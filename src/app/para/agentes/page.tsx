@@ -288,7 +288,7 @@ function EvaluationReportVisual() {
               initial={{ scale: 0, rotate: -15 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.8, type: "spring", stiffness: 400, damping: 12 }}
-              className="flex items-center gap-0.5 bg-emerald-100 text-emerald-700 text-[7px] font-bold px-1.5 py-0.5 rounded-full"
+              className="flex items-center gap-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[7px] font-bold px-1.5 py-0.5 rounded-full"
             >
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
@@ -362,7 +362,7 @@ function EvaluationReportVisual() {
       >
         <div className="flex items-center gap-1.5">
           <motion.div
-            className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center"
+            className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center"
             animate={{
               boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 10px 3px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
             }}
@@ -372,7 +372,7 @@ function EvaluationReportVisual() {
               animate={{ scale: [1, 1.15, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
-              <Shield className="w-2.5 h-2.5 text-emerald-600" />
+              <Shield className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
             </motion.div>
           </motion.div>
           <span className="text-[9px] text-emerald-700 font-medium">Bajo riesgo · Recomendado</span>
@@ -842,11 +842,11 @@ export default function AgentesPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-xl p-4 border border-border"
+                    className="absolute -bottom-6 -left-6 bg-card rounded-xl shadow-xl p-4 border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                        <Check className="w-5 h-5 text-emerald-600" />
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                        <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">Evaluación lista</p>
@@ -861,7 +861,7 @@ export default function AgentesPage() {
         </section>
 
         {/* Problems Bento Section */}
-        <section className="bg-white py-[80px] md:py-[100px]">
+        <section className="bg-background py-[80px] md:py-[100px]">
           <div className="container-platform">
             {/* 3-column Header */}
             <div className="grid md:grid-cols-12 gap-6 md:gap-12 mb-12">
@@ -929,7 +929,7 @@ export default function AgentesPage() {
                     { icon: Shield, label: 'Crédito' },
                     { icon: Users, label: 'Referencias' },
                   ].map((item) => (
-                    <div key={item.label} className="bg-white rounded-xl p-4 border border-border/50">
+                    <div key={item.label} className="bg-card rounded-xl p-4 border border-border/50">
                       <item.icon className="w-5 h-5 text-muted-foreground/40 mb-3" />
                       <div className="h-2 bg-muted rounded mb-1.5 w-full" />
                       <div className="h-2 bg-muted rounded w-2/3" />
@@ -965,8 +965,8 @@ export default function AgentesPage() {
                     { name: 'Nicolás Ruiz', initials: 'CR', status: 'Esperando', progress: 60 },
                     { name: 'Ana Pérez', initials: 'AP', status: 'Perdido', progress: 20 },
                   ].map((candidate, i) => (
-                    <div key={candidate.name} className="flex items-center gap-2.5 bg-white rounded-lg p-2.5 border border-border/50">
-                      <div className="w-8 h-8 rounded-full bg-sand-100 flex items-center justify-center text-[10px] font-semibold text-sand-700 flex-shrink-0">
+                    <div key={candidate.name} className="flex items-center gap-2.5 bg-card rounded-lg p-2.5 border border-border/50">
+                      <div className="w-8 h-8 rounded-full bg-sand-100 dark:bg-muted flex items-center justify-center text-[10px] font-semibold text-sand-700 dark:text-muted-foreground flex-shrink-0">
                         {candidate.initials}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1096,12 +1096,12 @@ export default function AgentesPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={bentoInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
+                className="md:col-span-5 bg-card rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <Shield className="w-5 h-5 text-sand-700" />
+                    <div className="w-10 h-10 rounded-xl bg-sand-100 dark:bg-muted flex items-center justify-center mb-4">
+                      <Shield className="w-5 h-5 text-sand-700 dark:text-muted-foreground" />
                     </div>
                     <div className="flex items-baseline gap-2 mb-1">
                       <span className="text-foreground text-sm font-semibold">$24.900</span>
@@ -1133,12 +1133,12 @@ export default function AgentesPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={bentoInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
+                className="md:col-span-5 bg-card rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <DeviceMobile className="w-5 h-5 text-sand-700" />
+                    <div className="w-10 h-10 rounded-xl bg-sand-100 dark:bg-muted flex items-center justify-center mb-4">
+                      <DeviceMobile className="w-5 h-5 text-sand-700 dark:text-muted-foreground" />
                     </div>
                     <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">App móvil</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
@@ -1196,17 +1196,17 @@ export default function AgentesPage() {
                   <div className="hidden sm:block w-[160px] flex-shrink-0">
                     <div className="bg-white rounded-xl p-3">
                       <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-xl font-bold text-foreground">$8.9M</span>
+                        <span className="text-xl font-bold text-neutral-900">$8.9M</span>
                         <span className="text-[10px] text-emerald-600 font-medium">+23%</span>
                       </div>
-                      <span className="text-[9px] text-muted-foreground">Comisiones este mes</span>
+                      <span className="text-[9px] text-neutral-500">Comisiones este mes</span>
                       <div className="mt-3">
                         <div className="flex justify-between text-[9px] mb-1">
-                          <span className="text-muted-foreground">Meta</span>
-                          <span className="text-foreground font-medium">89%</span>
+                          <span className="text-neutral-500">Meta</span>
+                          <span className="text-neutral-900 font-medium">89%</span>
                         </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-foreground rounded-full" style={{ width: '89%' }} />
+                        <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-neutral-900 rounded-full" style={{ width: '89%' }} />
                         </div>
                       </div>
                     </div>
@@ -1219,12 +1219,12 @@ export default function AgentesPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={bentoInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
+                className="md:col-span-6 bg-card rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <FileText className="w-5 h-5 text-sand-700" />
+                    <div className="w-10 h-10 rounded-xl bg-sand-100 dark:bg-muted flex items-center justify-center mb-4">
+                      <FileText className="w-5 h-5 text-sand-700 dark:text-muted-foreground" />
                     </div>
                     <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Contratos digitales</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
@@ -1254,12 +1254,12 @@ export default function AgentesPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={bentoInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
+                className="md:col-span-6 bg-card rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center mb-4">
-                      <ChartBar className="w-5 h-5 text-sand-700" />
+                    <div className="w-10 h-10 rounded-xl bg-sand-100 dark:bg-muted flex items-center justify-center mb-4">
+                      <ChartBar className="w-5 h-5 text-sand-700 dark:text-muted-foreground" />
                     </div>
                     <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Reportes profesionales</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">

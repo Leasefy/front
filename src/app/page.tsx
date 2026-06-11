@@ -11,7 +11,6 @@ import { AboutSection } from "@/components/home/AboutSection";
 import { TestimonialsSection } from "@/components/home/TestimonialsSection";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { CTASection } from "@/components/home/CTASection";
-import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
 
@@ -75,7 +74,7 @@ export const metadata: Metadata = {
  */
 export default function House() {
   return (
-    <ForceLightMode>
+    <>
       <Navbar />
       <main id="main-content">
         {/* 1. Hero */}
@@ -104,6 +103,6 @@ export default function House() {
         <CTASection />
       </main>
       <Footer />
-    </ForceLightMode>
+    </>
   );
 }

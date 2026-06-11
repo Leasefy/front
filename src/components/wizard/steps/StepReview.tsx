@@ -29,6 +29,8 @@ export function StepReview() {
     setAcceptTerms,
     authorizeVerification,
     setAuthorizeVerification,
+    consentText,
+    mode,
   } = useApplication();
   const { personal, employment, income, references, documents } = application;
 
@@ -205,29 +207,41 @@ export function StepReview() {
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <DocumentStatus
             label="Documento de identidad"
-            uploaded={!!documents.idDocument?.fileName || !!documents.idDocument?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.idDocument?.fileName || !!documents.idDocument?.file)
+              : !!documents.idDocument?.file}
             required
           />
           <DocumentStatus
             label="Extracto bancario"
-            uploaded={!!documents.bankStatement?.fileName || !!documents.bankStatement?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.bankStatement?.fileName || !!documents.bankStatement?.file)
+              : !!documents.bankStatement?.file}
             required
           />
           <DocumentStatus
             label="Contrato laboral"
-            uploaded={!!documents.employmentLetter?.fileName || !!documents.employmentLetter?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.employmentLetter?.fileName || !!documents.employmentLetter?.file)
+              : !!documents.employmentLetter?.file}
           />
           <DocumentStatus
             label="Certificado de ingresos"
-            uploaded={!!documents.incomeProof?.fileName || !!documents.incomeProof?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.incomeProof?.fileName || !!documents.incomeProof?.file)
+              : !!documents.incomeProof?.file}
           />
           <DocumentStatus
             label="Colilla de nómina"
-            uploaded={!!documents.payStub?.fileName || !!documents.payStub?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.payStub?.fileName || !!documents.payStub?.file)
+              : !!documents.payStub?.file}
           />
           <DocumentStatus
             label="Reporte de crédito"
-            uploaded={!!documents.creditReport?.fileName || !!documents.creditReport?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.creditReport?.fileName || !!documents.creditReport?.file)
+              : !!documents.creditReport?.file}
           />
         </div>
       </SummaryCard>
@@ -261,28 +275,46 @@ export function StepReview() {
             </span>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              id="authorizeVerification"
-              checked={authorizeVerification}
-              onChange={(e) => handleAuthorizationChange(e.target.checked)}
-              className={cn(
-                'mt-0.5 h-4 w-4 rounded-sm border border-border',
-                'focus:ring-2 focus:ring-ring focus:ring-offset-0',
-                'checked:bg-primary checked:border-primary',
-                'appearance-none cursor-pointer relative',
-                'after:content-[""] after:absolute after:hidden',
-                'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
-                'after:border-white after:border-r-2 after:border-b-2 after:rotate-45',
-                'checked:after:block'
-              )}
-            />
-            <span className="text-sm text-foreground/70">
-              Autorizo la verificación de mis datos personales, laborales y
-              crediticios
-            </span>
-          </label>
+          {/* Habeas-data consent block */}
+          <div className="flex flex-col gap-2">
+            {consentText ? (
+              <div className="border border-border rounded-md bg-muted/30 p-3">
+                <p className="text-xs font-medium text-foreground mb-1.5">
+                  {consentText.title}
+                </p>
+                <div
+                  className="text-xs text-muted-foreground leading-relaxed max-h-32 overflow-y-auto pr-1"
+                  data-testid="consent-text-body"
+                >
+                  {consentText.text}
+                </div>
+              </div>
+            ) : null}
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="authorizeVerification"
+                checked={authorizeVerification}
+                onChange={(e) => handleAuthorizationChange(e.target.checked)}
+                className={cn(
+                  'mt-0.5 h-4 w-4 rounded-sm border border-border',
+                  'focus:ring-2 focus:ring-ring focus:ring-offset-0',
+                  'checked:bg-primary checked:border-primary',
+                  'appearance-none cursor-pointer relative',
+                  'after:content-[""] after:absolute after:hidden',
+                  'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
+                  'after:border-white after:border-r-2 after:border-b-2 after:rotate-45',
+                  'checked:after:block'
+                )}
+              />
+              <span className="text-sm text-foreground/70">
+                {consentText
+                  ? 'He leído y autorizo el tratamiento de mis datos personales'
+                  : 'Autorizo la verificación de mis datos personales, laborales y crediticios'}
+              </span>
+            </label>
+          </div>
         </div>
 
         {!acceptTerms || !authorizeVerification ? (

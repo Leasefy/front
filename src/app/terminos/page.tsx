@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
-import { ForceLightMode } from "@/components/providers/ForceLightMode";
-
 export const metadata: Metadata = {
   title: "Términos y Condiciones | Leasefy",
   description:
@@ -12,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TerminosPage() {
   return (
-    <ForceLightMode>
+    <>
       <Navbar />
       <main id="main-content" className="bg-background">
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
@@ -1569,6 +1567,6 @@ export default function TerminosPage() {
         </section>
       </main>
       <Footer />
-    </ForceLightMode>
+    </>
   );
 }

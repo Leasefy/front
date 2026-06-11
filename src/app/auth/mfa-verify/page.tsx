@@ -101,7 +101,7 @@ export default function MfaVerifyPage() {
   }, [code, isLoading, handleVerify]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0a0a0b] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Icon */}
         <div className="flex justify-center">
@@ -112,10 +112,10 @@ export default function MfaVerifyPage() {
 
         {/* Title */}
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
             Verificacion de seguridad
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-muted-foreground">
             Ingresa el codigo de 6 digitos de tu app de autenticacion
           </p>
         </div>
@@ -130,7 +130,7 @@ export default function MfaVerifyPage() {
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-full h-14 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-lg text-center tracking-[0.5em] font-mono bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+            className="w-full h-14 px-4 border border-input rounded-xl text-lg text-center tracking-[0.5em] font-mono bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
             placeholder="000000"
           />
 
@@ -154,7 +154,7 @@ export default function MfaVerifyPage() {
         <div className="text-center">
           <button
             onClick={handleSignOut}
-            className="inline-flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <SignOut className="w-4 h-4" />
             Cerrar sesion

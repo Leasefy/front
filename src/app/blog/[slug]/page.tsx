@@ -172,7 +172,7 @@ export default async function BlogArticlePage({ params }: Props) {
           <div className="container-platform"><div className="max-w-[720px]">
             <Link
               href="/"
-              className="group inline-flex items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white px-3 py-2 -ml-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all mb-10"
+              className="group inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-2 -ml-3 rounded-lg hover:bg-muted transition-all mb-10"
             >
               <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" weight="bold" />
               Volver al inicio

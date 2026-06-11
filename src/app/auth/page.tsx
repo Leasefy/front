@@ -6,8 +6,6 @@ import Image from 'next/image';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lightning, Users, ArrowRight } from '@phosphor-icons/react';
-import { ForceLightMode } from '@/components/providers/ForceLightMode';
-
 // Door images for background slideshow
 const DOOR_IMAGES = [
   '/auth/door-1.jpg',   // Blue door with cobblestones
@@ -81,7 +79,6 @@ export default function AuthPage() {
   }, []);
 
   return (
-    <ForceLightMode>
     <div className="min-h-screen flex flex-col lg:flex-row bg-background" data-lenis-prevent>
       {/* Left Panel - Door images with glass widgets (sticky on desktop, hidden on mobile) */}
       <div className="hidden lg:flex lg:w-[55%] lg:fixed lg:inset-y-0 lg:left-0 relative overflow-hidden">
@@ -291,6 +288,5 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
-    </ForceLightMode>
   );
 }

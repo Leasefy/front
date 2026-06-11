@@ -34,7 +34,7 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white dark:bg-card border-t border-neutral-200 dark:border-border"
+        className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card border-t border-border"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}
         aria-label="Mobile navigation"
       >

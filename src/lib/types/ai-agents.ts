@@ -31,6 +31,22 @@ export interface AIAgentDefinition {
 
 export type ExecutionStepStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+export type ScoringAwaitingReason =
+  | 'study_in_progress'
+  | 'no_consent'
+  | 'consent_unavailable'
+  | 'cannot_launch'
+  | 'no_cedula'
+  | 'study_not_completed'
+  | 'no_db';
+
+/** Evaluation lifecycle status as returned by the main backend (EvaluationResponseDto). */
+export type ScoringRunStatus =
+  | 'PENDING'
+  | 'AWAITING_EVALUATION'
+  | 'COMPLETED'
+  | 'FAILED';
+
 export interface ExecutionStep {
   id: string;
   label: string;

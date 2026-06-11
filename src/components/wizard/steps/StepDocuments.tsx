@@ -70,14 +70,28 @@ export function StepDocuments() {
     [updateDocuments]
   );
 
-  const hasEmploymentOrIncome =
-    !!(documents.employmentLetter?.file || documents.employmentLetter?.fileName) ||
-    !!(documents.incomeProof?.file || documents.incomeProof?.fileName);
+  // In create mode, only a real File object counts — a fileName-only slot means
+  // the file was lost during page reload (stale localStorage). In update mode,
+  // fileName without a file means the document already lives on the server.
+  const hasEmploymentOrIncome = mode === 'update'
+    ? (!!(documents.employmentLetter?.file || documents.employmentLetter?.fileName) ||
+       !!(documents.incomeProof?.file || documents.incomeProof?.fileName))
+    : (!!(documents.employmentLetter?.file) || !!(documents.incomeProof?.file));
 
   const oneOfError =
     attemptedAdvance && !hasEmploymentOrIncome
       ? 'Debés subir al menos uno: contrato laboral o certificado de ingresos'
       : undefined;
+
+  // Shown above a document slot when the file was lost on page reload (create mode only).
+  const StaleDocWarning = () => (
+    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 rounded-sm">
+      <Warning className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-amber-600 dark:text-amber-400">
+        Volvé a adjuntar este archivo — se desconectó al recargar la página
+      </p>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -106,29 +120,39 @@ export function StepDocuments() {
         </div>
 
         <div className="space-y-6">
-          <DocumentUpload
-            label="Documento de identidad"
-            required
-            accept=".pdf,.jpg,.jpeg,.png"
-            maxSizeMB={5}
-            value={documents.idDocument || null}
-            onChange={(data) => handleDocumentChange('idDocument', data)}
-            onDelete={buildOnDelete('idDocument')}
-            hint="Cédula de ciudadanía o extranjería por ambos lados"
-            error={getDocumentError('idDocument')}
-          />
+          <div>
+            {mode !== 'update' && documents.idDocument?.fileName && !documents.idDocument?.file && (
+              <div className="mb-2"><StaleDocWarning /></div>
+            )}
+            <DocumentUpload
+              label="Documento de identidad"
+              required
+              accept=".pdf,.jpg,.jpeg,.png"
+              maxSizeMB={5}
+              value={documents.idDocument || null}
+              onChange={(data) => handleDocumentChange('idDocument', data)}
+              onDelete={buildOnDelete('idDocument')}
+              hint="Cédula de ciudadanía o extranjería por ambos lados"
+              error={getDocumentError('idDocument')}
+            />
+          </div>
 
-          <DocumentUpload
-            label="Extracto bancario"
-            required
-            accept=".pdf"
-            maxSizeMB={5}
-            value={documents.bankStatement || null}
-            onChange={(data) => handleDocumentChange('bankStatement', data)}
-            onDelete={buildOnDelete('bankStatement')}
-            hint="Últimos 3 meses de tu cuenta principal"
-            error={getDocumentError('bankStatement')}
-          />
+          <div>
+            {mode !== 'update' && documents.bankStatement?.fileName && !documents.bankStatement?.file && (
+              <div className="mb-2"><StaleDocWarning /></div>
+            )}
+            <DocumentUpload
+              label="Extracto bancario"
+              required
+              accept=".pdf"
+              maxSizeMB={5}
+              value={documents.bankStatement || null}
+              onChange={(data) => handleDocumentChange('bankStatement', data)}
+              onDelete={buildOnDelete('bankStatement')}
+              hint="Últimos 3 meses de tu cuenta principal"
+              error={getDocumentError('bankStatement')}
+            />
+          </div>
         </div>
       </section>
 
@@ -150,25 +174,35 @@ export function StepDocuments() {
         )}
 
         <div className="space-y-6">
-          <DocumentUpload
-            label="Contrato laboral"
-            accept=".pdf"
-            maxSizeMB={5}
-            value={documents.employmentLetter || null}
-            onChange={(data) => handleDocumentChange('employmentLetter', data)}
-            onDelete={buildOnDelete('employmentLetter')}
-            hint="Carta con fecha reciente indicando cargo y salario"
-          />
+          <div>
+            {mode !== 'update' && documents.employmentLetter?.fileName && !documents.employmentLetter?.file && (
+              <div className="mb-2"><StaleDocWarning /></div>
+            )}
+            <DocumentUpload
+              label="Contrato laboral"
+              accept=".pdf"
+              maxSizeMB={5}
+              value={documents.employmentLetter || null}
+              onChange={(data) => handleDocumentChange('employmentLetter', data)}
+              onDelete={buildOnDelete('employmentLetter')}
+              hint="Carta con fecha reciente indicando cargo y salario"
+            />
+          </div>
 
-          <DocumentUpload
-            label="Certificado de ingresos"
-            accept=".pdf,.jpg,.jpeg,.png"
-            maxSizeMB={5}
-            value={documents.incomeProof || null}
-            onChange={(data) => handleDocumentChange('incomeProof', data)}
-            onDelete={buildOnDelete('incomeProof')}
-            hint="Últimos 3 desprendibles de nómina o declaración de renta"
-          />
+          <div>
+            {mode !== 'update' && documents.incomeProof?.fileName && !documents.incomeProof?.file && (
+              <div className="mb-2"><StaleDocWarning /></div>
+            )}
+            <DocumentUpload
+              label="Certificado de ingresos"
+              accept=".pdf,.jpg,.jpeg,.png"
+              maxSizeMB={5}
+              value={documents.incomeProof || null}
+              onChange={(data) => handleDocumentChange('incomeProof', data)}
+              onDelete={buildOnDelete('incomeProof')}
+              hint="Últimos 3 desprendibles de nómina o declaración de renta"
+            />
+          </div>
         </div>
       </section>
 
@@ -185,25 +219,35 @@ export function StepDocuments() {
         </div>
 
         <div className="space-y-6">
-          <DocumentUpload
-            label="Colilla de nómina"
-            accept=".pdf,.jpg,.jpeg,.png"
-            maxSizeMB={5}
-            value={documents.payStub || null}
-            onChange={(data) => handleDocumentChange('payStub', data)}
-            onDelete={buildOnDelete('payStub')}
-            hint="Último desprendible de pago de tu empleador"
-          />
+          <div>
+            {mode !== 'update' && documents.payStub?.fileName && !documents.payStub?.file && (
+              <div className="mb-2"><StaleDocWarning /></div>
+            )}
+            <DocumentUpload
+              label="Colilla de nómina"
+              accept=".pdf,.jpg,.jpeg,.png"
+              maxSizeMB={5}
+              value={documents.payStub || null}
+              onChange={(data) => handleDocumentChange('payStub', data)}
+              onDelete={buildOnDelete('payStub')}
+              hint="Último desprendible de pago de tu empleador"
+            />
+          </div>
 
-          <DocumentUpload
-            label="Reporte de crédito"
-            accept=".pdf"
-            maxSizeMB={5}
-            value={documents.creditReport || null}
-            onChange={(data) => handleDocumentChange('creditReport', data)}
-            onDelete={buildOnDelete('creditReport')}
-            hint="Descarga gratuita de Datacrédito o TransUnion"
-          />
+          <div>
+            {mode !== 'update' && documents.creditReport?.fileName && !documents.creditReport?.file && (
+              <div className="mb-2"><StaleDocWarning /></div>
+            )}
+            <DocumentUpload
+              label="Reporte de crédito"
+              accept=".pdf"
+              maxSizeMB={5}
+              value={documents.creditReport || null}
+              onChange={(data) => handleDocumentChange('creditReport', data)}
+              onDelete={buildOnDelete('creditReport')}
+              hint="Descarga gratuita de Datacrédito o TransUnion"
+            />
+          </div>
         </div>
       </section>
     </div>

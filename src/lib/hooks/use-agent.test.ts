@@ -1,14 +1,23 @@
 /**
- * use-agent.test.ts — tenant-scoring execution hook (v6.0-01 item #4)
+ * use-agent.test.ts — tenant-scoring execution hook
  *
- * Covers the runScoring flow against the real agent contract
- * (agent/src/server/routes/tenant-scoring.ts):
- *   (1) payload shape: { applicationId, tenantId, monthlyRent, documents[] }
- *       with backend doc types mapped to the agent enum
- *   (2) 202 → poll GET /tenant-scoring/:runId → completed
- *   (3) fromCache short-circuit (no polling)
- *   (4) failed status surfaces an error + failed trace
- *   (5) zero usable documents → clear error (never hits the agent)
+ * Covers runScoring against the MAIN BACKEND evaluations contract
+ * (Leasefy/back, FRONTEND-API-CONTRACTS.md). The front never hits the agent
+ * micro directly:
+ *   POST /evaluations/:applicationId        → 202 { runId, status: 'PENDING' }
+ *   GET  /evaluations/:applicationId/result → EvaluationResponseDto
+ *
+ * Scenarios:
+ *   (1) dispatch (no body) → poll → COMPLETED maps to result
+ *   (2) PENDING then COMPLETED (active poll loop)
+ *   (3) FAILED surfaces an error + failed trace
+ *   (4) dispatch error (e.g. 429) surfaces an error, never polls
+ *   (5) AWAITING_EVALUATION exits the poll with awaiting state, no throw
+ *   (6) every awaiting_reason surfaces (7 values incl. consent_unavailable)
+ *   (7) recheckScoring transitions awaiting → completed (by applicationId)
+ *   (8) background slow poll for study_in_progress auto-completes
+ *   (9) clearResult clears awaiting + stops the background poll
+ *  (10) paths: POST/GET use /evaluations/:applicationId (by applicationId, not runId)
  */
 
 import * as React from 'react'
@@ -20,53 +29,45 @@ void React // jsx-preserve
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
-vi.mock('@/lib/api/agent-auth', () => ({
-  agentAuthHeaders: (extra?: HeadersInit) => new Headers(extra),
-}))
-
-const mockApiGet = vi.fn()
+const mockPost = vi.fn()
+const mockGet = vi.fn()
 vi.mock('@/lib/api/client', () => ({
-  apiClient: { get: (...args: unknown[]) => mockApiGet(...args) },
+  apiClient: {
+    post: (...args: unknown[]) => mockPost(...args),
+    get: (...args: unknown[]) => mockGet(...args),
+  },
   getAccessToken: () => 'test-token',
-}))
-
-const mockGetDocuments = vi.fn()
-const mockGetDownloadUrl = vi.fn()
-vi.mock('@/lib/api/applications.service', () => ({
-  applicationsApi: { getDocuments: (...a: unknown[]) => mockGetDocuments(...a) },
-  landlordApplicationsApi: { getDocumentDownloadUrl: (...a: unknown[]) => mockGetDownloadUrl(...a) },
+  ApiError: class ApiError extends Error {
+    constructor(public status: number, msg: string) { super(msg); this.name = 'ApiError' }
+  },
 }))
 
 import { useAgentExecution } from './use-agent'
+
+// ── Fixtures ─────────────────────────────────────────────────────────────────
+
+const COMPLETED = {
+  runId: 'run_1',
+  status: 'COMPLETED',
+  score: 82,
+  level: 'B',
+  score_breakdown: { financial: 30, stability: 20, history: 15, integrity: 10, payment_history: 7 },
+  observations: [{ doc_type: 'extracto_bancario', code: 'OK', severity: 'info', message: 'Sin observaciones' }],
+  integrity_flags: [],
+  documents_summary: { total_sent: 2, processed: 2, skipped: 0, types_present: ['cedula', 'extracto_bancario'] },
+  explanation: 'Ingresos consistentes',
+  requires_manual_review: false,
+  createdAt: '2026-06-08T00:00:00Z',
+}
+
+function awaitingBody(reason: string, extra: Record<string, unknown> = {}) {
+  return { runId: 'run_aw', status: 'AWAITING_EVALUATION', awaiting_reason: reason, ...extra }
+}
 
 // ── Harness ──────────────────────────────────────────────────────────────────
 
 let container: HTMLDivElement
 let root: Root
-
-const APPLICATION = {
-  id: 'app_1',
-  tenantId: 'tenant_99',
-  property: { id: 'prop_1', title: 'Apto', city: 'Bogotá', neighborhood: 'Chapinero', monthlyRent: 2_500_000 },
-}
-
-const BACKEND_DOCS = [
-  { id: 'doc_id', applicationId: 'app_1', type: 'ID_DOCUMENT', originalName: 'cedula.pdf', mimeType: 'application/pdf', size: 1, createdAt: '' },
-  { id: 'doc_bank', applicationId: 'app_1', type: 'BANK_STATEMENT', originalName: 'extracto.pdf', mimeType: 'application/pdf', size: 1, createdAt: '' },
-  { id: 'doc_letter', applicationId: 'app_1', type: 'EMPLOYMENT_LETTER', originalName: 'carta.pdf', mimeType: 'application/pdf', size: 1, createdAt: '' },
-  { id: 'doc_unknown', applicationId: 'app_1', type: 'SOMETHING_ELSE', originalName: 'x.pdf', mimeType: 'application/pdf', size: 1, createdAt: '' },
-]
-
-const COMPLETED_RESULT = {
-  success: true,
-  applicationId: 'app_1',
-  score: 82,
-  level: 'B' as const,
-  recommendation: 'Aprobar con depósito',
-  explanation: 'Ingresos consistentes',
-  escalate: false,
-  storedSuccessfully: true,
-}
 
 type Hook = ReturnType<typeof useAgentExecution>
 
@@ -81,19 +82,13 @@ function renderHook(): { get: () => Hook } {
 }
 
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_AGENT_URL = 'http://agent.test'
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  mockApiGet.mockReset()
-  mockGetDocuments.mockReset()
-  mockGetDownloadUrl.mockReset()
-  // Default happy-path resolvers
-  mockApiGet.mockResolvedValue(APPLICATION)
-  mockGetDocuments.mockResolvedValue(BACKEND_DOCS)
-  mockGetDownloadUrl.mockImplementation((_appId: string, docId: string) =>
-    Promise.resolve({ url: `https://signed.test/${docId}`, expiresAt: '' }),
-  )
+  mockPost.mockReset()
+  mockGet.mockReset()
+  // Default happy-path dispatch.
+  mockPost.mockResolvedValue({ runId: 'run_1', status: 'PENDING' })
 })
 
 afterEach(() => {
@@ -103,92 +98,66 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-// ── (3) fromCache short-circuit ───────────────────────────────────────────────
+// ── (1) dispatch → poll → completed ──────────────────────────────────────────
 
-describe('runScoring — fromCache short-circuit', () => {
-  it('uses cached data and never polls when POST returns fromCache=true', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true, fromCache: true, runId: 'run_cached', data: COMPLETED_RESULT }),
-    })
-    globalThis.fetch = fetchMock as typeof globalThis.fetch
+describe('runScoring — dispatch then completed', () => {
+  it('POSTs without a body and maps a COMPLETED result', async () => {
+    mockGet.mockResolvedValueOnce(COMPLETED)
 
     const hook = renderHook()
     await act(async () => { await hook.get().runScoring('app_1') })
 
-    // Only the POST happened — no GET poll
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe('http://agent.test/tenant-scoring')
-    expect((init as RequestInit).method).toBe('POST')
+    // Dispatch is a bodyless POST to /evaluations/:applicationId.
+    expect(mockPost).toHaveBeenCalledTimes(1)
+    expect(mockPost.mock.calls[0][0]).toBe('/evaluations/app_1')
+    expect(mockPost.mock.calls[0][1]).toBeUndefined()
 
     expect(hook.get().error).toBeNull()
     expect(hook.get().result).toMatchObject({ score: 82, level: 'B' })
     expect(hook.get().trace?.status).toBe('completed')
+    expect(hook.get().trace?.steps.every((s) => s.status === 'completed')).toBe(true)
   })
-})
 
-// ── (1) payload shape + (2) 202 → poll → completed ────────────────────────────
-
-describe('runScoring — payload shape + 202 then poll', () => {
-  it('sends mapped documents and polls runId until completed', async () => {
-    const fetchMock = vi.fn()
-      // POST → 202 with runId
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, runId: 'run_42', status: 'pending' }),
-      })
-      // First poll → still pending
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, runId: 'run_42', status: 'pending' }),
-      })
-      // Second poll → completed
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, runId: 'run_42', status: 'completed', data: COMPLETED_RESULT }),
-      })
-    globalThis.fetch = fetchMock as typeof globalThis.fetch
+  it('maps score_breakdown, documents_summary and requires_manual_review', async () => {
+    mockGet.mockResolvedValueOnce(COMPLETED)
 
     const hook = renderHook()
     await act(async () => { await hook.get().runScoring('app_1') })
 
-    // POST body matches the agent contract
-    const postBody = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)
-    expect(postBody.applicationId).toBe('app_1')
-    expect(postBody.tenantId).toBe('tenant_99')
-    expect(postBody.monthlyRent).toBe(2_500_000)
-    // Unknown doc type dropped; three known docs mapped to the agent enum
-    expect(postBody.documents).toEqual([
-      { url: 'https://signed.test/doc_id', type: 'cedula' },
-      { url: 'https://signed.test/doc_bank', type: 'extracto_bancario' },
-      { url: 'https://signed.test/doc_letter', type: 'contrato_laboral' },
-    ])
-
-    // Polled GET /tenant-scoring/run_42 twice (pending, then completed)
-    const getCalls = fetchMock.mock.calls.filter((c) => c[0] === 'http://agent.test/tenant-scoring/run_42')
-    expect(getCalls.length).toBe(2)
-
-    expect(hook.get().result).toMatchObject({ score: 82, level: 'B' })
-    expect(hook.get().trace?.status).toBe('completed')
-    expect(hook.get().trace?.steps.every((s) => s.status === 'completed')).toBe(true)
+    const result = hook.get().result as { scoreBreakdown?: unknown; documentsSummary?: unknown; requiresManualReview?: boolean }
+    expect(result.scoreBreakdown).toMatchObject({ financial: 30, payment_history: 7 })
+    expect(result.documentsSummary).toMatchObject({ total_sent: 2, processed: 2 })
+    expect(result.requiresManualReview).toBe(false)
   })
 })
 
-// ── (4) failed status ─────────────────────────────────────────────────────────
+// ── (2) PENDING then COMPLETED ───────────────────────────────────────────────
+
+describe('runScoring — active poll loop', () => {
+  it('keeps polling while PENDING and resolves on COMPLETED', async () => {
+    vi.useFakeTimers()
+    mockGet
+      .mockResolvedValueOnce({ runId: 'run_1', status: 'PENDING' })
+      .mockResolvedValueOnce(COMPLETED)
+
+    const hook = renderHook()
+    let p: Promise<void>
+    act(() => { p = hook.get().runScoring('app_1') })
+    // Advance past the 1.8s poll interval so the loop runs the second GET.
+    await act(async () => { await vi.advanceTimersByTimeAsync(1800) })
+    await act(async () => { await p })
+
+    expect(mockGet).toHaveBeenCalledTimes(2)
+    expect(hook.get().result).toMatchObject({ score: 82, level: 'B' })
+    expect(hook.get().trace?.status).toBe('completed')
+  })
+})
+
+// ── (3) FAILED ───────────────────────────────────────────────────────────────
 
 describe('runScoring — failed run', () => {
-  it('surfaces an error and a failed trace when the run fails', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, runId: 'run_x', status: 'pending' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, runId: 'run_x', status: 'failed', error: 'Documentos ilegibles' }),
-      })
-    globalThis.fetch = fetchMock as typeof globalThis.fetch
+  it('surfaces an error and a failed trace when status is FAILED', async () => {
+    mockGet.mockResolvedValueOnce({ runId: 'run_1', status: 'FAILED', error: 'Documentos ilegibles' })
 
     const hook = renderHook()
     await act(async () => { await hook.get().runScoring('app_1') })
@@ -199,34 +168,287 @@ describe('runScoring — failed run', () => {
   })
 })
 
-// ── (5) zero documents ────────────────────────────────────────────────────────
+// ── (4) dispatch error ───────────────────────────────────────────────────────
 
-describe('runScoring — zero usable documents', () => {
-  it('errors without calling the agent when no documents map to the enum', async () => {
-    mockGetDocuments.mockResolvedValue([
-      { id: 'doc_x', applicationId: 'app_1', type: 'SOMETHING_ELSE', originalName: 'x.pdf', mimeType: 'application/pdf', size: 1, createdAt: '' },
-    ])
-    const fetchMock = vi.fn()
-    globalThis.fetch = fetchMock as typeof globalThis.fetch
+describe('runScoring — dispatch error', () => {
+  it('surfaces the backend error and never polls', async () => {
+    mockPost.mockReset()
+    mockPost.mockRejectedValueOnce(new Error('Límite PRO de 30 evaluaciones/mes alcanzado'))
 
     const hook = renderHook()
     await act(async () => { await hook.get().runScoring('app_1') })
 
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(hook.get().error).toMatch(/documentos/i)
+    expect(mockGet).not.toHaveBeenCalled()
+    expect(hook.get().error).toMatch(/límite pro/i)
     expect(hook.get().trace?.status).toBe('failed')
+    expect(hook.get().result).toBeNull()
+  })
+})
+
+// ── (5) AWAITING_EVALUATION from poll ────────────────────────────────────────
+
+describe('runScoring — awaiting_evaluation', () => {
+  it('exits the poll with awaiting state, no error, no result', async () => {
+    vi.useFakeTimers()
+    mockPost.mockResolvedValueOnce({ runId: 'run_aw', status: 'PENDING' })
+    mockGet.mockResolvedValueOnce(
+      awaitingBody('study_in_progress', {
+        documents_summary: { total_sent: 2, processed: 2, types_present: ['cedula', 'extracto_bancario'] },
+      }),
+    )
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_1') })
+
+    expect(hook.get().error).toBeNull()
+    expect(hook.get().result).toBeNull()
+    expect(hook.get().awaiting?.reason).toBe('study_in_progress')
+    expect(hook.get().awaiting?.runId).toBe('run_aw')
+    expect(hook.get().awaiting?.documentsSummary).toMatchObject({ total_sent: 2, processed: 2 })
+    expect(hook.get().isRunning).toBe(false)
   })
 
-  it('errors when the application has no documents at all', async () => {
-    mockGetDocuments.mockResolvedValue([])
-    const fetchMock = vi.fn()
-    globalThis.fetch = fetchMock as typeof globalThis.fetch
+  it('does not time out when status is AWAITING_EVALUATION (terminal reason)', async () => {
+    mockGet.mockResolvedValueOnce(awaitingBody('no_consent'))
 
     const hook = renderHook()
     await act(async () => { await hook.get().runScoring('app_1') })
 
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(hook.get().error).toBeTruthy()
+    expect(hook.get().error).toBeNull()
+    expect(hook.get().awaiting?.reason).toBe('no_consent')
+  })
+})
+
+// ── (6) every awaiting_reason ────────────────────────────────────────────────
+
+describe('runScoring — all awaiting_reason values', () => {
+  const reasons = [
+    'study_in_progress',
+    'no_consent',
+    'consent_unavailable',
+    'cannot_launch',
+    'no_cedula',
+    'study_not_completed',
+    'no_db',
+  ] as const
+
+  for (const reason of reasons) {
+    it(`surfaces awaiting.reason = "${reason}"`, async () => {
+      vi.useFakeTimers()
+      mockGet.mockResolvedValueOnce(awaitingBody(reason))
+
+      const hook = renderHook()
+      await act(async () => { await hook.get().runScoring('app_1') })
+
+      expect(hook.get().awaiting?.reason).toBe(reason)
+      expect(hook.get().error).toBeNull()
+    })
+  }
+})
+
+// ── (7) recheckScoring ───────────────────────────────────────────────────────
+
+describe('runScoring — recheckScoring transitions awaiting → completed', () => {
+  it('re-queries the result by applicationId and sets the result', async () => {
+    vi.useFakeTimers()
+    mockPost.mockResolvedValueOnce({ runId: 'run_recheck', status: 'PENDING' })
+    mockGet
+      .mockResolvedValueOnce(awaitingBody('study_in_progress'))
+      .mockResolvedValueOnce(COMPLETED)
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_recheck') })
+    expect(hook.get().awaiting).not.toBeNull()
+
+    await act(async () => { await hook.get().recheckScoring() })
+
+    // recheck GETs the same applicationId result endpoint.
+    expect(mockGet).toHaveBeenLastCalledWith('/evaluations/app_recheck/result')
+    expect(hook.get().awaiting).toBeNull()
+    expect(hook.get().result).toMatchObject({ score: 82, level: 'B' })
+  })
+})
+
+// ── (8) background slow poll ──────────────────────────────────────────────────
+
+describe('runScoring — background slow poll for study_in_progress', () => {
+  it('auto-transitions to completed when the background poll resolves', async () => {
+    vi.useFakeTimers()
+    mockPost.mockResolvedValueOnce({ runId: 'run_bg', status: 'PENDING' })
+    mockGet
+      .mockResolvedValueOnce(awaitingBody('study_in_progress')) // initial poll
+      .mockResolvedValueOnce(COMPLETED) // background poll after 20s
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_bg') })
+    expect(hook.get().awaiting?.reason).toBe('study_in_progress')
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_000) })
+
+    expect(hook.get().result).toMatchObject({ score: 82, level: 'B' })
+    expect(hook.get().awaiting).toBeNull()
+  })
+})
+
+// ── (9) clearResult ──────────────────────────────────────────────────────────
+
+describe('runScoring — clearResult stops the background poll', () => {
+  it('clears awaiting state and prevents further polls', async () => {
+    vi.useFakeTimers()
+    mockPost.mockResolvedValueOnce({ runId: 'run_clr', status: 'PENDING' })
+    mockGet.mockResolvedValueOnce(awaitingBody('study_in_progress'))
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_clr') })
+    expect(hook.get().awaiting).not.toBeNull()
+
+    act(() => { hook.get().clearResult() })
+    expect(hook.get().awaiting).toBeNull()
     expect(hook.get().result).toBeNull()
+    expect(hook.get().error).toBeNull()
+
+    const callsBefore = mockGet.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_000) })
+    expect(mockGet.mock.calls.length).toBe(callsBefore)
+  })
+})
+
+// ── (10) paths ───────────────────────────────────────────────────────────────
+
+describe('runScoring — endpoint paths', () => {
+  it('POSTs and polls /evaluations/:applicationId (by applicationId, not runId)', async () => {
+    mockPost.mockResolvedValueOnce({ runId: 'run_path', status: 'PENDING' })
+    mockGet.mockResolvedValueOnce(COMPLETED)
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_xyz') })
+
+    expect(mockPost.mock.calls[0][0]).toBe('/evaluations/app_xyz')
+    expect(mockGet.mock.calls[0][0]).toBe('/evaluations/app_xyz/result')
+  })
+})
+
+// ── (11) credit_check field ───────────────────────────────────────────────────
+
+const CREDIT_CHECK_APPROVED = {
+  status: 'approved' as const,
+  bureauScore: 832,
+  monthlyCapacity: 2500000,
+  reasonCode: null,
+  progressPercentage: null,
+}
+
+const CREDIT_CHECK_REJECTED_CREDIT = {
+  status: 'rejected_credit' as const,
+  bureauScore: 320,
+  monthlyCapacity: null,
+  reasonCode: 'credit_history_rejection',
+  progressPercentage: null,
+}
+
+const CREDIT_CHECK_AWAITING = {
+  status: 'awaiting_authorization' as const,
+  bureauScore: null,
+  monthlyCapacity: null,
+  reasonCode: 'awaiting_habeas_data',
+  progressPercentage: 20,
+}
+
+const CREDIT_CHECK_BLOCKED_ADMIN = {
+  status: 'blocked_admin' as const,
+  bureauScore: 250,
+  monthlyCapacity: null,
+  reasonCode: null,
+  progressPercentage: null,
+}
+
+describe('runScoring — credit_check mapping', () => {
+  it('threads credit_check verbatim into ScoringResult when COMPLETED with credit_check present', async () => {
+    const bodyWithCreditCheck = {
+      ...COMPLETED,
+      credit_check: CREDIT_CHECK_APPROVED,
+    }
+    mockGet.mockResolvedValueOnce(bodyWithCreditCheck)
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_cc') })
+
+    const r = hook.get().result as { creditCheck?: typeof CREDIT_CHECK_APPROVED }
+    expect(r.creditCheck).toEqual(CREDIT_CHECK_APPROVED)
+  })
+
+  it('leaves creditCheck undefined when COMPLETED response has no credit_check (backward compat)', async () => {
+    mockGet.mockResolvedValueOnce(COMPLETED) // no credit_check key
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_no_cc') })
+
+    const r = hook.get().result as { creditCheck?: unknown; score: number }
+    expect(r.creditCheck).toBeUndefined()
+    // existing fields still work
+    expect(r.score).toBe(82)
+  })
+
+  it('maps rejected_credit credit_check through correctly', async () => {
+    mockGet.mockResolvedValueOnce({ ...COMPLETED, credit_check: CREDIT_CHECK_REJECTED_CREDIT })
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_rej') })
+
+    const r = hook.get().result as { creditCheck?: typeof CREDIT_CHECK_REJECTED_CREDIT }
+    expect(r.creditCheck?.status).toBe('rejected_credit')
+    expect(r.creditCheck?.reasonCode).toBe('credit_history_rejection')
+  })
+
+  it('maps awaiting_authorization credit_check with progressPercentage', async () => {
+    mockGet.mockResolvedValueOnce({ ...COMPLETED, credit_check: CREDIT_CHECK_AWAITING })
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_await_auth') })
+
+    const r = hook.get().result as { creditCheck?: typeof CREDIT_CHECK_AWAITING }
+    expect(r.creditCheck?.status).toBe('awaiting_authorization')
+    expect(r.creditCheck?.progressPercentage).toBe(20)
+  })
+
+  it('maps blocked_admin credit_check — low bureau score does NOT change the credit_check status', async () => {
+    mockGet.mockResolvedValueOnce({ ...COMPLETED, credit_check: CREDIT_CHECK_BLOCKED_ADMIN })
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_blocked') })
+
+    const r = hook.get().result as { creditCheck?: typeof CREDIT_CHECK_BLOCKED_ADMIN }
+    // blocked_admin is preserved exactly — NOT re-derived from score
+    expect(r.creditCheck?.status).toBe('blocked_admin')
+  })
+
+  it('threads credit_check through recheckScoring (awaiting → completed with credit_check)', async () => {
+    vi.useFakeTimers()
+    mockPost.mockResolvedValueOnce({ runId: 'run_rc2', status: 'PENDING' })
+    mockGet
+      .mockResolvedValueOnce(awaitingBody('study_in_progress'))
+      .mockResolvedValueOnce({ ...COMPLETED, credit_check: CREDIT_CHECK_APPROVED })
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_rc2') })
+    await act(async () => { await hook.get().recheckScoring() })
+
+    const r = hook.get().result as { creditCheck?: typeof CREDIT_CHECK_APPROVED }
+    expect(r.creditCheck).toEqual(CREDIT_CHECK_APPROVED)
+  })
+
+  it('threads credit_check through the background slow poll (study_in_progress)', async () => {
+    vi.useFakeTimers()
+    mockPost.mockResolvedValueOnce({ runId: 'run_bgcc', status: 'PENDING' })
+    mockGet
+      .mockResolvedValueOnce(awaitingBody('study_in_progress'))
+      .mockResolvedValueOnce({ ...COMPLETED, credit_check: CREDIT_CHECK_APPROVED })
+
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_bgcc') })
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_000) })
+
+    const r = hook.get().result as { creditCheck?: typeof CREDIT_CHECK_APPROVED }
+    expect(r.creditCheck).toEqual(CREDIT_CHECK_APPROVED)
   })
 })

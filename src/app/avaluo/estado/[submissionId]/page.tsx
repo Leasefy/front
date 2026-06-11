@@ -7,7 +7,6 @@
  * On mount, checks URL search params for Wompi return params
  * (?id= and ?status=) and shows an informational toast.
  *
- * ForceLightMode is applied by the parent /avaluo layout — do NOT re-add here.
  * Payment entry is only through AvaluoEstadoCard → WompiPayButton.
  */
 

@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { CheckCircle } from '@phosphor-icons/react';
-import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 
 function ArcoVerifyInner() {
@@ -34,15 +33,15 @@ function ArcoVerifyInner() {
       id="main-content"
       className="min-h-screen flex flex-col items-center justify-center py-16 px-4 bg-background"
     >
-      <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm text-center">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm text-center">
         <CheckCircle
           weight="duotone"
           className="h-12 w-12 text-emerald-500 mx-auto mb-4"
         />
-        <h1 className="text-xl font-semibold font-[Manrope,sans-serif] text-neutral-900">
+        <h1 className="text-xl font-semibold font-[Manrope,sans-serif] text-foreground">
           {t('inmobiliaria.ai.arco.verify.confirmed')}
         </h1>
-        <p className="text-sm text-neutral-500 mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           {t('inmobiliaria.ai.arco.verify.sla')}
         </p>
         <Link
@@ -51,7 +50,7 @@ function ArcoVerifyInner() {
         >
           Volver al inicio
         </Link>
-        <p className="text-xs text-neutral-400 mt-4">
+        <p className="text-xs text-muted-foreground/70 mt-4">
           ¿Tienes dudas? Consulta nuestra{' '}
           <Link
             href="/privacidad"
@@ -68,10 +67,8 @@ function ArcoVerifyInner() {
 
 export default function ArcoVerifyPage() {
   return (
-    <ForceLightMode>
-      <I18nProvider>
-        <ArcoVerifyInner />
-      </I18nProvider>
-    </ForceLightMode>
+    <I18nProvider>
+      <ArcoVerifyInner />
+    </I18nProvider>
   );
 }

@@ -304,7 +304,7 @@ function PropiedadesContent() {
             Capturar con IA
           </button>
           <button
-            onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}
+            onClick={() => router.push('/publicar')}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />

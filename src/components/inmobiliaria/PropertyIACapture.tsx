@@ -467,7 +467,7 @@ export function PropertyIACapture() {
             {t(k('retry'))}
           </button>
           <button
-            onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}
+            onClick={() => router.push('/publicar')}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-xs transition-transform active:scale-[0.97]"
           >
             {t(k('manualFlow'))}

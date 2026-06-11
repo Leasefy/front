@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: "Guía para Propietarios | Centro de Ayuda | Leasefy",
@@ -28,5 +27,5 @@ export default function PropietariosGuideLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <ForceLightMode>{children}</ForceLightMode>;
+  return <>{children}</>;
 }

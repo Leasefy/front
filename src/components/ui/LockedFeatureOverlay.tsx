@@ -44,14 +44,14 @@ export function LockedFeatureOverlay({
           variant === 'blur' ? 'absolute inset-0 z-10' : ''
         )}
       >
-        <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-3">
+        <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-3">
           <Lock className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
         </div>
         <p className="text-sm font-semibold text-foreground mb-1">{title}</p>
         <p className="text-xs text-muted-foreground max-w-xs mb-4">{description}</p>
         <Link
           href={upgradeHref}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono uppercase tracking-wide hover:bg-primary/85 transition-colors"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs hover:bg-primary/85 transition-colors font-medium"
         >
           {upgradeLabel}
           <ArrowUpRight className="w-3.5 h-3.5" />

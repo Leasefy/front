@@ -55,7 +55,7 @@ export default function UpgradePage() {
       currentPlanId === 'pro');
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Back link */}
         <div className="mb-6">
@@ -63,19 +63,19 @@ export default function UpgradePage() {
         </div>
 
         {/* Premium Header */}
-        <div className="relative rounded-2xl overflow-hidden mb-8">
+        <div className="relative rounded-xl overflow-hidden mb-8">
           {/* Gradient Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1A40FF] via-[#1A40FF] to-[#6B6B6B]" />
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
 
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-neutral-100 dark:bg-neutral-800/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
           {/* Content */}
           <div className="relative px-8 py-12 text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
-              <Sparkle className="w-4 h-4 text-amber-300" />
+              <Sparkle className="w-4 h-4 text-[#B7791F]" />
               <span className="text-sm font-medium text-white">
                 {t('landlord.upgrade.unlockPotential')}
               </span>
@@ -90,7 +90,7 @@ export default function UpgradePage() {
 
             {/* Current Plan Badge */}
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-              <Crown className="w-4 h-4 text-amber-300" />
+              <Crown className="w-4 h-4 text-[#B7791F]" />
               <span className="text-sm text-white/90">{t('landlord.upgrade.currentPlan')}</span>
               <span className="text-sm font-semibold text-white">{currentPlan.name}</span>
             </div>
@@ -101,8 +101,8 @@ export default function UpgradePage() {
         <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-6 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4 flex-1">
-              <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
               <div>
                 <h2 className="font-semibold text-neutral-900 dark:text-white">
@@ -148,8 +148,8 @@ export default function UpgradePage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Lightning className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                <Lightning className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
               </div>
               <div>
                 <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('landlord.upgrade.aiAnalysis')}</p>
@@ -159,8 +159,8 @@ export default function UpgradePage() {
           </div>
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <Buildings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                <Buildings className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
               <div>
                 <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('landlord.upgrade.multiProperty')}</p>
@@ -170,8 +170,8 @@ export default function UpgradePage() {
           </div>
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <ChartBar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="w-10 h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <ChartBar className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('landlord.upgrade.analytics')}</p>
@@ -189,11 +189,11 @@ export default function UpgradePage() {
 
         {/* Selected plan confirmation */}
         {canUpgrade && newPlan && (
-          <div className="mt-8 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-6">
+          <div className="mt-8 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 rounded-xl p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div>
                   <p className="font-semibold text-neutral-900 dark:text-white">
@@ -212,7 +212,7 @@ export default function UpgradePage() {
                 disabled={isProcessing}
                 className={cn(
                   'flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all min-w-[200px]',
-                  'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono',
+                  'bg-[#1A40FF] hover:opacity-90 text-white',
                   isProcessing && 'opacity-70 cursor-not-allowed'
                 )}
               >
@@ -233,9 +233,9 @@ export default function UpgradePage() {
 
             {/* Downgrade warning */}
             {newPlan.price.monthly < currentPlan.price.monthly && (
-              <div className="mt-4 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
-                <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800 dark:text-amber-200">
+              <div className="mt-4 flex items-start gap-3 p-4 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
+                <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" />
+                <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
                   {t('landlord.upgrade.downgradeWarning')}
                 </p>
               </div>
@@ -245,19 +245,19 @@ export default function UpgradePage() {
 
         {/* Trust indicators */}
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-6 px-6 py-4 bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700">
+          <div className="inline-flex items-center gap-6 px-6 py-4 bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Lock className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
               <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('landlord.upgrade.securePayment')}</span>
             </div>
             <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-700" />
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
               <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('landlord.upgrade.cancelAnytime')}</span>
             </div>
             <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-700" />
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Shield className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
               <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('landlord.upgrade.satisfactionGuarantee')}</span>
             </div>
           </div>

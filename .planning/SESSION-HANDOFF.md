@@ -103,3 +103,30 @@ El repo `agent` corre un milestone paralelo **`v2.1-frontend`** (Phases 29→37+
 **Git / entrega:**
 - [ ] Push de la rama + abrir PR para Víctor (cuando el usuario lo confirme; **nunca pushear sin OK**).
 - [ ] (opcional) Verificar `next build` verde end-to-end antes del PR.
+
+---
+
+## 11. Sesión de revisión local (2026-05-30) — retomar tras /clear
+
+**v6.0 = 100% (8/8), verificado (36/37 reqs MET).** mvp **PR #14** abierto (`feat/v6.0-01-...` → `Stg`, mega-PR mixto v6.0 + 37-xx). agent SIN pushear (sin write access a `Leasefy/agent`; commits locales `0cd2dff`/`0d53f61`/`e5f01f1`).
+
+### Cambios locales SIN commitear (de esta sesión)
+- `src/components/ui/plan/PlanSidebar.tsx` — **FIX REAL: COMMITEAR**. Agregó `data-lenis-prevent` + `overscrollBehavior:contain` al `<nav>` (Lenis secuestraba el wheel → sidebar no scrolleaba; la nav agrupada de v6-01 lo destapó). Mensaje sugerido: `fix(v6): sidebar nav scroll — data-lenis-prevent (Lenis wheel hijack)`.
+- `src/lib/auth/auth-context.tsx` + `src/lib/context/PermissionsContext.tsx` — **BYPASS DE DEMO, REVERTIR ANTES DEL PR** (`git checkout` esos 2 archivos). Gateado a mock mode (`NEXT_PUBLIC_USE_MOCK_API !== 'false'`), nunca afecta prod. Permite entrar como agencia con `agency@example.com` / `password123` sin Supabase.
+- `.planning/STATE.md` — lo toca el tooling GSD (dejar).
+- (NO tuyo) `src/components/inmobiliaria/cobranza/CostPerPesoKpi.tsx` — de la sesión paralela 37-xx.
+
+### Cómo revisar en local
+- Front en **:3000** (puerto CORS-permitido; NO :3001). `pnpm exec next dev -p 3000`. Hard-refresh tras cambios de `.env`.
+- Login demo (bypass, mock mode): **`agency@example.com` / `password123`** → `/panel/inmobiliaria`. (Rol agencia = panel inmobiliaria; rol arrendador = panel propietario sin ERP/agentes.)
+- Agent Hub (Validador/tenant-scoring + Smart Matching + Cobranza + Cotizador): **`/panel/inmobiliaria/ai`** (clic en "Agentes AI", no las flechas).
+
+### Hallazgos de revisión (no bugs de v6)
+- **Login real falla**: Supabase proyecto `jraqurdcjwnifzpdqtnm` devuelve `400 invalid_credentials` para la cuenta de prueba. Env/puerto/anon-key OK. → Víctor debe confirmar/crear la cuenta en ESE proyecto (email-confirmada, pass exacto) para login + datos reales.
+- **"Registrar pago" no abre**: `RegistrarPagoModal.tsx:217` `if (!cobro && !showCobroSelector) return null` — la lista de cobros está vacía (mock) → retorna null. No es bug; con datos reales abre. Mejora opcional: empty-state en vez de null.
+
+### Pendientes
+1. Revertir bypass (2 archivos) · decidir commit del fix de sidebar.
+2. Víctor → cuenta Supabase para datos reales.
+3. agent → push/PR cuando haya write access.
+4. Programa: M1 (motor ERP) — bloqueado en decisión de equipo.

@@ -158,7 +158,7 @@ export default function EvaluacionPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     {/* Header with profile */}
                     <motion.div
@@ -177,7 +177,7 @@ export default function EvaluacionPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-medium text-[14px]">Nicolás Andrés R.</p>
                         <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
                           <p className="text-white/50 text-[11px]">Evaluación completada</p>
                         </div>
                       </div>
@@ -188,11 +188,11 @@ export default function EvaluacionPage() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6, duration: 0.4 }}
-                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10 mb-3"
+                      className="bg-white/10 backdrop-blur-sm rounded-md p-4 border border-white/10 mb-3"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-white/50 text-[11px]">Score Leasefy</span>
-                        <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px] font-medium bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[#2C7A53] text-[11px] font-medium bg-[#2C7A53]/10 px-2 py-0.5 rounded-full">
                           <CheckCircle className="w-3 h-3" />
                           Bajo riesgo
                         </span>
@@ -206,7 +206,7 @@ export default function EvaluacionPage() {
                           initial={{ width: 0 }}
                           animate={{ width: '84.7%' }}
                           transition={{ delay: 0.8, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                          className="h-full bg-[#E8F3EC] dark:bg-[#2C7A53]/12 rounded-full"
                         />
                       </div>
                     </motion.div>
@@ -214,17 +214,17 @@ export default function EvaluacionPage() {
                     {/* Mini metrics */}
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: 'Crédito', value: '92', color: 'text-emerald-400' },
-                        { label: 'Empleo', value: '88', color: 'text-blue-400' },
-                        { label: 'Referencias', value: '85', color: 'text-violet-400' },
-                        { label: 'Judicial', value: '100', color: 'text-amber-400' },
+                        { label: 'Crédito', value: '92', color: 'text-[#2C7A53]' },
+                        { label: 'Empleo', value: '88', color: 'text-[#1A40FF]' },
+                        { label: 'Referencias', value: '85', color: 'text-neutral-600 dark:text-neutral-300' },
+                        { label: 'Judicial', value: '100', color: 'text-[#B7791F]' },
                       ].map((item, i) => (
                         <motion.div
                           key={item.label}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.7 + i * 0.1, duration: 0.4 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-lg p-2.5 border border-white/10"
+                          className="bg-white/10 backdrop-blur-sm rounded-md p-2.5 border border-white/10"
                         >
                           <p className="text-[9px] text-white/40 uppercase tracking-wide mb-1">{item.label}</p>
                           <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
@@ -238,11 +238,11 @@ export default function EvaluacionPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                        <Shield className="w-4 h-4 text-emerald-600" />
+                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-[#2C7A53]" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Sin antecedentes</p>
@@ -414,14 +414,14 @@ export default function EvaluacionPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
                     <div className="flex items-center gap-3 mb-4 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
-                        <Fingerprint className="w-5 h-5 text-emerald-600" />
+                      <div className="w-10 h-10 rounded-full bg-[#E8F3EC] flex items-center justify-center">
+                        <Fingerprint className="w-5 h-5 text-[#2C7A53]" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Identidad</p>
-                        <p className="text-[10px] text-emerald-600">✓ Verificada</p>
+                        <p className="text-[10px] text-[#2C7A53]">✓ Verificada</p>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -431,19 +431,19 @@ export default function EvaluacionPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Registraduría</span>
-                        <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                        <span className="text-[10px] text-[#2C7A53] flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> Válida
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Biometría</span>
-                        <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                        <span className="text-[10px] text-[#2C7A53] flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> Match
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#2C7A53] rounded-full flex items-center justify-center">
                     <Check className="w-3.5 h-3.5 text-white" />
                   </div>
                 </div>
@@ -469,10 +469,10 @@ export default function EvaluacionPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[220px] border border-neutral-100">
+                  <div className="bg-white rounded-xl p-4 w-[220px] border border-neutral-100">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Referencias verificadas</span>
-                      <span className="text-[10px] text-emerald-600 font-medium">3/3</span>
+                      <span className="text-[10px] text-[#2C7A53] font-medium">3/3</span>
                     </div>
                     <div className="space-y-2.5">
                       {[
@@ -480,21 +480,21 @@ export default function EvaluacionPage() {
                         { name: 'Empleador', rating: 5, comment: 'Empleado responsable' },
                         { name: 'Referencia personal', rating: 4, comment: 'Muy recomendado' },
                       ].map((ref, i) => (
-                        <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                          <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-bold text-violet-600 flex-shrink-0">
+                        <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                          <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-neutral-600 dark:text-neutral-300 flex-shrink-0">
                             {ref.name.charAt(0)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-medium text-foreground truncate">{ref.name}</p>
                             <div className="flex gap-0.5">
                               {[...Array(ref.rating)].map((_, j) => (
-                                <svg key={j} className="w-2.5 h-2.5 text-amber-400 fill-current" viewBox="0 0 20 20">
+                                <svg key={j} className="w-2.5 h-2.5 text-[#B7791F] fill-current" viewBox="0 0 20 20">
                                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                 </svg>
                               ))}
                             </div>
                           </div>
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                          <CheckCircle className="w-3.5 h-3.5 text-[#2C7A53] flex-shrink-0" />
                         </div>
                       ))}
                     </div>

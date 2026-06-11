@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 // Glass widget styles — always fully opaque so backdrop-filter works on every frame
 const glassWidgetClass =
-  "rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] border border-white/25 px-5 py-4 max-w-[260px] bg-white/15 backdrop-blur-xl";
+  "rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] border border-white/25 px-5 py-4 max-w-[260px] bg-white/15 backdrop-blur-xl";
 
 
 /**
@@ -91,7 +91,7 @@ export function ProblemSection() {
           style={{ transitionDelay: videoEnded ? "0.2s" : "0s" }}
         >
           <div className={glassWidgetClass}>
-            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-shadow-sm">
+            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-">
               3-6 meses buscando apartamento
             </p>
             <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
@@ -110,7 +110,7 @@ export function ProblemSection() {
           style={{ transitionDelay: videoEnded ? "0.45s" : "0s" }}
         >
           <div className={glassWidgetClass}>
-            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-shadow-sm">
+            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-">
               40% de impago sin verificación
             </p>
             <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
@@ -129,7 +129,7 @@ export function ProblemSection() {
           style={{ transitionDelay: videoEnded ? "0.7s" : "0s" }}
         >
           <div className={glassWidgetClass}>
-            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-shadow-sm">
+            <p className="font-mono uppercase text-[15px] text-white font-normal leading-snug drop-">
               +$6M en comisiones
             </p>
             <p className="text-[12px] text-white/80 mt-1.5 leading-relaxed">
@@ -169,7 +169,7 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="group relative h-[420px] md:h-[480px] rounded-3xl overflow-hidden md:col-span-2"
+              className="group relative h-[420px] md:h-[480px] rounded-xl overflow-hidden md:col-span-2"
             >
               <Image
                 src="/images/people/woman-laptop-kitchen.jpg"
@@ -213,7 +213,7 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="group relative h-[420px] md:h-[480px] rounded-3xl overflow-hidden md:col-span-2"
+              className="group relative h-[420px] md:h-[480px] rounded-xl overflow-hidden md:col-span-2"
             >
               <Image
                 src="/images/people/family-living-room.jpg"
@@ -257,7 +257,7 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="group relative h-[420px] md:h-[480px] rounded-3xl overflow-hidden md:col-span-2"
+              className="group relative h-[420px] md:h-[480px] rounded-xl overflow-hidden md:col-span-2"
             >
               <Image
                 src="/images/people/woman-packing.jpg"
@@ -302,7 +302,7 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4 }}
-              className="group relative rounded-2xl overflow-hidden bg-indigo-50 md:col-span-3 p-6 md:p-8"
+              className="group relative rounded-xl overflow-hidden bg-[#EEF1FF] md:col-span-3 p-6 md:p-8"
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
                 {/* UI Illustration Area - Stack of 3 rejected applications */}
@@ -313,7 +313,7 @@ export function ProblemSection() {
                     whileInView={{ opacity: 0.4, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.1 }}
-                    className="absolute top-0 left-0 w-[160px] bg-white rounded-xl shadow-sm border border-neutral-200 p-3 -rotate-6"
+                    className="absolute top-0 left-0 w-[160px] bg-white rounded-xl border border-neutral-200 p-3 -rotate-6"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-5 h-5 rounded-full bg-error-100 flex items-center justify-center">
@@ -333,7 +333,7 @@ export function ProblemSection() {
                     whileInView={{ opacity: 0.7, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 }}
-                    className="absolute top-6 left-6 w-[160px] bg-white rounded-xl shadow-md border border-neutral-200 p-3 -rotate-3"
+                    className="absolute top-6 left-6 w-[160px] bg-white rounded-xl border border-neutral-200 p-3 -rotate-3"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-5 h-5 rounded-full bg-error-100 flex items-center justify-center">
@@ -353,7 +353,7 @@ export function ProblemSection() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.3 }}
-                    className="absolute top-10 left-12 w-[170px] bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden"
+                    className="absolute top-10 left-12 w-[170px] bg-white rounded-xl border border-neutral-200 overflow-hidden"
                   >
                     {/* Header with red stripe */}
                     <div className="h-1 bg-error-500" />
@@ -371,9 +371,9 @@ export function ProblemSection() {
                         <div className="text-[8px] text-muted-foreground">Hoy</div>
                       </div>
                       <div className="space-y-1.5 mb-3">
-                        <div className="h-2 bg-indigo-100 rounded w-full" />
-                        <div className="h-2 bg-indigo-100 rounded w-4/5" />
-                        <div className="h-2 bg-indigo-100 rounded w-2/3" />
+                        <div className="h-2 bg-[#EEF1FF] rounded w-full" />
+                        <div className="h-2 bg-[#EEF1FF] rounded w-4/5" />
+                        <div className="h-2 bg-[#EEF1FF] rounded w-2/3" />
                       </div>
                       <div className="flex items-center gap-1 text-[8px] text-muted-foreground">
                         <span>Motivo:</span>
@@ -421,7 +421,7 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="group relative rounded-2xl overflow-hidden bg-[#F3EEE4] md:col-span-3 p-6 md:p-8"
+              className="group relative rounded-xl overflow-hidden bg-[#F3EEE4] md:col-span-3 p-6 md:p-8"
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
                 {/* UI Illustration Area - Bank statement with debt accumulation */}
@@ -431,10 +431,10 @@ export function ProblemSection() {
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="absolute top-4 left-0 w-[190px] bg-white rounded-xl shadow-lg overflow-hidden border border-neutral-200"
+                    className="absolute top-4 left-0 w-[190px] bg-white rounded-xl overflow-hidden border border-neutral-200"
                   >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-amber-600 to-amber-500 px-4 py-2.5">
+                    <div className="bg-[#F8F0E0] dark:bg-[#B7791F]/12 px-4 py-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-white text-[10px] font-medium">Cuenta de arriendo</span>
                         <span className="text-white/80 text-[8px]">2024</span>
@@ -488,7 +488,7 @@ export function ProblemSection() {
                     whileInView={{ opacity: 1, x: 0, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.3, type: "spring" }}
-                    className="absolute top-0 right-0 bg-error-500 text-white rounded-lg shadow-lg px-2.5 py-1.5 flex items-center gap-1.5"
+                    className="absolute top-0 right-0 bg-error-500 text-white rounded-md px-2.5 py-1.5 flex items-center gap-1.5"
                   >
                     <span className="text-[10px]">⚠️</span>
                     <span className="text-[9px] font-semibold">4 meses</span>

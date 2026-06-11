@@ -308,7 +308,7 @@ function TourCard({
       aria-modal="false"
       aria-labelledby={titleId}
       aria-describedby={descId}
-      className="rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-2xl p-5 motion-reduce:transition-none"
+      className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 p-5 motion-reduce:transition-none"
       style={style}
       onClick={onCardClick}
     >

@@ -43,18 +43,18 @@ export function AgenteCard({
   // Role badge colors
   const ROLE_COLORS: Record<AgenteRole, { bg: string; text: string; label: string }> = useMemo(() => ({
     agent: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-700 dark:text-blue-400',
+      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+      text: 'text-[#1A40FF] dark:text-[#5570FF]',
       label: t('inmobiliaria.agentes.card.role.agent'),
     },
     coordinator: {
-      bg: 'bg-purple-100 dark:bg-purple-900/30',
-      text: 'text-purple-700 dark:text-purple-400',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      text: 'text-neutral-600 dark:text-neutral-300',
       label: t('inmobiliaria.agentes.card.role.coordinator'),
     },
     director: {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-400',
+      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      text: 'text-[#B7791F] dark:text-[#D2992F]',
       label: t('inmobiliaria.agentes.card.role.director'),
     },
   }), [t]);
@@ -62,8 +62,8 @@ export function AgenteCard({
   // Status badge colors
   const STATUS_COLORS: Record<AgenteStatus, { bg: string; text: string; label: string }> = useMemo(() => ({
     active: {
-      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-      text: 'text-emerald-700 dark:text-emerald-400',
+      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
       label: t('inmobiliaria.agentes.card.status.active'),
     },
     inactive: {
@@ -72,8 +72,8 @@ export function AgenteCard({
       label: t('inmobiliaria.agentes.card.status.inactive'),
     },
     on_leave: {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-400',
+      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      text: 'text-[#B7791F] dark:text-[#D2992F]',
       label: t('inmobiliaria.agentes.card.status.onLeave'),
     },
   }), [t]);
@@ -99,7 +99,7 @@ export function AgenteCard({
         className={cn(
           'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
           selected
-            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-500'
+            ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 dark:border-[#1A40FF]/30'
             : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
         )}
       >
@@ -143,7 +143,7 @@ export function AgenteCard({
 
         {/* Selection indicator */}
         {selected && (
-          <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+          <div className="w-5 h-5 rounded-full bg-[#1A40FF] flex items-center justify-center shrink-0">
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -165,10 +165,10 @@ export function AgenteCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-2xl border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group',
+        'w-full rounded-xl border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group',
         selected
-          ? 'border-indigo-500 ring-2 ring-indigo-500/20'
-          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg',
+          ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
+          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:',
         onClick && 'cursor-pointer'
       )}
       onClick={onClick}
@@ -278,9 +278,9 @@ export function AgenteCard({
 
       {/* Commission Split Pill */}
       <div className="px-5 pb-4">
-        <div className="flex items-center justify-between p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
-          <span className="text-sm text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agentes.card.commissionSplit')}</span>
-          <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
+          <span className="text-sm text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agentes.card.commissionSplit')}</span>
+          <span className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF]">
             {agente.commissionSplit}%
           </span>
         </div>
@@ -293,7 +293,7 @@ export function AgenteCard({
             {onView && (
               <button
                 onClick={(e) => { e.stopPropagation(); onView(); }}
-                className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 title={t('inmobiliaria.agentes.card.viewDetailTitle')}
               >
                 <Eye className="w-4 h-4" />
@@ -302,7 +302,7 @@ export function AgenteCard({
             {onEdit && (
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 title={t('inmobiliaria.agentes.card.editTitle')}
               >
                 <PencilSimple className="w-4 h-4" />
@@ -310,7 +310,7 @@ export function AgenteCard({
             )}
           </div>
           {onClick && (
-            <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-indigo-500 transition-colors">
+            <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors">
               {t('inmobiliaria.agentes.card.viewDetail')}
               <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>

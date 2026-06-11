@@ -207,7 +207,7 @@ export function OTPVerification({
         <div className="space-y-6 py-4">
           {/* Error de envío (antes de poder ingresar código) */}
           {sendError && (
-            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
               <WarningCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <span>{sendError}</span>
             </div>
@@ -232,7 +232,7 @@ export function OTPVerification({
                     'focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
                     digit ? 'border-foreground/30' : 'border-border',
                     status === 'error' && 'border-destructive animate-shake',
-                    status === 'verified' && 'border-emerald-500 bg-emerald-50',
+                    status === 'verified' && 'border-[#2C7A53]/30 bg-[#E8F3EC]',
                     (status === 'verifying' || status === 'verified') && 'opacity-70'
                   )}
                 />
@@ -257,7 +257,7 @@ export function OTPVerification({
           )}
 
           {status === 'verified' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-emerald-600">
+            <div className="flex items-center justify-center gap-2 text-sm text-[#2C7A53]">
               <CheckCircle className="h-4 w-4" />
               Verificación exitosa
             </div>

@@ -81,7 +81,7 @@ function CreditosContent() {
 
         <header className="mb-8">
           <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
-            <Coin className="w-6 h-6 text-indigo-600" />
+            <Coin className="w-6 h-6 text-[#1A40FF]" />
             Créditos del agente
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -92,54 +92,54 @@ function CreditosContent() {
 
         {/* Balance */}
         {isLoading ? (
-          <div className="rounded-2xl border border-border bg-card p-8 flex items-center justify-center">
+          <div className="rounded-xl border border-border bg-card p-8 flex items-center justify-center">
             <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-5">
-            <div className="flex items-start gap-2 text-sm text-rose-700 dark:text-rose-400">
+          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-5">
+            <div className="flex items-start gap-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
               <WarningCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           </div>
         ) : balance ? (
-          <section className="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white mb-8">
+          <section className="rounded-xl bg-gradient-to-br from-[#1A40FF] to-[#6B6B6B] p-6 text-white mb-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-indigo-100 font-medium mb-2">
+                <p className="text-xs uppercase tracking-wider text-[#1A40FF] font-medium mb-2">
                   Saldo total
                 </p>
                 <p className="text-5xl font-bold tabular-nums">
                   {balance.total}
-                  <span className="text-2xl font-normal text-indigo-200 ml-2">créditos</span>
+                  <span className="text-2xl font-normal text-[#1A40FF] ml-2">créditos</span>
                 </p>
               </div>
-              <Sparkle className="w-10 h-10 text-indigo-200" />
+              <Sparkle className="w-10 h-10 text-[#1A40FF]" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 pt-6 border-t border-white/20">
               <div>
-                <p className="text-xs text-indigo-100 mb-1">Del plan</p>
+                <p className="text-xs text-[#1A40FF] mb-1">Del plan</p>
                 <p className="text-2xl font-semibold tabular-nums">{balance.planBalance}</p>
                 {expiresAt && (
-                  <p className="text-xs text-indigo-100 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-[#1A40FF] mt-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Expiran el {expiresAt}
                   </p>
                 )}
               </div>
               <div>
-                <p className="text-xs text-indigo-100 mb-1">Comprados</p>
+                <p className="text-xs text-[#1A40FF] mb-1">Comprados</p>
                 <p className="text-2xl font-semibold tabular-nums">{balance.purchasedBalance}</p>
-                <p className="text-xs text-indigo-100 mt-1">Sin vencimiento</p>
+                <p className="text-xs text-[#1A40FF] mt-1">Sin vencimiento</p>
               </div>
             </div>
           </section>
         ) : null}
 
         {/* How consumption works */}
-        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4 mb-8">
-          <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+        <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-4 mb-8">
+          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] flex items-start gap-2">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>
               <strong>FIFO:</strong> los créditos del plan se consumen primero para que no
@@ -170,7 +170,7 @@ function CreditosContent() {
         )}
 
         {!isLoading && packs.length === 0 && !error && (
-          <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+          <div className="rounded-xl border border-dashed border-border p-8 text-center">
             <p className="text-sm text-muted-foreground">
               No hay packs de créditos disponibles por el momento.
             </p>
@@ -213,14 +213,14 @@ function PackCard({
   return (
     <div
       className={cn(
-        'relative rounded-2xl border bg-card p-5 flex flex-col',
+        'relative rounded-xl border bg-card p-5 flex flex-col',
         pack.highlighted
-          ? 'border-indigo-500 shadow-lg shadow-indigo-500/10'
+          ? 'border-[#1A40FF]/30 shadow-[#1A40FF]/10'
           : 'border-border'
       )}
     >
       {pack.highlighted && (
-        <span className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-semibold uppercase tracking-wider">
+        <span className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full bg-[#1A40FF] text-white text-[10px] font-semibold uppercase tracking-wider">
           Más popular
         </span>
       )}
@@ -246,7 +246,7 @@ function PackCard({
           <p className="text-xs text-muted-foreground">
             ~ {formatCurrency(pricePerCredit)} / crédito
             {pack.discount && pack.discount > 0 && (
-              <span className="ml-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="ml-1.5 text-[#2C7A53] dark:text-[#3EAE70] font-medium">
                 (-{pack.discount}%)
               </span>
             )}
@@ -258,7 +258,7 @@ function PackCard({
           className={cn(
             'w-full py-2.5 rounded-xl text-sm font-semibold transition-colors',
             pack.highlighted
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              ? 'bg-[#1A40FF] hover:opacity-90 text-white'
               : 'bg-muted hover:bg-muted/70 text-foreground border border-border'
           )}
         >
@@ -355,7 +355,7 @@ function PurchaseModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={isSubmitting ? undefined : onClose}
       />
-      <div className="relative bg-background rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-background rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div>
@@ -367,7 +367,7 @@ function PurchaseModal({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
+            className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
           >
             <X className="w-4 h-4" />
           </button>
@@ -375,7 +375,7 @@ function PurchaseModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {successMessage ? (
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-4 text-sm text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
+            <div className="rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 p-4 text-sm text-[#2C7A53] dark:text-[#3EAE70] flex items-start gap-2">
               <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <span>{successMessage}</span>
             </div>
@@ -390,7 +390,7 @@ function PurchaseModal({
                   onChange={(e) =>
                     setForm({ ...form, documentType: e.target.value as PSEDocumentType })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
                 >
                   {DOCUMENT_TYPES.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -412,7 +412,7 @@ function PurchaseModal({
                   }
                   placeholder="1234567890"
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
                 />
               </div>
 
@@ -426,7 +426,7 @@ function PurchaseModal({
                   onChange={(e) => setForm({ ...form, holderName: e.target.value })}
                   placeholder="Nombre completo"
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
                 />
               </div>
 
@@ -438,7 +438,7 @@ function PurchaseModal({
                   value={form.bankCode}
                   onChange={(e) => setForm({ ...form, bankCode: e.target.value })}
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
                 >
                   <option value="">Seleccioná un banco</option>
                   {banks.map((b) => (
@@ -460,12 +460,12 @@ function PurchaseModal({
                     setForm({ ...form, phoneNumber: e.target.value })
                   }
                   placeholder="3001234567"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
                 />
               </div>
 
               {submitError && (
-                <div className="rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 px-3 py-2 text-xs text-rose-700 dark:text-rose-400">
+                <div className="rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 px-3 py-2 text-xs text-[#C4503B] dark:text-[#E0664D]">
                   {submitError}
                 </div>
               )}
@@ -487,7 +487,7 @@ function PurchaseModal({
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <Spinner className="w-4 h-4 animate-spin" />

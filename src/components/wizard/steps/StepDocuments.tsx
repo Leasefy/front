@@ -82,13 +82,13 @@ export function StepDocuments() {
   return (
     <div className="space-y-6">
       {/* Warning about file persistence */}
-      <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
-        <Warning className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 p-4 bg-[#F8F0E0]/50 border border-[#B7791F]/30 rounded-sm">
+        <Warning className="h-5 w-5 text-[#B7791F] flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm text-amber-800 font-medium">
+          <p className="text-sm text-[#B7791F] font-medium">
             Importante sobre tus documentos
           </p>
-          <p className="text-xs text-amber-700/80 mt-1">
+          <p className="text-xs text-[#B7791F]/80 mt-1">
             Los archivos se guardan temporalmente. Si cierras esta página, tendrás que
             volver a subirlos.
           </p>
@@ -102,7 +102,7 @@ export function StepDocuments() {
           <h3 className="text-sm font-medium text-foreground">
             Documentos obligatorios
           </h3>
-          <span className="text-xs text-red-500">*</span>
+          <span className="text-xs text-[#C4503B]">*</span>
         </div>
 
         <div className="space-y-6">
@@ -139,14 +139,14 @@ export function StepDocuments() {
           <h3 className="text-sm font-medium text-foreground">
             Uno de los dos obligatorio
           </h3>
-          <span className="text-xs text-red-500">*</span>
+          <span className="text-xs text-[#C4503B]">*</span>
         </div>
         <p className="text-xs text-muted-foreground mb-4 ml-7">
           Subí el contrato laboral o el certificado de ingresos — basta con uno.
         </p>
 
         {oneOfError && (
-          <p className="text-xs text-red-500 mb-3">{oneOfError}</p>
+          <p className="text-xs text-[#C4503B] mb-3">{oneOfError}</p>
         )}
 
         <div className="space-y-6">

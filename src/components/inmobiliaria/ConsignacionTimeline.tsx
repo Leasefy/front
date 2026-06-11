@@ -44,48 +44,48 @@ interface TimelineEvent {
 // Event type styling
 const EVENT_STYLES: Record<TimelineEventType, { bg: string; text: string; icon: React.ElementType }> = {
   consignacion_created: {
-    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-    text: 'text-indigo-600 dark:text-indigo-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
     icon: FileText,
   },
   agent_assigned: {
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
-    text: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
     icon: UserPlus,
   },
   property_published: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
     icon: Megaphone,
   },
   visit_scheduled: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
     icon: CalendarCheck,
   },
   visit_completed: {
-    bg: 'bg-teal-100 dark:bg-teal-900/30',
-    text: 'text-teal-600 dark:text-teal-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
     icon: Eye,
   },
   candidate_approved: {
-    bg: 'bg-lime-100 dark:bg-lime-900/30',
-    text: 'text-lime-600 dark:text-lime-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
     icon: CheckCircle,
   },
   contract_signed: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
     icon: Signature,
   },
   handover_completed: {
-    bg: 'bg-cyan-100 dark:bg-cyan-900/30',
-    text: 'text-cyan-600 dark:text-cyan-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
     icon: Key,
   },
   lease_renewal: {
-    bg: 'bg-rose-100 dark:bg-rose-900/30',
-    text: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
     icon: ArrowsClockwise,
   },
 };
@@ -258,7 +258,7 @@ export function ConsignacionTimeline({
       {/* Header */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
             <Clock className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
           </div>
           <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.consignaciones.timeline.title')}</h3>
@@ -341,7 +341,7 @@ export function ConsignacionTimeline({
         {hasMoreEvents && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-sm text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium"
+            className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium"
           >
             {isExpanded ? t('inmobiliaria.consignaciones.timeline.showLess') : t('inmobiliaria.consignaciones.timeline.showMoreEvents', { count: events.length - maxVisibleItems })}
             <CaretDown

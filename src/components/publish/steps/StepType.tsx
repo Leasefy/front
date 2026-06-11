@@ -44,15 +44,15 @@ export function StepType() {
               className={cn(
                 'relative group p-6 rounded-xl border transition-all duration-200',
                 isSelected
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:'
               )}
             >
               {/* Selection indicator */}
               <div className={cn(
                 'absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200',
                 isSelected
-                  ? 'border-indigo-600 bg-indigo-600'
+                  ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
                   : 'border-neutral-300 dark:border-neutral-600'
               )}>
                 {isSelected && (
@@ -79,7 +79,7 @@ export function StepType() {
               </p>
               <p className={cn(
                 'text-xs mt-1',
-                isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500 dark:text-neutral-400'
+                isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-500 dark:text-neutral-400'
               )}>
                 {type.description}
               </p>

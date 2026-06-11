@@ -45,7 +45,7 @@ function formatExpiry(isoDate: string): string {
 function LoadingView() {
   return (
     <div className="flex flex-col items-center gap-4">
-      <SpinnerGap className="h-10 w-10 text-indigo-500 animate-spin" />
+      <SpinnerGap className="h-10 w-10 text-[#1A40FF] animate-spin" />
       <p className="text-neutral-500 dark:text-neutral-400 text-sm">Validando invitación…</p>
     </div>
   );
@@ -55,8 +55,8 @@ function LoadingView() {
 function InvalidView() {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <div className="rounded-2xl bg-red-100 dark:bg-red-900/30 p-4">
-        <XCircle weight="duotone" className="h-10 w-10 text-red-500" />
+      <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4">
+        <XCircle weight="duotone" className="h-10 w-10 text-[#C4503B]" />
       </div>
       <div>
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -80,8 +80,8 @@ function InvalidView() {
 function ExpiredView() {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <div className="rounded-2xl bg-amber-100 dark:bg-amber-900/30 p-4">
-        <Warning weight="duotone" className="h-10 w-10 text-amber-500" />
+      <div className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-4">
+        <Warning weight="duotone" className="h-10 w-10 text-[#B7791F]" />
       </div>
       <div>
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -233,8 +233,8 @@ export default function InvitacionPage() {
 
         {/* Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 p-4">
-            <Buildings weight="duotone" className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
+          <div className="inline-flex items-center justify-center rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-4">
+            <Buildings weight="duotone" className="h-10 w-10 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">
@@ -254,14 +254,14 @@ export default function InvitacionPage() {
             // Logged in state
             <>
               <div className="flex items-center gap-3">
-                <CheckCircle weight="fill" className="h-5 w-5 text-emerald-500 shrink-0" />
+                <CheckCircle weight="fill" className="h-5 w-5 text-[#2C7A53] shrink-0" />
                 <p className="text-sm text-neutral-700 dark:text-neutral-300">
                   Hola <span className="font-medium">{user.firstName || user.name}</span>, te han
                   invitado a unirte como
                 </p>
               </div>
-              <div className="rounded-lg bg-indigo-50 dark:bg-indigo-900/30 px-4 py-3 text-center">
-                <p className="text-lg font-semibold text-indigo-700 dark:text-indigo-300">
+              <div className="rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-4 py-3 text-center">
+                <p className="text-lg font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                   {ROLE_LABELS[invitation?.role ?? ''] ?? invitation?.role}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -301,8 +301,8 @@ export default function InvitacionPage() {
 
         {/* Error message */}
         {actionError && (
-          <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 px-4 py-3">
-            <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>
+          <div className="rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 px-4 py-3">
+            <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{actionError}</p>
           </div>
         )}
 
@@ -314,7 +314,7 @@ export default function InvitacionPage() {
               <button
                 onClick={handleAccept}
                 disabled={accepting || declining}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed px-6 py-3 text-sm font-medium text-white transition-colors"
               >
                 {accepting && <SpinnerGap className="h-4 w-4 animate-spin" />}
                 {accepting ? 'Aceptando…' : 'Aceptar invitación'}
@@ -322,7 +322,7 @@ export default function InvitacionPage() {
               <button
                 onClick={handleDecline}
                 disabled={accepting || declining}
-                className="w-full rounded-xl border border-red-200 dark:border-red-900/50 px-6 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                className="w-full rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 px-6 py-3 text-sm font-medium text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               >
                 {declining ? 'Rechazando…' : 'Rechazar invitación'}
               </button>
@@ -332,14 +332,14 @@ export default function InvitacionPage() {
             <>
               <Link
                 href={registerUrl}
-                className="block w-full text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-3 text-sm font-medium text-white transition-colors"
+                className="block w-full text-center rounded-xl bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
               >
                 Completar registro para unirme
               </Link>
               <button
                 onClick={handleDecline}
                 disabled={declining}
-                className="w-full text-center text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-60 py-1 transition-colors"
+                className="w-full text-center text-sm text-[#C4503B] hover:text-[#C4503B] dark:text-[#E0664D] dark:hover:text-[#C4503B] disabled:opacity-60 py-1 transition-colors"
               >
                 {declining ? 'Rechazando…' : 'Rechazar invitación'}
               </button>
@@ -349,7 +349,7 @@ export default function InvitacionPage() {
             <>
               <Link
                 href={loginUrl}
-                className="block w-full text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-3 text-sm font-medium text-white transition-colors"
+                className="block w-full text-center rounded-xl bg-[#1A40FF] hover:opacity-90 px-6 py-3 text-sm font-medium text-white transition-colors"
               >
                 Iniciar sesión para aceptar
               </Link>
@@ -362,7 +362,7 @@ export default function InvitacionPage() {
               <button
                 onClick={handleDecline}
                 disabled={declining}
-                className="w-full text-center text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-60 py-1 transition-colors"
+                className="w-full text-center text-sm text-[#C4503B] hover:text-[#C4503B] dark:text-[#E0664D] dark:hover:text-[#C4503B] disabled:opacity-60 py-1 transition-colors"
               >
                 {declining ? 'Rechazando…' : 'Rechazar invitación'}
               </button>

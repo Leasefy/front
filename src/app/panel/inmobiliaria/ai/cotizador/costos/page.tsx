@@ -132,7 +132,7 @@ export default function CostosPage() {
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {row.populated ? (
-                    <Badge variant="outline" className="text-emerald-600 border-emerald-200">
+                    <Badge variant="outline" className="text-[#2C7A53] border-[#2C7A53]/30">
                       {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.statusPopulated')}
                     </Badge>
                   ) : (
@@ -163,7 +163,7 @@ export default function CostosPage() {
 
       {/* Error state */}
       {(summaryError || seriesError) && (
-        <div className="rounded-lg bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 px-4 py-3 text-sm flex items-center justify-between">
+        <div className="rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm flex items-center justify-between">
           <span>{t('inmobiliaria.ai.cotizador.costos.loadError')}</span>
           <Button
             variant="ghost"

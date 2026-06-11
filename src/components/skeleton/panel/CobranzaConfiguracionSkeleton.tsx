@@ -53,8 +53,8 @@ export function CobranzaConfiguracionSkeleton() {
 
       {/* Sticky save footer placeholder — mirrors the real Cancel + Save bar */}
       <div className="sticky bottom-0 border-t border-border bg-card/95 backdrop-blur-sm px-6 py-4 flex items-center justify-end gap-3">
-        <Skeleton className="h-9 w-20 rounded-md" />
-        <Skeleton className="h-9 w-24 rounded-md" />
+        <Skeleton className="h-9 w-20 rounded-sm" />
+        <Skeleton className="h-9 w-24 rounded-sm" />
       </div>
     </main>
   )

@@ -21,10 +21,10 @@ function formatCOP(value: number): string {
 // ---------------------------------------------------------------------------
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400',
-  partial: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400',
-  final: 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400',
-  error: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400',
+  pending: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
+  partial: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+  final: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+  error: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
 }
 
 function StatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
@@ -107,7 +107,7 @@ export function CotizadorRecentQuotesFeed({
               >
                 <Link
                   href={`/panel/inmobiliaria/ai/cotizador/${q.id}`}
-                  className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-lg transition-colors"
+                  className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-md transition-colors"
                   aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.ariaRow')
                     .replace('{{name}}', q.cedulaHashPrefix8)
                     .replace('{{city}}', q.ciudad)

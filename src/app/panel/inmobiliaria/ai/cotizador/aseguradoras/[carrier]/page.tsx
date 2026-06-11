@@ -64,7 +64,7 @@ export default function CarrierDeepDivePage() {
           {/* Ver SLA link — outlined, not primary CTA */}
           <Link
             href="./sla"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
           >
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.slaLinkLabel')}
           </Link>
@@ -73,7 +73,7 @@ export default function CarrierDeepDivePage() {
           <button
             type="button"
             onClick={() => void refetch()}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.refresh')}
           >
             <ArrowClockwise className="h-4 w-4" />
@@ -83,14 +83,14 @@ export default function CarrierDeepDivePage() {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.errorLoading')}: {error}
           </p>
           <button
             type="button"
             onClick={() => void refetch()}
-            className="text-xs text-rose-600 dark:text-rose-400 underline hover:no-underline flex-shrink-0"
+            className="text-xs text-[#C4503B] dark:text-[#E0664D] underline hover:no-underline flex-shrink-0"
           >
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.retry')}
           </button>

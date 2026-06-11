@@ -16,11 +16,11 @@ import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 
 // Risk level colors for badge
 const RISK_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
-  A: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' },
-  B: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' },
-  C: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400' },
-  D: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400' },
-  E: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400' },
+  A: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]' },
+  B: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]' },
+  C: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]' },
+  D: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]' },
+  E: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]' },
 };
 
 // Overdue warning thresholds
@@ -61,7 +61,7 @@ export function PipelineCard({
     .slice(0, 2)
     .toUpperCase();
 
-  // Extract stage color classes (e.g., "bg-blue-100" -> "blue")
+  // Extract stage color classes (e.g., "bg-[#EEF1FF]" -> "blue")
   const stageColor = stageInfo?.color?.split(' ')[0]?.replace('bg-', '').replace('-100', '') || 'neutral';
 
   return (
@@ -73,7 +73,7 @@ export function PipelineCard({
       className={cn(
         'w-full rounded-xl border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 cursor-pointer group',
         isDragging
-          ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-xl'
+          ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
           : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600',
       )}
       onClick={() => onClick?.(item)}
@@ -93,7 +93,7 @@ export function PipelineCard({
         <div className="flex items-start gap-2.5 mb-3">
           {/* Thumbnail */}
           {item.propertyThumbnail ? (
-            <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+            <div className="w-12 h-12 rounded-md overflow-hidden shrink-0">
               <img
                 src={item.propertyThumbnail}
                 alt={item.propertyTitle}
@@ -101,7 +101,7 @@ export function PipelineCard({
               />
             </div>
           ) : (
-            <div className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
               <HouseLine className="w-6 h-6 text-neutral-400" />
             </div>
           )}
@@ -130,8 +130,8 @@ export function PipelineCard({
               className="w-8 h-8 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-              <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+            <div className="w-8 h-8 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+              <span className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                 {initials}
               </span>
             </div>
@@ -165,11 +165,11 @@ export function PipelineCard({
         <div className="space-y-2">
           {/* Days in Stage */}
           <div className={cn(
-            'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs',
+            'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs',
             daysCritical
-              ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+              ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
               : daysWarning
-                ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+                ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
                 : 'bg-neutral-50 dark:bg-neutral-800/50 text-neutral-600 dark:text-neutral-400'
           )}>
             <Clock className="w-3.5 h-3.5" />
@@ -182,9 +182,9 @@ export function PipelineCard({
           {/* Next Action */}
           {item.nextAction && (
             <div className={cn(
-              'flex items-start gap-2 px-2.5 py-1.5 rounded-lg text-xs',
+              'flex items-start gap-2 px-2.5 py-1.5 rounded-md text-xs',
               isOverdue
-                ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
                 : 'bg-neutral-50 dark:bg-neutral-800/50 text-neutral-600 dark:text-neutral-400'
             )}>
               <CalendarCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />

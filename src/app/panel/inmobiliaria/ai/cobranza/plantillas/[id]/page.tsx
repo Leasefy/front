@@ -149,10 +149,10 @@ const SAMPLE_VALUES: Record<string, string> = {
 
 function tokenBadgeClass(count: number): string {
   if (count >= TOKEN_BUDGET) {
-    return 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400'
+    return 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
   }
   if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300'
+    return 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
   }
   return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
 }
@@ -175,14 +175,14 @@ function StatusPill({
 }) {
   if (status === 'published') {
     return (
-      <span className="inline-flex items-center text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">
+      <span className="inline-flex items-center text-xs rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-2 py-0.5">
         {t('inmobiliaria.ai.templates.status.published')}
       </span>
     )
   }
   if (status === 'wa_pending') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] px-2 py-0.5">
         <Clock className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.pending')}
       </span>
@@ -208,7 +208,7 @@ function WaStatusPill({
 }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-2 py-0.5">
         <CheckCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.approved')}
       </span>
@@ -216,14 +216,14 @@ function WaStatusPill({
   }
   if (status === 'rejected') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-2 py-0.5">
         <WarningCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.rejected')}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 px-2 py-0.5">
+    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] px-2 py-0.5">
       <Clock className="h-3 w-3" weight="fill" />
       {t('inmobiliaria.ai.templates.waStatus.pending')}
     </span>
@@ -255,7 +255,7 @@ function VariablePill({
           onInsert(varName)
         }
       }}
-      className="cursor-pointer select-none rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 text-xs font-mono hover:bg-indigo-100 dark:hover:bg-indigo-900/40 min-h-[44px] flex items-center transition-colors"
+      className="cursor-pointer select-none rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] px-2 py-0.5 text-xs font-mono hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/40 min-h-[44px] flex items-center transition-colors"
     >
       {`{{${varName}}}`}
     </span>
@@ -484,7 +484,7 @@ function TemplateEditorContent({
                 variant="default"
                 size="sm"
                 disabled={isPublishing}
-                className="min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white"
+                className="min-h-[44px] bg-[#1A40FF] hover:opacity-90 text-white"
               >
                 {isPublishing ? (
                   <CircleNotch className="h-4 w-4 animate-spin mr-1" />
@@ -502,7 +502,7 @@ function TemplateEditorContent({
                   {t('inmobiliaria.ai.templates.dialog.publish.cancel')}
                 </AlertDialogCancel>
                 <AlertDialogAction
-                  className="min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="min-h-[44px]"
                   onClick={() => void handlePublish()}
                 >
                   {t('inmobiliaria.ai.templates.dialog.publish.confirm')}
@@ -519,9 +519,9 @@ function TemplateEditorContent({
         {unknownVars.length > 0 && (
           <Alert
             data-unknown-var-alert
-            className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-200"
+            className="border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]"
           >
-            <WarningCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <WarningCircle className="h-4 w-4 text-[#B7791F] dark:text-[#D2992F]" />
             <AlertDescription>
               {unknownVars
                 .map(
@@ -571,7 +571,7 @@ function TemplateEditorContent({
             <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               {t('inmobiliaria.ai.templates.editor.previewTitle')}
             </p>
-            <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-4 min-h-[200px] text-sm whitespace-pre-wrap font-mono text-neutral-800 dark:text-neutral-200">
+            <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-4 min-h-[200px] text-sm whitespace-pre-wrap font-mono text-neutral-800 dark:text-neutral-200">
               {previewText || (
                 <span className="text-neutral-400 dark:text-neutral-500 italic">
                   La vista previa aparecerá aquí...
@@ -629,14 +629,14 @@ function TemplateEditorContent({
 
       {/* Success toast */}
       {successToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 px-4 py-3 text-sm shadow-lg">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-4 py-3 text-sm">
           {successToast}
         </div>
       )}
 
       {/* Error toast */}
       {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 px-4 py-3 text-sm shadow-lg">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm">
           {errorToast}
         </div>
       )}

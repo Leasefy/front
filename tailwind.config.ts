@@ -1,11 +1,17 @@
 import type { Config } from "tailwindcss";
+import leasefyBridge from "./tailwind.leasefy";
 
 const config: Config = {
     darkMode: ["class"],
+    // @leasefy/ui bridge — DS theme names (surface/fg/ink/text-label/shadow-glow…)
+    // resolve here; mvp's own keys below win on collision (same brand values).
+    presets: [leasefyBridge as Config],
     content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    // design-system components (symlinked package) — Tailwind must see their classes
+    "./node_modules/@leasefy/ui/src/**/*.{ts,tsx}",
   ],
   theme: {
   	extend: {
@@ -14,13 +20,13 @@ const config: Config = {
   			heading: ['var(--font-heading)'],
   			mono: ['var(--font-mono)'],
   		},
+  		// escala @leasefy/ui (BRAND-CONTRACT §3) — reemplaza la escala shadcn
+  		// tras el radius sweep (rounded-md→sm, rounded-lg→md, rounded-2xl/3xl→xl).
   		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)',
-  			xl: 'var(--radius-xl)',
-  			'2xl': 'var(--radius-2xl)',
-  			'3xl': 'var(--radius-3xl)',
+  			sm: '6px',
+  			md: '8px',
+  			lg: '12px',
+  			xl: '16px',
   		},
   		zIndex: {
   			dropdown: 'var(--z-dropdown)',

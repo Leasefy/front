@@ -204,13 +204,13 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
+            className="bg-white dark:bg-[#1a1a1c] rounded-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 p-5 border-b border-neutral-200 dark:border-neutral-800">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                  <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
@@ -243,9 +243,9 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
               )}
 
               {loadError && (
-                <div className="py-6 flex items-start gap-3 rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4">
-                  <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-rose-700 dark:text-rose-400">{loadError}</p>
+                <div className="py-6 flex items-start gap-3 rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4">
+                  <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{loadError}</p>
                 </div>
               )}
 
@@ -266,9 +266,9 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
               {step === 'confirm' && paymentInfo && (
                 <div className="space-y-4">
                   {paymentInfo.currentPeriodStatus === 'REJECTED' && (
-                    <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-3 flex items-start gap-2">
-                      <WarningCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                      <div className="text-xs text-rose-700 dark:text-rose-400">
+                    <div className="rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-3 flex items-start gap-2">
+                      <WarningCircle className="w-4 h-4 text-[#C4503B] flex-shrink-0 mt-0.5" />
+                      <div className="text-xs text-[#C4503B] dark:text-[#E0664D]">
                         <p className="font-medium mb-0.5">Tu pago anterior fue rechazado.</p>
                         {paymentInfo.currentPeriodRejectionReason && (
                           <p className="opacity-90">{paymentInfo.currentPeriodRejectionReason}</p>
@@ -296,7 +296,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
               {step === 'form' && paymentInfo && (
                 <div className="space-y-4">
                   {/* Resumen */}
-                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 flex items-center justify-between text-xs">
+                  <div className="rounded-md border border-border bg-muted/30 px-3 py-2 flex items-center justify-between text-xs">
                     <span className="text-muted-foreground capitalize">{monthName}</span>
                     <span className="font-semibold text-foreground tabular-nums">
                       {formatCurrency(paymentInfo.monthlyRent)}
@@ -308,7 +308,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     <select
                       value={bankCode}
                       onChange={(e) => setBankCode(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
                     >
                       <option value="">Seleccioná tu banco</option>
                       {banks.map((b) => (
@@ -322,7 +322,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                       <select
                         value={personType}
                         onChange={(e) => setPersonType(e.target.value as PsePersonType)}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
                       >
                         <option value="NATURAL">Natural</option>
                         <option value="JURIDICA">Jurídica</option>
@@ -332,7 +332,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                       <select
                         value={documentType}
                         onChange={(e) => setDocumentType(e.target.value as PseDocumentType)}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
                       >
                         {DOCUMENT_TYPES.map((d) => (
                           <option key={d.value} value={d.value}>{d.label}</option>
@@ -346,7 +346,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                       inputMode="numeric"
                       value={documentNumber}
                       onChange={(e) => setDocumentNumber(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
                       placeholder="1234567890"
                     />
                   </Field>
@@ -355,7 +355,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     <input
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
                     />
                   </Field>
 
@@ -364,7 +364,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                      className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
                     />
                   </Field>
                 </div>
@@ -373,7 +373,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
               {/* Step: processing */}
               {step === 'processing' && (
                 <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
-                  <SpinnerGap className="w-8 h-8 animate-spin text-indigo-600" />
+                  <SpinnerGap className="w-8 h-8 animate-spin text-[#1A40FF]" />
                   <p className="text-sm font-medium text-foreground">Procesando pago...</p>
                   <p className="text-xs text-muted-foreground">No cierres esta ventana.</p>
                 </div>
@@ -395,7 +395,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                 <button
                   type="button"
                   onClick={onClose}
-                  className="ml-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                  className="ml-auto px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-semibold transition-colors"
                 >
                   Cerrar
                 </button>
@@ -414,7 +414,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     type="button"
                     onClick={() => setStep('form')}
                     disabled={!paymentInfo}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-semibold transition-colors disabled:opacity-50"
                   >
                     {paymentInfo?.currentPeriodStatus === 'REJECTED' ? 'Reintentar pago' : 'Continuar'}
                     <ArrowRight className="w-4 h-4" />
@@ -435,7 +435,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                   <button
                     type="button"
                     onClick={handleProcess}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-semibold transition-colors"
                   >
                     <Bank className="w-4 h-4" />
                     Pagar con PSE
@@ -447,7 +447,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                 <button
                   type="button"
                   onClick={onClose}
-                  className="ml-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                  className="ml-auto px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-semibold transition-colors"
                 >
                   Cerrar
                 </button>
@@ -475,7 +475,7 @@ function Field({
     <div className="space-y-1">
       <label className="block text-xs font-medium text-foreground">{label}</label>
       {children}
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && <p className="text-xs text-[#C4503B]">{error}</p>}
     </div>
   );
 }
@@ -492,14 +492,14 @@ function ResultPanel({
   if (result.status === 'SUCCESS') {
     return (
       <div className="py-6 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-          <CheckCircle className="w-8 h-8 text-emerald-600" />
+        <div className="w-14 h-14 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+          <CheckCircle className="w-8 h-8 text-[#2C7A53]" />
         </div>
         <div>
           <p className="text-lg font-semibold text-foreground">¡Pago procesado!</p>
           <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
         </div>
-        <div className="rounded-lg border border-border bg-muted/30 p-3 w-full space-y-1 text-xs">
+        <div className="rounded-md border border-border bg-muted/30 p-3 w-full space-y-1 text-xs">
           <Row label="Monto" value={formatCurrency(amount)} />
           <Row label="Banco" value={result.bankName} />
           <Row label="Transacción" value={result.transactionId} mono />
@@ -514,14 +514,14 @@ function ResultPanel({
   if (result.status === 'PENDING') {
     return (
       <div className="py-6 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-          <Clock className="w-8 h-8 text-amber-600" />
+        <div className="w-14 h-14 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+          <Clock className="w-8 h-8 text-[#B7791F]" />
         </div>
         <div>
           <p className="text-lg font-semibold text-foreground">En verificación bancaria</p>
           <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
         </div>
-        <div className="rounded-lg border border-border bg-muted/30 p-3 w-full space-y-1 text-xs">
+        <div className="rounded-md border border-border bg-muted/30 p-3 w-full space-y-1 text-xs">
           <Row label="Banco" value={result.bankName} />
           <Row label="Transacción" value={result.transactionId} mono />
         </div>
@@ -532,12 +532,12 @@ function ResultPanel({
   // FAILURE
   return (
     <div className="py-6 flex flex-col items-center text-center space-y-3">
-      <div className="w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
-        <WarningCircle className="w-8 h-8 text-rose-600" />
+      <div className="w-14 h-14 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+        <WarningCircle className="w-8 h-8 text-[#C4503B]" />
       </div>
       <div>
         <p className="text-lg font-semibold text-foreground">Pago no procesado</p>
-        <p className="text-sm text-rose-600 dark:text-rose-400 mt-1">{result.message}</p>
+        <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">{result.message}</p>
       </div>
       <p className="text-xs text-muted-foreground">
         Podés intentar con otro banco o revisar los datos ingresados.
@@ -576,8 +576,8 @@ function PeriodBlockedPanel({
   if (status === 'APPROVED') {
     return (
       <div className="py-6 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-          <CheckCircle className="w-8 h-8 text-emerald-600" />
+        <div className="w-14 h-14 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+          <CheckCircle className="w-8 h-8 text-[#2C7A53]" />
         </div>
         <div>
           <p className="text-lg font-semibold text-foreground">Pago confirmado</p>
@@ -585,7 +585,7 @@ function PeriodBlockedPanel({
             {monthName}
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-muted/30 p-3 w-full text-xs">
+        <div className="rounded-md border border-border bg-muted/30 p-3 w-full text-xs">
           <Row label="Monto" value={formatCurrency(amount)} />
         </div>
         <p className="text-xs text-muted-foreground">
@@ -598,8 +598,8 @@ function PeriodBlockedPanel({
   // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
   return (
     <div className="py-6 flex flex-col items-center text-center space-y-3">
-      <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-        <Clock className="w-8 h-8 text-amber-600" />
+      <div className="w-14 h-14 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+        <Clock className="w-8 h-8 text-[#B7791F]" />
       </div>
       <div>
         <p className="text-lg font-semibold text-foreground">Pago en verificación</p>
@@ -607,7 +607,7 @@ function PeriodBlockedPanel({
           {monthName}
         </p>
       </div>
-      <div className="rounded-lg border border-border bg-muted/30 p-3 w-full text-xs">
+      <div className="rounded-md border border-border bg-muted/30 p-3 w-full text-xs">
         <Row label="Monto" value={formatCurrency(amount)} />
       </div>
       <p className="text-xs text-muted-foreground">

@@ -98,7 +98,7 @@ export default function CallAudioPlayer({
       aria-describedby="audio-seek-help"
       onKeyDown={onContainerKey}
       tabIndex={0}
-      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
     >
       {/* Visually-hidden keyboard help for screen-reader users (XR-06) */}
       <span id="audio-seek-help" className="sr-only">
@@ -124,7 +124,7 @@ export default function CallAudioPlayer({
               : t('inmobiliaria.ai.cobranza.call.player.play')
           }
           aria-pressed={isPlaying}
-          className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-full bg-violet-600 hover:bg-violet-700 text-white"
+          className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-full bg-neutral-500 hover:bg-[#6B6B6B] text-white"
         >
           {isPlaying ? (
             <svg
@@ -169,7 +169,7 @@ export default function CallAudioPlayer({
             aria-valuemax={Number.isFinite(duration) && duration > 0 ? duration : 0}
             aria-valuenow={Math.floor(currentTime)}
             aria-valuetext={formatSec(currentTime)}
-            className="flex-1 h-11 accent-violet-600 cursor-pointer"
+            className="flex-1 h-11 accent-[#6B6B6B] cursor-pointer"
             // h-11 gives a 44px tap row; the visual thumb sits centered inside.
           />
           <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-400 min-w-[4ch]">
@@ -199,9 +199,9 @@ export default function CallAudioPlayer({
                 speed: String(s),
               })}
               className={
-                'min-h-11 min-w-11 rounded-lg px-2 text-xs font-semibold transition-colors ' +
+                'min-h-11 min-w-11 rounded-md px-2 text-xs font-semibold transition-colors ' +
                 (active
-                  ? 'bg-violet-600 text-white'
+                  ? 'bg-neutral-500 text-white'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700')
               }
             >

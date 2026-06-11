@@ -61,25 +61,25 @@ export function RiskGauge({
       >
         {levelA > 0 && (
           <div
-            className="bg-emerald-500 transition-all duration-500"
+            className="bg-[#2C7A53] transition-all duration-500"
             style={{ width: `${percentA}%` }}
           />
         )}
         {levelB > 0 && (
           <div
-            className="bg-blue-500 transition-all duration-500"
+            className="bg-[#1A40FF] transition-all duration-500"
             style={{ width: `${percentB}%` }}
           />
         )}
         {levelC > 0 && (
           <div
-            className="bg-amber-500 transition-all duration-500"
+            className="bg-[#B7791F] transition-all duration-500"
             style={{ width: `${percentC}%` }}
           />
         )}
         {levelD > 0 && (
           <div
-            className="bg-red-500 transition-all duration-500"
+            className="bg-[#C4503B] transition-all duration-500"
             style={{ width: `${percentD}%` }}
           />
         )}
@@ -90,7 +90,7 @@ export function RiskGauge({
         <div className="flex items-center gap-3 mt-2">
           {levelA > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <div className="w-2 h-2 rounded-full bg-[#2C7A53]" />
               <span className="text-xs text-muted-foreground">
                 {levelA} nivel A
               </span>
@@ -98,7 +98,7 @@ export function RiskGauge({
           )}
           {levelB > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <div className="w-2 h-2 rounded-full bg-[#1A40FF]" />
               <span className="text-xs text-muted-foreground">
                 {levelB} nivel B
               </span>
@@ -106,7 +106,7 @@ export function RiskGauge({
           )}
           {levelC > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <div className="w-2 h-2 rounded-full bg-[#B7791F]" />
               <span className="text-xs text-muted-foreground">
                 {levelC} nivel C
               </span>
@@ -114,7 +114,7 @@ export function RiskGauge({
           )}
           {levelD > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <div className="w-2 h-2 rounded-full bg-[#C4503B]" />
               <span className="text-xs text-muted-foreground">
                 {levelD} nivel D
               </span>

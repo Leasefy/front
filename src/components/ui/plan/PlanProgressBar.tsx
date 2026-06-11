@@ -40,7 +40,7 @@ export function PlanProgressBar({
         return 'bg-plan-muted';
       default:
         // PLan CRM lime/green gradient
-        return 'bg-gradient-to-r from-lime-300 to-plan-status-green';
+        return 'bg-gradient-to-r from-[#2C7A53] to-plan-status-green';
     }
   };
 
@@ -85,7 +85,7 @@ export function PlanProgressBar({
               variant === 'warning' ? 'bg-plan-status-yellow' :
               variant === 'danger' ? 'bg-plan-status-red' :
               variant === 'muted' ? 'bg-plan-muted' :
-              'bg-emerald-600',
+              'bg-[#2C7A53]',
               size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-2.5 h-2.5' : 'w-3 h-3'
             )}
             style={{

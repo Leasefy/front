@@ -177,19 +177,19 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
       <div
         ref={panelRef}
         data-lenis-prevent
-        className={cn('absolute top-0 right-0 bottom-0 w-full max-w-lg bg-white dark:bg-[#1a1a1c] border-l border-neutral-200 dark:border-neutral-700 shadow-2xl shadow-black/10 dark:shadow-black/30', isClosing ? 'animate-panel-out' : 'animate-panel-in')}
+        className={cn('absolute top-0 right-0 bottom-0 w-full max-w-lg bg-white dark:bg-[#1a1a1c] border-l border-neutral-200 dark:border-neutral-700 shadow-black/10 dark:shadow-black/30', isClosing ? 'animate-panel-out' : 'animate-panel-in')}
         style={{ overflowY: 'auto', overscrollBehavior: 'none' }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white dark:bg-[#1a1a1c] border-b border-neutral-100 dark:border-neutral-800 px-6 py-4 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div className={cn(
-              'rounded-lg p-2 flex-shrink-0 mt-0.5',
-              isScoring ? 'bg-indigo-50 dark:bg-indigo-950/30' : 'bg-violet-50 dark:bg-violet-950/30',
+              'rounded-md p-2 flex-shrink-0 mt-0.5',
+              isScoring ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15' : 'bg-neutral-100 dark:bg-neutral-800',
             )}>
               <AgentIcon weight="duotone" className={cn(
                 'h-4 w-4',
-                isScoring ? 'text-indigo-500 dark:text-indigo-400' : 'text-violet-500 dark:text-violet-400',
+                isScoring ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-600 dark:text-neutral-300',
               )} />
             </div>
             <div className="min-w-0">
@@ -201,7 +201,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
           </div>
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
+            className="p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
           >
             <X className="h-4 w-4 text-neutral-500" />
           </button>
@@ -219,10 +219,10 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
               </div>
               <span className={cn(
                 'w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold',
-                activity.metadata.level === 'A' && 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400',
-                activity.metadata.level === 'B' && 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400',
-                activity.metadata.level === 'C' && 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400',
-                activity.metadata.level === 'D' && 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400',
+                activity.metadata.level === 'A' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+                activity.metadata.level === 'B' && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+                activity.metadata.level === 'C' && 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
+                activity.metadata.level === 'D' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
               )}>
                 {activity.metadata.level}
               </span>
@@ -237,11 +237,11 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
         <div className="mx-6 mt-5 flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 animate-content-reveal" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center gap-1.5">
             {activity.status === 'success' ? (
-              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-emerald-500" />
+              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#2C7A53]" />
             ) : activity.status === 'pending' ? (
-              <Warning weight="fill" className="h-3.5 w-3.5 text-amber-500" />
+              <Warning weight="fill" className="h-3.5 w-3.5 text-[#B7791F]" />
             ) : (
-              <Warning weight="fill" className="h-3.5 w-3.5 text-red-500" />
+              <Warning weight="fill" className="h-3.5 w-3.5 text-[#C4503B]" />
             )}
             <span className="font-medium">
               {activity.status === 'success' ? 'Completado' : activity.status === 'pending' ? 'Pendiente' : 'Error'}
@@ -266,18 +266,18 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
                 <div className="flex flex-col items-center">
                   <div className={cn(
                     'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0',
-                    step.status === 'completed' && 'bg-emerald-100 dark:bg-emerald-950/30',
-                    step.status === 'pending' && 'bg-amber-100 dark:bg-amber-950/30',
-                    step.status === 'failed' && 'bg-red-100 dark:bg-red-950/30',
+                    step.status === 'completed' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+                    step.status === 'pending' && 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+                    step.status === 'failed' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
                   )}>
-                    {step.status === 'completed' && <CheckCircle weight="fill" className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />}
-                    {step.status === 'pending' && <Clock weight="fill" className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />}
-                    {step.status === 'failed' && <Warning weight="fill" className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
+                    {step.status === 'completed' && <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#2C7A53] dark:text-[#3EAE70]" />}
+                    {step.status === 'pending' && <Clock weight="fill" className="h-3.5 w-3.5 text-[#B7791F] dark:text-[#D2992F]" />}
+                    {step.status === 'failed' && <Warning weight="fill" className="h-3.5 w-3.5 text-[#C4503B] dark:text-[#E0664D]" />}
                   </div>
                   {i < trace.length - 1 && (
                     <div className={cn(
                       'w-px flex-1 min-h-[20px]',
-                      step.status === 'completed' ? 'bg-emerald-200 dark:bg-emerald-800/40' : 'bg-neutral-200 dark:bg-neutral-700',
+                      step.status === 'completed' ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' : 'bg-neutral-200 dark:bg-neutral-700',
                     )} />
                   )}
                 </div>
@@ -287,7 +287,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
                   <div className="flex items-center justify-between gap-2">
                     <p className={cn(
                       'text-sm font-medium',
-                      step.status === 'failed' ? 'text-red-700 dark:text-red-400' : 'text-neutral-900 dark:text-white',
+                      step.status === 'failed' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-neutral-900 dark:text-white',
                     )}>
                       {step.label}
                     </p>
@@ -298,7 +298,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
                   {step.output && (
                     <p className={cn(
                       'text-xs mt-1',
-                      step.status === 'failed' ? 'text-red-600/80 dark:text-red-400/70' : 'text-neutral-500 dark:text-neutral-400',
+                      step.status === 'failed' ? 'text-[#C4503B]/80 dark:text-[#C4503B]/70' : 'text-neutral-500 dark:text-neutral-400',
                     )}>
                       {step.output}
                     </p>
@@ -315,14 +315,14 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
             <div className={cn(
               'rounded-xl border p-5 space-y-4',
               errorContext.severity === 'critical'
-                ? 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/10'
-                : 'border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/10',
+                ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/50 dark:bg-[#C4503B]/10'
+                : 'border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0]/50 dark:bg-[#B7791F]/10',
             )}>
               {/* What happened */}
               <div>
                 <h4 className={cn(
                   'text-xs font-semibold uppercase tracking-wide mb-1.5',
-                  errorContext.severity === 'critical' ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400',
+                  errorContext.severity === 'critical' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-[#B7791F] dark:text-[#D2992F]',
                 )}>
                   Qué pasó
                 </h4>
@@ -335,7 +335,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
               <div>
                 <h4 className={cn(
                   'text-xs font-semibold uppercase tracking-wide mb-1.5',
-                  errorContext.severity === 'critical' ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400',
+                  errorContext.severity === 'critical' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-[#B7791F] dark:text-[#D2992F]',
                 )}>
                   Por qué importa
                 </h4>
@@ -348,7 +348,7 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
               <div>
                 <h4 className={cn(
                   'text-xs font-semibold uppercase tracking-wide mb-1.5',
-                  errorContext.severity === 'critical' ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400',
+                  errorContext.severity === 'critical' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-[#B7791F] dark:text-[#D2992F]',
                 )}>
                   Qué hacer
                 </h4>
@@ -358,8 +358,8 @@ export function AIActivityDetailPanel({ activity, onClose }: AIActivityDetailPan
                       <span className={cn(
                         'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5',
                         errorContext.severity === 'critical'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                          : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+                          ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+                          : 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
                       )}>
                         {i + 1}
                       </span>

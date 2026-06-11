@@ -176,10 +176,10 @@ const QUICK_ACTIONS: QuickAction[] = [
 // ──────────────────────────────────────────────────────────────────────────────
 
 const BADGE_COLORS = {
-  green: 'bg-green-50 text-green-700 border-green-200',
-  amber: 'bg-amber-50 text-amber-700 border-amber-200',
-  red: 'bg-red-50 text-red-700 border-red-200',
-  violet: 'bg-violet-50 text-violet-700 border-violet-200',
+  green: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
+  amber: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
+  red: 'bg-[#F8EAE7] text-[#C4503B] border-[#C4503B]/30',
+  violet: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
   neutral: 'bg-neutral-100 text-neutral-600 border-neutral-200',
 };
 
@@ -187,7 +187,7 @@ function Badge({ label, color }: { label: string; color: keyof typeof BADGE_COLO
   return (
     <span
       className={cn(
-        'inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium border',
+        'inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border',
         BADGE_COLORS[color],
       )}
     >
@@ -243,8 +243,8 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-indigo-600" />
+          <div className="w-9 h-9 rounded-full bg-[#EEF1FF] flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-[#1A40FF]" />
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-neutral-900 truncate">
@@ -260,7 +260,7 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Stage pill */}
       <div
         className={cn(
-          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[12px] font-medium',
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-[12px] font-medium',
           colors?.text,
           colors?.bg,
           colors?.border,
@@ -301,9 +301,9 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
 
       {/* Paused banner */}
       {data.isPaused && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-          <Warning className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-amber-700 leading-snug">
+        <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#F8F0E0] border border-[#B7791F]/30">
+          <Warning className="w-3.5 h-3.5 text-[#B7791F] mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] text-[#B7791F] leading-snug">
             {locale === 'es' ? 'Cobranza pausada' : 'Collections paused'}
           </p>
         </div>
@@ -363,8 +363,8 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-emerald-600" />
+        <div className="w-9 h-9 rounded-full bg-[#E8F3EC] flex items-center justify-center flex-shrink-0">
+          <User className="w-4 h-4 text-[#2C7A53]" />
         </div>
         <div className="min-w-0">
           <p className="text-[14px] font-semibold text-neutral-900 truncate">{name}</p>
@@ -384,13 +384,13 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
         )}
       </div>
       <div className="grid grid-cols-2 gap-2 pt-1">
-        <div className="bg-neutral-50 rounded-lg p-2">
+        <div className="bg-neutral-50 rounded-md p-2">
           <p className="text-[10px] text-neutral-400 uppercase tracking-wide">
             {locale === 'es' ? 'Propiedades' : 'Properties'}
           </p>
           <p className="text-[16px] font-semibold text-neutral-800">{propertyCount}</p>
         </div>
-        <div className="bg-neutral-50 rounded-lg p-2">
+        <div className="bg-neutral-50 rounded-md p-2">
           <p className="text-[10px] text-neutral-400 uppercase tracking-wide">
             {locale === 'es' ? 'Arriendos' : 'Leases'}
           </p>
@@ -398,11 +398,11 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
         </div>
       </div>
       {totalMonthlyRent > 0 && (
-        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5">
-          <p className="text-[10px] text-emerald-600 font-medium">
+        <div className="bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-md p-2.5">
+          <p className="text-[10px] text-[#2C7A53] font-medium">
             {locale === 'es' ? 'Renta mensual total' : 'Total monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-emerald-800">
+          <p className="text-[14px] font-semibold text-[#2C7A53]">
             ${totalMonthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -432,10 +432,10 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
   const status = String(data.status ?? '');
 
   const STATUS_COLORS: Record<string, string> = {
-    available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    published: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    rented: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    available: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
+    published: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
+    rented: 'bg-[#EEF1FF] text-[#1A40FF] border-[#1A40FF]/30',
+    pending: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
     draft: 'bg-neutral-100 text-neutral-600 border-neutral-200',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
@@ -453,17 +453,17 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
         <p className="text-[11px] text-neutral-500 truncate mt-0.5">{address}, {city}</p>
       </div>
       <span className={cn(
-        'inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium border',
+        'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
         STATUS_COLORS[status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200',
       )}>
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5">
-          <p className="text-[10px] text-indigo-600 font-medium">
+        <div className="bg-[#EEF1FF] border border-[#1A40FF]/30 rounded-md p-2.5">
+          <p className="text-[10px] text-[#1A40FF] font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-indigo-800">
+          <p className="text-[14px] font-semibold text-[#1A40FF]">
             ${monthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -471,19 +471,19 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
       {(bedrooms != null || area != null) && (
         <div className="grid grid-cols-3 gap-1.5">
           {bedrooms != null && (
-            <div className="bg-neutral-50 rounded-lg p-2 text-center">
+            <div className="bg-neutral-50 rounded-md p-2 text-center">
               <p className="text-[16px] font-semibold text-neutral-800">{bedrooms}</p>
               <p className="text-[9px] text-neutral-400 uppercase">{locale === 'es' ? 'Hab' : 'Bed'}</p>
             </div>
           )}
           {bathrooms != null && (
-            <div className="bg-neutral-50 rounded-lg p-2 text-center">
+            <div className="bg-neutral-50 rounded-md p-2 text-center">
               <p className="text-[16px] font-semibold text-neutral-800">{bathrooms}</p>
               <p className="text-[9px] text-neutral-400 uppercase">{locale === 'es' ? 'Baños' : 'Bath'}</p>
             </div>
           )}
           {area != null && (
-            <div className="bg-neutral-50 rounded-lg p-2 text-center">
+            <div className="bg-neutral-50 rounded-md p-2 text-center">
               <p className="text-[16px] font-semibold text-neutral-800">{area}</p>
               <p className="text-[9px] text-neutral-400 uppercase">m²</p>
             </div>
@@ -514,15 +514,15 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
   const endDate = data.endDate != null ? String(data.endDate) : null;
 
   const STATUS_COLORS_PILL: Record<string, string> = {
-    ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    SIGNED: 'bg-violet-50 text-violet-700 border-violet-200',
-    PENDING_TENANT: 'bg-amber-50 text-amber-700 border-amber-200',
-    PENDING_TENANT_SIGNATURE: 'bg-amber-50 text-amber-700 border-amber-200',
-    PENDING_LANDLORD: 'bg-amber-50 text-amber-700 border-amber-200',
-    PENDING_LANDLORD_SIGNATURE: 'bg-amber-50 text-amber-700 border-amber-200',
+    ACTIVE: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
+    SIGNED: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
+    PENDING_TENANT: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
+    PENDING_TENANT_SIGNATURE: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
+    PENDING_LANDLORD: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
+    PENDING_LANDLORD_SIGNATURE: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
     DRAFT: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-    EXPIRED: 'bg-red-50 text-red-700 border-red-200',
-    CANCELLED: 'bg-red-50 text-red-700 border-red-200',
+    EXPIRED: 'bg-[#F8EAE7] text-[#C4503B] border-[#C4503B]/30',
+    CANCELLED: 'bg-[#F8EAE7] text-[#C4503B] border-[#C4503B]/30',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
     ACTIVE: 'Activo',
@@ -552,8 +552,8 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
     <div className="p-5 space-y-4">
       {tenantName && (
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-violet-600" />
+          <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-neutral-900 truncate">{tenantName}</p>
@@ -567,17 +567,17 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
         <p className="text-[12px] text-neutral-500 truncate">{propertyAddress}</p>
       )}
       <span className={cn(
-        'inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium border',
+        'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
         STATUS_COLORS_PILL[status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200',
       )}>
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-violet-50 border border-violet-100 rounded-lg p-2.5">
-          <p className="text-[10px] text-violet-600 font-medium">
+        <div className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md p-2.5">
+          <p className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-violet-800">
+          <p className="text-[14px] font-semibold text-neutral-600 dark:text-neutral-300">
             ${monthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -617,7 +617,7 @@ function ResultPreview({ result }: { result: SearchResult | null }) {
   if (!result) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8 gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center">
           <MagnifyingGlass className="w-5 h-5 text-neutral-400" />
         </div>
         <p className="text-[13px] text-neutral-500">
@@ -697,8 +697,8 @@ function NovadadesState({
                   key={entry.id}
                   className="flex items-start gap-3 px-4 py-3 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="w-7 h-7 rounded-full bg-[#EEF1FF] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Clock className="w-3.5 h-3.5 text-[#1A40FF]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[12px] font-medium text-neutral-700 leading-snug">
@@ -732,8 +732,8 @@ function NovadadesState({
                   onClick={() => onNavigate(qa.href)}
                   className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-neutral-50 transition-colors group"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-neutral-100 group-hover:bg-indigo-50 flex items-center justify-center flex-shrink-0 transition-colors">
-                    <Icon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-indigo-600 transition-colors" />
+                  <div className="w-7 h-7 rounded-md bg-neutral-100 group-hover:bg-[#EEF1FF] flex items-center justify-center flex-shrink-0 transition-colors">
+                    <Icon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-[#1A40FF] transition-colors" />
                   </div>
                   <span className="text-[12px] font-medium text-neutral-600 group-hover:text-neutral-900 transition-colors leading-snug">
                     {t(qa.labelKey)}
@@ -866,7 +866,7 @@ export function CommandPalette() {
           // Override default DialogContent styles
           'fixed left-1/2 top-[12%] -translate-x-1/2 translate-y-0',
           'w-[min(760px,96vw)] p-0 gap-0',
-          'rounded-2xl border border-neutral-200 bg-white shadow-2xl',
+          'rounded-xl border border-neutral-200 bg-white',
           'overflow-hidden',
           // Disable the default slide-in animation — we use our own
           'data-[state=open]:animate-none data-[state=closed]:animate-none',
@@ -971,21 +971,21 @@ export function CommandPalette() {
                                 className={cn(
                                   'w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors',
                                   isHighlighted
-                                    ? 'bg-indigo-50'
+                                    ? 'bg-[#EEF1FF]'
                                     : 'hover:bg-neutral-50',
                                 )}
                               >
                                 {/* Icon */}
                                 <div
                                   className={cn(
-                                    'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
-                                    isHighlighted ? 'bg-indigo-100' : 'bg-neutral-100',
+                                    'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5',
+                                    isHighlighted ? 'bg-[#EEF1FF]' : 'bg-neutral-100',
                                   )}
                                 >
                                   <SrcIcon
                                     className={cn(
                                       'w-3.5 h-3.5',
-                                      isHighlighted ? 'text-indigo-600' : 'text-neutral-500',
+                                      isHighlighted ? 'text-[#1A40FF]' : 'text-neutral-500',
                                     )}
                                   />
                                 </div>
@@ -995,7 +995,7 @@ export function CommandPalette() {
                                   <p
                                     className={cn(
                                       'text-[13px] font-medium truncate',
-                                      isHighlighted ? 'text-indigo-900' : 'text-neutral-800',
+                                      isHighlighted ? 'text-[#1A40FF]' : 'text-neutral-800',
                                     )}
                                   >
                                     {result.title}

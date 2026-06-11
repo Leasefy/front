@@ -129,7 +129,7 @@ export function PropietarioTable({
               placeholder={t('inmobiliaria.propietario.table.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
             />
             {searchQuery && (
               <button
@@ -166,9 +166,9 @@ export function PropietarioTable({
                 key={option.value}
                 onClick={() => setFilterType(option.value as typeof filterType)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                   filterType === option.value
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-background text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -186,7 +186,7 @@ export function PropietarioTable({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filterPending
-                ? 'bg-amber-500 text-white border-amber-500'
+                ? 'bg-[#B7791F] text-white border-[#B7791F]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             )}
           >
@@ -201,7 +201,7 @@ export function PropietarioTable({
                 setFilterPending(false);
                 setFilterType('all');
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-sm font-medium hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/30 transition-colors"
             >
               <Funnel className="w-4 h-4" weight="fill" />
               {t('inmobiliaria.propietario.table.clear')}
@@ -224,7 +224,7 @@ export function PropietarioTable({
               <th className="text-left p-4">
                 <button
                   onClick={() => handleSort('name')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
                   {t('inmobiliaria.propietario.table.owner')}
                   {sortField === 'name' && <SortIcon className="w-3.5 h-3.5" />}
@@ -233,7 +233,7 @@ export function PropietarioTable({
               <th className="text-left p-4">
                 <button
                   onClick={() => handleSort('propertyCount')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
                   {t('inmobiliaria.propietario.table.properties')}
                   {sortField === 'propertyCount' && <SortIcon className="w-3.5 h-3.5" />}
@@ -242,7 +242,7 @@ export function PropietarioTable({
               <th className="text-left p-4">
                 <button
                   onClick={() => handleSort('totalMonthlyRent')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
                   {t('inmobiliaria.propietario.table.monthlyRent')}
                   {sortField === 'totalMonthlyRent' && <SortIcon className="w-3.5 h-3.5" />}
@@ -251,7 +251,7 @@ export function PropietarioTable({
               <th className="text-left p-4">
                 <button
                   onClick={() => handleSort('pendingBalance')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
                   {t('inmobiliaria.propietario.table.pending')}
                   {sortField === 'pendingBalance' && <SortIcon className="w-3.5 h-3.5" />}
@@ -260,7 +260,7 @@ export function PropietarioTable({
               <th className="text-left p-4">
                 <button
                   onClick={() => handleSort('lastPaymentDate')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
                 >
                   {t('inmobiliaria.propietario.table.lastPayment')}
                   {sortField === 'lastPaymentDate' && <SortIcon className="w-3.5 h-3.5" />}
@@ -290,8 +290,8 @@ export function PropietarioTable({
                         className={cn(
                           'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
                           isCompany
-                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                            : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                            ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+                            : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                         )}
                       >
                         {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
@@ -329,12 +329,12 @@ export function PropietarioTable({
                   {/* Pending Balance */}
                   <td className="p-4">
                     {hasPending ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-sm font-medium tabular-nums">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-sm font-medium tabular-nums">
                         <Warning className="w-3.5 h-3.5" />
                         {formatCurrency(propietario.pendingBalance)}
                       </span>
                     ) : (
-                      <span className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">
+                      <span className="text-[#1A40FF] dark:text-[#5570FF] text-sm font-medium">
                         {t('inmobiliaria.propietario.table.upToDate')}
                       </span>
                     )}
@@ -361,7 +361,7 @@ export function PropietarioTable({
                           e.stopPropagation();
                           setOpenMenuId(openMenuId === propietario.id ? null : propietario.id);
                         }}
-                        className="p-2 rounded-lg hover:bg-muted transition-colors"
+                        className="p-2 rounded-md hover:bg-muted transition-colors"
                       >
                         <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
                       </button>
@@ -372,7 +372,7 @@ export function PropietarioTable({
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card shadow-xl z-10"
+                            className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card z-10"
                           >
                             <button
                               onClick={(e) => {
@@ -380,7 +380,7 @@ export function PropietarioTable({
                                 onView(propietario);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <Eye className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.propietario.table.viewDetail')}</span>
@@ -391,7 +391,7 @@ export function PropietarioTable({
                                 onEdit(propietario);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <PencilSimple className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.propietario.table.edit')}</span>
@@ -399,7 +399,7 @@ export function PropietarioTable({
                             <a
                               href={`mailto:${propietario.email}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <Envelope className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
@@ -407,7 +407,7 @@ export function PropietarioTable({
                             <a
                               href={`tel:${propietario.phone}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                             >
                               <Phone className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
@@ -419,7 +419,7 @@ export function PropietarioTable({
                                 onDelete(propietario);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
                             >
                               <TrashSimple className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.propietario.table.delete')}</span>

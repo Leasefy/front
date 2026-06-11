@@ -32,9 +32,9 @@ function SignatureIndicator({
     <div className="flex items-center gap-3">
       <div
         className={cn(
-          'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
+          'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0',
           isSigned
-            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
             : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500'
         )}
       >
@@ -95,13 +95,13 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
   // Status badge config
   const statusConfig: Record<ContractStatus, { text: string; className: string }> = {
     draft: { text: 'Borrador', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400' },
-    pending_landlord: { text: 'Tu firma', className: 'bg-indigo-600 text-white uppercase tracking-wide font-mono' },
-    pending_tenant: { text: 'Esperando', className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
-    rejected_pending_modifications: { text: 'Cambios pedidos', className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
-    signed: { text: 'Firmado', className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
-    active: { text: 'Activo', className: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
+    pending_landlord: { text: 'Tu firma', className: 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono' },
+    pending_tenant: { text: 'Esperando', className: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]' },
+    rejected_pending_modifications: { text: 'Cambios pedidos', className: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]' },
+    signed: { text: 'Firmado', className: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]' },
+    active: { text: 'Activo', className: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]' },
     expired: { text: 'Expirado', className: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400' },
-    cancelled: { text: 'Cancelado', className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
+    cancelled: { text: 'Cancelado', className: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]' },
   };
 
   const status = statusConfig[contract.status];
@@ -133,7 +133,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               </h3>
               <span
                 className={cn(
-                  'text-xs px-2 py-0.5 rounded-md flex-shrink-0 font-medium',
+                  'text-xs px-2 py-0.5 rounded-sm flex-shrink-0 font-medium',
                   status.className
                 )}
               >
@@ -152,7 +152,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 className={cn(
                   'w-2.5 h-2.5 rounded-full',
                   contract.landlordSignature
-                    ? 'bg-emerald-500'
+                    ? 'bg-[#2C7A53]'
                     : 'bg-neutral-300 dark:bg-neutral-600'
                 )}
               />
@@ -163,7 +163,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 className={cn(
                   'w-2.5 h-2.5 rounded-full',
                   contract.tenantSignature
-                    ? 'bg-emerald-500'
+                    ? 'bg-[#2C7A53]'
                     : 'bg-neutral-300 dark:bg-neutral-600'
                 )}
               />
@@ -269,7 +269,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-700">
                 {needsLandlordAction && (
                   <Link href={contractUrl} className="flex-1">
-                    <Button className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl">
+                    <Button className="w-full gap-2 bg-[#1A40FF] hover:opacity-90 text-white rounded-xl">
                       <PencilLine className="w-4 h-4" />
                       Firmar
                     </Button>

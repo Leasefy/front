@@ -20,7 +20,7 @@ export interface PlanStatsCardProps {
 
 const variantClasses = {
   default: 'bg-white dark:bg-card border-plan-border',
-  accent: 'bg-indigo-100 border-indigo-200',
+  accent: 'bg-[#EEF1FF] border-[#1A40FF]/30',
   muted: 'bg-muted border-plan-border',
 };
 

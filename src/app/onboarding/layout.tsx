@@ -2,7 +2,7 @@
 
 import { I18nProvider } from '@/lib/i18n';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/toast';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
@@ -17,7 +17,7 @@ export default function OnboardingLayout({ children }: OnboardingLayoutProps) {
     <ForceLightMode>
       <I18nProvider>
         {children}
-        <Toaster position="top-center" richColors />
+        <Toaster position="top-center" />
       </I18nProvider>
     </ForceLightMode>
   );

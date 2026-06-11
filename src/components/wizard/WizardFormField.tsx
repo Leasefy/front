@@ -34,14 +34,14 @@ export function FormField({
         className="block text-sm font-medium text-foreground/70"
       >
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-[#C4503B] ml-0.5">*</span>}
       </label>
       {children}
       {hint && !error && (
         <p className="text-xs text-muted-foreground">{hint}</p>
       )}
       {error && (
-        <p className="text-xs text-red-500">{error}</p>
+        <p className="text-xs text-[#C4503B]">{error}</p>
       )}
     </div>
   );
@@ -74,7 +74,7 @@ export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
             'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
             'transition-colors',
             icon && 'pl-12',
-            hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
+            hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
             className
           )}
           {...props}
@@ -132,7 +132,7 @@ export function DarkSelect({
           'transition-colors',
           icon && 'pl-12',
           !value && 'text-white/40',
-          hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
+          hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
           className
         )}
       >
@@ -172,7 +172,7 @@ export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
             'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
             'transition-colors',
             icon && 'pl-12',
-            hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
+            hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
             className
           )}
           {...props}
@@ -220,7 +220,7 @@ export function LightSelect({
           'transition-colors',
           icon && 'pl-12',
           !value && 'text-muted-foreground',
-          hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
+          hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
           className
         )}
       >

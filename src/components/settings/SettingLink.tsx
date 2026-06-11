@@ -21,7 +21,7 @@ export function SettingLink({
       className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors group"
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
           <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
         </div>
         <div className="text-left">
@@ -31,7 +31,7 @@ export function SettingLink({
       </div>
       <div className="flex items-center gap-2">
         {badge && (
-          <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full">
+          <span className="px-2 py-1 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-full">
             {badge}
           </span>
         )}

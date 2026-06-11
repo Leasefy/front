@@ -44,7 +44,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
         {Array.from({ length: 4 }, (_, i) => (
           <div
             key={i}
-            className="h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md animate-pulse"
+            className="h-12 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -53,14 +53,14 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 flex items-center justify-between">
+        <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
           {t('inmobiliaria.ai.cobranza.detail.llamadas.error')}: {error}
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+          className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
         >
           {t('inmobiliaria.ai.cobranza.detail.llamadas.errorRetry')}
         </button>
@@ -71,7 +71,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   const calls = data?.calls ?? []
   if (calls.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
+      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t('inmobiliaria.ai.cobranza.detail.llamadas.empty')}
         </p>
@@ -86,7 +86,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   return (
     <>
       {/* md+ table */}
-      <div className="hidden md:block overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+      <div className="hidden md:block overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
           <thead className="bg-neutral-50 dark:bg-neutral-950/50">
             <tr>
@@ -117,7 +117,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigate(c.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
               >
                 <td className="px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
                   {new Date(c.started_at).toLocaleString(locale)}
@@ -138,8 +138,8 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                     className={
                       'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ' +
                       (c.compliance_flags_count > 0
-                        ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
-                        : 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400')
+                        ? 'bg-[#B7791F] dark:bg-[#B7791F]/30 text-[#B7791F] dark:text-[#B7791F]'
+                        : 'bg-[#2C7A53] dark:bg-[#2C7A53]/30 text-[#2C7A53] dark:text-[#2C7A53]')
                     }
                   >
                     {c.compliance_flags_count}
@@ -158,7 +158,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
             <button
               type="button"
               onClick={() => navigate(c.id)}
-              className="w-full text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2"
+              className="w-full text-left rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2"
             >
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {new Date(c.started_at).toLocaleString(locale)}

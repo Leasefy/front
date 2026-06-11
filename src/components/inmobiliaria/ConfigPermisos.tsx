@@ -138,11 +138,11 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
           <div className="flex items-center justify-center">
             <label
               className={cn(
-                'relative flex items-center justify-center w-10 h-10 rounded-lg transition-all cursor-pointer',
+                'relative flex items-center justify-center w-10 h-10 rounded-md transition-all cursor-pointer',
                 isEnabled
                   ? isDangerous
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                    : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                    ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
+                    : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400',
                 isLocked && 'opacity-60 cursor-not-allowed'
               )}
@@ -160,7 +160,7 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
                 <ActionIcon className="w-4 h-4" />
               )}
               {isDangerous && isEnabled && (
-                <Warning className="absolute -top-1 -right-1 w-3.5 h-3.5 text-amber-500" weight="fill" />
+                <Warning className="absolute -top-1 -right-1 w-3.5 h-3.5 text-[#B7791F]" weight="fill" />
               )}
             </label>
           </div>
@@ -170,7 +170,7 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
             <p className="font-medium">{getActionLabel(action)}</p>
             <p className="text-neutral-400">{actionDescription}</p>
             {isDangerous && isEnabled && (
-              <p className="text-amber-400 mt-1">{t('inmobiliaria.config.permissions.sensitivePermission')}</p>
+              <p className="text-[#B7791F] mt-1">{t('inmobiliaria.config.permissions.sensitivePermission')}</p>
             )}
             {isLocked && (
               <p className="text-neutral-500 mt-1">{t('inmobiliaria.config.permissions.adminAlwaysHas')}</p>
@@ -214,7 +214,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
       {/* Module Name */}
       <td className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
             <ModuleIcon className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
           </div>
           <span className="font-medium text-neutral-900 dark:text-white">
@@ -356,7 +356,7 @@ export function ConfigPermisos({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-indigo-500" />
+            <ShieldCheck className="w-6 h-6 text-[#1A40FF]" />
             {t('inmobiliaria.config.permissions.permissionsTitle')}
           </h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -398,10 +398,10 @@ export function ConfigPermisos({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+          className="flex items-center gap-2 p-3 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40"
         >
-          <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className="text-sm text-amber-700 dark:text-amber-300">
+          <Info className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0" />
+          <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
             {t('inmobiliaria.config.permissions.unsavedChanges')}
           </p>
         </motion.div>
@@ -409,12 +409,16 @@ export function ConfigPermisos({
 
       {/* Role Tabs */}
       <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as AgencyRole)}>
-        <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:flex">
+        <TabsList variant="segmented" className="w-full sm:w-auto">
           {ALL_ROLES.map((role) => (
-            <TabsTrigger key={role} value={role} className="gap-2">
+            <TabsTrigger
+              key={role}
+              value={role}
+              className="inline-flex flex-1 items-center justify-center gap-2 sm:flex-initial"
+            >
               <span className="hidden sm:inline">{getRoleLabel(role)}</span>
               <span className="sm:hidden">{getRoleLabel(role).slice(0, 3)}</span>
-              <span className="inline-flex px-1.5 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 text-xs font-medium">
+              <span className="inline-flex rounded-full bg-surface-muted px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-fg-muted">
                 {getPermissionCount(role)}
               </span>
             </TabsTrigger>
@@ -425,10 +429,10 @@ export function ConfigPermisos({
           <TabsContent key={role} value={role}>
             {/* Admin Note */}
             {role === 'admin' && (
-              <div className="mb-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+              <div className="mb-4 p-3 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  <p className="text-sm text-purple-700 dark:text-purple-300">
+                  <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300">
                     {t('inmobiliaria.config.permissions.adminNote')}
                   </p>
                 </div>
@@ -514,19 +518,19 @@ export function ConfigPermisos({
             {/* Legend */}
             <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" weight="bold" />
+                <div className="w-6 h-6 rounded-sm bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]" weight="bold" />
                 </div>
                 <span>{t('inmobiliaria.config.permissions.legendActive')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" weight="bold" />
+                <div className="w-6 h-6 rounded-sm bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-[#B7791F] dark:text-[#D2992F]" weight="bold" />
                 </div>
                 <span>{t('inmobiliaria.config.permissions.legendSensitive')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-sm bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                   <Eye className="w-3.5 h-3.5 text-neutral-400" />
                 </div>
                 <span>{t('inmobiliaria.config.permissions.legendNoPermission')}</span>
@@ -560,13 +564,13 @@ export function ConfigPermisos({
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-amber-600 dark:text-amber-400">{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
+            <DialogTitle className="text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
             <DialogDescription>
               {t('inmobiliaria.config.permissions.resetDescription')}
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-700 dark:text-amber-300">
+          <div className="p-4 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+            <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
               {t('inmobiliaria.config.permissions.resetWarning')}
             </p>
           </div>

@@ -80,7 +80,7 @@ export function FinancialHeroSection({ stats, className }: FinancialHeroSectionP
                 <div className={cn(
                   'text-[2.5rem] md:text-[3.5rem] font-light leading-none tracking-[-0.03em] mb-3',
                   stat.highlight ? 'text-gradient-accent' : 'text-white',
-                  stat.alert && 'text-amber-400'
+                  stat.alert && 'text-[#B7791F]'
                 )}>
                   <span className="text-white/50">{stat.prefix}</span>
                   <AnimatedCounter

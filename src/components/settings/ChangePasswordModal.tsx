@@ -66,7 +66,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-xl overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
@@ -86,7 +86,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                   Contraseña actual
                 </label>
-                <p className="text-xs text-red-500 dark:text-red-400 mb-2 font-medium">
+                <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mb-2 font-medium">
                   Opcional si iniciaste sesión con Google o es la primera vez que asignas contraseña
                 </p>
                 <div className="relative">
@@ -94,7 +94,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                     type={show.current ? 'text' : 'password'}
                     value={form.current}
                     onChange={(e) => setForm(prev => ({ ...prev, current: e.target.value }))}
-                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
                     placeholder="Tu contraseña actual"
                   />
                   <button
@@ -117,7 +117,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                     type={show.new ? 'text' : 'password'}
                     value={form.new}
                     onChange={(e) => setForm(prev => ({ ...prev, new: e.target.value }))}
-                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
                     placeholder="Mínimo 8 caracteres"
                   />
                   <button
@@ -140,7 +140,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                     type={show.confirm ? 'text' : 'password'}
                     value={form.confirm}
                     onChange={(e) => setForm(prev => ({ ...prev, confirm: e.target.value }))}
-                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
                     placeholder="Repetir nueva contraseña"
                   />
                   <button

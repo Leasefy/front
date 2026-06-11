@@ -19,7 +19,7 @@ const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
 ];
 
 const inputClass =
-  'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all';
+  'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm transition-all';
 
 function NuevaPropiedadContent() {
   const router = useRouter();
@@ -96,7 +96,7 @@ function NuevaPropiedadContent() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -114,8 +114,8 @@ function NuevaPropiedadContent() {
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <House className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <House className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -166,8 +166,8 @@ function NuevaPropiedadContent() {
                   className={cn(
                     'px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-center',
                     form.type === pt.value
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400'
-                      : 'border-border text-muted-foreground hover:border-indigo-300 hover:text-foreground'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                      : 'border-border text-muted-foreground hover:border-[#1A40FF]/30 hover:text-foreground'
                   )}
                 >
                   {pt.label}
@@ -301,8 +301,8 @@ function NuevaPropiedadContent() {
             </div>
           </section>
         ) : (
-          <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3">
-            <p className="text-sm text-indigo-700 dark:text-indigo-400">
+          <div className="rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-4 py-3">
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
               La propiedad quedará asignada a tu cuenta automáticamente.
             </p>
           </div>
@@ -310,7 +310,7 @@ function NuevaPropiedadContent() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-700 dark:text-rose-400 text-sm">
+          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-[#C4503B] dark:text-[#E0664D] text-sm">
             {error}
           </div>
         )}
@@ -327,7 +327,7 @@ function NuevaPropiedadContent() {
           <button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSubmitting ? (
               <>

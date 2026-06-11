@@ -110,7 +110,7 @@ export default function SeguroPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6 rounded-xl">
                       Cotizar seguro
                     </Button>
                   </Link>
@@ -157,7 +157,7 @@ export default function SeguroPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     {/* Policy Header */}
                     <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
@@ -169,14 +169,14 @@ export default function SeguroPage() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.8, type: "spring" }}
-                        className="px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-emerald-400 text-[10px] font-medium"
+                        className="px-2.5 py-1 bg-[#2C7A53]/20 border border-[#2C7A53]/30 rounded-full text-[#2C7A53] text-[10px] font-medium"
                       >
                         ✓ Activa
                       </motion.span>
                     </div>
 
                     {/* Property Info */}
-                    <div className="bg-white/[0.06] rounded-lg p-3 mb-4 border border-white/[0.06]">
+                    <div className="bg-white/[0.06] rounded-md p-3 mb-4 border border-white/[0.06]">
                       <p className="text-[10px] text-white/40 mb-1">Inmueble asegurado</p>
                       <p className="text-[13px] font-medium text-white">Apto 502, Ed. Palma Real</p>
                       <p className="text-[11px] text-white/50">Usaquén, Bogotá</p>
@@ -197,7 +197,7 @@ export default function SeguroPage() {
                           className="flex items-center justify-between"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center">
                               <item.icon className="w-3 h-3 text-white/60" />
                             </div>
                             <span className="text-[11px] text-white/60">{item.label}</span>
@@ -224,11 +224,11 @@ export default function SeguroPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
+                        <ShieldCheck className="w-4 h-4 text-[#2C7A53]" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">98% siniestros</p>
@@ -374,14 +374,14 @@ export default function SeguroPage() {
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
                     <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                        <TrendDown className="w-5 h-5 text-red-500" />
+                      <div className="w-10 h-10 rounded-full bg-[#F8EAE7] flex items-center justify-center">
+                        <TrendDown className="w-5 h-5 text-[#C4503B]" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Flujo de caja</p>
-                        <p className="text-[10px] text-red-500 font-medium">En riesgo</p>
+                        <p className="text-[10px] text-[#C4503B] font-medium">En riesgo</p>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -393,7 +393,7 @@ export default function SeguroPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-[10px]">
                           <span className="text-muted-foreground">{item.month}</span>
-                          <span className={item.status === 'paid' ? 'text-emerald-600' : 'text-red-500 font-medium'}>
+                          <span className={item.status === 'paid' ? 'text-[#2C7A53]' : 'text-[#C4503B] font-medium'}>
                             {item.amount}
                           </span>
                         </div>
@@ -402,7 +402,7 @@ export default function SeguroPage() {
                     <div className="h-px bg-neutral-100 my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Pérdida acumulada:</span>
-                      <span className="text-[12px] text-red-500 font-bold">-$5M</span>
+                      <span className="text-[12px] text-[#C4503B] font-bold">-$5M</span>
                     </div>
                   </div>
                 </div>
@@ -426,10 +426,10 @@ export default function SeguroPage() {
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Gastos inesperados</span>
-                      <Warning className="w-4 h-4 text-amber-500" />
+                      <Warning className="w-4 h-4 text-[#B7791F]" />
                     </div>
                     <div className="space-y-2">
                       {[
@@ -440,14 +440,14 @@ export default function SeguroPage() {
                       ].map((expense, i) => (
                         <div key={i} className="flex items-center justify-between text-[10px] p-1.5 bg-neutral-50 rounded">
                           <span className="text-muted-foreground">{expense.item}</span>
-                          <span className="text-red-500">{expense.amount}</span>
+                          <span className="text-[#C4503B]">{expense.amount}</span>
                         </div>
                       ))}
                     </div>
                     <div className="h-px bg-neutral-100 my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Total:</span>
-                      <span className="text-[14px] text-red-500 font-bold">$8.3M</span>
+                      <span className="text-[14px] text-[#C4503B] font-bold">$8.3M</span>
                     </div>
                   </div>
                 </div>
@@ -520,8 +520,8 @@ export default function SeguroPage() {
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
-                    <Gavel className="w-6 h-6 text-emerald-600" />
+                  <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
+                    <Gavel className="w-6 h-6 text-[#2C7A53]" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Gastos Legales
@@ -548,8 +548,8 @@ export default function SeguroPage() {
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
-                    <House className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] flex items-center justify-center mb-6">
+                    <House className="w-6 h-6 text-[#1A40FF]" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Daños al Inmueble
@@ -641,7 +641,7 @@ export default function SeguroPage() {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-[11px] font-mono font-normal text-foreground/40 uppercase tracking-wider">Paso {step.number}</span>
-                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
                       <step.icon className="w-5 h-5 text-foreground/60" />
                     </div>
                   </div>

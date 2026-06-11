@@ -119,7 +119,7 @@ export function TestimonialsSection() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.4, delay: offset * 0.1 }}
-                    className="bg-white rounded-2xl p-8 flex flex-col h-[300px]"
+                    className="bg-white rounded-xl p-8 flex flex-col h-[300px]"
                   >
                     {/* Quote icon */}
                     <div className="mb-4">
@@ -157,7 +157,7 @@ export function TestimonialsSection() {
                         </p>
                       </div>
                       {testimonial.result && (
-                        <div className="flex-shrink-0 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-md">
+                        <div className="flex-shrink-0 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-sm">
                           <span className="text-[9px] font-mono font-normal text-primary uppercase tracking-wide whitespace-nowrap">
                             {testimonial.result}
                           </span>

@@ -110,8 +110,8 @@ export function StepEmployment() {
 
       {/* Status-specific messages */}
       {employment.employmentStatus === 'unemployed' && (
-        <div className="p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
-          <p className="text-sm text-amber-800">
+        <div className="p-4 bg-[#F8F0E0]/50 border border-[#B7791F]/30 rounded-sm">
+          <p className="text-sm text-[#B7791F]">
             Estar desempleado no descalifica tu aplicación. Podrás incluir otras
             fuentes de ingreso en el siguiente paso.
           </p>
@@ -119,16 +119,16 @@ export function StepEmployment() {
       )}
 
       {employment.employmentStatus === 'retired' && (
-        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-sm">
-          <p className="text-sm text-blue-800">
+        <div className="p-4 bg-[#EEF1FF]/50 border border-[#1A40FF]/30 rounded-sm">
+          <p className="text-sm text-[#1A40FF]">
             Como pensionado, tu pensión mensual se registrará en el paso de ingresos.
           </p>
         </div>
       )}
 
       {employment.employmentStatus === 'student' && (
-        <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-sm">
-          <p className="text-sm text-blue-800">
+        <div className="p-4 bg-[#EEF1FF]/50 border border-[#1A40FF]/30 rounded-sm">
+          <p className="text-sm text-[#1A40FF]">
             Si eres estudiante, puedes registrar ingresos de trabajo de medio tiempo
             o apoyo familiar en el siguiente paso.
           </p>

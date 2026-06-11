@@ -61,7 +61,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
         </div>
         <Link
           href="/panel/inmobiliaria/ai"
-          className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors"
+          className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] transition-colors"
         >
           {locale === 'es' ? 'Ver toda' : 'View all'}
           <ArrowRight className="h-4 w-4" />
@@ -71,8 +71,8 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
       {/* Content */}
       {items.length === 0 ? (
         <div className="px-6 pb-6">
-          <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-10 px-6 text-center">
-            <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4 shadow-sm dark:shadow-none">
+          <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-10 px-6 text-center">
+            <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4">
               <Lightning className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -86,10 +86,10 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
             {items.map((activity) => {
               const AgentIcon = AGENT_ICONS[activity.agentId] || ShieldCheck;
               const levelCfg = activity.metadata?.level ? {
-                A: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-600 dark:text-emerald-400' },
-                B: { bg: 'bg-blue-50 dark:bg-blue-950/30', text: 'text-blue-600 dark:text-blue-400' },
-                C: { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-600 dark:text-amber-400' },
-                D: { bg: 'bg-red-50 dark:bg-red-950/30', text: 'text-red-600 dark:text-red-400' },
+                A: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]' },
+                B: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]' },
+                C: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]' },
+                D: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]' },
               }[activity.metadata.level] : null;
 
               const isEscalation = activity.type === 'escalation' || activity.status === 'pending';
@@ -99,9 +99,9 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   key={activity.id}
                   onClick={() => setSelectedActivity(activity)}
                   className={cn(
-                    'flex items-start gap-3 py-3.5 first:pt-1 -mx-2 px-2 rounded-lg transition-colors',
+                    'flex items-start gap-3 py-3.5 first:pt-1 -mx-2 px-2 rounded-md transition-colors',
                     'hover:bg-neutral-50 dark:hover:bg-white/[0.03] cursor-pointer',
-                    isEscalation && 'bg-amber-50/50 dark:bg-amber-950/10 hover:bg-amber-50 dark:hover:bg-amber-950/20',
+                    isEscalation && 'bg-[#F8F0E0]/50 dark:bg-[#B7791F]/10 hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20',
                   )}
                 >
                   {/* Agent icon with status dot */}
@@ -109,21 +109,21 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                     <div className={cn(
                       'rounded-full p-2',
                       activity.agentId === 'tenant-scoring'
-                        ? 'bg-indigo-50 dark:bg-indigo-950/30'
-                        : 'bg-violet-50 dark:bg-violet-950/30',
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                        : 'bg-neutral-100 dark:bg-neutral-800',
                     )}>
                       <AgentIcon weight="duotone" className={cn(
                         'h-4 w-4',
                         activity.agentId === 'tenant-scoring'
-                          ? 'text-indigo-500 dark:text-indigo-400'
-                          : 'text-violet-500 dark:text-violet-400',
+                          ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                          : 'text-neutral-600 dark:text-neutral-300',
                       )} />
                     </div>
                     <div className={cn(
                       'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#1a1a1c]',
-                      activity.status === 'success' && 'bg-emerald-500',
-                      activity.status === 'pending' && 'bg-amber-500',
-                      activity.status === 'failed' && 'bg-red-500',
+                      activity.status === 'success' && 'bg-[#2C7A53]',
+                      activity.status === 'pending' && 'bg-[#B7791F]',
+                      activity.status === 'failed' && 'bg-[#C4503B]',
                     )} />
                   </div>
 
@@ -134,7 +134,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                         {activity.title}
                       </p>
                       {isEscalation && (
-                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
                           {locale === 'es' ? 'Acción' : 'Action'}
                         </span>
                       )}
@@ -149,7 +149,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   {/* Score badge */}
                   {levelCfg && activity.metadata?.level && (
                     <span className={cn(
-                      'flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold',
+                      'flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold',
                       levelCfg.bg, levelCfg.text,
                     )}>
                       {activity.metadata.level}

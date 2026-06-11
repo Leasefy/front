@@ -89,7 +89,7 @@ export function CitiesSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10 transition-opacity duration-500" />
 
                 {/* Hover indigo tint */}
-                <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-700/10 transition-colors duration-500" />
+                <div className="absolute inset-0 bg-[#1A40FF]/0 group-hover:opacity-90/10 transition-colors duration-500" />
 
                 {/* Content at bottom */}
                 <div className="absolute bottom-0 left-0 right-0 p-6">

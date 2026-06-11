@@ -103,7 +103,7 @@ const CollapsiblePanel = React.forwardRef<
     >
       <div className={cn('flex flex-1 items-center gap-3', headerClassName)}>
         {icon && (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
             {icon}
           </span>
         )}
@@ -151,7 +151,7 @@ const CollapsibleCard = React.forwardRef<
       ref={ref}
       className={cn(variants[variant], className)}
       triggerClassName={cn(
-        variant === 'default' && 'rounded-t-lg',
+        variant === 'default' && 'rounded-t-md',
         triggerClassName
       )}
       contentClassName={cn(

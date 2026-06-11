@@ -119,7 +119,7 @@ function Modal({
         {/* Modal */}
         <div
           className={cn(
-            'relative bg-white dark:bg-[#141416] w-full rounded-3xl shadow-2xl flex flex-col',
+            'relative bg-white dark:bg-[#141416] w-full rounded-xl flex flex-col',
             sizeClasses[size]
           )}
           style={{ maxHeight: '85vh' }}
@@ -325,14 +325,14 @@ function PropietariosContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowIACapture(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground uppercase tracking-wide font-mono font-medium transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-medium transition-colors"
           >
-            <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+            <Sparkle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
             {t('inmobiliaria.propietarios.addOwnerIA')}
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors"
           >
             <UserPlus className="w-5 h-5" />
             {t('inmobiliaria.propietarios.addOwner')}
@@ -344,8 +344,8 @@ function PropietariosContent() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <Users className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -358,8 +358,8 @@ function PropietariosContent() {
 
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Buildings className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <Buildings className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
             </div>
             <div>
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -372,8 +372,8 @@ function PropietariosContent() {
 
         <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CurrencyDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <CurrencyDollar className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <div>
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">
@@ -387,29 +387,29 @@ function PropietariosContent() {
         <div className={cn(
           'p-4 rounded-xl border',
           stats.pendingCount > 0
-            ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
+            ? 'border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15'
             : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]'
         )}>
           <div className="flex items-center gap-3">
             <div className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center',
               stats.pendingCount > 0
-                ? 'bg-amber-100 dark:bg-amber-900/30'
-                : 'bg-emerald-100 dark:bg-emerald-900/30'
+                ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15'
+                : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
             )}>
               <Warning className={cn(
                 'w-5 h-5',
                 stats.pendingCount > 0
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-emerald-600 dark:text-emerald-400'
+                  ? 'text-[#B7791F] dark:text-[#D2992F]'
+                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
               )} />
             </div>
             <div>
               <p className={cn(
                 'text-2xl font-bold',
                 stats.pendingCount > 0
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-emerald-600 dark:text-emerald-400'
+                  ? 'text-[#B7791F] dark:text-[#D2992F]'
+                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
               )}>
                 {stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate')}
               </p>
@@ -430,13 +430,13 @@ function PropietariosContent() {
       >
         {/* View Toggle Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+          <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
             <button
               onClick={() => setViewMode('table')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'table'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -446,9 +446,9 @@ function PropietariosContent() {
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'grid'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -495,7 +495,7 @@ function PropietariosContent() {
                   setItemsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="px-2 py-1 rounded-md border border-border bg-background text-foreground text-sm"
+                className="px-2 py-1 rounded-sm border border-border bg-background text-foreground text-sm"
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -509,14 +509,14 @@ function PropietariosContent() {
               <button
                 onClick={() => handlePageChange(1)}
                 disabled={currentPage === 1}
-                className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <CaretDoubleLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <CaretLeft className="w-4 h-4" />
               </button>
@@ -538,7 +538,7 @@ function PropietariosContent() {
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       className={cn(
-                        'w-8 h-8 rounded-md text-sm font-medium transition-colors',
+                        'w-8 h-8 rounded-sm text-sm font-medium transition-colors',
                         currentPage === pageNum
                           ? 'bg-foreground text-background'
                           : 'text-muted-foreground hover:bg-muted'
@@ -553,14 +553,14 @@ function PropietariosContent() {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === paginationData.totalPages}
-                className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <CaretRight className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handlePageChange(paginationData.totalPages)}
                 disabled={currentPage === paginationData.totalPages}
-                className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <CaretDoubleRight className="w-4 h-4" />
               </button>
@@ -626,8 +626,8 @@ function PropietariosContent() {
               {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
             </p>
             {deletingPropietario.propertyCount > 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <div className="p-3 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+                <div className="flex items-center gap-2 text-[#B7791F] dark:text-[#D2992F]">
                   <Warning className="w-4 h-4" />
                   <p className="text-sm">
                     {t('inmobiliaria.propietarios.deleteWarningProperties', { count: deletingPropietario.propertyCount })}
@@ -646,7 +646,7 @@ function PropietariosContent() {
               <button
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-xl bg-[#C4503B] hover:bg-[#C4503B] text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('inmobiliaria.common.delete')}
               </button>

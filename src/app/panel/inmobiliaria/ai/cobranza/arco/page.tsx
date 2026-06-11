@@ -34,10 +34,10 @@ import type { ArcoRequestRow } from '@/lib/hooks/cobranza/use-arco-requests'
 type TabValue = 'all' | 'acceso' | 'rectificacion' | 'cancelacion' | 'oposicion'
 
 const TYPE_COLORS: Record<ArcoRequestRow['type'], string> = {
-  acceso: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/30',
-  rectificacion: 'text-teal-700 bg-teal-50 dark:bg-teal-950/20',
-  cancelacion: 'text-amber-700 bg-amber-50 dark:bg-amber-950/20',
-  oposicion: 'text-rose-700 bg-rose-50 dark:bg-rose-950/20',
+  acceso: 'text-[#1A40FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  rectificacion: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800',
+  cancelacion: 'text-[#B7791F] bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+  oposicion: 'text-[#C4503B] bg-[#F8EAE7] dark:bg-[#C4503B]/15',
 }
 
 function KpiSkeleton() {
@@ -161,7 +161,7 @@ function RequestsTable({ requests }: RequestsTableProps) {
                 <Link href={`/panel/inmobiliaria/ai/cobranza/arco/${row.id}`}>
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-neutral-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-colors"
+                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-sm text-neutral-500 hover:text-[#1A40FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
                     aria-label={t('inmobiliaria.ai.arco.actions.view', { name: row.requesterName })}
                   >
                     <ArrowSquareOut className="h-4 w-4" weight="regular" />
@@ -236,7 +236,7 @@ export default function ArcoInboxPage() {
         <button
           type="button"
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
+          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition font-medium"
           aria-label={t('common.refresh')}
         >
           {t('common.refresh')}
@@ -270,19 +270,19 @@ export default function ArcoInboxPage() {
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<CheckCircle className="h-5 w-5 text-emerald-500" weight="duotone" />}
+          icon={<CheckCircle className="h-5 w-5 text-[#2C7A53]" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.onTime')}
           value={kpis?.onTime}
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<Warning className="h-5 w-5 text-rose-500" weight="duotone" />}
+          icon={<Warning className="h-5 w-5 text-[#C4503B]" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.overdue')}
           value={kpis?.overdue}
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<CheckCircle className="h-5 w-5 text-teal-500" weight="duotone" />}
+          icon={<CheckCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.resolved30d')}
           value={kpis?.resolvedLast30d}
           isLoading={isLoading && !data}
@@ -291,19 +291,19 @@ export default function ArcoInboxPage() {
 
       {/* Type-group Tabs + Table */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
-        <TabsList className="flex flex-wrap gap-1 h-auto">
+        <TabsList variant="underline" className="flex-wrap">
           {(['all', 'acceso', 'rectificacion', 'cancelacion', 'oposicion'] as TabValue[]).map((tab) => (
             <TabsTrigger
               key={tab}
               value={tab}
-              className="flex items-center gap-1.5 border-b-2 border-transparent data-[state=active]:border-indigo-500"
+              className="inline-flex items-center gap-1.5"
             >
               {t(`inmobiliaria.ai.arco.tab.${tab}`)}
               <span
-                className={`rounded-full px-1.5 py-0.5 text-xs font-mono ${
+                className={`rounded-full px-1.5 py-0.5 font-mono text-[11px] tabular-nums ${
                   hasOverdue[tab]
-                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
-                    : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
+                    ? 'bg-danger-soft text-danger'
+                    : 'bg-surface-muted text-fg-muted'
                 }`}
                 // a11y (XR-06): color encodes overdue state — surface it via
                 // aria-label so screen-reader users get the same signal.

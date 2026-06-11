@@ -229,7 +229,7 @@ function RegistroContent() {
   if (invitationError || !invitation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-        <div className="max-w-sm w-full bg-white dark:bg-card rounded-2xl border border-border p-8 text-center">
+        <div className="max-w-sm w-full bg-white dark:bg-card rounded-xl border border-border p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <WarningCircle className="w-7 h-7 text-destructive" />
           </div>
@@ -247,10 +247,10 @@ function RegistroContent() {
       <div className="max-w-md w-full">
 
         {/* Invitation card */}
-        <div className="bg-white dark:bg-card rounded-2xl border border-border p-6 mb-6">
+        <div className="bg-white dark:bg-card rounded-xl border border-border p-6 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-              <Buildings className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+              <Buildings className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">Invitación de</p>
@@ -270,19 +270,19 @@ function RegistroContent() {
                 <p className="text-xs text-muted-foreground">por {invitation.invitedBy}</p>
               )}
             </div>
-            {!isExpired && <CheckCircle className="w-5 h-5 text-emerald-500 ml-auto shrink-0" />}
+            {!isExpired && <CheckCircle className="w-5 h-5 text-[#2C7A53] ml-auto shrink-0" />}
           </div>
 
           {isExpired && (
-            <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2">
-              <WarningCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <p className="text-xs text-amber-700 dark:text-amber-300">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
+            <div className="mt-3 p-3 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 flex items-center gap-2">
+              <WarningCircle className="w-4 h-4 text-[#B7791F] shrink-0" />
+              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
             </div>
           )}
         </div>
 
         {!isExpired && (
-          <div className="bg-white dark:bg-card rounded-2xl border border-border p-6">
+          <div className="bg-white dark:bg-card rounded-xl border border-border p-6">
 
             {/* ── Step: Complete profile (Supabase session exists, no backend profile) ── */}
             {needsOnboarding ? (
@@ -364,8 +364,8 @@ function RegistroContent() {
                 {confirmed ? (
                   /* Email confirmation pending — user just needs to click the link */
                   <div className="py-4 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
-                      <Envelope className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-14 h-14 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto">
+                      <Envelope className="w-7 h-7 text-[#2C7A53] dark:text-[#3EAE70]" />
                     </div>
                     <div>
                       <p className="text-[15px] font-semibold text-foreground">Revisá tu email</p>

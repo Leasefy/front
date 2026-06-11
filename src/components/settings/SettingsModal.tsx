@@ -46,7 +46,7 @@ export function SettingsModal({
       />
       {/* Modal panel */}
       <div
-        className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-3xl shadow-2xl"
+        className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-xl"
         data-lenis-prevent
       >
         {/* Header */}

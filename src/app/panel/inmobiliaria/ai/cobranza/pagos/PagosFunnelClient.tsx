@@ -55,27 +55,27 @@ function formatCop(value: number | null | undefined): string {
 
 function chipClasses(active: boolean): string {
   return active
-    ? 'bg-violet-600 text-white border-violet-600'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-violet-400'
+    ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
+    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]'
 }
 
 function statusBadgeClasses(status: Status): string {
   switch (status) {
     case 'approved':
-      return 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-800'
+      return 'bg-[#2C7A53] text-[#2C7A53] ring-1 ring-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53] dark:ring-[#2C7A53]'
     case 'pending':
-      return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800'
+      return 'bg-[#B7791F] text-[#B7791F] ring-1 ring-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:ring-[#B7791F]'
     case 'declined':
-      return 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-400 dark:ring-red-800'
+      return 'bg-[#C4503B] text-[#C4503B] ring-1 ring-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B] dark:ring-[#C4503B]'
     case 'disbursed':
-      return 'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-800'
+      return 'bg-[#6B6B6B] text-[#6B6B6B] ring-1 ring-[#6B6B6B] dark:bg-[#6B6B6B]/30 dark:text-[#6B6B6B] dark:ring-[#6B6B6B]'
   }
 }
 
 function providerBadgeClasses(provider: Provider): string {
   return provider === 'wompi'
-    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-800'
-    : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:ring-purple-800'
+    ? 'bg-[#1A40FF] text-[#1A40FF] ring-1 ring-[#1A40FF] dark:bg-[#1A40FF]/30 dark:text-[#1A40FF] dark:ring-[#1A40FF]'
+    : 'bg-[#6B6B6B] text-[#6B6B6B] ring-1 ring-[#6B6B6B] dark:bg-[#6B6B6B]/30 dark:text-[#6B6B6B] dark:ring-[#6B6B6B]'
 }
 
 function KpiCard({
@@ -92,7 +92,7 @@ function KpiCard({
   return (
     <div
       data-testid={testId}
-      className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3"
+      className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3"
     >
       <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
         {label}
@@ -337,7 +337,7 @@ export default function PagosFunnelClient() {
         <button
           type="button"
           onClick={clearFilters}
-          className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+          className="text-xs font-medium text-[#6B6B6B] dark:text-[#6B6B6B] hover:underline"
         >
           {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
         </button>
@@ -356,7 +356,7 @@ export default function PagosFunnelClient() {
           value={sort}
           onChange={(e) => setSort(e.target.value as PaymentsFunnelSort)}
           data-testid="pagos-sort-select"
-          className="text-xs px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
+          className="text-xs px-2 py-1 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
         >
           <option value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</option>
           <option value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</option>
@@ -368,14 +368,14 @@ export default function PagosFunnelClient() {
 
       {/* Error banner */}
       {error && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 mb-4 flex items-center justify-between">
-          <p className="text-sm text-red-700 dark:text-red-400">
+        <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 mb-4 flex items-center justify-between">
+          <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
             {t('inmobiliaria.ai.cobranza.pagos.error')}: {error}
           </p>
           <button
             type="button"
             onClick={() => void refetch()}
-            className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+            className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
           >
             {t('inmobiliaria.ai.cobranza.pagos.errorRetry')}
           </button>
@@ -383,7 +383,7 @@ export default function PagosFunnelClient() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+      <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
           <thead className="bg-neutral-50 dark:bg-neutral-950/50">
             <tr>
@@ -391,7 +391,7 @@ export default function PagosFunnelClient() {
                 {t('inmobiliaria.ai.cobranza.pagos.columns.nombre')}
               </th>
               <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-violet-600"
+                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-[#6B6B6B]"
                 onClick={() => setSort('amount')}
                 data-testid="pagos-th-monto"
               >
@@ -408,7 +408,7 @@ export default function PagosFunnelClient() {
                 {t('inmobiliaria.ai.cobranza.pagos.columns.status')}
               </th>
               <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-violet-600"
+                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-[#6B6B6B]"
                 onClick={() => setSort('created_at')}
                 data-testid="pagos-th-fecha"
               >
@@ -450,7 +450,7 @@ export default function PagosFunnelClient() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleRowClick(row)
                   }}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
                 >
                   <td className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
                     <Mask field="cedula" value={row.debtor.fullName} />
@@ -484,7 +484,7 @@ export default function PagosFunnelClient() {
                       {isPending && (
                         <span
                           data-testid={`pagos-pending-pill-${row.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:ring-amber-700"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#B7791F] text-[#B7791F] ring-1 ring-[#B7791F] dark:bg-[#B7791F]/40 dark:text-[#B7791F] dark:ring-[#B7791F]"
                         >
                           <span aria-hidden="true">⚠</span>
                           {t('inmobiliaria.ai.cobranza.pagos.pill.disbursementPending')}

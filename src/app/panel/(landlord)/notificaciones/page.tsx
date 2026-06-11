@@ -97,7 +97,7 @@ function NotificationSkeleton() {
 
       {/* Action skeleton */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-neutral-200 dark:bg-neutral-700" />
+        <div className="w-8 h-8 rounded-md bg-neutral-200 dark:bg-neutral-700" />
         <div className="w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700" />
       </div>
     </div>
@@ -154,7 +154,7 @@ export default function NotificacionesPage() {
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
             >
               <Check className="w-4 h-4" />
               {t('landlord.notifications.markAllRead')}
@@ -185,9 +185,9 @@ export default function NotificacionesPage() {
             key={f.id}
             onClick={() => setFilter(f.id as FilterType)}
             className={cn(
-              'px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-2',
+              'px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex items-center gap-2',
               filter === f.id
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                ? 'bg-[#1A40FF] text-white'
                 : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
             )}
           >
@@ -198,7 +198,7 @@ export default function NotificacionesPage() {
                   'text-xs px-1.5 py-0.5 rounded-full',
                   filter === f.id
                     ? 'bg-white/20 text-white'
-                    : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                    : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                 )}
               >
                 {f.count}
@@ -250,7 +250,7 @@ export default function NotificacionesPage() {
                     'flex items-start gap-4 px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer group',
                     index !== filteredNotifications.length - 1 &&
                       'border-b border-neutral-100 dark:border-neutral-800',
-                    !notification.read && 'bg-indigo-50/50 dark:bg-indigo-600/5'
+                    !notification.read && 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/5'
                   )}
                 >
                   {/* Icon */}
@@ -313,7 +313,7 @@ export default function NotificacionesPage() {
                             router.push(notification.actionUrl);
                           }
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-700/20 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-md hover:bg-[#EEF1FF] dark:hover:opacity-90/20 transition-colors"
                       >
                         {notification.actionLabel}
                         <ArrowRight className="w-3 h-3" />
@@ -329,7 +329,7 @@ export default function NotificacionesPage() {
                     {!notification.read && (
                       <button
                         onClick={() => markAsRead(notification.id)}
-                        className="p-2 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        className="p-2 text-neutral-400 hover:text-[#2C7A53] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/10 rounded-md transition-colors"
                         title={t('landlord.notifications.markAsRead')}
                       >
                         <Check className="w-4 h-4" />
@@ -337,7 +337,7 @@ export default function NotificacionesPage() {
                     )}
                     <button
                       onClick={() => deleteNotification(notification.id)}
-                      className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-2 text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/10 rounded-md transition-colors"
                       title={t('landlord.notifications.deleteNotification')}
                     >
                       <TrashSimple className="w-4 h-4" />
@@ -347,7 +347,7 @@ export default function NotificacionesPage() {
                   {/* Unread indicator and arrow */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {!notification.read && (
-                      <div className="w-2 h-2 bg-indigo-600 rounded-full" />
+                      <div className="w-2 h-2 bg-[#1A40FF] rounded-full" />
                     )}
                     <CaretRight className="w-4 h-4 text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
                   </div>

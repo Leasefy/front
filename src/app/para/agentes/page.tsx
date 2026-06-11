@@ -50,7 +50,7 @@ function LinkGeneratorVisual() {
     <div className="relative w-full h-full overflow-hidden px-6 py-4">
       {/* Animated glow effects */}
       <motion.div
-        className="absolute top-[20%] right-[10%] w-[140px] h-[140px] bg-emerald-500/[0.08] rounded-full blur-[60px] pointer-events-none"
+        className="absolute top-[20%] right-[10%] w-[140px] h-[140px] bg-[#2C7A53]/[0.08] rounded-full blur-[60px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.08, 0.14, 0.08],
@@ -58,7 +58,7 @@ function LinkGeneratorVisual() {
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute bottom-[20%] left-[15%] w-[100px] h-[100px] bg-teal-500/[0.06] rounded-full blur-[50px] pointer-events-none"
+        className="absolute bottom-[20%] left-[15%] w-[100px] h-[100px] bg-neutral-500/[0.06] rounded-full blur-[50px] pointer-events-none"
         animate={{
           scale: [1, 1.4, 1],
           opacity: [0.06, 0.1, 0.06],
@@ -78,7 +78,7 @@ function LinkGeneratorVisual() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <motion.div
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2C7A53]/20 to-[#6B6B6B]/20 border border-[#2C7A53]/30 flex items-center justify-center"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 15px 3px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
@@ -89,7 +89,7 @@ function LinkGeneratorVisual() {
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
-                  <LinkIcon className="w-3.5 h-3.5 text-emerald-400" />
+                  <LinkIcon className="w-3.5 h-3.5 text-[#2C7A53]" />
                 </motion.div>
               </motion.div>
               <div>
@@ -101,7 +101,7 @@ function LinkGeneratorVisual() {
               initial={{ scale: 0, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.5, type: "spring", stiffness: 400, damping: 12 }}
-              className="flex items-center gap-1 bg-emerald-500/15 text-emerald-400 text-[8px] font-bold px-2 py-1 rounded-full border border-emerald-500/20"
+              className="flex items-center gap-1 bg-[#2C7A53]/15 text-[#2C7A53] text-[8px] font-bold px-2 py-1 rounded-full border border-[#2C7A53]/30"
             >
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
@@ -113,7 +113,7 @@ function LinkGeneratorVisual() {
             </motion.span>
           </div>
           <motion.div
-            className="bg-white/[0.04] rounded-lg px-3 py-2 flex items-center gap-2 relative overflow-hidden"
+            className="bg-white/[0.04] rounded-md px-3 py-2 flex items-center gap-2 relative overflow-hidden"
             whileHover={{ backgroundColor: "rgba(255,255,255,0.06)" }}
           >
             {/* Shimmer effect */}
@@ -126,7 +126,7 @@ function LinkGeneratorVisual() {
             <motion.button
               whileHover={{ scale: 1.15, backgroundColor: "rgba(255,255,255,0.15)" }}
               whileTap={{ scale: 0.9 }}
-              className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center relative z-10"
+              className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center relative z-10"
             >
               <Copy className="w-3 h-3 text-white/60" />
             </motion.button>
@@ -146,8 +146,8 @@ function LinkGeneratorVisual() {
           <div className="flex gap-2">
             {[
               { label: 'WhatsApp', color: 'from-[#25D366]/20 to-[#25D366]/10', border: 'border-[#25D366]/20', text: 'text-[#25D366]', hoverGlow: 'rgba(37,211,102,0.3)' },
-              { label: 'Email', color: 'from-blue-500/20 to-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', hoverGlow: 'rgba(59,130,246,0.3)' },
-              { label: 'SMS', color: 'from-violet-500/20 to-violet-500/10', border: 'border-violet-500/20', text: 'text-violet-400', hoverGlow: 'rgba(139,92,246,0.3)' },
+              { label: 'Email', color: 'from-[#1A40FF]/20 to-[#1A40FF]/10', border: 'border-[#1A40FF]/30', text: 'text-[#1A40FF]', hoverGlow: 'rgba(59,130,246,0.3)' },
+              { label: 'SMS', color: 'from-[#6B6B6B]/20 to-[#6B6B6B]/10', border: 'border-neutral-200 dark:border-neutral-700/20', text: 'text-neutral-600 dark:text-neutral-300', hoverGlow: 'rgba(139,92,246,0.3)' },
             ].map((opt, i) => (
               <motion.div
                 key={opt.label}
@@ -160,7 +160,7 @@ function LinkGeneratorVisual() {
                   boxShadow: `0 8px 20px ${opt.hoverGlow}`
                 }}
                 whileTap={{ scale: 0.95 }}
-                className={`flex-1 bg-gradient-to-br ${opt.color} border ${opt.border} rounded-lg py-2.5 flex items-center justify-center cursor-pointer`}
+                className={`flex-1 bg-gradient-to-br ${opt.color} border ${opt.border} rounded-md py-2.5 flex items-center justify-center cursor-pointer`}
               >
                 <span className={`text-[9px] font-medium ${opt.text}`}>{opt.label}</span>
               </motion.div>
@@ -171,8 +171,8 @@ function LinkGeneratorVisual() {
         {/* Stats with enhanced animations */}
         <div className="mt-auto space-y-2">
           {[
-            { label: "Visitas al link", value: "24", bar: 80, color: "bg-emerald-400", glow: "bg-emerald-400/40" },
-            { label: "Aplicaciones", value: "8", bar: 60, color: "bg-teal-400", glow: "bg-teal-400/40" },
+            { label: "Visitas al link", value: "24", bar: 80, color: "bg-[#2C7A53]", glow: "bg-[#2C7A53]/40" },
+            { label: "Aplicaciones", value: "8", bar: 60, color: "bg-[#6B6B6B]", glow: "bg-[#6B6B6B]/40" },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -252,8 +252,8 @@ function EvaluationReportVisual() {
             />
             <defs>
               <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#10b981" />
-                <stop offset="100%" stopColor="#34d399" />
+                <stop offset="0%" stopColor="#1A40FF" />
+                <stop offset="100%" stopColor="#8A9CFF" />
               </linearGradient>
             </defs>
           </svg>
@@ -288,7 +288,7 @@ function EvaluationReportVisual() {
               initial={{ scale: 0, rotate: -15 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.8, type: "spring", stiffness: 400, damping: 12 }}
-              className="flex items-center gap-0.5 bg-emerald-100 text-emerald-700 text-[7px] font-bold px-1.5 py-0.5 rounded-full"
+              className="flex items-center gap-0.5 bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] text-[7px] font-bold px-1.5 py-0.5 rounded-full"
             >
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
@@ -313,10 +313,10 @@ function EvaluationReportVisual() {
       {/* Metrics bars with enhanced animations */}
       <div className="space-y-2.5">
         {[
-          { label: "Capacidad de pago", score: 92, colorClass: "bg-emerald-500", glowClass: "bg-emerald-500/30" },
-          { label: "Historial crediticio", score: 88, colorClass: "bg-blue-500", glowClass: "bg-blue-500/30" },
-          { label: "Estabilidad laboral", score: 85, colorClass: "bg-violet-500", glowClass: "bg-violet-500/30" },
-          { label: "Referencias", score: 90, colorClass: "bg-amber-500", glowClass: "bg-amber-500/30" },
+          { label: "Capacidad de pago", score: 92, colorClass: "bg-[#2C7A53]", glowClass: "bg-[#2C7A53]/30" },
+          { label: "Historial crediticio", score: 88, colorClass: "bg-[#1A40FF]", glowClass: "bg-[#1A40FF]/30" },
+          { label: "Estabilidad laboral", score: 85, colorClass: "bg-neutral-500", glowClass: "bg-neutral-500/30" },
+          { label: "Referencias", score: 90, colorClass: "bg-[#B7791F]", glowClass: "bg-[#B7791F]/30" },
         ].map((m, i) => (
           <motion.div
             key={m.label}
@@ -362,7 +362,7 @@ function EvaluationReportVisual() {
       >
         <div className="flex items-center gap-1.5">
           <motion.div
-            className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center"
+            className="w-5 h-5 rounded-full bg-[#E8F3EC] flex items-center justify-center"
             animate={{
               boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 10px 3px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
             }}
@@ -372,10 +372,10 @@ function EvaluationReportVisual() {
               animate={{ scale: [1, 1.15, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
-              <Shield className="w-2.5 h-2.5 text-emerald-600" />
+              <Shield className="w-2.5 h-2.5 text-[#2C7A53]" />
             </motion.div>
           </motion.div>
-          <span className="text-[9px] text-emerald-700 font-medium">Bajo riesgo · Recomendado</span>
+          <span className="text-[9px] text-[#2C7A53] font-medium">Bajo riesgo · Recomendado</span>
         </div>
         <motion.span
           whileHover={{ scale: 1.05, color: "hsl(var(--primary))" }}
@@ -456,7 +456,7 @@ function MobileAppVisual() {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 120 }}
             whileHover={{ x: 4, backgroundColor: notif.isNew ? "rgba(var(--primary),0.06)" : "rgba(0,0,0,0.03)" }}
-            className={`flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${notif.isNew ? 'bg-primary/[0.04] border-l-2 border-primary' : 'bg-muted/50'}`}
+            className={`flex items-start gap-3 p-2.5 rounded-md cursor-pointer transition-colors ${notif.isNew ? 'bg-primary/[0.04] border-l-2 border-primary' : 'bg-muted/50'}`}
           >
             <motion.span
               className="text-base flex-shrink-0"
@@ -535,7 +535,7 @@ function CommissionVisual() {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
             whileHover={{ scale: 1.1 }}
-            className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer"
+            className="text-[9px] font-bold text-[#2C7A53] bg-[#E8F3EC] px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer"
           >
             <motion.div
               animate={{ y: [0, -2, 0] }}
@@ -619,17 +619,17 @@ function CommissionVisual() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               transition={{ delay: 0.6 + i * 0.12, type: "spring", stiffness: 120 }}
               whileHover={{ x: 4, backgroundColor: "rgba(0,0,0,0.03)" }}
-              className="flex items-center justify-between p-2 bg-muted/50 rounded-lg cursor-pointer transition-colors"
+              className="flex items-center justify-between p-2 bg-muted/50 rounded-md cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-2">
                 <motion.div
-                  className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center"
+                  className="w-6 h-6 rounded-md bg-[#E8F3EC] flex items-center justify-center"
                   whileHover={{ scale: 1.1 }}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.7 + i * 0.12, type: "spring", stiffness: 300 }}
                 >
-                  <Check className="w-3 h-3 text-emerald-600" />
+                  <Check className="w-3 h-3 text-[#2C7A53]" />
                 </motion.div>
                 <div>
                   <span className="text-[10px] font-medium text-foreground">{deal.property}</span>
@@ -640,7 +640,7 @@ function CommissionVisual() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8 + i * 0.12 }}
-                className="text-[11px] font-bold text-emerald-600"
+                className="text-[11px] font-bold text-[#2C7A53]"
               >
                 {deal.amount}
               </motion.span>
@@ -716,7 +716,7 @@ export default function AgentesPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth?role=agent">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6 rounded-xl">
                       Crear cuenta gratis
                     </Button>
                   </Link>
@@ -763,7 +763,7 @@ export default function AgentesPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-6 shadow-2xl"
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-6"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -787,7 +787,7 @@ export default function AgentesPage() {
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.8, type: "spring", stiffness: 400 }}
                       >
-                        <SealCheck className="w-5 h-5 text-emerald-400 ml-auto" />
+                        <SealCheck className="w-5 h-5 text-[#2C7A53] ml-auto" />
                       </motion.div>
                     </motion.div>
 
@@ -800,7 +800,7 @@ export default function AgentesPage() {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-white/60 text-sm">Comisiones este mes</span>
-                          <span className="text-emerald-400 text-xs font-medium">+45%</span>
+                          <span className="text-[#2C7A53] text-xs font-medium">+45%</span>
                         </div>
                         <p className="text-3xl font-bold text-white">$8.900.000</p>
                       </motion.div>
@@ -842,11 +842,11 @@ export default function AgentesPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-xl p-4 border border-border"
+                    className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                        <Check className="w-5 h-5 text-emerald-600" />
+                      <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] flex items-center justify-center">
+                        <Check className="w-5 h-5 text-[#2C7A53]" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">Evaluación lista</p>
@@ -965,7 +965,7 @@ export default function AgentesPage() {
                     { name: 'Nicolás Ruiz', initials: 'CR', status: 'Esperando', progress: 60 },
                     { name: 'Ana Pérez', initials: 'AP', status: 'Perdido', progress: 20 },
                   ].map((candidate, i) => (
-                    <div key={candidate.name} className="flex items-center gap-2.5 bg-white rounded-lg p-2.5 border border-border/50">
+                    <div key={candidate.name} className="flex items-center gap-2.5 bg-white rounded-md p-2.5 border border-border/50">
                       <div className="w-8 h-8 rounded-full bg-sand-100 flex items-center justify-center text-[10px] font-semibold text-sand-700 flex-shrink-0">
                         {candidate.initials}
                       </div>
@@ -1073,7 +1073,7 @@ export default function AgentesPage() {
                         <span className="text-[10px] text-white/70">Apto 302</span>
                         <span className="text-[8px] text-white/50 ml-auto bg-white/10 px-1.5 py-0.5 rounded">Activo</span>
                       </div>
-                      <div className="bg-white/5 rounded-lg px-2 py-1.5 mb-3">
+                      <div className="bg-white/5 rounded-md px-2 py-1.5 mb-3">
                         <code className="text-[8px] text-white/40 font-mono">arriendo.co/ch302</code>
                       </div>
                       <div className="space-y-1.5">
@@ -1117,13 +1117,13 @@ export default function AgentesPage() {
                     <div className="relative">
                       <svg viewBox="0 0 60 60" className="w-[60px] h-[60px]">
                         <circle cx="30" cy="30" r="24" fill="none" stroke="#f5f5f4" strokeWidth="5" />
-                        <circle cx="30" cy="30" r="24" fill="none" stroke="#10b981" strokeWidth="5" strokeLinecap="round" strokeDasharray="151" strokeDashoffset={151 * (1 - 0.91)} transform="rotate(-90 30 30)" />
+                        <circle cx="30" cy="30" r="24" fill="none" stroke="#1A40FF" strokeWidth="5" strokeLinecap="round" strokeDasharray="151" strokeDashoffset={151 * (1 - 0.91)} transform="rotate(-90 30 30)" />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-lg font-bold text-foreground">91</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-emerald-600 font-medium mt-1">Bajo riesgo</span>
+                    <span className="text-[10px] text-[#2C7A53] font-medium mt-1">Bajo riesgo</span>
                   </div>
                 </div>
               </motion.div>
@@ -1153,7 +1153,7 @@ export default function AgentesPage() {
                         { text: 'Contrato firmado', time: '1h' },
                         { text: 'Reporte listo', time: '2h' },
                       ].map((notif, i) => (
-                        <div key={i} className="flex items-center gap-2 bg-muted rounded-lg px-2.5 py-2">
+                        <div key={i} className="flex items-center gap-2 bg-muted rounded-md px-2.5 py-2">
                           <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-foreground' : 'bg-muted-foreground/30'}`} />
                           <span className="text-[10px] text-foreground flex-1 truncate">{notif.text}</span>
                           <span className="text-[9px] text-muted-foreground">{notif.time}</span>
@@ -1197,7 +1197,7 @@ export default function AgentesPage() {
                     <div className="bg-white rounded-xl p-3">
                       <div className="flex items-baseline gap-1.5 mb-1">
                         <span className="text-xl font-bold text-foreground">$8.9M</span>
-                        <span className="text-[10px] text-emerald-600 font-medium">+23%</span>
+                        <span className="text-[10px] text-[#2C7A53] font-medium">+23%</span>
                       </div>
                       <span className="text-[9px] text-muted-foreground">Comisiones este mes</span>
                       <div className="mt-3">
@@ -1233,7 +1233,7 @@ export default function AgentesPage() {
                   </div>
                   {/* Visual: Document preview */}
                   <div className="hidden sm:flex flex-col items-center justify-center w-[70px]">
-                    <div className="w-14 h-[72px] bg-muted rounded-lg border border-border relative">
+                    <div className="w-14 h-[72px] bg-muted rounded-md border border-border relative">
                       <div className="absolute top-2 left-2 right-2 space-y-1">
                         <div className="h-1 bg-foreground/10 rounded w-full" />
                         <div className="h-1 bg-foreground/10 rounded w-3/4" />
@@ -1241,7 +1241,7 @@ export default function AgentesPage() {
                         <div className="h-1 bg-foreground/10 rounded w-1/2" />
                       </div>
                       <div className="absolute bottom-2 right-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <Check className="w-3.5 h-3.5 text-[#2C7A53]" />
                       </div>
                     </div>
                     <span className="text-[9px] text-muted-foreground mt-1.5">Firmado</span>
@@ -1271,13 +1271,13 @@ export default function AgentesPage() {
                     <div className="relative">
                       <svg viewBox="0 0 56 56" className="w-[52px] h-[52px]">
                         <circle cx="28" cy="28" r="22" fill="none" stroke="#f5f5f4" strokeWidth="4" />
-                        <circle cx="28" cy="28" r="22" fill="none" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeDasharray="138" strokeDashoffset={138 * (1 - 0.87)} transform="rotate(-90 28 28)" />
+                        <circle cx="28" cy="28" r="22" fill="none" stroke="#1A40FF" strokeWidth="4" strokeLinecap="round" strokeDasharray="138" strokeDashoffset={138 * (1 - 0.87)} transform="rotate(-90 28 28)" />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-base font-bold text-foreground">87</span>
                       </div>
                     </div>
-                    <span className="text-[9px] text-emerald-600 font-medium mt-1">Aprobado</span>
+                    <span className="text-[9px] text-[#2C7A53] font-medium mt-1">Aprobado</span>
                   </div>
                 </div>
               </motion.div>

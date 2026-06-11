@@ -98,7 +98,7 @@ export function EscalationAssignDropdown({
         aria-labelledby="assign-dropdown-title"
         className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center md:p-4 animate-in slide-in-from-bottom md:fade-in duration-300"
       >
-        <div className="bg-card text-foreground shadow-2xl rounded-t-2xl md:rounded-xl w-full md:max-w-md max-h-[80vh] flex flex-col">
+        <div className="bg-card text-foreground rounded-t-xl md:rounded-xl w-full md:max-w-md max-h-[80vh] flex flex-col">
           <div className="flex-none flex items-center justify-between border-b border-border px-5 py-4">
             <h2
               id="assign-dropdown-title"
@@ -110,7 +110,7 @@ export function EscalationAssignDropdown({
               type="button"
               onClick={onClose}
               aria-label={t('inmobiliaria.ai.cobranza.escalaciones.actions.cancel')}
-              className="rounded-md p-1 hover:bg-muted transition"
+              className="rounded-sm p-1 hover:bg-muted transition"
             >
               <X className="w-5 h-5" aria-hidden="true" />
             </button>

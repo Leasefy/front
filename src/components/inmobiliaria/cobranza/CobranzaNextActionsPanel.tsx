@@ -12,9 +12,9 @@ interface CobranzaNextActionsPanelProps {
 }
 
 function ChannelIcon({ channel }: { channel: 'voice' | 'whatsapp' | 'email' }) {
-  if (channel === 'voice') return <Phone size={14} className="text-violet-500" />
-  if (channel === 'whatsapp') return <ChatTeardropDots size={14} className="text-green-500" />
-  return <EnvelopeSimple size={14} className="text-indigo-500" />
+  if (channel === 'voice') return <Phone size={14} className="text-neutral-600 dark:text-neutral-300" />
+  if (channel === 'whatsapp') return <ChatTeardropDots size={14} className="text-[#2C7A53]" />
+  return <EnvelopeSimple size={14} className="text-[#1A40FF]" />
 }
 
 function formatTime(iso: string): string {
@@ -53,7 +53,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
         disabled
         aria-disabled="true"
         title={t('inmobiliaria.ai.cobranza.overview.nextActions.configCtaTooltip')}
-        className="px-4 py-2 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed opacity-60"
+        className="px-4 py-2 rounded-md text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed opacity-60"
       >
         {t('inmobiliaria.ai.cobranza.overview.nextActions.configCta')}
       </button>
@@ -63,7 +63,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
   const listContent = isLoading ? (
     <div className="space-y-2 p-5">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+        <div key={i} className="h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
       ))}
     </div>
   ) : top10.length === 0 ? (

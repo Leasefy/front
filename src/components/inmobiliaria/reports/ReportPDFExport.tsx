@@ -27,7 +27,7 @@ export function ReportPDFExport({ title }: ReportPDFExportProps) {
     <>
       <button
         onClick={handleExport}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-neutral-100 dark:bg-neutral-800 text-foreground hover:bg-neutral-200 dark:hover:bg-neutral-700 print:hidden"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors bg-neutral-100 dark:bg-neutral-800 text-foreground hover:bg-neutral-200 dark:hover:bg-neutral-700 print:hidden"
       >
         <FileText className="w-4 h-4" />
         {locale === 'es' ? 'Exportar PDF' : 'Export PDF'}
@@ -65,8 +65,8 @@ export function ReportPDFExport({ title }: ReportPDFExportProps) {
 
           /* Remove shadows and decorative borders */
           .rounded-xl,
-          .rounded-lg,
-          .rounded-2xl {
+          .rounded-md,
+          .rounded-xl {
             box-shadow: none !important;
           }
 

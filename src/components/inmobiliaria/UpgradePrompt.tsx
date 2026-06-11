@@ -76,7 +76,7 @@ export function UpgradePrompt({
 
         {/* Flex-only callout */}
         {isFlexOnly && (
-          <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium text-indigo-600">
+          <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium text-[#1A40FF]">
             <Sparkle weight="fill" className="h-3.5 w-3.5" />
             {locale === 'es'
               ? 'Incluido en planes Flex'

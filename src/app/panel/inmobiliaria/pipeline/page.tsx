@@ -247,17 +247,17 @@ function PipelineContent() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20"
+          className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <Funnel className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <Funnel className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">
+              <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
                 {stats.inProcess}
               </p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-500">
+              <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
                 {t('inmobiliaria.pipeline.stats.inProcess')}
               </p>
             </div>
@@ -269,17 +269,17 @@ function PipelineContent() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20"
+          className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+              <p className="text-2xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                 {stats.completedThisMonth}
               </p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500">
+              <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">
                 {t('inmobiliaria.pipeline.stats.closedThisMonth')}
               </p>
             </div>
@@ -291,17 +291,17 @@ function PipelineContent() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20"
+          className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+              <ChartLineUp className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+              <p className="text-2xl font-bold text-[#B7791F] dark:text-[#D2992F]">
                 {stats.conversionRate}%
               </p>
-              <p className="text-xs text-amber-600 dark:text-amber-500">
+              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
                 {t('inmobiliaria.pipeline.stats.conversionRate')}
               </p>
             </div>

@@ -62,10 +62,10 @@ export function WizardStep2Propiedad({
               // parent controls errors via validateStep2 — blur just ensures field is touched
             }
           }}
-          className={errors.canonCop ? 'border-rose-500 focus-visible:ring-rose-500/20' : ''}
+          className={errors.canonCop ? 'border-[#C4503B]/30 focus-visible:ring-[#C4503B]/20' : ''}
         />
         {errors.canonCop && (
-          <p className="text-sm text-rose-600 dark:text-rose-400">{errors.canonCop}</p>
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{errors.canonCop}</p>
         )}
       </div>
 
@@ -94,7 +94,7 @@ export function WizardStep2Propiedad({
           })}
         </div>
         {errors.tipoInmueble && (
-          <p className="text-sm text-rose-600 dark:text-rose-400">{errors.tipoInmueble}</p>
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{errors.tipoInmueble}</p>
         )}
       </div>
 
@@ -144,7 +144,7 @@ export function WizardStep2Propiedad({
         <Button
           disabled={!canProceed}
           onClick={onNext}
-          className="flex-1 uppercase tracking-wide"
+          className="flex-1"
           size="lg"
         >
           {t('inmobiliaria.ai.cotizador.nueva.actions.siguiente')}

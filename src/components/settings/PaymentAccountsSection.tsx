@@ -275,13 +275,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay }}
-        className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+        className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
       >
         <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
               </div>
               <div>
                 <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.paymentAccounts.title')}</h2>
@@ -324,7 +324,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                             {info.name} {info.detail}
                           </p>
                           {account.isDefault && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-xs font-medium rounded-full">
                               <Star className="w-3 h-3" weight="fill" />
                               {t('landlordSettings.paymentAccounts.default')}
                             </span>
@@ -339,7 +339,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                             {assignedNames.map((name) => (
                               <span
                                 key={name}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-[11px] font-medium rounded-md"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-[11px] font-medium rounded-sm"
                               >
                                 <House className="w-3 h-3" />
                                 {name.length > 30 ? name.slice(0, 30) + '...' : name}
@@ -358,7 +358,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                       {!account.isDefault && (
                         <button
                           onClick={() => handleSetDefaultAccount(account.id)}
-                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                          className="text-xs text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                         >
                           {t('landlordSettings.paymentAccounts.setAsDefault')}
                         </button>
@@ -368,7 +368,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                           setEditingAccount(account);
                           setShowDeleteAccountModal(true);
                         }}
-                        className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                        className="text-xs text-[#C4503B] dark:text-[#E0664D] hover:underline"
                       >
                         {t('common.delete')}
                       </button>
@@ -382,7 +382,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
           {/* Single Add Account Button */}
           <button
             onClick={() => { resetForms(); setShowAddAccountModal(true); }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-indigo-500 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-[#1A40FF]/30 hover:text-[#1A40FF] dark:hover:border-[#1A40FF]/30 dark:hover:text-[#1A40FF] transition-colors"
           >
             <Plus className="w-5 h-5" />
             <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addAccount')}</span>
@@ -407,9 +407,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 type="button"
                 onClick={() => setAccountMethodType('bank')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
                   accountMethodType === 'bank'
-                    ? 'bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                 )}
               >
@@ -420,9 +420,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 type="button"
                 onClick={() => setAccountMethodType('wallet')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
                   accountMethodType === 'wallet'
-                    ? 'bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                 )}
               >
@@ -444,7 +444,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   <select
                     value={bankForm.bankCode}
                     onChange={(e) => setBankForm(prev => ({ ...prev, bankCode: e.target.value as BankCode }))}
-                    className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+                    className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all appearance-none cursor-pointer"
                   >
                     <option value="">{t('landlordSettings.paymentAccounts.modals.addBankAccount.selectBank')}</option>
                     {COLOMBIAN_BANKS.map((bank) => (
@@ -467,7 +467,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     className={cn(
                       'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                       bankForm.accountType === 'savings'
-                        ? 'border-indigo-500 bg-indigo-600/10 text-indigo-700 dark:text-indigo-300'
+                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
                     )}
                   >
@@ -479,7 +479,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     className={cn(
                       'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                       bankForm.accountType === 'checking'
-                        ? 'border-indigo-500 bg-indigo-600/10 text-indigo-700 dark:text-indigo-300'
+                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
                     )}
                   >
@@ -500,14 +500,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   className={cn(
                     'w-full h-12 px-4 border rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-all',
                     fieldErrors.accountNumber
-                      ? 'border-red-400 dark:border-red-500 focus:ring-red-500/20 focus:border-red-400'
-                      : 'border-neutral-200 dark:border-neutral-600 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500'
+                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
+                      : 'border-neutral-200 dark:border-neutral-600 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
                   )}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumberPlaceholder')}
                   maxLength={20}
                 />
                 {fieldErrors.accountNumber && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">{fieldErrors.accountNumber}</p>
+                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">{fieldErrors.accountNumber}</p>
                 )}
               </div>
 
@@ -520,7 +520,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   type="text"
                   value={bankForm.accountHolderName}
                   onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderName: e.target.value }))}
-                  className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+                  className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolderPlaceholder')}
                 />
               </div>
@@ -537,14 +537,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   className={cn(
                     'w-full h-12 px-4 border rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-all',
                     fieldErrors.document
-                      ? 'border-red-400 dark:border-red-500 focus:ring-red-500/20 focus:border-red-400'
-                      : 'border-neutral-200 dark:border-neutral-600 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500'
+                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
+                      : 'border-neutral-200 dark:border-neutral-600 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
                   )}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.documentPlaceholder')}
                   maxLength={12}
                 />
                 {fieldErrors.document && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">{fieldErrors.document}</p>
+                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">{fieldErrors.document}</p>
                 )}
               </div>
             </>
@@ -559,7 +559,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   <select
                     value={walletForm.walletCode}
                     onChange={(e) => setWalletForm(prev => ({ ...prev, walletCode: e.target.value as WalletCode }))}
-                    className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+                    className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all appearance-none cursor-pointer"
                   >
                     <option value="">{t('landlordSettings.paymentAccounts.modals.addWallet.selectWallet')}</option>
                     {DIGITAL_WALLETS.map((wallet) => (
@@ -578,7 +578,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <div className="flex gap-2">
                   <div className={cn(
                     'w-16 h-12 px-3 border rounded-xl bg-neutral-50 dark:bg-[#1f1f21] flex items-center justify-center text-sm text-neutral-500 dark:text-neutral-400',
-                    fieldErrors.phone ? 'border-red-400 dark:border-red-500' : 'border-neutral-200 dark:border-neutral-600'
+                    fieldErrors.phone ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40' : 'border-neutral-200 dark:border-neutral-600'
                   )}>
                     +57
                   </div>
@@ -589,15 +589,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     className={cn(
                       'flex-1 h-12 px-4 border rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-all',
                       fieldErrors.phone
-                        ? 'border-red-400 dark:border-red-500 focus:ring-red-500/20 focus:border-red-400'
-                        : 'border-neutral-200 dark:border-neutral-600 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500'
+                        ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
+                        : 'border-neutral-200 dark:border-neutral-600 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
                     )}
                     placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.phonePlaceholder')}
                     maxLength={10}
                   />
                 </div>
                 {fieldErrors.phone && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">{fieldErrors.phone}</p>
+                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">{fieldErrors.phone}</p>
                 )}
               </div>
 
@@ -610,7 +610,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   type="text"
                   value={walletForm.holderName}
                   onChange={(e) => setWalletForm(prev => ({ ...prev, holderName: e.target.value }))}
-                  className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+                  className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
                   placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.holderPlaceholder')}
                 />
               </div>
@@ -630,7 +630,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 className={cn(
                   'w-full h-10 px-3 pr-10 border rounded-xl text-sm text-left relative transition-all appearance-none cursor-pointer',
                   showPropertyDropdown
-                    ? 'border-indigo-300 dark:border-indigo-500 ring-2 ring-indigo-500/20 bg-white dark:bg-[#1f1f21]'
+                    ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 ring-2 ring-[#1A40FF]/20 bg-white dark:bg-[#1f1f21]'
                     : 'border-neutral-200 dark:border-neutral-600 bg-white dark:bg-[#1f1f21]'
                 )}
               >
@@ -658,14 +658,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     return (
                       <span
                         key={pid}
-                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-lg"
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-md"
                       >
                         <House className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate max-w-[140px]">{prop.title}</span>
                         <button
                           type="button"
                           onClick={() => setSelectedPropertyIds(prev => prev.filter(id => id !== pid))}
-                          className="w-4 h-4 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800 flex items-center justify-center ml-0.5 transition-colors"
+                          className="w-4 h-4 rounded-full hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF] flex items-center justify-center ml-0.5 transition-colors"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -676,7 +676,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               )}
               {/* Dropdown panel with checkboxes */}
               {showPropertyDropdown && (
-                <div className="mt-1 border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                <div className="mt-1 border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] overflow-hidden max-h-48 overflow-y-auto">
                   {landlordProperties.map((property) => {
                     const isSelected = selectedPropertyIds.includes(property.id);
                     return (
@@ -693,7 +693,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                         <div className={cn(
                           'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
                           isSelected
-                            ? 'border-indigo-500 bg-indigo-600'
+                            ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
                             : 'border-neutral-300 dark:border-neutral-600'
                         )}>
                           {isSelected && <Check className="w-3 h-3 text-white" weight="bold" />}
@@ -721,7 +721,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   setWalletForm(prev => ({ ...prev, isDefault: e.target.checked }));
                 }
               }}
-              className="w-5 h-5 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
+              className="w-5 h-5 rounded border-neutral-300 text-[#1A40FF] focus:ring-[#1A40FF]"
             />
             <span className="text-sm text-neutral-700 dark:text-neutral-300">
               {t('landlordSettings.paymentAccounts.modals.addBankAccount.setDefault')}
@@ -739,7 +739,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <button
               onClick={handleAddAccount}
               disabled={isLoading}
-              className="flex-1 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? (
                 <SpinnerGap className="w-4 h-4 animate-spin" />
@@ -759,15 +759,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         <div className="space-y-4">
           {editingAccount && (
             <>
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                  <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-xl flex gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center flex-shrink-0">
+                  <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                  <p className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
                   </p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">
                     {isBankAccount(editingAccount)
                       ? `${editingAccount.bankName} ${maskAccountNumber(editingAccount.accountNumber)}`
                       : `${editingAccount.walletName} ${maskPhoneNumber(editingAccount.phoneNumber)}`}
@@ -775,15 +775,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </div>
               </div>
               {getPropertyCountForAccount(editingAccount.id) > 0 && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                <div className="p-3 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
+                  <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningWithProperties', { count: getPropertyCountForAccount(editingAccount.id) })}
                   </p>
                 </div>
               )}
               {editingAccount.isDefault && paymentAccounts.length > 1 && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                <div className="p-3 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
+                  <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningDefault')}
                   </p>
                 </div>
@@ -798,7 +798,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <button
                   onClick={handleDeletePaymentAccount}
                   disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
-                  className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 py-3 bg-[#C4503B] text-white text-sm font-medium rounded-xl hover:bg-[#C4503B] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                 >
                   {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
                   {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}

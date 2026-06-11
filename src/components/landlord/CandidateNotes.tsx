@@ -168,7 +168,7 @@ export function CandidateNotes({
         </span>
         <div className="flex items-center gap-2">
           {isSaved && (
-            <span className="flex items-center gap-1 text-xs text-emerald-600">
+            <span className="flex items-center gap-1 text-xs text-[#2C7A53]">
               <Check className="h-3 w-3" />
               Guardado
             </span>

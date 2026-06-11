@@ -351,9 +351,9 @@ export default function NuevaCotizacionPage() {
           {isReQuoteMode && prefillFailed && !prefillDismissed && (
             <div
               role="alert"
-              className="mb-6 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4"
+              className="mb-6 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-4"
             >
-              <p className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
                 {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.banner')}
               </p>
               <div className="mt-3 flex gap-3">
@@ -391,15 +391,15 @@ export default function NuevaCotizacionPage() {
             <div
               role="region"
               aria-label={t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.ariaLabel')}
-              className="mb-4 flex items-center justify-between rounded-xl border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-3"
+              className="mb-4 flex items-center justify-between rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-4 py-3"
             >
-              <p className="text-sm text-blue-800 dark:text-blue-200">
+              <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
                 {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.message')}
               </p>
               <button
                 type="button"
                 onClick={handleClearPrefill}
-                className="ml-3 shrink-0 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                className="ml-3 shrink-0 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
               >
                 {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.changeButton')}
               </button>
@@ -442,7 +442,7 @@ export default function NuevaCotizacionPage() {
           {sessionCapError && (
             <div
               role="alert"
-              className="mt-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-sm text-rose-700 dark:text-rose-300"
+              className="mt-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
             >
               {t('inmobiliaria.ai.cotizador.reQuote.sessionCapHit')}
             </div>
@@ -451,7 +451,7 @@ export default function NuevaCotizacionPage() {
           {submitError && (
             <div
               role="alert"
-              className="mt-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-sm text-rose-700 dark:text-rose-300"
+              className="mt-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
             >
               {submitError}
             </div>

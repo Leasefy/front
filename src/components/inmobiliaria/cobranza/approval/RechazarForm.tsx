@@ -82,7 +82,7 @@ export function RechazarForm({
   return (
     <section
       data-testid="rechazar-form"
-      className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+      className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
     >
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
         {t('inmobiliaria.ai.cobranza.approval.rechazarForm.reasonLabel')}
@@ -90,7 +90,7 @@ export function RechazarForm({
           data-testid="rechazar-reason"
           value={reason}
           onChange={(e) => setReason(e.target.value as RejectReasonSlug | '')}
-          className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+          className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
         >
           <option value="">
             {t('inmobiliaria.ai.cobranza.approval.rechazarForm.reasonPlaceholder')}
@@ -111,7 +111,7 @@ export function RechazarForm({
           onChange={(e) => setComment(e.target.value.slice(0, MAX_COMMENT))}
           maxLength={MAX_COMMENT}
           rows={3}
-          className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+          className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
         />
         <span className="mt-1 block text-xs text-neutral-500 dark:text-neutral-400">
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.charsRemaining', {
@@ -126,7 +126,7 @@ export function RechazarForm({
           data-testid="rechazar-confirm"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
+          className="inline-flex items-center rounded-sm bg-[#C4503B] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#C4503B] disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
         >
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.confirm')}
         </button>
@@ -135,7 +135,7 @@ export function RechazarForm({
           data-testid="rechazar-cancel"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+          className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
         >
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.cancel')}
         </button>

@@ -54,7 +54,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
         {/* Skip to chat link - visible only on focus for screen readers */}
         <a
           href="#beta-chat-main"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white uppercase tracking-wide font-mono focus:rounded-lg focus:text-sm focus:font-medium"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-[#1A40FF] focus:text-white focus:rounded-md focus:text-sm focus:font-medium"
         >
           {t('beta.a11y.skipToChat')}
         </a>
@@ -71,7 +71,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           <button
             onClick={() => setDrawerOpen(true)}
             className={cn(
-              'w-9 h-9 rounded-lg',
+              'w-9 h-9 rounded-md',
               'flex items-center justify-center',
               'text-muted-foreground hover:text-foreground',
               'hover:bg-neutral-100 dark:hover:bg-neutral-800',
@@ -84,7 +84,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
 
           {/* Title */}
           <div className="flex items-center gap-1.5">
-            <Sparkle className="w-4 h-4 text-indigo-500" weight="fill" />
+            <Sparkle className="w-4 h-4 text-[#1A40FF]" weight="fill" />
             <span className="text-[14px] font-semibold text-foreground">
               {t('beta.title')}
             </span>
@@ -160,10 +160,10 @@ function MobileNewChatButton() {
     <button
       onClick={createConversation}
       className={cn(
-        'w-9 h-9 rounded-lg',
+        'w-9 h-9 rounded-md',
         'flex items-center justify-center',
-        'text-indigo-500 hover:text-indigo-600',
-        'hover:bg-indigo-50 dark:hover:bg-indigo-700/10',
+        'text-[#1A40FF] hover:text-[#1A40FF]',
+        'hover:bg-[#EEF1FF] dark:hover:opacity-90/10',
         'transition-colors duration-150'
       )}
       aria-label={t('beta.mobile.newChat')}

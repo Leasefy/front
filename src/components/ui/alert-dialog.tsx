@@ -1,49 +1,71 @@
 "use client"
 
 import * as React from "react"
-import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
+import {
+  AlertDialog as DSAlertDialog,
+  AlertDialogTrigger as DSAlertDialogTrigger,
+  AlertDialogPortal as DSAlertDialogPortal,
+  AlertDialogOverlay as DSAlertDialogOverlay,
+  AlertDialogContent as DSAlertDialogContent,
+  type AlertDialogContentProps as DSAlertDialogContentProps,
+  AlertDialogTitle as DSAlertDialogTitle,
+  AlertDialogDescription as DSAlertDialogDescription,
+  AlertDialogAction as DSAlertDialogAction,
+  AlertDialogCancel as DSAlertDialogCancel,
+} from "@leasefy/ui"
 
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
 
-const AlertDialog = AlertDialogPrimitive.Root
+/**
+ * ADAPTER fino sobre el AlertDialog de @leasefy/ui (Radix alert-dialog real:
+ * role="alertdialog", foco atrapado, SIN outside-dismiss — nativo del DS).
+ * Preserva la API local del mvp:
+ * - Content: contrato de layout legacy (`p-6 grid gap-4 max-w-lg`), z-[300],
+ *   overlay `z-[300] bg-black/60` y animación legacy in/out.
+ * - Action/Cancel = los del DS, ya estilados con buttonVariants
+ *   (Action acepta `tone="primary" | "danger"`; Cancel = secondary).
+ * - Header/Footer mantienen las clases legacy (padding en el Content).
+ */
 
-const AlertDialogTrigger = AlertDialogPrimitive.Trigger
+const AlertDialog = DSAlertDialog
 
-const AlertDialogPortal = AlertDialogPrimitive.Portal
+const AlertDialogTrigger = DSAlertDialogTrigger
+
+const AlertDialogPortal = DSAlertDialogPortal
+
+const alertOverlayClasses =
+  "z-[300] bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 
 const AlertDialogOverlay = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
+  React.ElementRef<typeof DSAlertDialogOverlay>,
+  React.ComponentPropsWithoutRef<typeof DSAlertDialogOverlay>
 >(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Overlay
+  <DSAlertDialogOverlay
+    ref={ref}
+    className={cn(alertOverlayClasses, className)}
+    {...props}
+  />
+))
+AlertDialogOverlay.displayName = "AlertDialogOverlay"
+
+const AlertDialogContent = React.forwardRef<
+  React.ElementRef<typeof DSAlertDialogContent>,
+  DSAlertDialogContentProps
+>(({ className, overlayClassName, ...props }, ref) => (
+  <DSAlertDialogContent
+    ref={ref}
+    overlayClassName={cn(alertOverlayClasses, overlayClassName)}
     className={cn(
-      "fixed inset-0 z-[300] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      // contrato de layout legacy — overridable por className del call site
+      "z-[300] grid w-full max-w-lg gap-4 p-6",
+      // animación legacy del mvp (in/out); animate-none apaga el scale-in del DS
+      "animate-none duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
       className
     )}
     {...props}
-    ref={ref}
   />
 ))
-AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName
-
-const AlertDialogContent = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <AlertDialogPortal>
-    <AlertDialogOverlay />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-[300] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-        className
-      )}
-      {...props}
-    />
-  </AlertDialogPortal>
-))
-AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName
+AlertDialogContent.displayName = "AlertDialogContent"
 
 const AlertDialogHeader = ({
   className,
@@ -73,58 +95,26 @@ const AlertDialogFooter = ({
 )
 AlertDialogFooter.displayName = "AlertDialogFooter"
 
-const AlertDialogTitle = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold", className)}
-    {...props}
-  />
-))
-AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName
+const AlertDialogTitle = DSAlertDialogTitle
 
-const AlertDialogDescription = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-AlertDialogDescription.displayName =
-  AlertDialogPrimitive.Description.displayName
+const AlertDialogDescription = DSAlertDialogDescription
 
-const AlertDialogAction = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Action>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Action
-    ref={ref}
-    className={cn(buttonVariants(), className)}
-    {...props}
-  />
-))
-AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName
+// Estilado por el DS (buttonVariants). `tone="danger"` para destructivas.
+const AlertDialogAction = DSAlertDialogAction
 
+// Estilado por el DS (variant secondary). mt-2 conserva el stacking mobile
+// del footer legacy (flex-col-reverse).
 const AlertDialogCancel = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Cancel>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>
+  React.ElementRef<typeof DSAlertDialogCancel>,
+  React.ComponentPropsWithoutRef<typeof DSAlertDialogCancel>
 >(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Cancel
+  <DSAlertDialogCancel
     ref={ref}
-    className={cn(
-      buttonVariants({ variant: "outline" }),
-      "mt-2 sm:mt-0",
-      className
-    )}
+    className={cn("mt-2 sm:mt-0", className)}
     {...props}
   />
 ))
-AlertDialogCancel.displayName = AlertDialogPrimitive.Cancel.displayName
+AlertDialogCancel.displayName = "AlertDialogCancel"
 
 export {
   AlertDialog,

@@ -44,10 +44,10 @@ interface MantenimientoKanbanProps {
 // ============================================================================
 
 const PRIORITY_COLORS: Record<MantenimientoPriority, string> = {
-  emergency: 'border-l-red-500',
-  high: 'border-l-amber-500',
-  medium: 'border-l-blue-500',
-  low: 'border-l-slate-400',
+  emergency: 'border-l-[#C4503B]',
+  high: 'border-l-[#B7791F]',
+  medium: 'border-l-[#1A40FF]',
+  low: 'border-l-[#6B6B6B]',
 };
 
 const PRIORITY_LABEL_KEYS: Record<MantenimientoPriority, string> = {
@@ -80,36 +80,36 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     id: 'reported',
     titleKey: 'inmobiliaria.mantenimiento.colReported',
     icon: ListBullets,
-    color: 'text-slate-600 dark:text-slate-400',
-    bgColor: 'bg-slate-100 dark:bg-slate-800/50',
+    color: 'text-[#6B6B6B] dark:text-[#6B6B6B]',
+    bgColor: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]/50',
   },
   {
     id: 'quoted',
     titleKey: 'inmobiliaria.mantenimiento.colQuoted',
     icon: CurrencyCircleDollar,
-    color: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    color: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
   },
   {
     id: 'approved',
     titleKey: 'inmobiliaria.mantenimiento.colApproved',
     icon: Check,
-    color: 'text-lime-600 dark:text-lime-400',
-    bgColor: 'bg-lime-50 dark:bg-lime-900/20',
+    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
   },
   {
     id: 'in_progress',
     titleKey: 'inmobiliaria.mantenimiento.colInProgress',
     icon: Clock,
-    color: 'text-amber-600 dark:text-amber-400',
-    bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+    color: 'text-[#B7791F] dark:text-[#D2992F]',
+    bgColor: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
   },
   {
     id: 'completed',
     titleKey: 'inmobiliaria.mantenimiento.colCompleted',
     icon: CheckCircle,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
   },
 ];
 
@@ -147,9 +147,9 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
       exit={{ opacity: 0, scale: 0.95 }}
       onClick={onClick}
       className={cn(
-        'w-full text-left p-3 rounded-lg border-l-4 bg-white dark:bg-neutral-800/80',
+        'w-full text-left p-3 rounded-md border-l-4 bg-white dark:bg-neutral-800/80',
         'border border-neutral-200 dark:border-neutral-700',
-        'hover:shadow-md hover:border-neutral-300 dark:hover:border-neutral-600',
+        'hover: hover:border-neutral-300 dark:hover:border-neutral-600',
         'transition-all cursor-pointer group',
         PRIORITY_COLORS[solicitud.priority]
       )}
@@ -158,23 +158,23 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
       <div className="flex items-start gap-2 mb-2">
         <div
           className={cn(
-            'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0',
+            'w-7 h-7 rounded-sm flex items-center justify-center flex-shrink-0',
             solicitud.priority === 'emergency'
-              ? 'bg-red-100 dark:bg-red-900/30'
-              : 'bg-indigo-100 dark:bg-indigo-900/30'
+              ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
+              : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
           )}
         >
           <TypeIcon
             className={cn(
               'w-4 h-4',
               solicitud.priority === 'emergency'
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-indigo-600 dark:text-indigo-400'
+                ? 'text-[#C4503B] dark:text-[#E0664D]'
+                : 'text-[#1A40FF] dark:text-[#5570FF]'
             )}
           />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          <h4 className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-2 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
             {solicitud.title}
           </h4>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -210,8 +210,8 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
             className={cn(
               'px-1.5 py-0.5 rounded text-xs font-medium',
               solicitud.priority === 'emergency'
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                ? 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
+                : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
             )}
           >
             {solicitud.priority === 'emergency' && <Warning className="w-3 h-3 inline mr-0.5" weight="fill" />}
@@ -221,7 +221,7 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
 
         {/* Approved Amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}
@@ -355,8 +355,8 @@ export function MantenimientoKanban({ data, onViewDetails }: MantenimientoKanban
 
       {/* Cancelled items notice */}
       {groupedData.cancelled.length > 0 && (
-        <div className="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-          <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+        <div className="mt-4 p-3 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
+          <div className="flex items-center gap-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
             <XCircle className="w-4 h-4" />
             <span>
               {t('inmobiliaria.mantenimiento.cancelledNotice', { count: groupedData.cancelled.length })}

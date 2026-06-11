@@ -55,12 +55,12 @@ export function CancelContractModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
+            className="bg-white dark:bg-[#1a1a1c] rounded-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
           >
             <div className="flex items-start justify-between gap-4 p-5 border-b border-neutral-200 dark:border-neutral-800">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
-                  <WarningCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+                  <WarningCircle className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
@@ -83,8 +83,8 @@ export function CancelContractModal({
             </div>
 
             <div className="p-5 space-y-4">
-              <div className="rounded-xl border border-rose-200 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-950/20 p-3">
-                <p className="text-sm text-rose-800 dark:text-rose-200">
+              <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-3">
+                <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
                   Al cancelar, el contrato termina y la aplicación asociada queda cerrada.
                   Si querés volver a intentar con el mismo {otherParty}, vas a tener que crear una aplicación nueva.
                 </p>
@@ -102,16 +102,16 @@ export function CancelContractModal({
                   maxLength={REASON_MAX}
                   disabled={isSubmitting}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none',
+                    'w-full px-3 py-2 rounded-md border bg-background text-sm resize-none',
                     tooLong
-                      ? 'border-rose-300 dark:border-rose-700'
-                      : 'border-border focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/40'
+                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                      : 'border-border focus:ring-2 focus:ring-[#1A40FF] dark:focus:ring-[#1A40FF]/40'
                   )}
                 />
                 <div className="flex items-center justify-end">
                   <p className={cn(
                     'text-xs tabular-nums',
-                    tooLong ? 'text-rose-600' : 'text-muted-foreground'
+                    tooLong ? 'text-[#C4503B]' : 'text-muted-foreground'
                   )}>
                     {reasonTrimmed.length}/{REASON_MAX}
                   </p>
@@ -132,7 +132,7 @@ export function CancelContractModal({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#C4503B] hover:bg-[#C4503B] text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting && <SpinnerGap className="w-4 h-4 animate-spin" />}
                 Cancelar contrato

@@ -46,21 +46,21 @@ export default function LeaseDetailPage() {
 
   if (leaseLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!lease) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <div className="w-20 h-20 rounded-full bg-stone-100 dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 rounded-full bg-neutral-100 dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
             <House className="w-10 h-10 text-neutral-400" />
           </div>
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
@@ -113,12 +113,12 @@ export default function LeaseDetailPage() {
   const getRequestStatusInfo = (status: TenantPaymentRequestStatus) => {
     switch (status) {
       case 'APPROVED':
-        return { label: locale === 'es' ? 'Aprobado' : 'Approved', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', icon: CheckCircle };
+        return { label: locale === 'es' ? 'Aprobado' : 'Approved', bgColor: 'bg-[#E8F3EC]', textColor: 'text-[#2C7A53]', icon: CheckCircle };
       case 'PENDING_VALIDATION':
-        return { label: locale === 'es' ? 'En verificación' : 'In verification', bgColor: 'bg-amber-50', textColor: 'text-amber-700', icon: Clock };
+        return { label: locale === 'es' ? 'En verificación' : 'In verification', bgColor: 'bg-[#F8F0E0]', textColor: 'text-[#B7791F]', icon: Clock };
       case 'REJECTED':
       case 'DISPUTED':
-        return { label: locale === 'es' ? 'Rechazado' : 'Rejected', bgColor: 'bg-rose-50', textColor: 'text-rose-700', icon: XCircle };
+        return { label: locale === 'es' ? 'Rechazado' : 'Rejected', bgColor: 'bg-[#F8EAE7]', textColor: 'text-[#C4503B]', icon: XCircle };
       case 'CANCELLED':
         return { label: locale === 'es' ? 'Cancelado' : 'Cancelled', bgColor: 'bg-neutral-100', textColor: 'text-neutral-600', icon: Prohibit };
     }
@@ -139,7 +139,7 @@ export default function LeaseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Back Button */}
@@ -156,7 +156,7 @@ export default function LeaseDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden shadow-sm mb-8"
+          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden mb-8"
         >
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
@@ -173,8 +173,8 @@ export default function LeaseDetailPage() {
                 <span className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-full backdrop-blur-sm',
                   lease.status === 'ending_soon'
-                    ? 'bg-amber-100/90 text-amber-700'
-                    : 'bg-emerald-100/90 text-emerald-700'
+                    ? 'bg-[#F8F0E0]/90 text-[#B7791F]'
+                    : 'bg-[#E8F3EC]/90 text-[#2C7A53]'
                 )}>
                   {lease.status === 'ending_soon'
                     ? (locale === 'es' ? 'Termina pronto' : 'Ending soon')
@@ -241,7 +241,7 @@ export default function LeaseDetailPage() {
                     transition={{ duration: 1, ease: 'easeOut' }}
                     className={cn(
                       "h-full rounded-full",
-                      daysRemaining < 30 ? "bg-amber-500" : "bg-emerald-500"
+                      daysRemaining < 30 ? "bg-[#B7791F]" : "bg-[#2C7A53]"
                     )}
                   />
                   {/* Progress Indicator Dot */}
@@ -252,8 +252,8 @@ export default function LeaseDetailPage() {
                     className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
                   >
                     <div className={cn(
-                      "w-5 h-5 rounded-full border-4 border-white shadow-md",
-                      daysRemaining < 30 ? "bg-amber-500" : "bg-emerald-500"
+                      "w-5 h-5 rounded-full border-4 border-white",
+                      daysRemaining < 30 ? "bg-[#B7791F]" : "bg-[#2C7A53]"
                     )} />
                   </motion.div>
                 </div>
@@ -276,12 +276,12 @@ export default function LeaseDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 className={cn(
-                  'rounded-3xl border p-6 lg:p-8',
+                  'rounded-xl border p-6 lg:p-8',
                   periodStatus === 'PENDING_VALIDATION'
-                    ? 'bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-amber-900/20 border-amber-200 dark:border-amber-800/60'
+                    ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/12 border-[#B7791F]/30 dark:border-[#B7791F]/40'
                     : periodStatus === 'APPROVED'
-                      ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800/60'
-                      : 'bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border-indigo-100 dark:border-indigo-800/60'
+                      ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/12 border-[#2C7A53]/30 dark:border-[#2C7A53]/40'
+                      : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border-[#1A40FF]/30 dark:border-[#1A40FF]/40'
                 )}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
@@ -289,29 +289,29 @@ export default function LeaseDetailPage() {
                     <div className="flex items-center gap-2 mb-2">
                       {periodStatus === 'PENDING_VALIDATION' ? (
                         <>
-                          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                          <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                          <Clock className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F]" />
+                          <span className="text-sm text-[#B7791F] dark:text-[#D2992F] font-medium">
                             {locale === 'es' ? 'Pago en verificación bancaria' : 'Payment in bank verification'}
                           </span>
                         </>
                       ) : periodStatus === 'APPROVED' ? (
                         <>
-                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          <span className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+                          <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
+                          <span className="text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
                             {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
                           </span>
                         </>
                       ) : periodStatus === 'REJECTED' ? (
                         <>
-                          <WarningCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                          <span className="text-sm text-rose-700 dark:text-rose-400 font-medium">
+                          <WarningCircle className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D]" />
+                          <span className="text-sm text-[#C4503B] dark:text-[#E0664D] font-medium">
                             {locale === 'es' ? 'Pago rechazado — reintentar' : 'Payment rejected — retry'}
                           </span>
                         </>
                       ) : (
                         <>
-                          <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                          <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                          <CreditCard className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
+                          <span className="text-sm text-[#1A40FF] dark:text-[#5570FF] font-medium">
                             {locale === 'es' ? 'Pagar arriendo' : 'Pay rent'}
                           </span>
                         </>
@@ -325,7 +325,7 @@ export default function LeaseDetailPage() {
                       {formatPeriod(paymentInfo.currentPeriod.month, paymentInfo.currentPeriod.year)}
                     </p>
                     {periodStatus === 'REJECTED' && paymentInfo.currentPeriodRejectionReason && (
-                      <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 italic max-w-md">
+                      <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-2 italic max-w-md">
                         {paymentInfo.currentPeriodRejectionReason}
                       </p>
                     )}
@@ -334,7 +334,7 @@ export default function LeaseDetailPage() {
                     <button
                       type="button"
                       onClick={() => setPayModalOpen(true)}
-                      className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-2xl font-semibold hover:bg-indigo-700 transition-colors"
+                      className="flex items-center justify-center gap-2 px-8 py-4 bg-[#1A40FF] text-white rounded-xl font-semibold hover:opacity-90 transition-colors"
                     >
                       <Wallet className="w-5 h-5" />
                       {periodStatus === 'REJECTED'
@@ -354,26 +354,26 @@ export default function LeaseDetailPage() {
               transition={{ delay: 0.3 }}
               className="grid grid-cols-2 sm:grid-cols-3 gap-4"
             >
-              <div className="rounded-2xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
-                  <TrendUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                  <TrendUp className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">{formatCurrency(totalPaid)}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
               </div>
-              <div className="rounded-2xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
-                  <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                  <Receipt className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">{approvedRequests.length}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
               </div>
-              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 p-5 col-span-2 sm:col-span-1">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/12 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 p-5 col-span-2 sm:col-span-1">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                  <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">{locale === 'es' ? 'Al día' : 'Up to date'}</p>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
+                <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
               </div>
             </motion.div>
 
@@ -382,11 +382,11 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
             >
               <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
                     <Receipt className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   </div>
                   <div>
@@ -414,7 +414,7 @@ export default function LeaseDetailPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 + index * 0.05 }}
-                        className="flex items-center gap-4 px-6 py-4 hover:bg-stone-50 dark:hover:bg-[#222224] transition-colors"
+                        className="flex items-center gap-4 px-6 py-4 hover:bg-neutral-50 dark:hover:bg-[#222224] transition-colors"
                       >
                         <div className={cn(
                           'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
@@ -444,7 +444,7 @@ export default function LeaseDetailPage() {
                             <p className="text-xs text-neutral-400 mt-1">Ref: {request.referenceNumber}</p>
                           )}
                           {request.rejectionReason && (
-                            <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 italic">
+                            <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1 italic">
                               {request.rejectionReason}
                             </p>
                           )}
@@ -461,7 +461,7 @@ export default function LeaseDetailPage() {
                 </div>
               ) : (
                 <div className="py-16 text-center">
-                  <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
                     <Receipt className="w-8 h-8 text-neutral-400" />
                   </div>
                   <p className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}</p>
@@ -478,11 +478,11 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
             >
               <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/50 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Contrato' : 'Contract'}</h2>
               </div>
@@ -496,7 +496,7 @@ export default function LeaseDetailPage() {
                 <div>
                   <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Garantía' : 'Guarantee'}</p>
                   <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                    <Shield className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
                     <p className="text-sm text-neutral-900 dark:text-white font-medium">
                       {lease.guaranteeType === 'poliza' ? (locale === 'es' ? 'Póliza de arriendo' : 'Rental insurance') :
                        lease.guaranteeType === 'codeudor' ? (locale === 'es' ? 'Codeudor' : 'Co-signer') :
@@ -515,7 +515,7 @@ export default function LeaseDetailPage() {
                       href={lease.contractUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
                       <FileText className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                       <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Contrato de arriendo' : 'Lease agreement'}</span>
@@ -528,7 +528,7 @@ export default function LeaseDetailPage() {
                       href={lease.insuranceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
                       <Shield className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                       <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Póliza de seguro' : 'Insurance policy'}</span>
@@ -541,7 +541,7 @@ export default function LeaseDetailPage() {
                       href={lease.inventoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
                       <Buildings className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                       <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Inventario' : 'Inventory'}</span>
@@ -557,17 +557,17 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
             >
               <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
-                <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
                   <User className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                 </div>
                 <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Propietario' : 'Landlord'}</h2>
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-4 mb-5">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-xl font-semibold shadow-lg">
+                  <div className="w-14 h-14 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center text-white text-xl font-semibold">
                     {lease.landlordName.charAt(0)}
                   </div>
                   <div>
@@ -579,14 +579,14 @@ export default function LeaseDetailPage() {
                 <div className="space-y-2 mb-5">
                   <a
                     href={`mailto:${lease.landlordEmail}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
                   >
                     <Envelope className="w-4 h-4 text-neutral-400" />
                     {lease.landlordEmail}
                   </a>
                   <a
                     href={`tel:${lease.landlordPhone}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-stone-50 dark:bg-[#222224] rounded-xl hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
                   >
                     <Phone className="w-4 h-4 text-neutral-400" />
                     {lease.landlordPhone}
@@ -609,11 +609,11 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
             >
               <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/50 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
                 <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Métodos de pago' : 'Payment methods'}</h2>
               </div>
@@ -621,7 +621,7 @@ export default function LeaseDetailPage() {
                 {PAYMENT_METHODS.filter(m => m.enabled).slice(0, 4).map((method) => (
                   <div
                     key={method.id}
-                    className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-[#222224] rounded-xl"
+                    className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl"
                   >
                     <span className="text-xl">{method.icon}</span>
                     <div className="flex-1">
@@ -629,9 +629,9 @@ export default function LeaseDetailPage() {
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">{method.processingTime}</p>
                     </div>
                     {method.fee && method.fee > 0 ? (
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400 bg-white dark:bg-[#2a2a2c] px-2 py-1 rounded-lg">+{method.fee}%</span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400 bg-white dark:bg-[#2a2a2c] px-2 py-1 rounded-md">+{method.fee}%</span>
                     ) : (
-                      <span className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/50 px-2 py-1 rounded-lg font-medium">{locale === 'es' ? 'Gratis' : 'Free'}</span>
+                      <span className="text-xs text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2 py-1 rounded-md font-medium">{locale === 'es' ? 'Gratis' : 'Free'}</span>
                     )}
                   </div>
                 ))}

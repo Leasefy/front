@@ -94,19 +94,19 @@ export function ArcoFormClient() {
 
   const descriptionColorClass =
     description.length >= 1000
-      ? 'text-rose-600'
+      ? 'text-[#C4503B]'
       : description.length >= 900
-        ? 'text-amber-600'
+        ? 'text-[#B7791F]'
         : 'text-neutral-500';
 
   return (
-    <div className="w-full max-w-xl rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
+    <div className="w-full max-w-xl rounded-xl border border-neutral-200 bg-white p-8">
       {/* Card header */}
       <div className="text-center mb-8">
-        <p className="text-xl font-semibold font-[Manrope,sans-serif] text-neutral-900 mb-2">
+        <p className="text-xl font-semibold font-heading text-neutral-900 mb-2">
           Leasefy
         </p>
-        <h1 className="text-3xl font-semibold font-[Manrope,sans-serif] text-neutral-900 mb-3">
+        <h1 className="text-3xl font-semibold font-heading text-neutral-900 mb-3">
           {t('inmobiliaria.ai.arco.public.title')}
         </h1>
         <p className="text-sm text-neutral-500 max-w-sm mx-auto">
@@ -119,7 +119,7 @@ export function ArcoFormClient() {
         <div className="text-center space-y-4">
           <EnvelopeSimple
             weight="duotone"
-            className="h-12 w-12 text-indigo-500 mx-auto"
+            className="h-12 w-12 text-[#1A40FF] mx-auto"
           />
           <h2 className="text-xl font-semibold text-neutral-900">
             {t('inmobiliaria.ai.arco.public.successTitle')}
@@ -133,7 +133,7 @@ export function ArcoFormClient() {
           <button
             type="button"
             onClick={resetForm}
-            className="text-xs text-indigo-500 cursor-pointer hover:text-indigo-600 transition-colors mt-2 block mx-auto"
+            className="text-xs text-[#1A40FF] cursor-pointer hover:text-[#1A40FF] transition-colors mt-2 block mx-auto"
           >
             {t('inmobiliaria.ai.arco.public.submitAnother')}
           </button>
@@ -291,7 +291,7 @@ export function ArcoFormClient() {
             {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
             <Link
               href="/privacidad"
-              className="text-indigo-500 hover:text-indigo-600 transition-colors"
+              className="text-[#1A40FF] hover:text-[#1A40FF] transition-colors"
             >
               {t('inmobiliaria.ai.arco.public.privacyLink')}
             </Link>
@@ -306,7 +306,7 @@ export function ArcoFormClient() {
           {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
           <Link
             href="/privacidad"
-            className="text-indigo-500 hover:text-indigo-600 transition-colors"
+            className="text-[#1A40FF] hover:text-[#1A40FF] transition-colors"
           >
             {t('inmobiliaria.ai.arco.public.privacyLink')}
           </Link>

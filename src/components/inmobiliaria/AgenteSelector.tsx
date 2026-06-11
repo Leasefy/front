@@ -127,7 +127,7 @@ export function AgenteSelector({
           <select
             value={zoneFilter}
             onChange={(e) => setZoneFilter(e.target.value)}
-            className="appearance-none pl-4 pr-8 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="appearance-none pl-4 pr-8 py-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent"
           >
             <option value="all">{t('inmobiliaria.agente.allZones')}</option>
             {zones.map((zone) => (
@@ -144,7 +144,7 @@ export function AgenteSelector({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="appearance-none pl-4 pr-8 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="appearance-none pl-4 pr-8 py-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent"
           >
             <option value="recommended">{t('inmobiliaria.agente.sortRecommended')}</option>
             <option value="name">{t('inmobiliaria.agente.sortByName')}</option>
@@ -173,13 +173,13 @@ export function AgenteSelector({
               className={cn(
                 'relative p-4 rounded-xl border text-left transition-all duration-200',
                 value === null
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500/20'
-                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-md'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 ring-2 ring-[#1A40FF]/20'
+                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:'
               )}
             >
               {/* Selected Indicator */}
               {value === null && (
-                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
+                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-[#1A40FF] flex items-center justify-center">
                   <motion.svg
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -223,13 +223,13 @@ export function AgenteSelector({
               className={cn(
                 'relative p-4 rounded-xl border text-left transition-all duration-200',
                 value === agente.id
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500/20'
-                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-md'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 ring-2 ring-[#1A40FF]/20'
+                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:'
               )}
             >
               {/* Recommended Badge */}
               {isRecommended(agente.id) && (
-                <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium flex items-center gap-1">
+                <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-xs font-medium flex items-center gap-1">
                   <Star className="w-3 h-3" weight="fill" />
                   {t('inmobiliaria.agente.recommended')}
                 </div>
@@ -237,7 +237,7 @@ export function AgenteSelector({
 
               {/* Selected Indicator */}
               {value === agente.id && (
-                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
+                <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-[#1A40FF] flex items-center justify-center">
                   <motion.svg
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -254,7 +254,7 @@ export function AgenteSelector({
               {/* Agent Header */}
               <div className="flex items-start gap-3 mb-3">
                 {/* Avatar */}
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1A40FF] to-[#6B6B6B] flex items-center justify-center text-white font-semibold text-sm shrink-0">
                   {agente.avatar ? (
                     <img
                       src={agente.avatar}
@@ -274,9 +274,9 @@ export function AgenteSelector({
                     <span className={cn(
                       'px-2 py-0.5 rounded-full text-xs font-medium',
                       agente.role === 'director'
-                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
                         : agente.role === 'coordinator'
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                           : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                     )}>
                       {ROLE_LABELS[agente.role]}
@@ -314,7 +314,7 @@ export function AgenteSelector({
                 <div className="flex items-center gap-4 pt-2 border-t border-neutral-100 dark:border-neutral-800">
                   {/* Commission Split */}
                   <div className="flex items-center gap-1.5">
-                    <Percent className="w-4 h-4 text-emerald-500" />
+                    <Percent className="w-4 h-4 text-[#2C7A53]" />
                     <span className="text-neutral-900 dark:text-white font-medium">
                       {agente.commissionSplit}%
                     </span>
@@ -322,7 +322,7 @@ export function AgenteSelector({
 
                   {/* Conversion Rate */}
                   <div className="flex items-center gap-1.5">
-                    <ChartLineUp className="w-4 h-4 text-blue-500" />
+                    <ChartLineUp className="w-4 h-4 text-[#1A40FF]" />
                     <span className="text-neutral-900 dark:text-white font-medium">
                       {Math.round(agente.metrics.conversionRate * 100)}%
                     </span>
@@ -354,13 +354,13 @@ export function AgenteSelector({
           "text-sm flex items-center gap-2",
           value === null
             ? "text-muted-foreground"
-            : "text-emerald-600 dark:text-emerald-400"
+            : "text-[#2C7A53] dark:text-[#3EAE70]"
         )}>
           <span className={cn(
             "w-5 h-5 rounded-full flex items-center justify-center",
             value === null
               ? "bg-muted"
-              : "bg-emerald-100 dark:bg-emerald-900/30"
+              : "bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
           )}>
             <motion.svg
               initial={{ scale: 0 }}

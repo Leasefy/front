@@ -33,15 +33,15 @@ interface DocumentAnalysisSectionProps {
 
 const STATUS_CONFIG = {
   PENDING: { icon: Clock, color: 'text-neutral-400', bg: 'bg-neutral-50 dark:bg-neutral-800', label: 'Pendiente' },
-  PROCESSING: { icon: SpinnerGap, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', label: 'Procesando...' },
-  COMPLETED: { icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'Completado' },
-  FAILED: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', label: 'Error' },
+  PROCESSING: { icon: SpinnerGap, color: 'text-[#1A40FF]', bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', label: 'Procesando...' },
+  COMPLETED: { icon: CheckCircle, color: 'text-[#2C7A53]', bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', label: 'Completado' },
+  FAILED: { icon: XCircle, color: 'text-[#C4503B]', bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', label: 'Error' },
 } as const;
 
 const RISK_COLORS: Record<string, string> = {
-  BAJO: 'text-emerald-600 dark:text-emerald-400',
-  MEDIO: 'text-amber-600 dark:text-amber-400',
-  ALTO: 'text-red-600 dark:text-red-400',
+  BAJO: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  MEDIO: 'text-[#B7791F] dark:text-[#D2992F]',
+  ALTO: 'text-[#C4503B] dark:text-[#E0664D]',
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -108,7 +108,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
         )}
 
         {result.status === 'FAILED' && result.errorMessage && (
-          <span className="text-xs text-red-500 truncate max-w-[150px]">{result.errorMessage}</span>
+          <span className="text-xs text-[#C4503B] truncate max-w-[150px]">{result.errorMessage}</span>
         )}
       </button>
 
@@ -150,7 +150,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
                 {result.flags.map((flag, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs rounded-md"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-xs rounded-sm"
                   >
                     <Warning className="w-3 h-3" />
                     {String(flag)}
@@ -213,7 +213,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       {/* Header with trigger button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-indigo-500" />
+          <Brain className="w-5 h-5 text-[#1A40FF]" />
           <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">
             Analisis IA de documentos
           </h4>
@@ -246,8 +246,8 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-3 py-2">
-          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+        <div className="rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 px-3 py-2">
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
         </div>
       )}
 
@@ -293,8 +293,8 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
         <div className={cn(
           'p-3 rounded-xl border',
           results.crossValidation.consistencyScore >= 80
-            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50'
-            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50'
+            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border-[#2C7A53]/30 dark:border-[#2C7A53]/40'
+            : 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 border-[#B7791F]/30 dark:border-[#B7791F]/40'
         )}>
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-4 h-4" />

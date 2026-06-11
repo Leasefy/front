@@ -10,12 +10,12 @@ import { RESUMEN_VACIO } from '@/lib/api/conciliacion.types';
 
 /** Casos de conciliación para el resumen — color por caso (estático). */
 const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_VACIO }[] = [
-  { key: 'conciliados', dot: 'bg-emerald-500', field: 'conciliados' },
-  { key: 'parciales', dot: 'bg-amber-500', field: 'parciales' },
-  { key: 'duplicados', dot: 'bg-violet-500', field: 'duplicados' },
-  { key: 'noIdentificados', dot: 'bg-slate-400', field: 'noIdentificados' },
-  { key: 'diferencias', dot: 'bg-rose-500', field: 'diferencias' },
-  { key: 'fueraFecha', dot: 'bg-blue-500', field: 'fueraDeFecha' },
+  { key: 'conciliados', dot: 'bg-[#2C7A53]', field: 'conciliados' },
+  { key: 'parciales', dot: 'bg-[#B7791F]', field: 'parciales' },
+  { key: 'duplicados', dot: 'bg-neutral-100 dark:bg-neutral-800', field: 'duplicados' },
+  { key: 'noIdentificados', dot: 'bg-[#6B6B6B]', field: 'noIdentificados' },
+  { key: 'diferencias', dot: 'bg-[#C4503B]', field: 'diferencias' },
+  { key: 'fueraFecha', dot: 'bg-[#1A40FF]', field: 'fueraDeFecha' },
 ];
 
 const COLUMNS = [
@@ -39,7 +39,7 @@ export default function ConciliacionPage() {
         </div>
         <button
           onClick={() => toast.info(t(k('newSoon')))}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] flex-shrink-0"
+          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm transition-transform active:scale-[0.97] flex-shrink-0 font-medium"
         >
           <Plus className="w-4 h-4" weight="bold" />
           {t(k('new'))}
@@ -47,21 +47,21 @@ export default function ConciliacionPage() {
       </header>
 
       {/* Honest M2 banner */}
-      <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" weight="fill" />
+      <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-3 flex items-start gap-2.5">
+        <Info className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] flex-shrink-0 mt-0.5" weight="fill" />
         <div>
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">{t(k('m2BannerTitle'))}</p>
-          <p className="text-xs text-blue-600 dark:text-blue-300/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
+          <p className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">{t(k('m2BannerTitle'))}</p>
+          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
 
       {/* Cargar fuente — dropzone (stub: procesamiento real en M2) */}
       <button
         onClick={() => toast.info(t(k('uploadSoon')))}
-        className="w-full rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 hover:border-foreground/20 transition-colors p-8 flex flex-col items-center justify-center gap-2 text-center"
+        className="w-full rounded-xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 hover:border-foreground/20 transition-colors p-8 flex flex-col items-center justify-center gap-2 text-center"
       >
-        <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center mb-1">
-          <UploadSimple className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+        <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center mb-1">
+          <UploadSimple className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
         </div>
         <p className="text-body-sm font-medium text-foreground">{t(k('uploadTitle'))}</p>
         <p className="text-caption text-muted-foreground">{t(k('uploadHint'))}</p>
@@ -84,10 +84,10 @@ export default function ConciliacionPage() {
       </section>
 
       {/* Movimientos */}
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 p-5 border-b border-border">
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center flex-shrink-0">
-            <ArrowsClockwise className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" />
+          <div className="w-9 h-9 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center flex-shrink-0">
+            <ArrowsClockwise className="w-[18px] h-[18px] text-[#2C7A53] dark:text-[#3EAE70]" />
           </div>
           <div>
             <h2 className="text-h4 text-foreground">{t(k('movimientosTitle'))}</h2>

@@ -20,16 +20,16 @@ interface StatCardProps {
 function StatCard({ icon, label, value, variant = 'default' }: StatCardProps) {
   const variantStyles = {
     default: 'bg-card border-border text-foreground',
-    pending: 'bg-amber-50/50 border-amber-100 text-amber-700',
-    'pre-approved': 'bg-blue-50/50 border-blue-100 text-blue-700',
-    approved: 'bg-emerald-50/50 border-emerald-100 text-emerald-700',
+    pending: 'bg-[#F8F0E0]/50 border-[#B7791F]/30 text-[#B7791F]',
+    'pre-approved': 'bg-[#EEF1FF]/50 border-[#1A40FF]/30 text-[#1A40FF]',
+    approved: 'bg-[#E8F3EC]/50 border-[#2C7A53]/30 text-[#2C7A53]',
   };
 
   const iconStyles = {
     default: 'text-muted-foreground',
-    pending: 'text-amber-500',
-    'pre-approved': 'text-blue-500',
-    approved: 'text-emerald-500',
+    pending: 'text-[#B7791F]',
+    'pre-approved': 'text-[#1A40FF]',
+    approved: 'text-[#2C7A53]',
   };
 
   return (

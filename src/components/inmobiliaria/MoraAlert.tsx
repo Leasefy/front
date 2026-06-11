@@ -46,27 +46,27 @@ const SEVERITY_STYLES: Record<
   }
 > = {
   warning: {
-    bg: 'bg-amber-50 dark:bg-amber-900/20',
-    border: 'border-amber-200 dark:border-amber-800',
-    icon: 'text-amber-600 dark:text-amber-400',
-    text: 'text-amber-800 dark:text-amber-300',
-    textSecondary: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    icon: 'text-[#B7791F] dark:text-[#D2992F]',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    textSecondary: 'text-[#B7791F] dark:text-[#D2992F]',
     pulse: false,
   },
   critical: {
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    border: 'border-red-200 dark:border-red-800',
-    icon: 'text-red-600 dark:text-red-400',
-    text: 'text-red-800 dark:text-red-300',
-    textSecondary: 'text-red-700 dark:text-red-400',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
+    icon: 'text-[#C4503B] dark:text-[#E0664D]',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    textSecondary: 'text-[#C4503B] dark:text-[#E0664D]',
     pulse: true,
   },
   severe: {
-    bg: 'bg-red-100 dark:bg-red-900/40',
-    border: 'border-red-300 dark:border-red-700',
-    icon: 'text-red-700 dark:text-red-300',
-    text: 'text-red-900 dark:text-red-200',
-    textSecondary: 'text-red-800 dark:text-red-300',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
+    icon: 'text-[#C4503B] dark:text-[#E0664D]',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    textSecondary: 'text-[#C4503B] dark:text-[#E0664D]',
     pulse: true,
   },
 };
@@ -190,7 +190,7 @@ export function MoraAlert({
                 <button
                   onClick={onSendReminder}
                   className={cn(
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg',
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md',
                     'bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/30',
                     'border transition-colors',
                     styles.border,
@@ -205,7 +205,7 @@ export function MoraAlert({
                 <button
                   onClick={onViewHistory}
                   className={cn(
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg',
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md',
                     'hover:underline transition-colors',
                     styles.textSecondary
                   )}

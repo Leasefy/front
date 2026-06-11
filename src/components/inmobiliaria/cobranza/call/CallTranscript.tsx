@@ -41,12 +41,12 @@ function speakerTone(speaker: TranscriptSpeaker): {
     case 'operador':
       return {
         label: 'speakerOperador',
-        cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+        cls: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-[#6B6B6B]/30 dark:text-neutral-600 dark:text-neutral-300',
       }
     case 'bot':
       return {
         label: 'speakerBot',
-        cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+        cls: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]',
       }
     case 'deudor':
     default:
@@ -99,7 +99,7 @@ export default function CallTranscript({
 
       {error && !data && (
         <div className="p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.call.transcript.error')}
           </p>
           <button
@@ -107,7 +107,7 @@ export default function CallTranscript({
             onClick={() => {
               void refetch()
             }}
-            className="mt-2 inline-flex items-center min-h-11 min-w-11 px-3 py-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-sm"
+            className="mt-2 inline-flex items-center min-h-11 min-w-11 px-3 py-2 rounded-md bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-sm"
           >
             {t('inmobiliaria.ai.cobranza.call.transcript.errorRetry')}
           </button>
@@ -143,7 +143,7 @@ export default function CallTranscript({
                         'inmobiliaria.ai.cobranza.call.transcript.seekAria',
                         { time: formatSec(turn.startSec) },
                       )}
-                      className="inline-flex items-center justify-center min-h-11 min-w-11 px-2 py-1 rounded-md text-xs font-mono tabular-nums text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="inline-flex items-center justify-center min-h-11 min-w-11 px-2 py-1 rounded-sm text-xs tabular-nums text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-[#6B6B6B]/20 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] font-medium"
                     >
                       {formatSec(turn.startSec)}
                     </button>

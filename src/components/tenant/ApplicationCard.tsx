@@ -154,7 +154,7 @@ export function ApplicationCard({
               variant="ghost"
               size="sm"
               onClick={handleWithdraw}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7]"
               title="Retirar solicitud"
             >
               <X className="w-4 h-4" />

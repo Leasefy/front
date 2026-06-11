@@ -120,22 +120,22 @@ export function SignatureForm({
     return (
       <div className={cn('space-y-4', className)}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <SealCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+            <SealCheck className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
           </div>
           <div>
             <h3 className="font-semibold text-neutral-900 dark:text-white">Firma electrónica</h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">Como {role}</p>
           </div>
         </div>
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 p-4">
+        <div className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2C7A53]">
               <Check className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-emerald-800 dark:text-emerald-200">Contrato firmado</p>
-              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              <p className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">Contrato firmado</p>
+              <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">
                 {signerName ? `Por ${signerName}` : 'Firma completada exitosamente'}
               </p>
             </div>
@@ -151,7 +151,7 @@ export function SignatureForm({
         {/* Header - Simplified */}
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-neutral-900 dark:text-white">Firma electrónica</h3>
-          <span className="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+          <span className="px-2.5 py-1 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
             {role}
           </span>
         </div>
@@ -169,13 +169,13 @@ export function SignatureForm({
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedTerms
-              ? 'bg-indigo-50/50 dark:bg-indigo-900/10'
+              ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10'
               : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedTerms
-                ? 'bg-indigo-600 border-indigo-600'
+                ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                 : 'border-neutral-300 dark:border-neutral-600'
             )}>
               {acceptedTerms && <Check className="w-3 h-3 text-white" />}
@@ -204,13 +204,13 @@ export function SignatureForm({
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedLegal
-              ? 'bg-indigo-50/50 dark:bg-indigo-900/10'
+              ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10'
               : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedLegal
-                ? 'bg-indigo-600 border-indigo-600'
+                ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                 : 'border-neutral-300 dark:border-neutral-600'
             )}>
               {acceptedLegal && <Check className="w-3 h-3 text-white" />}
@@ -239,13 +239,13 @@ export function SignatureForm({
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedData
-              ? 'bg-indigo-50/50 dark:bg-indigo-900/10'
+              ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10'
               : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedData
-                ? 'bg-indigo-600 border-indigo-600'
+                ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                 : 'border-neutral-300 dark:border-neutral-600'
             )}>
               {acceptedData && <Check className="w-3 h-3 text-white" />}
@@ -275,7 +275,7 @@ export function SignatureForm({
           className={cn(
             'w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm transition-all',
             canSign && !isLoading
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
+              ? 'bg-[#1A40FF] hover:opacity-90 text-white'
               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
           )}
         >

@@ -67,7 +67,7 @@ function AgenteDetailContent() {
           </p>
           <Link
             href="/panel/inmobiliaria/agentes"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.agentes.backToList')}
@@ -83,14 +83,14 @@ function AgenteDetailContent() {
       <nav className="flex items-center gap-2 text-sm">
         <Link
           href="/panel/inmobiliaria"
-          className="text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
+          className="text-neutral-500 dark:text-neutral-400 hover:text-[#1A40FF] transition-colors"
         >
           {t('inmobiliaria.common.title')}
         </Link>
         <span className="text-neutral-300 dark:text-neutral-600">/</span>
         <Link
           href="/panel/inmobiliaria/agentes"
-          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
+          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-[#1A40FF] transition-colors"
         >
           <CaretLeft className="w-4 h-4" />
           {t('inmobiliaria.agentes.title')}
@@ -155,8 +155,8 @@ function AgenteDetailContent() {
             className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
           >
             <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <div className="w-8 h-8 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F]" />
               </div>
               <h3 className="font-semibold text-neutral-900 dark:text-white">
                 {t('inmobiliaria.agentes.detail.commissions')}

@@ -109,9 +109,9 @@ export function NoDataEmptyState({ context }: NoDataEmptyStateProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center"
+      className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center"
     >
-      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+      <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
         <Icon className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
       </div>
 

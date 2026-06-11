@@ -91,10 +91,10 @@ function MessagesSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className={cn('flex', i % 2 === 0 ? 'justify-start' : 'justify-end')}>
           <div className={cn(
-            'h-12 rounded-2xl',
+            'h-12 rounded-xl',
             i % 2 === 0
-              ? 'w-3/5 bg-neutral-200 dark:bg-neutral-700 rounded-bl-md'
-              : 'w-2/5 bg-indigo-100 dark:bg-indigo-900/30 rounded-br-md'
+              ? 'w-3/5 bg-neutral-200 dark:bg-neutral-700 rounded-bl-sm'
+              : 'w-2/5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-br-sm'
           )} />
         </div>
       ))}
@@ -234,9 +234,9 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
               </p>
             </div>
             {totalUnread > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-full">
-                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+              <div className="flex items-center gap-2 px-4 py-2 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-full">
+                <div className="w-2 h-2 bg-[#1A40FF] rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
                   {totalUnread} {locale === 'es' ? 'sin leer' : 'unread'}
                 </span>
               </div>
@@ -249,13 +249,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden shadow-sm flex-1 min-h-0"
+          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden flex-1 min-h-0"
         >
           <div className="h-full flex">
             {/* Conversations List */}
             <div
               className={cn(
-                'w-full md:w-80 lg:w-96 border-r border-neutral-100 dark:border-neutral-700 flex flex-col bg-stone-50/50 dark:bg-[#0f0f10]/50',
+                'w-full md:w-80 lg:w-96 border-r border-neutral-100 dark:border-neutral-700 flex flex-col bg-neutral-50/50 dark:bg-[#0f0f10]/50',
                 showMobileChat && 'hidden md:flex',
               )}
             >
@@ -269,7 +269,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={locale === 'es' ? 'Buscar conversacion...' : 'Search conversation...'}
                     aria-label={locale === 'es' ? 'Buscar conversacion' : 'Search conversation'}
-                    className="w-full h-11 pl-11 pr-4 bg-stone-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                    className="w-full h-11 pl-11 pr-4 bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 transition-all"
                   />
                 </div>
               </div>
@@ -280,7 +280,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   <ConversationsSkeleton />
                 ) : filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                    <div className="w-14 h-14 rounded-full bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+                    <div className="w-14 h-14 rounded-full bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
                       <Chat className="w-6 h-6 text-neutral-400" />
                     </div>
                     <p className="font-medium text-neutral-900 dark:text-white mb-1">
@@ -306,12 +306,12 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         className={cn(
                           'w-full flex items-start gap-3 px-4 py-4 text-left transition-all',
                           selectedApplicationId === conversation.applicationId
-                            ? 'bg-white dark:bg-[#1a1a1c] border-l-2 border-l-indigo-500'
+                            ? 'bg-white dark:bg-[#1a1a1c] border-l-2 border-l-[#1A40FF]'
                             : 'hover:bg-white/80 dark:hover:bg-[#1a1a1c]/80',
                         )}
                       >
                         <div className="relative flex-shrink-0">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm overflow-hidden">
+                          <div className="w-12 h-12 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center text-[#1A40FF] dark:text-[#5570FF] font-semibold text-sm overflow-hidden">
                             {getInitials(conversation.name)}
                           </div>
                         </div>
@@ -350,7 +350,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         </div>
 
                         {conversation.unreadCount > 0 && (
-                          <span className="w-5 h-5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="w-5 h-5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
                             {conversation.unreadCount}
                           </span>
                         )}
@@ -383,11 +383,11 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setShowMobileChat(false)}
-                        className="md:hidden p-2 -ml-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-600 dark:text-neutral-400"
+                        className="md:hidden p-2 -ml-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] text-neutral-600 dark:text-neutral-400"
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
+                      <div className="w-11 h-11 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center text-[#1A40FF] dark:text-[#5570FF] font-semibold text-sm">
                         {getInitials(selectedConversation.name)}
                       </div>
                       <div>
@@ -406,8 +406,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         className={cn(
                           'p-2.5 rounded-full transition-colors',
                           showInfoPanel
-                            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                            : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]',
+                            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                            : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]',
                         )}
                         aria-label={locale === 'es' ? 'Informacion' : 'Information'}
                       >
@@ -420,8 +420,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                           className={cn(
                             'p-2.5 rounded-full transition-colors',
                             showOptionsList
-                              ? 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-700 dark:text-neutral-300'
-                              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]',
+                              ? 'bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-700 dark:text-neutral-300'
+                              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]',
                           )}
                           aria-label={locale === 'es' ? 'Mas opciones' : 'More options'}
                         >
@@ -435,25 +435,25 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: -10 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-700 py-2 z-50"
+                              className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 py-2 z-50"
                             >
                               <button
                                 onClick={handleArchive}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
                               >
                                 <Archive className="w-4 h-4 text-neutral-400" />
                                 {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}
                               </button>
                               <button
                                 onClick={handleMute}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
                               >
                                 <BellSlash className="w-4 h-4 text-neutral-400" />
                                 {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
                               </button>
                               <button
                                 onClick={handleReport}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
                               >
                                 <Flag className="w-4 h-4 text-neutral-400" />
                                 {locale === 'es' ? 'Reportar' : 'Report'}
@@ -469,12 +469,12 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   <div className="flex-1 flex overflow-hidden">
                     {/* Messages Area */}
                     <div className={cn('flex-1 flex flex-col', showInfoPanel && 'hidden lg:flex')}>
-                      <div className="flex-1 overflow-y-auto p-6 bg-stone-50/50 dark:bg-[#0f0f10]/50">
+                      <div className="flex-1 overflow-y-auto p-6 bg-neutral-50/50 dark:bg-[#0f0f10]/50">
                         {isLoadingMessages ? (
                           <MessagesSkeleton />
                         ) : messages.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                            <div className="w-14 h-14 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4 shadow-sm border border-neutral-100 dark:border-neutral-700">
+                            <div className="w-14 h-14 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4 border border-neutral-100 dark:border-neutral-700">
                               <ChatCircle className="w-6 h-6 text-neutral-400" />
                             </div>
                             <p className="font-medium text-neutral-900 dark:text-white mb-1">
@@ -499,10 +499,10 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                 >
                                   <div
                                     className={cn(
-                                      'max-w-[75%] px-4 py-3 rounded-2xl',
+                                      'max-w-[75%] px-4 py-3 rounded-xl',
                                       message.isMine
-                                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100 border border-indigo-200 dark:border-indigo-800/50 rounded-br-md'
-                                        : 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-700 rounded-bl-md shadow-sm',
+                                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 rounded-br-sm'
+                                        : 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-700 rounded-bl-sm',
                                     )}
                                   >
                                     <p className="text-sm leading-relaxed">{message.content}</p>
@@ -510,13 +510,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                       className={cn(
                                         'flex items-center justify-end gap-1.5 mt-1.5',
                                         message.isMine
-                                          ? 'text-indigo-500 dark:text-indigo-400'
+                                          ? 'text-[#1A40FF] dark:text-[#5570FF]'
                                           : 'text-neutral-400',
                                       )}
                                     >
                                       <span className="text-[11px]">{formatMessageTime(message.createdAt)}</span>
                                       {message.isMine && (message.readAt ? (
-                                        <Checks className="w-3.5 h-3.5 text-indigo-200" />
+                                        <Checks className="w-3.5 h-3.5 text-[#1A40FF]" />
                                       ) : (
                                         <Check className="w-3.5 h-3.5" />
                                       ))}
@@ -535,13 +535,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1">
                             <button
-                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
                               aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
                             >
                               <Paperclip className="w-5 h-5" />
                             </button>
                             <button
-                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
                               aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
                             >
                               <Image className="w-5 h-5" />
@@ -556,7 +556,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                               placeholder={locale === 'es' ? 'Escribe un mensaje...' : 'Type a message...'}
                               aria-label={locale === 'es' ? 'Escribe un mensaje' : 'Type a message'}
-                              className="w-full h-12 pl-5 pr-12 bg-stone-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                              className="w-full h-12 pl-5 pr-12 bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 transition-all"
                             />
                             <button
                               className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
@@ -572,8 +572,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             className={cn(
                               'p-3 rounded-full transition-all',
                               messageText.trim() && !isSending
-                                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
-                                : 'bg-stone-100 dark:bg-[#2a2a2c] text-neutral-300 dark:text-neutral-600 cursor-not-allowed',
+                                ? 'bg-[#1A40FF] text-white hover:opacity-90'
+                                : 'bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-300 dark:text-neutral-600 cursor-not-allowed',
                             )}
                           >
                             <PaperPlaneTilt className="w-5 h-5" />
@@ -599,7 +599,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             </h3>
                             <button
                               onClick={() => setShowInfoPanel(false)}
-                              className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 transition-colors"
+                              className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 transition-colors"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -607,7 +607,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
 
                           <div className="p-6">
                             <div className="text-center mb-6">
-                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-2xl mx-auto mb-3">
+                              <div className="w-20 h-20 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center text-[#1A40FF] dark:text-[#5570FF] font-bold text-2xl mx-auto mb-3">
                                 {getInitials(selectedConversation.name)}
                               </div>
                               <h4 className="font-semibold text-neutral-900 dark:text-white text-lg">
@@ -620,8 +620,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
 
                             <div className="space-y-4">
                               {selectedConversation.property && (
-                                <div className="flex items-start gap-3 p-3 bg-stone-50 dark:bg-[#2a2a2c] rounded-xl">
-                                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
+                                <div className="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-[#2a2a2c] rounded-xl">
+                                  <div className="w-9 h-9 rounded-md bg-white dark:bg-[#1a1a1c] flex items-center justify-center">
                                     <House className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
                                   </div>
                                   <div>
@@ -636,8 +636,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               )}
 
                               {selectedConversation.email && (
-                                <div className="flex items-start gap-3 p-3 bg-stone-50 dark:bg-[#2a2a2c] rounded-xl">
-                                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
+                                <div className="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-[#2a2a2c] rounded-xl">
+                                  <div className="w-9 h-9 rounded-md bg-white dark:bg-[#1a1a1c] flex items-center justify-center">
                                     <Envelope className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
                                   </div>
                                   <div>
@@ -660,14 +660,14 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               <div className="space-y-2">
                                 <button
                                   onClick={handleMute}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
                                 >
                                   <BellSlash className="w-4 h-4 text-neutral-400" />
                                   {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
                                 </button>
                                 <button
                                   onClick={handleArchive}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
                                 >
                                   <Archive className="w-4 h-4 text-neutral-400" />
                                   {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}

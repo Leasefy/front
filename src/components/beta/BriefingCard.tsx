@@ -38,30 +38,30 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_LEFT_COLORS: Record<string, string> = {
-  emerald: 'border-l-emerald-400 dark:border-l-emerald-500',
-  blue: 'border-l-blue-400 dark:border-l-blue-500',
-  amber: 'border-l-amber-400 dark:border-l-amber-500',
-  purple: 'border-l-purple-400 dark:border-l-purple-500',
-  pink: 'border-l-pink-400 dark:border-l-pink-500',
-  indigo: 'border-l-indigo-400 dark:border-l-indigo-500',
+  emerald: 'border-l-[#2C7A53] dark:border-l-[#2C7A53]',
+  blue: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
+  amber: 'border-l-[#B7791F] dark:border-l-[#B7791F]',
+  purple: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
+  pink: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
+  indigo: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
 };
 
 const ICON_COLORS: Record<string, string> = {
-  emerald: 'text-emerald-500 dark:text-emerald-400',
-  blue: 'text-blue-500 dark:text-blue-400',
-  amber: 'text-amber-500 dark:text-amber-400',
-  purple: 'text-purple-500 dark:text-purple-400',
-  pink: 'text-pink-500 dark:text-pink-400',
-  indigo: 'text-indigo-500 dark:text-indigo-400',
+  emerald: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  blue: 'text-[#1A40FF] dark:text-[#5570FF]',
+  amber: 'text-[#B7791F] dark:text-[#D2992F]',
+  purple: 'text-neutral-600 dark:text-neutral-300',
+  pink: 'text-neutral-600 dark:text-neutral-300',
+  indigo: 'text-[#1A40FF] dark:text-[#5570FF]',
 };
 
 const ACTION_BTN_COLORS: Record<string, string> = {
-  emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-500/20',
-  blue: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20',
-  amber: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20',
-  purple: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 hover:bg-purple-100 dark:hover:bg-purple-500/20',
-  pink: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/30 hover:bg-pink-100 dark:hover:bg-pink-500/20',
-  indigo: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-700/20',
+  emerald: 'text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border-[#2C7A53]/30 dark:border-[#2C7A53]/40 hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20',
+  blue: 'text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border-[#1A40FF]/30 dark:border-[#1A40FF]/40 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20',
+  amber: 'text-[#B7791F] dark:text-[#D2992F] bg-[#F8F0E0] dark:bg-[#B7791F]/15 border-[#B7791F]/30 dark:border-[#B7791F]/40 hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20',
+  purple: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-100 dark:bg-neutral-800/20',
+  pink: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-100 dark:bg-neutral-800/20',
+  indigo: 'text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border-[#1A40FF]/30 dark:border-[#1A40FF]/40 hover:bg-[#EEF1FF] dark:hover:opacity-90/20',
 };
 
 // ============================================================================
@@ -106,7 +106,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
         'border border-neutral-200/60 dark:border-border/50',
         'border-l-[3px]',
         borderColor,
-        'rounded-lg overflow-hidden',
+        'rounded-md overflow-hidden',
         'bg-white/60 dark:bg-card/60',
         'transition-all duration-200'
       )}
@@ -175,7 +175,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
                 }}
                 className={cn(
                   'inline-flex items-center gap-1.5',
-                  'px-2.5 py-1.5 rounded-md',
+                  'px-2.5 py-1.5 rounded-sm',
                   'text-xs font-medium',
                   'border',
                   'transition-colors duration-150',
@@ -248,7 +248,7 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
               className={cn(
                 'inline-flex items-center gap-1',
                 'px-1.5 py-0.5 rounded-full',
-                'bg-indigo-600/10 text-indigo-500',
+                'bg-[#1A40FF]/10 text-[#1A40FF]',
                 'text-[10px] font-semibold'
               )}
             >

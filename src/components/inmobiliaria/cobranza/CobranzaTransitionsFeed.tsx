@@ -41,7 +41,7 @@ export function CobranzaTransitionsFeed({
       {isLoading ? (
         <div className="mt-4 space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+            <div key={i} className="h-12 rounded-md bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
           ))}
         </div>
       ) : transitions.length === 0 ? (
@@ -67,7 +67,7 @@ export function CobranzaTransitionsFeed({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="flex flex-wrap items-start gap-2 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800"
+                className="flex flex-wrap items-start gap-2 p-3 rounded-md bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800"
               >
                 {/* Stage transition */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -91,7 +91,7 @@ export function CobranzaTransitionsFeed({
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                       item.actor === 'agent'
-                        ? 'bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400'
+                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400'
                     }`}
                   >

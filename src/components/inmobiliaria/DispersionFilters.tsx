@@ -145,7 +145,7 @@ export function DispersionFilters({
             placeholder={t('inmobiliaria.dispersiones.filtersPanel.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+            className="w-full pl-10 pr-4 py-2 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all text-sm"
           />
           {searchInput && (
             <button
@@ -164,16 +164,16 @@ export function DispersionFilters({
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-medium',
+            'flex items-center gap-2 px-4 py-2 rounded-md border transition-all text-sm font-medium',
             showFilters || activeFiltersCount > 0
-              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+              ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
               : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
           )}
         >
           <Funnel className="w-4 h-4" />
           <span>{t('inmobiliaria.dispersiones.filtersPanel.filtersButton')}</span>
           {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
+            <span className="px-1.5 py-0.5 rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
               {activeFiltersCount}
             </span>
           )}
@@ -200,7 +200,7 @@ export function DispersionFilters({
                   </label>
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'month' ? null : 'month')}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-background text-foreground hover:border-foreground/30 transition-all text-sm"
+                    className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background text-foreground hover:border-foreground/30 transition-all text-sm"
                   >
                     <CalendarBlank className="w-4 h-4 text-muted-foreground" />
                     <span className="font-medium capitalize min-w-[120px]">{getMonthLabel()}</span>
@@ -212,7 +212,7 @@ export function DispersionFilters({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-56 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-64 overflow-y-auto"
+                        className="absolute top-full left-0 mt-1 w-56 p-2 rounded-xl border border-border bg-card z-50 max-h-64 overflow-y-auto"
                       >
                         {recentMonths.map((month) => (
                           <button
@@ -222,9 +222,9 @@ export function DispersionFilters({
                               setOpenDropdown(null);
                             }}
                             className={cn(
-                              'w-full px-3 py-2 rounded-lg text-left text-sm capitalize transition-colors',
+                              'w-full px-3 py-2 rounded-md text-left text-sm capitalize transition-colors',
                               filters.month === month.value
-                                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
+                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -241,7 +241,7 @@ export function DispersionFilters({
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.dispersiones.filtersPanel.statusLabel')}
                   </label>
-                  <div className="flex items-center gap-1 p-1 rounded-lg bg-muted overflow-x-auto">
+                  <div className="flex items-center gap-1 p-1 rounded-md bg-muted overflow-x-auto">
                     {STATUS_TAB_VALUES.map((tabValue) => {
                       const count = statusCounts[tabValue] || 0;
                       const isActive = filters.status === tabValue;
@@ -251,9 +251,9 @@ export function DispersionFilters({
                           key={tabValue}
                           onClick={() => updateFilter('status', tabValue)}
                           className={cn(
-                            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all',
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium whitespace-nowrap transition-all',
                             isActive
-                              ? 'bg-background text-foreground shadow-sm'
+                              ? 'bg-background text-foreground'
                               : 'text-muted-foreground hover:text-foreground'
                           )}
                         >
@@ -262,7 +262,7 @@ export function DispersionFilters({
                             <span className={cn(
                               'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
                               isActive
-                                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                                 : 'bg-muted-foreground/20 text-muted-foreground'
                             )}>
                               {count}
@@ -285,9 +285,9 @@ export function DispersionFilters({
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'propietario' ? null : 'propietario')}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all min-w-[200px] justify-between border',
+                      'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all min-w-[200px] justify-between border',
                       filters.propietarioId !== 'all'
-                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                        ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'border-border bg-background text-foreground hover:border-foreground/30'
                     )}
                   >
@@ -301,7 +301,7 @@ export function DispersionFilters({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-64 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+                        className="absolute top-full left-0 mt-1 w-64 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
                       >
                         <button
                           onClick={() => {
@@ -309,9 +309,9 @@ export function DispersionFilters({
                             setOpenDropdown(null);
                           }}
                           className={cn(
-                            'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                            'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                             filters.propietarioId === 'all'
-                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                              ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                               : 'text-foreground hover:bg-muted'
                           )}
                         >
@@ -325,9 +325,9 @@ export function DispersionFilters({
                               setOpenDropdown(null);
                             }}
                             className={cn(
-                              'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                              'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                               filters.propietarioId === propietario.id
-                                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -343,7 +343,7 @@ export function DispersionFilters({
                 {activeFiltersCount > 0 && (
                   <button
                     onClick={clearAllFilters}
-                    className="px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                    className="px-3 py-2 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 rounded-md transition-colors"
                   >
                     {t('inmobiliaria.dispersiones.filtersPanel.clearFilters')}
                   </button>

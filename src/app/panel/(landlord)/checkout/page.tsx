@@ -93,7 +93,7 @@ function CheckoutContent() {
                         key={feature.id}
                         className="flex items-center gap-2 text-sm text-muted-foreground"
                       >
-                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-[#2C7A53] shrink-0" />
                         <span>{feature.name}</span>
                         {feature.limit && feature.limit !== 'unlimited' && (
                           <span className="text-muted-foreground">
@@ -140,7 +140,7 @@ function CheckoutContent() {
                       : 'border-border text-muted-foreground hover:border-border'
                   )}
                 >
-                  <span className="absolute -top-2.5 right-3 px-2 py-0.5 text-xs font-medium bg-emerald-500 text-white rounded-sm">
+                  <span className="absolute -top-2.5 right-3 px-2 py-0.5 text-xs font-medium bg-[#2C7A53] text-white rounded-sm">
                     -20%
                   </span>
                   <span className="block">{t('landlord.checkout.yearly')}</span>

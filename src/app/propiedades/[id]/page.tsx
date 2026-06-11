@@ -56,7 +56,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
         <main id="main-content" className="min-h-screen bg-background">
           <div className="pt-20 container-platform">
             <div className="animate-pulse space-y-6">
-              <div className="h-[45vh] md:h-[65vh] bg-neutral-100 rounded-2xl" />
+              <div className="h-[45vh] md:h-[65vh] bg-neutral-100 rounded-xl" />
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 py-10">
                 <div className="lg:col-span-7 space-y-4">
                   <div className="h-4 bg-neutral-100 rounded w-40" />
@@ -67,7 +67,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                   </div>
                 </div>
                 <div className="lg:col-span-5 hidden lg:block">
-                  <div className="h-64 bg-neutral-100 rounded-2xl" />
+                  <div className="h-64 bg-neutral-100 rounded-xl" />
                 </div>
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
               <button
                 onClick={() => openGallery(0)}
                 aria-label={`Ver galeria de imagenes de ${property.title}`}
-                className="md:col-span-2 relative overflow-hidden rounded-2xl cursor-pointer group"
+                className="md:col-span-2 relative overflow-hidden rounded-xl cursor-pointer group"
               >
                 <Image
                   src={property.images[0]}
@@ -150,7 +150,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                   <button
                     onClick={() => openGallery(1)}
                     aria-label="Ver imagen 2 en galeria"
-                    className="relative overflow-hidden rounded-2xl cursor-pointer group"
+                    className="relative overflow-hidden rounded-xl cursor-pointer group"
                   >
                     <Image
                       src={property.images[1]}
@@ -166,7 +166,7 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                   <button
                     onClick={() => openGallery(2)}
                     aria-label="Ver imagen 3 en galeria"
-                    className="relative overflow-hidden rounded-2xl cursor-pointer group"
+                    className="relative overflow-hidden rounded-xl cursor-pointer group"
                   >
                     <Image
                       src={property.images[2]}
@@ -182,14 +182,14 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                           e.stopPropagation();
                           openGallery(0);
                         }}
-                        className="absolute bottom-4 right-4 px-4 py-2.5 bg-white/95 backdrop-blur-sm text-foreground text-[13px] font-medium rounded-xl hover:bg-white transition-colors shadow-lg"
+                        className="absolute bottom-4 right-4 px-4 py-2.5 bg-white/95 backdrop-blur-sm text-foreground text-[13px] font-medium rounded-xl hover:bg-white transition-colors"
                       >
                         Ver {property.images.length} fotos
                       </span>
                     )}
                   </button>
                 ) : (
-                  <div className="relative overflow-hidden rounded-2xl bg-neutral-100" />
+                  <div className="relative overflow-hidden rounded-xl bg-neutral-100" />
                 )}
               </div>
             </div>
@@ -314,8 +314,8 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
               {/* Map / Location */}
               <div className="mt-12">
                 <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wide mb-4">Ubicación</h2>
-                <div className="border border-border rounded-2xl bg-gradient-to-br from-neutral-50 to-neutral-100/50 p-8 flex flex-col items-center justify-center gap-5 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <div className="border border-border rounded-xl bg-gradient-to-br from-neutral-50 to-neutral-100/50 p-8 flex flex-col items-center justify-center gap-5 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
                     <MapPin className="w-6 h-6 text-primary" strokeWidth={1.5} />
                   </div>
                   <div>

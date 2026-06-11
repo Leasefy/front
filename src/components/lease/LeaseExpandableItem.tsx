@@ -22,29 +22,29 @@ function PaymentStatus({ status }: { status: Payment['status'] }) {
     paid: {
       icon: CheckCircle,
       text: 'Pagado',
-      className: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+      className: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
     },
     pending: {
       icon: Clock,
       text: 'Pendiente',
-      className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+      className: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
     },
     late: {
       icon: WarningCircle,
       text: 'Atrasado',
-      className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+      className: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
     },
     failed: {
       icon: WarningCircle,
       text: 'Fallido',
-      className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+      className: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
     },
   };
 
   const { icon: Icon, text, className } = config[status];
 
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg font-medium', className)}>
+    <span className={cn('inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md font-medium', className)}>
       <Icon className="w-3 h-3" />
       {text}
     </span>
@@ -114,7 +114,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 {lease.propertyTitle}
               </h3>
               {isEndingSoon && (
-                <span className="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-md flex-shrink-0 font-medium">
+                <span className="text-xs px-2 py-0.5 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] rounded-sm flex-shrink-0 font-medium">
                   Vence pronto
                 </span>
               )}
@@ -127,12 +127,12 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
           {/* Payment status indicators */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {lateCount > 0 && (
-              <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+              <span className="text-xs text-[#C4503B] dark:text-[#E0664D] font-medium">
                 {lateCount} atrasado{lateCount > 1 ? 's' : ''}
               </span>
             )}
             {pendingCount > 0 && lateCount === 0 && (
-              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+              <span className="text-xs text-[#B7791F] dark:text-[#D2992F] font-medium">
                 {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
               </span>
             )}
@@ -182,7 +182,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">Días restantes</span>
                   <span className={cn(
                     'text-sm font-medium',
-                    daysRemaining <= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-neutral-900 dark:text-white'
+                    daysRemaining <= 60 ? 'text-[#B7791F] dark:text-[#D2992F]' : 'text-neutral-900 dark:text-white'
                   )}>
                     {daysRemaining} días
                   </span>
@@ -236,7 +236,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 {isEndingSoon && (
                   <Button
                     size="sm"
-                    className="gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
+                    className="gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white"
                     onClick={handleRenewal}
                   >
                     <ArrowsClockwise className="w-4 h-4" />
@@ -253,7 +253,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
               </p>
               {paymentsLoading ? (
                 <div className="flex items-center justify-center py-6">
-                  <SpinnerGap className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" />
+                  <SpinnerGap className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] animate-spin" />
                 </div>
               ) : (
                 <div className="space-y-3.5">
@@ -271,7 +271,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                     <span className="text-sm text-neutral-500 dark:text-neutral-400">Pendientes</span>
                     <span className={cn(
                       'text-sm',
-                      pendingCount > 0 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-900 dark:text-white'
+                      pendingCount > 0 ? 'text-[#B7791F] dark:text-[#D2992F] font-medium' : 'text-neutral-900 dark:text-white'
                     )}>
                       {pendingCount}
                     </span>
@@ -280,7 +280,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                     <span className="text-sm text-neutral-500 dark:text-neutral-400">Atrasados</span>
                     <span className={cn(
                       'text-sm',
-                      lateCount > 0 ? 'text-red-600 dark:text-red-400 font-medium' : 'text-neutral-900 dark:text-white'
+                      lateCount > 0 ? 'text-[#C4503B] dark:text-[#E0664D] font-medium' : 'text-neutral-900 dark:text-white'
                     )}>
                       {lateCount}
                     </span>
@@ -301,7 +301,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
               {paymentsLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <SpinnerGap className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" />
+                  <SpinnerGap className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] animate-spin" />
                 </div>
               ) : payments.length === 0 ? (
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 p-5 text-center">
@@ -346,7 +346,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
                   {payments.length > 5 && (
                     <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 text-center border-t border-neutral-100 dark:border-neutral-700">
-                      <button className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+                      <button className="text-sm text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium">
                         Ver {payments.length - 5} pagos más
                       </button>
                     </div>

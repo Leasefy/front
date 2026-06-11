@@ -27,27 +27,27 @@ interface ExecutiveSummaryProps {
 
 const HEALTH_COLORS = {
   excellent: {
-    ring: 'text-emerald-500',
-    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    track: 'text-emerald-200 dark:text-emerald-800',
+    ring: 'text-[#2C7A53]',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    track: 'text-[#2C7A53] dark:text-[#3EAE70]',
     label: { es: 'Excelente', en: 'Excellent' },
   },
   good: {
-    ring: 'text-blue-500',
-    bg: 'bg-blue-50 dark:bg-blue-900/20',
-    track: 'text-blue-200 dark:text-blue-800',
+    ring: 'text-[#1A40FF]',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    track: 'text-[#1A40FF] dark:text-[#5570FF]',
     label: { es: 'Bueno', en: 'Good' },
   },
   warning: {
-    ring: 'text-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-900/20',
-    track: 'text-amber-200 dark:text-amber-800',
+    ring: 'text-[#B7791F]',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    track: 'text-[#B7791F] dark:text-[#D2992F]',
     label: { es: 'Atencion', en: 'Warning' },
   },
   critical: {
-    ring: 'text-red-500',
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    track: 'text-red-200 dark:text-red-800',
+    ring: 'text-[#C4503B]',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    track: 'text-[#C4503B] dark:text-[#E0664D]',
     label: { es: 'Critico', en: 'Critical' },
   },
 } as const;
@@ -187,8 +187,8 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
                     className={cn(
                       'text-xs font-semibold',
                       m.netIncome >= 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-red-600 dark:text-red-400'
+                        ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                        : 'text-[#C4503B] dark:text-[#E0664D]'
                     )}
                   >
                     {formatCurrency(m.netIncome)}
@@ -249,17 +249,17 @@ function MetricCard({
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-4">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+        <div className="w-9 h-9 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
           <Icon className="w-4.5 h-4.5 text-neutral-500" />
         </div>
         {/* Delta indicator */}
         {deltaRaw !== 0 && (
           <div
             className={cn(
-              'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-md',
+              'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-sm',
               isGoodChange
-                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
-                : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+                ? 'text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                : 'text-[#C4503B] dark:text-[#E0664D] bg-[#F8EAE7] dark:bg-[#C4503B]/15'
             )}
           >
             {isPositiveChange ? (

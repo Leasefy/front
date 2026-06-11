@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { LeasefyLogo } from '@/components/brand';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
@@ -98,17 +99,14 @@ export default function UpdatePasswordPage() {
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <Link href="/">
-              <svg viewBox="0 0 207 60" className="h-8 w-auto text-foreground" fill="none">
-                <path d="M5 51L29 27L47 45V15" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M65.52 47V15.32H68.05V44.536H83.45V47H65.52Z" fill="currentColor"/>
-              </svg>
+              <LeasefyLogo size={28} tone="brand" />
             </Link>
           </div>
 
           {success ? (
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="h-9 w-9 text-green-600" />
+              <div className="mx-auto w-16 h-16 bg-[#E8F3EC] rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="h-9 w-9 text-[#2C7A53]" />
               </div>
               <h1 className="text-xl font-semibold text-foreground mb-2">
                 Contraseña actualizada

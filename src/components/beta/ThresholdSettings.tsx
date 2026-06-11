@@ -54,7 +54,7 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
         onClick={handleDecrement}
         disabled={value <= min}
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-lg',
+          'flex items-center justify-center w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
@@ -69,7 +69,7 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
       <div
         className={cn(
           'flex items-center justify-center min-w-[80px] px-3 py-1.5',
-          'rounded-lg border border-neutral-200 dark:border-border',
+          'rounded-md border border-neutral-200 dark:border-border',
           'bg-neutral-50 dark:bg-neutral-800/50',
           'text-[13px] font-medium text-foreground tabular-nums'
         )}
@@ -81,7 +81,7 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
         onClick={handleIncrement}
         disabled={value >= max}
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-lg',
+          'flex items-center justify-center w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
@@ -121,7 +121,7 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
         onClick={handleDecrement}
         disabled={value <= min}
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-lg',
+          'flex items-center justify-center w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
@@ -136,7 +136,7 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
       <div
         className={cn(
           'flex items-center justify-center min-w-[140px] px-3 py-1.5',
-          'rounded-lg border border-neutral-200 dark:border-border',
+          'rounded-md border border-neutral-200 dark:border-border',
           'bg-neutral-50 dark:bg-neutral-800/50',
           'text-[13px] font-medium text-foreground tabular-nums'
         )}
@@ -148,7 +148,7 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
         onClick={handleIncrement}
         disabled={value >= max}
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-lg',
+          'flex items-center justify-center w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
@@ -203,21 +203,21 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
   } => {
     if (score < 50) {
       return {
-        bg: 'bg-red-100 dark:bg-red-500/10',
-        text: 'text-red-600 dark:text-red-400',
+        bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+        text: 'text-[#C4503B] dark:text-[#E0664D]',
         label: t('beta.preferences.thresholds.scoreRisky'),
       };
     }
     if (score < 70) {
       return {
-        bg: 'bg-amber-100 dark:bg-amber-500/10',
-        text: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+        text: 'text-[#B7791F] dark:text-[#D2992F]',
         label: t('beta.preferences.thresholds.scoreModerate'),
       };
     }
     return {
-      bg: 'bg-emerald-100 dark:bg-emerald-500/10',
-      text: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
       label: t('beta.preferences.thresholds.scoreSafe'),
     };
   };
@@ -330,7 +330,7 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
               />
               <span
                 className={cn(
-                  'inline-flex items-center px-2 py-0.5 rounded-md',
+                  'inline-flex items-center px-2 py-0.5 rounded-sm',
                   'text-[11px] font-medium',
                   scoreColor.bg,
                   scoreColor.text

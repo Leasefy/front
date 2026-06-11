@@ -120,10 +120,10 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         <Link
           href="/inquilino/perfil"
           onClick={onItemClick}
-          className="block p-3 rounded-xl bg-stone-100 dark:bg-[#2a2a2e] border border-transparent dark:border-[#3a3a3e] hover:bg-stone-200/80 dark:hover:bg-[#323236] transition-colors"
+          className="block p-3 rounded-xl bg-neutral-100 dark:bg-[#2a2a2e] border border-transparent dark:border-[#3a3a3e] hover:bg-neutral-200/80 dark:hover:bg-[#323236] transition-colors"
         >
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-md bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
               <TrendUp className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
             </div>
             <div className="flex-1 min-w-0">
@@ -134,13 +134,13 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
           {/* Progress bar */}
           <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mb-3">
-            <div className="h-full w-4/5 bg-neutral-900 dark:bg-indigo-600 rounded-full" />
+            <div className="h-full w-4/5 bg-neutral-900 dark:bg-[#1A40FF] rounded-full" />
           </div>
 
           {/* Steps summary */}
           <div className="space-y-1.5">
             {/* Completed steps */}
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-1.5 text-[11px] text-[#2C7A53] dark:text-[#3EAE70]">
               <CheckCircle className="w-3 h-3" />
               <span>Info básica, Teléfono, Identidad, Emergencia</span>
             </div>

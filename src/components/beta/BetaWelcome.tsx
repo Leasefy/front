@@ -31,12 +31,12 @@ interface PromptCard {
 }
 
 const ICON_STYLES: Record<string, { bg: string; text: string }> = {
-  emerald: { bg: 'bg-emerald-100 dark:bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-400' },
-  blue: { bg: 'bg-blue-100 dark:bg-blue-500/15', text: 'text-blue-600 dark:text-blue-400' },
-  amber: { bg: 'bg-amber-100 dark:bg-amber-500/15', text: 'text-amber-600 dark:text-amber-400' },
-  rose: { bg: 'bg-rose-100 dark:bg-rose-500/15', text: 'text-rose-600 dark:text-rose-400' },
-  violet: { bg: 'bg-violet-100 dark:bg-violet-500/15', text: 'text-violet-600 dark:text-violet-400' },
-  sky: { bg: 'bg-sky-100 dark:bg-sky-500/15', text: 'text-sky-600 dark:text-sky-400' },
+  emerald: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]' },
+  blue: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]' },
+  amber: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]' },
+  rose: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]' },
+  violet: { bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-300' },
+  sky: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]' },
 };
 
 const PROMPT_CARDS: PromptCard[] = [
@@ -91,11 +91,11 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                 onClick={() => onPromptClick?.(t(card.descKey))}
                 className={cn(
                   'group text-left',
-                  'px-4 py-3.5 rounded-2xl',
+                  'px-4 py-3.5 rounded-xl',
                   'bg-white dark:bg-neutral-900',
                   'border border-neutral-200/80 dark:border-neutral-800/80',
                   'hover:border-neutral-300 dark:hover:border-neutral-700',
-                  'hover:shadow-sm',
+                  'hover:',
                   'hover:-translate-y-0.5',
                   'transition-all duration-200 ease-out',
                   'cursor-pointer'

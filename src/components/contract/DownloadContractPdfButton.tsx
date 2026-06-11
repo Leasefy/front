@@ -65,7 +65,7 @@ export function DownloadContractPdfButton({
 
   const base = 'inline-flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
   const variantClasses = {
-    primary: 'px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white',
+    primary: 'px-4 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white',
     secondary: 'px-3 py-2 rounded-xl border border-border bg-background text-foreground hover:bg-muted',
     ghost: 'text-muted-foreground hover:text-foreground underline-offset-2 hover:underline',
   }[variant];

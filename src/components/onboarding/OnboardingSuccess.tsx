@@ -35,13 +35,13 @@ export function OnboardingSuccess() {
         ...defaults,
         particleCount,
         origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-        colors: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'],
+        colors: ['#1A40FF', '#8A9CFF', '#6B6B6B', '#9B9B9B', '#C9CDD3'],
       })
       confetti({
         ...defaults,
         particleCount,
         origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-        colors: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'],
+        colors: ['#1A40FF', '#8A9CFF', '#6B6B6B', '#9B9B9B', '#C9CDD3'],
       })
     }, 250)
 
@@ -65,10 +65,10 @@ export function OnboardingSuccess() {
   }, [router])
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center p-4">
       {/* Subtle background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-indigo-50/50 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-[#1A40FF]/50 to-transparent rounded-full blur-3xl" />
       </div>
 
       <motion.div
@@ -77,7 +77,7 @@ export function OnboardingSuccess() {
         transition={{ duration: 0.5 }}
         className="relative z-10 max-w-lg w-full"
       >
-        <div className="bg-white rounded-3xl shadow-2xl shadow-neutral-200/50 border border-neutral-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-neutral-200/50 border border-neutral-100 overflow-hidden">
           {/* Success animation */}
           <div className="pt-12 pb-8 px-8 text-center">
             {/* Check animation */}
@@ -87,7 +87,7 @@ export function OnboardingSuccess() {
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
               className="relative inline-flex"
             >
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/30">
+              <div className="w-20 h-20 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center shadow-[#1A40FF]/30">
                 <motion.div
                   initial={{ scale: 0, rotate: -45 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -104,7 +104,7 @@ export function OnboardingSuccess() {
                 transition={{ delay: 0.6 }}
                 className="absolute -top-2 -right-2"
               >
-                <Star className="w-7 h-7 text-amber-400 fill-amber-400" />
+                <Star className="w-7 h-7 text-[#B7791F] fill-[#B7791F]" />
               </motion.div>
             </motion.div>
 
@@ -113,7 +113,7 @@ export function OnboardingSuccess() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-full text-sm font-medium text-indigo-700 mt-6"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#EEF1FF] rounded-full text-sm font-medium text-[#1A40FF] mt-6"
             >
               <Confetti className="w-4 h-4" />
               Cuenta configurada
@@ -144,17 +144,17 @@ export function OnboardingSuccess() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="px-8 py-6 bg-stone-50 border-t border-neutral-100"
+            className="px-8 py-6 bg-neutral-50 border-t border-neutral-100"
           >
             <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
-              <Rocket className="w-4 h-4 text-indigo-600" />
+              <Rocket className="w-4 h-4 text-[#1A40FF]" />
               Próximos pasos
             </h3>
             <div className="space-y-3">
               {[
-                { icon: Buildings, text: 'Completar fotos y descripción de tu propiedad', color: 'bg-indigo-100 text-indigo-600' },
-                { icon: House, text: 'Publicar tu anuncio', color: 'bg-amber-100 text-amber-600' },
-                { icon: Users, text: 'Recibir y evaluar candidatos', color: 'bg-emerald-100 text-emerald-600' },
+                { icon: Buildings, text: 'Completar fotos y descripción de tu propiedad', color: 'bg-[#EEF1FF] text-[#1A40FF]' },
+                { icon: House, text: 'Publicar tu anuncio', color: 'bg-[#F8F0E0] text-[#B7791F]' },
+                { icon: Users, text: 'Recibir y evaluar candidatos', color: 'bg-[#E8F3EC] text-[#2C7A53]' },
               ].map((item, index) => (
                 <motion.div
                   key={index}
@@ -186,9 +186,9 @@ export function OnboardingSuccess() {
               href="/panel?setup=true"
               className={cn(
                 'flex items-center justify-center gap-2 w-full py-4 px-6 text-sm font-semibold',
-                'bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl',
-                'hover:bg-indigo-700 transition-all',
-                'shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30'
+                'bg-[#1A40FF] text-white rounded-xl',
+                'hover:opacity-90 transition-all',
+                ' shadow-[#1A40FF]/20 hover: hover:shadow-[#1A40FF]/30'
               )}
             >
               <House className="w-4 h-4" />
@@ -197,7 +197,7 @@ export function OnboardingSuccess() {
             </Link>
 
             <p className="text-center text-xs text-neutral-400 pt-2">
-              Redirigiendo automáticamente en <span className="font-semibold text-indigo-600">{countdown}</span> segundos...
+              Redirigiendo automáticamente en <span className="font-semibold text-[#1A40FF]">{countdown}</span> segundos...
             </p>
           </motion.div>
         </div>

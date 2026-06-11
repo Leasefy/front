@@ -51,7 +51,7 @@ function MagnifyingGlassVisual() {
     <div className="relative w-full h-full overflow-hidden px-6 py-4">
       {/* Animated glow effects */}
       <motion.div
-        className="absolute top-[10%] right-[20%] w-[150px] h-[150px] bg-violet-500/[0.08] rounded-full blur-[60px] pointer-events-none"
+        className="absolute top-[10%] right-[20%] w-[150px] h-[150px] bg-neutral-500/[0.08] rounded-full blur-[60px] pointer-events-none"
         animate={{
           scale: [1, 1.2, 1],
           opacity: [0.08, 0.12, 0.08],
@@ -59,7 +59,7 @@ function MagnifyingGlassVisual() {
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute bottom-[20%] left-[10%] w-[120px] h-[120px] bg-cyan-500/[0.06] rounded-full blur-[50px] pointer-events-none"
+        className="absolute bottom-[20%] left-[10%] w-[120px] h-[120px] bg-[#1A40FF]/[0.06] rounded-full blur-[50px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.06, 0.1, 0.06],
@@ -119,7 +119,7 @@ function MagnifyingGlassVisual() {
               animate={{ scale: 1 }}
               transition={{ delay: 0.7 + i * 0.12, type: "spring", stiffness: 400 }}
             >
-              <CheckCircle className="w-2.5 h-2.5 text-emerald-400" />
+              <CheckCircle className="w-2.5 h-2.5 text-[#2C7A53]" />
             </motion.div>
             {tag}
           </motion.span>
@@ -145,7 +145,7 @@ function MagnifyingGlassVisual() {
           whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
           className="relative bg-white/10 backdrop-blur-sm border border-white/10 overflow-hidden cursor-pointer transition-shadow"
         >
-          <div className="h-[60px] bg-gradient-to-br from-amber-400/20 via-orange-400/15 to-rose-400/20 relative overflow-hidden">
+          <div className="h-[60px] bg-gradient-to-br from-[#B7791F]/20 via-[#B7791F]/15 to-[#C4503B]/20 relative overflow-hidden">
             {/* Animated shimmer */}
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
@@ -179,7 +179,7 @@ function MagnifyingGlassVisual() {
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="absolute bottom-2 left-2 flex items-center gap-1 bg-emerald-500/80 text-[7px] font-medium text-white px-1.5 py-0.5"
+              className="absolute bottom-2 left-2 flex items-center gap-1 bg-[#2C7A53]/80 text-[7px] font-medium text-white px-1.5 py-0.5"
             >
               <CheckCircle className="w-2 h-2" /> Verificado
             </motion.div>
@@ -270,7 +270,7 @@ function ArriendoPassVisual() {
           boxShadow: "0 25px 50px rgba(124, 58, 237, 0.4)",
           rotateX: -2,
         }}
-        className="bg-gradient-to-br from-primary via-primary to-violet-600 p-4 relative overflow-hidden cursor-pointer"
+        className="bg-gradient-to-br from-primary via-primary to-[#6B6B6B] p-4 relative overflow-hidden cursor-pointer"
         style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
       >
         {/* Animated decorative circles */}
@@ -401,11 +401,11 @@ function ArriendoPassVisual() {
             transition={{ delay: 0.9 }}
             className="text-right"
           >
-            <span className="text-[9px] font-semibold text-emerald-600 block">Aplica a 3+ y ahorras</span>
+            <span className="text-[9px] font-semibold text-[#2C7A53] block">Aplica a 3+ y ahorras</span>
             <motion.span
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="text-[12px] font-bold text-emerald-600 inline-block"
+              className="text-[12px] font-bold text-[#2C7A53] inline-block"
             >
               $59.800+
             </motion.span>
@@ -432,7 +432,7 @@ function VerifiedVisual() {
         className="w-full bg-white overflow-hidden cursor-pointer"
         style={{ border: "1px solid rgba(0,0,0,0.06)" }}
       >
-        <div className="h-[50px] bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-50 relative flex items-center justify-center overflow-hidden">
+        <div className="h-[50px] bg-gradient-to-br from-[#1A40FF] via-[#1A40FF] to-[#1A40FF] relative flex items-center justify-center overflow-hidden">
           {/* Animated shimmer */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
@@ -450,7 +450,7 @@ function VerifiedVisual() {
             initial={{ scale: 0, rotate: -20 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
-            className="absolute top-2 right-2 bg-emerald-500 text-white text-[7px] font-bold px-1.5 py-0.5 flex items-center gap-0.5"
+            className="absolute top-2 right-2 bg-[#2C7A53] text-white text-[7px] font-bold px-1.5 py-0.5 flex items-center gap-0.5"
           >
             <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
               <CheckCircle className="w-2 h-2" />
@@ -509,9 +509,9 @@ function VerifiedVisual() {
                 stiffness: 400,
                 damping: 10
               }}
-              className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0"
+              className="w-5 h-5 rounded-full bg-[#E8F3EC] flex items-center justify-center flex-shrink-0"
             >
-              <CheckCircle className="w-3 h-3 text-emerald-600" />
+              <CheckCircle className="w-3 h-3 text-[#2C7A53]" />
             </motion.div>
             <motion.span
               initial={{ opacity: 0 }}
@@ -531,7 +531,7 @@ function VerifiedVisual() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: 1.1, type: "spring" }}
         whileHover={{ scale: 1.05 }}
-        className="flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-emerald-50 cursor-pointer"
+        className="flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-[#E8F3EC] cursor-pointer"
         style={{ border: "1px solid rgba(16,185,129,0.15)" }}
       >
         <motion.div
@@ -542,9 +542,9 @@ function VerifiedVisual() {
           transition={{ duration: 2, repeat: Infinity }}
           className="rounded-full"
         >
-          <Shield className="w-3 h-3 text-emerald-600" />
+          <Shield className="w-3 h-3 text-[#2C7A53]" />
         </motion.div>
-        <span className="text-[8px] font-semibold text-emerald-700">Cero estafas garantizado</span>
+        <span className="text-[8px] font-semibold text-[#2C7A53]">Cero estafas garantizado</span>
       </motion.div>
     </div>
   );
@@ -588,7 +588,7 @@ function ContractVisual() {
           >
             <motion.div
               className={`w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold transition-colors duration-300 ${
-                step.done ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
+                step.done ? 'bg-[#2C7A53] text-white' : 'bg-muted text-muted-foreground'
               }`}
               animate={step.done ? {
                 scale: [1, 1.2, 1],
@@ -658,7 +658,7 @@ function ContractVisual() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring" }}
             className={`text-[8px] font-semibold px-2 py-1 ${
-              signed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+              signed ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]' : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
             }`}
           >
             {signed ? '✓ Firmado' : 'Tu turno'}
@@ -732,13 +732,13 @@ function ContractVisual() {
               className="absolute top-3 right-3"
             >
               <motion.div
-                className="w-12 h-12 rounded-full border-2 border-emerald-500/40 flex items-center justify-center bg-emerald-50/80"
+                className="w-12 h-12 rounded-full border-2 border-[#2C7A53]/30 flex items-center justify-center bg-[#E8F3EC]/80"
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 15px 3px rgba(16,185,129,0.3)", "0 0 0 0 rgba(16,185,129,0)"]
                 }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
+                <CheckCircle className="w-5 h-5 text-[#2C7A53]" />
               </motion.div>
             </motion.div>
           )}
@@ -830,7 +830,7 @@ export default function InquilinosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/propiedades">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6 rounded-xl">
                       Ver propiedades
                     </Button>
                   </Link>
@@ -838,7 +838,7 @@ export default function InquilinosPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-mono uppercase font-normal h-12 px-6 rounded-xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 h-12 px-6 rounded-xl"
                     >
                       Crear perfil gratis
                     </Button>
@@ -877,7 +877,7 @@ export default function InquilinosPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     {/* Header with profile */}
                     <motion.div
@@ -896,7 +896,7 @@ export default function InquilinosPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-medium text-[14px]">María López</p>
                         <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
                           <p className="text-white/50 text-[11px]">Inquilina verificada</p>
                         </div>
                       </div>
@@ -907,11 +907,11 @@ export default function InquilinosPage() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6, duration: 0.4 }}
-                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10 mb-3"
+                      className="bg-white/10 backdrop-blur-sm rounded-md p-4 border border-white/10 mb-3"
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-white/50 text-[11px]">Arriendo Pass</span>
-                        <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px] font-medium bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[#2C7A53] text-[11px] font-medium bg-[#2C7A53]/10 px-2 py-0.5 rounded-full">
                           <InfinityIcon className="w-3 h-3" />
                           60 días
                         </span>
@@ -925,7 +925,7 @@ export default function InquilinosPage() {
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.7, duration: 0.4 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10"
+                        className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <FileText className="w-3.5 h-3.5 text-white/40" />
@@ -937,7 +937,7 @@ export default function InquilinosPage() {
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.8, duration: 0.4 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10"
+                        className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <House className="w-3.5 h-3.5 text-white/40" />
@@ -953,10 +953,10 @@ export default function InquilinosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center">
                         <House className="w-4 h-4 text-primary" />
                       </div>
                       <div>
@@ -1101,20 +1101,20 @@ export default function InquilinosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
-                    <div className="aspect-video bg-neutral-200 rounded-lg mb-3 flex items-center justify-center">
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
+                    <div className="aspect-video bg-neutral-200 rounded-md mb-3 flex items-center justify-center">
                       <span className="text-[10px] text-neutral-400">Foto no disponible</span>
                     </div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[12px] font-medium text-foreground">Apto Chapinero</span>
-                      <span className="text-[10px] text-red-500 font-medium">¿Real?</span>
+                      <span className="text-[10px] text-[#C4503B] font-medium">¿Real?</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[14px] font-bold text-foreground">$800.000</span>
                       <span className="text-[9px] text-muted-foreground line-through">$2.5M valor real</span>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white uppercase tracking-wide font-mono font-bold text-sm">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#C4503B] rounded-full flex items-center justify-center text-white uppercase tracking-wide font-mono font-bold text-sm">
                     !
                   </div>
                 </div>
@@ -1140,7 +1140,7 @@ export default function InquilinosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
                     <p className="text-[11px] font-medium text-foreground mb-3">Documentos requeridos</p>
                     <div className="space-y-2">
                       {[
@@ -1152,14 +1152,14 @@ export default function InquilinosPage() {
                       ].map((doc, i) => (
                         <div key={i} className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded border border-neutral-300 flex items-center justify-center">
-                            {i < 2 && <Check className="w-2.5 h-2.5 text-emerald-600" />}
+                            {i < 2 && <Check className="w-2.5 h-2.5 text-[#2C7A53]" />}
                           </div>
                           <span className="text-[10px] text-muted-foreground">{doc}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 bg-amber-400 text-white text-[9px] font-medium px-2 py-1 rounded-full">
+                  <div className="absolute -top-2 -right-2 bg-[#B7791F] text-white text-[9px] font-medium px-2 py-1 rounded-full">
                     +15 más
                   </div>
                 </div>
@@ -1261,8 +1261,8 @@ export default function InquilinosPage() {
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
-                    <Shield className="w-6 h-6 text-emerald-600" />
+                  <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
+                    <Shield className="w-6 h-6 text-[#2C7A53]" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     100% Verificado

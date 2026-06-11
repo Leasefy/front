@@ -308,10 +308,10 @@ export default function CobranzaConfiguracionPage() {
   if (configError && !configData) {
     return (
       <main className="p-4 md:p-6">
-        <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-start gap-3">
-          <Warning weight="fill" className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
+        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-start gap-3">
+          <Warning weight="fill" className="h-5 w-5 text-[#C4503B] mt-0.5 flex-shrink-0" />
           <div className="flex-1 space-y-2">
-            <p className="text-sm text-rose-800 dark:text-rose-200">
+            <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
               {t('inmobiliaria.ai.policies.error.load')}
             </p>
             <Button
@@ -343,7 +343,7 @@ export default function CobranzaConfiguracionPage() {
     <TooltipProvider>
       <main className="p-4 md:p-6 space-y-6 pb-24">
         {/* Page heading */}
-        <h1 className="text-3xl font-semibold font-[Manrope,sans-serif] text-foreground">
+        <h1 className="text-3xl font-semibold font-heading text-foreground">
           {t('inmobiliaria.ai.policies.title')}
         </h1>
 
@@ -707,8 +707,8 @@ export default function CobranzaConfiguracionPage() {
             {simulatorData && simulatorData.flipped_count > 0 && (
               <>
                 {/* Headline flipped count */}
-                <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 p-4">
-                  <div className="text-3xl font-semibold text-indigo-700 dark:text-indigo-300">
+                <div className="rounded-md border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-4">
+                  <div className="text-3xl font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                     {simulatorData.flipped_count}
                   </div>
                   <div className="text-sm text-neutral-700 dark:text-neutral-300">
@@ -722,7 +722,7 @@ export default function CobranzaConfiguracionPage() {
                 </div>
 
                 {/* By-stage breakdown table */}
-                <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
+                <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-700">
                   <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700 text-sm">
                     <thead className="bg-neutral-50 dark:bg-neutral-800/50">
                       <tr>
@@ -746,7 +746,7 @@ export default function CobranzaConfiguracionPage() {
                           <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600 dark:text-neutral-400">
                             —
                           </td>
-                          <td className="px-4 py-2 text-right font-mono tabular-nums text-rose-600">
+                          <td className="px-4 py-2 text-right font-mono tabular-nums text-[#C4503B]">
                             {count}
                           </td>
                         </tr>
@@ -771,7 +771,7 @@ export default function CobranzaConfiguracionPage() {
                         <Legend />
                         <Bar
                           dataKey="flippedCount"
-                          fill="#5B5FEF"
+                          fill="#1A40FF"
                           name={t('inmobiliaria.ai.policies.simulator.flippedLabel')}
                         />
                       </BarChart>
@@ -837,7 +837,7 @@ export default function CobranzaConfiguracionPage() {
                         key={version.id}
                         className={
                           isActive
-                            ? 'bg-emerald-50 dark:bg-emerald-950/10'
+                            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                             : 'bg-white dark:bg-[#1a1a1c]'
                         }
                       >
@@ -849,7 +849,7 @@ export default function CobranzaConfiguracionPage() {
                               v{version.versionNumber}
                             </span>
                             {isActive && (
-                              <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                              <span className="inline-flex items-center rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2 py-0.5 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70]">
                                 {t('inmobiliaria.ai.policies.history.active')}
                               </span>
                             )}
@@ -911,7 +911,7 @@ export default function CobranzaConfiguracionPage() {
                   String(rollbackTarget?.versionNumber ?? ''),
                 )}
                 {rollbackError && (
-                  <span className="block mt-2 text-rose-600 text-sm">{rollbackError}</span>
+                  <span className="block mt-2 text-[#C4503B] text-sm">{rollbackError}</span>
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -920,7 +920,7 @@ export default function CobranzaConfiguracionPage() {
                 {t('inmobiliaria.ai.policies.dialog.restore.cancel')}
               </AlertDialogCancel>
               <AlertDialogAction
-                className="bg-rose-600 hover:bg-rose-700 text-white"
+                tone="danger"
                 onClick={() => void handleRollback()}
               >
                 <ArrowCounterClockwise className="h-4 w-4 mr-1" />
@@ -945,7 +945,7 @@ export default function CobranzaConfiguracionPage() {
                     '.'
                   : t('inmobiliaria.ai.policies.dialog.save.body')}
                 {saveError && (
-                  <span className="block mt-2 text-rose-600 text-sm">{saveError}</span>
+                  <span className="block mt-2 text-[#C4503B] text-sm">{saveError}</span>
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -954,7 +954,6 @@ export default function CobranzaConfiguracionPage() {
               <AlertDialogAction
                 onClick={() => void handleSave()}
                 disabled={isSaving}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
               >
                 {isSaving ? (
                   <CircleNotch className="h-4 w-4 animate-spin mr-1" />
@@ -972,7 +971,7 @@ export default function CobranzaConfiguracionPage() {
       <div className="sticky bottom-0 z-20 bg-white dark:bg-[#1a1a1c] border-t border-neutral-200 dark:border-neutral-700 py-3 px-6 flex items-center justify-between">
         <div>
           {isDirty && (
-            <span className="text-xs text-amber-600">
+            <span className="text-xs text-[#B7791F]">
               {t('inmobiliaria.ai.policies.unsavedChanges')}
             </span>
           )}
@@ -989,7 +988,7 @@ export default function CobranzaConfiguracionPage() {
           </Button>
           <Button
             size="sm"
-            className="min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="min-h-[44px] bg-[#1A40FF] hover:opacity-90 text-white"
             disabled={!isDirty || isSaving}
             onClick={() => setSaveDialogOpen(true)}
           >

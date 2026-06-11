@@ -156,7 +156,7 @@ export function LeaseCard({
               </span>
             )}
             {lease.status === 'ending_soon' && (
-              <span className={cn('text-xs px-2 py-0.5', 'rounded-sm', 'bg-amber-100 text-amber-700')}>
+              <span className={cn('text-xs px-2 py-0.5', 'rounded-sm', 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]')}>
                 Vence pronto
               </span>
             )}

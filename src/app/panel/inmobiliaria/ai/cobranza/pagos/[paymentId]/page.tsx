@@ -64,14 +64,14 @@ async function PaymentDetailContent({ paymentId }: { paymentId: string }) {
         <Link
           href="/panel/inmobiliaria/ai/cobranza/pagos"
           data-testid="pagos-detail-back"
-          className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+          className="text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:underline"
         >
           ← Volver a pagos
         </Link>
         <h1 className="mt-4 text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
           Detalle de pago
         </h1>
-        <div className="mt-6 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
+        <div className="mt-6 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Pago no encontrado (ID: <span className="font-mono">{paymentId}</span>)
           </p>
@@ -88,7 +88,7 @@ async function PaymentDetailContent({ paymentId }: { paymentId: string }) {
       <Link
         href="/panel/inmobiliaria/ai/cobranza/pagos"
         data-testid="pagos-detail-back"
-        className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+        className="text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:underline"
       >
         ← Volver a pagos
       </Link>
@@ -97,7 +97,7 @@ async function PaymentDetailContent({ paymentId }: { paymentId: string }) {
         Detalle de pago
       </h1>
 
-      <div className="mt-6 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="mt-6 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
             Monto
@@ -154,7 +154,7 @@ async function PaymentDetailContent({ paymentId }: { paymentId: string }) {
           <div className="sm:col-span-2">
             <Link
               href={`/panel/inmobiliaria/ai/cobranza/pagos/planes/${payment.paymentPlanId}`}
-              className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+              className="text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:underline"
             >
               Ver plan de pagos asociado →
             </Link>

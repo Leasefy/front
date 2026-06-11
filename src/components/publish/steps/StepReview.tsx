@@ -26,7 +26,7 @@ const PLAN_INFO = Object.fromEntries([
       name: `Plan ${plan.name}`,
       icon: PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS] ?? Lightning,
       price: plan.price.monthly === 0 ? '$0' : `${formatCurrency(plan.price.monthly)}/mes`,
-      color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100',
+      color: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
     },
   ]),
   ...AGENCY_PLANS.map((plan) => [
@@ -35,7 +35,7 @@ const PLAN_INFO = Object.fromEntries([
       name: `Plan ${plan.name}`,
       icon: PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS] ?? Lightning,
       price: plan.price.monthly != null ? `${formatCurrency(plan.price.monthly)}/mes` : 'Personalizado',
-      color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100',
+      color: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
     },
   ]),
 ]) as Record<string, { name: string; icon: typeof Lightning; price: string; color: string }>;
@@ -102,7 +102,7 @@ export function StepReview() {
       {/* Property TextT and Location */}
       <Section title="Tipo y ubicación" onEdit={() => goToStep(1)}>
         <div className="flex items-center gap-4 text-sm">
-          <span className="px-3 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-neutral-700 dark:text-neutral-300">{typeLabel}</span>
+          <span className="px-3 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-neutral-700 dark:text-neutral-300">{typeLabel}</span>
           <span className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
             <MapPin className="w-4 h-4" />
             {draft.neighborhood}, {draft.city}
@@ -143,7 +143,7 @@ export function StepReview() {
             {selectedAmenities.map((amenity) => (
               <span
                 key={amenity.value}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-md text-sm text-neutral-700 dark:text-neutral-300"
               >
                 <Check className="w-3 h-3" />
                 {amenity.label}
@@ -169,7 +169,7 @@ export function StepReview() {
                 className="w-full h-full object-cover"
               />
               {index === 0 && (
-                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] rounded-md">
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-sm">
                   Principal
                 </span>
               )}
@@ -317,7 +317,7 @@ export function StepReview() {
                   <span className="text-neutral-500 dark:text-neutral-400 min-w-[100px]">{r.label}:</span>
                   <span className="text-neutral-900 dark:text-white flex-1">{r.value}</span>
                   {r.isNonNegotiable && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-xs font-medium">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded text-xs font-medium">
                       <Lock className="w-2.5 h-2.5" />
                       Innegociable
                     </span>
@@ -352,14 +352,14 @@ export function StepReview() {
       )}
 
       {/* Confirmation notice */}
-      <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+      <div className="mt-6 p-4 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 rounded-xl">
         <div className="flex items-start gap-3">
-          <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+          <Check className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+            <p className="text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70]">
               Todo listo para publicar
             </p>
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
+            <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">
               Al publicar, tu inmueble será visible para miles de inquilinos potenciales.
             </p>
           </div>

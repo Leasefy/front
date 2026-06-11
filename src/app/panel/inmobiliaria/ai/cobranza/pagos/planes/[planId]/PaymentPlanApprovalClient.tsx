@@ -105,7 +105,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   if (envMissing) {
     return (
       <div className="p-4 lg:p-8">
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-md border border-[#B7791F] bg-[#B7791F] px-4 py-3 text-sm text-[#B7791F] dark:border-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]">
           {t('inmobiliaria.ai.cobranza.planes.envMissing')}
         </div>
       </div>
@@ -125,7 +125,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   if (error && !plan) {
     return (
       <div className="p-4 lg:p-8">
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-md border border-[#C4503B] bg-[#C4503B] px-4 py-3 text-sm text-[#C4503B] dark:border-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B]">
           {t('inmobiliaria.ai.cobranza.planes.loadError')}
         </div>
       </div>
@@ -246,14 +246,14 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         </div>
         <Link
           href={`/panel/inmobiliaria/ai/cobranza/deudores/${plan.debtor.id}`}
-          className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-violet-400 hover:text-violet-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:border-violet-500"
+          className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-[#6B6B6B] hover:text-[#6B6B6B] dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:border-[#6B6B6B]"
         >
           {t('inmobiliaria.ai.cobranza.planes.verDeudor')} →
         </Link>
       </header>
 
       {/* Comparison panel */}
-      <section className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+      <section className="overflow-hidden rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs font-medium uppercase text-neutral-500 dark:bg-neutral-950/50 dark:text-neutral-400">
             <tr>
@@ -276,7 +276,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               <td
                 className={`px-4 py-3 font-medium ${
                   isMaxDiscountExceeded
-                    ? 'text-red-700 dark:text-red-400'
+                    ? 'text-[#C4503B] dark:text-[#C4503B]'
                     : 'text-neutral-900 dark:text-neutral-100'
                 }`}
               >
@@ -321,7 +321,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       {isMaxDiscountExceeded && (
         <div
           data-testid="max-discount-banner"
-          className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200"
+          className="rounded-md border border-[#C4503B] bg-[#C4503B] px-4 py-3 text-sm text-[#C4503B] dark:border-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B]"
         >
           <div className="font-medium">
             {t('inmobiliaria.ai.cobranza.planes.maxDiscountBanner', {
@@ -330,7 +330,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           </div>
           <Link
             href="/panel/inmobiliaria/configuracion/agencia"
-            className="mt-2 inline-block text-sm font-medium underline hover:text-red-900 dark:hover:text-red-100"
+            className="mt-2 inline-block text-sm font-medium underline hover:text-[#C4503B] dark:hover:text-[#C4503B]"
           >
             {t('inmobiliaria.ai.cobranza.planes.configLink')} →
           </Link>
@@ -345,7 +345,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           onClick={() => void handleAprobar()}
           disabled={aprobarDisabled}
           title={aprobarDisabledTitle || undefined}
-          className="inline-flex items-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
+          className="inline-flex items-center rounded-sm bg-[#6B6B6B] px-4 py-2 text-sm font-medium text-white hover:bg-[#6B6B6B] disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
         >
           {t('inmobiliaria.ai.cobranza.planes.aprobar')}
         </button>
@@ -355,7 +355,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           onClick={openRechazar}
           disabled={actionsDisabled}
           title={!canApprove ? t('inmobiliaria.ai.cobranza.planes.aprobarDisabledPerm') : undefined}
-          className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-red-400 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+          className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-[#C4503B] hover:text-[#C4503B] disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
         >
           {t('inmobiliaria.ai.cobranza.planes.rechazar')}
         </button>
@@ -365,35 +365,35 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           onClick={openModificar}
           disabled={actionsDisabled}
           title={!canApprove ? t('inmobiliaria.ai.cobranza.planes.aprobarDisabledPerm') : undefined}
-          className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-violet-400 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+          className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-[#6B6B6B] hover:text-[#6B6B6B] disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
         >
           {t('inmobiliaria.ai.cobranza.planes.modificar')}
         </button>
       </div>
 
       {actionError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-sm border border-[#C4503B] bg-[#C4503B] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B]">
           {actionError}
         </div>
       )}
 
       {toast && (
-        <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-700 dark:bg-green-950/30 dark:text-green-200">
+        <div className="rounded-sm border border-[#2C7A53] bg-[#2C7A53] px-3 py-2 text-sm text-[#2C7A53] dark:border-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53]">
           {toast}
         </div>
       )}
 
       {/* Wompi link panel — populated after approve success */}
       {wompiLink && (
-        <section className="rounded-lg border border-green-300 bg-green-50 p-4 dark:border-green-700 dark:bg-green-950/30">
-          <div className="text-sm font-medium text-green-900 dark:text-green-100">
+        <section className="rounded-md border border-[#2C7A53] bg-[#2C7A53] p-4 dark:border-[#2C7A53] dark:bg-[#2C7A53]/30">
+          <div className="text-sm font-medium text-[#2C7A53] dark:text-[#2C7A53]">
             {t('inmobiliaria.ai.cobranza.planes.wompiLinkTitle')}
           </div>
           <a
             href={wompiLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-block break-all text-sm font-medium text-green-800 underline hover:text-green-900 dark:text-green-200 dark:hover:text-green-100"
+            className="mt-2 inline-block break-all text-sm font-medium text-[#2C7A53] underline hover:text-[#2C7A53] dark:text-[#2C7A53] dark:hover:text-[#2C7A53]"
           >
             {t('inmobiliaria.ai.cobranza.planes.wompiLinkLabel')} →
           </a>
@@ -402,13 +402,13 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
       {/* Rechazar inline form */}
       {rechazarOpen && (
-        <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
             {t('inmobiliaria.ai.cobranza.planes.rechazarForm.reasonLabel')}
             <select
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value as RejectReasonSlug | '')}
-              className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+              className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
             >
               <option value="">
                 {t('inmobiliaria.ai.cobranza.planes.rechazarForm.reasonPlaceholder')}
@@ -426,14 +426,14 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
             maxLength={500}
             rows={3}
             placeholder={t('inmobiliaria.ai.cobranza.planes.rechazarForm.commentPlaceholder')}
-            className="block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+            className="block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => void handleRechazarSubmit()}
               disabled={!rejectReason || actionLoading}
-              className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
+              className="inline-flex items-center rounded-sm bg-[#C4503B] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#C4503B] disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
             >
               {t('inmobiliaria.ai.cobranza.planes.rechazarForm.submit')}
             </button>
@@ -444,7 +444,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
                 setRejectReason('')
                 setRejectComment('')
               }}
-              className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+              className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
             >
               {t('inmobiliaria.ai.cobranza.planes.rechazarForm.cancel')}
             </button>
@@ -454,11 +454,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
       {/* Modificar inline form */}
       {modificarOpen && (
-        <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
               {t('inmobiliaria.ai.cobranza.planes.modificarForm.descuento')}{' '}
-              <span className="ml-1 text-violet-700 dark:text-violet-400">
+              <span className="ml-1 text-[#6B6B6B] dark:text-[#6B6B6B]">
                 {modDiscount}%
               </span>
             </label>
@@ -486,7 +486,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               max={24}
               value={modCuotas}
               onChange={(e) => setModCuotas(Math.max(1, Number(e.target.value)))}
-              className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+              className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
             />
           </label>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
@@ -496,7 +496,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               min={1}
               value={modMonto}
               onChange={(e) => setModMonto(Math.max(1, Number(e.target.value)))}
-              className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+              className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
             />
           </label>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
@@ -506,7 +506,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               min={todayIso()}
               value={modFecha}
               onChange={(e) => setModFecha(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+              className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
             />
           </label>
           <div className="flex gap-2">
@@ -514,14 +514,14 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               type="button"
               onClick={() => void handleModificarSubmit()}
               disabled={actionLoading}
-              className="inline-flex items-center rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
+              className="inline-flex items-center rounded-sm bg-[#6B6B6B] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#6B6B6B] disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
             >
               {t('inmobiliaria.ai.cobranza.planes.modificarForm.submit')}
             </button>
             <button
               type="button"
               onClick={() => setModificarOpen(false)}
-              className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+              className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
             >
               {t('inmobiliaria.ai.cobranza.planes.modificarForm.cancel')}
             </button>

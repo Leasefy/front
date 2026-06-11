@@ -72,11 +72,11 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
         {/* Legend */}
         <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-emerald-400" />
+            <div className="w-3 h-3 rounded-sm bg-[#2C7A53]" />
             <span>Recaudado</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-red-300" />
+            <div className="w-3 h-3 rounded-sm bg-[#C4503B]" />
             <span>En mora</span>
           </div>
         </div>
@@ -95,11 +95,11 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                 </span>
                 <div className="w-full flex-1 flex flex-col justify-end gap-px">
                   <div
-                    className="w-full bg-red-300 dark:bg-red-400/60 rounded-t transition-all duration-300"
+                    className="w-full bg-[#C4503B] dark:bg-[#C4503B]/60 rounded-t transition-all duration-300"
                     style={{ height: `${latePct}%` }}
                   />
                   <div
-                    className="w-full bg-emerald-400 dark:bg-emerald-500 rounded-b transition-all duration-300"
+                    className="w-full bg-[#2C7A53] dark:bg-[#2C7A53] rounded-b transition-all duration-300"
                     style={{ height: `${collectedPct}%` }}
                   />
                 </div>
@@ -129,12 +129,12 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                   className={cn(
                     'h-full rounded-full transition-all duration-500',
                     m.moraRate <= 5
-                      ? 'bg-emerald-400'
+                      ? 'bg-[#2C7A53]'
                       : m.moraRate <= 8
-                        ? 'bg-blue-400'
+                        ? 'bg-[#1A40FF]'
                         : m.moraRate <= 10
-                          ? 'bg-amber-400'
-                          : 'bg-red-400'
+                          ? 'bg-[#B7791F]'
+                          : 'bg-[#C4503B]'
                   )}
                   style={{ width: `${Math.min(m.moraRate * 5, 100)}%` }}
                 />
@@ -143,12 +143,12 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                 className={cn(
                   'w-12 text-right text-xs font-medium',
                   m.moraRate <= 5
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-[#2C7A53] dark:text-[#3EAE70]'
                     : m.moraRate <= 8
-                      ? 'text-blue-600 dark:text-blue-400'
+                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
                       : m.moraRate <= 10
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-red-600 dark:text-red-400'
+                        ? 'text-[#B7791F] dark:text-[#D2992F]'
+                        : 'text-[#C4503B] dark:text-[#E0664D]'
                 )}
               >
                 {m.moraRate}%
@@ -162,7 +162,7 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] overflow-hidden">
         <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Warning className="w-4 h-4 text-red-500" />
+            <Warning className="w-4 h-4 text-[#C4503B]" />
             Principales morosos
           </h3>
         </div>
@@ -197,10 +197,10 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                       className={cn(
                         'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
                         d.daysLate >= 30
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          ? 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
                           : d.daysLate >= 15
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
+                            : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
                       )}
                     >
                       <Clock className="w-3 h-3" />
@@ -232,20 +232,20 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
 
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
   emerald: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
   },
   red: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-600 dark:text-red-400',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
   },
   violet: {
-    bg: 'bg-violet-100 dark:bg-violet-900/30',
-    text: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
   },
 } as const;
 
@@ -268,7 +268,7 @@ function KPICard({
       <div className="flex items-center gap-3">
         <div
           className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center',
+            'w-10 h-10 rounded-md flex items-center justify-center',
             colors.bg
           )}
         >

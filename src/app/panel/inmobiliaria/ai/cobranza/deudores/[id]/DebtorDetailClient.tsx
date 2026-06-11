@@ -47,12 +47,12 @@ function isTabKey(s: string | null): s is TabKey {
 
 function daysBadgeClasses(days: number): string {
   if (days <= 3) {
-    return 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-800'
+    return 'bg-[#2C7A53] text-[#2C7A53] ring-1 ring-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53] dark:ring-[#2C7A53]'
   }
   if (days <= 7) {
-    return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800'
+    return 'bg-[#B7791F] text-[#B7791F] ring-1 ring-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:ring-[#B7791F]'
   }
-  return 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-400 dark:ring-red-800'
+  return 'bg-[#C4503B] text-[#C4503B] ring-1 ring-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B] dark:ring-[#C4503B]'
 }
 
 interface DebtorDetailClientProps {
@@ -206,7 +206,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               </span>
             )}
             {data?.isPaused && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#B7791F] dark:bg-[#B7791F]/30 text-[#B7791F] dark:text-[#B7791F]">
                 {t('inmobiliaria.ai.cobranza.detail.header.paused')}
               </span>
             )}
@@ -216,14 +216,14 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 mb-4 flex items-center justify-between">
-          <p className="text-sm text-red-700 dark:text-red-400">
+        <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 mb-4 flex items-center justify-between">
+          <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
             {t('inmobiliaria.ai.cobranza.detail.error')}: {error}
           </p>
           <button
             type="button"
             onClick={() => void refetch()}
-            className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+            className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
           >
             {t('inmobiliaria.ai.cobranza.detail.errorRetry')}
           </button>
@@ -249,7 +249,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                 className={
                   'px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ' +
                   (activeTab === k
-                    ? 'border-violet-600 text-violet-700 dark:text-violet-300'
+                    ? 'border-[#6B6B6B] text-[#6B6B6B] dark:text-[#6B6B6B]'
                     : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200')
                 }
               >
@@ -264,7 +264,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               type="button"
               onClick={() => setTabSwitcherOpen(true)}
               data-testid="tab-switcher-button"
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
             >
               <span>{t(`inmobiliaria.ai.cobranza.detail.tabs.${activeTab}`)}</span>
               <span className="text-xs text-neutral-400">▾</span>
@@ -284,7 +284,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                 onClick={() => setTabSwitcherOpen(false)}
                 className="absolute inset-0 bg-black/40"
               />
-              <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-2xl p-4 max-h-[60vh] overflow-y-auto">
+              <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-xl p-4 max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                     {t('inmobiliaria.ai.cobranza.detail.tabs.switcher')}
@@ -304,9 +304,9 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                         type="button"
                         onClick={() => onTabChange(k)}
                         className={
-                          'w-full text-left px-3 py-2 rounded-md text-sm font-medium ' +
+                          'w-full text-left px-3 py-2 rounded-sm text-sm font-medium ' +
                           (activeTab === k
-                            ? 'bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300'
+                            ? 'bg-[#6B6B6B] dark:bg-[#6B6B6B]/30 text-[#6B6B6B] dark:text-[#6B6B6B]'
                             : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800')
                         }
                       >
@@ -367,7 +367,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(true)}
-              className="ml-3 text-sm font-medium text-violet-600 dark:text-violet-400"
+              className="ml-3 text-sm font-medium text-[#6B6B6B] dark:text-[#6B6B6B]"
               data-testid="mobile-sidebar-open"
             >
               {t('inmobiliaria.ai.cobranza.detail.sidebar.openSidebar')} ›
@@ -388,7 +388,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               onClick={() => setMobileSidebarOpen(false)}
               className="absolute inset-0 bg-black/40"
             />
-            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-2xl p-4 max-h-[80vh] overflow-y-auto">
+            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-xl p-4 max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                   {t('inmobiliaria.ai.cobranza.detail.sidebar.title')}

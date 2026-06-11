@@ -49,9 +49,9 @@ function ActivityItem({ activity }: ActivityItemProps) {
   // Map activity types to accent colors
   const typeColors: Record<ActivityType, string> = {
     application: 'bg-[black]/10 text-[black]',
-    status_change: 'bg-emerald-50 text-emerald-600',
-    message: 'bg-blue-50 text-blue-600',
-    document: 'bg-amber-50 text-amber-600',
+    status_change: 'bg-[#E8F3EC] text-[#2C7A53]',
+    message: 'bg-[#EEF1FF] text-[#1A40FF]',
+    document: 'bg-[#F8F0E0] text-[#B7791F]',
   };
 
   const content = (
@@ -76,7 +76,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
       </div>
 
       {/* Time badge */}
-      <span className="text-xs text-muted-foreground bg-muted/80 px-2 py-1 rounded-md flex-shrink-0 font-medium">
+      <span className="text-xs text-muted-foreground bg-muted/80 px-2 py-1 rounded-sm flex-shrink-0 font-medium">
         {formatRelativeTime(activity.timestamp, locale)}
       </span>
     </div>

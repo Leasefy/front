@@ -58,13 +58,13 @@ export function DecisionConfirmation({
           <div className="flex items-center gap-3">
             <div
               className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                isReject ? 'bg-red-100' : 'bg-emerald-100'
+                isReject ? 'bg-[#F8EAE7]' : 'bg-[#E8F3EC]'
               }`}
             >
               {isReject ? (
-                <Warning className="h-5 w-5 text-red-600" />
+                <Warning className="h-5 w-5 text-[#C4503B]" />
               ) : (
-                <Check className="h-5 w-5 text-emerald-600" />
+                <Check className="h-5 w-5 text-[#2C7A53]" />
               )}
             </div>
             <DialogTitle className="text-lg">
@@ -97,7 +97,7 @@ export function DecisionConfirmation({
             variant={isReject ? 'destructive' : 'default'}
             onClick={onConfirm}
             className={`flex-1 ${
-              !isReject ? 'bg-emerald-600 hover:bg-emerald-700' : ''
+              !isReject ? 'bg-[#2C7A53] hover:bg-[#2C7A53]' : ''
             }`}
           >
             <Check className="mr-1.5 h-4 w-4" />

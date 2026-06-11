@@ -1,10 +1,22 @@
 import type { Icon } from '@phosphor-icons/react';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { EmptyState as DSEmptyState } from '@leasefy/ui';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+/**
+ * EmptyState — ADAPTER fino sobre el EmptyState de @leasefy/ui que preserva
+ * la API local:
+ * - icon: componente Phosphor (el DS espera un nodo) → se instancia duotone.
+ * - action: { label, href } (el DS espera un nodo) → Button asChild + Link.
+ * - Se conserva el contenedor con fondo del mvp (incl. dark:) — el DS
+ *   renderiza el estado "flotante" sin canvas propio.
+ * El interior (icono 40px primary sobre el dome de BrandMotif + tipografía)
+ * es el brand moment del DS (§5 del brand contract).
+ */
+
 // ============================================================================
-// TextTs
+// Types (API local intacta)
 // ============================================================================
 
 export interface EmptyStateAction {
@@ -29,43 +41,27 @@ export interface EmptyStateProps {
 // Component
 // ============================================================================
 
-/**
- * EmptyState - Reusable empty state component for lists and pages
- *
- * Features:
- * - Centered icon with muted background
- * - Title and description text
- * - Optional call-to-action button
- * - Consistent styling across the app
- */
 export function EmptyState({
-  icon: Icon,
+  icon: IconComponent,
   title,
   description,
   action,
   className,
 }: EmptyStateProps) {
   return (
-    <div className={cn('rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03]', className)}>
-      <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-        {/* Icon */}
-        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mb-5 shadow-sm dark:shadow-none">
-          <Icon className="h-6 w-6 text-neutral-400 dark:text-neutral-500" />
-        </div>
-
-        {/* Title */}
-        <h3 className="text-base font-semibold text-foreground mb-1.5">{title}</h3>
-
-        {/* Description */}
-        <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">{description}</p>
-
-        {/* Optional CTA */}
-        {action && (
-          <Button asChild>
-            <Link href={action.href}>{action.label}</Link>
-          </Button>
-        )}
-      </div>
+    <div className={cn('rounded-xl bg-neutral-50/80 dark:bg-white/[0.03]', className)}>
+      <DSEmptyState
+        icon={<IconComponent weight="duotone" />}
+        title={title}
+        description={description}
+        action={
+          action ? (
+            <Button asChild>
+              <Link href={action.href}>{action.label}</Link>
+            </Button>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

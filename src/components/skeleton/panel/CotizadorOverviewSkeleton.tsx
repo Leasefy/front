@@ -27,7 +27,7 @@ export function CotizadorOverviewSkeleton() {
           <Skeleton className="h-7 w-48" />
           <Skeleton className="h-4 w-72" />
         </div>
-        <Skeleton className="h-9 w-36 rounded-lg" />
+        <Skeleton className="h-9 w-36 rounded-md" />
       </header>
 
       {/* KPI strip — 2 cols sm / 4 cols lg, matches CotizadorKpiStrip */}

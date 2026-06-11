@@ -290,7 +290,7 @@ function FilterDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute top-full left-0 mt-2 bg-card rounded-sm shadow-lg border border-border z-50 max-h-64 overflow-auto origin-top-left"
+            className="absolute top-full left-0 mt-2 bg-card rounded-sm border border-border z-50 max-h-64 overflow-auto origin-top-left"
           >
             {children}
           </motion.div>

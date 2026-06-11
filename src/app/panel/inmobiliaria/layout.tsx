@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/toast';
 import {
   SquaresFour,
   Buildings,
@@ -240,18 +240,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
       {/* Toast notifications - Premium style */}
-      <Toaster
-        position="top-right"
-        style={{ zIndex: 9999 }}
-        toastOptions={{
-          style: {
-            borderRadius: '16px',
-            background: 'white',
-            border: '1px solid rgba(0, 0, 0, 0.05)',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
-          },
-        }}
-      />
+      <Toaster position="top-right" />
     </div>
   );
 }

@@ -55,14 +55,14 @@ export function StepAmenities() {
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-200',
                 isSelected
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:'
               )}
             >
               <div className={cn(
-                'w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                'w-5 h-5 rounded-sm flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                 isSelected
-                  ? 'bg-indigo-600 border-indigo-600'
+                  ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                   : 'border-neutral-300 dark:border-neutral-600'
               )}>
                 {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -83,9 +83,9 @@ export function StepAmenities() {
             key={amenity}
             type="button"
             onClick={() => toggleAmenity(amenity)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm text-left transition-all duration-200"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-left transition-all duration-200"
           >
-            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 bg-indigo-600 border-indigo-600">
+            <div className="w-5 h-5 rounded-sm flex items-center justify-center flex-shrink-0 border-2 bg-[#1A40FF] border-[#1A40FF]/30">
               <Check className="w-3 h-3 text-white" strokeWidth={3} />
             </div>
             <span className="text-sm text-neutral-900 dark:text-white font-medium">{amenity}</span>
@@ -97,9 +97,9 @@ export function StepAmenities() {
           <button
             type="button"
             onClick={() => setShowCustom(true)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 text-left transition-all duration-200 hover:border-neutral-400 dark:hover:border-neutral-500 hover:shadow-sm bg-white dark:bg-[#2a2a2c]"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 text-left transition-all duration-200 hover:border-neutral-400 dark:hover:border-neutral-500 hover: bg-white dark:bg-[#2a2a2c]"
           >
-            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border-2 border-neutral-300 dark:border-neutral-600">
+            <div className="w-5 h-5 rounded-sm flex items-center justify-center flex-shrink-0 border-2 border-neutral-300 dark:border-neutral-600">
               <Plus className="w-3 h-3 text-neutral-400 dark:text-neutral-500" strokeWidth={2.5} />
             </div>
             <span className="text-sm text-neutral-500 dark:text-neutral-400">Otro</span>
@@ -122,7 +122,7 @@ export function StepAmenities() {
               type="button"
               onClick={addCustom}
               disabled={!customValue.trim()}
-              className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl disabled:opacity-30 transition-opacity hover:bg-indigo-700"
+              className="px-4 py-2 text-sm font-medium bg-[#1A40FF] text-white rounded-xl disabled:opacity-30 transition-opacity hover:opacity-90"
             >
               Agregar
             </button>

@@ -25,10 +25,10 @@ export const RISK_LEVEL_LABELS: Record<RiskLevel, string> = {
 };
 
 export const RISK_LEVEL_COLORS: Record<RiskLevel, { bg: string; text: string; border: string }> = {
-  A: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
-  B: { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
-  C: { bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
-  D: { bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
+  A: { bg: 'bg-[#2C7A53]/10', text: 'text-[#2C7A53]', border: 'border-[#2C7A53]/30' },
+  B: { bg: 'bg-[#1A40FF]/10', text: 'text-[#1A40FF]', border: 'border-[#1A40FF]/30' },
+  C: { bg: 'bg-[#B7791F]/10', text: 'text-[#B7791F]', border: 'border-[#B7791F]/30' },
+  D: { bg: 'bg-[#C4503B]/10', text: 'text-[#C4503B]', border: 'border-[#C4503B]/30' },
 };
 
 // ============================================================================

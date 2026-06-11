@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 export function TypingIndicator({ className }: { className?: string }) {
   return (
     <div className={cn('flex gap-3', className)}>
-      <div className="flex-shrink-0 w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+      <div className="flex-shrink-0 w-6 h-6 rounded-sm bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
         <Sparkle className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" weight="fill" />
       </div>
       <div className="flex items-center gap-1.5 py-2">

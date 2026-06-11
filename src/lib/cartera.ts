@@ -39,30 +39,30 @@ export const STAGE_LABELS_EN: Record<CarteraStage, string> = {
 export function stageColorClasses(stage: CarteraStage): { text: string; bg: string; border: string } {
   if (stage === 'S0' || stage === 'S1') {
     return {
-      text: 'text-green-600 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-950/30',
-      border: 'border-green-200 dark:border-green-800',
+      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
     }
   }
   if (stage === 'S2' || stage === 'S3') {
     return {
-      text: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-950/30',
-      border: 'border-amber-200 dark:border-amber-800',
+      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
     }
   }
   if (stage === 'S4' || stage === 'S5') {
     return {
-      text: 'text-red-600 dark:text-red-400',
-      bg: 'bg-red-50 dark:bg-red-950/30',
-      border: 'border-red-200 dark:border-red-800',
+      text: 'text-[#C4503B] dark:text-[#E0664D]',
+      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+      border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
     }
   }
   // SX
   return {
-    text: 'text-violet-600 dark:text-violet-400',
-    bg: 'bg-violet-50 dark:bg-violet-950/30',
-    border: 'border-violet-200 dark:border-violet-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    border: 'border-neutral-200 dark:border-neutral-700',
   }
 }
 

@@ -23,17 +23,17 @@ function tone(score: number | null): {
   }
   if (score >= 0.8) {
     return {
-      bar: 'bg-emerald-500',
-      text: 'text-emerald-700 dark:text-emerald-300',
+      bar: 'bg-[#2C7A53]',
+      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
     }
   }
   if (score >= 0.6) {
     return {
-      bar: 'bg-amber-500',
-      text: 'text-amber-700 dark:text-amber-300',
+      bar: 'bg-[#B7791F]',
+      text: 'text-[#B7791F] dark:text-[#D2992F]',
     }
   }
-  return { bar: 'bg-red-500', text: 'text-red-700 dark:text-red-300' }
+  return { bar: 'bg-[#C4503B]', text: 'text-[#C4503B] dark:text-[#E0664D]' }
 }
 
 function ScoreRow({

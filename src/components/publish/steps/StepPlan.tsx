@@ -97,16 +97,16 @@ export function StepPlan() {
                 className={cn(
                   'relative p-4 rounded-xl border text-left transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                     : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c]',
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
+                      'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0 transition-colors',
                       isSelected
-                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                        ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400',
                     )}
                   >
@@ -184,7 +184,7 @@ export function StepPlan() {
                           </p>
                           <a
                             href="mailto:ventas@leasefy.co?subject=Plan%20Enterprise"
-                            className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                            className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                           >
                             <EnvelopeSimple className="w-4 h-4" />
                             Contactar ventas
@@ -207,21 +207,21 @@ export function StepPlan() {
                       'relative w-full text-left p-5 rounded-xl border transition-all duration-200',
                       plan.highlighted &&
                         !isSelected &&
-                        'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10 hover:border-indigo-400 dark:hover:border-indigo-600 scale-[1.01]',
+                        'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 scale-[1.01]',
                       plan.highlighted &&
                         isSelected &&
-                        'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-md scale-[1.01]',
+                        'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 scale-[1.01]',
                       !plan.highlighted &&
                         isSelected &&
-                        'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm',
+                        'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
                       !plan.highlighted &&
                         !isSelected &&
-                        'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm',
+                        'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:',
                     )}
                   >
                     {/* Badge */}
                     {plan.badge && (
-                      <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono">
+                      <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono">
                         {plan.badge}
                       </span>
                     )}
@@ -232,9 +232,9 @@ export function StepPlan() {
                         className={cn(
                           'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200',
                           plan.highlighted
-                            ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                            ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
                             : isSelected
-                              ? 'bg-indigo-100 dark:bg-indigo-900/30'
+                              ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                               : 'bg-neutral-100 dark:bg-neutral-800',
                         )}
                       >
@@ -289,7 +289,7 @@ export function StepPlan() {
                                 className={cn(
                                   'w-3.5 h-3.5 flex-shrink-0',
                                   isSelected || plan.highlighted
-                                    ? 'text-indigo-600 dark:text-indigo-400'
+                                    ? 'text-[#1A40FF] dark:text-[#5570FF]'
                                     : 'text-neutral-400 dark:text-neutral-500',
                                 )}
                               />
@@ -306,9 +306,9 @@ export function StepPlan() {
                         className={cn(
                           'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200',
                           isSelected
-                            ? 'border-indigo-600 bg-indigo-600'
+                            ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
                             : plan.highlighted
-                              ? 'border-indigo-400 dark:border-indigo-600'
+                              ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40'
                               : 'border-neutral-300 dark:border-neutral-600',
                         )}
                       >
@@ -325,15 +325,15 @@ export function StepPlan() {
             {/* Trust indicator */}
             <div className="flex items-center justify-center gap-6 pt-4 text-xs text-neutral-500 dark:text-neutral-400">
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
                 Sin compromisos
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
                 Cancela cuando quieras
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
                 Pago seguro
               </span>
             </div>

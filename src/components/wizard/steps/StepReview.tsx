@@ -71,13 +71,13 @@ export function StepReview() {
     <div className="space-y-6">
       {/* Incomplete steps warning */}
       {!allStepsComplete && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
-          <WarningCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-[#F8F0E0]/50 border border-[#B7791F]/30 rounded-sm">
+          <WarningCircle className="h-5 w-5 text-[#B7791F] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-amber-800 font-medium">
+            <p className="text-sm text-[#B7791F] font-medium">
               Algunos pasos están incompletos
             </p>
-            <p className="text-xs text-amber-700/80 mt-1">
+            <p className="text-xs text-[#B7791F]/80 mt-1">
               Completa todos los pasos antes de enviar tu aplicación.
             </p>
           </div>
@@ -156,7 +156,7 @@ export function StepReview() {
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Obligaciones:</span>
-            <span className="font-medium text-red-600">
+            <span className="font-medium text-[#C4503B]">
               {income.monthlyObligations !== undefined
                 ? formatCurrency(income.monthlyObligations)
                 : '-'}
@@ -164,7 +164,7 @@ export function StepReview() {
           </div>
           <div className="border-t border-border pt-2 flex justify-between">
             <span className="text-foreground font-medium">Disponible:</span>
-            <span className="font-semibold text-emerald-600">
+            <span className="font-semibold text-[#2C7A53]">
               {income.availableForRent ? formatCurrency(income.availableForRent) : '-'}
             </span>
           </div>
@@ -179,17 +179,17 @@ export function StepReview() {
       >
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="h-4 w-4 text-[#2C7A53]" />
             {landlordCount} arrendador{landlordCount !== 1 ? 'es' : ''} anterior
             {landlordCount !== 1 ? 'es' : ''}
           </p>
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="h-4 w-4 text-[#2C7A53]" />
             {employmentRefCount} referencia{employmentRefCount !== 1 ? 's' : ''} laboral
             {employmentRefCount !== 1 ? 'es' : ''}
           </p>
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="h-4 w-4 text-[#2C7A53]" />
             {personalRefCount} referencia{personalRefCount !== 1 ? 's' : ''} personal
             {personalRefCount !== 1 ? 'es' : ''}
           </p>
@@ -346,10 +346,10 @@ function DocumentStatus({ label, uploaded, required }: DocumentStatusProps) {
   return (
     <p className={cn(
       'flex items-center gap-2',
-      !uploaded && required && 'text-red-600'
+      !uploaded && required && 'text-[#C4503B]'
     )}>
       {uploaded ? (
-        <Check className="h-4 w-4 text-emerald-500" />
+        <Check className="h-4 w-4 text-[#2C7A53]" />
       ) : (
         <span className="h-4 w-4 flex items-center justify-center text-xs">
           {required ? '!' : '-'}

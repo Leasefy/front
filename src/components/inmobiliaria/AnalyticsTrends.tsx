@@ -100,9 +100,9 @@ function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
           className={cn(
             'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium',
             comparison.change.direction === 'up' &&
-              'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+              'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
             comparison.change.direction === 'down' &&
-              'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+              'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
             comparison.change.direction === 'stable' &&
               'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
           )}
@@ -203,7 +203,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-indigo-600 rounded" />
+            <span className="w-3 h-0.5 bg-[#1A40FF] rounded" />
             <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.historic')}</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -264,8 +264,8 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
         {/* Gradient definition */}
         <defs>
           <linearGradient id={`trend-gradient-${analysis.metricId}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#6366F1" stopOpacity={0.3} />
-            <stop offset="100%" stopColor="#6366F1" stopOpacity={0} />
+            <stop offset="0%" stopColor="#1A40FF" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#1A40FF" stopOpacity={0} />
           </linearGradient>
         </defs>
 
@@ -282,7 +282,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
         <motion.path
           d={linePath}
           fill="none"
-          stroke="#6366F1"
+          stroke="#1A40FF"
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -310,7 +310,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
             cx={point.x}
             cy={point.y}
             r={hoveredIndex === point.index ? 6 : 4}
-            fill="#6366F1"
+            fill="#1A40FF"
             stroke="white"
             strokeWidth={2}
             initial={{ scale: 0 }}
@@ -329,14 +329,14 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
               cx={ap.x}
               cy={ap.y}
               r={8}
-              fill={ap.anomaly.severity === 'high' ? '#EF4444' : '#F59E0B'}
+              fill={ap.anomaly.severity === 'high' ? '#C4503B' : '#9B9B9B'}
               fillOpacity={0.3}
             />
             <circle
               cx={ap.x}
               cy={ap.y}
               r={5}
-              fill={ap.anomaly.severity === 'high' ? '#EF4444' : '#F59E0B'}
+              fill={ap.anomaly.severity === 'high' ? '#C4503B' : '#9B9B9B'}
               stroke="white"
               strokeWidth={2}
             />
@@ -405,8 +405,8 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
   return (
     <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-          <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <div className="w-8 h-8 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+          <Calendar className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F]" />
         </div>
         <div>
           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -445,7 +445,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
                   transition={{ duration: 0.5, delay: i * 0.03 }}
                   className={cn(
                     'h-full rounded-sm absolute',
-                    month.deviation >= 0 ? 'left-1/2 bg-emerald-500 dark:bg-emerald-400' : 'right-1/2 bg-red-500 dark:bg-red-400'
+                    month.deviation >= 0 ? 'left-1/2 bg-[#2C7A53] dark:bg-[#2C7A53]' : 'right-1/2 bg-[#C4503B] dark:bg-[#C4503B]'
                   )}
                 />
               </div>
@@ -454,8 +454,8 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
             <span
               className={cn(
                 'w-12 text-xs font-medium text-right',
-                month.deviation > 0 && 'text-emerald-600 dark:text-emerald-400',
-                month.deviation < 0 && 'text-red-600 dark:text-red-400',
+                month.deviation > 0 && 'text-[#2C7A53] dark:text-[#3EAE70]',
+                month.deviation < 0 && 'text-[#C4503B] dark:text-[#E0664D]',
                 month.deviation === 0 && 'text-neutral-500 dark:text-neutral-400'
               )}
             >
@@ -465,7 +465,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
 
             {month.isHighSeason && (
               <span className="shrink-0">
-                <Sun className="w-4 h-4 text-amber-500" weight="fill" />
+                <Sun className="w-4 h-4 text-[#B7791F]" weight="fill" />
               </span>
             )}
           </motion.div>
@@ -475,15 +475,15 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
       {/* Legend */}
       <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <Sun className="w-4 h-4 text-amber-500" weight="fill" />
+          <Sun className="w-4 h-4 text-[#B7791F]" weight="fill" />
           <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.highSeason')}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-2 bg-emerald-500 rounded-sm" />
+          <span className="w-3 h-2 bg-[#2C7A53] rounded-sm" />
           <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.aboveAverage')}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-2 bg-red-500 rounded-sm" />
+          <span className="w-3 h-2 bg-[#C4503B] rounded-sm" />
           <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.belowAverage')}</span>
         </div>
       </div>
@@ -496,7 +496,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
             .map((p, i) => (
               <div
                 key={i}
-                className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-400 p-2 rounded-lg bg-neutral-50 dark:bg-neutral-800/50"
+                className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-400 p-2 rounded-md bg-neutral-50 dark:bg-neutral-800/50"
               >
                 <Info className="w-3.5 h-3.5 text-neutral-400 shrink-0 mt-0.5" />
                 <span>
@@ -521,8 +521,8 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
     return (
       <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <Warning className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-8 h-8 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+            <Warning className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
           </div>
           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.trendsComp.anomalies')}</h3>
         </div>
@@ -536,8 +536,8 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
   return (
     <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-          <Warning className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <div className="w-8 h-8 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+          <Warning className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F]" />
         </div>
         <div>
           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -599,8 +599,8 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
                   className={cn(
                     'p-2 text-sm text-right font-medium',
                     anomaly.deviationPercent > 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-600 dark:text-red-400'
+                      ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                      : 'text-[#C4503B] dark:text-[#E0664D]'
                   )}
                 >
                   {anomaly.deviationPercent > 0 && '+'}
@@ -636,12 +636,12 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
 function InsightsPanel({ insights }: { insights: string[] }) {
   const { t } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
+    <div className="p-6 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-          <Lightbulb className="w-4 h-4 text-indigo-600 dark:text-indigo-400" weight="fill" />
+        <div className="w-8 h-8 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+          <Lightbulb className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
         </div>
-        <h3 className="text-sm font-medium text-indigo-900 dark:text-indigo-200">
+        <h3 className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
           {t('inmobiliaria.analytics.trendsComp.autoInsights')}
         </h3>
       </div>
@@ -653,9 +653,9 @@ function InsightsPanel({ insights }: { insights: string[] }) {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="flex items-start gap-2 text-sm text-indigo-800 dark:text-indigo-200"
+            className="flex items-start gap-2 text-sm text-[#1A40FF] dark:text-[#5570FF]"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shrink-0 mt-1.5" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1A40FF] dark:bg-[#5570FF] shrink-0 mt-1.5" />
             {insight}
           </motion.li>
         ))}
@@ -707,8 +707,8 @@ export function AnalyticsTrends({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <ChartLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="bold" />
+          <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <ChartLine className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="bold" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -737,7 +737,7 @@ export function AnalyticsTrends({
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-lg z-10 overflow-hidden"
+                  className="absolute right-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10 overflow-hidden"
                 >
                   {data.map((item) => (
                     <button
@@ -746,7 +746,7 @@ export function AnalyticsTrends({
                       className={cn(
                         'w-full px-4 py-2.5 text-left text-sm transition-colors',
                         activeMetric === item.metricId
-                          ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
                           : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                       )}
                     >
@@ -768,9 +768,9 @@ export function AnalyticsTrends({
                 key={period.value}
                 onClick={() => handlePeriodChange(period.value as ComparisonPeriod)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                   activePeriod === period.value
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                 )}
               >
@@ -794,16 +794,16 @@ export function AnalyticsTrends({
             <div
               className={cn(
                 'w-14 h-14 rounded-xl flex items-center justify-center',
-                currentAnalysis.trendLine.direction === 'up' && 'bg-emerald-100 dark:bg-emerald-900/30',
-                currentAnalysis.trendLine.direction === 'down' && 'bg-red-100 dark:bg-red-900/30',
+                currentAnalysis.trendLine.direction === 'up' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+                currentAnalysis.trendLine.direction === 'down' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
                 currentAnalysis.trendLine.direction === 'stable' && 'bg-neutral-100 dark:bg-neutral-800'
               )}
             >
               {currentAnalysis.trendLine.direction === 'up' && (
-                <TrendUp className="w-7 h-7 text-emerald-600 dark:text-emerald-400" weight="bold" />
+                <TrendUp className="w-7 h-7 text-[#2C7A53] dark:text-[#3EAE70]" weight="bold" />
               )}
               {currentAnalysis.trendLine.direction === 'down' && (
-                <TrendDown className="w-7 h-7 text-red-600 dark:text-red-400" weight="bold" />
+                <TrendDown className="w-7 h-7 text-[#C4503B] dark:text-[#E0664D]" weight="bold" />
               )}
               {currentAnalysis.trendLine.direction === 'stable' && (
                 <Minus className="w-7 h-7 text-neutral-600 dark:text-neutral-400" weight="bold" />
@@ -827,9 +827,9 @@ export function AnalyticsTrends({
                 className={cn(
                   'font-medium',
                   currentAnalysis.trendLine.slope > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-[#2C7A53] dark:text-[#3EAE70]'
                     : currentAnalysis.trendLine.slope < 0
-                    ? 'text-red-600 dark:text-red-400'
+                    ? 'text-[#C4503B] dark:text-[#E0664D]'
                     : 'text-neutral-600 dark:text-neutral-400'
                 )}
               >

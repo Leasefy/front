@@ -8,11 +8,11 @@ import type { AssumptionRow } from '@/lib/hooks/cotizador/use-insights'
 // ---------------------------------------------------------------------------
 const STATE_COLORS: Record<string, string> = {
   active:
-    'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400',
+    'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
   deprecated:
-    'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400',
+    'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
   under_review:
-    'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400',
+    'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
 }
 
 // ---------------------------------------------------------------------------

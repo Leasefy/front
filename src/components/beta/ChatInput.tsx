@@ -62,7 +62,7 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
           className={cn(
             'flex items-end gap-2',
             'px-4 py-2',
-            'rounded-2xl',
+            'rounded-xl',
             'bg-white dark:bg-neutral-900',
             'border border-neutral-200 dark:border-neutral-700',
             'shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',
@@ -97,7 +97,7 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
             disabled={isDisabled}
             className={cn(
               'flex-shrink-0',
-              'w-8 h-8 rounded-lg',
+              'w-8 h-8 rounded-md',
               'flex items-center justify-center',
               'transition-all duration-150',
               isDisabled

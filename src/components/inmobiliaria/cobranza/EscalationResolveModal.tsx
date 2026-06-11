@@ -152,14 +152,14 @@ export function EscalationResolveModal({
         aria-hidden="true"
       />
       {/* Drawer on sm (bottom-anchored), centered modal on md+
-          DESIGN.md §4 drawer pattern + §2 z-50 token + shadow-2xl */}
+          DESIGN.md §4 drawer pattern + §2 z-50 token + */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="escalation-resolve-title"
         className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center md:p-4 animate-in slide-in-from-bottom md:fade-in duration-300"
       >
-        <div className="bg-card text-foreground shadow-2xl rounded-t-2xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="bg-card text-foreground rounded-t-xl md:rounded-xl w-full md:max-w-2xl max-h-[90vh] flex flex-col">
           {/* Header */}
           <div className="flex-none flex items-center justify-between border-b border-border px-5 py-4">
             <h2
@@ -172,7 +172,7 @@ export function EscalationResolveModal({
               type="button"
               onClick={onClose}
               aria-label={t('inmobiliaria.ai.cobranza.escalaciones.actions.cancel')}
-              className="rounded-md p-1 hover:bg-muted transition"
+              className="rounded-sm p-1 hover:bg-muted transition"
             >
               <X className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -191,7 +191,7 @@ export function EscalationResolveModal({
                 className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1.5"
               >
                 {t('inmobiliaria.ai.cobranza.escalaciones.resolveModal.categoryLabel')}
-                <span className="text-rose-600 dark:text-rose-400 ml-1">*</span>
+                <span className="text-[#C4503B] dark:text-[#E0664D] ml-1">*</span>
               </label>
               <select
                 id="resolve-category"
@@ -199,7 +199,7 @@ export function EscalationResolveModal({
                 onChange={(e) =>
                   handleCategoryChange(e.target.value as EscalationCategory)
                 }
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               >
                 <option value="" disabled>
@@ -215,23 +215,23 @@ export function EscalationResolveModal({
 
             {/* Escalated-to-legal warning (rose banner per DESIGN.md §4) */}
             {requiresLegalAck && (
-              <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 flex items-start gap-2">
+              <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 flex items-start gap-2">
                 <WarningCircle
-                  className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5"
+                  className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5"
                   aria-hidden="true"
                 />
                 <div className="flex-1 space-y-2">
-                  <p className="text-xs font-semibold text-rose-700 dark:text-rose-400">
+                  <p className="text-xs font-semibold text-[#C4503B] dark:text-[#E0664D]">
                     {t(
                       'inmobiliaria.ai.cobranza.escalaciones.resolveModal.escalatedToLegalWarning',
                     )}
                   </p>
-                  <label className="flex items-center gap-2 text-xs text-rose-700 dark:text-rose-300 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-[#C4503B] dark:text-[#E0664D] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={ackLegal}
                       onChange={(e) => setAckLegal(e.target.checked)}
-                      className="rounded border-rose-400 text-rose-600 focus:ring-rose-500"
+                      className="rounded border-[#C4503B]/30 text-[#C4503B] focus:ring-[#C4503B]"
                       data-testid="ack-legal-checkbox"
                     />
                     <span>Esto pasará el deudor a pre_judicial</span>
@@ -247,7 +247,7 @@ export function EscalationResolveModal({
                 className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1.5"
               >
                 {t('inmobiliaria.ai.cobranza.escalaciones.resolveModal.textLabel')}
-                <span className="text-rose-600 dark:text-rose-400 ml-1">*</span>
+                <span className="text-[#C4503B] dark:text-[#E0664D] ml-1">*</span>
               </label>
               <textarea
                 id="resolve-text"
@@ -255,7 +255,7 @@ export function EscalationResolveModal({
                 onChange={(e) => setText(e.target.value)}
                 rows={6}
                 maxLength={RESOLUTION_TEXT_MAX + 50 /* allow over-typing then show error */}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-sans leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm font-sans leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder={t(
                   'inmobiliaria.ai.cobranza.escalaciones.resolveModal.textLabel',
                 )}
@@ -264,9 +264,9 @@ export function EscalationResolveModal({
                 <span
                   className={
                     tooShort
-                      ? 'text-rose-600 dark:text-rose-400'
+                      ? 'text-[#C4503B] dark:text-[#E0664D]'
                       : tooLong
-                        ? 'text-rose-600 dark:text-rose-400'
+                        ? 'text-[#C4503B] dark:text-[#E0664D]'
                         : 'text-muted-foreground'
                   }
                 >
@@ -283,7 +283,7 @@ export function EscalationResolveModal({
             </div>
 
             {submitError && (
-              <p className="text-xs text-rose-600 dark:text-rose-400">{submitError}</p>
+              <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{submitError}</p>
             )}
           </div>
 
@@ -293,7 +293,7 @@ export function EscalationResolveModal({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-muted disabled:opacity-50"
+              className="px-3 py-1.5 text-sm font-medium rounded-sm border border-border text-foreground hover:bg-muted disabled:opacity-50"
             >
               {t('inmobiliaria.ai.cobranza.escalaciones.actions.cancel')}
             </button>
@@ -301,7 +301,7 @@ export function EscalationResolveModal({
               type="button"
               onClick={() => void handleSubmit()}
               disabled={!canSubmit}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-mono uppercase tracking-wide rounded-md bg-emerald-600 dark:bg-emerald-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-sm bg-[#2C7A53] dark:bg-[#3EAE70] text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               data-testid="resolve-submit-button"
             >
               <CheckCircle className="w-4 h-4" aria-hidden="true" />

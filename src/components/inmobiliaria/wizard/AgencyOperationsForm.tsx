@@ -57,7 +57,7 @@ function NumberInput({
           min={min}
           max={max}
           onChange={handleChange}
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
         />
         {suffix && (
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400 dark:text-neutral-500">

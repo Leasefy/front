@@ -114,7 +114,7 @@ export function DebtorSidebar({ data, isLoading, onRevealRequest }: DebtorSideba
 
       {/* Paused badge */}
       {data.isPaused && data.carterapausedUntil && (
-        <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+        <div className="rounded-sm bg-[#B7791F] dark:bg-[#B7791F]/30 border border-[#B7791F] dark:border-[#B7791F] px-3 py-2 text-xs text-[#B7791F] dark:text-[#B7791F]">
           {t('inmobiliaria.ai.cobranza.detail.sidebar.paused').replace(
             '{{date}}',
             new Date(data.carterapausedUntil).toLocaleDateString(locale),
@@ -130,7 +130,7 @@ export function DebtorSidebar({ data, isLoading, onRevealRequest }: DebtorSideba
         {nextAction ? (
           <p className="mt-1 text-sm text-neutral-900 dark:text-white">
             {nextAction.channel} ·{' '}
-            <span className="text-violet-700 dark:text-violet-300 font-mono text-xs">
+            <span className="text-[#6B6B6B] dark:text-[#6B6B6B] font-mono text-xs">
               {formatRelative(nextAction.plannedFor, now, locale)}
             </span>
             {nextAction.templateName && (

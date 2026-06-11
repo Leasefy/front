@@ -10,8 +10,8 @@ import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotiza
 // ---------------------------------------------------------------------------
 
 const ROUTE_COLORS: Record<string, string> = {
-  rest: 'bg-teal-100 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400',
-  stub: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400',
+  rest: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+  stub: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
   disabled: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400',
 }
 
@@ -32,9 +32,9 @@ function RouteBadge({ mode, t }: { mode: string; t: (k: string) => string }) {
 }
 
 const SLA_COLORS: Record<string, string> = {
-  healthy: 'text-emerald-600 dark:text-emerald-400',
-  degraded: 'text-amber-600 dark:text-amber-400',
-  breached: 'text-red-600 dark:text-red-400',
+  healthy: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  degraded: 'text-[#B7791F] dark:text-[#D2992F]',
+  breached: 'text-[#C4503B] dark:text-[#E0664D]',
 }
 
 function SlaBadge({ state, t }: { state: string; t: (k: string) => string }) {
@@ -95,7 +95,7 @@ export function CotizadorCarriersStatus({
     <div>
       {/* All-breach banner */}
       {allInBreach && (
-        <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
+        <div className="mb-4 rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 px-4 py-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2">
           <Warning weight="fill" className="h-4 w-4 flex-shrink-0" />
           {t('inmobiliaria.ai.cotizador.overview.carriers.allBreachBanner')}
         </div>

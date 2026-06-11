@@ -146,7 +146,7 @@ export function ConsignacionFilters({
           placeholder={t('inmobiliaria.consignaciones.filters.searchPlaceholder')}
           value={filters.search}
           onChange={(e) => updateFilter('search', e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all text-sm"
         />
         {filters.search && (
           <button
@@ -167,9 +167,9 @@ export function ConsignacionFilters({
               key={option.value}
               onClick={() => updateFilter('availability', option.value)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
+                'px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap',
                 filters.availability === option.value
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -188,7 +188,7 @@ export function ConsignacionFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.agenteId !== 'all'
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
+                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -201,14 +201,14 @@ export function ConsignacionFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-56 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+                className="absolute top-full left-0 mt-2 w-56 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
               >
                 <button
                   onClick={() => { updateFilter('agenteId', 'all'); setOpenDropdown(null); }}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     filters.agenteId === 'all'
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -219,16 +219,16 @@ export function ConsignacionFilters({
                     key={agente.id}
                     onClick={() => { updateFilter('agenteId', agente.id); setOpenDropdown(null); }}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
                       filters.agenteId === agente.id
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'text-foreground hover:bg-muted'
                     )}
                   >
                     {agente.avatar ? (
                       <img src={agente.avatar} alt={agente.name} className="w-6 h-6 rounded-full" />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                      <div className="w-6 h-6 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                         {agente.name.charAt(0)}
                       </div>
                     )}
@@ -247,7 +247,7 @@ export function ConsignacionFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.propietarioId !== 'all'
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
+                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -260,14 +260,14 @@ export function ConsignacionFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-56 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+                className="absolute top-full left-0 mt-2 w-56 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
               >
                 <button
                   onClick={() => { updateFilter('propietarioId', 'all'); setOpenDropdown(null); }}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     filters.propietarioId === 'all'
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -278,9 +278,9 @@ export function ConsignacionFilters({
                     key={prop.id}
                     onClick={() => { updateFilter('propietarioId', prop.id); setOpenDropdown(null); }}
                     className={cn(
-                      'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors truncate',
+                      'w-full px-3 py-2 rounded-md text-left text-sm transition-colors truncate',
                       filters.propietarioId === prop.id
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'text-foreground hover:bg-muted'
                     )}
                   >
@@ -299,7 +299,7 @@ export function ConsignacionFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.city !== 'all'
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
+                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -312,14 +312,14 @@ export function ConsignacionFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-44 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+                className="absolute top-full left-0 mt-2 w-44 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
               >
                 <button
                   onClick={() => { updateFilter('city', 'all'); setOpenDropdown(null); }}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     filters.city === 'all'
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -330,9 +330,9 @@ export function ConsignacionFilters({
                     key={city}
                     onClick={() => { updateFilter('city', city); setOpenDropdown(null); }}
                     className={cn(
-                      'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                       filters.city === city
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'text-foreground hover:bg-muted'
                     )}
                   >
@@ -351,7 +351,7 @@ export function ConsignacionFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.propertyType !== 'all'
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
+                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -364,7 +364,7 @@ export function ConsignacionFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-44 p-2 rounded-xl border border-border bg-card shadow-xl z-50"
+                className="absolute top-full left-0 mt-2 w-44 p-2 rounded-xl border border-border bg-card z-50"
               >
                 {PROPERTY_TYPE_OPTIONS.map((option) => {
                   const Icon = option.icon;
@@ -373,9 +373,9 @@ export function ConsignacionFilters({
                       key={option.value}
                       onClick={() => { updateFilter('propertyType', option.value); setOpenDropdown(null); }}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
                         filters.propertyType === option.value
-                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                           : 'text-foreground hover:bg-muted'
                       )}
                     >
@@ -395,7 +395,7 @@ export function ConsignacionFilters({
             <div className="hidden sm:block w-px h-6 bg-border" />
             <button
               onClick={clearAllFilters}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
             >
               <X className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.filters.clear')}

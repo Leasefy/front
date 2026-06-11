@@ -44,22 +44,22 @@ function qaTone(score: number | null | undefined): {
   }
   if (score >= 0.8) {
     return {
-      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-      text: 'text-emerald-700 dark:text-emerald-300',
-      ring: 'ring-emerald-200 dark:ring-emerald-800',
+      bg: 'bg-[#2C7A53] dark:bg-[#2C7A53]/30',
+      text: 'text-[#2C7A53] dark:text-[#2C7A53]',
+      ring: 'ring-[#2C7A53] dark:ring-[#2C7A53]',
     }
   }
   if (score >= 0.6) {
     return {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-300',
-      ring: 'ring-amber-200 dark:ring-amber-800',
+      bg: 'bg-[#B7791F] dark:bg-[#B7791F]/30',
+      text: 'text-[#B7791F] dark:text-[#B7791F]',
+      ring: 'ring-[#B7791F] dark:ring-[#B7791F]',
     }
   }
   return {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-700 dark:text-red-300',
-    ring: 'ring-red-200 dark:ring-red-800',
+    bg: 'bg-[#C4503B] dark:bg-[#C4503B]/30',
+    text: 'text-[#C4503B] dark:text-[#C4503B]',
+    ring: 'ring-[#C4503B] dark:ring-[#C4503B]',
   }
 }
 
@@ -151,17 +151,17 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   if (error && !data) {
     return (
       <main className="p-6 lg:p-8">
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-6 max-w-xl">
-          <p className="text-sm text-red-700 dark:text-red-300 font-medium">
+        <div className="rounded-xl border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-6 max-w-xl">
+          <p className="text-sm text-[#C4503B] dark:text-[#C4503B] font-medium">
             {t('inmobiliaria.ai.cobranza.call.error')}
           </p>
-          <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">{error}</p>
+          <p className="text-xs text-[#C4503B]/80 dark:text-[#C4503B]/80 mt-1">{error}</p>
           <button
             type="button"
             onClick={() => {
               void refetch()
             }}
-            className="mt-3 inline-flex items-center min-h-11 min-w-11 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
+            className="mt-3 inline-flex items-center min-h-11 min-w-11 px-3 py-2 rounded-md bg-[#C4503B] hover:bg-[#C4503B] text-white text-sm font-medium"
           >
             {t('inmobiliaria.ai.cobranza.call.errorRetry')}
           </button>
@@ -191,7 +191,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
       <header className="space-y-3">
         <Link
           href={`/panel/inmobiliaria/ai/cobranza/deudores/${data.debtorId}`}
-          className="inline-flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:underline min-h-11"
+          className="inline-flex items-center gap-1 text-sm text-[#6B6B6B] dark:text-[#6B6B6B] hover:underline min-h-11"
         >
           ← {t('inmobiliaria.ai.cobranza.call.back')}
         </Link>
@@ -242,7 +242,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
               type="button"
               onClick={() => { void exportTranscript() }}
               disabled={isExportingTranscript}
-              className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs font-mono uppercase tracking-wide text-foreground transition"
+              className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-md border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs text-foreground transition font-medium"
               aria-label={t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
             >
               {isExportingTranscript

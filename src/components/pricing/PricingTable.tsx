@@ -61,27 +61,17 @@ export function PricingTable({
       <div className={cn('', className)}>
         {/* Billing cycle toggle */}
         <div className="flex justify-center mb-12">
-          <div className="inline-flex items-center bg-muted/80 p-1.5 rounded-full">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={cn(
-                'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
-                billingCycle === 'monthly' ? 'bg-card text-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Mensual
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={cn(
-                'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
-                billingCycle === 'yearly' ? 'bg-card text-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
+        <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
+          <TabsList variant="segmented">
+            <TabsTrigger value="monthly">Mensual</TabsTrigger>
+            <TabsTrigger value="yearly" className="inline-flex items-center gap-2">
               Anual
-              <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">-20%</span>
-            </button>
-          </div>
+              <span className="rounded-full bg-success-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-success">
+                -20%
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -115,33 +105,17 @@ export function PricingTable({
     <div className={cn('', className)}>
       {/* Billing cycle toggle - Premium pill design */}
       <div className="flex justify-center mb-12">
-        <div className="inline-flex items-center bg-muted/80 p-1.5 rounded-full">
-          <button
-            onClick={() => setBillingCycle('monthly')}
-            className={cn(
-              'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
-              billingCycle === 'monthly'
-                ? 'bg-card text-foreground shadow-md'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Mensual
-          </button>
-          <button
-            onClick={() => setBillingCycle('yearly')}
-            className={cn(
-              'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
-              billingCycle === 'yearly'
-                ? 'bg-card text-foreground shadow-md'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Anual
-            <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-              -20%
-            </span>
-          </button>
-        </div>
+        <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
+          <TabsList variant="segmented">
+            <TabsTrigger value="monthly">Mensual</TabsTrigger>
+            <TabsTrigger value="yearly" className="inline-flex items-center gap-2">
+              Anual
+              <span className="rounded-full bg-success-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-success">
+                -20%
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Plans grid with stagger animation */}
@@ -232,11 +206,11 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
     return value ? (
       <div className={cn(
         'w-7 h-7 rounded-full mx-auto flex items-center justify-center',
-        highlighted ? 'bg-primary/10' : 'bg-emerald-50'
+        highlighted ? 'bg-primary/10' : 'bg-[#E8F3EC]'
       )}>
         <Check className={cn(
           'w-4 h-4',
-          highlighted ? 'text-primary' : 'text-emerald-500'
+          highlighted ? 'text-primary' : 'text-[#2C7A53]'
         )} />
       </div>
     ) : (

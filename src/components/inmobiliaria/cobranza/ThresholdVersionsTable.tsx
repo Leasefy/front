@@ -64,13 +64,13 @@ export function ThresholdVersionsTable({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between">
         <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.versionsHeading')}
         </h2>
         {!supported && (
-          <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400">
+          <span className="text-[10px] font-mono uppercase text-[#B7791F] dark:text-[#D2992F]">
             {locale.startsWith('es') ? 'Sólo versión activa' : 'Active only'}
           </span>
         )}
@@ -108,7 +108,7 @@ export function ThresholdVersionsTable({
                   <td className="px-3 py-2 font-mono tabular-nums text-foreground">
                     {v.version != null ? `v${v.version}` : '—'}
                     {isCurrent && (
-                      <span className="ml-2 text-[10px] font-mono uppercase text-emerald-600 dark:text-emerald-400">
+                      <span className="ml-2 text-[10px] font-mono uppercase text-[#2C7A53] dark:text-[#3EAE70]">
                         {locale.startsWith('es') ? 'vigente' : 'active'}
                       </span>
                     )}
@@ -121,7 +121,7 @@ export function ThresholdVersionsTable({
                   </td>
                   <td className="px-3 py-2">
                     {v.is_rollback_of_version != null ? (
-                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
                         {locale.startsWith('es')
                           ? `Rollback de v${v.is_rollback_of_version}`
                           : `Rollback of v${v.is_rollback_of_version}`}
@@ -137,7 +137,7 @@ export function ThresholdVersionsTable({
                       <button
                         type="button"
                         onClick={() => setRollbackConfirmVersion(v.version)}
-                        className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2 py-1 rounded-md border border-border hover:bg-muted transition"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-sm border border-border hover:bg-muted transition font-medium"
                         aria-label={`rollback v${v.version}`}
                       >
                         <ArrowCounterClockwise className="w-3 h-3" aria-hidden="true" />
@@ -154,7 +154,7 @@ export function ThresholdVersionsTable({
 
       {/* Toast */}
       {toast && (
-        <div className="px-4 py-2 border-t border-border bg-emerald-50 dark:bg-emerald-950/30 text-xs font-mono text-emerald-700 dark:text-emerald-400">
+        <div className="px-4 py-2 border-t border-border bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-xs font-mono text-[#2C7A53] dark:text-[#3EAE70]">
           {toast}
         </div>
       )}
@@ -167,7 +167,7 @@ export function ThresholdVersionsTable({
           aria-modal="true"
           aria-label="rollbackConfirm"
         >
-          <div className="rounded-xl border border-border bg-card shadow-lg max-w-md w-full p-5 space-y-4">
+          <div className="rounded-xl border border-border bg-card max-w-md w-full p-5 space-y-4">
             <h3 className="text-base font-heading text-foreground">
               {locale.startsWith('es') ? '¿Restaurar versión?' : 'Restore version?'}
             </h3>
@@ -181,7 +181,7 @@ export function ThresholdVersionsTable({
                 type="button"
                 onClick={() => setRollbackConfirmVersion(null)}
                 disabled={isRollingBack}
-                className="text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
+                className="text-xs px-3 py-1.5 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
               >
                 {locale.startsWith('es') ? 'Cancelar' : 'Cancel'}
               </button>
@@ -189,7 +189,7 @@ export function ThresholdVersionsTable({
                 type="button"
                 onClick={() => void confirmRollback()}
                 disabled={isRollingBack}
-                className="text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition"
+                className="text-xs px-3 py-1.5 rounded-sm border border-border bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition font-medium"
               >
                 {isRollingBack
                   ? locale.startsWith('es') ? 'Restaurando...' : 'Restoring...'

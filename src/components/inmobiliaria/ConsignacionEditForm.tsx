@@ -75,13 +75,13 @@ function InputWrapper({
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-[#C4503B] ml-0.5">*</span>}
       </label>
       {children}
       {helper && !error && (
         <p className="text-xs text-neutral-500 dark:text-neutral-400">{helper}</p>
       )}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-[#C4503B]">{error}</p>}
     </div>
   );
 }
@@ -204,7 +204,7 @@ export function ConsignacionEditForm({
       {/* Property Info Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
-          <Buildings className="w-5 h-5 text-indigo-500" />
+          <Buildings className="w-5 h-5 text-[#1A40FF]" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.propertyInfo')}</h3>
         </div>
 
@@ -222,7 +222,7 @@ export function ConsignacionEditForm({
                   className={cn(
                     'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
                   )}
                 >
@@ -230,7 +230,7 @@ export function ConsignacionEditForm({
                     className={cn(
                       'w-5 h-5',
                       isSelected
-                        ? 'text-indigo-500'
+                        ? 'text-[#1A40FF]'
                         : 'text-neutral-500 dark:text-neutral-400'
                     )}
                   />
@@ -238,7 +238,7 @@ export function ConsignacionEditForm({
                     className={cn(
                       'text-xs font-medium',
                       isSelected
-                        ? 'text-indigo-600 dark:text-indigo-400'
+                        ? 'text-[#1A40FF] dark:text-[#5570FF]'
                         : 'text-neutral-600 dark:text-neutral-400'
                     )}
                   >
@@ -261,8 +261,8 @@ export function ConsignacionEditForm({
             className={cn(
               'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
               errors.propertyTitle
-                ? 'border-red-300 dark:border-red-700'
-                : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
             )}
           />
         </InputWrapper>
@@ -280,8 +280,8 @@ export function ConsignacionEditForm({
               className={cn(
                 'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
                 errors.propertyAddress
-                  ? 'border-red-300 dark:border-red-700'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                  ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                  : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
               )}
             />
           </div>
@@ -299,8 +299,8 @@ export function ConsignacionEditForm({
               className={cn(
                 'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
                 errors.propertyCity
-                  ? 'border-red-300 dark:border-red-700'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                  ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                  : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
               )}
             />
           </InputWrapper>
@@ -313,8 +313,8 @@ export function ConsignacionEditForm({
               className={cn(
                 'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white',
                 errors.propertyZone
-                  ? 'border-red-300 dark:border-red-700'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                  ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                  : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
               )}
             >
               <option value="">{t('inmobiliaria.consignaciones.editForm.selectZone')}</option>
@@ -331,7 +331,7 @@ export function ConsignacionEditForm({
       {/* Financial Info Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
-          <CurrencyDollar className="w-5 h-5 text-emerald-500" />
+          <CurrencyDollar className="w-5 h-5 text-[#2C7A53]" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.financialInfo')}</h3>
         </div>
 
@@ -351,8 +351,8 @@ export function ConsignacionEditForm({
                 className={cn(
                   'w-full pl-8 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
                   errors.monthlyRent
-                    ? 'border-red-300 dark:border-red-700'
-                    : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                    ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                    : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
                 )}
               />
             </div>
@@ -369,7 +369,7 @@ export function ConsignacionEditForm({
                 placeholder="250000"
                 min="0"
                 step="10000"
-                className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:border-indigo-500 dark:focus:border-indigo-500"
+                className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30"
               />
             </div>
           </InputWrapper>
@@ -391,14 +391,14 @@ export function ConsignacionEditForm({
                 className={cn(
                   'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
                   errors.commissionPercent
-                    ? 'border-red-300 dark:border-red-700'
-                    : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                    ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                    : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
                 )}
               />
               <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             </div>
             {estimatedCommission > 0 && (
-              <div className="px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm">
+              <div className="px-3 py-2 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-sm">
                 {t('inmobiliaria.consignaciones.editForm.estimatedPerMonth', { amount: fmtCurrency(estimatedCommission) })}
               </div>
             )}
@@ -409,7 +409,7 @@ export function ConsignacionEditForm({
       {/* Contract Info Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
-          <CalendarBlank className="w-5 h-5 text-blue-500" />
+          <CalendarBlank className="w-5 h-5 text-[#1A40FF]" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.contractTerms')}</h3>
         </div>
 
@@ -424,8 +424,8 @@ export function ConsignacionEditForm({
               className={cn(
                 'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white',
                 errors.agenteId
-                  ? 'border-red-300 dark:border-red-700'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                  ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                  : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
               )}
             >
               <option value="">{t('inmobiliaria.consignaciones.editForm.selectAgent')}</option>
@@ -449,8 +449,8 @@ export function ConsignacionEditForm({
               className={cn(
                 'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white',
                 errors.contractDate
-                  ? 'border-red-300 dark:border-red-700'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 dark:focus:border-indigo-500'
+                  ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+                  : 'border-neutral-200 dark:border-neutral-700 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
               )}
             />
           </InputWrapper>
@@ -461,7 +461,7 @@ export function ConsignacionEditForm({
               name="contractEndDate"
               value={formData.contractEndDate}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30"
             />
           </InputWrapper>
         </div>
@@ -478,16 +478,16 @@ export function ConsignacionEditForm({
               placeholder="12"
               min="1"
               max="36"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:border-indigo-500 dark:focus:border-indigo-500"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30"
             />
           </div>
         </InputWrapper>
       </div>
 
       {/* Info Alert */}
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
-        <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-        <p className="text-sm text-blue-700 dark:text-blue-300">
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
+        <Info className="w-5 h-5 text-[#1A40FF] shrink-0 mt-0.5" />
+        <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
           {t('inmobiliaria.consignaciones.editForm.changesNotice')}
         </p>
       </div>
@@ -505,7 +505,7 @@ export function ConsignacionEditForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors disabled:opacity-70"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors disabled:opacity-70"
         >
           {isSubmitting ? (
             <>

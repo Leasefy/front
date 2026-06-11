@@ -23,8 +23,8 @@ function ImportarContent() {
 
         {/* Title */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <FileArrowUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <FileArrowUp className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">

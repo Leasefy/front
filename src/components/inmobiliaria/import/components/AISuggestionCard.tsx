@@ -48,10 +48,10 @@ function ConfidencePill({ confidence }: { confidence: AISuggestion['confidence']
       className={cn(
         'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono uppercase tracking-wide shrink-0',
         confidence === 'alta'
-          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+          ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
           : confidence === 'media'
-            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
+            : 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
       )}
     >
       {confidence}
@@ -77,9 +77,9 @@ function SuggestionRow({
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-3 rounded-lg transition-colors',
+        'flex items-start gap-3 p-3 rounded-md transition-colors',
         suggestion.accepted === true
-          ? 'bg-emerald-50 dark:bg-emerald-900/10'
+          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
           : suggestion.accepted === false
             ? 'bg-neutral-50 dark:bg-neutral-800/50 opacity-60'
             : 'bg-white dark:bg-neutral-900'
@@ -99,7 +99,7 @@ function SuggestionRow({
             suggestion.accepted === false
               ? 'line-through text-neutral-400 dark:text-neutral-600'
               : suggestion.accepted === true
-                ? 'text-emerald-700 dark:text-emerald-400'
+                ? 'text-[#2C7A53] dark:text-[#3EAE70]'
                 : 'text-neutral-900 dark:text-white'
           )}
         >
@@ -121,7 +121,7 @@ function SuggestionRow({
             type="button"
             onClick={() => onAccept(rowIndex, suggestion.field)}
             title="Aceptar sugerencia"
-            className="w-7 h-7 flex items-center justify-center rounded-md border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-sm border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20 transition-colors"
           >
             <Check className="w-3.5 h-3.5" weight="bold" />
           </button>
@@ -129,7 +129,7 @@ function SuggestionRow({
             type="button"
             onClick={() => onReject(rowIndex, suggestion.field)}
             title="Rechazar sugerencia"
-            className="w-7 h-7 flex items-center justify-center rounded-md border border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-sm border border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <X className="w-3.5 h-3.5" weight="bold" />
           </button>
@@ -138,7 +138,7 @@ function SuggestionRow({
         <span
           className={cn(
             'text-xs font-mono uppercase tracking-wide shrink-0 mt-1',
-            suggestion.accepted ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400 dark:text-neutral-500'
+            suggestion.accepted ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-neutral-400 dark:text-neutral-500'
           )}
         >
           {suggestion.accepted
@@ -174,15 +174,15 @@ export function AISuggestionCard({
   })();
 
   const statusDotClass = (() => {
-    if (property.hasErrors) return 'bg-red-500';
-    if (pendingSuggestions.length > 0) return 'bg-amber-500';
-    return 'bg-emerald-500';
+    if (property.hasErrors) return 'bg-[#C4503B]';
+    if (pendingSuggestions.length > 0) return 'bg-[#B7791F]';
+    return 'bg-[#2C7A53]';
   })();
 
   const statusTextClass = (() => {
-    if (property.hasErrors) return 'text-red-600 dark:text-red-400';
-    if (pendingSuggestions.length > 0) return 'text-amber-600 dark:text-amber-400';
-    return 'text-emerald-600 dark:text-emerald-400';
+    if (property.hasErrors) return 'text-[#C4503B] dark:text-[#E0664D]';
+    if (pendingSuggestions.length > 0) return 'text-[#B7791F] dark:text-[#D2992F]';
+    return 'text-[#2C7A53] dark:text-[#3EAE70]';
   })();
 
   const displayTitle =
@@ -202,7 +202,7 @@ export function AISuggestionCard({
           type="checkbox"
           checked={property.selected}
           onChange={() => onToggleSelect(property._rowIndex)}
-          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
+          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-[#1A40FF] focus:ring-[#1A40FF] cursor-pointer shrink-0"
           disabled={property.hasErrors}
           title={property.hasErrors ? 'No se puede importar: tiene errores sin resolver' : undefined}
         />
@@ -231,7 +231,7 @@ export function AISuggestionCard({
         <button
           type="button"
           onClick={() => setIsExpanded((v) => !v)}
-          className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shrink-0"
+          className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shrink-0"
         >
           {isExpanded ? (
             <CaretUp className="w-4 h-4" />
@@ -247,22 +247,22 @@ export function AISuggestionCard({
           {/* Property summary pills */}
           <div className="flex flex-wrap gap-2">
             {property.propertyType && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-xs font-mono text-neutral-600 dark:text-neutral-400">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 text-xs font-mono text-neutral-600 dark:text-neutral-400">
                 {property.propertyType}
               </span>
             )}
             {property.propertyCity && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-xs font-mono text-neutral-600 dark:text-neutral-400">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 text-xs font-mono text-neutral-600 dark:text-neutral-400">
                 {property.propertyCity}
               </span>
             )}
             {property.propertyZone && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-xs font-mono text-neutral-600 dark:text-neutral-400">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 text-xs font-mono text-neutral-600 dark:text-neutral-400">
                 {property.propertyZone}
               </span>
             )}
             {property.monthlyRent && property.monthlyRent > 0 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-xs font-mono text-indigo-700 dark:text-indigo-400">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-xs font-mono text-[#1A40FF] dark:text-[#5570FF]">
                 {formatCOP(property.monthlyRent)}/mes
               </span>
             )}
@@ -273,7 +273,7 @@ export function AISuggestionCard({
             <>
               <div className="border-t border-neutral-100 dark:border-neutral-800 pt-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkle className="w-3.5 h-3.5 text-indigo-500" />
+                  <Sparkle className="w-3.5 h-3.5 text-[#1A40FF]" />
                   <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                     Sugerencias AI
                   </span>
@@ -296,7 +296,7 @@ export function AISuggestionCard({
                     <button
                       type="button"
                       onClick={() => onAcceptAll(property._rowIndex)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wide border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors font-medium"
                     >
                       <Sparkle className="w-3 h-3" />
                       Aceptar todas
@@ -313,10 +313,10 @@ export function AISuggestionCard({
               {property.errorMessages.map((msg, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                  className="flex items-start gap-2 p-2 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40"
                 >
-                  <Warning className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-700 dark:text-red-400">{msg}</p>
+                  <Warning className="w-4 h-4 text-[#C4503B] shrink-0 mt-0.5" />
+                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{msg}</p>
                 </div>
               ))}
             </div>

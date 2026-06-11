@@ -170,7 +170,7 @@ export function PlanTabs({
             sizeClasses[size],
             fullWidth && 'flex-1',
             activeTab === tab.id
-              ? 'bg-primary text-white uppercase tracking-wide font-mono'
+              ? 'bg-primary text-white'
               : 'text-plan-secondary hover:bg-muted hover:text-plan-primary',
             tab.disabled && 'opacity-50 cursor-not-allowed'
           )}

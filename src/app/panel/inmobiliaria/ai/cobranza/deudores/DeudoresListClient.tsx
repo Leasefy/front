@@ -38,18 +38,18 @@ const DAYS_MAX_DEFAULT = 90
 // Tailwind tokens for days-in-stage badge — D-31 spec: green ≤3, amber 4-7, red ≥8
 function daysBadgeClasses(days: number): string {
   if (days <= 3) {
-    return 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-800'
+    return 'bg-[#2C7A53] text-[#2C7A53] ring-1 ring-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53] dark:ring-[#2C7A53]'
   }
   if (days <= 7) {
-    return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800'
+    return 'bg-[#B7791F] text-[#B7791F] ring-1 ring-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:ring-[#B7791F]'
   }
-  return 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-400 dark:ring-red-800'
+  return 'bg-[#C4503B] text-[#C4503B] ring-1 ring-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B] dark:ring-[#C4503B]'
 }
 
 function stageChipClasses(active: boolean): string {
   return active
-    ? 'bg-violet-600 text-white border-violet-600'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-violet-400'
+    ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
+    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]'
 }
 
 export default function DeudoresListClient() {
@@ -243,8 +243,8 @@ export default function DeudoresListClient() {
               className={
                 'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
                 (channels.includes(c)
-                  ? 'bg-violet-600 text-white border-violet-600'
-                  : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-violet-400')
+                  ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
+                  : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]')
               }
             >
               {t(`inmobiliaria.ai.cobranza.deudores.channels.${c}` as Parameters<typeof t>[0])}
@@ -290,7 +290,7 @@ export default function DeudoresListClient() {
       <button
         type="button"
         onClick={clearFilters}
-        className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+        className="text-xs font-medium text-[#6B6B6B] dark:text-[#6B6B6B] hover:underline"
       >
         {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
       </button>
@@ -326,7 +326,7 @@ export default function DeudoresListClient() {
           <button
             type="button"
             onClick={() => setFiltersDrawerOpen(true)}
-            className="text-xs font-medium px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
+            className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
           >
             {t('inmobiliaria.ai.cobranza.deudores.openFilters')}
           </button>
@@ -341,7 +341,7 @@ export default function DeudoresListClient() {
               onClick={() => setFiltersDrawerOpen(false)}
               className="absolute inset-0 bg-black/40"
             />
-            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-2xl p-5 max-h-[80vh] overflow-y-auto">
+            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-xl p-5 max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                   {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
@@ -373,10 +373,10 @@ export default function DeudoresListClient() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('inmobiliaria.ai.cobranza.deudores.filters.search.placeholder')}
-                className="w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-3 py-2 text-sm rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
               />
               {searchHint && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{searchHint}</p>
+                <p className="text-xs text-[#B7791F] dark:text-[#B7791F] mt-1">{searchHint}</p>
               )}
             </div>
             <span
@@ -389,14 +389,14 @@ export default function DeudoresListClient() {
 
           {/* Error */}
           {error && (
-            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 mb-4 flex items-center justify-between">
-              <p className="text-sm text-red-700 dark:text-red-400">
+            <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 mb-4 flex items-center justify-between">
+              <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
                 {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
               </p>
               <button
                 type="button"
                 onClick={() => void refetch()}
-                className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+                className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
               >
                 {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
               </button>
@@ -404,7 +404,7 @@ export default function DeudoresListClient() {
           )}
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
               <thead className="bg-neutral-50 dark:bg-neutral-950/50">
                 <tr>
@@ -452,7 +452,7 @@ export default function DeudoresListClient() {
                       <button
                         type="button"
                         onClick={clearFilters}
-                        className="text-xs font-medium px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                        className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                       >
                         {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
                       </button>
@@ -468,13 +468,13 @@ export default function DeudoresListClient() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') navigateToDebtor(d.id)
                     }}
-                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
                   >
                     <td className="px-3 py-2 text-neutral-900 dark:text-white whitespace-nowrap">
                       {d.fullName}
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">
+                      <span className="text-xs font-semibold text-[#6B6B6B] dark:text-[#6B6B6B]">
                         {d.currentStage}
                       </span>
                     </td>

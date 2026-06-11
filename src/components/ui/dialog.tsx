@@ -1,13 +1,33 @@
 "use client"
 
 import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from '@phosphor-icons/react'
+import {
+  Dialog as DSDialog,
+  DialogTrigger as DSDialogTrigger,
+  DialogPortal as DSDialogPortal,
+  DialogClose as DSDialogClose,
+  DialogOverlay as DSDialogOverlay,
+  DialogContent as DSDialogContent,
+  type DialogContentProps as DSDialogContentProps,
+  DialogTitle as DSDialogTitle,
+  DialogDescription as DSDialogDescription,
+} from "@leasefy/ui"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * ADAPTER fino sobre el Dialog de @leasefy/ui que preserva la API local del mvp:
+ * - Root con scroll-lock propio (body/html overflow hidden mientras open).
+ * - DialogContent: contrato de layout legacy (`p-6 grid gap-4 max-w-lg`,
+ *   overridable vía className), z-[300] sobre headers fijos, overlay
+ *   `z-[300] bg-black/60`, onWheel stopPropagation y animación legacy
+ *   (tailwindcss-animate in/out) en lugar del animate-scale-in del DS.
+ * - Header/Footer mantienen las clases de layout legacy (el padding vive en
+ *   el Content, no en los sub-parts como en el DS).
+ */
+
 // Custom Dialog Root that blocks body scroll when open
-const Dialog = ({ children, ...props }: DialogPrimitive.DialogProps) => {
+const Dialog = ({ children, ...props }: React.ComponentProps<typeof DSDialog>) => {
   React.useEffect(() => {
     if (props.open) {
       document.body.style.overflow = 'hidden';
@@ -19,54 +39,55 @@ const Dialog = ({ children, ...props }: DialogPrimitive.DialogProps) => {
     }
   }, [props.open]);
 
-  return <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>;
+  return <DSDialog {...props}>{children}</DSDialog>;
 }
 
-const DialogTrigger = DialogPrimitive.Trigger
+const DialogTrigger = DSDialogTrigger
 
-const DialogPortal = DialogPrimitive.Portal
+const DialogPortal = DSDialogPortal
 
-const DialogClose = DialogPrimitive.Close
+const DialogClose = DSDialogClose
+
+// Overlay legacy del mvp: z sobre headers fijos + fade in/out simétrico.
+// `data-[state=closed]:opacity-100` neutraliza el snap a opacity-0 del DS
+// para que el fade-out de tailwindcss-animate sea visible.
+const dialogOverlayClasses =
+  "z-[300] bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:opacity-100"
 
 const DialogOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+  React.ElementRef<typeof DSDialogOverlay>,
+  React.ComponentPropsWithoutRef<typeof DSDialogOverlay>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay
+  <DSDialogOverlay
     ref={ref}
-    className={cn(
-      "fixed inset-0 z-[300] bg-black/60  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      className
-    )}
+    className={cn(dialogOverlayClasses, className)}
     {...props}
   />
 ))
-DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+DialogOverlay.displayName = "DialogOverlay"
 
 const DialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      onWheel={(e) => e.stopPropagation()}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-[300] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-[var(--duration-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl overscroll-contain",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Cerrar</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
+  React.ElementRef<typeof DSDialogContent>,
+  DSDialogContentProps
+>(({ className, overlayClassName, children, ...props }, ref) => (
+  <DSDialogContent
+    ref={ref}
+    overlayClassName={cn(dialogOverlayClasses, overlayClassName)}
+    onWheel={(e) => e.stopPropagation()}
+    className={cn(
+      // contrato de layout legacy — overridable por className del call site
+      "z-[300] grid w-full max-w-lg gap-4 p-6 overscroll-contain",
+      // animación legacy del mvp (in/out). `animate-none` apaga el
+      // animate-scale-in base del DS; los modifiers data-[state] ganan.
+      "animate-none duration-[var(--duration-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </DSDialogContent>
 ))
-DialogContent.displayName = DialogPrimitive.Content.displayName
+DialogContent.displayName = "DialogContent"
 
 const DialogHeader = ({
   className,
@@ -96,32 +117,9 @@ const DialogFooter = ({
 )
 DialogFooter.displayName = "DialogFooter"
 
-const DialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
-      className
-    )}
-    {...props}
-  />
-))
-DialogTitle.displayName = DialogPrimitive.Title.displayName
+const DialogTitle = DSDialogTitle
 
-const DialogDescription = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-DialogDescription.displayName = DialogPrimitive.Description.displayName
+const DialogDescription = DSDialogDescription
 
 export {
   Dialog,

@@ -63,11 +63,11 @@ function CancelModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
+      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
           <h3 className="font-semibold text-neutral-900 dark:text-white">{t('landlord.visits.cancelModalTitle')}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -89,7 +89,7 @@ function CancelModal({
                   className={cn(
                     'flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all border',
                     selectedReason === reason.value
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                   )}
                 >
@@ -99,7 +99,7 @@ function CancelModal({
                     value={reason.value}
                     checked={selectedReason === reason.value}
                     onChange={() => setSelectedReason(reason.value)}
-                    className="accent-indigo-600"
+                    className="accent-[#1A40FF]"
                   />
                   <span className="text-sm text-neutral-700 dark:text-neutral-300">{reason.value}</span>
                 </label>
@@ -113,13 +113,13 @@ function CancelModal({
               onChange={(e) => setCustomReason(e.target.value)}
               placeholder={t('landlord.visits.cancelReasonPlaceholder')}
               rows={3}
-              className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
+              className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 resize-none"
             />
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-xl">
           <button
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
@@ -129,7 +129,7 @@ function CancelModal({
           <button
             onClick={() => canSubmit && onConfirm(finalReason)}
             disabled={!canSubmit}
-            className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-[#C4503B] text-white rounded-xl hover:bg-[#C4503B] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('landlord.visits.cancelConfirm')}
           </button>
@@ -166,11 +166,11 @@ function RescheduleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
+      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
           <h3 className="font-semibold text-neutral-900 dark:text-white">{t('landlord.visits.rescheduleModalTitle')}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -200,7 +200,7 @@ function RescheduleModal({
                 value={newDate}
                 min={minDate}
                 onChange={(e) => setNewDate(e.target.value)}
-                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
               />
             </div>
             <div>
@@ -211,14 +211,14 @@ function RescheduleModal({
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
               />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-xl">
           <button
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
@@ -228,7 +228,7 @@ function RescheduleModal({
           <button
             onClick={() => canSubmit && onConfirm(newDate, newTime)}
             disabled={!canSubmit}
-            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-[#1A40FF] text-white rounded-xl hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('landlord.visits.rescheduleConfirm')}
           </button>
@@ -288,11 +288,11 @@ function ScheduleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
+      <div className="relative bg-white dark:bg-[#222224] w-full max-w-md rounded-xl border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
           <h3 className="font-semibold text-neutral-900 dark:text-white">{t('landlord.visits.scheduleModalTitle')}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -307,7 +307,7 @@ function ScheduleModal({
                 value={fecha}
                 min={minDate}
                 onChange={(e) => setFecha(e.target.value)}
-                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
               />
             </div>
             <div>
@@ -315,7 +315,7 @@ function ScheduleModal({
               <select
                 value={hora}
                 onChange={(e) => setHora(e.target.value)}
-                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
               >
                 <option value="">{t('landlord.visits.scheduleTimeSelect')}</option>
                 {SCHEDULE_HOURS.map((h) => (
@@ -330,7 +330,7 @@ function ScheduleModal({
             <select
               value={propiedad}
               onChange={(e) => setPropiedad(e.target.value)}
-              className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full h-11 px-4 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
             >
               <option value="">{t('landlord.visits.schedulePropertySelect')}</option>
               {properties.map((p) => (
@@ -346,13 +346,13 @@ function ScheduleModal({
               onChange={(e) => setNotas(e.target.value)}
               placeholder={t('landlord.visits.scheduleNotesPlaceholder')}
               rows={3}
-              className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
+              className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-b-xl">
           <button
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
@@ -362,7 +362,7 @@ function ScheduleModal({
           <button
             onClick={handleConfirm}
             disabled={!canSubmit}
-            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium bg-[#1A40FF] text-white rounded-xl hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('landlord.visits.scheduleConfirm')}
           </button>
@@ -637,8 +637,8 @@ export default function VisitasPage() {
             <span className="text-sm text-neutral-900 dark:text-white">{visit.propertyTitle}</span>
           </div>
           {visit.rescheduledFrom && (
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
-              <p className="text-xs text-indigo-700 dark:text-indigo-400">{t('landlord.visits.rescheduledNote')}</p>
+            <div className="p-3 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-xl">
+              <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">{t('landlord.visits.rescheduledNote')}</p>
             </div>
           )}
         </div>
@@ -662,10 +662,10 @@ export default function VisitasPage() {
       id: 'cancel-reason',
       title: t('landlord.visits.cancelReasonTitle'),
       content: (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
+        <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 rounded-xl">
           <div className="flex items-start gap-3">
-            <XCircle className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-red-700 dark:text-red-400">{visit.cancellationReason}</p>
+            <XCircle className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D] mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{visit.cancellationReason}</p>
           </div>
         </div>
       ),
@@ -674,8 +674,8 @@ export default function VisitasPage() {
       id: 'landlord-notes',
       title: t('landlord.visits.notesTitle'),
       content: (
-        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
-          <p className="text-sm text-amber-800 dark:text-amber-300">{visit.landlordNotes}</p>
+        <div className="p-4 bg-[#F8F0E0] dark:bg-[#B7791F]/15 rounded-xl">
+          <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">{visit.landlordNotes}</p>
         </div>
       ),
     }] : []),
@@ -683,25 +683,25 @@ export default function VisitasPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>
-          <button onClick={refetch} className="text-sm text-indigo-600 hover:underline">Reintentar</button>
+          <p className="text-[#C4503B] dark:text-[#E0664D] mb-2">{error}</p>
+          <button onClick={refetch} className="text-sm text-[#1A40FF] hover:underline">Reintentar</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <header className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -714,7 +714,7 @@ export default function VisitasPage() {
           <button
             type="button"
             onClick={() => setShowScheduleModal(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1A40FF] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-colors shrink-0"
           >
             <CalendarPlus className="w-4 h-4" />
             {t('landlord.visits.scheduleButton')}
@@ -735,14 +735,14 @@ export default function VisitasPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.requested}</p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.visits.pendingVisits')}</p>
             {stats.requested > 0 && (
-              <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+              <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-xs font-medium rounded-full">
                 {t('landlord.visits.toConfirm')}
               </span>
             )}
@@ -750,8 +750,8 @@ export default function VisitasPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <CalendarCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                <CalendarCheck className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{confirmedToday}</p>
@@ -760,8 +760,8 @@ export default function VisitasPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.completed}</p>

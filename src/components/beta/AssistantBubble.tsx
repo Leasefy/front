@@ -33,7 +33,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
   return (
     <div className={cn('flex gap-3', className)}>
       {/* AI icon */}
-      <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+      <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
         <Sparkle className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" weight="fill" />
       </div>
 
@@ -58,7 +58,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
                   <button
                     key={label}
                     type="button"
-                    className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                    className="p-1.5 rounded-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                     aria-label={label}
                   >
                     <ActionIcon className="w-3.5 h-3.5" />

@@ -17,11 +17,11 @@ import type { ApprovalRateMonthlyRow } from '@/lib/hooks/cotizador/use-insights'
 // 5-color carrier palette (D-35-05 / UI-SPEC)
 // ---------------------------------------------------------------------------
 const CARRIER_COLORS = [
-  '#6366f1', // indigo-500
-  '#14b8a6', // teal-500
-  '#f59e0b', // amber-500
-  '#8b5cf6', // violet-500
-  '#f43f5e', // rose-500
+  '#1A40FF', // electric-blue (primary)
+  '#8A9CFF', // blue-tint
+  '#6B6B6B', // neutral-mid
+  '#9B9B9B', // neutral-light
+  '#C9CDD3', // neutral-pale
 ]
 
 // ---------------------------------------------------------------------------

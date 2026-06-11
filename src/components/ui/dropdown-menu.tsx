@@ -1,201 +1,117 @@
 "use client"
 
 import * as React from "react"
-import * as DropdownListPrimitive from "@radix-ui/react-dropdown-menu"
-import { Check, CaretRight, Circle } from '@phosphor-icons/react'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuRadioGroup,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuContent as DSDropdownMenuContent,
+  DropdownMenuItem as DSDropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel as DSDropdownMenuLabel,
+  DropdownMenuSeparator as DSDropdownMenuSeparator,
+  DropdownMenuShortcut,
+} from "@leasefy/ui"
 
 import { cn } from "@/lib/utils"
 
-const DropdownList = DropdownListPrimitive.Root
-
-const DropdownListTrigger = DropdownListPrimitive.Trigger
-
-const DropdownListGroup = DropdownListPrimitive.Group
-
-const DropdownListPortal = DropdownListPrimitive.Portal
-
-const DropdownListSub = DropdownListPrimitive.Sub
-
-const DropdownListRadioGroup = DropdownListPrimitive.RadioGroup
-
-const DropdownListSubTrigger = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.SubTrigger>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.SubTrigger> & {
-    inset?: boolean
-  }
->(({ className, inset, children, ...props }, ref) => (
-  <DropdownListPrimitive.SubTrigger
+/**
+ * ADAPTER fino sobre el DropdownMenu de @leasefy/ui, expuesto con los nombres
+ * legacy del mvp (DropdownList*). Root/Trigger/Group/Portal/Sub/Radio/Checkbox/
+ * Shortcut son re-exports con alias (misma API Radix; el Item del DS es
+ * superset: inset/destructive/shortcut).
+ *
+ * Wrappers de fidelidad (cero cambios de comportamiento visible):
+ *  - Content: sideOffset 4 (DS usa 6); menús largos scrollean (max-h
+ *    available-height + overflow-y-auto; el DS recorta con overflow-hidden);
+ *    sin tope de ancho (el DS impone max-w-[240px]); min-w-[8rem] legacy.
+ *  - Item: el DS usa variantes `disabled:` que NO aplican a items Radix
+ *    (exponen data-disabled, no :disabled) → se restaura data-[disabled]:*;
+ *    [&_svg]:size-4 para no encoger los iconos w-4 de los call sites
+ *    (el DS fuerza 3.5 por descendiente y le gana a la clase del icono).
+ *  - Label: el DS lo trata como eyebrow mono/uppercase que CASCADEA sobre los
+ *    children ricos (user-card de PlanHeader) → se restaura la tipografía legacy.
+ *  - Separator: -mx-1 full-bleed legacy.
+ *
+ * Dark mode: los tokens del DS (bg-surface/border-border/text-fg…) ya flipan
+ * vía el bridge en globals.css (.dark), así que las clases dark: explícitas
+ * del legacy ya no hacen falta.
+ */
+const DropdownListContent = React.forwardRef<
+  React.ElementRef<typeof DSDropdownMenuContent>,
+  React.ComponentPropsWithoutRef<typeof DSDropdownMenuContent>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <DSDropdownMenuContent
     ref={ref}
+    sideOffset={sideOffset}
     className={cn(
-      "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-      inset && "pl-8",
-      className
-    )}
-    {...props}
-  >
-    {children}
-    <CaretRight className="ml-auto" />
-  </DropdownListPrimitive.SubTrigger>
-))
-DropdownListSubTrigger.displayName =
-  DropdownListPrimitive.SubTrigger.displayName
-
-const DropdownListSubContent = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.SubContent>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.SubContent>
->(({ className, ...props }, ref) => (
-  <DropdownListPrimitive.SubContent
-    ref={ref}
-    className={cn(
-      "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-dropdown-menu-content-transform-origin]",
+      "max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[8rem] max-w-none",
+      "overflow-visible overflow-x-hidden overflow-y-auto",
       className
     )}
     {...props}
   />
 ))
-DropdownListSubContent.displayName =
-  DropdownListPrimitive.SubContent.displayName
-
-const DropdownListContent = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <DropdownListPrimitive.Portal>
-    <DropdownListPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-white/10 p-1 text-neutral-900 dark:text-neutral-100 shadow-md",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-dropdown-menu-content-transform-origin]",
-        className
-      )}
-      {...props}
-    />
-  </DropdownListPrimitive.Portal>
-))
-DropdownListContent.displayName = DropdownListPrimitive.Content.displayName
+DropdownListContent.displayName = "DropdownListContent"
 
 const DropdownListItem = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.Item> & {
-    inset?: boolean
-  }
->(({ className, inset, ...props }, ref) => (
-  <DropdownListPrimitive.Item
+  React.ElementRef<typeof DSDropdownMenuItem>,
+  React.ComponentPropsWithoutRef<typeof DSDropdownMenuItem>
+>(({ className, ...props }, ref) => (
+  <DSDropdownMenuItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-neutral-700 dark:text-neutral-200 outline-none transition-colors focus:bg-neutral-100 dark:focus:bg-white/10 focus:text-neutral-900 dark:focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-neutral-500 dark:[&>svg]:text-neutral-400",
-      inset && "pl-8",
+      "data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4",
       className
     )}
     {...props}
   />
 ))
-DropdownListItem.displayName = DropdownListPrimitive.Item.displayName
-
-const DropdownListCheckboxItem = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
-  <DropdownListPrimitive.CheckboxItem
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    checked={checked}
-    {...props}
-  >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <DropdownListPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
-      </DropdownListPrimitive.ItemIndicator>
-    </span>
-    {children}
-  </DropdownListPrimitive.CheckboxItem>
-))
-DropdownListCheckboxItem.displayName =
-  DropdownListPrimitive.CheckboxItem.displayName
-
-const DropdownListRadioItem = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => (
-  <DropdownListPrimitive.RadioItem
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    {...props}
-  >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <DropdownListPrimitive.ItemIndicator>
-        <Circle className="h-2 w-2 fill-current" />
-      </DropdownListPrimitive.ItemIndicator>
-    </span>
-    {children}
-  </DropdownListPrimitive.RadioItem>
-))
-DropdownListRadioItem.displayName = DropdownListPrimitive.RadioItem.displayName
+DropdownListItem.displayName = "DropdownListItem"
 
 const DropdownListLabel = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.Label>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.Label> & {
-    inset?: boolean
-  }
->(({ className, inset, ...props }, ref) => (
-  <DropdownListPrimitive.Label
+  React.ElementRef<typeof DSDropdownMenuLabel>,
+  React.ComponentPropsWithoutRef<typeof DSDropdownMenuLabel>
+>(({ className, ...props }, ref) => (
+  <DSDropdownMenuLabel
     ref={ref}
     className={cn(
-      "px-2 py-1.5 text-sm font-semibold text-neutral-900 dark:text-white",
-      inset && "pl-8",
+      "px-2 py-1.5 font-sans text-sm font-semibold normal-case tracking-normal text-neutral-900 dark:text-white",
       className
     )}
     {...props}
   />
 ))
-DropdownListLabel.displayName = DropdownListPrimitive.Label.displayName
+DropdownListLabel.displayName = "DropdownListLabel"
 
 const DropdownListSeparator = React.forwardRef<
-  React.ElementRef<typeof DropdownListPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof DropdownListPrimitive.Separator>
+  React.ElementRef<typeof DSDropdownMenuSeparator>,
+  React.ComponentPropsWithoutRef<typeof DSDropdownMenuSeparator>
 >(({ className, ...props }, ref) => (
-  <DropdownListPrimitive.Separator
-    ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-neutral-100 dark:bg-white/10", className)}
-    {...props}
-  />
+  <DSDropdownMenuSeparator ref={ref} className={cn("-mx-1", className)} {...props} />
 ))
-DropdownListSeparator.displayName = DropdownListPrimitive.Separator.displayName
-
-const DropdownListShortcut = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement>) => {
-  return (
-    <span
-      className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
-      {...props}
-    />
-  )
-}
-DropdownListShortcut.displayName = "DropdownListShortcut"
+DropdownListSeparator.displayName = "DropdownListSeparator"
 
 export {
-  DropdownList,
-  DropdownListTrigger,
+  DropdownMenu as DropdownList,
+  DropdownMenuTrigger as DropdownListTrigger,
   DropdownListContent,
   DropdownListItem,
-  DropdownListCheckboxItem,
-  DropdownListRadioItem,
+  DropdownMenuCheckboxItem as DropdownListCheckboxItem,
+  DropdownMenuRadioItem as DropdownListRadioItem,
   DropdownListLabel,
   DropdownListSeparator,
-  DropdownListShortcut,
-  DropdownListGroup,
-  DropdownListPortal,
-  DropdownListSub,
-  DropdownListSubContent,
-  DropdownListSubTrigger,
-  DropdownListRadioGroup,
+  DropdownMenuShortcut as DropdownListShortcut,
+  DropdownMenuGroup as DropdownListGroup,
+  DropdownMenuPortal as DropdownListPortal,
+  DropdownMenuSub as DropdownListSub,
+  DropdownMenuSubContent as DropdownListSubContent,
+  DropdownMenuSubTrigger as DropdownListSubTrigger,
+  DropdownMenuRadioGroup as DropdownListRadioGroup,
 }

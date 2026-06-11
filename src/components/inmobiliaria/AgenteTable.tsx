@@ -28,32 +28,32 @@ interface AgenteTableProps {
 // Role badge colors (labels moved inside component for i18n)
 const ROLE_STYLES: Record<AgenteRole, { bg: string; text: string }> = {
   agent: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-700 dark:text-blue-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
   coordinator: {
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
-    text: 'text-purple-700 dark:text-purple-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
   },
   director: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
   },
 };
 
 // Status badge colors (labels moved inside component for i18n)
 const STATUS_STYLES: Record<AgenteStatus, { bg: string; text: string }> = {
   active: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
   },
   inactive: {
     bg: 'bg-neutral-100 dark:bg-neutral-800',
     text: 'text-neutral-600 dark:text-neutral-400',
   },
   on_leave: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
   },
 };
 
@@ -173,7 +173,7 @@ export function AgenteTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('name')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.agente.agentLabel')}
                 {sortField === 'name' && <SortIcon className="w-3.5 h-3.5" />}
@@ -182,7 +182,7 @@ export function AgenteTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('role')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.agente.role')}
                 {sortField === 'role' && <SortIcon className="w-3.5 h-3.5" />}
@@ -191,7 +191,7 @@ export function AgenteTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('status')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.agente.status')}
                 {sortField === 'status' && <SortIcon className="w-3.5 h-3.5" />}
@@ -205,7 +205,7 @@ export function AgenteTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('assignedProperties')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.agente.propsShort')}
                 {sortField === 'assignedProperties' && <SortIcon className="w-3.5 h-3.5" />}
@@ -214,7 +214,7 @@ export function AgenteTable({
             <th className="text-left p-4 hidden md:table-cell">
               <button
                 onClick={() => handleSort('closedThisMonth')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.agente.closings')}
                 {sortField === 'closedThisMonth' && <SortIcon className="w-3.5 h-3.5" />}
@@ -223,7 +223,7 @@ export function AgenteTable({
             <th className="text-left p-4 hidden md:table-cell">
               <button
                 onClick={() => handleSort('commissionsThisMonth')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.agente.commissions')}
                 {sortField === 'commissionsThisMonth' && <SortIcon className="w-3.5 h-3.5" />}
@@ -232,7 +232,7 @@ export function AgenteTable({
             <th className="text-left p-4 hidden lg:table-cell">
               <button
                 onClick={() => handleSort('commissionSplit')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 Split %
                 {sortField === 'commissionSplit' && <SortIcon className="w-3.5 h-3.5" />}
@@ -337,7 +337,7 @@ export function AgenteTable({
 
                 {/* Commission Split */}
                 <td className="p-4 hidden lg:table-cell">
-                  <span className="inline-flex px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-medium">
+                  <span className="inline-flex px-2.5 py-1 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-sm font-medium">
                     {agente.commissionSplit}%
                   </span>
                 </td>
@@ -350,7 +350,7 @@ export function AgenteTable({
                         e.stopPropagation();
                         setOpenMenuId(openMenuId === agente.id ? null : agente.id);
                       }}
-                      className="p-2 rounded-lg hover:bg-muted transition-colors"
+                      className="p-2 rounded-md hover:bg-muted transition-colors"
                     >
                       <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
                     </button>
@@ -361,7 +361,7 @@ export function AgenteTable({
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-40 p-2 rounded-xl border border-border bg-card shadow-xl z-10"
+                          className="absolute right-0 top-full mt-1 w-40 p-2 rounded-xl border border-border bg-card z-10"
                         >
                           <button
                             onClick={(e) => {
@@ -369,7 +369,7 @@ export function AgenteTable({
                               onView(agente);
                               setOpenMenuId(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             <span className="text-sm">{t('inmobiliaria.agente.viewDetail')}</span>
@@ -380,7 +380,7 @@ export function AgenteTable({
                               onEdit(agente);
                               setOpenMenuId(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <PencilSimple className="w-4 h-4" />
                             <span className="text-sm">{t('inmobiliaria.agente.edit')}</span>

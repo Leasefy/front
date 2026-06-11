@@ -173,7 +173,7 @@ function PortafolioContent() {
           {/* Import Button */}
           <button
             onClick={handleImportar}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <FileArrowUp className="w-5 h-5" />
             {t('inmobiliaria.import.title')}
@@ -181,7 +181,7 @@ function PortafolioContent() {
           {/* Nueva consignación */}
           <button
             onClick={handleNuevaConsignacion}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
           >
             <Plus className="w-5 h-5" />
             {t('inmobiliaria.portafolio.addProperty')}
@@ -209,16 +209,16 @@ function PortafolioContent() {
         </div>
 
         {/* Available */}
-        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
+        <div className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+              <p className="text-2xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                 {stats.available}
               </p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500">
+              <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">
                 {t('inmobiliaria.portafolio.summary.available')}
               </p>
             </div>
@@ -226,16 +226,16 @@ function PortafolioContent() {
         </div>
 
         {/* Rented */}
-        <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
+        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <HouseSimple className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <HouseSimple className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">
+              <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
                 {stats.rented}
               </p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-500">
+              <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
                 {t('inmobiliaria.portafolio.summary.rented')}
               </p>
             </div>
@@ -243,16 +243,16 @@ function PortafolioContent() {
         </div>
 
         {/* In Process */}
-        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+        <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <Timer className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+              <Timer className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+              <p className="text-2xl font-bold text-[#B7791F] dark:text-[#D2992F]">
                 {stats.inProcess}
               </p>
-              <p className="text-xs text-amber-600 dark:text-amber-500">
+              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
                 {t('inmobiliaria.portafolio.stats.inProcess')}
               </p>
             </div>
@@ -260,16 +260,16 @@ function PortafolioContent() {
         </div>
 
         {/* Maintenance */}
-        <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 hidden sm:block">
+        <div className="p-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 hidden sm:block">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+              <Wrench className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-rose-700 dark:text-rose-400">
+              <p className="text-2xl font-bold text-[#C4503B] dark:text-[#E0664D]">
                 {stats.maintenance}
               </p>
-              <p className="text-xs text-rose-600 dark:text-rose-500">
+              <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">
                 {t('inmobiliaria.portafolio.stats.maintenance')}
               </p>
             </div>
@@ -286,13 +286,13 @@ function PortafolioContent() {
       >
         {/* View Toggle Header - First */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+          <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
             <button
               onClick={() => setViewMode('table')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'table'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -302,9 +302,9 @@ function PortafolioContent() {
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'grid'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -385,7 +385,7 @@ function PortafolioContent() {
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className={cn(
-                'p-2 rounded-md border border-border transition-all',
+                'p-2 rounded-sm border border-border transition-all',
                 currentPage === 1
                   ? 'text-muted-foreground/40 cursor-not-allowed'
                   : 'text-muted-foreground hover:bg-muted'
@@ -400,7 +400,7 @@ function PortafolioContent() {
                   key={page}
                   onClick={() => setCurrentPage(page)}
                   className={cn(
-                    'w-8 h-8 rounded-md text-sm font-medium transition-all',
+                    'w-8 h-8 rounded-sm text-sm font-medium transition-all',
                     page === currentPage
                       ? 'bg-foreground text-background'
                       : 'text-muted-foreground hover:bg-muted'
@@ -415,7 +415,7 @@ function PortafolioContent() {
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className={cn(
-                'p-2 rounded-md border border-border transition-all',
+                'p-2 rounded-sm border border-border transition-all',
                 currentPage === totalPages
                   ? 'text-muted-foreground/40 cursor-not-allowed'
                   : 'text-muted-foreground hover:bg-muted'
@@ -435,8 +435,8 @@ function EmptyState() {
   const { t } = useI18n();
   const router = useRouter();
   return (
-    <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+    <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+      <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
         <Buildings className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
       </div>
       <h3 className="text-base font-semibold text-foreground mb-1.5">
@@ -448,7 +448,7 @@ function EmptyState() {
       <div className="flex items-center justify-center gap-3 mt-4">
         <button
           onClick={() => router.push('/panel/inmobiliaria/portafolio/importar')}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         >
           <FileArrowUp className="w-4 h-4" />
           {t('inmobiliaria.import.title')}

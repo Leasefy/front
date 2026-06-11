@@ -21,23 +21,23 @@ const STATUS_CONFIG: Record<
   { label: string; bg: string; text: string }
 > = {
   DRAFT:           { label: 'Borrador',          bg: 'bg-neutral-100 dark:bg-neutral-800',    text: 'text-neutral-600 dark:text-neutral-400' },
-  SUBMITTED:       { label: 'Postulado',         bg: 'bg-blue-100 dark:bg-blue-900/30',        text: 'text-blue-700 dark:text-blue-400' },
-  UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-indigo-100 dark:bg-indigo-900/30',   text: 'text-indigo-700 dark:text-indigo-400' },
-  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-violet-100 dark:bg-violet-900/30',   text: 'text-violet-700 dark:text-violet-400' },
-  APPROVED:        { label: 'Aprobado',          bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' },
-  REJECTED:        { label: 'Rechazado',         bg: 'bg-rose-100 dark:bg-rose-900/30',       text: 'text-rose-700 dark:text-rose-400' },
-  NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-amber-100 dark:bg-amber-900/30',     text: 'text-amber-700 dark:text-amber-400' },
+  SUBMITTED:       { label: 'Postulado',         bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',        text: 'text-[#1A40FF] dark:text-[#5570FF]' },
+  UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',   text: 'text-[#1A40FF] dark:text-[#5570FF]' },
+  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-neutral-100 dark:bg-neutral-800',   text: 'text-neutral-600 dark:text-neutral-300' },
+  APPROVED:        { label: 'Aprobado',          bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]' },
+  REJECTED:        { label: 'Rechazado',         bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',       text: 'text-[#C4503B] dark:text-[#E0664D]' },
+  NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',     text: 'text-[#B7791F] dark:text-[#D2992F]' },
   WITHDRAWN:       { label: 'Retirado',          bg: 'bg-neutral-100 dark:bg-neutral-800',    text: 'text-neutral-500 dark:text-neutral-500' },
-  CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-rose-100 dark:bg-rose-900/30',       text: 'text-rose-700 dark:text-rose-400' },
+  CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',       text: 'text-[#C4503B] dark:text-[#E0664D]' },
 };
 
 const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-500' };
 
 const SCORE_COLORS: Record<string, string> = {
-  A: 'text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30',
-  B: 'text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30',
-  C: 'text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30',
-  D: 'text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-900/30',
+  A: 'text-[#2C7A53] bg-[#E8F3EC] dark:text-[#2C7A53] dark:bg-[#2C7A53]/30',
+  B: 'text-[#1A40FF] bg-[#EEF1FF] dark:text-[#1A40FF] dark:bg-[#1A40FF]/30',
+  C: 'text-[#B7791F] bg-[#F8F0E0] dark:text-[#B7791F] dark:bg-[#B7791F]/30',
+  D: 'text-[#C4503B] bg-[#F8EAE7] dark:text-[#C4503B] dark:bg-[#C4503B]/30',
 };
 
 // ─── Action modal ─────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ const ACTION_CONFIG: Record<
     placeholder: 'Observaciones internas...',
     required: false,
     confirmLabel: 'Pre-aprobar',
-    confirmClass: 'bg-indigo-600 hover:bg-indigo-700',
+    confirmClass: 'bg-[#1A40FF] hover:opacity-90',
   },
   approve: {
     title: 'Aprobar candidato',
@@ -62,7 +62,7 @@ const ACTION_CONFIG: Record<
     placeholder: 'Observaciones finales...',
     required: false,
     confirmLabel: 'Aprobar',
-    confirmClass: 'bg-emerald-600 hover:bg-emerald-700',
+    confirmClass: 'bg-[#2C7A53] hover:bg-[#2C7A53]',
   },
   reject: {
     title: 'Rechazar postulación',
@@ -70,7 +70,7 @@ const ACTION_CONFIG: Record<
     placeholder: 'Explicá el motivo del rechazo al candidato...',
     required: true,
     confirmLabel: 'Rechazar',
-    confirmClass: 'bg-rose-600 hover:bg-rose-700',
+    confirmClass: 'bg-[#C4503B] hover:bg-[#C4503B]',
   },
   'request-info': {
     title: 'Solicitar información',
@@ -78,7 +78,7 @@ const ACTION_CONFIG: Record<
     placeholder: '¿Qué información adicional necesitás?',
     required: true,
     confirmLabel: 'Enviar solicitud',
-    confirmClass: 'bg-amber-600 hover:bg-amber-700',
+    confirmClass: 'bg-[#B7791F] hover:bg-[#B7791F]',
   },
 };
 
@@ -115,7 +115,7 @@ function ActionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-card rounded-2xl border border-border shadow-2xl">
+      <div className="w-full max-w-md bg-card rounded-xl border border-border">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="font-semibold text-foreground">{cfg.title}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{candidateName}</p>
@@ -129,11 +129,11 @@ function ActionModal({
               placeholder={cfg.placeholder}
               rows={3}
               autoFocus
-              className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all resize-none"
+              className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm transition-all resize-none"
             />
           </div>
 
-          {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
+          {error && <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>}
 
           <div className="flex items-center gap-3">
             <button
@@ -178,19 +178,19 @@ function CandidateActions({
       <div className="flex items-center gap-1 flex-wrap">
         <button
           onClick={() => onAction('preapprove', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors whitespace-nowrap"
+          className="px-2.5 py-1 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/50 transition-colors whitespace-nowrap"
         >
           Pre-aprobar
         </button>
         <button
           onClick={() => onAction('request-info', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors whitespace-nowrap"
+          className="px-2.5 py-1 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-xs font-medium hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/50 transition-colors whitespace-nowrap"
         >
           Pedir info
         </button>
         <button
           onClick={() => onAction('reject', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap"
+          className="px-2.5 py-1 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] text-xs font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/50 transition-colors whitespace-nowrap"
         >
           Rechazar
         </button>
@@ -203,13 +203,13 @@ function CandidateActions({
       <div className="flex items-center gap-1">
         <button
           onClick={() => onAction('approve', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors whitespace-nowrap"
+          className="px-2.5 py-1 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-xs font-medium hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/50 transition-colors whitespace-nowrap"
         >
           Aprobar
         </button>
         <button
           onClick={() => onAction('reject', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap"
+          className="px-2.5 py-1 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] text-xs font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/50 transition-colors whitespace-nowrap"
         >
           Rechazar
         </button>
@@ -224,7 +224,7 @@ function CandidateActions({
       return (
         <Link
           href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-neutral-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs font-semibold transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-white dark:bg-neutral-900 text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/30 text-xs font-semibold transition-colors whitespace-nowrap"
         >
           Ver contrato
           <ArrowUpRight className="w-3 h-3" />
@@ -234,7 +234,7 @@ function CandidateActions({
     return (
       <Link
         href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#2C7A53] hover:bg-[#2C7A53] text-white text-xs font-semibold transition-colors whitespace-nowrap"
       >
         Crear contrato
         <ArrowUpRight className="w-3 h-3" />
@@ -244,7 +244,7 @@ function CandidateActions({
 
   if (status === 'CONTRACT_FAILED') {
     return (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 text-xs font-medium whitespace-nowrap">
+      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] text-xs font-medium whitespace-nowrap">
         Proceso cerrado
       </span>
     );
@@ -328,7 +328,7 @@ function CandidatosContent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -336,7 +336,7 @@ function CandidatosContent() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-700 dark:text-rose-400 text-sm">
+        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-[#C4503B] dark:text-[#E0664D] text-sm">
           {error}
         </div>
       </div>
@@ -377,17 +377,17 @@ function CandidatosContent() {
       {/* Stats */}
       {candidates.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{activeCount}</p>
-            <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">En revisión</p>
+          <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
+            <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">{activeCount}</p>
+            <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mt-0.5">En revisión</p>
           </div>
-          <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
-            <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{preapprovedCount}</p>
-            <p className="text-xs text-indigo-600 dark:text-indigo-500 mt-0.5">Pre-aprobados</p>
+          <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
+            <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">{preapprovedCount}</p>
+            <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mt-0.5">Pre-aprobados</p>
           </div>
-          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
-            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{approvedCount}</p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">Aprobados</p>
+          <div className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
+            <p className="text-2xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">{approvedCount}</p>
+            <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70] mt-0.5">Aprobados</p>
           </div>
         </div>
       )}
@@ -396,7 +396,7 @@ function CandidatosContent() {
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {candidates.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-4">
               <User className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="font-medium text-foreground">Sin candidatos</p>
@@ -440,15 +440,15 @@ function CandidatosContent() {
                       {/* Tenant */}
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                          <div className="w-9 h-9 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                            <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
                               {initials}
                             </span>
                           </div>
                           <div>
                             <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
                               {candidate.tenantName || '—'}
-                              <Sparkle className="w-3 h-3 text-indigo-500" aria-label="Ver análisis IA" />
+                              <Sparkle className="w-3 h-3 text-[#1A40FF]" aria-label="Ver análisis IA" />
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {candidate.tenantEmail || '—'}
@@ -474,7 +474,7 @@ function CandidatosContent() {
                             </span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline">
                             <Sparkle className="w-3 h-3" />
                             Ver resultado
                           </span>

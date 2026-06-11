@@ -8,7 +8,7 @@ export function DocumentRowSkeleton() {
     <div className="flex items-center justify-between py-4 px-4 border-b border-neutral-200 dark:border-neutral-800 last:border-0">
       <div className="flex items-center gap-4">
         {/* File icon placeholder */}
-        <Skeleton className="h-10 w-10 rounded-lg" />
+        <Skeleton className="h-10 w-10 rounded-md" />
 
         <div className="space-y-1">
           <Skeleton className="h-4 w-40" />
@@ -20,8 +20,8 @@ export function DocumentRowSkeleton() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Skeleton className="h-8 w-8 rounded-lg" />
-        <Skeleton className="h-8 w-8 rounded-lg" />
+        <Skeleton className="h-8 w-8 rounded-md" />
+        <Skeleton className="h-8 w-8 rounded-md" />
       </div>
     </div>
   );

@@ -181,8 +181,8 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
         {/* Shimmer loading */}
         <div className="flex flex-col items-center gap-4 py-8">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <SpinnerGap className="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-spin" />
+            <div className="w-16 h-16 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <SpinnerGap className="w-8 h-8 text-[#1A40FF] dark:text-[#5570FF] animate-spin" />
             </div>
           </div>
           <div className="text-center">
@@ -233,26 +233,26 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
 
       {/* Summary stats */}
       <div className="flex flex-wrap gap-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
+          <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <span className="text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70]">
             {readyCount} completas
           </span>
         </div>
 
         {withSuggestions > 0 && (
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-            <Sparkle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+            <Sparkle className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F]" />
+            <span className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
               {withSuggestions} con sugerencias
             </span>
           </div>
         )}
 
         {errorCount > 0 && (
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <Warning className="w-4 h-4 text-red-600 dark:text-red-400" />
-            <span className="text-sm font-medium text-red-700 dark:text-red-400">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
+            <Warning className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D]" />
+            <span className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">
               {errorCount} con errores
             </span>
           </div>
@@ -268,7 +268,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
               type="checkbox"
               checked={allSelected}
               onChange={handleToggleSelectAll}
-              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-indigo-600 focus:ring-indigo-500"
+              className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-[#1A40FF] focus:ring-[#1A40FF]"
             />
             <span className="text-sm text-neutral-600 dark:text-neutral-400">
               {allSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}
@@ -284,7 +284,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           <button
             type="button"
             onClick={handleAcceptAllGlobal}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-mono uppercase tracking-wide hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white text-xs hover:opacity-90 transition-colors font-medium"
           >
             <Sparkle className="w-3.5 h-3.5" />
             Aceptar todas las sugerencias

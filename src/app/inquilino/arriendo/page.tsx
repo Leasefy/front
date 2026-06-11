@@ -66,8 +66,8 @@ export default function ArriendoPage() {
   // Loading state
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 text-indigo-600 animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <SpinnerGap className="w-8 h-8 text-[#1A40FF] animate-spin" />
       </div>
     );
   }
@@ -75,7 +75,7 @@ export default function ArriendoPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -86,7 +86,7 @@ export default function ArriendoPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <ErrorState description={error} onRetry={refetch} />
         </div>
@@ -95,7 +95,7 @@ export default function ArriendoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -120,8 +120,8 @@ export default function ArriendoPage() {
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
           {/* Active Leases */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <House className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Arriendos activos' : 'Active rentals'}</p>
@@ -134,11 +134,11 @@ export default function ArriendoPage() {
           </div>
 
           {/* Total Monthly */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <CreditCard className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">{locale === 'es' ? 'Total mensual' : 'Monthly total'}</p>
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">{locale === 'es' ? 'Total mensual' : 'Monthly total'}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {formatCurrency(totalMonthlyRent)}
             </p>
@@ -148,9 +148,9 @@ export default function ArriendoPage() {
           </div>
 
           {/* Status */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Estado general' : 'Overall status'}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
@@ -190,7 +190,7 @@ export default function ArriendoPage() {
                     transition={{ delay: 0.3 + index * 0.1 }}
                   >
                     <Link href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                      <div className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden">
                         <div className="flex flex-col lg:flex-row">
                           {/* Image */}
                           <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -208,8 +208,8 @@ export default function ArriendoPage() {
                               <span className={cn(
                                 'px-3 py-1.5 text-xs font-medium rounded-full',
                                 lease.status === 'ending_soon'
-                                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                  : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                  ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
+                                  : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
                               )}>
                                 {lease.status === 'ending_soon' ? (locale === 'es' ? 'Termina pronto' : 'Ending soon') : t('common.active')}
                               </span>
@@ -220,7 +220,7 @@ export default function ArriendoPage() {
                           <div className="flex-1 p-6">
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                               <div>
-                                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                                   {lease.propertyTitle}
                                 </h3>
                                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
@@ -277,7 +277,7 @@ export default function ArriendoPage() {
                                 <div
                                   className={cn(
                                     "h-full rounded-full transition-all duration-500",
-                                    daysRemaining < 30 ? "bg-amber-500" : "bg-emerald-500"
+                                    daysRemaining < 30 ? "bg-[#B7791F]" : "bg-[#2C7A53]"
                                   )}
                                   style={{ width: `${leaseProgress}%` }}
                                 />
@@ -289,9 +289,9 @@ export default function ArriendoPage() {
 
                             {/* Next Payment */}
                             {nextPayment && (
-                              <div className="flex items-center justify-between mt-4 p-4 bg-neutral-50 dark:bg-[#222224] rounded-2xl">
+                              <div className="flex items-center justify-between mt-4 p-4 bg-neutral-50 dark:bg-[#222224] rounded-xl">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
+                                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
                                     <Clock className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                                   </div>
                                   <div>
@@ -301,7 +301,7 @@ export default function ArriendoPage() {
                                     </p>
                                   </div>
                                 </div>
-                                <span className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                                <span className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
                                   <ArrowUpRight className="w-4 h-4" />
                                 </span>

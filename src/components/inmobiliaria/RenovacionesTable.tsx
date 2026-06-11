@@ -206,7 +206,7 @@ export function RenovacionesTable({
     <th className={cn('text-left p-4', className)}>
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -222,13 +222,13 @@ export function RenovacionesTable({
       {/* Filter Tabs and Status Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Bucket Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
+        <div className="flex items-center gap-1 p-1 rounded-md bg-muted/50">
           <button
             onClick={() => setBucketFilter('all')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
               bucketFilter === 'all'
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-background text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -240,16 +240,16 @@ export function RenovacionesTable({
           <button
             onClick={() => setBucketFilter('0-30')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
               bucketFilter === '0-30'
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-background text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {t('inmobiliaria.finance.renewals.critical')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '0-30' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-muted'
+              bucketFilter === '0-30' ? 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:bg-[#C4503B]/40 dark:text-[#C4503B]' : 'bg-muted'
             )}>
               {bucketCounts['0-30']}
             </span>
@@ -257,16 +257,16 @@ export function RenovacionesTable({
           <button
             onClick={() => setBucketFilter('31-60')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
               bucketFilter === '31-60'
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-background text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {t('inmobiliaria.finance.renewals.urgent')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '31-60' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-muted'
+              bucketFilter === '31-60' ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:bg-[#B7791F]/40 dark:text-[#B7791F]' : 'bg-muted'
             )}>
               {bucketCounts['31-60']}
             </span>
@@ -274,16 +274,16 @@ export function RenovacionesTable({
           <button
             onClick={() => setBucketFilter('61-90')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
               bucketFilter === '61-90'
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-background text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {t('inmobiliaria.finance.renewals.upcoming')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '61-90' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'bg-muted'
+              bucketFilter === '61-90' ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/40 dark:text-[#1A40FF]' : 'bg-muted'
             )}>
               {bucketCounts['61-90']}
             </span>
@@ -297,7 +297,7 @@ export function RenovacionesTable({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="pl-3 pr-8 py-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+            className="pl-3 pr-8 py-1.5 rounded-md border border-border bg-background text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
           >
             <option value="all">{t('inmobiliaria.finance.renewals.allStatuses')}</option>
             <option value="pending">{t('inmobiliaria.finance.renewals.statusPending')}</option>
@@ -318,7 +318,7 @@ export function RenovacionesTable({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+            className="flex items-center gap-3 p-3 rounded-md bg-muted/50"
           >
             <span className="text-sm font-medium text-foreground">
               {selectedItems.size} {t('inmobiliaria.finance.renewals.selected')}
@@ -333,7 +333,7 @@ export function RenovacionesTable({
                     });
                     setSelectedItems(new Set());
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors"
                 >
                   <Bell className="w-4 h-4" />
                   {t('inmobiliaria.finance.renewals.notify')}
@@ -348,7 +348,7 @@ export function RenovacionesTable({
                     });
                     setSelectedItems(new Set());
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
                   {t('inmobiliaria.finance.renewals.startRenewal')}
@@ -406,7 +406,7 @@ export function RenovacionesTable({
                   transition={{ delay: index * 0.02 }}
                   className={cn(
                     'border-b border-neutral-50 dark:border-neutral-800 transition-colors',
-                    isSelected && 'bg-indigo-50 dark:bg-indigo-900/20',
+                    isSelected && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
                     !isSelected && 'hover:bg-neutral-50 dark:hover:bg-[#141416]'
                   )}
                 >
@@ -425,18 +425,18 @@ export function RenovacionesTable({
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
-                          'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
+                          'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
                           isUrgent
-                            ? 'bg-red-100 dark:bg-red-900/30'
-                            : 'bg-indigo-100 dark:bg-indigo-900/30'
+                            ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
+                            : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                         )}
                       >
                         <HouseLine
                           className={cn(
                             'w-5 h-5',
                             isUrgent
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-indigo-600 dark:text-indigo-400'
+                              ? 'text-[#C4503B] dark:text-[#E0664D]'
+                              : 'text-[#1A40FF] dark:text-[#5570FF]'
                           )}
                         />
                       </div>
@@ -454,8 +454,8 @@ export function RenovacionesTable({
                   {/* Tenant */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[120px]">
@@ -510,7 +510,7 @@ export function RenovacionesTable({
                           {formatCurrencyLocal(item.negotiatedRent || item.proposedRent, locale)}
                         </span>
                         {ipcIncrease && (
-                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <span className="inline-flex items-center gap-1 text-xs text-[#2C7A53] dark:text-[#3EAE70]">
                             <TrendUp className="w-3 h-3" />
                             +{ipcIncrease}% IPC
                           </span>
@@ -537,7 +537,7 @@ export function RenovacionesTable({
                       <DropdownListTrigger asChild>
                         <button
                           onClick={(e) => e.stopPropagation()}
-                          className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                         >
                           <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
                         </button>
@@ -566,7 +566,7 @@ export function RenovacionesTable({
                             <DropdownListSeparator />
                             <DropdownListItem
                               onSelect={() => onStartRenewal(item)}
-                              className="flex items-center gap-3 px-3 py-2 cursor-pointer text-indigo-600 dark:text-indigo-400 focus:text-indigo-600 dark:focus:text-indigo-400"
+                              className="flex items-center gap-3 px-3 py-2 cursor-pointer text-[#1A40FF] dark:text-[#5570FF] focus:text-[#1A40FF] dark:focus:text-[#1A40FF]"
                             >
                               <ArrowsClockwise className="w-4 h-4" />
                               <span>{t('inmobiliaria.finance.renewals.startNegotiation')}</span>
@@ -603,8 +603,8 @@ export function RenovacionesTable({
         {/* Empty State */}
         {filteredAndSortedItems.length === 0 && (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CheckSquare className="w-8 h-8 text-emerald-600 dark:text-emerald-400" weight="fill" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <CheckSquare className="w-8 h-8 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
               {t('inmobiliaria.finance.renewals.noRenewals')}

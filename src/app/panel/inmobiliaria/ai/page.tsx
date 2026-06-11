@@ -102,10 +102,10 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">{name}</h1>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[11px] font-medium text-[#2C7A53] dark:text-[#3EAE70]">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-emerald-400" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-[#2C7A53]" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#2C7A53]" />
               </span>
               {locale === 'es' ? 'Activo' : 'Active'}
             </span>
@@ -272,7 +272,7 @@ export default function AIAgentsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger-in" style={{ animationDelay: '0.08s' }}>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <CheckCircle weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
@@ -285,7 +285,7 @@ export default function AIAgentsPage() {
         </div>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <TrendUp weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
@@ -300,7 +300,7 @@ export default function AIAgentsPage() {
         </div>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <Clock weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
@@ -322,8 +322,8 @@ export default function AIAgentsPage() {
             {locale === 'es' ? 'Agentes Activos' : 'Active Agents'}
           </h2>
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2C7A53] opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2C7A53]" />
           </span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

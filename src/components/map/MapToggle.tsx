@@ -16,7 +16,7 @@ export function MapToggle({ showMap, onToggle }: MapToggleProps) {
   return (
     <Button
       onClick={onToggle}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 lg:hidden shadow-lg gap-2"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 lg:hidden gap-2"
       size="lg"
       aria-label={showMap ? 'Ver lista de propiedades' : 'Ver mapa de propiedades'}
     >

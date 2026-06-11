@@ -43,38 +43,38 @@ const LEVEL_ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_COLORS: Record<string, string> = {
-  emerald: 'border-l-emerald-500',
-  blue: 'border-l-blue-500',
-  amber: 'border-l-amber-500',
-  purple: 'border-l-purple-500',
-  pink: 'border-l-pink-500',
-  indigo: 'border-l-indigo-500',
+  emerald: 'border-l-[#2C7A53]',
+  blue: 'border-l-[#1A40FF]',
+  amber: 'border-l-[#B7791F]',
+  purple: 'border-l-[#6B6B6B]',
+  pink: 'border-l-[#6B6B6B]',
+  indigo: 'border-l-[#1A40FF]',
 };
 
 const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
   emerald: {
-    bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
   },
   blue: {
-    bg: 'bg-blue-50 dark:bg-blue-500/10',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
   amber: {
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
   },
   purple: {
-    bg: 'bg-purple-50 dark:bg-purple-500/10',
-    text: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
   },
   pink: {
-    bg: 'bg-pink-50 dark:bg-pink-500/10',
-    text: 'text-pink-600 dark:text-pink-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
   },
   indigo: {
-    bg: 'bg-indigo-50 dark:bg-indigo-600/10',
-    text: 'text-indigo-600 dark:text-indigo-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
 };
 
@@ -155,7 +155,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
               <div className="flex items-center gap-2.5 mb-3">
                 <div
                   className={cn(
-                    'flex items-center justify-center w-7 h-7 rounded-lg',
+                    'flex items-center justify-center w-7 h-7 rounded-md',
                     badge.bg
                   )}
                 >
@@ -174,7 +174,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
               {/* Segmented control */}
               <div
                 className={cn(
-                  'flex rounded-lg',
+                  'flex rounded-md',
                   'bg-neutral-100 dark:bg-neutral-800/50',
                   'p-0.5'
                 )}
@@ -189,11 +189,11 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
                       onClick={() => handleLevelChange(agentType, level.id)}
                       className={cn(
                         'flex-1 flex items-center justify-center gap-1.5',
-                        'px-2.5 py-1.5 rounded-md',
+                        'px-2.5 py-1.5 rounded-sm',
                         'text-[12px] font-medium',
                         'transition-all duration-150',
                         isActive
-                          ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                          ? 'bg-[#1A40FF] text-white'
                           : 'text-muted-foreground hover:text-foreground'
                       )}
                     >

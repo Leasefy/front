@@ -4,7 +4,7 @@
  * CarrierLatencySparkline.tsx — Phase 35 plan 35-08 (Task 2)
  *
  * Recharts LineChart at 160px height showing latency p95 over time.
- * Stroke: teal-500 (#14b8a6). ResponsiveContainer width="100%".
+ * Stroke: electric-blue (#1A40FF). ResponsiveContainer width="100%".
  * Must declare 'use client' — ResponsiveContainer needs DOM access (T-35-12).
  */
 
@@ -59,7 +59,7 @@ export function CarrierLatencySparkline({ data, isLoading = false }: CarrierLate
         <Line
           type="monotone"
           dataKey="p95LatencyMs"
-          stroke="#14b8a6"
+          stroke="#1A40FF"
           dot={false}
           strokeWidth={1.5}
         />

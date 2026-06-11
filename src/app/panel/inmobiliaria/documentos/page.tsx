@@ -84,7 +84,7 @@ function StatCard({ icon: Icon, label, value, bgColor, iconColor }: StatCardProp
   return (
     <div className="p-4 rounded-xl border border-border bg-card">
       <div className="flex items-center gap-3">
-        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', bgColor)}>
+        <div className={cn('w-10 h-10 rounded-md flex items-center justify-center', bgColor)}>
           <Icon className={cn('w-5 h-5', iconColor)} />
         </div>
         <div className="min-w-0">
@@ -110,19 +110,19 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
   const statusConfig: Record<ActaEntrega['status'], { label: string; className: string }> = {
     draft: {
       label: t('inmobiliaria.documentos.actas.status.draft'),
-      className: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+      className: 'bg-[#6B6B6B] text-[#6B6B6B] dark:bg-[#6B6B6B]/30 dark:text-[#6B6B6B]',
     },
     in_progress: {
       label: t('inmobiliaria.documentos.actas.status.inProgress'),
-      className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      className: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
     },
     pending_signatures: {
       label: t('inmobiliaria.documentos.actas.status.pendingSignatures'),
-      className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+      className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
     },
     completed: {
       label: t('inmobiliaria.documentos.actas.status.completed'),
-      className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+      className: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
     },
   };
 
@@ -133,7 +133,7 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
       onClick={onClick}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className="w-full p-4 rounded-xl border border-border bg-card hover:shadow-md transition-shadow text-left"
+      className="w-full p-4 rounded-xl border border-border bg-card hover: transition-shadow text-left"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -356,8 +356,8 @@ function DocumentosContent() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
             </div>
             {t('inmobiliaria.documentos.title')}
           </h1>
@@ -367,7 +367,7 @@ function DocumentosContent() {
         </div>
         <button
           onClick={handleCreateActa}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 font-medium transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white hover:opacity-90 font-medium transition-colors"
         >
           <Plus className="w-5 h-5" />
           {t('inmobiliaria.documentos.newActa')}
@@ -384,29 +384,29 @@ function DocumentosContent() {
           icon={FolderOpen}
           label={t('inmobiliaria.documentos.stats.totalDocuments')}
           value={stats.total}
-          bgColor="bg-blue-100 dark:bg-blue-900/30"
-          iconColor="text-blue-600 dark:text-blue-400"
+          bgColor="bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+          iconColor="text-[#1A40FF] dark:text-[#5570FF]"
         />
         <StatCard
           icon={FileText}
           label={t('inmobiliaria.documentos.stats.signed')}
           value={stats.signed}
-          bgColor="bg-emerald-100 dark:bg-emerald-900/30"
-          iconColor="text-emerald-600 dark:text-emerald-400"
+          bgColor="bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
+          iconColor="text-[#2C7A53] dark:text-[#3EAE70]"
         />
         <StatCard
           icon={ClipboardText}
           label={t('inmobiliaria.documentos.stats.pendingSignature')}
           value={stats.pending}
-          bgColor="bg-amber-100 dark:bg-amber-900/30"
-          iconColor="text-amber-600 dark:text-amber-400"
+          bgColor="bg-[#F8F0E0] dark:bg-[#B7791F]/15"
+          iconColor="text-[#B7791F] dark:text-[#D2992F]"
         />
         <StatCard
           icon={Buildings}
           label={t('inmobiliaria.documentos.stats.actasCompleted')}
           value={stats.actasCompleted}
-          bgColor="bg-violet-100 dark:bg-violet-900/30"
-          iconColor="text-violet-600 dark:text-violet-400"
+          bgColor="bg-neutral-100 dark:bg-neutral-800"
+          iconColor="text-neutral-600 dark:text-neutral-300"
         />
       </motion.div>
 
@@ -428,9 +428,9 @@ function DocumentosContent() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
                     isActive
-                      ? 'bg-background text-foreground shadow-sm'
+                      ? 'bg-background text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -441,7 +441,7 @@ function DocumentosContent() {
                       className={cn(
                         'px-1.5 py-0.5 text-xs rounded-full',
                         isActive
-                          ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400'
+                          ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/40 dark:text-[#1A40FF]'
                           : 'bg-muted-foreground/20'
                       )}
                     >
@@ -462,7 +462,7 @@ function DocumentosContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('inmobiliaria.documentos.searchActas')}
-                className="pl-9 pr-4 py-2 w-full sm:w-64 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                className="pl-9 pr-4 py-2 w-full sm:w-64 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30"
               />
             </div>
           )}
@@ -483,7 +483,7 @@ function DocumentosContent() {
               <>
                 {isLoadingDocuments ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30"></div>
                   </div>
                 ) : (
                   <DocumentoManager
@@ -505,7 +505,7 @@ function DocumentosContent() {
               <>
                 {isLoadingTemplates ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30"></div>
                   </div>
                 ) : (
                   <DocumentoTemplates
@@ -522,13 +522,13 @@ function DocumentosContent() {
               <>
                 {isLoadingActas ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30"></div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {filteredActas.length === 0 ? (
-                      <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+                      <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+                        <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
                           <ClipboardText className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
                         </div>
                         <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
@@ -536,7 +536,7 @@ function DocumentosContent() {
                         </p>
                         <button
                           onClick={handleCreateActa}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 text-sm font-medium transition-colors"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#1A40FF] text-white hover:opacity-90 text-sm font-medium transition-colors"
                         >
                           <Plus className="w-4 h-4" />
                           {t('inmobiliaria.documentos.createFirstActa')}
@@ -562,7 +562,7 @@ function DocumentosContent() {
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <ClipboardText className="w-5 h-5 text-indigo-600" />
+              <ClipboardText className="w-5 h-5 text-[#1A40FF]" />
               {t('inmobiliaria.documentos.newActaOf', { type: actaFormType === 'entrega' ? t('inmobiliaria.documentos.actas.typeEntrega') : t('inmobiliaria.documentos.actas.typeDevolucion') })}
             </SheetTitle>
           </SheetHeader>
@@ -582,7 +582,7 @@ function DocumentosContent() {
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <ClipboardText className="w-5 h-5 text-indigo-600" />
+              <ClipboardText className="w-5 h-5 text-[#1A40FF]" />
               {t('inmobiliaria.documentos.actaDetail')}
             </SheetTitle>
           </SheetHeader>

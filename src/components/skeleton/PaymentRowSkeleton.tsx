@@ -8,7 +8,7 @@ export function PaymentRowSkeleton() {
     <div className="flex items-center justify-between py-4 border-b border-neutral-200 dark:border-neutral-800 last:border-0">
       <div className="flex items-center gap-4">
         {/* Icon placeholder */}
-        <Skeleton className="h-10 w-10 rounded-lg" />
+        <Skeleton className="h-10 w-10 rounded-md" />
 
         <div className="space-y-1">
           <Skeleton className="h-4 w-32" />

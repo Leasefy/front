@@ -30,11 +30,11 @@ export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail
     <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
         {/* Success card */}
-        <div className="bg-card rounded-sm border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-sm border border-border overflow-hidden">
           {/* Success header */}
-          <div className="bg-green-50 px-6 py-8 text-center border-b border-green-100">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="h-10 w-10 text-green-600" />
+          <div className="bg-[#E8F3EC] px-6 py-8 text-center border-b border-[#2C7A53]/30">
+            <div className="mx-auto w-16 h-16 bg-[#E8F3EC] rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-10 w-10 text-[#2C7A53]" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
               Aplicación enviada!
@@ -51,7 +51,7 @@ export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail
           {/* Next steps */}
           <div className="px-6 py-6">
             <h2 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-600" />
+              <FileText className="h-4 w-4 text-[#1A40FF]" />
               ¿Qué sigue?
             </h2>
 
@@ -136,7 +136,7 @@ function TimelineItem({
 
       {/* Number circle */}
       <div className="relative flex-shrink-0">
-        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
+        <div className="w-8 h-8 rounded-full bg-[#EEF1FF] text-[#1A40FF] flex items-center justify-center text-sm font-medium">
           {number}
         </div>
       </div>

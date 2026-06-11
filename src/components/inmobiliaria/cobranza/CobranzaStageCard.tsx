@@ -109,13 +109,13 @@ export const CobranzaStageCard = React.forwardRef<
         <div className="flex items-center gap-1 mt-1.5">
           {weeklyDelta > 0 ? (
             <>
-              <ArrowUp size={12} className="text-red-500" />
-              <span className="text-xs text-red-500">+{weeklyDelta}</span>
+              <ArrowUp size={12} className="text-[#C4503B]" />
+              <span className="text-xs text-[#C4503B]">+{weeklyDelta}</span>
             </>
           ) : weeklyDelta < 0 ? (
             <>
-              <ArrowDown size={12} className="text-green-500" />
-              <span className="text-xs text-green-500">{weeklyDelta}</span>
+              <ArrowDown size={12} className="text-[#2C7A53]" />
+              <span className="text-xs text-[#2C7A53]">{weeklyDelta}</span>
             </>
           ) : (
             <>

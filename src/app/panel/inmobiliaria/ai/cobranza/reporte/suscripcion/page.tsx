@@ -87,7 +87,7 @@ function SuscripcionContent() {
       <div>
         <Link
           href="/panel/inmobiliaria/ai/cobranza/reporte"
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition font-medium"
         >
           <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
@@ -121,7 +121,7 @@ function SuscripcionContent() {
 
           {/* Admin aggregate — read only */}
           {isAdmin && (
-            <div className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-1">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-1">
               <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
                 {locale.startsWith('es') ? 'Vista agregada (admin)' : 'Aggregate view (admin)'}
               </h2>

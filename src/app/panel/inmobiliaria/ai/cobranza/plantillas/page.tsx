@@ -54,10 +54,10 @@ const TOKEN_AMBER_THRESHOLD = 0.8 * TOKEN_BUDGET // 1600
 
 function tokenBadgeClass(count: number): string {
   if (count >= TOKEN_BUDGET) {
-    return 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400'
+    return 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
   }
   if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300'
+    return 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
   }
   return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
 }
@@ -75,7 +75,7 @@ function tokenBadgeLevel(count: number): 'normal' | 'amber' | 'rose' {
 function StatusPill({ status, t }: { status: 'draft' | 'published'; t: (k: string) => string }) {
   if (status === 'published') {
     return (
-      <span className="inline-flex items-center text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">
+      <span className="inline-flex items-center text-xs rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-2 py-0.5">
         {t('inmobiliaria.ai.templates.status.published')}
       </span>
     )
@@ -100,7 +100,7 @@ function WaPill({
 }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-2 py-0.5">
         <CheckCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.approved')}
       </span>
@@ -108,7 +108,7 @@ function WaPill({
   }
   if (status === 'rejected') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-2 py-0.5">
         <WarningCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.rejected')}
       </span>
@@ -116,7 +116,7 @@ function WaPill({
   }
   // pending
   return (
-    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 px-2 py-0.5">
+    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] px-2 py-0.5">
       <Clock className="h-3 w-3" weight="fill" />
       {t('inmobiliaria.ai.templates.waStatus.pending')}
     </span>
@@ -172,7 +172,7 @@ function TemplateCard({
         <Link
           href={`/panel/inmobiliaria/ai/cobranza/plantillas/${tpl.id}`}
           aria-label={`${t('inmobiliaria.ai.templates.card.ariaEdit').replace('{name}', tpl.name)}`}
-          className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+          className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-md text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
         >
           <PencilSimple className="h-3.5 w-3.5" weight="bold" />
           {t('inmobiliaria.ai.templates.card.edit')}
@@ -287,7 +287,7 @@ export default function PlantillasPage() {
         </div>
         <button
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 min-h-[44px] text-xs font-mono uppercase tracking-wide px-3 py-2 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
+          className="inline-flex items-center gap-1 min-h-[44px] text-xs px-3 py-2 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
         >
           {t('inmobiliaria.ai.templates.error.retry')}
         </button>
@@ -295,7 +295,7 @@ export default function PlantillasPage() {
 
       {/* Error banner */}
       {error && !data && (
-        <div className="rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 px-4 py-3 text-sm flex items-center justify-between gap-4">
+        <div className="rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm flex items-center justify-between gap-4">
           <span>{t('inmobiliaria.ai.templates.error.load')}</span>
           <button
             onClick={handleRetry}
@@ -335,7 +335,7 @@ export default function PlantillasPage() {
 
       {/* Error toast — refetch failures */}
       {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 px-4 py-3 text-sm shadow-lg">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm">
           {errorToast}
         </div>
       )}

@@ -58,7 +58,7 @@ export function InsightsMonthlyCostPreview({
         <div className="text-center">
           <Link
             href="../costos"
-            className="text-xs text-indigo-500 hover:text-indigo-600 underline"
+            className="text-xs text-[#1A40FF] hover:text-[#1A40FF] underline"
           >
             {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}
           </Link>
@@ -101,7 +101,7 @@ export function InsightsMonthlyCostPreview({
           <Line
             type="monotone"
             dataKey="total"
-            stroke="#4f46e5"
+            stroke="#1A40FF"
             dot={false}
             strokeWidth={2}
           />
@@ -111,7 +111,7 @@ export function InsightsMonthlyCostPreview({
       <div className="text-center">
         <Link
           href="../costos"
-          className="text-xs text-indigo-500 hover:text-indigo-600 underline"
+          className="text-xs text-[#1A40FF] hover:text-[#1A40FF] underline"
         >
           {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}
         </Link>

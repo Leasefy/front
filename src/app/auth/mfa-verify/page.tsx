@@ -105,8 +105,8 @@ export default function MfaVerifyPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Icon */}
         <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-16 h-16 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <ShieldCheck className="w-8 h-8 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
         </div>
 
@@ -130,14 +130,14 @@ export default function MfaVerifyPage() {
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-full h-14 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-lg text-center tracking-[0.5em] font-mono bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+            className="w-full h-14 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-lg text-center tracking-[0.5em] font-mono bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
             placeholder="000000"
           />
 
           <button
             onClick={handleVerify}
             disabled={isLoading || code.length !== 6 || !factorId}
-            className="w-full py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-3.5 bg-[#1A40FF] text-white text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
             {isLoading ? (
               <>

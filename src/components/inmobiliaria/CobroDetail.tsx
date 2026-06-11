@@ -121,7 +121,7 @@ function CopyButton({ text, tooltip }: { text: string; tooltip: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+      className="p-1.5 rounded-sm hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
       title={tooltip}
     >
       <Copy className="w-4 h-4" />
@@ -147,7 +147,7 @@ function ContactAction({
     <a
       href={href}
       className={cn(
-        'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+        'inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
         className
       )}
       target="_blank"
@@ -212,9 +212,9 @@ function AmountRow({
         className={cn(
           isTotal ? 'text-lg font-bold' : 'text-sm font-medium',
           isWarning
-            ? 'text-amber-600 dark:text-amber-400'
+            ? 'text-[#B7791F] dark:text-[#D2992F]'
             : isSuccess
-            ? 'text-emerald-600 dark:text-emerald-400'
+            ? 'text-[#2C7A53] dark:text-[#3EAE70]'
             : 'text-foreground'
         )}
       >
@@ -327,12 +327,12 @@ export function CobroDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Buildings className="w-4 h-4 text-indigo-600" />
+              <Buildings className="w-4 h-4 text-[#1A40FF]" />
               {t('inmobiliaria.cobros.detail.propertySection')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
               {consignacion?.propertyThumbnail && (
-                <div className="w-full h-32 rounded-lg overflow-hidden mb-3">
+                <div className="w-full h-32 rounded-md overflow-hidden mb-3">
                   <img
                     src={consignacion.propertyThumbnail}
                     alt={cobro.propertyTitle}
@@ -352,7 +352,7 @@ export function CobroDetail({
                   <Link
                     href={`/panel/inmobiliaria/portafolio/${consignacion.id}`}
                     onClick={onClose}
-                    className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2"
+                    className="inline-flex items-center gap-1 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline mt-2"
                   >
                     {t('inmobiliaria.cobros.detail.viewConsignacion')}
                     <CaretRight className="w-4 h-4" />
@@ -370,13 +370,13 @@ export function CobroDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <User className="w-4 h-4 text-indigo-600" />
+              <User className="w-4 h-4 text-[#1A40FF]" />
               {t('inmobiliaria.cobros.detail.tenantSection')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                  <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-12 h-12 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                  <User className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div>
                   <p className="font-medium text-foreground">{cobro.tenantName}</p>
@@ -398,13 +398,13 @@ export function CobroDetail({
                   icon={WhatsappLogo}
                   href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
                   label="WhatsApp"
-                  className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400"
+                  className="bg-[#E8F3EC] hover:bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/30 dark:hover:bg-[#2C7A53]/50 dark:text-[#2C7A53]"
                 />
                 <ContactAction
                   icon={Envelope}
                   href={`mailto:${cobro.tenantEmail}`}
                   label="Email"
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400"
+                  className="bg-[#EEF1FF] hover:bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/30 dark:hover:bg-[#1A40FF]/50 dark:text-[#1A40FF]"
                 />
               </div>
             </div>
@@ -419,7 +419,7 @@ export function CobroDetail({
               className="space-y-3"
             >
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Bank className="w-4 h-4 text-indigo-600" />
+                <Bank className="w-4 h-4 text-[#1A40FF]" />
                 {t('inmobiliaria.cobros.detail.ownerSection')}
               </h3>
               <div className="p-4 rounded-xl border border-border bg-muted/30">
@@ -430,7 +430,7 @@ export function CobroDetail({
                   </div>
                   <Link
                     href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                   >
                     {t('inmobiliaria.cobros.detail.viewProfile')}
                   </Link>
@@ -447,7 +447,7 @@ export function CobroDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <CurrencyCircleDollar className="w-4 h-4 text-indigo-600" />
+              <CurrencyCircleDollar className="w-4 h-4 text-[#1A40FF]" />
               {t('inmobiliaria.cobros.detail.breakdownSection')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
@@ -509,10 +509,10 @@ export function CobroDetail({
 
               {/* Days Late Warning */}
               {isLate && (
-                <div className="mt-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <div className="mt-3 p-3 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
                   <div className="flex items-center gap-2">
-                    <Warning className="w-4 h-4 text-red-600 dark:text-red-400" weight="fill" />
-                    <span className="text-sm font-medium text-red-700 dark:text-red-400">
+                    <Warning className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D]" weight="fill" />
+                    <span className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">
                       {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
                     </span>
                   </div>
@@ -530,7 +530,7 @@ export function CobroDetail({
               className="space-y-3"
             >
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-indigo-600" />
+                <Receipt className="w-4 h-4 text-[#1A40FF]" />
                 {t('inmobiliaria.cobros.detail.paymentHistory')}
               </h3>
               <div className="space-y-2">
@@ -540,8 +540,8 @@ export function CobroDetail({
                     className="p-3 rounded-xl border border-border bg-muted/30 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-8 h-8 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">
@@ -572,7 +572,7 @@ export function CobroDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Bell className="w-4 h-4 text-indigo-600" />
+              <Bell className="w-4 h-4 text-[#1A40FF]" />
               {t('inmobiliaria.cobros.detail.remindersSection')} ({cobro.remindersSent})
             </h3>
             {reminderHistory.length > 0 ? (
@@ -583,11 +583,11 @@ export function CobroDetail({
                     className="p-3 rounded-xl border border-border bg-muted/30 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
                         {reminder.channel === 'email' ? (
-                          <Envelope className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <Envelope className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
                         ) : (
-                          <WhatsappLogo className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <WhatsappLogo className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
                         )}
                       </div>
                       <div>
@@ -636,7 +636,7 @@ export function CobroDetail({
           <div className="flex gap-3">
             {isPending && onRegisterPayment && (
               <Button
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="flex-1 bg-[#2C7A53] hover:bg-[#2C7A53] text-white"
                 onClick={() => onRegisterPayment(cobro)}
               >
                 <CurrencyCircleDollar className="w-4 h-4 mr-2" />
@@ -682,7 +682,7 @@ export function CobroDetail({
           {isLate && (
             <Button
               variant="ghost"
-              className="w-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+              className="w-full text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20"
               onClick={handleMarkDefaulted}
             >
               <XCircle className="w-4 h-4 mr-2" />

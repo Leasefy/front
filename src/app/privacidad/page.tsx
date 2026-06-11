@@ -1118,7 +1118,7 @@ export default function PrivacidadPage() {
                   personales, puede comunicarse con nosotros a través de los
                   siguientes canales:
                 </p>
-                <div className="p-5 border border-border rounded-lg bg-muted/30 space-y-1">
+                <div className="p-5 border border-border rounded-md bg-muted/30 space-y-1">
                   <p className="text-foreground font-medium">Leasefy S.A.S.</p>
                   <p className="text-foreground font-medium text-[13px] mt-1">
                     Oficial de Protección de Datos / Data Protection Officer
@@ -1146,7 +1146,7 @@ export default function PrivacidadPage() {
                   </p>
                 </div>
 
-                <div className="mt-6 p-4 border border-border rounded-lg bg-muted/20">
+                <div className="mt-6 p-4 border border-border rounded-md bg-muted/20">
                   <p className="text-[14px] font-medium text-foreground mb-2">
                     Autoridades de supervisión por jurisdicción
                   </p>

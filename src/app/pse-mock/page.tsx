@@ -148,8 +148,8 @@ function PSEMockContent() {
     return (
       <PSEShell>
         <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle className="w-9 h-9 text-emerald-600" weight="fill" />
+          <div className="w-16 h-16 rounded-full bg-[#E8F3EC] flex items-center justify-center">
+            <CheckCircle className="w-9 h-9 text-[#2C7A53]" weight="fill" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">¡Pago aprobado!</h2>
           <p className="text-sm text-gray-500 max-w-xs">
@@ -166,21 +166,21 @@ function PSEMockContent() {
     return (
       <PSEShell>
         <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-            <XCircle className="w-9 h-9 text-red-500" weight="fill" />
+          <div className="w-16 h-16 rounded-full bg-[#F8EAE7] flex items-center justify-center">
+            <XCircle className="w-9 h-9 text-[#C4503B]" weight="fill" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">{pseError.title}</h2>
           <p className="text-sm text-gray-500 max-w-xs">{pseError.description}</p>
           <div className="flex gap-3 mt-2">
             <button
               onClick={() => router.back()}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 transition-colors"
             >
               Volver al checkout
             </button>
             <button
               onClick={() => { setPageState('form'); setPseError(null); }}
-              className="px-4 py-2 text-sm bg-[#008B5E] text-white rounded-lg hover:bg-[#006f4a] transition-colors font-medium"
+              className="px-4 py-2 text-sm bg-[#008B5E] text-white rounded-md hover:bg-[#006f4a] transition-colors font-medium"
             >
               Intentar de nuevo
             </button>
@@ -194,7 +194,7 @@ function PSEMockContent() {
   return (
     <PSEShell>
       {/* Merchant info */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+      <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-0.5">Pago a</p>
@@ -225,7 +225,7 @@ function PSEMockContent() {
           <select
             value={bankCode}
             onChange={(e) => setBankCode(e.target.value)}
-            className="w-full h-11 px-3 rounded-lg border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
           >
             <option value="">Seleccioná tu banco</option>
             {banks.map((b) => (
@@ -244,7 +244,7 @@ function PSEMockContent() {
             <select
               value={docType}
               onChange={(e) => setDocType(e.target.value as PSEDocumentType)}
-              className="w-full h-11 px-2 rounded-lg border border-gray-300 bg-white text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+              className="w-full h-11 px-2 rounded-md border border-gray-300 bg-white text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
             >
               {DOC_TYPES.map((d) => (
                 <option key={d.value} value={d.value}>{d.value}</option>
@@ -258,7 +258,7 @@ function PSEMockContent() {
               onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, ''))}
               placeholder="1234567890"
               maxLength={12}
-              className="w-full h-11 px-3 rounded-lg border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+              className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
             />
           </div>
         </div>
@@ -273,7 +273,7 @@ function PSEMockContent() {
             value={holderName}
             onChange={(e) => setHolderName(e.target.value)}
             placeholder="Juan García"
-            className="w-full h-11 px-3 rounded-lg border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
           />
         </div>
 
@@ -289,22 +289,22 @@ function PSEMockContent() {
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
             placeholder="3001234567"
             maxLength={10}
-            className="w-full h-11 px-3 rounded-lg border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
           />
         </div>
 
         {/* Form error */}
         {formError && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
-            <Warning className="w-4 h-4 text-red-500 shrink-0" />
-            <p className="text-sm text-red-600">{formError}</p>
+          <div className="flex items-center gap-2 p-3 rounded-md bg-[#F8EAE7] border border-[#C4503B]/30">
+            <Warning className="w-4 h-4 text-[#C4503B] shrink-0" />
+            <p className="text-sm text-[#C4503B]">{formError}</p>
           </div>
         )}
 
         {/* Mock outcome hint */}
-        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-          <p className="text-xs text-amber-700 font-medium mb-1">Comportamiento del simulador</p>
-          <p className="text-xs text-amber-600">
+        <div className="p-3 rounded-md bg-[#F8F0E0] border border-[#B7791F]/30">
+          <p className="text-xs text-[#B7791F] font-medium mb-1">Comportamiento del simulador</p>
+          <p className="text-xs text-[#B7791F]">
             El resultado depende del <strong>último dígito</strong> del documento:
             &nbsp;<strong>0</strong> → fondos insuficientes · <strong>1</strong> → rechazo banco · <strong>9</strong> → pendiente · <strong>cualquier otro</strong> → éxito ✓
           </p>
@@ -315,13 +315,13 @@ function PSEMockContent() {
           <button
             type="button"
             onClick={() => submit(true)}
-            className="flex-1 h-12 rounded-lg border-2 border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors"
+            className="flex-1 h-12 rounded-md border-2 border-[#C4503B]/30 text-[#C4503B] text-sm font-semibold hover:bg-[#F8EAE7] transition-colors"
           >
             Rechazar pago
           </button>
           <button
             type="submit"
-            className="flex-1 h-12 rounded-lg bg-[#008B5E] hover:bg-[#006f4a] text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
+            className="flex-1 h-12 rounded-md bg-[#008B5E] hover:bg-[#006f4a] text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
           >
             <Lock className="w-4 h-4" />
             Confirmar pago
@@ -347,9 +347,9 @@ function PSEShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-start py-8 px-4">
       {/* PSE Header */}
       <div className="w-full max-w-md mb-4">
-        <div className="bg-[#008B5E] rounded-t-2xl px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#008B5E] rounded-t-xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center">
+            <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center">
               <span className="text-[#008B5E] font-black text-xs">PSE</span>
             </div>
             <div>
@@ -357,9 +357,9 @@ function PSEShell({ children }: { children: React.ReactNode }) {
               <p className="text-white/70 text-[11px]">Pagos Seguros en Línea</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-400/20 border border-amber-300/30">
-            <Warning className="w-3 h-3 text-amber-300" weight="fill" />
-            <span className="text-amber-200 text-[10px] font-bold uppercase tracking-wide">Simulación</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#B7791F]/20 border border-[#B7791F]/30">
+            <Warning className="w-3 h-3 text-[#B7791F]" weight="fill" />
+            <span className="text-[#B7791F] text-[10px] font-bold uppercase tracking-wide">Simulación</span>
           </div>
         </div>
 
@@ -371,7 +371,7 @@ function PSEShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-md bg-white rounded-b-2xl shadow-lg border border-gray-200 px-6 py-6">
+      <div className="w-full max-w-md bg-white rounded-b-xl border border-gray-200 px-6 py-6">
         {children}
       </div>
 

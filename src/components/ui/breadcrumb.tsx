@@ -3,47 +3,29 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { CaretRight, House, DotsThree } from '@phosphor-icons/react';
-import { cva, type VariantProps } from 'class-variance-authority';
+import {
+  Breadcrumb as DSBreadcrumb,
+  BreadcrumbItem as DSBreadcrumbItem,
+  BreadcrumbPage as DSBreadcrumbPage,
+  BreadcrumbSeparator as DSBreadcrumbSeparator,
+} from '@leasefy/ui';
 import { cn } from '@/lib/utils';
 
-// ============================================================================
-// Breadcrumb Variants
-// ============================================================================
-
-const breadcrumbVariants = cva(
-  'flex items-center',
-  {
-    variants: {
-      size: {
-        sm: 'text-xs gap-1',
-        default: 'text-sm gap-1.5',
-        lg: 'text-base gap-2',
-      },
-    },
-    defaultVariants: {
-      size: 'default',
-    },
-  }
-);
-
-const breadcrumbItemVariants = cva(
-  'transition-colors duration-150',
-  {
-    variants: {
-      variant: {
-        default: 'text-muted-foreground hover:text-foreground',
-        active: 'text-foreground font-medium',
-        disabled: 'text-muted-foreground/50 pointer-events-none',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+/**
+ * Breadcrumb — ADAPTER fino sobre @leasefy/ui que preserva la API local
+ * basada en `items[]` (label/href/icon/disabled + showHouseIcon/homeHref/
+ * maxItems collapse). La estructura semántica (nav/ol/li, aria-current,
+ * separador) viene del DS; los links usan next/link para conservar la
+ * navegación client-side (el BreadcrumbLink del DS renderiza <a> plano) y
+ * el separador conserva el caret del mvp vía el override de children que
+ * soporta el DSBreadcrumbSeparator.
+ *
+ * La familia composable legacy (BreadcrumbRoot/List/Link/Ellipsis…) no tenía
+ * call sites; para composición usar los primitivos de '@leasefy/ui'.
+ */
 
 // ============================================================================
-// TextTs
+// Types (API local intacta)
 // ============================================================================
 
 export interface BreadcrumbItem {
@@ -53,10 +35,11 @@ export interface BreadcrumbItem {
   disabled?: boolean;
 }
 
-export interface BreadcrumbProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof breadcrumbVariants> {
+type BreadcrumbSize = 'sm' | 'default' | 'lg';
+
+export interface BreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
   items: BreadcrumbItem[];
+  size?: BreadcrumbSize | null;
   separator?: React.ReactNode;
   showHouseIcon?: boolean;
   homeHref?: string;
@@ -66,30 +49,52 @@ export interface BreadcrumbProps
 }
 
 // ============================================================================
-// Breadcrumb List Context
+// Escalas visuales del mvp (se preservan tal cual)
 // ============================================================================
 
-const BreadcrumbContext = React.createContext<{
-  size: VariantProps<typeof breadcrumbVariants>['size'];
-}>({ size: 'default' });
+const ROOT_SIZE: Record<BreadcrumbSize, string> = {
+  sm: 'text-xs [&>ol]:gap-1 [&>ol]:text-xs',
+  default: 'text-sm [&>ol]:gap-1.5 [&>ol]:text-sm',
+  lg: 'text-base [&>ol]:gap-2 [&>ol]:text-base',
+};
+
+const ICON_SIZE: Record<BreadcrumbSize, string> = {
+  sm: 'h-3 w-3',
+  default: 'h-3.5 w-3.5',
+  lg: 'h-4 w-4',
+};
+
+const SEPARATOR_SIZE: Record<BreadcrumbSize, string> = {
+  sm: 'h-3 w-3',
+  default: 'h-4 w-4',
+  lg: 'h-5 w-5',
+};
+
+const LINK_CLASSES =
+  'flex items-center gap-1 text-muted-foreground transition-colors duration-150 hover:text-foreground';
+const DISABLED_CLASSES =
+  'flex items-center gap-1 text-muted-foreground/50 pointer-events-none';
 
 // ============================================================================
-// Breadcrumb Root
+// Breadcrumb (items API)
 // ============================================================================
 
 const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
-  ({
-    items,
-    size,
-    separator,
-    showHouseIcon = true,
-    homeHref = '/',
-    maxItems,
-    itemsBeforeCollapse = 1,
-    itemsAfterCollapse = 2,
-    className,
-    ...props
-  }, ref) => {
+  (
+    {
+      items,
+      size,
+      separator,
+      showHouseIcon = true,
+      homeHref = '/',
+      maxItems,
+      itemsBeforeCollapse = 1,
+      itemsAfterCollapse = 2,
+      className,
+      ...props
+    },
+    ref
+  ) => {
     const shouldCollapse = maxItems && items.length > maxItems;
 
     const visibleItems = React.useMemo(() => {
@@ -100,257 +105,83 @@ const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(
 
       return [
         ...beforeItems,
-        { label: '...', href: undefined, isCollapsed: true } as BreadcrumbItem & { isCollapsed?: boolean },
+        { label: '...', href: undefined, isCollapsed: true } as BreadcrumbItem & {
+          isCollapsed?: boolean;
+        },
         ...afterItems,
       ];
     }, [items, shouldCollapse, itemsBeforeCollapse, itemsAfterCollapse]);
 
-    const iconSizes = {
-      sm: 'h-3 w-3',
-      default: 'h-3.5 w-3.5',
-      lg: 'h-4 w-4',
-    };
+    const resolvedSize: BreadcrumbSize = size || 'default';
+    const iconSize = ICON_SIZE[resolvedSize];
 
-    const separatorSizes = {
-      sm: 'h-3 w-3',
-      default: 'h-4 w-4',
-      lg: 'h-5 w-5',
-    };
-
-    const resolvedSize = size || 'default';
-    const iconSize = iconSizes[resolvedSize];
-    const separatorSize = separatorSizes[resolvedSize];
-
-    const defaultSeparator = (
-      <CaretRight className={cn(separatorSize, 'text-muted-foreground/50 shrink-0')} />
+    const renderSeparator = (key: string) => (
+      <DSBreadcrumbItem key={key} aria-hidden="true">
+        <DSBreadcrumbSeparator className="mx-0 flex items-center">
+          {separator || (
+            <CaretRight
+              className={cn(SEPARATOR_SIZE[resolvedSize], 'text-muted-foreground/50 shrink-0')}
+            />
+          )}
+        </DSBreadcrumbSeparator>
+      </DSBreadcrumbItem>
     );
 
     return (
-      <BreadcrumbContext.Provider value={{ size }}>
-        <nav
-          ref={ref}
-          aria-label="Breadcrumb"
-          className={cn(breadcrumbVariants({ size, className }))}
-          {...props}
-        >
-          <ol className={cn('flex items-center', breadcrumbVariants({ size }))}>
-            {/* House icon */}
-            {showHouseIcon && (
-              <>
-                <li>
-                  <Link
-                    href={homeHref}
-                    className={cn(
-                      breadcrumbItemVariants({ variant: 'default' }),
-                      'flex items-center'
-                    )}
-                    aria-label="House"
-                  >
-                    <House className={iconSize} />
+      <DSBreadcrumb
+        ref={ref}
+        className={cn('flex items-center', ROOT_SIZE[resolvedSize], className)}
+        {...props}
+      >
+        {/* House icon */}
+        {showHouseIcon && (
+          <>
+            <DSBreadcrumbItem>
+              <Link href={homeHref} aria-label="House" className={LINK_CLASSES}>
+                <House className={iconSize} />
+              </Link>
+            </DSBreadcrumbItem>
+            {items.length > 0 && renderSeparator('sep-home')}
+          </>
+        )}
+
+        {/* Breadcrumb items */}
+        {visibleItems.map((item, index) => {
+          const isLast = index === visibleItems.length - 1;
+          const isCollapsed = (item as BreadcrumbItem & { isCollapsed?: boolean }).isCollapsed;
+
+          return (
+            <React.Fragment key={`${item.label}-${index}`}>
+              <DSBreadcrumbItem current={isLast && !isCollapsed}>
+                {isCollapsed ? (
+                  <span className={DISABLED_CLASSES}>
+                    <DotsThree className={iconSize} />
+                  </span>
+                ) : isLast ? (
+                  <DSBreadcrumbPage className="flex items-center gap-1 font-medium text-foreground">
+                    {item.icon}
+                    {item.label}
+                  </DSBreadcrumbPage>
+                ) : !item.href || item.disabled ? (
+                  <span className={item.disabled ? DISABLED_CLASSES : LINK_CLASSES}>
+                    {item.icon}
+                    {item.label}
+                  </span>
+                ) : (
+                  <Link href={item.href} className={LINK_CLASSES}>
+                    {item.icon}
+                    {item.label}
                   </Link>
-                </li>
-                {items.length > 0 && (
-                  <li className="flex items-center" aria-hidden="true">
-                    {separator || defaultSeparator}
-                  </li>
                 )}
-              </>
-            )}
-
-            {/* Breadcrumb items */}
-            {visibleItems.map((item, index) => {
-              const isLast = index === visibleItems.length - 1;
-              const isCollapsed = (item as BreadcrumbItem & { isCollapsed?: boolean }).isCollapsed;
-
-              return (
-                <React.Fragment key={`${item.label}-${index}`}>
-                  <li className="flex items-center">
-                    {isCollapsed ? (
-                      <span className={cn(breadcrumbItemVariants({ variant: 'disabled' }), 'flex items-center gap-1')}>
-                        <DotsThree className={iconSize} />
-                      </span>
-                    ) : isLast || !item.href || item.disabled ? (
-                      <span
-                        className={cn(
-                          breadcrumbItemVariants({
-                            variant: isLast ? 'active' : item.disabled ? 'disabled' : 'default',
-                          }),
-                          'flex items-center gap-1'
-                        )}
-                        aria-current={isLast ? 'page' : undefined}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </span>
-                    ) : (
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          breadcrumbItemVariants({ variant: 'default' }),
-                          'flex items-center gap-1'
-                        )}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </Link>
-                    )}
-                  </li>
-                  {!isLast && (
-                    <li className="flex items-center" aria-hidden="true">
-                      {separator || defaultSeparator}
-                    </li>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </ol>
-        </nav>
-      </BreadcrumbContext.Provider>
+              </DSBreadcrumbItem>
+              {!isLast && renderSeparator(`sep-${index}`)}
+            </React.Fragment>
+          );
+        })}
+      </DSBreadcrumb>
     );
   }
 );
 Breadcrumb.displayName = 'Breadcrumb';
 
-// ============================================================================
-// Composable Breadcrumb Components
-// ============================================================================
-
-const BreadcrumbRoot = React.forwardRef<
-  HTMLElement,
-  React.HTMLAttributes<HTMLElement> & VariantProps<typeof breadcrumbVariants>
->(({ className, size, ...props }, ref) => (
-  <BreadcrumbContext.Provider value={{ size }}>
-    <nav
-      ref={ref}
-      aria-label="Breadcrumb"
-      className={cn(breadcrumbVariants({ size, className }))}
-      {...props}
-    />
-  </BreadcrumbContext.Provider>
-));
-BreadcrumbRoot.displayName = 'BreadcrumbRoot';
-
-const BreadcrumbList = React.forwardRef<
-  HTMLOListElement,
-  React.OlHTMLAttributes<HTMLOListElement>
->(({ className, ...props }, ref) => {
-  const { size } = React.useContext(BreadcrumbContext);
-  return (
-    <ol
-      ref={ref}
-      className={cn('flex items-center', breadcrumbVariants({ size }), className)}
-      {...props}
-    />
-  );
-});
-BreadcrumbList.displayName = 'BreadcrumbList';
-
-const BreadcrumbItemWrapper = React.forwardRef<
-  HTMLLIElement,
-  React.LiHTMLAttributes<HTMLLIElement>
->(({ className, ...props }, ref) => (
-  <li
-    ref={ref}
-    className={cn('flex items-center', className)}
-    {...props}
-  />
-));
-BreadcrumbItemWrapper.displayName = 'BreadcrumbItem';
-
-const BreadcrumbLink = React.forwardRef<
-  HTMLAnchorElement,
-  React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string; asChild?: boolean }
->(({ className, href, asChild, ...props }, ref) => {
-  return (
-    <Link
-      ref={ref}
-      href={href}
-      className={cn(breadcrumbItemVariants({ variant: 'default' }), className)}
-      {...props}
-    />
-  );
-});
-BreadcrumbLink.displayName = 'BreadcrumbLink';
-
-const BreadcrumbPage = React.forwardRef<
-  HTMLSpanElement,
-  React.HTMLAttributes<HTMLSpanElement>
->(({ className, ...props }, ref) => (
-  <span
-    ref={ref}
-    role="link"
-    aria-current="page"
-    aria-disabled="true"
-    className={cn(breadcrumbItemVariants({ variant: 'active' }), className)}
-    {...props}
-  />
-));
-BreadcrumbPage.displayName = 'BreadcrumbPage';
-
-const BreadcrumbSeparator = React.forwardRef<
-  HTMLLIElement,
-  React.LiHTMLAttributes<HTMLLIElement>
->(({ className, children, ...props }, ref) => {
-  const { size } = React.useContext(BreadcrumbContext);
-  const separatorSizes = {
-    sm: 'h-3 w-3',
-    default: 'h-4 w-4',
-    lg: 'h-5 w-5',
-  };
-  const resolvedSize = size || 'default';
-
-  return (
-    <li
-      ref={ref}
-      role="presentation"
-      aria-hidden="true"
-      className={cn('flex items-center', className)}
-      {...props}
-    >
-      {children ?? (
-        <CaretRight
-          className={cn(separatorSizes[resolvedSize], 'text-muted-foreground/50')}
-        />
-      )}
-    </li>
-  );
-});
-BreadcrumbSeparator.displayName = 'BreadcrumbSeparator';
-
-const BreadcrumbEllipsis = React.forwardRef<
-  HTMLSpanElement,
-  React.HTMLAttributes<HTMLSpanElement>
->(({ className, ...props }, ref) => {
-  const { size } = React.useContext(BreadcrumbContext);
-  const iconSizes = {
-    sm: 'h-3 w-3',
-    default: 'h-4 w-4',
-    lg: 'h-5 w-5',
-  };
-  const resolvedSize = size || 'default';
-
-  return (
-    <span
-      ref={ref}
-      role="presentation"
-      aria-hidden="true"
-      className={cn('flex items-center', className)}
-      {...props}
-    >
-      <DotsThree className={iconSizes[resolvedSize]} />
-      <span className="sr-only">More</span>
-    </span>
-  );
-});
-BreadcrumbEllipsis.displayName = 'BreadcrumbEllipsis';
-
-export {
-  Breadcrumb,
-  BreadcrumbRoot,
-  BreadcrumbList,
-  BreadcrumbItemWrapper as BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
-};
+export { Breadcrumb };

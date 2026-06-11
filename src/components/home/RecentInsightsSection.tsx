@@ -21,7 +21,7 @@ export function RecentInsightsSection() {
           </div>
           <Link
             href="/blog"
-            className="mt-4 md:mt-0 inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:text-indigo-600 transition-colors group"
+            className="mt-4 md:mt-0 inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:text-[#1A40FF] transition-colors group"
           >
             Ver todos los artículos
             <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -98,13 +98,13 @@ export function RecentInsightsSection() {
                   {/* Content — right */}
                   <div className="flex flex-col justify-center py-4 pr-5 flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[11px] font-mono font-normal text-indigo-600 tracking-wide uppercase">
+                      <span className="text-[11px] font-mono font-normal text-[#1A40FF] tracking-wide uppercase">
                         {post.category}
                       </span>
                       <span className="text-[11px] text-muted-foreground">{post.readTime}</span>
                     </div>
 
-                    <h3 className="text-[15px] font-heading font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors duration-300 mb-2">
+                    <h3 className="text-[15px] font-heading font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-[#1A40FF] transition-colors duration-300 mb-2">
                       {post.title}
                     </h3>
 

@@ -114,9 +114,9 @@ function DaySelector({
               type="button"
               onClick={() => toggleDay(day)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                 isSelected
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 ring-1 ring-indigo-300 dark:ring-indigo-700'
+                  ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] ring-1 ring-[#1A40FF] dark:ring-[#1A40FF]'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
@@ -157,16 +157,16 @@ function ChannelToggle({
       className={cn(
         'flex items-center justify-between p-4 rounded-xl border transition-colors',
         enabled
-          ? 'border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-900/20'
+          ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:border-[#1A40FF]/30 dark:bg-[#1A40FF]/20'
           : 'border-border bg-card'
       )}
     >
       <div className="flex items-center gap-3">
         <div
           className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center',
+            'w-10 h-10 rounded-md flex items-center justify-center',
             enabled
-              ? 'bg-indigo-100 dark:bg-indigo-900/30'
+              ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
               : 'bg-muted'
           )}
         >
@@ -174,7 +174,7 @@ function ChannelToggle({
             className={cn(
               'w-5 h-5',
               enabled
-                ? 'text-indigo-600 dark:text-indigo-400'
+                ? 'text-[#1A40FF] dark:text-[#5570FF]'
                 : 'text-muted-foreground'
             )}
           />
@@ -206,7 +206,7 @@ function MessagePreview({
   // Highlight variables in template
   const highlightedTemplate = template.replace(
     /\{([^}]+)\}/g,
-    '<span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium">{$1}</span>'
+    '<span class="px-1.5 py-0.5 rounded bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium">{$1}</span>'
   );
 
   return (
@@ -293,7 +293,7 @@ export function RecordatorioConfig({
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">
-            <Gear className="w-5 h-5 text-indigo-600" />
+            <Gear className="w-5 h-5 text-[#1A40FF]" />
             {t('inmobiliaria.cobros.recordatorioConfig.title')}
           </SheetTitle>
           <SheetDescription>
@@ -310,7 +310,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Calendar className="w-4 h-4 text-indigo-600" />
+              <Calendar className="w-4 h-4 text-[#1A40FF]" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
               </h3>
@@ -331,7 +331,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Warning className="w-4 h-4 text-amber-600" />
+              <Warning className="w-4 h-4 text-[#B7791F]" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
               </h3>
@@ -352,7 +352,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Bell className="w-4 h-4 text-indigo-600" />
+              <Bell className="w-4 h-4 text-[#1A40FF]" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
               </h3>
@@ -383,7 +383,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Envelope className="w-4 h-4 text-indigo-600" />
+              <Envelope className="w-4 h-4 text-[#1A40FF]" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
               </h3>
@@ -419,7 +419,7 @@ export function RecordatorioConfig({
             </Button>
             <Button
               type="button"
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
+              className="flex-1 bg-[#1A40FF] hover:opacity-90 text-white"
               onClick={handleSave}
               disabled={!isValid || isSaving}
             >

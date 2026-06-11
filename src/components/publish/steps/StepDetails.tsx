@@ -199,7 +199,7 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
         {open && (
           <div
             ref={gridRef}
-            className="absolute z-20 top-full mt-1 left-0 right-0 bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 shadow-lg max-h-[240px] overflow-y-auto overscroll-contain p-2 rounded-xl"
+            className="absolute z-20 top-full mt-1 left-0 right-0 bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 max-h-[240px] overflow-y-auto overscroll-contain p-2 rounded-xl"
           >
             <div className="grid grid-cols-4 gap-1">
               {years.map((year) => (
@@ -213,9 +213,9 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
                     setOpen(false);
                   }}
                   className={cn(
-                    "py-1.5 text-[13px] font-medium transition-colors rounded-lg",
+                    "py-1.5 text-[13px] font-medium transition-colors rounded-md",
                     year === value
-                      ? "bg-primary text-white uppercase tracking-wide font-mono"
+                      ? "bg-primary text-white"
                       : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   )}
                 >

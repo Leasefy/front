@@ -35,7 +35,7 @@ export function BackButton({
     "group inline-flex items-center gap-2 text-sm font-medium transition-all duration-200",
     {
       // Default: clean with subtle background on hover
-      'default': "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white px-3 py-2 -ml-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800",
+      'default': "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white px-3 py-2 -ml-3 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800",
       // Subtle: minimal, just text and icon
       'subtle': "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white",
       // Pill: contained button style

@@ -35,7 +35,7 @@ export default function SeleccionarRolPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center p-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-10">
           <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-3">
@@ -122,13 +122,13 @@ export default function SeleccionarRolPage() {
             className={cn(
               'relative flex items-center gap-4 p-5 rounded-xl border-2 text-left transition-all duration-200',
               selected === 'inmobiliaria'
-                ? 'border-indigo-600 bg-indigo-50'
+                ? 'border-[#1A40FF]/30 bg-[#EEF1FF]'
                 : 'border-neutral-200 hover:border-neutral-300 bg-white'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors flex-shrink-0',
-              selected === 'inmobiliaria' ? 'bg-indigo-600 text-white' : 'bg-neutral-100 text-neutral-500'
+              selected === 'inmobiliaria' ? 'bg-[#1A40FF] text-white' : 'bg-neutral-100 text-neutral-500'
             )}>
               <Storefront className="w-6 h-6" strokeWidth={1.5} />
             </div>
@@ -140,7 +140,7 @@ export default function SeleccionarRolPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center"
+                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-[#1A40FF] flex items-center justify-center"
               >
                 <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -159,7 +159,7 @@ export default function SeleccionarRolPage() {
             'w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all',
             selected && !isLoading
               ? selected === 'inmobiliaria'
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                ? 'bg-[#1A40FF] text-white hover:opacity-90'
                 : 'bg-neutral-900 text-white hover:bg-neutral-800'
               : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
           )}

@@ -58,12 +58,12 @@ interface RecoveryRateChartProps {
 // ─── Stage Colors ─────────────────────────────────────────────────────────────
 
 const STAGE_COLORS: Record<string, string> = {
-  S0: '#3b82f6', // blue-500
-  S1: '#6366f1', // indigo-500
-  S2: '#8b5cf6', // violet-500
-  S3: '#ec4899', // pink-500
-  S4: '#f97316', // orange-500
-  S5: '#f43f5e', // rose-500
+  S0: '#1A40FF', // electric-blue (primary)
+  S1: '#8A9CFF', // blue-tint
+  S2: '#6B6B6B', // neutral-mid
+  S3: '#9B9B9B', // neutral-light
+  S4: '#C9CDD3', // neutral-pale
+  S5: '#C4503B', // semantic red (highest severity stage)
 };
 
 // ─── Pivot Helper ─────────────────────────────────────────────────────────────

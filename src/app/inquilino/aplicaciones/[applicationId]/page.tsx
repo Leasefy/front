@@ -138,21 +138,21 @@ export default function ApplicationDetailPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!application || error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center px-6"
         >
-          <div className="w-20 h-20 rounded-full bg-stone-100 dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 rounded-full bg-neutral-100 dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
             <FileText className="w-10 h-10 text-neutral-400" />
           </div>
           <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-3">
@@ -174,12 +174,12 @@ export default function ApplicationDetailPage() {
   const property = application.property;
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof CheckCircle }> = {
-    submitted: { label: locale === 'es' ? 'Enviada' : 'Submitted', color: 'text-blue-600', bgColor: 'bg-blue-100', icon: PaperPlaneTilt },
-    under_review: { label: locale === 'es' ? 'En revisión' : 'Under review', color: 'text-amber-600', bgColor: 'bg-amber-100', icon: Eye },
-    needs_info: { label: locale === 'es' ? 'Info. requerida' : 'Info required', color: 'text-orange-600', bgColor: 'bg-orange-100', icon: Warning },
-    pre_approved: { label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved', color: 'text-indigo-600', bgColor: 'bg-indigo-100', icon: ThumbsUp },
-    approved: { label: locale === 'es' ? 'Aprobada' : 'Approved', color: 'text-emerald-600', bgColor: 'bg-emerald-100', icon: Confetti },
-    rejected: { label: locale === 'es' ? 'Rechazada' : 'Rejected', color: 'text-red-600', bgColor: 'bg-red-100', icon: XCircle },
+    submitted: { label: locale === 'es' ? 'Enviada' : 'Submitted', color: 'text-[#1A40FF]', bgColor: 'bg-[#EEF1FF]', icon: PaperPlaneTilt },
+    under_review: { label: locale === 'es' ? 'En revisión' : 'Under review', color: 'text-[#B7791F]', bgColor: 'bg-[#F8F0E0]', icon: Eye },
+    needs_info: { label: locale === 'es' ? 'Info. requerida' : 'Info required', color: 'text-[#B7791F]', bgColor: 'bg-[#F8F0E0]', icon: Warning },
+    pre_approved: { label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved', color: 'text-[#1A40FF]', bgColor: 'bg-[#EEF1FF]', icon: ThumbsUp },
+    approved: { label: locale === 'es' ? 'Aprobada' : 'Approved', color: 'text-[#2C7A53]', bgColor: 'bg-[#E8F3EC]', icon: Confetti },
+    rejected: { label: locale === 'es' ? 'Rechazada' : 'Rejected', color: 'text-[#C4503B]', bgColor: 'bg-[#F8EAE7]', icon: XCircle },
     withdrawn: { label: locale === 'es' ? 'Retirada' : 'Withdrawn', color: 'text-neutral-600', bgColor: 'bg-neutral-100', icon: XCircle },
   };
 
@@ -263,7 +263,7 @@ export default function ApplicationDetailPage() {
   const events = generateTimelineFromStatus(application.status, application.submittedAt, locale);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Back Button */}
         <motion.div
@@ -279,7 +279,7 @@ export default function ApplicationDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-stone-100 to-stone-50 dark:from-[#1a1a1c] dark:to-[#1a1a1c] border border-transparent dark:border-neutral-800 mb-8"
+          className="relative rounded-xl overflow-hidden bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-[#1a1a1c] dark:to-[#1a1a1c] border border-transparent dark:border-neutral-800 mb-8"
         >
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
@@ -292,8 +292,8 @@ export default function ApplicationDetailPage() {
                 priority
               />
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-stone-100/80 dark:to-[#1a1a1c]/90 hidden lg:block" />
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-100/80 dark:from-[#1a1a1c]/90 via-transparent to-transparent lg:hidden" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-neutral-100/80 dark:to-[#1a1a1c]/90 hidden lg:block" />
+              <div className="absolute inset-0 bg-gradient-to-t from-neutral-100/80 dark:from-[#1a1a1c]/90 via-transparent to-transparent lg:hidden" />
             </div>
 
             {/* Content */}
@@ -313,7 +313,7 @@ export default function ApplicationDetailPage() {
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 text-emerald-500" />
+                      <Check className="w-4 h-4 text-[#2C7A53]" />
                       {locale === 'es' ? 'Copiado' : 'Copied'}
                     </>
                   ) : (
@@ -328,7 +328,7 @@ export default function ApplicationDetailPage() {
               {/* Property Info */}
               {property && (
                 <Link href={`/propiedades/${property.id}`} className="group">
-                  <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
+                  <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors mb-2">
                     {property.title}
                   </h1>
                   <p className="text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mb-4">
@@ -348,7 +348,7 @@ export default function ApplicationDetailPage() {
                     {formatCurrency(property?.monthlyRent || 0)}
                   </p>
                 </div>
-                <div className="h-10 w-px bg-stone-200 dark:bg-neutral-700 hidden sm:block" />
+                <div className="h-10 w-px bg-neutral-200 dark:bg-neutral-700 hidden sm:block" />
                 <div>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">
                     {locale === 'es' ? 'Fecha de envío' : 'Submitted on'}
@@ -362,7 +362,7 @@ export default function ApplicationDetailPage() {
 
               {/* Progress Steps */}
               {!isFinalStatus && (
-                <div className="pt-6 border-t border-stone-200 dark:border-neutral-700">
+                <div className="pt-6 border-t border-neutral-200 dark:border-neutral-700">
                   <div className="flex items-center justify-between">
                     {progressSteps.map((step, index) => {
                       const StepIcon = step.icon;
@@ -376,9 +376,9 @@ export default function ApplicationDetailPage() {
                               'w-10 h-10 rounded-full flex items-center justify-center transition-all',
                               isCompleted
                                 ? isCurrent
-                                  ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                                  : 'bg-emerald-500 text-white'
-                                : 'bg-stone-200 dark:bg-neutral-700 text-neutral-400'
+                                  ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
+                                  : 'bg-[#2C7A53] text-white'
+                                : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400'
                             )}>
                               {isCompleted && !isCurrent ? (
                                 <CheckCircle className="w-5 h-5" />
@@ -388,7 +388,7 @@ export default function ApplicationDetailPage() {
                             </div>
                             <span className={cn(
                               'text-xs mt-2 font-medium hidden sm:block',
-                              isCurrent ? 'text-indigo-600 dark:text-indigo-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'
+                              isCurrent ? 'text-[#1A40FF] dark:text-[#5570FF]' : isCompleted ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-neutral-400'
                             )}>
                               {step.label}
                             </span>
@@ -396,7 +396,7 @@ export default function ApplicationDetailPage() {
                           {index < progressSteps.length - 1 && (
                             <div className={cn(
                               'w-8 sm:w-16 lg:w-24 h-1 mx-2 rounded-full transition-colors',
-                              index < currentStep ? 'bg-emerald-500' : 'bg-stone-200 dark:bg-neutral-700'
+                              index < currentStep ? 'bg-[#2C7A53]' : 'bg-neutral-200 dark:bg-neutral-700'
                             )} />
                           )}
                         </div>
@@ -413,16 +413,16 @@ export default function ApplicationDetailPage() {
                 // Sin contrato todavía: el landlord no lo creó.
                 if (!contract) {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#2C7A53] flex items-center justify-center flex-shrink-0">
                           <Confetti className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                          <p className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
                             {locale === 'es' ? '¡Felicidades! Tu aplicación fue aprobada' : 'Congratulations! Your application was approved'}
                           </p>
-                          <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                          <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">
                             {locale === 'es'
                               ? 'El propietario está preparando el contrato. Te avisaremos cuando esté listo para firmar.'
                               : 'The landlord is preparing the contract. We\'ll notify you when it\'s ready to sign.'}
@@ -436,23 +436,23 @@ export default function ApplicationDetailPage() {
                 // Pendiente firma del tenant → CTA principal (firmá primero — flow tenant-first).
                 if (contractStatus === 'pending_tenant') {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#1A40FF] flex items-center justify-center flex-shrink-0">
                           <PenNib className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-indigo-800 dark:text-indigo-300">
+                          <p className="font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                             {locale === 'es' ? '¡Tu contrato está listo para firmar!' : 'Your contract is ready to sign!'}
                           </p>
-                          <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-1">
+                          <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mt-1">
                             {locale === 'es'
                               ? 'Revisá el contrato y firmá. Después el propietario firmará para cerrar el proceso.'
                               : 'Review the contract and sign. Then the landlord will sign to close the process.'}
                           </p>
                           <Link
                             href={`/inquilino/contratos/${contract.id}/firmar`}
-                            className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-semibold transition-colors"
+                            className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] hover:opacity-90 text-white rounded-xl text-sm font-semibold transition-colors"
                           >
                             <PenNib className="w-4 h-4" />
                             {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
@@ -466,16 +466,16 @@ export default function ApplicationDetailPage() {
                 // DRAFT: landlord aún no envió el contrato.
                 if (contractStatus === 'draft') {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#B7791F] flex items-center justify-center flex-shrink-0">
                           <Clock className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-amber-800 dark:text-amber-300">
+                          <p className="font-semibold text-[#B7791F] dark:text-[#D2992F]">
                             {locale === 'es' ? 'Contrato en preparación' : 'Contract being prepared'}
                           </p>
-                          <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                          <p className="text-sm text-[#B7791F] dark:text-[#D2992F] mt-1">
                             {locale === 'es'
                               ? 'El propietario está preparando el contrato. Te avisamos cuando esté listo para firmar.'
                               : 'The landlord is preparing the contract. We\'ll notify you when it\'s ready to sign.'}
@@ -489,23 +489,23 @@ export default function ApplicationDetailPage() {
                 // PENDING_LANDLORD_SIGNATURE: tenant ya firmó, esperando al landlord.
                 if (contractStatus === 'pending_landlord') {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#2C7A53] flex items-center justify-center flex-shrink-0">
                           <SealCheck className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                          <p className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
                             {locale === 'es' ? 'Ya firmaste el contrato' : 'You already signed the contract'}
                           </p>
-                          <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                          <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">
                             {locale === 'es'
                               ? 'Esperando que el propietario firme para cerrar el proceso.'
                               : 'Waiting for the landlord to sign to close the process.'}
                           </p>
                           <Link
                             href={`/inquilino/contratos/${contract.id}/firmar`}
-                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70] hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
                             <ArrowUpRight className="w-4 h-4" />
@@ -519,23 +519,23 @@ export default function ApplicationDetailPage() {
                 // El propietario está aplicando los cambios que pediste antes de firmar.
                 if (contractStatus === 'rejected_pending_modifications') {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#B7791F] flex items-center justify-center flex-shrink-0">
                           <ArrowClockwise className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-amber-800 dark:text-amber-300">
+                          <p className="font-semibold text-[#B7791F] dark:text-[#D2992F]">
                             {locale === 'es' ? 'El propietario está aplicando los cambios' : 'The landlord is applying the changes'}
                           </p>
-                          <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                          <p className="text-sm text-[#B7791F] dark:text-[#D2992F] mt-1">
                             {locale === 'es'
                               ? 'Pediste modificaciones al contrato. Te avisamos cuando el propietario las aplique así podés revisarlo y firmar.'
                               : 'You requested modifications. We\'ll notify you once the landlord applies them so you can review and sign.'}
                           </p>
                           <Link
                             href={`/inquilino/contratos/${contract.id}/firmar`}
-                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#B7791F] dark:text-[#D2992F] hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
                             <ArrowUpRight className="w-4 h-4" />
@@ -549,23 +549,23 @@ export default function ApplicationDetailPage() {
                 // Ambos firmaron, esperando que empiece a regir.
                 if (contractStatus === 'signed') {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#2C7A53] flex items-center justify-center flex-shrink-0">
                           <SealCheck className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                          <p className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
                             {locale === 'es' ? '¡Contrato firmado por ambas partes!' : 'Contract signed by both parties!'}
                           </p>
-                          <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                          <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">
                             {locale === 'es'
                               ? 'Esperando que el contrato comience a regir en la fecha acordada.'
                               : 'Waiting for the contract to start on the agreed date.'}
                           </p>
                           <Link
                             href={`/inquilino/contratos/${contract.id}/firmar`}
-                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70] hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
                             <ArrowUpRight className="w-4 h-4" />
@@ -579,20 +579,20 @@ export default function ApplicationDetailPage() {
                 // Contrato vigente o expirado → acceso al detalle.
                 if (contractStatus === 'active' || contractStatus === 'expired') {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#2C7A53] flex items-center justify-center flex-shrink-0">
                           <SealCheck className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                          <p className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
                             {locale === 'es'
                               ? (contractStatus === 'active' ? 'Contrato vigente' : 'Contrato expirado')
                               : (contractStatus === 'active' ? 'Contract active' : 'Contract expired')}
                           </p>
                           <Link
                             href={`/inquilino/contratos/${contract.id}/firmar`}
-                            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70] hover:underline"
                           >
                             {locale === 'es' ? 'Ver contrato' : 'View contract'}
                             <ArrowUpRight className="w-4 h-4" />
@@ -606,16 +606,16 @@ export default function ApplicationDetailPage() {
                 // Cancelled (raro — normalmente el backend pasa la app a CONTRACT_FAILED).
                 if (contractStatus === 'cancelled') {
                   return (
-                    <div className="mt-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60">
+                    <div className="mt-6 p-4 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-rose-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#C4503B] flex items-center justify-center flex-shrink-0">
                           <XCircle className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-semibold text-rose-800 dark:text-rose-300">
+                          <p className="font-semibold text-[#C4503B] dark:text-[#E0664D]">
                             {locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled'}
                           </p>
-                          <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">
+                          <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">
                             {locale === 'es'
                               ? 'El proceso se cerró. Para intentar de nuevo tenés que crear una nueva aplicación.'
                               : 'The process is closed. To try again you need to create a new application.'}
@@ -630,23 +630,23 @@ export default function ApplicationDetailPage() {
               })()}
 
               {(application.status === 'needs_info') && !responseSubmitted && (
-                <div className="mt-6 p-4 rounded-2xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60">
+                <div className="mt-6 p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#B7791F] flex items-center justify-center flex-shrink-0">
                       <Warning className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-orange-800 dark:text-orange-300">
+                      <p className="font-semibold text-[#B7791F] dark:text-[#D2992F]">
                         {locale === 'es' ? 'La inmobiliaria solicitó más información' : 'The agency requested more information'}
                       </p>
-                      <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                      <p className="text-sm text-[#B7791F] dark:text-[#D2992F] mt-1">
                         {locale === 'es'
                           ? 'Revisá la sección de Acciones para completar lo que se te pidió y notificar a la inmobiliaria.'
                           : 'Check the Actions section to complete what was requested and notify the agency.'}
                       </p>
                       <button
                         onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
-                        className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                        className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-[#B7791F] hover:bg-[#B7791F] text-white rounded-xl text-sm font-semibold transition-colors"
                       >
                         <ArrowClockwise className="w-4 h-4" />
                         {locale === 'es' ? 'Completar información' : 'Complete information'}
@@ -657,16 +657,16 @@ export default function ApplicationDetailPage() {
               )}
 
               {(application.status === 'needs_info') && responseSubmitted && (
-                <div className="mt-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                <div className="mt-6 p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#2C7A53] flex items-center justify-center flex-shrink-0">
                       <CheckCircle className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+                      <p className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
                         {locale === 'es' ? 'Respuesta enviada a la inmobiliaria' : 'Response sent to the agency'}
                       </p>
-                      <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                      <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">
                         {locale === 'es'
                           ? 'La inmobiliaria fue notificada y revisará tu información a la brevedad.'
                           : 'The agency has been notified and will review your information shortly.'}
@@ -677,23 +677,23 @@ export default function ApplicationDetailPage() {
               )}
 
               {application.status === 'rejected' && (
-                <div className="mt-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60">
+                <div className="mt-6 p-4 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#C4503B] flex items-center justify-center flex-shrink-0">
                       <XCircle className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-red-800 dark:text-red-300">
+                      <p className="font-semibold text-[#C4503B] dark:text-[#E0664D]">
                         {locale === 'es' ? 'Proceso cerrado' : 'Process closed'}
                       </p>
-                      <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                      <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">
                         {locale === 'es'
                           ? 'Esta aplicación se cerró. Puede ser porque la propiedad fue rentada a otro candidato o porque el propietario tomó otra decisión. No es un rechazo a tu perfil — vas a recibir alternativas en breve.'
                           : 'This application was closed. The property may have been rented to another candidate or the landlord chose differently. It\'s not a rejection of your profile — you\'ll receive alternatives shortly.'}
                       </p>
                       <Link
                         href="/inquilino/explorar"
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-colors"
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-[#C4503B] hover:bg-[#C4503B] text-white rounded-xl text-sm font-semibold transition-colors"
                       >
                         {locale === 'es' ? 'Explorar otras propiedades' : 'Explore other properties'}
                         <ArrowUpRight className="w-4 h-4" />
@@ -714,7 +714,7 @@ export default function ApplicationDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6"
+              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6"
             >
               <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-6">
                 {locale === 'es' ? 'Historial de la aplicación' : 'Application history'}
@@ -722,7 +722,7 @@ export default function ApplicationDetailPage() {
 
               <div className="relative">
                 {/* Timeline line */}
-                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-stone-200 dark:bg-neutral-700" />
+                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-neutral-200 dark:bg-neutral-700" />
 
                 {/* Events */}
                 <div className="space-y-6">
@@ -742,8 +742,8 @@ export default function ApplicationDetailPage() {
                         <div className={cn(
                           'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-all',
                           isFirst
-                            ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                            : 'bg-white dark:bg-[#2a2a2c] border-2 border-stone-200 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400'
+                            ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
+                            : 'bg-white dark:bg-[#2a2a2c] border-2 border-neutral-200 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400'
                         )}>
                           <EventIcon className="w-4 h-4" />
                         </div>
@@ -774,14 +774,14 @@ export default function ApplicationDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6"
+                className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6"
               >
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
                   {locale === 'es' ? 'Propiedad' : 'Property'}
                 </h2>
 
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0">
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                     <Image
                       src={property.thumbnail}
                       alt={property.title}
@@ -821,7 +821,7 @@ export default function ApplicationDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6"
+              className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6"
             >
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 {locale === 'es' ? 'Acciones' : 'Actions'}
@@ -830,10 +830,10 @@ export default function ApplicationDetailPage() {
               <div className="space-y-3">
                 <button
                   onClick={() => router.push(`/inquilino/mensajes?applicationId=${applicationId}`)}
-                  className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white dark:bg-[#1a1a1c] hover:shadow-md transition-all group"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-white dark:bg-[#1a1a1c] hover: transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center group-hover:bg-indigo-700 transition-colors">
-                    <ChatCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors" />
+                  <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center group-hover:opacity-90 transition-colors">
+                    <ChatCircle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] group-hover:text-white transition-colors" />
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -845,9 +845,9 @@ export default function ApplicationDetailPage() {
                   </div>
                 </button>
 
-                <button className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white dark:bg-[#1a1a1c] hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center group-hover:bg-emerald-600 transition-colors">
-                    <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-400 group-hover:text-white transition-colors" />
+                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-white dark:bg-[#1a1a1c] hover: transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center group-hover:bg-[#2C7A53] transition-colors">
+                    <Phone className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70] group-hover:text-white transition-colors" />
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -862,13 +862,13 @@ export default function ApplicationDetailPage() {
                 {application.status === 'needs_info' && !responseSubmitted && (
                   <button
                     onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
-                    className="flex items-center gap-3 w-full p-3 rounded-2xl bg-orange-50 dark:bg-orange-950/40 hover:shadow-md transition-all group border border-orange-200 dark:border-orange-800/60"
+                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 hover: transition-all group border border-[#B7791F]/30 dark:border-[#B7791F]/40"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center group-hover:bg-orange-500 transition-colors">
-                      <ArrowClockwise className="w-5 h-5 text-orange-600 dark:text-orange-400 group-hover:text-white transition-colors" />
+                    <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center group-hover:bg-[#B7791F] transition-colors">
+                      <ArrowClockwise className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] group-hover:text-white transition-colors" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                      <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
                         {locale === 'es' ? 'Completar información' : 'Complete information'}
                       </p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -879,12 +879,12 @@ export default function ApplicationDetailPage() {
                 )}
 
                 {!isFinalStatus && (
-                  <button className="flex items-center gap-3 w-full p-3 rounded-2xl bg-white/50 dark:bg-[#1a1a1c]/50 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all group border border-transparent hover:border-red-200 dark:hover:border-red-800/60">
-                    <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors">
-                      <XCircle className="w-5 h-5 text-red-500" />
+                  <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/50 dark:bg-[#1a1a1c]/50 hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/40 transition-all group border border-transparent hover:border-[#C4503B]/30 dark:hover:border-[#C4503B]/30">
+                    <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center group-hover:bg-[#F8EAE7] dark:group-hover:bg-[#C4503B]/50 transition-colors">
+                      <XCircle className="w-5 h-5 text-[#C4503B]" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                      <p className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">
                         {locale === 'es' ? 'Retirar aplicación' : 'Withdraw application'}
                       </p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -902,17 +902,17 @@ export default function ApplicationDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="rounded-3xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 p-6"
+                className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-6"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
-                    <Warning className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  <div className="w-10 h-10 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center flex-shrink-0">
+                    <Warning className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
                   </div>
                   <div>
-                    <p className="font-semibold text-orange-800 dark:text-orange-300 mb-1">
+                    <p className="font-semibold text-[#B7791F] dark:text-[#D2992F] mb-1">
                       {locale === 'es' ? 'Acción requerida' : 'Action required'}
                     </p>
-                    <p className="text-sm text-orange-700 dark:text-orange-400">
+                    <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
                       {locale === 'es'
                         ? 'La inmobiliaria necesita más información para continuar con tu solicitud. Hacé clic en "Completar información" para responder.'
                         : 'The agency needs more information to proceed with your application. Click "Complete information" to respond.'}
@@ -927,17 +927,17 @@ export default function ApplicationDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="rounded-3xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-6"
+                className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-6"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                    <Sparkle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <div className="w-10 h-10 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center flex-shrink-0">
+                    <Sparkle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
                   </div>
                   <div>
-                    <p className="font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                    <p className="font-semibold text-[#B7791F] dark:text-[#D2992F] mb-1">
                       {locale === 'es' ? 'En proceso de revisión' : 'Under review'}
                     </p>
-                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                    <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
                       {locale === 'es'
                         ? 'El propietario está evaluando tu aplicación. Normalmente toma entre 24-48 horas.'
                         : 'The landlord is evaluating your application. This typically takes 24-48 hours.'}
@@ -952,17 +952,17 @@ export default function ApplicationDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="rounded-3xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 p-6"
+                className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center flex-shrink-0">
-                    <ThumbsUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
+                    <ThumbsUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
-                    <p className="font-semibold text-indigo-800 dark:text-indigo-300 mb-1">
+                    <p className="font-semibold text-[#1A40FF] dark:text-[#5570FF] mb-1">
                       {locale === 'es' ? '¡Vas muy bien!' : 'Looking good!'}
                     </p>
-                    <p className="text-sm text-indigo-700 dark:text-indigo-400">
+                    <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
                       {locale === 'es'
                         ? 'El propietario está interesado en tu perfil. Espera la confirmación final.'
                         : 'The landlord is interested in your profile. Await final confirmation.'}
@@ -977,7 +977,7 @@ export default function ApplicationDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6"
+              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6"
             >
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 {locale === 'es' ? 'Resumen' : 'Summary'}
@@ -990,21 +990,21 @@ export default function ApplicationDetailPage() {
                   </span>
                   <span className="text-sm font-mono font-medium text-neutral-900 dark:text-white">{application.trackingCode}</span>
                 </div>
-                <div className="h-px bg-stone-200 dark:bg-neutral-700" />
+                <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">
                     {locale === 'es' ? 'Enviada' : 'Submitted'}
                   </span>
                   <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatShortDate(application.submittedAt)}</span>
                 </div>
-                <div className="h-px bg-stone-200 dark:bg-neutral-700" />
+                <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">
                     {locale === 'es' ? 'Estado actual' : 'Current status'}
                   </span>
                   <span className={cn('text-sm font-medium', status.color)}>{status.label}</span>
                 </div>
-                <div className="h-px bg-stone-200 dark:bg-neutral-700" />
+                <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">
                     {locale === 'es' ? 'Ubicación' : 'Location'}

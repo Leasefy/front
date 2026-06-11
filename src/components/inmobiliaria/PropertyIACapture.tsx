@@ -37,7 +37,7 @@ const PROPERTY_TYPES: { value: PropertyType; labelKey: string }[] = [
 ];
 
 const inputClass =
-  'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all';
+  'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm transition-all';
 
 const MAX_PHOTOS = 4;
 // ~4 min cap so a forgotten recorder can't produce an oversized upload, and a
@@ -318,11 +318,11 @@ export function PropertyIACapture() {
   if (step === 'review' && form) {
     return (
       <form onSubmit={handleCreate} className="space-y-5">
-        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 flex items-start gap-2.5">
-          <Sparkle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" weight="fill" />
+        <div className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-3 flex items-start gap-2.5">
+          <Sparkle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] flex-shrink-0 mt-0.5" weight="fill" />
           <div>
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{t(k('reviewBannerTitle'))}</p>
-            <p className="text-xs text-amber-600 dark:text-amber-300/90 mt-0.5">
+            <p className="text-xs font-semibold text-[#B7791F] dark:text-[#D2992F]">{t(k('reviewBannerTitle'))}</p>
+            <p className="text-xs text-[#B7791F] dark:text-[#D2992F]/90 mt-0.5">
               {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
             </p>
           </div>
@@ -348,8 +348,8 @@ export function PropertyIACapture() {
                   className={cn(
                     'px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-center',
                     form.type === pt.value
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400'
-                      : 'border-border text-muted-foreground hover:border-indigo-300 hover:text-foreground',
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                      : 'border-border text-muted-foreground hover:border-[#1A40FF]/30 hover:text-foreground',
                   )}
                 >
                   {t(k(pt.labelKey))}
@@ -405,7 +405,7 @@ export function PropertyIACapture() {
         </section>
 
         {errorMsg && (
-          <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-700 dark:text-rose-400 text-sm">
+          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-[#C4503B] dark:text-[#E0664D] text-sm">
             {errorMsg}
           </div>
         )}
@@ -421,7 +421,7 @@ export function PropertyIACapture() {
           <button
             type="submit"
             disabled={!isValid || isCreating}
-            className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isCreating ? (
               <>
@@ -451,8 +451,8 @@ export function PropertyIACapture() {
   if (step === 'error') {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12 px-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
-          <WarningCircle className="w-7 h-7 text-rose-600 dark:text-rose-400" />
+        <div className="w-14 h-14 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+          <WarningCircle className="w-7 h-7 text-[#C4503B] dark:text-[#E0664D]" />
         </div>
         <div className="space-y-1">
           <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
@@ -461,14 +461,14 @@ export function PropertyIACapture() {
         <div className="flex items-center gap-2 mt-1">
           <button
             onClick={() => setStep('capture')}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-mono uppercase tracking-wide text-xs transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs transition-colors font-medium"
           >
             <ArrowClockwise className="w-4 h-4" />
             {t(k('retry'))}
           </button>
           <button
             onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-xs transition-transform active:scale-[0.97]"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs transition-transform active:scale-[0.97] font-medium"
           >
             {t(k('manualFlow'))}
           </button>
@@ -481,18 +481,18 @@ export function PropertyIACapture() {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-          <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+        <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
+          <Sparkle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
         </div>
         <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
       </div>
 
       {/* Audio recorder */}
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-xl border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">{t(k('recordTitle'))}</h2>
           {(isRecording || audioBlob) && (
-            <span className={cn('text-sm font-mono tabular-nums', isRecording ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
+            <span className={cn('text-sm font-mono tabular-nums', isRecording ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-muted-foreground')}>
               {mmss}
             </span>
           )}
@@ -503,22 +503,22 @@ export function PropertyIACapture() {
             type="button"
             onClick={isRecording ? stopRecording : startRecording}
             className={cn(
-              'w-full rounded-2xl border-2 border-dashed transition-colors p-8 flex flex-col items-center justify-center gap-3 text-center',
+              'w-full rounded-xl border-2 border-dashed transition-colors p-8 flex flex-col items-center justify-center gap-3 text-center',
               isRecording
-                ? 'border-rose-400 bg-rose-50/60 dark:bg-rose-950/20'
+                ? 'border-[#C4503B]/30 bg-[#F8EAE7]/60 dark:bg-[#C4503B]/20'
                 : 'border-border bg-muted/30 hover:bg-muted/50 hover:border-foreground/20',
             )}
           >
             <div
               className={cn(
-                'w-14 h-14 rounded-2xl flex items-center justify-center',
-                isRecording ? 'bg-rose-100 dark:bg-rose-900/40 animate-pulse' : 'bg-indigo-50 dark:bg-indigo-950/40',
+                'w-14 h-14 rounded-xl flex items-center justify-center',
+                isRecording ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 animate-pulse' : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
               )}
             >
               {isRecording ? (
-                <Stop className="w-7 h-7 text-rose-600 dark:text-rose-400" weight="fill" />
+                <Stop className="w-7 h-7 text-[#C4503B] dark:text-[#E0664D]" weight="fill" />
               ) : (
-                <Microphone className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+                <Microphone className="w-7 h-7 text-[#1A40FF] dark:text-[#5570FF]" />
               )}
             </div>
             <p className="text-body-sm font-medium text-foreground">
@@ -542,7 +542,7 @@ export function PropertyIACapture() {
       </section>
 
       {/* Photos (optional) */}
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-xl border border-border p-5 space-y-4">
         <div>
           <h2 className="font-semibold text-foreground">{t(k('photosTitle'))}</h2>
           <p className="text-caption text-muted-foreground mt-0.5">{t(k('photosHint'))}</p>
@@ -562,7 +562,7 @@ export function PropertyIACapture() {
                 type="button"
                 onClick={() => removePhoto(i)}
                 aria-label={t(k('removePhoto'))}
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center shadow-sm hover:bg-muted"
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted"
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
@@ -584,14 +584,14 @@ export function PropertyIACapture() {
       <div className="flex items-center justify-end gap-2 pb-6">
         <button
           onClick={() => router.push('/panel/inmobiliaria/propiedades')}
-          className="h-11 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-mono uppercase tracking-wide text-sm transition-colors"
+          className="h-11 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-sm transition-colors font-medium"
         >
           {t(k('cancel'))}
         </button>
         <button
           onClick={handleExtract}
           disabled={!audioBlob || isRecording}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm transition-transform active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           <Sparkle className="w-4 h-4" weight="fill" />
           {t(k('process'))}

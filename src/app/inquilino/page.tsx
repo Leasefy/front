@@ -105,8 +105,8 @@ export default function InquilinoPage() {
   // Loading state
   if (isOnboardingComplete === null) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -120,7 +120,7 @@ export default function InquilinoPage() {
   const isNewUser = activeLeases.length === 0 && activeApplications.length === 0;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Hero Header */}
@@ -150,11 +150,11 @@ export default function InquilinoPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-8 rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6 sm:p-8"
+            className="mb-8 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] p-6 sm:p-8"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-14 h-14 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/20 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-7 h-7 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
@@ -190,8 +190,8 @@ export default function InquilinoPage() {
           />
 
           {/* Active Leases */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] p-5">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
               <House className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
@@ -204,8 +204,8 @@ export default function InquilinoPage() {
           </div>
 
           {/* Applications */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] p-5">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
               <FileText className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('nav.applications')}</p>
@@ -219,8 +219,8 @@ export default function InquilinoPage() {
 
           {/* Next Payment or CTA */}
           {nextPayment && primaryLease ? (
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-              <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+            <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] p-5">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
                 <CreditCard className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('dashboard.nextPayment')}</p>
@@ -230,14 +230,14 @@ export default function InquilinoPage() {
             </div>
           ) : (
             <Link href="/inquilino/explorar" className="group">
-              <div className="h-full rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5 hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors">
-                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+              <div className="h-full rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] p-5 hover:bg-neutral-100 dark:hover:bg-[#222224] transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
                   <MagnifyingGlass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                 </div>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-1">
+                <p className="text-xs text-primary font-medium mb-1">
                   {locale === 'es' ? 'Comienza ahora' : 'Get started'}
                 </p>
-                <p className="text-sm font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white group-hover:text-primary transition-colors">
                   {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
                 </p>
               </div>
@@ -281,7 +281,7 @@ export default function InquilinoPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 + index * 0.05 }}
-                    className="group relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 text-left w-full"
+                    className="group relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors duration-300 text-left w-full"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
                       <Image
@@ -292,23 +292,23 @@ export default function InquilinoPage() {
                       />
 
                       {/* Match badge */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-emerald-500 text-white text-xs font-medium rounded-full flex items-center gap-1 shadow-sm">
-                        <Check className="w-3 h-3" />
+                      <div className="absolute top-3 left-3 px-2.5 py-1 text-white text-xs font-medium rounded-full flex items-center gap-1" style={{ backgroundColor: '#0B1220' }}>
+                        <Check className="w-3 h-3" weight="bold" />
                         {92 - index * 5}% match
                       </div>
 
                       {/* Heart - Glass effect */}
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all backdrop-blur-xl bg-white/20 border border-white/30 shadow-lg hover:bg-white/30 cursor-pointer"
+                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all backdrop-blur-xl bg-white/20 border border-white/30 hover:bg-white/30 cursor-pointer"
                       >
-                        <Heart className="w-4 h-4 text-white drop-shadow-sm" />
+                        <Heart className="w-4 h-4 text-white drop-" />
                       </div>
                     </div>
 
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+                        <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">
                           {property.title}
                         </h3>
                         <p className="text-lg font-bold text-neutral-900 dark:text-white whitespace-nowrap flex-shrink-0">
@@ -323,13 +323,13 @@ export default function InquilinoPage() {
                       </p>
 
                       <div className="flex items-center gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-700">
-                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-xs text-neutral-600 dark:text-neutral-400 font-medium">
                           {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                         </span>
-                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-xs text-neutral-600 dark:text-neutral-400 font-medium">
                           {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
                         </span>
-                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                        <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-xs text-neutral-600 dark:text-neutral-400 font-medium">
                           {property.area} m²
                         </span>
                       </div>
@@ -346,8 +346,8 @@ export default function InquilinoPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
               >
-                <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+                <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
                     <FileText className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <h3 className="text-base font-semibold text-foreground mb-1.5">
@@ -376,7 +376,7 @@ export default function InquilinoPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+              className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] p-5"
             >
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 {t('dashboard.quickActions')}
@@ -409,17 +409,17 @@ export default function InquilinoPage() {
                   },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#222224] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm group-hover:shadow transition-shadow">
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#222224] transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary transition-colors">
                           {action.label}
                         </p>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
                       </div>
-                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-primary transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -432,11 +432,11 @@ export default function InquilinoPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+                className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] p-5"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0 shadow-sm">
-                    <Lightbulb className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                    <Lightbulb className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-1">
@@ -457,7 +457,7 @@ export default function InquilinoPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
-              className="rounded-3xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 p-5"
+              className="rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 p-5"
             >
               <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-2">
                 {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
@@ -469,7 +469,7 @@ export default function InquilinoPage() {
               </p>
               <Link
                 href="/ayuda"
-                className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:opacity-80 transition-opacity"
               >
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
                 <ArrowRight className="w-4 h-4" />

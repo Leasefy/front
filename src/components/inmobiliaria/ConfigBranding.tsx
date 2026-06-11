@@ -31,10 +31,10 @@ interface ConfigBrandingProps {
 // Preset color palettes for quick selection
 const COLOR_PRESETS = [
   {
-    name: 'Indigo',
-    primary: '#4F46E5',
-    secondary: '#10B981',
-    accent: '#F59E0B',
+    name: 'Electric Blue',
+    primary: '#1A40FF',
+    secondary: '#6B6B6B',
+    accent: '#9B9B9B',
   },
   {
     name: 'Blue',
@@ -220,7 +220,7 @@ export function ConfigBranding({
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-muted rounded-lg w-1/3" />
+        <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="h-48 bg-muted rounded-xl" />
         <div className="h-32 bg-muted rounded-xl" />
       </div>
@@ -237,14 +237,14 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground">
-            <Image className="w-5 h-5 text-indigo-500" />
+            <Image className="w-5 h-5 text-[#1A40FF]" />
             <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
           </div>
           {currentLogo && (
             <button
               type="button"
               onClick={removeLogo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
             >
               <Trash className="w-4 h-4" />
               {t('inmobiliaria.common.delete')}
@@ -283,19 +283,19 @@ export function ConfigBranding({
               className={cn(
                 'h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all',
                 isDragging
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                  : 'border-border hover:border-indigo-400 hover:bg-muted/50'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                  : 'border-border hover:border-[#1A40FF]/30 hover:bg-muted/50'
               )}
             >
               <Upload
                 className={cn(
                   'w-8 h-8 mb-2',
-                  isDragging ? 'text-indigo-500' : 'text-muted-foreground'
+                  isDragging ? 'text-[#1A40FF]' : 'text-muted-foreground'
                 )}
               />
               <p className="text-sm text-muted-foreground text-center">
                 {t('inmobiliaria.config.brandingSection.dragOrClick')}{' '}
-                <span className="text-indigo-500 font-medium">{t('inmobiliaria.config.brandingSection.clickHere')}</span>
+                <span className="text-[#1A40FF] font-medium">{t('inmobiliaria.config.brandingSection.clickHere')}</span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 PNG, JPG, SVG (max 2MB)
@@ -312,7 +312,7 @@ export function ConfigBranding({
         </div>
 
         {previewError && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+          <div className="flex items-center gap-2 p-3 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] text-sm">
             <Warning className="w-4 h-4" />
             {previewError}
           </div>
@@ -323,13 +323,13 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground">
-            <Palette className="w-5 h-5 text-purple-500" />
+            <Palette className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
             <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
           </div>
           <button
             type="button"
             onClick={resetToDefaults}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-muted transition-colors"
           >
             <ArrowCounterClockwise className="w-4 h-4" />
             {t('inmobiliaria.config.brandingSection.restore')}
@@ -369,7 +369,7 @@ export function ConfigBranding({
                 key={preset.name}
                 type="button"
                 onClick={() => applyPreset(preset)}
-                className="group p-3 rounded-lg border border-border hover:border-indigo-400 transition-all"
+                className="group p-3 rounded-md border border-border hover:border-[#1A40FF]/30 transition-all"
               >
                 <div className="flex gap-1 mb-2">
                   <div
@@ -397,13 +397,13 @@ export function ConfigBranding({
       {/* Preview Section */}
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
-          <Eye className="w-5 h-5 text-emerald-500" />
+          <Eye className="w-5 h-5 text-[#2C7A53]" />
           <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.preview')}</h3>
         </div>
 
         <div className="p-6 rounded-xl bg-muted/30 border border-border space-y-6">
           {/* Header Preview */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
+          <div className="flex items-center justify-between p-4 rounded-md bg-background border border-border">
             <div className="flex items-center gap-3">
               {currentLogo ? (
                 <img
@@ -413,7 +413,7 @@ export function ConfigBranding({
                 />
               ) : (
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-white font-bold text-sm"
                   style={{ backgroundColor: formData.primaryColor }}
                 >
                   A
@@ -433,21 +433,21 @@ export function ConfigBranding({
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90"
+                className="px-4 py-2 rounded-md text-white text-sm font-medium transition-opacity hover:opacity-90"
                 style={{ backgroundColor: formData.primaryColor }}
               >
                 {t('inmobiliaria.config.brandingSection.primaryButton')}
               </button>
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90"
+                className="px-4 py-2 rounded-md text-white text-sm font-medium transition-opacity hover:opacity-90"
                 style={{ backgroundColor: formData.secondaryColor }}
               >
                 {t('inmobiliaria.config.brandingSection.secondaryButton')}
               </button>
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg border text-sm font-medium transition-colors"
+                className="px-4 py-2 rounded-md border text-sm font-medium transition-colors"
                 style={{
                   borderColor: formData.primaryColor,
                   color: formData.primaryColor,
@@ -511,7 +511,7 @@ export function ConfigBranding({
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.alert')}</p>
             <div
-              className="p-3 rounded-lg text-sm"
+              className="p-3 rounded-md text-sm"
               style={{
                 backgroundColor: `${formData.accentColor}15`,
                 borderLeft: `3px solid ${formData.accentColor}`,
@@ -546,7 +546,7 @@ export function ConfigBranding({
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
             >
               {isSaving ? (
                 <>
@@ -612,7 +612,7 @@ function ColorPickerField({
             type="color"
             value={value}
             onChange={handleColorPickerChange}
-            className="w-10 h-10 rounded-lg cursor-pointer border border-border overflow-hidden"
+            className="w-10 h-10 rounded-md cursor-pointer border border-border overflow-hidden"
             style={{ padding: 0 }}
           />
         </div>
@@ -622,7 +622,7 @@ function ColorPickerField({
           onChange={handleInputChange}
           placeholder="#000000"
           maxLength={7}
-          className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all uppercase"
+          className="flex-1 px-3 py-2 rounded-md border border-border bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all uppercase"
         />
       </div>
       {description && (

@@ -31,21 +31,21 @@ export function StepLocation() {
                 className={cn(
                   'relative p-4 rounded-xl border text-left transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:'
                 )}
               >
                 <div className={cn(
                   'absolute top-2.5 right-2.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-600 bg-indigo-600'
+                    ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
                     : 'border-neutral-300 dark:border-neutral-600'
                 )}>
                   {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                 </div>
                 <Buildings className={cn(
                   'w-5 h-5 mb-2 transition-colors',
-                  isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-400 dark:text-neutral-500'
+                  isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-400 dark:text-neutral-500'
                 )} />
                 <span className={cn(
                   'text-sm font-medium',
@@ -80,7 +80,7 @@ export function StepLocation() {
           />
         </div>
         {!draft.city && (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
+          <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
             Primero selecciona una ciudad
           </p>
         )}
@@ -103,7 +103,7 @@ export function StepLocation() {
           />
         </div>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
           La dirección exacta solo será visible para inquilinos confirmados
         </p>
       </div>

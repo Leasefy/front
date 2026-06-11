@@ -82,23 +82,23 @@ export function CobroResumen({
   const getCollectionRateInfo = (rate: number) => {
     if (rate >= 90) {
       return {
-        fill: 'bg-emerald-500',
-        text: 'text-emerald-600 dark:text-emerald-400',
+        fill: 'bg-[#2C7A53]',
+        text: 'text-[#2C7A53] dark:text-[#3EAE70]',
         label: t('inmobiliaria.cobros.resumen.rateExcellent'),
         trend: 'up' as const,
       };
     }
     if (rate >= 70) {
       return {
-        fill: 'bg-amber-500',
-        text: 'text-amber-600 dark:text-amber-400',
+        fill: 'bg-[#B7791F]',
+        text: 'text-[#B7791F] dark:text-[#D2992F]',
         label: t('inmobiliaria.cobros.resumen.rateAcceptable'),
         trend: 'neutral' as const,
       };
     }
     return {
-      fill: 'bg-red-500',
-      text: 'text-red-600 dark:text-red-400',
+      fill: 'bg-[#C4503B]',
+      text: 'text-[#C4503B] dark:text-[#E0664D]',
       label: t('inmobiliaria.cobros.resumen.rateLow'),
       trend: 'down' as const,
     };
@@ -124,8 +124,8 @@ export function CobroResumen({
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <ChartLineUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="bold" />
+          <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <ChartLineUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="bold" />
           </div>
           <div>
             <h3 className="text-base font-semibold text-foreground capitalize">
@@ -139,7 +139,7 @@ export function CobroResumen({
         {onRefresh && (
           <button
             onClick={onRefresh}
-            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             title={t('inmobiliaria.cobros.resumen.refreshTooltip')}
           >
             <ArrowClockwise className="w-5 h-5" />
@@ -194,9 +194,9 @@ export function CobroResumen({
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-4 mb-5">
           {/* Cobrado */}
-          <div className="p-3 rounded-lg bg-muted/30">
+          <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-emerald-500" weight="fill" />
+              <CheckCircle className="w-4 h-4 text-[#2C7A53]" weight="fill" />
               <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.collected')}</span>
             </div>
             <AnimatedNumber
@@ -210,9 +210,9 @@ export function CobroResumen({
           </div>
 
           {/* Pendiente */}
-          <div className="p-3 rounded-lg bg-muted/30">
+          <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-amber-500" weight="fill" />
+              <Clock className="w-4 h-4 text-[#B7791F]" weight="fill" />
               <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.pendingLabel')}</span>
             </div>
             <AnimatedNumber
@@ -226,9 +226,9 @@ export function CobroResumen({
           </div>
 
           {/* En mora */}
-          <div className="p-3 rounded-lg bg-muted/30">
+          <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
-              <Warning className="w-4 h-4 text-red-500" weight="fill" />
+              <Warning className="w-4 h-4 text-[#C4503B]" weight="fill" />
               <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.lateLabel')}</span>
             </div>
             <AnimatedNumber
@@ -248,10 +248,10 @@ export function CobroResumen({
             {onViewPending && summary.cobrosPending > 0 && (
               <button
                 onClick={onViewPending}
-                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-lg border border-border transition-colors group"
+                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md border border-border transition-colors group"
               >
                 <span className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-500" weight="fill" />
+                  <Clock className="w-4 h-4 text-[#B7791F]" weight="fill" />
                   {t('inmobiliaria.cobros.resumen.viewPending')}
                 </span>
                 <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -260,10 +260,10 @@ export function CobroResumen({
             {onViewLate && summary.cobrosLate > 0 && (
               <button
                 onClick={onViewLate}
-                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-lg border border-border transition-colors group"
+                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md border border-border transition-colors group"
               >
                 <span className="flex items-center gap-2">
-                  <Warning className="w-4 h-4 text-red-500" weight="fill" />
+                  <Warning className="w-4 h-4 text-[#C4503B]" weight="fill" />
                   {t('inmobiliaria.cobros.resumen.viewLate')}
                 </span>
                 <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -291,21 +291,21 @@ export function CobroResumenCompact({
   const getCollectionRateInfo = (rate: number) => {
     if (rate >= 90) {
       return {
-        fill: 'bg-emerald-500',
-        text: 'text-emerald-600 dark:text-emerald-400',
+        fill: 'bg-[#2C7A53]',
+        text: 'text-[#2C7A53] dark:text-[#3EAE70]',
         trend: 'up' as const,
       };
     }
     if (rate >= 70) {
       return {
-        fill: 'bg-amber-500',
-        text: 'text-amber-600 dark:text-amber-400',
+        fill: 'bg-[#B7791F]',
+        text: 'text-[#B7791F] dark:text-[#D2992F]',
         trend: 'neutral' as const,
       };
     }
     return {
-      fill: 'bg-red-500',
-      text: 'text-red-600 dark:text-red-400',
+      fill: 'bg-[#C4503B]',
+      text: 'text-[#C4503B] dark:text-[#E0664D]',
       trend: 'down' as const,
     };
   };

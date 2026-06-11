@@ -244,7 +244,7 @@ export function StepReferences() {
                   <button
                     type="button"
                     onClick={() => removeLandlord(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] transition-colors"
                   >
                     <TrashSimple className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -370,7 +370,7 @@ export function StepReferences() {
                   <button
                     type="button"
                     onClick={() => removeEmploymentRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] transition-colors"
                   >
                     <TrashSimple className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -489,7 +489,7 @@ export function StepReferences() {
                   <button
                     type="button"
                     onClick={() => removePersonalRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] transition-colors"
                   >
                     <TrashSimple className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
@@ -585,7 +585,7 @@ function AddButton({ onClick, label }: AddButtonProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium font-mono uppercase tracking-wide',
+        'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
         'rounded-xl border border-neutral-300 dark:border-neutral-600',
         'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-500',
         'transition-colors'

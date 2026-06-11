@@ -75,8 +75,8 @@ export function StepPayments() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pb-2"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 mb-4">
-          <CreditCard className="w-8 h-8 text-amber-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-[#F8F0E0] mb-4">
+          <CreditCard className="w-8 h-8 text-[#B7791F]" />
         </div>
         <h3 className="text-2xl font-bold text-neutral-900">Configura tus cobros</h3>
         <p className="text-neutral-500 mt-2 max-w-md mx-auto">
@@ -89,12 +89,12 @@ export function StepPayments() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100"
+        className="flex items-start gap-3 p-4 rounded-xl bg-[#EEF1FF] border border-[#1A40FF]/30"
       >
-        <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <Info className="w-5 h-5 text-[#1A40FF] flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm text-blue-700 font-medium">Esta sección es opcional</p>
-          <p className="text-xs text-blue-600 mt-1">
+          <p className="text-sm text-[#1A40FF] font-medium">Esta sección es opcional</p>
+          <p className="text-xs text-[#1A40FF] mt-1">
             Puedes completar estos datos más adelante desde tu panel de control.
           </p>
         </div>
@@ -119,8 +119,8 @@ export function StepPayments() {
             className={cn(
               'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white appearance-none',
               'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-              draft.bankName ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
+              draft.bankName ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
             )}
           >
             <option value="">Selecciona tu banco</option>
@@ -162,8 +162,8 @@ export function StepPayments() {
             'w-full px-4 py-4 text-base rounded-xl border bg-white',
             'transition-all duration-200',
             'placeholder:text-neutral-400',
-            'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-            draft.bankAccount ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
+            'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
+            draft.bankAccount ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
           )}
         />
         <p className="text-xs text-neutral-400 mt-2">
@@ -196,7 +196,7 @@ export function StepPayments() {
                 className={cn(
                   'relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF]'
                     : 'border-neutral-200 bg-white hover:border-neutral-300'
                 )}
               >
@@ -204,7 +204,7 @@ export function StepPayments() {
                 <div
                   className={cn(
                     'absolute top-2 right-2 w-4 h-4 rounded-full border flex items-center justify-center transition-all',
-                    isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-neutral-300'
+                    isSelected ? 'border-[#1A40FF]/30 bg-[#1A40FF]' : 'border-neutral-300'
                   )}
                 >
                   {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
@@ -212,8 +212,8 @@ export function StepPayments() {
 
                 <div
                   className={cn(
-                    'w-9 h-9 rounded-lg flex items-center justify-center transition-colors',
-                    isSelected ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
+                    'w-9 h-9 rounded-md flex items-center justify-center transition-colors',
+                    isSelected ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -222,7 +222,7 @@ export function StepPayments() {
                   <p
                     className={cn(
                       'text-xs font-semibold',
-                      isSelected ? 'text-indigo-700' : 'text-neutral-700'
+                      isSelected ? 'text-[#1A40FF]' : 'text-neutral-700'
                     )}
                   >
                     {method.label}
@@ -258,7 +258,7 @@ export function StepPayments() {
                 className={cn(
                   'w-12 h-12 rounded-xl border font-semibold transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                    ? 'border-[#1A40FF]/30 bg-[#1A40FF] text-white'
                     : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                 )}
               >
@@ -277,10 +277,10 @@ export function StepPayments() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="p-4 rounded-xl bg-emerald-50 border border-emerald-200"
+          className="p-4 rounded-xl bg-[#E8F3EC] border border-[#2C7A53]/30"
         >
-          <p className="text-sm font-medium text-emerald-700 mb-2">Resumen de cobros</p>
-          <ul className="text-xs text-emerald-600 space-y-1">
+          <p className="text-sm font-medium text-[#2C7A53] mb-2">Resumen de cobros</p>
+          <ul className="text-xs text-[#2C7A53] space-y-1">
             {draft.bankName && (
               <li>• Depósitos en {draft.bankName}</li>
             )}

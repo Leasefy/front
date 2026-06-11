@@ -22,20 +22,20 @@ interface AgentPerformanceReportProps {
 
 const COLOR_MAP = {
   amber: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
   },
   blue: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
   emerald: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
   },
   violet: {
-    bg: 'bg-violet-100 dark:bg-violet-900/30',
-    text: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
   },
 } as const;
 
@@ -137,7 +137,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                     className={cn(
                       'border-b border-neutral-50 dark:border-neutral-800/50 transition-colors',
                       isTop
-                        ? 'bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                        ? 'bg-[#F8F0E0]/50 dark:bg-[#B7791F]/10 hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20'
                         : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/30'
                     )}
                   >
@@ -146,7 +146,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                       <div className="flex items-center">
                         {isTop ? (
                           <Medal
-                            className="w-5 h-5 text-amber-500"
+                            className="w-5 h-5 text-[#B7791F]"
                             weight="fill"
                           />
                         ) : (
@@ -184,10 +184,10 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                             className={cn(
                               'h-full rounded-full transition-all duration-500',
                               agent.conversionRate >= 70
-                                ? 'bg-emerald-500'
+                                ? 'bg-[#2C7A53]'
                                 : agent.conversionRate >= 50
-                                  ? 'bg-blue-500'
-                                  : 'bg-amber-500'
+                                  ? 'bg-[#1A40FF]'
+                                  : 'bg-[#B7791F]'
                             )}
                             style={{ width: `${conversionWidth}%` }}
                           />
@@ -248,10 +248,10 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
                       agent.conversionRate >= 70
-                        ? 'bg-emerald-500'
+                        ? 'bg-[#2C7A53]'
                         : agent.conversionRate >= 50
-                          ? 'bg-blue-500'
-                          : 'bg-amber-500'
+                          ? 'bg-[#1A40FF]'
+                          : 'bg-[#B7791F]'
                     )}
                     style={{ width: `${barWidth}%` }}
                   />
@@ -286,7 +286,7 @@ function KPICard({
       <div className="flex items-center gap-3">
         <div
           className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center',
+            'w-10 h-10 rounded-md flex items-center justify-center',
             colors.bg
           )}
         >

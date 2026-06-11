@@ -104,7 +104,7 @@ export function PropertyHeader({
                   <span>{candidates.length} candidatos</span>
                 </div>
                 {preApprovedCount > 0 && (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#EEF1FF] text-[#1A40FF] rounded-full">
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span className="text-xs font-medium">
                       {preApprovedCount}/{MAX_PRE_APPROVALS} pre-aprobados

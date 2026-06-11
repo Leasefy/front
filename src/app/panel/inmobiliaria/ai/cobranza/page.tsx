@@ -167,7 +167,7 @@ export default function CobranzaOverviewPage() {
             {relativeTime(data.generatedAt, locale)}
             {isConnected && (
               <span
-                className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"
+                className="inline-flex h-1.5 w-1.5 rounded-full bg-[#2C7A53] animate-ping"
                 aria-hidden="true"
               />
             )}
@@ -265,7 +265,7 @@ export default function CobranzaOverviewPage() {
 
         {/* Error state */}
         {error && !isLoading && (
-          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
           </div>
         )}

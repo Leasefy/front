@@ -92,7 +92,7 @@ export function PropertyDashboardCard({
           <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
             <Badge
               variant="default"
-              className="bg-white/95 backdrop-blur-sm text-foreground hover:bg-white shadow-lg shadow-black/10 px-3 py-2 text-sm font-semibold rounded-sm border-0"
+              className="bg-white/95 backdrop-blur-sm text-foreground hover:bg-white shadow-black/10 px-3 py-2 text-sm font-semibold rounded-sm border-0"
             >
               <Users className="w-4 h-4 mr-2 text-[black]" />
               {candidateCount} {candidateCount === 1 ? 'candidato' : 'candidatos'}
@@ -108,7 +108,7 @@ export function PropertyDashboardCard({
           {/* Property status overlay if no candidates */}
           {candidateCount === 0 && (
             <div className="absolute inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center">
-              <span className="bg-white/95 backdrop-blur-sm text-foreground text-sm px-5 py-2.5 rounded-sm font-medium shadow-lg">
+              <span className="bg-white/95 backdrop-blur-sm text-foreground text-sm px-5 py-2.5 rounded-sm font-medium">
                 Sin candidatos
               </span>
             </div>
@@ -147,7 +147,7 @@ export function PropertyDashboardCard({
 
               {/* Urgent badge - with subtle pulse */}
               {hasUrgent && (
-                <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-sm font-medium">
+                <div className="flex items-center gap-2 text-xs text-[#B7791F] bg-[#F8F0E0] px-3 py-2 rounded-sm font-medium">
                   <WarningCircle className="w-3.5 h-3.5 animate-pulse" />
                   <span>Urgente</span>
                 </div>
@@ -155,8 +155,8 @@ export function PropertyDashboardCard({
 
               {/* All reviewed indicator */}
               {pendingCount === 0 && (
-                <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <div className="flex items-center gap-2 text-xs text-[#2C7A53] font-medium">
+                  <div className="w-2 h-2 rounded-full bg-[#2C7A53]" />
                   <span>Todo revisado</span>
                 </div>
               )}
@@ -165,7 +165,7 @@ export function PropertyDashboardCard({
         </div>
 
         {/* Hover accent line at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-black to-purple-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-black to-[#6B6B6B] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
       </div>
     </Link>
   );

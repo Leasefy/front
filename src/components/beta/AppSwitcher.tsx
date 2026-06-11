@@ -34,12 +34,12 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
     <div className="flex items-center justify-between">
       {/* Brand */}
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-sm">
+        <div className="w-8 h-8 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center">
           <Sparkle className="w-[18px] h-[18px] text-white" weight="fill" />
         </div>
         <span className="text-[15px] font-bold text-foreground tracking-tight">
           Leasefy
-          <span className="text-indigo-500 ml-1">AI</span>
+          <span className="text-[#1A40FF] ml-1">AI</span>
         </span>
       </div>
 
@@ -47,7 +47,7 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
       <button
         onClick={() => router.push(targetPath)}
         className={cn(
-          'p-2 rounded-lg',
+          'p-2 rounded-md',
           'text-neutral-400 dark:text-neutral-500',
           'hover:text-neutral-600 dark:hover:text-neutral-300',
           'hover:bg-neutral-100 dark:hover:bg-neutral-800',

@@ -168,7 +168,7 @@ export function CandidateDetail({
 
                   {/* Privacy Notice */}
                   {!isDataRevealed && (
-                    <div className="flex items-center gap-1.5 mt-2 text-[11px] text-amber-600">
+                    <div className="flex items-center gap-1.5 mt-2 text-[11px] text-[#B7791F]">
                       <Lock className="h-3 w-3" />
                       <span>{MASKED_DATA_MESSAGE}</span>
                     </div>

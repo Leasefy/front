@@ -79,7 +79,7 @@ export function HowItWorksSection() {
                 className="group"
               >
                 {/* Card */}
-                <div className="relative bg-muted/30 border border-border hover:border-primary/30 rounded-2xl p-8 md:p-10 transition-all duration-300 hover:shadow-lg h-full flex flex-col">
+                <div className="relative bg-muted/30 border border-border hover:border-primary/30 rounded-xl p-8 md:p-10 transition-all duration-300 hover: h-full flex flex-col">
                   {/* Step number */}
                   <div className="flex items-center justify-between mb-6">
                     <span className="text-[48px] md:text-[56px] font-extralight tracking-[-4px] text-primary/20">

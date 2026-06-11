@@ -33,7 +33,7 @@ export default function CallStateTracePanel({
           {stateTrace.map((row) => (
             <li
               key={row.id}
-              className="flex flex-col gap-0.5 border-l-2 border-violet-300 dark:border-violet-700 pl-3 py-1"
+              className="flex flex-col gap-0.5 border-l-2 border-neutral-200 dark:border-neutral-700 pl-3 py-1"
             >
               <p className="text-sm font-mono text-neutral-800 dark:text-neutral-200">
                 {t('inmobiliaria.ai.cobranza.call.stateTrace.transition', {

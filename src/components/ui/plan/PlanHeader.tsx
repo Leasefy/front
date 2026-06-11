@@ -222,14 +222,14 @@ export function PlanHeader({
                 'w-full h-10 pl-10 pr-4',
                 'bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full',
                 'text-[14px] text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
-                'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:bg-white dark:focus:bg-white/10',
+                'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 dark:focus:ring-[#1A40FF]/30 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 focus:bg-white dark:focus:bg-white/10',
                 'transition-colors'
               )}
             />
 
             {/* MagnifyingGlass Dropdown */}
             {searchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl max-h-[400px] overflow-y-auto z-50 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-xl max-h-[400px] overflow-y-auto z-50 overflow-hidden">
                 {searchQuery.length >= 2 ? (
                   // Show search results
                   searchResults.length > 0 ? (
@@ -346,12 +346,12 @@ export function PlanHeader({
                   <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {isBaseTier && (
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full" />
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-[#1A40FF] rounded-full" />
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-lg rounded-2xl overflow-hidden"
+                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-lg rounded-xl overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
@@ -400,7 +400,7 @@ export function PlanHeader({
                         <div key={feature.id} className="flex items-center gap-2">
                           <div className={cn(
                             'w-4 h-4 flex items-center justify-center rounded-sm',
-                            feature.included ? 'bg-plan-status-green-bg text-green-800' : 'bg-muted text-plan-muted'
+                            feature.included ? 'bg-plan-status-green-bg text-[#2C7A53]' : 'bg-muted text-plan-muted'
                           )}>
                             <Check className="w-3 h-3" />
                           </div>
@@ -420,7 +420,7 @@ export function PlanHeader({
                       <Link
                         href={upgradePlanHref}
                         onClick={() => setSubscriptionOpen(false)}
-                        className="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide font-mono transition-colors"
+                        className="block w-full py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-[12px] font-semibold text-center rounded-xl transition-colors"
                       >
                         {isBaseTier ? 'Mejorar Plan' : 'Ver Planes'}
                       </Link>
@@ -451,14 +451,14 @@ export function PlanHeader({
                   <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
-                      <span className="absolute top-0 right-0 w-4 h-4 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
+                      <span className="absolute top-0 right-0 w-4 h-4 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
                         {pendingInvites.length}
                       </span>
                     )}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[380px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-lg rounded-2xl overflow-hidden"
+                  className="w-[calc(100vw-2rem)] sm:w-[380px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-lg rounded-xl overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
@@ -483,7 +483,7 @@ export function PlanHeader({
                       /* Success state */
                       <div className="text-center py-4">
                         <div className="w-12 h-12 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Check className="w-6 h-6 text-green-800" />
+                          <Check className="w-6 h-6 text-[#2C7A53]" />
                         </div>
                         <p className="text-[14px] font-medium text-plan-primary">Invitación enviada</p>
                         <p className="text-[12px] text-plan-secondary mt-1">
@@ -519,12 +519,12 @@ export function PlanHeader({
                               aria-label="Correo electrónico para invitación"
                               className={cn(
                                 "w-full h-10 pl-9 pr-4 bg-muted border rounded-xl text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
-                                inviteEmailError ? 'border-red-400 focus:ring-red-400' : 'border-plan-border focus:ring-plan-primary'
+                                inviteEmailError ? 'border-[#C4503B]/30 focus:ring-[#C4503B]' : 'border-plan-border focus:ring-plan-primary'
                               )}
                             />
                           </div>
                           {inviteEmailError && (
-                            <p className="text-xs text-red-500 mt-1">{inviteEmailError}</p>
+                            <p className="text-xs text-[#C4503B] mt-1">{inviteEmailError}</p>
                           )}
                         </div>
 
@@ -541,16 +541,16 @@ export function PlanHeader({
                                 className={cn(
                                   'w-full flex items-start gap-3 p-3 text-left border rounded-xl transition-all',
                                   inviteRole === role.id
-                                    ? 'border-indigo-500 dark:border-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20'
+                                    ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                                     : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
                                 )}
                               >
                                 <div className={cn(
                                   'w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 transition-colors',
-                                  inviteRole === role.id ? 'border-indigo-500 dark:border-indigo-400' : 'border-neutral-300 dark:border-neutral-600'
+                                  inviteRole === role.id ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40' : 'border-neutral-300 dark:border-neutral-600'
                                 )}>
                                   {inviteRole === role.id && (
-                                    <div className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                                    <div className="w-2 h-2 rounded-full bg-[#1A40FF] dark:bg-[#5570FF]" />
                                   )}
                                 </div>
                                 <div className="flex-1">
@@ -597,9 +597,9 @@ export function PlanHeader({
                           }}
                           disabled={!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading}
                           className={cn(
-                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-xl uppercase tracking-wide transition-colors font-mono flex items-center justify-center gap-2',
+                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-xl transition-colors flex items-center justify-center gap-2',
                             inviteEmail && isValidEmail(inviteEmail) && !inviteLoading
-                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              ? 'bg-[#1A40FF] hover:opacity-90 text-white'
                               : 'bg-muted text-plan-muted cursor-not-allowed'
                           )}
                         >
@@ -635,7 +635,7 @@ export function PlanHeader({
                             </div>
                           ))}
                           {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-indigo-600 border-2 border-white dark:border-[#1a1a1c] flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
+                            <div className="w-8 h-8 rounded-full bg-[#1A40FF] border-2 border-white dark:border-[#1a1a1c] flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
                               +{teamMembers.length - 5}
                             </div>
                           )}
@@ -661,12 +661,12 @@ export function PlanHeader({
               <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full ring-2 ring-white" />
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#1A40FF] rounded-full ring-2 ring-white" />
                 )}
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[calc(100vw-2rem)] sm:w-[420px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl overflow-hidden"
+              className="w-[calc(100vw-2rem)] sm:w-[420px] p-0 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-xl overflow-hidden"
               align="end"
               sideOffset={8}
             >
@@ -699,12 +699,12 @@ export function PlanHeader({
                     {tab === 'all' && (locale === 'es' ? 'Todas' : 'All')}
                     {tab === 'unread' && (locale === 'es' ? 'Sin leer' : 'Unread')}
                     {tab === 'all' && notifications.length > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
                         {notifications.length}
                       </span>
                     )}
                     {tab === 'unread' && unreadCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
                         {unreadCount}
                       </span>
                     )}
@@ -786,7 +786,7 @@ export function PlanHeader({
                             e.stopPropagation();
                             activeNotifs.deleteNotification(notification.id);
                           }}
-                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
+                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-all"
                           title="Eliminar"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -807,7 +807,7 @@ export function PlanHeader({
                     setNotificationsOpen(false);
                     router.push(isLandlord ? '/panel/notificaciones' : '/inquilino/notificaciones');
                   }}
-                  className="w-full text-center text-[13px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                  className="w-full text-center text-[13px] font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
                 >
                   {t('header.viewAll')}
                 </button>
@@ -841,14 +841,14 @@ export function PlanHeader({
               </button>
             </DropdownListTrigger>
             <DropdownListContent
-              className="w-56 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl p-1.5"
+              className="w-56 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-xl p-1.5"
               align="end"
               sideOffset={8}
             >
               <DropdownListLabel className="px-3 py-2">
                 <p className="text-[14px] font-medium text-neutral-900 dark:text-white">{user?.name || 'Usuario'}</p>
                 <p className="text-[12px] text-neutral-500 dark:text-neutral-400">{user?.email}</p>
-                <span className="inline-block mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                <span className="inline-block mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-[#6B6B6B]/30 dark:text-neutral-600 dark:text-neutral-300">
                   {user?.role === 'agency' ? 'Inmobiliaria' : user?.role === 'landlord' ? 'Propietario' : 'Inquilino'}
                 </span>
               </DropdownListLabel>
@@ -933,7 +933,7 @@ export function PlanHeader({
               <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
               <DropdownListItem
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2 text-[13px] text-red-600 dark:!text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl cursor-pointer"
+                className="flex items-center gap-3 px-3 py-2 text-[13px] text-[#C4503B] dark:!text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 rounded-xl cursor-pointer"
               >
                 <SignOut className="w-4 h-4 stroke-[1.5px]" />
                 {t('nav.logout')}

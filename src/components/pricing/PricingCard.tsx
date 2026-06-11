@@ -60,7 +60,7 @@ export function PricingCard({
         'rounded-sm',
         'transition-all duration-300 ease-out',
         plan.highlighted
-          ? 'bg-card text-card-foreground border border-primary rounded-sm shadow-md ring-1 ring-primary'
+          ? 'bg-card text-card-foreground border border-primary rounded-sm ring-1 ring-primary'
           : 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
         'relative',
         className
@@ -102,7 +102,7 @@ export function PricingCard({
         {billingCycle === 'yearly' && yearlySavings > 0 && (
           <Badge
             variant="secondary"
-            className="mt-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
+            className="mt-2 bg-[#E8F3EC] text-[#2C7A53] hover:bg-[#E8F3EC]"
           >
             Ahorras {yearlySavings}%
           </Badge>
@@ -114,7 +114,7 @@ export function PricingCard({
         {plan.features.map((feature) => (
           <li key={feature.id} className="flex items-start gap-3">
             {feature.included ? (
-              <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+              <Check className="w-5 h-5 text-[#2C7A53] shrink-0 mt-0.5" />
             ) : (
               <X className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
             )}
@@ -129,7 +129,7 @@ export function PricingCard({
                 <span className="text-muted-foreground"> ({feature.limit})</span>
               )}
               {feature.included && feature.limit === 'unlimited' && (
-                <span className="text-emerald-600 text-xs ml-1">(ilimitado)</span>
+                <span className="text-[#2C7A53] text-xs ml-1">(ilimitado)</span>
               )}
             </span>
           </li>

@@ -30,7 +30,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     id: 'simi',
     name: 'SIMI CRM',
     description: 'Líder del mercado desde 1992',
-    color: 'bg-blue-500',
+    color: 'bg-[#1A40FF]',
     icon: Buildings,
     popular: true,
   },
@@ -38,7 +38,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     id: 'daytona',
     name: 'Daytona Cyber',
     description: 'Segunda plataforma más usada',
-    color: 'bg-violet-500',
+    color: 'bg-neutral-100 dark:bg-neutral-800',
     icon: Desktop,
     popular: true,
   },
@@ -46,7 +46,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     id: 'domus',
     name: 'DOMUS',
     description: 'Sistema tradicional',
-    color: 'bg-emerald-500',
+    color: 'bg-[#2C7A53]',
     icon: HouseLine,
     popular: false,
   },
@@ -54,7 +54,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     id: 'wasi',
     name: 'WASI',
     description: 'Plataforma cloud moderna',
-    color: 'bg-amber-500',
+    color: 'bg-[#B7791F]',
     icon: CloudArrowUp,
     popular: false,
   },
@@ -62,7 +62,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     id: 'inmoflex',
     name: 'Inmoflex',
     description: 'En crecimiento',
-    color: 'bg-rose-500',
+    color: 'bg-[#C4503B]',
     icon: ChartLineUp,
     popular: false,
   },
@@ -111,7 +111,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
               className={cn(
                 'animate-stagger-in rounded-xl border transition-all cursor-pointer',
                 isExpanded
-                  ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10'
+                  ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10'
                   : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
               )}
               style={{ animationDelay: `${index * 80}ms` }}
@@ -133,7 +133,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                           {software.name}
                         </span>
                         {software.popular && (
-                          <span className="inline-block text-xs font-mono uppercase tracking-wide px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                          <span className="inline-block text-xs font-mono uppercase tracking-wide px-2 py-0.5 rounded-sm bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]">
                             {t('inmobiliaria.import.software.popular')}
                           </span>
                         )}
@@ -187,11 +187,11 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
       {/* Request help card */}
       <a
         href="#"
-        className="flex items-start gap-4 p-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors group"
+        className="flex items-start gap-4 p-5 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20 transition-colors group"
         onClick={(e) => e.preventDefault()}
       >
-        <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-          <Question className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+        <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center shrink-0">
+          <Question className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
         </div>
         <div className="flex-1">
           <p className="font-semibold text-neutral-900 dark:text-white text-sm">
@@ -201,7 +201,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
             {t('inmobiliaria.import.software.otherSoftwareDesc')}
           </p>
         </div>
-        <span className="text-xs font-mono uppercase tracking-wide text-amber-600 dark:text-amber-400 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors self-center">
+        <span className="text-xs font-mono uppercase tracking-wide text-[#B7791F] dark:text-[#D2992F] group-hover:text-[#B7791F] dark:group-hover:text-[#B7791F] transition-colors self-center">
           {t('inmobiliaria.import.software.requestHelp')}
         </span>
       </a>
@@ -211,7 +211,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
         <button
           type="button"
           onClick={handleHaveFile}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
         >
           <FileArrowUp className="w-5 h-5" />
           {t('inmobiliaria.import.software.haveFile')}

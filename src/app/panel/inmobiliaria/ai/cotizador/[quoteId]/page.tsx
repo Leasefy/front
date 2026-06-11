@@ -196,9 +196,9 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         {error && !isConnected && (
           <div
             role="alert"
-            className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 flex items-center justify-between gap-3"
+            className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-4 flex items-center justify-between gap-3"
           >
-            <span className="text-body-sm text-amber-700 dark:text-amber-400">
+            <span className="text-body-sm text-[#B7791F] dark:text-[#D2992F]">
               {t('inmobiliaria.ai.cotizador.detail.connectionInterrupted')}
             </span>
             <Button variant="outline" size="sm" onClick={reconnect}>

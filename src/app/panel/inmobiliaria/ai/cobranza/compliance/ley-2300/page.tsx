@@ -106,7 +106,7 @@ function Ley2300Content() {
       <div>
         <Link
           href="/panel/inmobiliaria/ai/cobranza/compliance"
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition font-medium"
         >
           <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
@@ -117,13 +117,13 @@ function Ley2300Content() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
           Error: {error}
         </div>
       )}
 
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/30 border-b border-border">
               <tr>
@@ -156,8 +156,8 @@ function Ley2300Content() {
                       className={[
                         'inline-flex items-center px-2 py-0.5 rounded text-xs font-mono uppercase',
                         row.direction === 'inbound'
-                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
-                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
+                          ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/30 dark:text-[#1A40FF]'
+                          : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]',
                       ].join(' ')}
                     >
                       {row.direction}
@@ -173,7 +173,7 @@ function Ley2300Content() {
                 type="button"
                 onClick={() => void loadMore()}
                 disabled={isLoadingMore}
-                className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
+                className="text-xs px-4 py-2 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
               >
                 {isLoadingMore
                   ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'

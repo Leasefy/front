@@ -60,8 +60,8 @@ export function StepFirstProperty() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pb-2"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 mb-4">
-          <House className="w-8 h-8 text-emerald-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-[#E8F3EC] mb-4">
+          <House className="w-8 h-8 text-[#2C7A53]" />
         </div>
         <h3 className="text-2xl font-bold text-neutral-900">Tu primera propiedad</h3>
         <p className="text-neutral-500 mt-2 max-w-md mx-auto">
@@ -93,15 +93,15 @@ export function StepFirstProperty() {
                 className={cn(
                   'relative group p-5 rounded-xl border transition-all duration-200 text-left',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-500/10'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] shadow-[#1A40FF]/10'
+                    : 'border-neutral-200 bg-white hover:border-neutral-300 hover:'
                 )}
               >
                 {/* Selection indicator */}
                 <div
                   className={cn(
                     'absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
-                    isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-neutral-300'
+                    isSelected ? 'border-[#1A40FF]/30 bg-[#1A40FF]' : 'border-neutral-300'
                   )}
                 >
                   {isSelected && (
@@ -118,7 +118,7 @@ export function StepFirstProperty() {
                 <p
                   className={cn(
                     'font-semibold text-sm',
-                    isSelected ? 'text-indigo-700' : 'text-neutral-700'
+                    isSelected ? 'text-[#1A40FF]' : 'text-neutral-700'
                   )}
                 >
                   {type.label}
@@ -149,8 +149,8 @@ export function StepFirstProperty() {
             className={cn(
               'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white appearance-none',
               'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-              draft.propertyCity ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
+              draft.propertyCity ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
             )}
           >
             <option value="">Selecciona una ciudad</option>
@@ -187,8 +187,8 @@ export function StepFirstProperty() {
             'w-full px-4 py-4 text-base rounded-xl border bg-white',
             'transition-all duration-200',
             'placeholder:text-neutral-400',
-            'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-            draft.propertyAddress ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
+            'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
+            draft.propertyAddress ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
           )}
         />
       </motion.div>
@@ -216,8 +216,8 @@ export function StepFirstProperty() {
               'w-full pl-10 pr-16 py-4 text-base rounded-xl border bg-white',
               'transition-all duration-200',
               'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-              draft.rentPrice ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
+              draft.rentPrice ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
             )}
           />
           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
@@ -234,9 +234,9 @@ export function StepFirstProperty() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-emerald-50 border border-emerald-200"
+          className="p-4 rounded-xl bg-[#E8F3EC] border border-[#2C7A53]/30"
         >
-          <p className="text-sm text-emerald-700">
+          <p className="text-sm text-[#2C7A53]">
             <span className="font-semibold">Vista previa:</span>{' '}
             {PROPERTY_TYPES.find((t) => t.value === draft.propertyType)?.label} en {draft.propertyCity}
             {' por '}

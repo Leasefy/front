@@ -114,7 +114,7 @@ export function PipelineColumn({
       className={cn(
         'flex flex-col h-full rounded-xl border bg-neutral-50 dark:bg-neutral-900/50 transition-all duration-200',
         isDropTarget
-          ? 'border-indigo-400 dark:border-indigo-500 border-dashed ring-2 ring-indigo-500/20'
+          ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 border-dashed ring-2 ring-[#1A40FF]/20'
           : 'border-neutral-200 dark:border-neutral-800'
       )}
       style={{ width: '280px', minWidth: '280px' }}
@@ -156,7 +156,7 @@ export function PipelineColumn({
         {collapsible && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="p-1 rounded-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             aria-label={isCollapsed ? t('inmobiliaria.pipeline.expandColumn') : t('inmobiliaria.pipeline.collapseColumn')}
           >
             {isCollapsed ? (
@@ -192,9 +192,9 @@ export function PipelineColumn({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className={cn(
-                    'flex flex-col items-center justify-center py-8 px-4 rounded-lg border-2 border-dashed',
+                    'flex flex-col items-center justify-center py-8 px-4 rounded-md border-2 border-dashed',
                     isDropTarget
-                      ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                       : 'border-neutral-200 dark:border-neutral-700 bg-neutral-100/50 dark:bg-neutral-800/30'
                   )}
                 >
@@ -230,11 +230,11 @@ export function PipelineColumn({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className={cn(
-                    'flex items-center justify-center py-4 rounded-lg border-2 border-dashed',
-                    'border-indigo-300 dark:border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20'
+                    'flex items-center justify-center py-4 rounded-md border-2 border-dashed',
+                    'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                   )}
                 >
-                  <p className="text-xs text-indigo-500 dark:text-indigo-400">
+                  <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
                     {t('inmobiliaria.pipeline.dropHere')}
                   </p>
                 </motion.div>
@@ -247,7 +247,7 @@ export function PipelineColumn({
                 <button
                   onClick={() => setIsSidebarOpen(true)}
                   className={cn(
-                    'w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-all',
+                    'w-full flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-all',
                     'border border-neutral-200 dark:border-neutral-700',
                     'text-neutral-600 dark:text-neutral-400',
                     'hover:bg-neutral-100 dark:hover:bg-neutral-800',
@@ -310,7 +310,7 @@ export function PipelineColumn({
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="fixed right-0 top-0 bottom-0 w-full sm:w-[420px] bg-white dark:bg-[#1a1a1c] shadow-2xl z-[201] flex flex-col"
+                className="fixed right-0 top-0 bottom-0 w-full sm:w-[420px] bg-white dark:bg-[#1a1a1c] z-[201] flex flex-col"
                 style={{ height: '100dvh' }}
               >
                 {/* Sidebar Header */}
@@ -334,7 +334,7 @@ export function PipelineColumn({
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
-                    className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                    className="p-2 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                     aria-label={t('inmobiliaria.pipeline.close')}
                   >
                     <X className="w-5 h-5" />

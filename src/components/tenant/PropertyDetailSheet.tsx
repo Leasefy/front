@@ -134,7 +134,7 @@ export function PropertyDetailSheet({
               {/* View photos button */}
               <button
                 onClick={() => handleOpenGallery(0)}
-                className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-lg text-sm font-medium text-neutral-900 dark:text-white hover:bg-white dark:hover:bg-neutral-800 transition-colors"
+                className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm rounded-md text-sm font-medium text-neutral-900 dark:text-white hover:bg-white dark:hover:bg-neutral-800 transition-colors"
               >
                 <Camera className="w-4 h-4" />
                 Ver {property.images.length} fotos
@@ -144,7 +144,7 @@ export function PropertyDetailSheet({
               {matchData && (
                 <div
                   className={cn(
-                    'absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
+                    'absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md',
                     getMatchScoreBgColor(matchData.matchScore)
                   )}
                 >
@@ -179,10 +179,10 @@ export function PropertyDetailSheet({
                         className={cn(
                           'text-[10px] font-medium px-2 py-0.5 rounded-full',
                           matchData.acceptanceProbability === 'alta'
-                            ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400'
+                            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
                             : matchData.acceptanceProbability === 'media'
-                              ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400'
-                              : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
+                              ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
+                              : 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
                         )}
                       >
                         {getAcceptanceProbabilityLabel(matchData.acceptanceProbability)}
@@ -279,7 +279,7 @@ export function PropertyDetailSheet({
                       <button
                         key={index}
                         onClick={() => handleOpenGallery(index)}
-                        className="relative aspect-square rounded-lg overflow-hidden group"
+                        className="relative aspect-square rounded-md overflow-hidden group"
                       >
                         <Image
                           src={image}
@@ -305,8 +305,8 @@ export function PropertyDetailSheet({
               <div className="bg-neutral-50 dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 rounded-xl p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
-                      <MapPin className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="flex items-center justify-center w-10 h-10 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-xl">
+                      <MapPin className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
@@ -326,7 +326,7 @@ export function PropertyDetailSheet({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
                   >
                     Ver en Maps
                     <ArrowSquareOut className="w-3 h-3" />
@@ -358,7 +358,7 @@ export function PropertyDetailSheet({
                 className={cn(
                   'flex items-center justify-center w-12 h-12 rounded-xl border transition-colors',
                   wishlisted
-                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                    ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 border-[#C4503B]/30 dark:border-[#C4503B]/40'
                     : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700'
                 )}
                 aria-label={wishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
@@ -367,7 +367,7 @@ export function PropertyDetailSheet({
                   className={cn(
                     'w-5 h-5 transition-colors',
                     wishlisted
-                      ? 'fill-red-500 text-red-500'
+                      ? 'fill-[#C4503B] text-[#C4503B]'
                       : 'text-neutral-500 dark:text-neutral-400'
                   )}
                 />
@@ -376,7 +376,7 @@ export function PropertyDetailSheet({
               {/* Apply Button */}
               <Link
                 href={`/aplicar/${property.id}`}
-                className="flex items-center justify-center gap-2 h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 h-12 px-6 bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors"
               >
                 Aplicar a propiedad
                 <CaretRight className="w-4 h-4" />

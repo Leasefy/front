@@ -22,14 +22,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
-import { CaretLeft, ClipboardText } from '@phosphor-icons/react'
+import { ClipboardText } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
@@ -164,13 +164,15 @@ function AuditContent() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/compliance"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition font-medium"
-          >
-            <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-            {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-          </Link>
+          <MigaDePan
+            backHref="/panel/inmobiliaria/ai/cobranza/compliance"
+            crumbs={[
+              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+              { label: t('inmobiliaria.ai.workspace.agente.cobranza'), href: '/panel/inmobiliaria/ai/cobranza' },
+              { label: t('inmobiliaria.ai.cobranza.compliance.pageTitle'), href: '/panel/inmobiliaria/ai/cobranza/compliance' },
+              { label: t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle') },
+            ]}
+          />
           <h1 className="text-h2 font-heading text-foreground mt-2">
             {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
           </h1>

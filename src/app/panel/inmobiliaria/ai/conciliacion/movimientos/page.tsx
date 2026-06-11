@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import {
@@ -307,7 +308,15 @@ function ConciliacionContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header — subir extracto (abajo) ES la acción principal; sin CTA extra */}
       <header className="space-y-2">
-        <SectionLabel>{t(k('label'))}</SectionLabel>
+        <MigaDePan
+          backHref="/panel/inmobiliaria/ai/conciliacion"
+          icon={Bank}
+          crumbs={[
+            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+            { label: t('inmobiliaria.ai.workspace.agente.conciliacion'), href: '/panel/inmobiliaria/ai/conciliacion' },
+            { label: t(k('movimientosTitle')) },
+          ]}
+        />
         <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
         <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
       </header>

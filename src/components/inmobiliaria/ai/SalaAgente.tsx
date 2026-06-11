@@ -22,6 +22,7 @@ import type { AgentOverviewResponse, KpiFormat } from '@/lib/api/agent-workspace
 import { useI18n } from '@/lib/i18n'
 import { estadoLabel, relativeTime } from './ColaHumana'
 import { actorLabel, actorMeta } from './TrazaCaso'
+import { MigaDePan } from './MigaDePan'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -268,10 +269,15 @@ export function SalaAgente({
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
-            <HeaderIcon className="w-3.5 h-3.5" weight="duotone" aria-hidden="true" />
-            {t(`${WORKSPACE_NS}.sala.eyebrow`, { titulo })}
-          </span>
+          {/* ← + miga de pan: volver al hub de agentes con un clic */}
+          <MigaDePan
+            backHref="/panel/inmobiliaria/ai"
+            icon={HeaderIcon}
+            crumbs={[
+              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+              { label: titulo },
+            ]}
+          />
           <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">{descripcion}</p>
         </div>

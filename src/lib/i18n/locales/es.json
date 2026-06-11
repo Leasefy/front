@@ -6003,7 +6003,8 @@
           "decision": "Decisión",
           "decididoPor": "Por {{nombre}}",
           "decisionRegistrada": "Decisión registrada",
-          "trazaTitle": "Historial del caso"
+          "trazaTitle": "Historial del caso",
+          "migaCaso": "Caso"
         },
         "equipo": {
           "error": "No se pudo cargar el equipo de agentes: {{error}}",

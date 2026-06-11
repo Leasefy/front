@@ -21,7 +21,6 @@
 import Link from 'next/link'
 import {
   ArrowRight,
-  CaretLeft,
   CheckCircle,
   Clock,
   MagnifyingGlass,
@@ -29,6 +28,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
+import { MigaDePan } from './MigaDePan'
 
 import type { WorkItemAction, WorkItemEstado } from '@/lib/api/work-item'
 import type { WorkItemDetailResponse } from '@/lib/api/agent-workspace'
@@ -111,15 +111,18 @@ export function WorkItemDetalle({
   // Finite icon maps crash when a key is missing — ALWAYS fall back here.
   const BreadcrumbIcon = icon ?? Robot
 
+  // ← + miga de pan: el botón vuelve a la cola; la miga también permite
+  // saltar al hub de agentes (patrón MigaDePan, pedido UX 2026-06-11).
   const backToCola = (
-    <Link
-      href={colaHref}
-      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition"
-    >
-      <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-      <BreadcrumbIcon className="w-3.5 h-3.5" aria-hidden="true" />
-      {colaLabel}
-    </Link>
+    <MigaDePan
+      backHref={colaHref}
+      icon={BreadcrumbIcon}
+      crumbs={[
+        { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+        { label: colaLabel, href: colaHref },
+        { label: t(`${NS}.migaCaso`) },
+      ]}
+    />
   )
 
   // ── Loading skeleton ──────────────────────────────────────────────────────

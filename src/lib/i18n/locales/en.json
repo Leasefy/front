@@ -6002,7 +6002,8 @@
           "decision": "Decision",
           "decididoPor": "By {{nombre}}",
           "decisionRegistrada": "Decision recorded",
-          "trazaTitle": "Case history"
+          "trazaTitle": "Case history",
+          "migaCaso": "Case"
         },
         "equipo": {
           "error": "Could not load the agent team: {{error}}",

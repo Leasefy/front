@@ -9,12 +9,12 @@
  * callout renders).
  */
 
-import Link from 'next/link'
-import { CaretLeft, ShieldCheck } from '@phosphor-icons/react'
+import { ShieldCheck } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function EstudioConfiguracion() {
@@ -25,14 +25,15 @@ function EstudioConfiguracion() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <Link
-          href="/panel/inmobiliaria/ai/estudio"
-          className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-        >
-          <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.workspace.pages.estudio.eyebrow')}
-        </Link>
+        <MigaDePan
+          backHref="/panel/inmobiliaria/ai/estudio"
+          icon={ShieldCheck}
+          crumbs={[
+            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+            { label: t('inmobiliaria.ai.workspace.agente.estudio'), href: '/panel/inmobiliaria/ai/estudio' },
+            { label: t('inmobiliaria.ai.workspace.pages.comun.configTitle') },
+          ]}
+        />
         <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}

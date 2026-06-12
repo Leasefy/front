@@ -14,8 +14,9 @@
  * namespace (extracted from the original inline literals — es output is
  * byte-identical).
  *
- * Styling vocabulary harvested from EscalationCard (mvp:docs/COLOR_SYSTEM.md):
- * rose = error/critical, amber = warning, emerald = ok; theme tokens for chrome.
+ * Styling vocabulary harvested from EscalationCard (mvp:docs/COLOR_SYSTEM.md),
+ * mapped to the brand contract tones: danger #C4503B = error/critical,
+ * warning #B7791F = attention, success #2C7A53 = ok; theme tokens for chrome.
  */
 
 import { useMemo, useState } from 'react'
@@ -83,24 +84,24 @@ export const flagLabel = (t: TranslateFn, flag: string): string =>
 
 export const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring: string }> = {
   critica: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900 animate-pulse',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    ring: 'ring-[#C4503B]/30 dark:ring-[#C4503B]/40 animate-pulse',
   },
   alta: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    ring: 'ring-[#C4503B]/30 dark:ring-[#C4503B]/40',
   },
   media: {
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    ring: 'ring-amber-200 dark:ring-amber-900',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    ring: 'ring-[#B7791F]/30 dark:ring-[#B7791F]/40',
   },
   baja: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    ring: 'ring-emerald-200 dark:ring-emerald-900',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    ring: 'ring-[#2C7A53]/30 dark:ring-[#2C7A53]/40',
   },
 }
 
@@ -110,11 +111,11 @@ const SEVERIDAD_RANK: Record<Severidad, number> = { critica: 3, alta: 2, media: 
 export const FLAG_META: Record<WorkItemFlag, { icon: typeof WarningCircle; cls: string }> = {
   necesita_humano: {
     icon: WarningCircle,
-    cls: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 ring-amber-200 dark:ring-amber-900',
+    cls: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] ring-[#B7791F]/30 dark:ring-[#B7791F]/40',
   },
   t323: {
     icon: ShieldWarning,
-    cls: 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 ring-rose-200 dark:ring-rose-900',
+    cls: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] ring-[#C4503B]/30 dark:ring-[#C4503B]/40',
   },
   en_espera: {
     icon: Hourglass,
@@ -136,7 +137,8 @@ export function relativeTime(iso: string, t: TranslateFn): string {
 
 export const ACTION_KIND_CLS: Record<WorkItemAction['kind'], string> = {
   primary: 'bg-primary text-primary-foreground hover:opacity-90',
-  danger: 'bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90',
+  // Destructive confirm keeps the danger fill + white text (brand exception).
+  danger: 'bg-[#C4503B] text-white hover:opacity-90',
   neutral: 'border border-border text-foreground hover:bg-muted',
 }
 
@@ -213,7 +215,7 @@ function WorkItemCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow p-3 space-y-2"
+      className="rounded-xl border border-border bg-card p-3 space-y-2"
       data-testid={`work-item-${item.id}`}
     >
       {/* Header: severidad + estado + flags + relative time */}
@@ -311,7 +313,7 @@ function WorkItemCard({
               type="button"
               disabled={reasonText.trim().length === 0 || busyActionId !== null}
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-[#C4503B] text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t(`${WORKSPACE_NS}.acciones.confirmar`)}
@@ -340,7 +342,7 @@ function WorkItemCard({
               disabled={busyActionId !== null}
               aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
-              className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
+              className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
             >
               {action.kind === 'primary' && <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />}
               {action.kind === 'danger' && <XCircle className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -390,7 +392,7 @@ export function ColaHumana({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         data-testid="cola-humana-error"
       >
         {t(`${WORKSPACE_NS}.cola.error`, { error })}
@@ -404,7 +406,9 @@ export function ColaHumana({
         className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
         data-testid="cola-humana-empty"
       >
-        <CheckCircle className="w-8 h-8 mx-auto text-emerald-500 mb-2" aria-hidden="true" />
+        <span className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-2">
+          <CheckCircle className="w-6 h-6 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
+        </span>
         <p className="text-sm font-medium text-foreground">
           {emptyTitle ?? t(`${WORKSPACE_NS}.cola.vacia`)}
         </p>
@@ -414,7 +418,7 @@ export function ColaHumana({
         {emptyAction && (
           <Link
             href={emptyAction.href}
-            className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+            className="inline-flex items-center gap-1 mt-3 text-xs font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
             data-testid="cola-humana-empty-action"
           >
             {emptyAction.label}

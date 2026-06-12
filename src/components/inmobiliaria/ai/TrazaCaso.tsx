@@ -23,15 +23,17 @@ import { relativeTime, type TranslateFn } from './ColaHumana'
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
 /** Shared actor chip styling — also reused by SalaAgente's feed. Label text
- *  resolves via actorLabel(t, actorType) (inmobiliaria.ai.workspace.actor.*). */
+ *  resolves via actorLabel(t, actorType) (inmobiliaria.ai.workspace.actor.*).
+ *  Brand contract: humanos/system = gris (informational), agent = tint primary
+ *  (la voz del agente es el momento de marca; purple es off-brand). */
 export const ACTOR_META: Record<ActorType, { cls: string; dot: string }> = {
   user: {
-    cls: 'bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 ring-sky-200 dark:ring-sky-900',
-    dot: 'bg-sky-500',
+    cls: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 ring-neutral-300 dark:ring-neutral-700',
+    dot: 'bg-neutral-500 dark:bg-neutral-400',
   },
   agent: {
-    cls: 'bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 ring-violet-200 dark:ring-violet-900',
-    dot: 'bg-violet-500',
+    cls: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] ring-[#1A40FF]/30 dark:ring-[#1A40FF]/40',
+    dot: 'bg-[#1A40FF] dark:bg-[#5570FF]',
   },
   system: {
     cls: 'bg-muted text-muted-foreground ring-border',
@@ -109,7 +111,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
   if (error) {
     return (
       <div
-        className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         data-testid="traza-caso-error"
       >
         {t('inmobiliaria.ai.workspace.traza.error', { error })}
@@ -181,7 +183,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
               {hasDetails && flatDetails && (
                 /* Flat object (all-primitive values) → readable label/value rows */
                 <details className="group">
-                  <summary className="cursor-pointer text-[11px] font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground select-none">
+                  <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground select-none">
                     {t('inmobiliaria.ai.workspace.traza.detalles')}
                   </summary>
                   <dl className="mt-1 max-h-40 overflow-y-auto rounded-md bg-muted/40 p-2 divide-y divide-border">
@@ -201,7 +203,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
               )}
               {hasDetails && !flatDetails && (
                 <details className="group">
-                  <summary className="cursor-pointer text-[11px] font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground select-none">
+                  <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground select-none">
                     {techSummary}
                   </summary>
                   {/* Plain <pre> JSON — never raw-HTML sinks (T-34-07-02). */}

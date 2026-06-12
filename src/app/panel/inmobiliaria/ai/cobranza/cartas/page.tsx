@@ -28,11 +28,11 @@ import {
 function statusBadgeClasses(status: string): string {
   switch (status) {
     case 'pending_human_review':
-      return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800'
+      return 'bg-[#F8F0E0] text-[#B7791F] ring-1 ring-[#B7791F]/30 dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:ring-[#B7791F]/40'
     case 'approved':
-      return 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-800'
+      return 'bg-[#E8F3EC] text-[#2C7A53] ring-1 ring-[#2C7A53]/30 dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:ring-[#2C7A53]/40'
     case 'sent':
-      return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-800'
+      return 'bg-[#EEF1FF] text-[#1A40FF] ring-1 ring-[#1A40FF]/30 dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:ring-[#1A40FF]/40'
     case 'void':
     default:
       return 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'
@@ -42,8 +42,8 @@ function statusBadgeClasses(status: string): string {
 // ── Filter chip helper ────────────────────────────────────────────────────────
 function chipClasses(active: boolean): string {
   return active
-    ? 'bg-violet-600 text-white border-violet-600'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-violet-400'
+    ? 'bg-[#EEF1FF] text-[#1A40FF] border-[#1A40FF]/30 dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:border-[#1A40FF]/40'
+    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
 }
 
 const KIND_OPTIONS: LegalArtifactKind[] = [
@@ -148,7 +148,7 @@ function CartasContent() {
         <button
           type="button"
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition shrink-0"
+          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition shrink-0"
           aria-label={isEs ? 'Actualizar' : 'Refresh'}
         >
           <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
@@ -169,7 +169,7 @@ function CartasContent() {
                 onClick={() => setKindFilter((prev) => (prev === k ? undefined : k))}
                 aria-pressed={kindFilter === k}
                 className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
                   chipClasses(kindFilter === k)
                 }
               >
@@ -190,7 +190,7 @@ function CartasContent() {
                 onClick={() => setStatusFilter((prev) => (prev === s ? undefined : s))}
                 aria-pressed={statusFilter === s}
                 className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
                   chipClasses(statusFilter === s)
                 }
               >
@@ -207,7 +207,7 @@ function CartasContent() {
               setKindFilter(undefined)
               setStatusFilter(undefined)
             }}
-            className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline self-center"
+            className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline self-center"
           >
             {isEs ? 'Limpiar filtros' : 'Clear filters'}
           </button>
@@ -218,7 +218,7 @@ function CartasContent() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2 mb-4"
+          className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2 mb-4"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -230,19 +230,19 @@ function CartasContent() {
         <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
           <thead className="bg-neutral-50 dark:bg-neutral-950/50">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.cartas.columns.kind')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.cartas.columns.status')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.cartas.columns.generatedAt')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.cartas.columns.sentAt')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.cartas.columns.sendMethod')}
               </th>
             </tr>
@@ -268,7 +268,7 @@ function CartasContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigateToCarta(a.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF]"
               >
                 <td className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
                   {isEs

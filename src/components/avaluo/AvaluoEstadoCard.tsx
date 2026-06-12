@@ -37,7 +37,7 @@ function EstadoSkeleton() {
     <div className="space-y-4 animate-pulse">
       <div className="h-6 w-32 rounded-full bg-muted" />
       <div className="h-4 w-48 rounded bg-muted" />
-      <div className="h-10 w-40 rounded-xl bg-muted" />
+      <div className="h-10 w-40 rounded-md bg-muted" />
     </div>
   )
 }
@@ -54,7 +54,7 @@ export function AvaluoEstadoCard({
   // While loading and no data yet — show skeleton
   if (isLoading && !statusData) {
     return (
-      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
+      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
         <EstadoSkeleton />
       </section>
     )
@@ -83,7 +83,7 @@ export function AvaluoEstadoCard({
             href={statusData.downloadUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-mono uppercase tracking-wide text-primary hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
           >
             <ArrowDown className="w-4 h-4" />
             Descargar certificado
@@ -94,7 +94,7 @@ export function AvaluoEstadoCard({
             href={`/avaluo/verificar/${statusData.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-mono uppercase tracking-wide text-primary hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
           >
             <ArrowSquareOut className="w-4 h-4" />
             Verificar certificado
@@ -129,7 +129,7 @@ export function AvaluoEstadoCard({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-6 space-y-5">
+    <section className="rounded-xl border border-border bg-card p-6 space-y-5">
       {/* Status badge */}
       <div className="flex items-center gap-3">
         <Badge variant={badge.variant as React.ComponentProps<typeof Badge>['variant']}>

@@ -128,7 +128,7 @@ export default function CallAudioPlayer({
       aria-describedby="audio-seek-help"
       onKeyDown={onContainerKey}
       tabIndex={0}
-      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
+      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]"
     >
       {/* Visually-hidden keyboard help for screen-reader users (XR-06) */}
       <span id="audio-seek-help" className="sr-only">
@@ -137,7 +137,7 @@ export default function CallAudioPlayer({
       <audio ref={audioRef} src={objectUrl} preload="metadata" />
 
       {audioError && (
-        <p className="mb-2 text-xs text-red-600 dark:text-red-400" role="status">
+        <p className="mb-2 text-xs text-[#C4503B] dark:text-[#E0664D]" role="status">
           {t('inmobiliaria.ai.cobranza.call.player.audioError')}
         </p>
       )}

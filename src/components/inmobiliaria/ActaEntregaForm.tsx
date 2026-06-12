@@ -288,7 +288,7 @@ export function ActaEntregaForm({
                       status === 'completed'
                         ? 'bg-[#2C7A53] text-white'
                         : status === 'current'
-                        ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono ring-4 ring-[#1A40FF]/20'
+                        ? 'bg-[#1A40FF] text-white'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
                     )}
                   >

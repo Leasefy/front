@@ -61,7 +61,7 @@ export function MonthlyCostTrendChart({ rows, isLoading = false }: MonthlyCostTr
     )
   }
 
-  // Historical rows — solid indigo-600 line
+  // Historical rows — solid electric-blue (#1A40FF) line
   const historicalRows = rows.filter(r => !r.isForecast)
   // Forecast rows — dotted neutral-400 line
   const forecastRows = rows.filter(r => r.isForecast === true)
@@ -111,7 +111,7 @@ export function MonthlyCostTrendChart({ rows, isLoading = false }: MonthlyCostTr
           }}
         />
 
-        {/* Historical line — solid indigo-600, rendered over all rows */}
+        {/* Historical line — solid electric-blue (#1A40FF), rendered over all rows */}
         <Line
           data={historicalRows}
           dataKey="total"

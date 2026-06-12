@@ -59,7 +59,7 @@ function MatchingSala() {
     >
       {/* Domain slot: cómo funciona — el viaje del matching en 4 pasos */}
       <section className="space-y-4" data-testid="matching-como-funciona">
-        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl space-y-4">
+        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4">
           <h2 className="text-sm font-semibold text-foreground">
             {t(`${PAGES_NS}.comoFunciona.title`)}
           </h2>

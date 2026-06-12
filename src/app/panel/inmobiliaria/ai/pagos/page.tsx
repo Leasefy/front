@@ -83,7 +83,7 @@ function PagosSala() {
       {/* Domain slot: cómo funciona + operaciones profundas */}
       {/* Cómo funciona — el viaje de una factura en 4 pasos */}
       <section
-        className="rounded-2xl border border-border bg-card p-5 max-w-3xl space-y-4"
+        className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4"
         data-testid="pagos-como-funciona"
       >
         <h2 className="text-sm font-semibold text-foreground">

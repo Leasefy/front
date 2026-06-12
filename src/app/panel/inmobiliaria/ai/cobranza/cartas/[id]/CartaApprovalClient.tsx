@@ -208,7 +208,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
         />
         {pdfError && (
-          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+          <div className="rounded-md border border-[#C4503B]/20 bg-[#F8EAE7] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B]/40 dark:bg-[#C4503B]/15 dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.error')}
           </div>
         )}

@@ -232,8 +232,8 @@ describe('WorkItemDetalle — states', () => {
     const decision = container.querySelector('[data-testid="caso-decision"]')
     expect(decision).not.toBeNull()
     expect(decision!.textContent).toContain('Con problema')
-    // rose/danger tone on the estado label
-    expect(decision!.querySelector('.text-rose-700')).not.toBeNull()
+    // danger tone (#C4503B) on the estado label
+    expect(decision!.querySelector('.text-\\[\\#C4503B\\]')).not.toBeNull()
     expect(container.querySelector('[data-testid="accion-sugerida"]')).toBeNull()
   })
 

@@ -2,7 +2,7 @@
 
 /**
  * FeatureAnnouncementCard — the shared Relume/Givingli-style announcement card:
- * brand hero image on top (with floating close), "Nuevo" badge, serif title,
+ * brand hero image on top (with floating close), "Nuevo" badge, Satoshi title,
  * body copy, and a footer with optional dismiss link + progress dots + CTA.
  *
  * Used by:
@@ -72,7 +72,7 @@ export function FeatureAnnouncementCard({
       aria-modal="false"
       aria-labelledby={titleId}
       aria-describedby={descId}
-      className="overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-2xl motion-reduce:transition-none"
+      className="overflow-hidden rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-2xl motion-reduce:transition-none"
       style={style}
       onClick={onCardClick}
     >
@@ -92,7 +92,7 @@ export function FeatureAnnouncementCard({
           type="button"
           onClick={onDismiss}
           aria-label={dismissLabel}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 dark:bg-neutral-900/80 backdrop-blur flex items-center justify-center text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white shadow-sm transition-colors"
+          className="absolute top-3 right-3 w-8 h-8 rounded-md bg-white/90 dark:bg-neutral-900/80 backdrop-blur flex items-center justify-center text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white transition-colors"
         >
           <X className="w-4 h-4" weight="bold" />
         </button>
@@ -101,7 +101,7 @@ export function FeatureAnnouncementCard({
       {/* Body */}
       <div className={centered ? 'px-6 pb-6 pt-1' : 'px-5 pb-5 pt-1'}>
         <div className="flex items-center gap-2 mb-2.5">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 text-[11px] font-semibold tracking-wide text-[#1A40FF] dark:text-indigo-300 uppercase">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/20 text-[11px] font-mono uppercase tracking-[0.08em] text-[#1A40FF] dark:text-[#8FA3FF]">
             {newBadge}
           </span>
           {showProgress && (
@@ -113,7 +113,7 @@ export function FeatureAnnouncementCard({
 
         <h2
           id={titleId}
-          className={`font-serif text-neutral-900 dark:text-white mb-2 leading-snug ${centered ? 'text-[24px]' : 'text-[20px]'}`}
+          className={`font-medium tracking-[-0.01em] text-neutral-900 dark:text-white mb-2 leading-snug ${centered ? 'text-[24px]' : 'text-[20px]'}`}
         >
           {title}
         </h2>
@@ -152,7 +152,7 @@ export function FeatureAnnouncementCard({
                     key={i}
                     className={`rounded-full transition-all duration-200 motion-reduce:transition-none ${
                       i === currentStep
-                        ? 'w-4 h-1.5 bg-[#1A40FF] dark:bg-indigo-400'
+                        ? 'w-4 h-1.5 bg-[#1A40FF] dark:bg-[#5570FF]'
                         : 'w-1.5 h-1.5 bg-neutral-300 dark:bg-neutral-600'
                     }`}
                   />
@@ -165,7 +165,7 @@ export function FeatureAnnouncementCard({
               // autoFocus on the primary CTA keeps keyboard nav obvious.
               autoFocus
               onClick={onNext}
-              className="px-5 py-2.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-[0.98] transition-all motion-reduce:transition-none"
+              className="px-5 py-2.5 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] active:scale-[0.98] transition-all motion-reduce:transition-none"
             >
               {primaryLabel}
             </button>

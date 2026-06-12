@@ -86,11 +86,11 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
         <aside className="hidden lg:flex lg:flex-col lg:w-[280px] xl:w-[320px] bg-card border-r border-border lg:sticky lg:top-0 lg:h-screen">
           {/* Brand / title */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-[0.08em] mb-1">
               Leasefy
             </p>
-            <h1 className="text-lg font-semibold text-foreground leading-tight">
-              Avalúo Comercial
+            <h1 className="text-lg font-medium text-foreground leading-tight tracking-[-0.01em]">
+              Avalúo comercial
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               Completá los pasos para enviar tu solicitud.
@@ -171,7 +171,7 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
         {/* Main content */}
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
-            <div className="bg-card rounded-xl border border-border shadow-sm">
+            <div className="bg-card rounded-xl border border-border">
               {/* Step header — desktop */}
               <div className="hidden lg:block px-6 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -206,9 +206,9 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
                   role="alert"
                   aria-live="assertive"
                 >
-                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-                    <WarningCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-800">{submitError}</p>
+                  <div className="flex items-start gap-3 p-4 bg-error-50 border border-error-100 rounded-xl">
+                    <WarningCircle className="h-5 w-5 text-error-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-error-700">{submitError}</p>
                   </div>
                 </div>
               )}

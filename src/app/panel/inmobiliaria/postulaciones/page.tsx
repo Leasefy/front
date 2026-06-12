@@ -55,14 +55,14 @@ export default function PostulacionesPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-24" role="status" aria-label="Cargando postulaciones">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 dark:border-neutral-600 border-t-transparent" />
         </div>
       ) : error ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
           <p className="text-sm text-destructive">{error}</p>
           <button
             onClick={() => void load()}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-muted"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-muted"
           >
             <ArrowClockwise className="h-4 w-4" />
             Reintentar
@@ -78,7 +78,7 @@ export default function PostulacionesPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border text-left font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                 <th className="px-4 py-3">Postulación</th>
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Puntaje</th>

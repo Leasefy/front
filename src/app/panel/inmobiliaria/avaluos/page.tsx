@@ -64,7 +64,7 @@ export default function AvaluosListPage() {
 
         <Link
           href="/panel/inmobiliaria/avaluos/nuevo"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 h-10 text-xs font-mono uppercase tracking-wide text-primary-foreground hover:bg-primary/90 transition-colors active:scale-[0.97]"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-[#1A40FF] px-4 h-10 text-sm font-medium text-white hover:bg-[#1636D8] transition-colors active:scale-[0.97]"
         >
           Solicitar avalúo
         </Link>
@@ -85,13 +85,13 @@ export default function AvaluosListPage() {
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/60 border-b border-neutral-200 dark:border-neutral-700">
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+            <span className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-[0.08em]">
               Dirección
             </span>
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+            <span className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-[0.08em]">
               Estado
             </span>
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide hidden sm:block">
+            <span className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-[0.08em] hidden sm:block">
               Fecha
             </span>
             <span className="sr-only">Ver</span>
@@ -128,7 +128,7 @@ export default function AvaluosListPage() {
                       {formattedDate}
                     </span>
 
-                    <span className="text-xs text-primary font-mono uppercase tracking-wide">
+                    <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                       Ver
                     </span>
                   </Link>

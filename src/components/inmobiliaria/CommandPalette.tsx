@@ -244,8 +244,8 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-primary" />
+          <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-foreground truncate">
@@ -364,8 +364,8 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/20 flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
+        <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+          <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
         </div>
         <div className="min-w-0">
           <p className="text-[14px] font-semibold text-foreground truncate">{name}</p>
@@ -435,7 +435,7 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
   const STATUS_COLORS: Record<string, string> = {
     available: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
     published: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-    rented: 'bg-accent text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/25',
+    rented: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#8FA3FF] border-[#1A40FF]/20 dark:border-[#1A40FF]/30',
     pending: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
     draft: 'bg-muted text-muted-foreground border-border',
   };
@@ -460,11 +460,11 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-accent border border-indigo-100 dark:border-indigo-500/20 rounded-md p-2.5">
-          <p className="text-[10px] text-primary font-medium">
+        <div className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md p-2.5">
+          <p className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-indigo-800 dark:text-indigo-200">
+          <p className="text-[14px] font-semibold text-foreground">
             ${monthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -723,8 +723,8 @@ function NovadadesState({
               key={entry.id}
               className="flex items-start gap-3 px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors"
             >
-              <div className="grid place-items-center w-7 h-7 rounded-full bg-accent flex-shrink-0 mt-0.5">
-                <Clock className="w-3.5 h-3.5 text-primary" />
+              <div className="grid place-items-center w-7 h-7 rounded-full bg-muted flex-shrink-0 mt-0.5">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-medium text-foreground leading-snug">

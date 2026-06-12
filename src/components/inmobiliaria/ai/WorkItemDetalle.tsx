@@ -114,7 +114,7 @@ export function WorkItemDetalle({
   const backToCola = (
     <Link
       href={colaHref}
-      className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition"
     >
       <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
       <BreadcrumbIcon className="w-3.5 h-3.5" aria-hidden="true" />
@@ -145,7 +145,7 @@ export function WorkItemDetalle({
       <div className="p-6 lg:p-8 space-y-4">
         {backToCola}
         <div
-          className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+          className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
           data-testid="caso-error"
         >
           {t(`${NS}.error`, { error })}
@@ -159,7 +159,7 @@ export function WorkItemDetalle({
   const emptyStateCta = notFoundAction ? (
     <Link
       href={notFoundAction.href}
-      className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+      className="inline-flex items-center gap-1 mt-3 text-xs font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
       data-testid="caso-not-found-action"
     >
       {notFoundAction.label}
@@ -167,7 +167,7 @@ export function WorkItemDetalle({
   ) : (
     <Link
       href={colaHref}
-      className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
+      className="inline-flex items-center gap-1 mt-3 text-xs font-medium px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
     >
       {t(`${NS}.volverACola`)}
     </Link>
@@ -271,7 +271,7 @@ export function WorkItemDetalle({
           {!isActionable ? (
             /* No longer actionable — actions hidden, show the status block */
             <div
-              className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-2"
+              className="rounded-xl border border-border bg-card p-4 space-y-2"
               data-testid="caso-decision"
             >
               <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
@@ -279,15 +279,15 @@ export function WorkItemDetalle({
               </p>
               <div className="flex items-center gap-2">
                 {item.estado === 'rechazado' || item.estado === 'fallo' ? (
-                  <XCircle className="w-5 h-5 text-rose-500" weight="duotone" aria-hidden="true" />
+                  <XCircle className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" weight="duotone" aria-hidden="true" />
                 ) : item.estado === 'ejecutando' ? (
                   <Clock className="w-5 h-5 text-muted-foreground" weight="duotone" aria-hidden="true" />
                 ) : (
-                  <CheckCircle className="w-5 h-5 text-emerald-500" weight="duotone" aria-hidden="true" />
+                  <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" weight="duotone" aria-hidden="true" />
                 )}
                 <p
                   className={`text-sm font-semibold ${
-                    item.estado === 'fallo' ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'
+                    item.estado === 'fallo' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-foreground'
                   }`}
                 >
                   {estadoLabel(t, item.estado, item.agente)}
@@ -316,7 +316,7 @@ export function WorkItemDetalle({
           {contexto.map((block, i) => (
             <section
               key={`${block.title}-${i}`}
-              className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-2"
+              className="rounded-xl border border-border bg-card p-4 space-y-2"
               data-testid={`caso-contexto-${i}`}
             >
               <h2 className="text-sm font-semibold text-foreground">{block.title}</h2>
@@ -340,7 +340,7 @@ export function WorkItemDetalle({
           {crossLink && (
             <Link
               href={crossLink.href}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card shadow-sm p-4 hover:bg-muted/50 transition group"
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 hover:bg-muted/50 transition group"
               data-testid="caso-cross-link"
             >
               <div className="min-w-0">

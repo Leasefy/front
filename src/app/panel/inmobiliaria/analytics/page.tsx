@@ -82,25 +82,26 @@ function HeroKPICard({
   accentColor,
   onClick,
 }: HeroKPIProps) {
+  // Tiles/borders = neutral (blue is actionable-only); progress bars keep brand tones (data).
   const colorConfig = {
     indigo: {
-      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-      icon: 'text-[#1A40FF] dark:text-[#5570FF]',
-      border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
       progress: 'bg-[#1A40FF]',
       progressBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
     },
     emerald: {
-      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-      icon: 'text-[#2C7A53] dark:text-[#3EAE70]',
-      border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
       progress: 'bg-[#2C7A53]',
       progressBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
     },
     amber: {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      icon: 'text-[#B7791F] dark:text-[#D2992F]',
-      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
       progress: 'bg-[#B7791F]',
       progressBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
     },
@@ -108,7 +109,7 @@ function HeroKPICard({
       bg: 'bg-neutral-100 dark:bg-neutral-800',
       icon: 'text-neutral-600 dark:text-neutral-300',
       border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-neutral-100 dark:bg-neutral-800',
+      progress: 'bg-[#1A40FF]',
       progressBg: 'bg-neutral-100 dark:bg-neutral-800',
     },
   };
@@ -143,7 +144,7 @@ function HeroKPICard({
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        'w-full p-5 rounded-xl border bg-card text-left transition-all hover:',
+        'w-full p-5 rounded-xl border bg-card text-left transition-all',
         colors.border
       )}
     >
@@ -237,11 +238,12 @@ function InsightCard({ type, title, description, action }: InsightProps) {
       icon: WarningCircle,
       iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
     },
+    // Informational (non-actionable) = neutral; blue stays reserved for actions.
     info: {
-      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-      border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      border: 'border-neutral-200 dark:border-neutral-700',
       icon: Lightning,
-      iconColor: 'text-[#1A40FF] dark:text-[#5570FF]',
+      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
   };
 
@@ -451,8 +453,8 @@ function AnalyticsContent() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             {t('inmobiliaria.analytics.title')}
           </h1>
@@ -466,7 +468,7 @@ function AnalyticsContent() {
           {/* Date Range */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
+              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
                 <CalendarBlank className="w-4 h-4 text-muted-foreground" />
                 <span className="hidden sm:inline">
                   {DATE_RANGES.find((r) => r.id === dateRange)?.label}
@@ -490,7 +492,7 @@ function AnalyticsContent() {
           {/* Export */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white hover:opacity-90 text-sm font-medium transition-colors">
+              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#1A40FF] text-white hover:bg-[#1636D8] text-sm font-medium transition-colors">
                 <Export className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('inmobiliaria.common.export')}</span>
               </button>

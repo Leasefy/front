@@ -75,7 +75,7 @@ export function WompiPayButton({ submissionId }: WompiPayButtonProps) {
       onClick={handlePay}
       className="w-full sm:w-auto"
     >
-      pagar certificado
+      Pagar certificado
     </Button>
   )
 }

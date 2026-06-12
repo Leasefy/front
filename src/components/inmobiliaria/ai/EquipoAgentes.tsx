@@ -142,14 +142,14 @@ function AgenteCard({
       <div className="flex items-center gap-2">
         <Link
           href={salaHref(agente)}
-          className="flex-1 text-center text-[11px] font-mono uppercase tracking-wide px-2 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+          className="flex-1 text-center text-[11px] font-medium px-2 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
           data-testid={`equipo-sala-${agente}`}
         >
           {t(`${NS}.sala`)}
         </Link>
         <Link
           href={colaHref(agente)}
-          className="flex-1 text-center text-[11px] font-mono uppercase tracking-wide px-2 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
+          className="flex-1 text-center text-[11px] font-medium px-2 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
           data-testid={`equipo-cola-${agente}`}
         >
           {t(`${NS}.cola`)}
@@ -179,7 +179,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
   if (error) {
     return (
       <div
-        className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         data-testid="equipo-agentes-error"
       >
         {t(`${NS}.error`, { error })}

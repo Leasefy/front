@@ -27,16 +27,18 @@ const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
-/** Pipeline segment colors per estado (ColaHumana has no per-estado color). */
+/** Pipeline segment colors per estado (ColaHumana has no per-estado color).
+ *  Brand-contract ramp: gris = idle, azules = activo, success/warning/danger
+ *  desaturados como señales reales. */
 const ESTADO_BAR_CLS: Record<WorkItemEstado, string> = {
-  detectado: 'bg-slate-400 dark:bg-slate-500',
-  sugerido: 'bg-sky-500',
-  en_revision: 'bg-amber-500',
-  aprobado: 'bg-emerald-500',
-  ejecutando: 'bg-indigo-500',
-  resuelto: 'bg-emerald-600',
-  rechazado: 'bg-rose-500',
-  fallo: 'bg-rose-700',
+  detectado: 'bg-neutral-400 dark:bg-neutral-500',
+  sugerido: 'bg-[#5570FF]',
+  en_revision: 'bg-[#B7791F]',
+  aprobado: 'bg-[#3EAE70]',
+  ejecutando: 'bg-[#1A40FF]',
+  resuelto: 'bg-[#2C7A53]',
+  rechazado: 'bg-[#C4503B]',
+  fallo: 'bg-[#A23A28]',
 }
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
@@ -118,7 +120,7 @@ function OverviewBody({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         data-testid="sala-agente-error"
       >
         {t(`${WORKSPACE_NS}.sala.error`, { error })}
@@ -276,7 +278,7 @@ export function SalaAgente({
 
         <Link
           href={colaHref}
-          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wide px-3 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
           data-testid="sala-cola-cta"
         >
           {colaLabel ?? t(`${WORKSPACE_NS}.sala.irACola`)}

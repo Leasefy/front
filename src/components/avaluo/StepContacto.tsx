@@ -37,7 +37,7 @@ export function StepContacto() {
       {/* Email */}
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-foreground">
-          Email de contacto <span className="text-red-500">*</span>
+          Email de contacto <span className="text-error-500">*</span>
         </label>
         <Input
           type="email"
@@ -93,7 +93,7 @@ export function StepContacto() {
             Necesario para continuar.
           </p>
           {!formData.purposeAvaluo && (
-            <p className="text-xs text-amber-600 pl-7">
+            <p className="text-xs text-warning-500 pl-7">
               Debés aceptar este consentimiento para enviar la solicitud.
             </p>
           )}

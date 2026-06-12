@@ -32,25 +32,25 @@ import {
 // ── Summary card config ─────────────────────────────────────────────────────
 
 const RESUMEN_ITEMS = [
-  { key: 'conciliados',       dot: 'bg-emerald-500', field: 'conciliados'       },
-  { key: 'parciales',         dot: 'bg-amber-500',   field: 'parciales'         },
-  { key: 'duplicados',        dot: 'bg-violet-500',  field: 'duplicados'        },
-  { key: 'noIdentificados',   dot: 'bg-slate-400',   field: 'noIdentificados'   },
-  { key: 'diferencias',       dot: 'bg-rose-500',    field: 'diferencias'       },
-  { key: 'fueraFecha',        dot: 'bg-blue-500',    field: 'fueraDeFecha'      },
+  { key: 'conciliados',       dot: 'bg-[#2C7A53]',   field: 'conciliados'       },
+  { key: 'parciales',         dot: 'bg-[#B7791F]',   field: 'parciales'         },
+  { key: 'duplicados',        dot: 'bg-neutral-400', field: 'duplicados'        },
+  { key: 'noIdentificados',   dot: 'bg-neutral-400', field: 'noIdentificados'   },
+  { key: 'diferencias',       dot: 'bg-[#C4503B]',   field: 'diferencias'       },
+  { key: 'fueraFecha',        dot: 'bg-neutral-400', field: 'fueraDeFecha'      },
 ] as const;
 
 // ── Caso badge ──────────────────────────────────────────────────────────────
 
 const CASO_STYLES: Record<string, string> = {
-  conciliado:       'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
-  parcial:          'bg-amber-100  text-amber-800  dark:bg-amber-950/50  dark:text-amber-300',
-  duplicado:        'bg-violet-100 text-violet-800 dark:bg-violet-950/50 dark:text-violet-300',
-  no_identificado:  'bg-slate-100  text-slate-700  dark:bg-slate-800      dark:text-slate-300',
-  diferencia_valor: 'bg-rose-100   text-rose-800   dark:bg-rose-950/50   dark:text-rose-300',
-  fuera_de_fecha:   'bg-blue-100   text-blue-800   dark:bg-blue-950/50   dark:text-blue-300',
-  confirmado:       'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
-  rechazado:        'bg-slate-100  text-slate-500  dark:bg-slate-800      dark:text-slate-400',
+  conciliado:       'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+  parcial:          'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+  duplicado:        'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
+  no_identificado:  'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
+  diferencia_valor: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+  fuera_de_fecha:   'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
+  confirmado:       'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+  rechazado:        'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
 };
 
 /** Derive display caso from queue item fields */
@@ -104,11 +104,11 @@ function RejectDialog({ matchId: _matchId, onConfirm, onCancel, t, busy }: Rejec
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-xl p-6 space-y-4">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl p-6 space-y-4">
         <h3 className="text-h4 text-foreground">{t(k('rejectDialogTitle'))}</h3>
         <p className="text-body-sm text-muted-foreground">{t(k('rejectDialogDesc'))}</p>
         <textarea
-          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/40"
           placeholder={t(k('rejectReasonPlaceholder'))}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
@@ -118,14 +118,14 @@ function RejectDialog({ matchId: _matchId, onConfirm, onCancel, t, busy }: Rejec
           <button
             onClick={onCancel}
             disabled={busy}
-            className="h-9 px-4 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            className="h-9 px-4 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             {t(k('cancel'))}
           </button>
           <button
             onClick={() => { if (reason.trim()) onConfirm(reason.trim()); }}
             disabled={!reason.trim() || busy}
-            className="h-9 px-4 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="h-9 px-4 rounded-md bg-[#C4503B] text-white text-sm font-medium hover:bg-[#C4503B]/90 transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {busy && <Spinner className="w-3.5 h-3.5 animate-spin" />}
             {t(k('rejectConfirm'))}
@@ -166,7 +166,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
             disabled={busy}
             title={t(k('actionConfirm'))}
             aria-label={t(k('actionConfirm'))}
-            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70 text-xs font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#E8F3EC] text-[#2C7A53] hover:bg-[#2C7A53]/15 dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:hover:bg-[#2C7A53]/25 text-xs font-medium transition-colors disabled:opacity-50"
           >
             {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionConfirm'))}
@@ -176,7 +176,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
             disabled={busy}
             title={t(k('actionReject'))}
             aria-label={t(k('actionReject'))}
-            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70 text-xs font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#F8EAE7] text-[#C4503B] hover:bg-[#C4503B]/15 dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:hover:bg-[#C4503B]/25 text-xs font-medium transition-colors disabled:opacity-50"
           >
             {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionReject'))}
@@ -189,7 +189,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
           disabled={busy}
           title={t(k('actionReverse'))}
           aria-label={t(k('actionReverse'))}
-          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-xs font-medium transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 text-xs font-medium transition-colors disabled:opacity-50"
         >
           {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <ArrowCounterClockwise className="w-3.5 h-3.5" />}
           {t(k('actionReverse'))}
@@ -313,11 +313,11 @@ function ConciliacionContent() {
       </header>
 
       {/* Phase-honest banner */}
-      <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" weight="fill" />
+      <div className="rounded-xl bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-800 p-3 flex items-start gap-2.5">
+        <Info className="w-5 h-5 text-neutral-500 dark:text-neutral-400 flex-shrink-0 mt-0.5" weight="duotone" />
         <div>
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">{t(k('m2BannerTitle'))}</p>
-          <p className="text-xs text-blue-600 dark:text-blue-300/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
+          <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{t(k('m2BannerTitle'))}</p>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
 
@@ -327,7 +327,7 @@ function ConciliacionContent() {
         reconciliation run; matching is async (Inngest), so new suggestions surface
         on a later refresh of the queue below.
       */}
-      <div id="upload" className="scroll-mt-24 rounded-2xl border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
+      <div id="upload" className="scroll-mt-24 rounded-xl border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
         {/* Bank selector */}
         <div className="flex items-center gap-2">
           <span className="text-caption text-muted-foreground">{t(k('uploadBankLabel'))}</span>
@@ -362,13 +362,13 @@ function ConciliacionContent() {
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           aria-label={t(k('uploadTitle'))}
-          className="w-full rounded-xl border-2 border-dashed border-border bg-background/40 p-8 flex flex-col items-center justify-center gap-2 text-center transition-colors hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 disabled:cursor-wait disabled:opacity-60"
+          className="w-full rounded-xl border-2 border-dashed border-border bg-background/40 p-8 flex flex-col items-center justify-center gap-2 text-center transition-colors hover:border-[#1A40FF]/30 hover:bg-[#EEF1FF]/50 dark:hover:bg-[#1A40FF]/10 disabled:cursor-wait disabled:opacity-60"
         >
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center mb-1">
             {uploading ? (
-              <Spinner className="w-6 h-6 text-indigo-600 dark:text-indigo-400 animate-spin" />
+              <Spinner className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF] animate-spin" />
             ) : (
-              <UploadSimple className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              <UploadSimple className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
             )}
           </div>
           <p className="text-body-sm font-medium text-foreground">
@@ -405,7 +405,7 @@ function ConciliacionContent() {
                   <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                   <span className="text-caption text-muted-foreground truncate">{t(k(`caso_${item.key}`))}</span>
                 </div>
-                <p className="mt-1.5 text-2xl font-mono tabular-nums text-foreground">
+                <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">
                   {isLoading ? <span className="inline-block w-8 h-6 rounded bg-muted animate-pulse" /> : value}
                 </p>
               </div>
@@ -416,15 +416,15 @@ function ConciliacionContent() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-start gap-2.5">
-          <Warning className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" weight="fill" />
+        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-start gap-2.5">
+          <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5" weight="fill" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-rose-700 dark:text-rose-300">{t(k('errorTitle'))}</p>
-            <p className="text-xs text-rose-600 dark:text-rose-300/90 mt-0.5">{error}</p>
+            <p className="text-xs font-semibold text-[#C4503B] dark:text-[#E0664D]">{t(k('errorTitle'))}</p>
+            <p className="text-xs text-[#C4503B]/90 dark:text-[#E0664D]/90 mt-0.5">{error}</p>
           </div>
           <button
             onClick={() => void refetch()}
-            className="h-7 px-2.5 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/70 transition-colors flex-shrink-0"
+            className="h-7 px-2.5 rounded-md bg-[#C4503B]/10 dark:bg-[#C4503B]/20 text-[#C4503B] dark:text-[#E0664D] text-xs font-medium hover:bg-[#C4503B]/20 dark:hover:bg-[#C4503B]/30 transition-colors flex-shrink-0"
           >
             {t(k('retry'))}
           </button>
@@ -432,11 +432,11 @@ function ConciliacionContent() {
       )}
 
       {/* Movimientos table */}
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center flex-shrink-0">
-              <ArrowsClockwise className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" />
+            <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+              <ArrowsClockwise className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             <div>
               <h2 className="text-h4 text-foreground">{t(k('movimientosTitle'))}</h2>
@@ -513,10 +513,10 @@ function ConciliacionContent() {
                     <td className="px-5 py-3.5 max-w-[160px] truncate text-muted-foreground" title={item.domain}>
                       {item.domain}
                     </td>
-                    <td className="px-5 py-3.5 tabular-nums font-mono whitespace-nowrap">
+                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap">
                       {valorBanco}
                     </td>
-                    <td className="px-5 py-3.5 tabular-nums font-mono whitespace-nowrap text-muted-foreground">
+                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
                       {valorEsperado}
                     </td>
                     <td className="px-5 py-3.5">

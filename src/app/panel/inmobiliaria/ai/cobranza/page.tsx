@@ -143,10 +143,10 @@ export default function CobranzaOverviewPage() {
         {/* Importar cartera — visible pero aún sin importador real (patrón avalúos):
             el importador de /portafolio/importar solo carga propiedades, así que
             la acción degrada a "próximamente" en vez de mentir con un link. */}
-        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl mx-auto">
+        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
-              <FileArrowUp className="w-5 h-5 text-[#1A40FF] dark:text-indigo-300" weight="duotone" aria-hidden="true" />
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+              <FileArrowUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0 space-y-0.5">
               <h2 className="text-base font-semibold text-foreground">
@@ -156,7 +156,7 @@ export default function CobranzaOverviewPage() {
                 {t(`${PAGES_NS}.importarNota`)}
               </p>
             </div>
-            <span className="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
+            <span className="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-muted text-muted-foreground text-xs font-mono uppercase tracking-wide">
               {t(`${PAGES_NS}.importarProximamente`)}
             </span>
           </div>
@@ -214,10 +214,10 @@ export default function CobranzaOverviewPage() {
       {/* Acción principal + ¿Cómo funciona? — patrón avalúos (card + 4 pasos) */}
       <section className="space-y-4" data-testid="cobranza-accion">
         {/* Acción principal — revisar escalaciones pendientes */}
-        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl">
+        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
-              <Warning className="w-5 h-5 text-[#1A40FF] dark:text-indigo-300" weight="duotone" aria-hidden="true" />
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+              <Warning className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0 space-y-0.5">
               <h2 className="text-base font-semibold text-foreground">
@@ -229,7 +229,7 @@ export default function CobranzaOverviewPage() {
             </div>
             <Link
               href="/panel/inmobiliaria/ai/cobranza/escalaciones"
-              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.98] transition"
+              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.98] transition"
               data-testid="cobranza-accion-cta"
             >
               {t('inmobiliaria.ai.nav.escalaciones')}
@@ -243,7 +243,7 @@ export default function CobranzaOverviewPage() {
         </div>
 
         {/* Cómo funciona — el viaje de la cobranza en 4 pasos */}
-        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="cobranza-como-funciona">
+        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="cobranza-como-funciona">
           <h2 className="text-sm font-semibold text-foreground">
             {t(`${PAGES_NS}.comoFunciona.title`)}
           </h2>

@@ -1051,7 +1051,7 @@ export default function AgentesPage() {
                       <span className="text-white text-sm font-semibold">GRATIS</span>
                       <span className="text-white/50 text-xs">para ti</span>
                     </div>
-                    <h3 className="text-white text-xl font-mono uppercase font-normal mb-2">Link de evaluación</h3>
+                    <h3 className="text-white text-xl font-medium tracking-[-0.01em] mb-2">Link de evaluación</h3>
                     <p className="text-white/60 text-sm leading-relaxed mb-4">
                       Genera un link único para cada propiedad. Compártelo por WhatsApp y recibe el reporte.
                     </p>

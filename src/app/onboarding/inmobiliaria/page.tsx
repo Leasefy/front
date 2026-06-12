@@ -83,6 +83,13 @@ function OnboardingInmobiliariaContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [isNavigating, setIsNavigating] = useState(false)
+  // Shown when the user taps a disabled CTA: explains the first missing field
+  const [disabledHint, setDisabledHint] = useState<string | null>(null)
+
+  // Clear the disabled-CTA hint when changing steps
+  useEffect(() => {
+    setDisabledHint(null)
+  }, [step])
 
   const [data, setData] = useState<OnboardingData>({
     agencyName: '',
@@ -145,6 +152,16 @@ function OnboardingInmobiliariaContent() {
   const isStep4Valid = data.email.trim().length > 0 &&
     data.password.length >= 8 &&
     data.password === data.confirmPassword
+
+  // First missing-field message per step (for the disabled-CTA tap affordance)
+  const step1HintMessage = !data.agencyName.trim()
+    ? `${t('inmobiliaria.onboarding.register.step1.agencyName')}: ${t('validation.required')}`
+    : `${t('inmobiliaria.onboarding.register.step1.contactPerson')}: ${t('validation.required')}`
+  const step4HintMessage = !data.email.trim()
+    ? `${t('inmobiliaria.onboarding.register.step4.email')}: ${t('validation.required')}`
+    : data.password.length < 8
+      ? t('validation.password')
+      : t('validation.passwordMatch')
 
   const handleNext = () => {
     if (step === 1 && isStep1Valid) {
@@ -297,17 +314,17 @@ function OnboardingInmobiliariaContent() {
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-neutral-100">
-        <div className="max-w-2xl mx-auto px-6">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
               <LeasefyLogo size={28} tone="brand" />
             </Link>
 
             {/* Progress */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {(fromPublish ? [1, 4] : [1, 2, 3, 4]).map((s, idx, arr) => (
-                  <div key={s} className="flex items-center gap-2">
+                  <div key={s} className="flex items-center gap-1.5 sm:gap-2">
                     <div className={cn(
                       "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
                       step > s ? "bg-[#1A40FF] text-white uppercase tracking-wide font-mono" :
@@ -317,7 +334,7 @@ function OnboardingInmobiliariaContent() {
                     </div>
                     {idx < arr.length - 1 && (
                       <div className={cn(
-                        "w-6 h-0.5 transition-colors",
+                        "w-3 sm:w-6 h-0.5 transition-colors",
                         step > s ? "bg-[#1A40FF]" : "bg-neutral-200"
                       )} />
                     )}
@@ -327,7 +344,7 @@ function OnboardingInmobiliariaContent() {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
+                className="shrink-0 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
               >
                 {t('inmobiliaria.onboarding.register.skip')}
               </button>
@@ -361,14 +378,23 @@ function OnboardingInmobiliariaContent() {
                 </p>
               </div>
 
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleNext()
+                }}
+              >
               <div className="space-y-5">
                 {/* Agency Name */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="agencyName" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step1.agencyName')} <span className="text-[#C4503B]">*</span>
                   </label>
                   <input
+                    id="agencyName"
                     type="text"
+                    autoComplete="organization"
                     value={data.agencyName}
                     onChange={(e) => updateData({ agencyName: e.target.value })}
                     placeholder={t('inmobiliaria.onboarding.register.step1.agencyNamePlaceholder')}
@@ -378,11 +404,14 @@ function OnboardingInmobiliariaContent() {
 
                 {/* NIT */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="nit" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step1.nit')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
                   <input
+                    id="nit"
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     value={data.nit}
                     onChange={(e) => updateData({ nit: e.target.value })}
                     placeholder="900.123.456-7"
@@ -392,11 +421,13 @@ function OnboardingInmobiliariaContent() {
 
                 {/* Contact Person */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="contactPerson" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step1.contactPerson')} <span className="text-[#C4503B]">*</span>
                   </label>
                   <input
+                    id="contactPerson"
                     type="text"
+                    autoComplete="name"
                     value={data.contactPerson}
                     onChange={(e) => updateData({ contactPerson: e.target.value })}
                     placeholder={t('inmobiliaria.onboarding.register.step1.contactPersonPlaceholder')}
@@ -406,12 +437,14 @@ function OnboardingInmobiliariaContent() {
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step1.phone')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
                   <input
+                    id="phone"
                     type="tel"
-                    inputMode="numeric"
+                    inputMode="tel"
+                    autoComplete="tel"
                     value={data.phone}
                     onChange={(e) => {
                       // Only allow numbers
@@ -451,20 +484,32 @@ function OnboardingInmobiliariaContent() {
               </div>
 
               {/* Continue Button */}
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={!isStep1Valid}
-                className={cn(
-                  "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                  isStep1Valid
-                    ? "bg-[#1A40FF] text-white hover:opacity-90"
-                    : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                )}
+              <span
+                className={cn('block', !isStep1Valid && 'cursor-not-allowed')}
+                onClick={() => {
+                  if (!isStep1Valid) setDisabledHint(step1HintMessage)
+                }}
               >
-                {t('inmobiliaria.onboarding.register.continue')}
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                <button
+                  type="submit"
+                  disabled={!isStep1Valid}
+                  className={cn(
+                    "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
+                    isStep1Valid
+                      ? "bg-[#1A40FF] text-white hover:opacity-90"
+                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed pointer-events-none"
+                  )}
+                >
+                  {t('inmobiliaria.onboarding.register.continue')}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </span>
+              {disabledHint && !isStep1Valid && (
+                <p role="status" className="mt-3 text-xs text-[#B7791F] text-center">
+                  {disabledHint}
+                </p>
+              )}
+              </form>
             </motion.div>
           )}
 
@@ -490,13 +535,21 @@ function OnboardingInmobiliariaContent() {
                 </p>
               </div>
 
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleNext()
+                }}
+              >
               <div className="space-y-6">
                 {/* City */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step2.city')} <span className="text-[#C4503B]">*</span>
                   </label>
                   <select
+                    id="city"
                     value={data.city}
                     onChange={(e) => updateData({ city: e.target.value })}
                     className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all appearance-none"
@@ -541,11 +594,13 @@ function OnboardingInmobiliariaContent() {
 
                 {/* Years in Business */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step2.yearsInBusiness')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
                   <input
+                    id="yearsInBusiness"
                     type="number"
+                    inputMode="numeric"
                     min="0"
                     max="100"
                     value={data.yearsInBusiness}
@@ -567,8 +622,7 @@ function OnboardingInmobiliariaContent() {
                   {t('inmobiliaria.onboarding.register.back')}
                 </button>
                 <button
-                  type="button"
-                  onClick={handleNext}
+                  type="submit"
                   disabled={!isStep2Valid}
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
@@ -581,6 +635,7 @@ function OnboardingInmobiliariaContent() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+              </form>
             </motion.div>
           )}
 
@@ -606,6 +661,13 @@ function OnboardingInmobiliariaContent() {
                 </p>
               </div>
 
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleNext()
+                }}
+              >
               <div className="space-y-6">
                 {/* Services Selection */}
                 <div>
@@ -685,8 +747,7 @@ function OnboardingInmobiliariaContent() {
                   {t('inmobiliaria.onboarding.register.back')}
                 </button>
                 <button
-                  type="button"
-                  onClick={handleNext}
+                  type="submit"
                   disabled={!isStep3Valid}
                   className={cn(
                     "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
@@ -699,6 +760,7 @@ function OnboardingInmobiliariaContent() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+              </form>
             </motion.div>
           )}
 
@@ -724,16 +786,27 @@ function OnboardingInmobiliariaContent() {
                 </p>
               </div>
 
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSubmit()
+                }}
+              >
               <div className="space-y-5">
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="accountEmail" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step4.email')} <span className="text-[#C4503B]">*</span>
                   </label>
                   <div className="relative">
                     <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
                     <input
+                      id="accountEmail"
                       type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      spellCheck={false}
                       value={data.email}
                       onChange={(e) => updateData({ email: e.target.value })}
                       placeholder={t('inmobiliaria.onboarding.register.step4.emailPlaceholder')}
@@ -744,13 +817,15 @@ function OnboardingInmobiliariaContent() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="accountPassword" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step4.password')} <span className="text-[#C4503B]">*</span>
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
                     <input
+                      id="accountPassword"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
                       value={data.password}
                       onChange={(e) => updateData({ password: e.target.value })}
                       placeholder={t('inmobiliaria.onboarding.register.step4.passwordPlaceholder')}
@@ -773,13 +848,15 @@ function OnboardingInmobiliariaContent() {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label htmlFor="accountConfirmPassword" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step4.confirmPassword')} <span className="text-[#C4503B]">*</span>
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
                     <input
+                      id="accountConfirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
                       value={data.confirmPassword}
                       onChange={(e) => updateData({ confirmPassword: e.target.value })}
                       placeholder={t('inmobiliaria.onboarding.register.step4.confirmPasswordPlaceholder')}
@@ -835,30 +912,42 @@ function OnboardingInmobiliariaContent() {
                   <ArrowLeft className="w-4 h-4" />
                   {t('inmobiliaria.onboarding.register.back')}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!isStep4Valid || isSubmitting}
-                  className={cn(
-                    "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                    isStep4Valid && !isSubmitting
-                      ? "bg-[#1A40FF] text-white hover:opacity-90"
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                  )}
+                <span
+                  className={cn('flex-1 flex', !isStep4Valid && !isSubmitting && 'cursor-not-allowed')}
+                  onClick={() => {
+                    if (!isStep4Valid && !isSubmitting) setDisabledHint(step4HintMessage)
+                  }}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
-                      {t('inmobiliaria.onboarding.register.step4.creatingAccount')}
-                    </>
-                  ) : (
-                    <>
-                      {t('inmobiliaria.onboarding.register.step4.createAccount')}
-                      <Rocket className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={!isStep4Valid || isSubmitting}
+                    className={cn(
+                      "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
+                      isStep4Valid && !isSubmitting
+                        ? "bg-[#1A40FF] text-white hover:opacity-90"
+                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed pointer-events-none"
+                    )}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <SpinnerGap className="w-4 h-4 animate-spin" />
+                        {t('inmobiliaria.onboarding.register.step4.creatingAccount')}
+                      </>
+                    ) : (
+                      <>
+                        {t('inmobiliaria.onboarding.register.step4.createAccount')}
+                        <Rocket className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </span>
               </div>
+              {disabledHint && !isStep4Valid && (
+                <p role="status" className="mt-3 text-xs text-[#B7791F] text-center">
+                  {disabledHint}
+                </p>
+              )}
+              </form>
             </motion.div>
           )}
         </AnimatePresence>

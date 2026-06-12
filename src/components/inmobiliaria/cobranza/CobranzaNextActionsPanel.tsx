@@ -1,9 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Phone, ChatTeardropDots, EnvelopeSimple, CaretDown } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { type CarteraStage, stageColorClasses } from '@/lib/cartera'
+import { type CarteraStage, stageColorClasses, stageDisplayName } from '@/lib/cartera'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 
 interface CobranzaNextActionsPanelProps {
@@ -26,14 +27,21 @@ function formatTime(iso: string): string {
 }
 
 function StageBadge({ stage }: { stage: string }) {
+  const { locale } = useI18n()
   const validStages: CarteraStage[] = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'SX']
   const s = stage as CarteraStage
-  const colors = validStages.includes(s)
+  const isValid = validStages.includes(s)
+  const colors = isValid
     ? stageColorClasses(s)
     : { text: 'text-neutral-600 dark:text-neutral-400', bg: 'bg-neutral-100 dark:bg-neutral-800', border: 'border-neutral-200 dark:border-neutral-700' }
+  // Human name leads; the S-code stays available via title= (hover/AT).
+  const label = isValid ? stageDisplayName(s, locale) : stage
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono font-medium ${colors.bg} ${colors.text} border ${colors.border}`}>
-      {stage}
+    <span
+      title={stage}
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
+    >
+      {label}
     </span>
   )
 }
@@ -49,14 +57,12 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       <p className="text-sm text-neutral-500 dark:text-neutral-400">
         {t('inmobiliaria.ai.cobranza.overview.nextActions.empty')}
       </p>
-      <button
-        disabled
-        aria-disabled="true"
-        title={t('inmobiliaria.ai.cobranza.overview.nextActions.configCtaTooltip')}
-        className="px-4 py-2 rounded-md text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed opacity-60"
+      <Link
+        href="/panel/inmobiliaria/ai/cobranza/configuracion"
+        className="px-4 py-2 rounded-md text-sm font-medium bg-[#1A40FF] text-white hover:opacity-90 active:scale-[0.98] transition"
       >
         {t('inmobiliaria.ai.cobranza.overview.nextActions.configCta')}
-      </button>
+      </Link>
     </div>
   )
 

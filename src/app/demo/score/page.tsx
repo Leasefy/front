@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Info } from '@phosphor-icons/react';
 import { RiskScoreDisplay } from '@/components/score';
@@ -22,6 +23,14 @@ import { Button } from '@/components/ui/button';
  * Note: This page is for development, not production users.
  */
 export default function ScoreDemoPage() {
+  // Production guard: this is a dev-only playground. Render the standard 404 in
+  // production so the page is unreachable for real users. Must be the first
+  // statement (before any hooks) so it short-circuits before React hooks run.
+  // NODE_ENV is build-time-inlined by Next, so this branch tree-shakes cleanly.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   // Selected candidate state
   const [selectedCandidateId, setSelectedCandidateId] = useState(MOCK_CANDIDATES[0].id);
 

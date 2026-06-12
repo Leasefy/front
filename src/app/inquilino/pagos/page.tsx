@@ -70,9 +70,11 @@ export default function PagosPage() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRequests = allRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Stats — sólo cuentan los APPROVED como "pagado", PENDING_VALIDATION como "pendiente"
+  // Stats — sólo cuentan los APPROVED como "pagado", PENDING_VALIDATION como "pendiente".
+  // El indicador "Total pagado / Este año" es year-to-date: se limita al año en curso.
+  const currentYear = new Date().getFullYear();
   const totalPaid = allRequests
-    .filter(r => r.status === 'APPROVED')
+    .filter(r => r.status === 'APPROVED' && r.periodYear === currentYear)
     .reduce((sum, r) => sum + r.amount, 0);
 
   const pendingAmount = allRequests

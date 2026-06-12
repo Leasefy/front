@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useLenis } from '@/components/providers/SmoothScroll';
 import { leasesApi } from '@/lib/api/leases.service';
 import { psePaymentsApi } from '@/lib/api/pse-payments.service';
 import type { BackendPaymentInfo } from '@/lib/api/leases.types';
@@ -65,6 +66,14 @@ const DOCUMENT_TYPES: { value: PseDocumentType; label: string }[] = [
  */
 export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRentModalProps) {
   const { formatCurrency, locale } = useI18n();
+  const lenis = useLenis();
+
+  // Pause Lenis smooth scroll while the modal is open (DESIGN.md §8).
+  useEffect(() => {
+    if (open) lenis.stop();
+    else lenis.start();
+    return () => lenis.start();
+  }, [open, lenis]);
 
   const [step, setStep] = useState<Step>('loading');
   const [paymentInfo, setPaymentInfo] = useState<BackendPaymentInfo | null>(null);
@@ -233,7 +242,11 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
             </div>
 
             {/* Body */}
-            <div className="p-5">
+            <div
+              className="p-5 max-h-[70vh] overflow-y-auto"
+              data-lenis-prevent
+              style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+            >
               {/* Loading */}
               {step === 'loading' && !loadError && (
                 <div className="py-10 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">

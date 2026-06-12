@@ -494,19 +494,6 @@ export default function VisitasPage() {
     }
   };
 
-  const handleComplete = async (visit: Visit) => {
-    const ok = await actions.confirm(visit.id);
-    setSheetOpen(false);
-    if (ok) {
-      toast.success(t('landlord.visits.completedToast'), {
-        description: t('landlord.visits.completedToastDesc', { name: visit.candidateName }),
-      });
-      refetch();
-    } else {
-      toast.error('Error al completar visita');
-    }
-  };
-
   const openCancelModal = (visit: Visit) => {
     setSheetOpen(false);
     setTimeout(() => setCancelTarget(visit), 150);
@@ -583,13 +570,6 @@ export default function VisitasPage() {
     }
 
     if (visit.status === 'confirmed') {
-      actions.push({
-        id: 'complete',
-        label: t('landlord.visits.completeAction'),
-        icon: <CheckCircle className="w-4 h-4" />,
-        onClick: () => handleComplete(visit),
-        variant: 'primary',
-      });
       actions.push({
         id: 'reschedule',
         label: t('landlord.visits.rescheduleAction'),

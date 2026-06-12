@@ -80,12 +80,14 @@ export function Footer() {
             <h4 className="text-[18px] tracking-[-0.72px] leading-[24px] text-white/60 mb-[20px]">
               List
             </h4>
-            <nav className="space-y-3">
+            {/* py-1.5 per row replaces space-y-3 (6px + 6px = same 12px gap)
+                while growing each tap target; -my-1.5 keeps outer edges put */}
+            <nav className="-my-1.5">
               {menuLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block text-[14px] text-white/70 hover:text-white transition-colors group/link font-medium"
+                  className="block py-1.5 text-[14px] text-white/70 hover:text-white transition-colors group/link font-medium"
                 >
                   <span className="relative overflow-hidden inline-block">
                     <span className="block transition-transform duration-300 group-hover/link:-translate-y-full">
@@ -111,7 +113,7 @@ export function Footer() {
                     href={social.href}
                     target={social.target}
                     rel={social.rel}
-                    className="text-white/50 hover:text-white transition-colors"
+                    className="p-3 -m-3 text-white/50 hover:text-white transition-colors"
                     aria-label={social.name}
                   >
                     {social.icon}

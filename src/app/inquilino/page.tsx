@@ -44,6 +44,10 @@ export default function InquilinoPage() {
   };
 
   const handleDownloadPDF = () => {
+    // TODO: migrar a GET /evaluations/:applicationId/certificate.pdf
+    // Bloqueado por: useEvaluation está mockeado (localStorage + IDs fake).
+    // Cuando useEvaluation se conecte al agente real → usar apiClient.getBlob con evaluation.id
+    // y eliminar generate-score-pdf.ts.
     if (!score || !evaluation?.verificationCode || !evaluation.paidAt || !evaluation.expiresAt) return;
     const name = user?.name || 'Inquilino';
     downloadScorePDF(name, score, evaluation.verificationCode, evaluation.paidAt, evaluation.expiresAt);

@@ -7,7 +7,7 @@ import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Property } from '@/lib/types/property';
-import type { QualificationResult } from '@/lib/scoring/qualificationScore';
+import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
 const INITIAL_ITEMS = 9;
 const LOAD_MORE_ITEMS = 6;

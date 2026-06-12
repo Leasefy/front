@@ -13,11 +13,20 @@ import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 
 // Document type labels and icons
 const DOC_TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: typeof FileText }> = {
+  // Legacy lowercase keys (kept for back-compat)
   id_document: { label: 'Documento de identidad', labelEn: 'ID Document', icon: IdentificationCard },
   income_proof: { label: 'Comprobante de ingresos', labelEn: 'Income Proof', icon: Money },
   employment_letter: { label: 'Carta laboral', labelEn: 'Employment Letter', icon: Briefcase },
   bank_statements: { label: 'Extractos bancarios', labelEn: 'Bank Statements', icon: Bank },
   credit_report: { label: 'Reporte crediticio', labelEn: 'Credit Report', icon: FileText },
+  // Canonical UPPER_SNAKE backend keys
+  ID_DOCUMENT: { label: 'Documento de identidad', labelEn: 'ID Document', icon: IdentificationCard },
+  INCOME_PROOF: { label: 'Comprobante de ingresos', labelEn: 'Income Proof', icon: Money },
+  EMPLOYMENT_LETTER: { label: 'Carta laboral', labelEn: 'Employment Letter', icon: Briefcase },
+  BANK_STATEMENT: { label: 'Extracto bancario', labelEn: 'Bank Statement', icon: Bank },
+  PAY_STUB: { label: 'Desprendible de nómina', labelEn: 'Pay Stub', icon: Money },
+  CREDIT_REPORT: { label: 'Reporte crediticio', labelEn: 'Credit Report', icon: FileText },
+  OTHER: { label: 'Otro documento', labelEn: 'Other Document', icon: FileText },
 };
 
 const ITEMS_PER_PAGE = 6;

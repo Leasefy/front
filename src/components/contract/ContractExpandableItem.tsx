@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, CaretDown, CheckCircle, Clock, PencilLine, Download, PaperPlaneTilt, Phone, Envelope } from '@phosphor-icons/react';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { getContractTypeLabel } from '@/lib/types/contract';
-import { getTemplateById } from '@/lib/constants/contract-templates';
-import { generateContractPdf } from '@/lib/utils/generate-contract-pdf';
+import { contractsApi } from '@/lib/api/contracts.service';
 
 interface ContractExpandableItemProps {
   contract: Contract;
@@ -299,10 +298,14 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                   <Button
                     variant="outline"
                     className="gap-2 rounded-xl border-neutral-200 dark:border-neutral-700"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      const tpl = getTemplateById(contract.templateId);
-                      if (tpl) generateContractPdf(contract, tpl);
+                      try {
+                        const { url } = await contractsApi.getSignedPdfUrl(contract.id);
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      } catch {
+                        toast.error('No se pudo obtener el PDF del contrato');
+                      }
                     }}
                   >
                     <Download className="w-4 h-4" />

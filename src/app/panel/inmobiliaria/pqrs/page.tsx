@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PageGuard } from '@/components/auth/PageGuard';
 import { RESUMEN_PQRS_VACIO } from '@/lib/api/pqrs.types';
 
 /** Resumen por estado del ciclo PQRS — color por estado (estático). */
@@ -24,7 +25,7 @@ const COLUMNS = [
   'colAsignado', 'colEstado', 'colSla', 'colAccion',
 ];
 
-export default function PqrsPage() {
+function PqrsContent() {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.pqrs.${s}`;
   const resumen = RESUMEN_PQRS_VACIO;
@@ -124,5 +125,13 @@ export default function PqrsPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function PqrsPage() {
+  return (
+    <PageGuard adminOnly>
+      <PqrsContent />
+    </PageGuard>
   );
 }

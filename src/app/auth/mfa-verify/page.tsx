@@ -125,6 +125,9 @@ export default function MfaVerifyPage() {
           <input
             type="text"
             inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            aria-label="Código de verificación de 6 dígitos"
             maxLength={6}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}

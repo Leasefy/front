@@ -47,8 +47,12 @@ const SIZE_MAP: Record<ButtonSize, NonNullable<DSButtonProps["size"]>> = {
 }
 
 // El size default legacy del mvp era h-10 (el md del DS es h-9): se conserva la altura.
+// [@media(pointer:coarse)] agranda los touch targets a >=44px SOLO en dispositivos
+// táctiles — la apariencia en desktop (pointer fino) no cambia. lg ya es h-12 (48px).
 const SIZE_FIDELITY: Partial<Record<ButtonSize, string>> = {
-  default: "h-10",
+  default: "h-10 [@media(pointer:coarse)]:min-h-11",
+  sm: "[@media(pointer:coarse)]:min-h-11",
+  icon: "[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11",
 }
 
 // La flecha automática del mvp aplica a estos variants (hideArrow la apaga).

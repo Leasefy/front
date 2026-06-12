@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText } from '@phosphor-icons/react';
+import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText, EnvelopeSimple } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import type { Property } from '@/lib/types/property';
 
@@ -25,7 +25,6 @@ interface ConfirmationScreenProps {
  * Displays tracking code and next steps
  */
 export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail }: ConfirmationScreenProps) {
-  void isGuest; void guestEmail; // available for future use
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
@@ -56,12 +55,25 @@ export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail
             </h2>
 
             <div className="space-y-4">
-              <TimelineItem
-                icon={<MagnifyingGlass className="h-4 w-4" />}
-                title="Verificación de documentos"
-                description="Revisaremos tus documentos en las próximas 24 horas."
-                number={1}
-              />
+              {isGuest ? (
+                <TimelineItem
+                  icon={<EnvelopeSimple className="h-4 w-4" />}
+                  title="Revisa tu correo"
+                  description={
+                    guestEmail
+                      ? `Te enviamos un enlace a ${guestEmail} para crear tu cuenta y subir tus documentos.`
+                      : 'Te enviamos un enlace por correo para crear tu cuenta y subir tus documentos.'
+                  }
+                  number={1}
+                />
+              ) : (
+                <TimelineItem
+                  icon={<MagnifyingGlass className="h-4 w-4" />}
+                  title="Verificación de documentos"
+                  description="Revisaremos tus documentos en las próximas 24 horas."
+                  number={1}
+                />
+              )}
               <TimelineItem
                 icon={<Clock className="h-4 w-4" />}
                 title="Evaluación AI"

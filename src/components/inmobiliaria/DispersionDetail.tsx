@@ -36,9 +36,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import { getDispersionStatusColor } from '@/lib/types/inmobiliaria';
-import { usePropietarios, useInmobiliariaConfig, propietariosApi } from '@/lib/hooks/useInmobiliaria';
+import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
+import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
-import { downloadExtractoPDF } from '@/lib/utils/generate-extracto-pdf';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -265,16 +265,19 @@ export function DispersionDetail({
 
     setIsDownloadingPDF(true);
     try {
-      // Generate extracto data
-      const extracto = await propietariosApi.getExtracto(dispersion.propietarioId, dispersion.month);
-      if (extracto && config) {
-        downloadExtractoPDF(extracto, config, propietario);
-        toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
-          description: t('inmobiliaria.dispersiones.toasts.pdfDownloadedDesc', { name: dispersion.propietarioName }),
-        });
-      } else {
-        toast.error(t('inmobiliaria.dispersiones.toasts.couldNotGenerate'));
-      }
+      const blob = await apiClient.getBlob(`/inmobiliaria/dispersiones/${dispersion.id}/extracto.pdf`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = dispersion.propietarioName.replace(/\s+/g, '-').toLowerCase();
+      a.download = `extracto-${safeName}-${dispersion.month}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
+        description: t('inmobiliaria.dispersiones.toasts.pdfDownloadedDesc', { name: dispersion.propietarioName }),
+      });
     } catch {
       toast.error(t('inmobiliaria.dispersiones.toasts.downloadError'));
     } finally {

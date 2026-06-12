@@ -42,6 +42,7 @@ import {
   Phone,
   Envelope,
   Warning,
+  CaretRight,
 } from '@phosphor-icons/react';
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -176,11 +177,11 @@ const QUICK_ACTIONS: QuickAction[] = [
 // ──────────────────────────────────────────────────────────────────────────────
 
 const BADGE_COLORS = {
-  green: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
-  amber: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
-  red: 'bg-[#F8EAE7] text-[#C4503B] border-[#C4503B]/30',
+  green: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+  amber: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+  red: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
   violet: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
-  neutral: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+  neutral: 'bg-muted text-muted-foreground border-border',
 };
 
 function Badge({ label, color }: { label: string; color: keyof typeof BADGE_COLORS }) {
@@ -243,14 +244,14 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-full bg-[#EEF1FF] flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-[#1A40FF]" />
+          <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-primary" />
           </div>
           <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-neutral-900 truncate">
+            <p className="text-[14px] font-semibold text-foreground truncate">
               {data.fullName}
             </p>
-            <p className="text-[11px] text-neutral-500 font-mono truncate">
+            <p className="text-[11px] text-muted-foreground font-mono truncate">
               {data.cedulaMasked}
             </p>
           </div>
@@ -275,14 +276,14 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Contact info */}
       <div className="space-y-2">
         {data.phoneMasked != null && (
-          <div className="flex items-center gap-2 text-[12px] text-neutral-600">
-            <Phone className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             <span className="font-mono">{data.phoneMasked}</span>
           </div>
         )}
         {data.emailMasked != null && (
-          <div className="flex items-center gap-2 text-[12px] text-neutral-600">
-            <Envelope className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <Envelope className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             <span className="truncate">{data.emailMasked}</span>
           </div>
         )}
@@ -290,7 +291,7 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
 
       {/* Last activity */}
       {data.lastActivityAt != null && (
-        <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Clock className="w-3 h-3" />
           <span>
             {locale === 'es' ? 'Última actividad' : 'Last activity'}{' '}
@@ -301,16 +302,16 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
 
       {/* Paused banner */}
       {data.isPaused && (
-        <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#F8F0E0] border border-[#B7791F]/30">
-          <Warning className="w-3.5 h-3.5 text-[#B7791F] mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-[#B7791F] leading-snug">
+        <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+          <Warning className="w-3.5 h-3.5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] text-[#B7791F] dark:text-[#D2992F] leading-snug">
             {locale === 'es' ? 'Cobranza pausada' : 'Collections paused'}
           </p>
         </div>
       )}
 
       {/* Open link hint */}
-      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-1 border-t border-neutral-100">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
         <ArrowElbowDownLeft className="w-3 h-3" />
         <span>{locale === 'es' ? 'Enter para abrir en cobranza' : 'Enter to open in collections'}</span>
         <ArrowSquareOut className="w-3 h-3 ml-auto" />
@@ -327,9 +328,9 @@ function GenericPreview({ result }: { result: SearchResult }) {
   const { locale } = useI18n();
   return (
     <div className="p-5 space-y-3">
-      <p className="text-[14px] font-semibold text-neutral-900">{result.title}</p>
+      <p className="text-[14px] font-semibold text-foreground">{result.title}</p>
       {result.subtitle && (
-        <p className="text-[12px] text-neutral-500">{result.subtitle}</p>
+        <p className="text-[12px] text-muted-foreground">{result.subtitle}</p>
       )}
       {result.badges && result.badges.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -338,7 +339,7 @@ function GenericPreview({ result }: { result: SearchResult }) {
           ))}
         </div>
       )}
-      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-2 border-t border-neutral-100">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-2 border-t border-border">
         <ArrowElbowDownLeft className="w-3 h-3" />
         <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
       </div>
@@ -363,51 +364,51 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-full bg-[#E8F3EC] flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-[#2C7A53]" />
+        <div className="w-9 h-9 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/20 flex items-center justify-center flex-shrink-0">
+          <User className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
         </div>
         <div className="min-w-0">
-          <p className="text-[14px] font-semibold text-neutral-900 truncate">{name}</p>
-          {city && <p className="text-[11px] text-neutral-500 truncate">{city}</p>}
+          <p className="text-[14px] font-semibold text-foreground truncate">{name}</p>
+          {city && <p className="text-[11px] text-muted-foreground truncate">{city}</p>}
         </div>
       </div>
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-[12px] text-neutral-600">
-          <Envelope className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <Envelope className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
           <span className="truncate">{email}</span>
         </div>
         {phone && (
-          <div className="flex items-center gap-2 text-[12px] text-neutral-600">
-            <Phone className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             <span className="font-mono">{phone}</span>
           </div>
         )}
       </div>
       <div className="grid grid-cols-2 gap-2 pt-1">
-        <div className="bg-neutral-50 rounded-md p-2">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">
+        <div className="bg-muted rounded-md p-2">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             {locale === 'es' ? 'Propiedades' : 'Properties'}
           </p>
-          <p className="text-[16px] font-semibold text-neutral-800">{propertyCount}</p>
+          <p className="text-[16px] font-semibold text-foreground">{propertyCount}</p>
         </div>
-        <div className="bg-neutral-50 rounded-md p-2">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wide">
+        <div className="bg-muted rounded-md p-2">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             {locale === 'es' ? 'Arriendos' : 'Leases'}
           </p>
-          <p className="text-[16px] font-semibold text-neutral-800">{activeLeases}</p>
+          <p className="text-[16px] font-semibold text-foreground">{activeLeases}</p>
         </div>
       </div>
       {totalMonthlyRent > 0 && (
-        <div className="bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-md p-2.5">
-          <p className="text-[10px] text-[#2C7A53] font-medium">
+        <div className="bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 rounded-md p-2.5">
+          <p className="text-[10px] text-[#2C7A53] dark:text-[#3EAE70] font-medium">
             {locale === 'es' ? 'Renta mensual total' : 'Total monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-[#2C7A53]">
+          <p className="text-[14px] font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
             ${totalMonthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
       )}
-      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-1 border-t border-neutral-100">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
         <ArrowElbowDownLeft className="w-3 h-3" />
         <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
         <ArrowSquareOut className="w-3 h-3 ml-auto" />
@@ -432,11 +433,11 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
   const status = String(data.status ?? '');
 
   const STATUS_COLORS: Record<string, string> = {
-    available: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
-    published: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
-    rented: 'bg-[#EEF1FF] text-[#1A40FF] border-[#1A40FF]/30',
-    pending: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
-    draft: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+    available: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    published: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    rented: 'bg-accent text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/25',
+    pending: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    draft: 'bg-muted text-muted-foreground border-border',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
     available: 'Disponible',
@@ -449,21 +450,21 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="p-5 space-y-4">
       <div>
-        <p className="text-[14px] font-semibold text-neutral-900 leading-snug">{title}</p>
-        <p className="text-[11px] text-neutral-500 truncate mt-0.5">{address}, {city}</p>
+        <p className="text-[14px] font-semibold text-foreground leading-snug">{title}</p>
+        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{address}, {city}</p>
       </div>
       <span className={cn(
         'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
-        STATUS_COLORS[status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200',
+        STATUS_COLORS[status] ?? 'bg-muted text-muted-foreground border-border',
       )}>
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-[#EEF1FF] border border-[#1A40FF]/30 rounded-md p-2.5">
-          <p className="text-[10px] text-[#1A40FF] font-medium">
+        <div className="bg-accent border border-indigo-100 dark:border-indigo-500/20 rounded-md p-2.5">
+          <p className="text-[10px] text-primary font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-[#1A40FF]">
+          <p className="text-[14px] font-semibold text-indigo-800 dark:text-indigo-200">
             ${monthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -471,26 +472,26 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
       {(bedrooms != null || area != null) && (
         <div className="grid grid-cols-3 gap-1.5">
           {bedrooms != null && (
-            <div className="bg-neutral-50 rounded-md p-2 text-center">
-              <p className="text-[16px] font-semibold text-neutral-800">{bedrooms}</p>
-              <p className="text-[9px] text-neutral-400 uppercase">{locale === 'es' ? 'Hab' : 'Bed'}</p>
+            <div className="bg-muted rounded-md p-2 text-center">
+              <p className="text-[16px] font-semibold text-foreground">{bedrooms}</p>
+              <p className="text-[9px] text-muted-foreground uppercase">{locale === 'es' ? 'Hab' : 'Bed'}</p>
             </div>
           )}
           {bathrooms != null && (
-            <div className="bg-neutral-50 rounded-md p-2 text-center">
-              <p className="text-[16px] font-semibold text-neutral-800">{bathrooms}</p>
-              <p className="text-[9px] text-neutral-400 uppercase">{locale === 'es' ? 'Baños' : 'Bath'}</p>
+            <div className="bg-muted rounded-md p-2 text-center">
+              <p className="text-[16px] font-semibold text-foreground">{bathrooms}</p>
+              <p className="text-[9px] text-muted-foreground uppercase">{locale === 'es' ? 'Baños' : 'Bath'}</p>
             </div>
           )}
           {area != null && (
-            <div className="bg-neutral-50 rounded-md p-2 text-center">
-              <p className="text-[16px] font-semibold text-neutral-800">{area}</p>
-              <p className="text-[9px] text-neutral-400 uppercase">m²</p>
+            <div className="bg-muted rounded-md p-2 text-center">
+              <p className="text-[16px] font-semibold text-foreground">{area}</p>
+              <p className="text-[9px] text-muted-foreground uppercase">m²</p>
             </div>
           )}
         </div>
       )}
-      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-1 border-t border-neutral-100">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
         <ArrowElbowDownLeft className="w-3 h-3" />
         <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
         <ArrowSquareOut className="w-3 h-3 ml-auto" />
@@ -514,15 +515,15 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
   const endDate = data.endDate != null ? String(data.endDate) : null;
 
   const STATUS_COLORS_PILL: Record<string, string> = {
-    ACTIVE: 'bg-[#E8F3EC] text-[#2C7A53] border-[#2C7A53]/30',
+    ACTIVE: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
     SIGNED: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
-    PENDING_TENANT: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
-    PENDING_TENANT_SIGNATURE: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
-    PENDING_LANDLORD: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
-    PENDING_LANDLORD_SIGNATURE: 'bg-[#F8F0E0] text-[#B7791F] border-[#B7791F]/30',
-    DRAFT: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-    EXPIRED: 'bg-[#F8EAE7] text-[#C4503B] border-[#C4503B]/30',
-    CANCELLED: 'bg-[#F8EAE7] text-[#C4503B] border-[#C4503B]/30',
+    PENDING_TENANT: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    PENDING_TENANT_SIGNATURE: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    PENDING_LANDLORD: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    PENDING_LANDLORD_SIGNATURE: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    DRAFT: 'bg-muted text-muted-foreground border-border',
+    EXPIRED: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
+    CANCELLED: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
     ACTIVE: 'Activo',
@@ -556,19 +557,19 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
             <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-neutral-900 truncate">{tenantName}</p>
+            <p className="text-[14px] font-semibold text-foreground truncate">{tenantName}</p>
             {tenantEmail && (
-              <p className="text-[11px] text-neutral-500 truncate">{tenantEmail}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{tenantEmail}</p>
             )}
           </div>
         </div>
       )}
       {propertyAddress && (
-        <p className="text-[12px] text-neutral-500 truncate">{propertyAddress}</p>
+        <p className="text-[12px] text-muted-foreground truncate">{propertyAddress}</p>
       )}
       <span className={cn(
         'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
-        STATUS_COLORS_PILL[status] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200',
+        STATUS_COLORS_PILL[status] ?? 'bg-muted text-muted-foreground border-border',
       )}>
         {STATUS_LABELS_ES[status] ?? status}
       </span>
@@ -585,20 +586,20 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
       {(startDate ?? endDate) && (
         <div className="space-y-1">
           {startDate && (
-            <div className="flex items-center gap-2 text-[11px] text-neutral-500">
-              <Clock className="w-3 h-3 text-neutral-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
               <span>{locale === 'es' ? 'Inicio' : 'Start'}: {formatDate(startDate)}</span>
             </div>
           )}
           {endDate && (
-            <div className="flex items-center gap-2 text-[11px] text-neutral-500">
-              <Clock className="w-3 h-3 text-neutral-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
               <span>{locale === 'es' ? 'Fin' : 'End'}: {formatDate(endDate)}</span>
             </div>
           )}
         </div>
       )}
-      <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-1 border-t border-neutral-100">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border">
         <ArrowElbowDownLeft className="w-3 h-3" />
         <span>{locale === 'es' ? 'Enter para abrir' : 'Enter to open'}</span>
         <ArrowSquareOut className="w-3 h-3 ml-auto" />
@@ -617,10 +618,10 @@ function ResultPreview({ result }: { result: SearchResult | null }) {
   if (!result) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8 gap-3">
-        <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center">
-          <MagnifyingGlass className="w-5 h-5 text-neutral-400" />
+        <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+          <MagnifyingGlass className="w-5 h-5 text-muted-foreground" />
         </div>
-        <p className="text-[13px] text-neutral-500">
+        <p className="text-[13px] text-muted-foreground">
           {locale === 'es'
             ? 'Selecciona un resultado para ver el detalle'
             : 'Select a result to see details'}
@@ -669,81 +670,74 @@ function NovadadesState({
   );
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left: feed */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Novedades header */}
-        <div className="px-4 py-2.5 border-b border-neutral-100 bg-neutral-50/80">
-          <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
-            {t('inmobiliaria.commandPalette.novedades')}
-          </p>
-        </div>
-
-        <ScrollArea className="flex-1">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <Spinner className="w-4 h-4 text-neutral-400 animate-spin" />
-            </div>
-          ) : recentItems.length === 0 ? (
-            <div className="px-4 py-8 text-center">
-              <p className="text-[13px] text-neutral-400">
-                {locale === 'es' ? 'Sin actividad reciente' : 'No recent activity'}
-              </p>
-            </div>
-          ) : (
-            <div>
-              {recentItems.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-start gap-3 px-4 py-3 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors"
-                >
-                  <div className="w-7 h-7 rounded-full bg-[#EEF1FF] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Clock className="w-3.5 h-3.5 text-[#1A40FF]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-medium text-neutral-700 leading-snug">
-                      {auditActionLabel(entry.action, locale)}
-                    </p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">
-                      {entry.entity_type} · {relativeTime(entry.occurred_at, locale)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
+    <div className="flex-1 min-h-0 md:flex-none max-h-none md:max-h-[min(60vh,460px)] overflow-y-auto overscroll-contain p-2">
+      {/* Acciones rápidas — primary, full width */}
+      <p className="px-2.5 pt-1.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+        {t('inmobiliaria.commandPalette.quickActions.title')}
+      </p>
+      <div className="space-y-0.5">
+        {visibleQuickActions.map((qa) => {
+          const Icon = qa.icon;
+          return (
+            <button
+              key={qa.id}
+              onClick={() => onNavigate(qa.href)}
+              className="group w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-accent transition-colors"
+            >
+              <div className="grid place-items-center w-9 h-9 rounded-xl bg-muted group-hover:bg-primary/15 flex-shrink-0 transition-colors">
+                <Icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="flex-1 min-w-0 truncate text-[14px] font-medium text-foreground">
+                {t(qa.labelKey)}
+              </span>
+              <CaretRight className="w-4 h-4 flex-shrink-0 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+            </button>
+          );
+        })}
       </div>
 
-      {/* Right: quick actions */}
-      <div className="w-[180px] flex-shrink-0 border-l border-neutral-100 flex flex-col">
-        <div className="px-3 py-2.5 border-b border-neutral-100 bg-neutral-50/80">
-          <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
-            {t('inmobiliaria.commandPalette.quickActions.title')}
-          </p>
+      {/* Novedades — secondary, only as much room as it needs */}
+      <p className="px-2.5 pt-4 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+        {t('inmobiliaria.commandPalette.novedades')}
+      </p>
+      {isLoading ? (
+        <div className="space-y-0.5">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex items-center gap-3 px-2.5 py-2">
+              <div className="w-7 h-7 rounded-full bg-muted animate-pulse flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+                <div className="h-2.5 w-1/4 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
-        <ScrollArea className="flex-1">
-          <div className="py-1">
-            {visibleQuickActions.map((qa) => {
-              const Icon = qa.icon;
-              return (
-                <button
-                  key={qa.id}
-                  onClick={() => onNavigate(qa.href)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-neutral-50 transition-colors group"
-                >
-                  <div className="w-7 h-7 rounded-md bg-neutral-100 group-hover:bg-[#EEF1FF] flex items-center justify-center flex-shrink-0 transition-colors">
-                    <Icon className="w-3.5 h-3.5 text-neutral-500 group-hover:text-[#1A40FF] transition-colors" />
-                  </div>
-                  <span className="text-[12px] font-medium text-neutral-600 group-hover:text-neutral-900 transition-colors leading-snug">
-                    {t(qa.labelKey)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </ScrollArea>
-      </div>
+      ) : recentItems.length === 0 ? (
+        <p className="px-2.5 py-2 text-[12px] text-muted-foreground">
+          {locale === 'es' ? 'Sin actividad reciente' : 'No recent activity'}
+        </p>
+      ) : (
+        <div className="space-y-0.5">
+          {recentItems.map((entry) => (
+            <div
+              key={entry.id}
+              className="flex items-start gap-3 px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors"
+            >
+              <div className="grid place-items-center w-7 h-7 rounded-full bg-accent flex-shrink-0 mt-0.5">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12.5px] font-medium text-foreground leading-snug">
+                  {auditActionLabel(entry.action, locale)}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {entry.entity_type} · {relativeTime(entry.occurred_at, locale)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -863,14 +857,18 @@ export function CommandPalette() {
       {/* We override DialogContent styling for the palette layout */}
       <DialogContent
         className={cn(
-          // Override default DialogContent styles
-          'fixed left-1/2 top-[12%] -translate-x-1/2 translate-y-0',
-          'w-[min(760px,96vw)] p-0 gap-0',
-          'rounded-xl border border-neutral-200 bg-white',
-          'overflow-hidden',
+          // Override default DialogContent styles.
+          // <md: full-screen takeover (dvh — la URL bar / teclado no dejan franja
+          // muerta) con el close X por defecto visible; md+: palette centrado clasico.
+          'fixed inset-x-0 left-0 top-0 translate-x-0 translate-y-0',
+          'h-[100dvh] max-h-[100dvh] w-full max-w-none rounded-none',
+          'md:inset-x-auto md:left-1/2 md:top-[12%] md:-translate-x-1/2 md:translate-y-0',
+          'md:h-auto md:max-h-none md:w-[min(720px,94vw)] md:rounded-xl',
+          'flex flex-col p-0 gap-0',
+          'border border-border bg-popover text-popover-foreground',
+          'overflow-hidden md:[&>button]:hidden',
           // Disable the default slide-in animation — we use our own
           'data-[state=open]:animate-none data-[state=closed]:animate-none',
-          'max-h-[70vh]',
         )}
         // Remove the close button from the Radix default
         aria-describedby={undefined}
@@ -880,11 +878,11 @@ export function CommandPalette() {
         </DialogTitle>
 
         {/* ── Search input row ────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
+        <div className="flex items-center gap-3 px-4 h-[52px] border-b border-border">
           {isAnyLoading ? (
-            <Spinner className="w-4 h-4 text-neutral-400 animate-spin flex-shrink-0" />
+            <Spinner className="w-[18px] h-[18px] text-muted-foreground animate-spin flex-shrink-0" />
           ) : (
-            <MagnifyingGlass className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+            <MagnifyingGlass className="w-[18px] h-[18px] text-muted-foreground flex-shrink-0" />
           )}
           <input
             ref={inputRef}
@@ -898,15 +896,12 @@ export function CommandPalette() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t('inmobiliaria.commandPalette.placeholder')}
-            className={cn(
-              'flex-1 text-[14px] text-neutral-900 placeholder:text-neutral-400',
-              'bg-transparent border-0 outline-none',
-            )}
+            className="flex-1 text-[15px] text-foreground placeholder:text-muted-foreground bg-transparent border-0 outline-none"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="grid place-items-center w-6 h-6 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label={locale === 'es' ? 'Limpiar búsqueda' : 'Clear search'}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -916,22 +911,22 @@ export function CommandPalette() {
           )}
         </div>
 
-        {/* ── Body ───────────────────────────────────────────────────────── */}
-        <div className="flex min-h-[320px] max-h-[calc(70vh-100px)]">
+        {/* ── Body — llena la pantalla en movil, height-capped en md+ ────── */}
+        <div className="flex flex-1 min-h-0 pb-[env(safe-area-inset-bottom)] md:pb-0 md:flex-none md:min-h-[320px] md:max-h-[calc(70vh-100px)]">
           {!isQuerying ? (
-            /* Empty state / Novedades */
+            /* Empty state — single-column command list */
             <NovadadesState onNavigate={handleNavigate} />
           ) : (
             <>
               {/* Results list */}
-              <div className="flex-1 min-w-0 border-r border-neutral-100 overflow-hidden flex flex-col">
-                <ScrollArea className="flex-1">
+              <div className="flex-1 min-w-0 md:border-r border-border overflow-hidden flex flex-col">
+                <ScrollArea className="flex-1 [&>[data-radix-scroll-area-viewport]]:overscroll-contain">
                   {!hasResults && !isAnyLoading && (
                     <div className="flex flex-col items-center justify-center py-12 gap-2">
-                      <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center">
-                        <MagnifyingGlass className="w-4 h-4 text-neutral-400" />
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                        <MagnifyingGlass className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <p className="text-[13px] text-neutral-500">
+                      <p className="text-[13px] text-muted-foreground">
                         {t('inmobiliaria.commandPalette.noResults', { query })}
                       </p>
                     </div>
@@ -946,11 +941,11 @@ export function CommandPalette() {
                     {groups.map(({ source, results }) => {
                       const SrcIcon = source.icon;
                       return (
-                        <div key={source.id}>
+                        <div key={source.id} className="px-2">
                           {/* Group header */}
-                          <div className="flex items-center gap-2 px-4 py-2 bg-neutral-50/80 border-b border-neutral-100 sticky top-0 z-10">
-                            <SrcIcon className="w-3 h-3 text-neutral-400" />
-                            <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                          <div className="flex items-center gap-2 px-2 pt-3 pb-1.5 sticky top-0 z-10 bg-popover/95 backdrop-blur-sm">
+                            <SrcIcon className="w-3 h-3 text-muted-foreground/70" />
+                            <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-[0.12em]">
                               {t(source.labelKey)}
                             </span>
                           </div>
@@ -969,39 +964,32 @@ export function CommandPalette() {
                                 onClick={() => handleNavigate(result.href)}
                                 onMouseEnter={() => setHighlightIdx(flatIdx)}
                                 className={cn(
-                                  'w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors',
-                                  isHighlighted
-                                    ? 'bg-[#EEF1FF]'
-                                    : 'hover:bg-neutral-50',
+                                  'w-full flex items-start gap-3 px-2 py-2 rounded-md text-left transition-colors',
+                                  isHighlighted ? 'bg-accent' : 'hover:bg-muted/60',
                                 )}
                               >
                                 {/* Icon */}
                                 <div
                                   className={cn(
-                                    'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5',
-                                    isHighlighted ? 'bg-[#EEF1FF]' : 'bg-neutral-100',
+                                    'grid place-items-center w-7 h-7 rounded-md flex-shrink-0 mt-0.5 transition-colors',
+                                    isHighlighted ? 'bg-primary/15' : 'bg-muted',
                                   )}
                                 >
                                   <SrcIcon
                                     className={cn(
-                                      'w-3.5 h-3.5',
-                                      isHighlighted ? 'text-[#1A40FF]' : 'text-neutral-500',
+                                      'w-3.5 h-3.5 transition-colors',
+                                      isHighlighted ? 'text-primary' : 'text-muted-foreground',
                                     )}
                                   />
                                 </div>
 
                                 {/* Text */}
                                 <div className="min-w-0 flex-1">
-                                  <p
-                                    className={cn(
-                                      'text-[13px] font-medium truncate',
-                                      isHighlighted ? 'text-[#1A40FF]' : 'text-neutral-800',
-                                    )}
-                                  >
+                                  <p className="text-[13px] font-medium truncate text-foreground">
                                     {result.title}
                                   </p>
                                   {result.subtitle && (
-                                    <p className="text-[11px] text-neutral-400 font-mono truncate mt-0.5">
+                                    <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">
                                       {result.subtitle}
                                     </p>
                                   )}
@@ -1026,8 +1014,8 @@ export function CommandPalette() {
                         .filter((s) => bySource[s.id]?.isLoading)
                         .map((s) => (
                           <div key={`loading-${s.id}`} className="flex items-center gap-2 px-4 py-3">
-                            <Spinner className="w-3 h-3 text-neutral-400 animate-spin" />
-                            <span className="text-[12px] text-neutral-400">
+                            <Spinner className="w-3 h-3 text-muted-foreground animate-spin" />
+                            <span className="text-[12px] text-muted-foreground">
                               {t(s.labelKey)}…
                             </span>
                           </div>
@@ -1036,9 +1024,9 @@ export function CommandPalette() {
                 </ScrollArea>
               </div>
 
-              {/* Preview panel */}
-              <div className="w-[240px] flex-shrink-0 overflow-hidden flex flex-col">
-                <ScrollArea className="flex-1">
+              {/* Preview panel — mouse/hover-driven, hidden on mobile */}
+              <div className="hidden md:flex w-[240px] flex-shrink-0 overflow-hidden flex-col">
+                <ScrollArea className="flex-1 [&>[data-radix-scroll-area-viewport]]:overscroll-contain">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={highlightedResult?.id ?? 'empty'}
@@ -1056,19 +1044,27 @@ export function CommandPalette() {
           )}
         </div>
 
-        {/* ── Footer / keyboard hints ─────────────────────────────────────── */}
-        <div className="flex items-center gap-4 px-4 py-2 border-t border-neutral-100 bg-neutral-50/80">
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-            <ArrowUp className="w-3 h-3" />
-            <ArrowDown className="w-3 h-3" />
+        {/* ── Footer / keyboard hints — desktop-only (no hay teclado en touch) ── */}
+        <div className="hidden md:flex items-center gap-4 px-4 h-10 border-t border-border bg-muted/30">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <kbd className="grid place-items-center w-[18px] h-[18px] rounded border border-border bg-background">
+              <ArrowUp className="w-2.5 h-2.5" />
+            </kbd>
+            <kbd className="grid place-items-center w-[18px] h-[18px] rounded border border-border bg-background">
+              <ArrowDown className="w-2.5 h-2.5" />
+            </kbd>
             <span>{t('inmobiliaria.commandPalette.hintNavigate')}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-            <ArrowElbowDownLeft className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <kbd className="grid place-items-center w-[18px] h-[18px] rounded border border-border bg-background">
+              <ArrowElbowDownLeft className="w-2.5 h-2.5" />
+            </kbd>
             <span>{t('inmobiliaria.commandPalette.hintOpen')}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-            <kbd className="text-[10px] font-mono bg-neutral-200 px-1 rounded">esc</kbd>
+          <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <kbd className="inline-flex items-center h-[18px] px-1.5 rounded border border-border bg-background text-[10px] font-medium">
+              esc
+            </kbd>
             <span>{t('inmobiliaria.commandPalette.hintClose')}</span>
           </div>
         </div>

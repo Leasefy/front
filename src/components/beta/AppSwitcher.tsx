@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { SquaresFour, Sparkle } from '@phosphor-icons/react';
+import { SquaresFour } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { LeasefyMark } from './LeasefyMark';
 
 type Workspace = 'dashboard' | 'beta';
 
@@ -25,21 +26,21 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
     pathname.startsWith('/panel/inmobiliaria') ? '/panel/inmobiliaria' : '/panel'
   );
   const resolvedWorkspace: Workspace = currentWorkspace ?? (
-    pathname.includes('/beta') ? 'beta' : 'dashboard'
+    pathname.includes('/dashboard') ? 'dashboard' : 'beta'
   );
   const isDashboard = resolvedWorkspace === 'dashboard';
-  const targetPath = isDashboard ? `${resolvedBase}/beta` : resolvedBase;
+  // AI CHAT HOME F3: the chat is the root inicio; the classic dashboard moved
+  // to `${base}/dashboard`. Toggle: chat (root) ⇄ classic dashboard.
+  const targetPath = isDashboard ? resolvedBase : `${resolvedBase}/dashboard`;
 
   return (
     <div className="flex items-center justify-between">
-      {/* Brand */}
+      {/* Brand — real Leasefy mark (white on dark, brand blue on light) */}
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center">
-          <Sparkle className="w-[18px] h-[18px] text-white" weight="fill" />
-        </div>
+        <LeasefyMark className="w-7 h-auto shrink-0 text-[#1A40FF] dark:text-white" />
         <span className="text-[15px] font-bold text-foreground tracking-tight">
           Leasefy
-          <span className="text-[#1A40FF] ml-1">AI</span>
+          <span className="text-[#1A40FF] dark:text-[#5570FF] ml-1">AI</span>
         </span>
       </div>
 
@@ -48,6 +49,9 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
         onClick={() => router.push(targetPath)}
         className={cn(
           'p-2 rounded-md',
+          'inline-flex items-center justify-center',
+          // ≥44px touch target on coarse pointers
+          '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
           'text-neutral-400 dark:text-neutral-500',
           'hover:text-neutral-600 dark:hover:text-neutral-300',
           'hover:bg-neutral-100 dark:hover:bg-neutral-800',

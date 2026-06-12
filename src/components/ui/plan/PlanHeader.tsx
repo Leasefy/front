@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -13,6 +13,7 @@ import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/us
 import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '@/lib/types/notification';
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
+import { openPlanMobileSidebar } from './PlanSidebar';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
@@ -81,7 +82,11 @@ export function PlanHeader({
   const { t, locale } = useI18n();
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [searchFocused, setMagnifyingGlassFocused] = useState(false);
+  // Mobile (<sm) search pattern: the inline input is hidden and replaced by an
+  // icon button that toggles an absolute full-width search row under the header.
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [teamInviteOpen, setTeamInviteOpen] = useState(false);
@@ -94,6 +99,8 @@ export function PlanHeader({
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchBtnRef = useRef<HTMLButtonElement>(null);
 
   // Context detection — both landlord and inmobiliaria live under /panel.
   // `isLandlord` intentionally covers BOTH (same UI chrome: notifications, search, quick actions).
@@ -125,7 +132,9 @@ export function PlanHeader({
 
   const handleNotificationClick = (notification: BaseNotification) => {
     if (!notification.read) {
-      activeNotifs.markAsRead(notification.id);
+      activeNotifs.markAsRead(notification.id).catch(() => {
+        toast.error(t('header.notificationActionError'));
+      });
     }
     setNotificationsOpen(false);
     if (notification.actionUrl) {
@@ -152,18 +161,34 @@ export function PlanHeader({
     } else {
       setSearchResults([]);
     }
+    // Reset keyboard navigation whenever the query / result set changes.
+    setActiveIndex(-1);
   }, [searchQuery, isLandlord]);
 
-  // Close search on click outside
+  // Close search on click outside (the mobile toggle button is excluded so it
+  // can toggle the row without the outside-click handler racing it closed).
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(target) &&
+        !mobileSearchBtnRef.current?.contains(target)
+      ) {
         setMagnifyingGlassFocused(false);
+        setMobileSearchOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Focus the input when the mobile search row opens.
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [mobileSearchOpen]);
 
   const handleMagnifyingGlass = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -174,12 +199,48 @@ export function PlanHeader({
   const handleMagnifyingGlassSelect = (result: SearchResult) => {
     setMagnifyingGlassQuery('');
     setMagnifyingGlassFocused(false);
+    setMobileSearchOpen(false);
     router.push(result.href);
   };
 
   const groupedResults = groupSearchResults(searchResults, isLandlord);
   const recentSearches = getRecentSearches(isLandlord);
   const quickLinks = getQuickLinks(isLandlord);
+
+  // Flatten the navigable items in render order so ArrowUp/ArrowDown index math
+  // matches what the listbox shows. When the query is < 2 chars we show quick
+  // links; otherwise we show the grouped results (recent searches are not
+  // included here because they re-fill the query rather than navigate).
+  const flatResults: SearchResult[] =
+    searchQuery.length >= 2
+      ? Object.values(groupedResults).flat()
+      : quickLinks;
+  const activeOptionId =
+    activeIndex >= 0 && flatResults[activeIndex]
+      ? `plan-search-opt-${flatResults[activeIndex].id}`
+      : undefined;
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (flatResults.length === 0) return;
+      setActiveIndex((i) => Math.min(i + 1, flatResults.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (flatResults.length === 0) return;
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && flatResults[activeIndex]) {
+        e.preventDefault();
+        handleMagnifyingGlassSelect(flatResults[activeIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setMagnifyingGlassFocused(false);
+      setMobileSearchOpen(false);
+      setActiveIndex(-1);
+      e.currentTarget.blur();
+    }
+  };
 
   const getCategoryIcon = (category: SearchCategory) => {
     const icons: Record<SearchCategory, React.ReactNode> = {
@@ -205,16 +266,50 @@ export function PlanHeader({
 
   return (
     <header className={cn('sticky top-0 z-30 bg-white dark:bg-card border-b border-neutral-200 dark:border-border', className)}>
-      <div className="flex items-center justify-between h-16 px-6">
-        {/* Left: MagnifyingGlass */}
+      <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+        {/* Left: mobile menu trigger + MagnifyingGlass */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {/* Mobile nav trigger — opens PlanSidebar's Sheet (sidebar is hidden below lg) */}
+          <button
+            type="button"
+            onClick={openPlanMobileSidebar}
+            aria-label={locale === 'es' ? 'Abrir menú de navegación' : 'Open navigation menu'}
+            className="lg:hidden flex h-11 w-11 flex-shrink-0 items-center justify-center -ml-1.5 rounded-xl text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF]/40"
+          >
+            <List className="w-5 h-5" />
+          </button>
+
         {showMagnifyingGlass && (
-          <div ref={searchRef} className="relative w-full max-w-[400px]">
+          <div
+            ref={searchRef}
+            className={cn(
+              // sm+: inline relative container, exactly as before
+              'sm:relative sm:inset-auto sm:top-auto sm:z-auto sm:block sm:w-full sm:max-w-[400px] sm:border-b-0 sm:bg-transparent sm:px-0 sm:py-0',
+              // <sm: hidden behind an icon toggle; when open, an absolute
+              // full-width row directly under the header (anchored to the
+              // sticky <header>, the nearest positioned ancestor)
+              mobileSearchOpen
+                ? 'absolute inset-x-0 top-full z-40 border-b border-neutral-200 dark:border-border bg-white dark:bg-card px-4 py-2'
+                : 'hidden'
+            )}
+          >
+            <div className="relative">
             <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
             <input
+              ref={searchInputRef}
               type="text"
+              role="combobox"
+              aria-expanded={searchFocused}
+              aria-controls="plan-search-listbox"
+              aria-autocomplete="list"
+              aria-activedescendant={activeOptionId}
+              aria-label={isLandlord
+                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
+                : t('header.search')}
               value={searchQuery}
               onChange={handleMagnifyingGlass}
               onFocus={() => setMagnifyingGlassFocused(true)}
+              onKeyDown={handleSearchKeyDown}
               placeholder={isLandlord
                 ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
                 : t('header.search')}
@@ -226,10 +321,14 @@ export function PlanHeader({
                 'transition-colors'
               )}
             />
+            </div>
 
             {/* MagnifyingGlass Dropdown */}
             {searchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-xl max-h-[400px] overflow-y-auto z-50 overflow-hidden">
+              <div
+                id="plan-search-listbox"
+                role="listbox"
+                className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-xl max-h-[min(400px,60dvh)] overflow-y-auto overscroll-contain z-50 overflow-hidden">
                 {searchQuery.length >= 2 ? (
                   // Show search results
                   searchResults.length > 0 ? (
@@ -241,11 +340,21 @@ export function PlanHeader({
                               {getCategoryLabel(category as SearchCategory)}
                             </p>
                           </div>
-                          {items.map((result) => (
+                          {items.map((result) => {
+                            const optIndex = flatResults.indexOf(result);
+                            const isActive = optIndex === activeIndex;
+                            return (
                             <button
                               key={result.id}
+                              id={`plan-search-opt-${result.id}`}
+                              role="option"
+                              aria-selected={isActive}
                               onClick={() => handleMagnifyingGlassSelect(result)}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"
+                              onMouseEnter={() => setActiveIndex(optIndex)}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
+                                isActive ? "bg-neutral-50 dark:bg-white/5" : "hover:bg-neutral-50 dark:hover:bg-white/5"
+                              )}
                             >
                               <div className="w-9 h-9 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                                 {getCategoryIcon(result.category)}
@@ -259,7 +368,8 @@ export function PlanHeader({
                                 </p>
                               </div>
                             </button>
-                          ))}
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
@@ -286,11 +396,21 @@ export function PlanHeader({
                         {locale === 'es' ? 'Accesos rápidos' : 'Quick Links'}
                       </p>
                     </div>
-                    {quickLinks.map((link) => (
+                    {quickLinks.map((link) => {
+                      const optIndex = flatResults.indexOf(link);
+                      const isActive = optIndex === activeIndex;
+                      return (
                       <button
                         key={link.id}
+                        id={`plan-search-opt-${link.id}`}
+                        role="option"
+                        aria-selected={isActive}
                         onClick={() => handleMagnifyingGlassSelect(link)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"
+                        onMouseEnter={() => setActiveIndex(optIndex)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
+                          isActive ? "bg-neutral-50 dark:bg-white/5" : "hover:bg-neutral-50 dark:hover:bg-white/5"
+                        )}
                       >
                         <div className="w-9 h-9 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                           {getCategoryIcon(link.category)}
@@ -304,7 +424,8 @@ export function PlanHeader({
                           </p>
                         </div>
                       </button>
-                    ))}
+                      );
+                    })}
 
                     {/* Recent MagnifyingGlasses */}
                     {recentSearches.length > 0 && (
@@ -332,9 +453,23 @@ export function PlanHeader({
             )}
           </div>
         )}
+        </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+          {/* Mobile search toggle — replaces the inline input below sm */}
+          {showMagnifyingGlass && (
+            <button
+              ref={mobileSearchBtnRef}
+              type="button"
+              onClick={() => setMobileSearchOpen((open) => !open)}
+              aria-label={locale === 'es' ? 'Buscar' : 'Search'}
+              aria-expanded={mobileSearchOpen}
+              className="sm:hidden flex h-11 w-11 items-center justify-center rounded-xl text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF]/40"
+            >
+              <MagnifyingGlass className="w-5 h-5" />
+            </button>
+          )}
           {actions}
 
           {/* Quick Action Icons - Only for Landlords */}
@@ -343,7 +478,7 @@ export function PlanHeader({
               {/* Subscription Popover — admin-only in inmobiliaria context */}
               {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+                  <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {isBaseTier && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-[#1A40FF] rounded-full" />
@@ -361,6 +496,7 @@ export function PlanHeader({
                       <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">Tu Suscripción</h3>
                       <button
                         onClick={() => setSubscriptionOpen(false)}
+                        aria-label={t('common.close')}
                         className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -448,7 +584,7 @@ export function PlanHeader({
                 }
               }}>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+                  <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
                       <span className="absolute top-0 right-0 w-4 h-4 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
@@ -468,6 +604,7 @@ export function PlanHeader({
                       <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">Invitar al Equipo</h3>
                       <button
                         onClick={() => setTeamInviteOpen(false)}
+                        aria-label={t('common.close')}
                         className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -658,7 +795,7 @@ export function PlanHeader({
             }}
           >
             <PopoverTrigger asChild>
-              <button className="relative p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+              <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#1A40FF] rounded-full ring-2 ring-white" />
@@ -675,9 +812,10 @@ export function PlanHeader({
                 <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">{t('header.notifications')}</h3>
                 <button
                   onClick={() => setNotificationsOpen(false)}
+                  aria-label={t('common.close')}
                   className="text-plan-muted hover:text-plan-secondary"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -784,7 +922,9 @@ export function PlanHeader({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            activeNotifs.deleteNotification(notification.id);
+                            activeNotifs.deleteNotification(notification.id).catch(() => {
+                              toast.error(t('header.notificationActionError'));
+                            });
                           }}
                           className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-all"
                           title="Eliminar"
@@ -818,7 +958,7 @@ export function PlanHeader({
           {/* User Account Container */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-xl bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors outline-none">
+              <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-2.5 rounded-xl bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/15 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF]/40">
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center">
                   <span className="text-white font-medium text-sm">

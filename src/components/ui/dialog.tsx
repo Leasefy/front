@@ -17,30 +17,20 @@ import { cn } from "@/lib/utils"
 
 /**
  * ADAPTER fino sobre el Dialog de @leasefy/ui que preserva la API local del mvp:
- * - Root con scroll-lock propio (body/html overflow hidden mientras open).
  * - DialogContent: contrato de layout legacy (`p-6 grid gap-4 max-w-lg`,
- *   overridable vía className), z-[300] sobre headers fijos, overlay
- *   `z-[300] bg-black/60`, onWheel stopPropagation y animación legacy
- *   (tailwindcss-animate in/out) en lugar del animate-scale-in del DS.
+ *   overridable vía className) + sizing mobile (`w-[calc(100%-2rem)]`,
+ *   `max-h-[min(640px,90dvh)]`, `overflow-y-auto`), z-[300] sobre headers
+ *   fijos, overlay `z-[300] bg-black/60`, onWheel stopPropagation y animación
+ *   legacy (tailwindcss-animate in/out) en lugar del animate-scale-in del DS.
  * - Header/Footer mantienen las clases de layout legacy (el padding vive en
  *   el Content, no en los sub-parts como en el DS).
  */
 
-// Custom Dialog Root that blocks body scroll when open
-const Dialog = ({ children, ...props }: React.ComponentProps<typeof DSDialog>) => {
-  React.useEffect(() => {
-    if (props.open) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [props.open]);
-
-  return <DSDialog {...props}>{children}</DSDialog>;
-}
+// Scroll locking is handled by Radix (modal by default via react-remove-scroll),
+// which the DS Dialog re-exports. The previous manual body-overflow effect only
+// worked for controlled usage (keyed off props.open) and caused scrollbar
+// layout shift — removed.
+const Dialog = DSDialog
 
 const DialogTrigger = DSDialogTrigger
 
@@ -75,8 +65,9 @@ const DialogContent = React.forwardRef<
     overlayClassName={cn(dialogOverlayClasses, overlayClassName)}
     onWheel={(e) => e.stopPropagation()}
     className={cn(
-      // contrato de layout legacy — overridable por className del call site
-      "z-[300] grid w-full max-w-lg gap-4 p-6 overscroll-contain",
+      // contrato de layout legacy — overridable por className del call site.
+      // Sizing mobile: margen lateral de 1rem y alto acotado con scroll interno.
+      "z-[300] grid w-[calc(100%-2rem)] max-w-lg max-h-[min(640px,90dvh)] overflow-y-auto gap-4 p-6 overscroll-contain",
       // animación legacy del mvp (in/out). `animate-none` apaga el
       // animate-scale-in base del DS; los modifiers data-[state] ganan.
       "animate-none duration-[var(--duration-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",

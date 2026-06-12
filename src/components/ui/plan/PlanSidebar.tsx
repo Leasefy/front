@@ -1,21 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretLeft, CaretRight, CaretDown, SignOut, List, Question, TrendUp, CheckCircle, Circle, ArrowUpRight } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { LeasefyMark, LeasefyLogo } from '@/components/brand';
 import { useAuth } from '@/lib/auth';
 import { useSidebar } from '@/lib/context/SidebarContext';
-import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mobile sidebar opener — module-level pub-sub.
+//
+// The mobile menu trigger lives in PlanHeader (so it sits inline in the top
+// bar instead of floating over it), but the Sheet + nav data live here.
+// Every layout renders PlanSidebar + PlanHeader as siblings, so a tiny
+// pub-sub avoids threading open-state through each layout. No-op when no
+// PlanSidebar is mounted.
+// ─────────────────────────────────────────────────────────────────────────────
+type MobileSidebarListener = () => void;
+const mobileSidebarListeners = new Set<MobileSidebarListener>();
+
+/** Opens the PlanSidebar mobile navigation Sheet (called from PlanHeader). */
+export function openPlanMobileSidebar() {
+  mobileSidebarListeners.forEach((listener) => listener());
+}
 
 export interface NavItem {
   label: string;
@@ -64,6 +80,9 @@ export interface PlanSidebarProps {
   profileCompletion?: ProfileCompletionConfig;
   /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger). */
   aboveNav?: React.ReactNode;
+  /** When true, the nav list is replaced by a skeleton placeholder (e.g. while
+   *  permissions load) so permission-gated items never flash in then disappear. */
+  loading?: boolean;
 }
 
 interface NavItemComponentProps {
@@ -207,6 +226,44 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
   );
 }
 
+/**
+ * Placeholder shown while permissions load. Mirrors the real nav's rhythm
+ * (a group label + a few item rows) so the sidebar holds its shape and gated
+ * items never flash in then disappear. Widths are fixed so the SSR markup and
+ * the hydrated client markup match exactly (no hydration mismatch).
+ */
+function NavSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
+  const groups: number[][] = [[68, 52], [60, 74, 48, 56], [64, 50, 70]];
+  return (
+    <div className="space-y-3" aria-hidden="true" data-testid="sidebar-nav-skeleton">
+      {groups.map((rows, gi) => (
+        <div key={gi} className="space-y-1.5">
+          {!isCollapsed && (
+            <div className="ml-4 h-2 w-16 rounded bg-neutral-200/80 dark:bg-neutral-700/50 animate-pulse" />
+          )}
+          {rows.map((w, ri) => (
+            <div
+              key={ri}
+              className={cn(
+                'flex items-center gap-3 py-2',
+                isCollapsed ? 'justify-center px-2' : 'px-3'
+              )}
+            >
+              <div className="h-[18px] w-[18px] flex-shrink-0 rounded-md bg-neutral-200/80 dark:bg-neutral-700/50 animate-pulse" />
+              {!isCollapsed && (
+                <div
+                  className="h-3 rounded bg-neutral-200/70 dark:bg-neutral-700/40 animate-pulse"
+                  style={{ width: `${w}%` }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface SidebarContentProps {
   navItems: NavItem[];
   logo?: PlanSidebarProps['logo'];
@@ -219,6 +276,7 @@ interface SidebarContentProps {
   showCollapseButton?: boolean;
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
+  loading?: boolean;
 }
 
 function SidebarContent({
@@ -230,6 +288,7 @@ function SidebarContent({
   showCollapseButton = true,
   profileCompletion,
   aboveNav,
+  loading = false,
 }: SidebarContentProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -245,13 +304,18 @@ function SidebarContent({
       {showCollapseButton && (
         <button
           onClick={onCollapse}
+          aria-label={isCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+          aria-expanded={!isCollapsed}
           className={cn(
             'absolute top-6 -right-3 z-50',
             'w-6 h-6 rounded-full bg-white dark:bg-card',
             'border border-neutral-200 dark:border-border',
             'flex items-center justify-center',
             'text-neutral-400 hover:text-neutral-600',
-            'shadow-sm transition-colors'
+            'shadow-sm transition-colors',
+            // ≥44px hit target without changing the 24px visual (24 + 2×10 = 44)
+            "before:absolute before:-inset-2.5 before:rounded-full before:content-['']",
+            'outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1'
           )}
         >
           {isCollapsed ? (
@@ -294,17 +358,21 @@ function SidebarContent({
           isCollapsed ? 'px-2' : 'px-3'
         )}
       >
-        <div className="space-y-0.5">
-          {navItems.map((item) => (
-            <NavItemComponent
-              key={item.href}
-              item={item}
-              isActive={isActive(item)}
-              isCollapsed={isCollapsed}
-              onClick={onItemClick}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <NavSkeleton isCollapsed={isCollapsed} />
+        ) : (
+          <div className="space-y-0.5">
+            {navItems.map((item) => (
+              <NavItemComponent
+                key={item.href}
+                item={item}
+                isActive={isActive(item)}
+                isCollapsed={isCollapsed}
+                onClick={onItemClick}
+              />
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Profile Completion Widget */}
@@ -417,9 +485,20 @@ export function PlanSidebar({
   upgradeLabel,
   profileCompletion,
   aboveNav,
+  loading = false,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Register with the module-level opener so PlanHeader's menu button
+  // (rendered in a sibling tree) can open this Sheet.
+  useEffect(() => {
+    const listener = () => setMobileOpen(true);
+    mobileSidebarListeners.add(listener);
+    return () => {
+      mobileSidebarListeners.delete(listener);
+    };
+  }, []);
 
   return (
     <>
@@ -443,21 +522,13 @@ export function PlanSidebar({
           upgradeLabel={upgradeLabel}
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
+          loading={loading}
         />
       </aside>
 
-      {/* Mobile List Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="lg:hidden fixed top-3 left-3 z-40 bg-white/90 backdrop-blur-sm dark:bg-card shadow-md border border-neutral-100 rounded-xl hover:bg-white hover:shadow-lg transition-all"
-        onClick={() => setMobileOpen(true)}
-      >
-        <List className="w-5 h-5 text-neutral-600" />
-        <span className="sr-only">Abrir menu</span>
-      </Button>
-
-      {/* Mobile Sheet */}
+      {/* Mobile Sheet — opened from PlanHeader's inline menu button via
+          openPlanMobileSidebar() (the old floating hamburger overlapped the
+          header search input and was removed). */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[280px] p-0 bg-white dark:bg-card border-r-0">
           <SheetHeader className="sr-only">
@@ -475,6 +546,7 @@ export function PlanSidebar({
             showCollapseButton={false}
             profileCompletion={profileCompletion}
             aboveNav={aboveNav}
+            loading={loading}
           />
         </SheetContent>
       </Sheet>

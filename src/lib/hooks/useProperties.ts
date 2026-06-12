@@ -127,6 +127,69 @@ export function useMyProperties() {
 }
 
 // ============================================================================
+// useWishlistedProperties - resolve a list of property IDs to full properties
+// ============================================================================
+
+/**
+ * Resolve an arbitrary list of property IDs to full Property objects.
+ *
+ * Unlike intersecting against the featured/top-N list, this fetches each
+ * wishlisted property directly by ID, so saved items never silently vanish
+ * just because they fall outside the featured page. IDs that fail to resolve
+ * (deleted property, 404) are dropped, so `properties.length` is the honest
+ * count of what is actually shown.
+ */
+export function useWishlistedProperties(ids: string[]) {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Serialize ids to a stable key so the effect only re-runs on real changes.
+  const idsKey = ids.join(',');
+
+  useEffect(() => {
+    const idList = idsKey ? idsKey.split(',') : [];
+
+    if (idList.length === 0) {
+      setProperties([]);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    Promise.all(
+      idList.map((id) =>
+        propertiesApi.getById(id).catch(() => null),
+      ),
+    )
+      .then((results) => {
+        if (!cancelled) {
+          // Preserve wishlist order; drop IDs that failed to resolve.
+          setProperties(results.filter((p): p is Property => p !== null));
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error cargando propiedades');
+          setProperties([]);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
+
+  return { properties, isLoading, error };
+}
+
+// ============================================================================
 // useFeaturedProperties - for homepage / tenant dashboard
 // ============================================================================
 

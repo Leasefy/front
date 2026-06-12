@@ -107,6 +107,7 @@ export default function CostosPage() {
             {t('inmobiliaria.ai.cotizador.costos.sourceBreakdownTitle')}
           </h2>
         </div>
+        <div className="overflow-x-auto overscroll-contain">
         <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
           <thead className="bg-neutral-50 dark:bg-neutral-800/50">
             <tr>
@@ -145,6 +146,7 @@ export default function CostosPage() {
             ))}
           </tbody>
         </table>
+        </div>
 
         {/* Loading skeleton for table when no data yet */}
         {(isLoadingSummary || isLoadingSeries) && tableRows.length === 0 && (

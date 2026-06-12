@@ -133,6 +133,53 @@ export default function LeaseDetailPage() {
   const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
   const approvedRequests = requests.filter(r => r.status === 'APPROVED');
   const totalPaid = approvedRequests.reduce((sum, r) => sum + r.amount, 0);
+
+  // Account-status card: drive label / icon / color from the real period status
+  // (paymentInfo.currentPeriodStatus) instead of always showing "Al día".
+  // Reuses the brand success/warning/danger convention used elsewhere in this view.
+  const accountStatus = (() => {
+    switch (periodStatus) {
+      case 'PENDING_VALIDATION':
+        return {
+          label: locale === 'es' ? 'Pago en validación' : 'Payment under review',
+          icon: Clock,
+          cardClass:
+            'bg-[#F8F0E0] dark:bg-[#B7791F]/12 border border-[#B7791F]/30 dark:border-[#B7791F]/40',
+          iconClass: 'text-[#B7791F] dark:text-[#D2992F]',
+          captionClass: 'text-[#B7791F] dark:text-[#D2992F]',
+        };
+      case 'REJECTED':
+        return {
+          label: locale === 'es' ? 'Pago rechazado' : 'Payment rejected',
+          icon: XCircle,
+          cardClass:
+            'bg-[#F8EAE7] dark:bg-[#C4503B]/12 border border-[#C4503B]/30 dark:border-[#C4503B]/40',
+          iconClass: 'text-[#C4503B] dark:text-[#E0664D]',
+          captionClass: 'text-[#C4503B] dark:text-[#E0664D]',
+        };
+      case 'APPROVED':
+        return {
+          label: locale === 'es' ? 'Al día' : 'Up to date',
+          icon: CheckCircle,
+          cardClass:
+            'bg-[#E8F3EC] dark:bg-[#2C7A53]/12 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+          iconClass: 'text-[#2C7A53] dark:text-[#3EAE70]',
+          captionClass: 'text-[#2C7A53] dark:text-[#3EAE70]',
+        };
+      default:
+        // 'NONE' or unknown → no confirmed/in-flight payment for the period.
+        return {
+          label: locale === 'es' ? 'Pago pendiente' : 'Payment pending',
+          icon: WarningCircle,
+          cardClass:
+            'bg-[#F8F0E0] dark:bg-[#B7791F]/12 border border-[#B7791F]/30 dark:border-[#B7791F]/40',
+          iconClass: 'text-[#B7791F] dark:text-[#D2992F]',
+          captionClass: 'text-[#B7791F] dark:text-[#D2992F]',
+        };
+    }
+  })();
+  const AccountStatusIcon = accountStatus.icon;
+
   const handlePaid = () => {
     refetchRequests();
     refetchPaymentInfo();
@@ -368,12 +415,12 @@ export default function LeaseDetailPage() {
                 <p className="text-2xl font-bold text-neutral-900 dark:text-white">{approvedRequests.length}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
               </div>
-              <div className="rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/12 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 p-5 col-span-2 sm:col-span-1">
+              <div className={cn('rounded-xl p-5 col-span-2 sm:col-span-1', accountStatus.cardClass)}>
                 <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
-                  <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+                  <AccountStatusIcon className={cn('w-5 h-5', accountStatus.iconClass)} />
                 </div>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{locale === 'es' ? 'Al día' : 'Up to date'}</p>
-                <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
+                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{accountStatus.label}</p>
+                <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
               </div>
             </motion.div>
 

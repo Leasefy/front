@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Ubuntu_Mono } from "next/font/google";
 import "./globals.css";
@@ -101,6 +101,13 @@ export const metadata: Metadata = {
   category: "real estate",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1A40FF",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -110,7 +117,6 @@ export default function RootLayout({
     <html lang="es" className={`lenis ${satoshi.variable} ${ubuntuMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#1A40FF" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <OrganizationJsonLd />
         <WebsiteJsonLd />

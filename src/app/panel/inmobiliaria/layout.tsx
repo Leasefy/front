@@ -28,8 +28,19 @@ import {
   CalendarBlank,
   Sparkle,
   Wallet,
+  FilePlus,
+  CreditCard,
+  Warning,
+  ClipboardText,
+  Envelope,
+  PhoneCall,
+  Siren,
+  GitMerge,
+  ArrowsClockwise,
+  Scales,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
@@ -47,6 +58,8 @@ function CommandPaletteShortcuts() {
   const { open, close, isOpen } = useCommandPalette();
   const pathname = usePathname();
   const BETA_PREFIX = '/panel/inmobiliaria/beta';
+  // AI CHAT HOME F3: the chat is also the INICIO at the exact root.
+  const CHAT_ROOT = '/panel/inmobiliaria';
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -55,8 +68,9 @@ function CommandPaletteShortcuts() {
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        // Yield to BetaLayout's useBetaKeyboardShortcuts when inside the beta subtree.
-        if (pathname?.startsWith(BETA_PREFIX)) return;
+        // Yield to BetaLayout's useBetaKeyboardShortcuts inside the chat
+        // (the root inicio + the /beta subtree).
+        if (pathname === CHAT_ROOT || pathname?.startsWith(BETA_PREFIX)) return;
         e.preventDefault();
         if (isOpen) { close(); } else { open(); }
       }
@@ -78,30 +92,75 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isLoading: permissionsLoading } = usePermissionsContext();
+  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole } = usePermissionsContext();
 
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
-  type NavItemWithModule = NavItem & { module?: string | null };
+  // `roles` is an optional role-based gate (in addition to module-based gating).
+  // `adminOnly` is a stricter gate: only super-admins see the item (no role list).
+  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[]; adminOnly?: boolean };
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
-    // ── INICIO ──
+    // ── PRINCIPAL ──
     { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
+    // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
+    // exact match so it doesn't stay highlighted on every subroute.
+    { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: Sparkle,       exact: true, module: null },
     { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria',              icon: SquaresFour,   exact: true, module: null },
-    // ── CARTERA ──
-    { kind: 'section', label: t('inmobiliaria.nav.secCartera'), href: '#sec-cartera', icon: ChatCircleText, module: null },
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
+    // ── AGENTES IA ──
+    { kind: 'section', label: t('inmobiliaria.nav.secAgentes'), href: '#sec-agentes', icon: Sparkle, module: null },
     {
       label: t('inmobiliaria.ai.nav.cobranza'),
       href: '/panel/inmobiliaria/ai/cobranza',
       icon: ChatCircleText,
       module: 'cobranza',
       dataTourTarget: 'sidebar-cobranza',
+      // Children ordered by frequency of use (audit 2026-06-11): operación
+      // diaria primero (deudores/escalaciones/pagos/llamadas/cartas/siniestros/
+      // reporte), luego configuración y compliance.
       children: [
         {
-          label: t('inmobiliaria.ai.nav.arco'),
-          href: '/panel/inmobiliaria/ai/cobranza/arco',
-          icon: ShieldCheck,
+          label: t('inmobiliaria.ai.nav.deudores'),
+          href: '/panel/inmobiliaria/ai/cobranza/deudores',
+          icon: Users,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.escalaciones'),
+          href: '/panel/inmobiliaria/ai/cobranza/escalaciones',
+          icon: Warning,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.pagos'),
+          href: '/panel/inmobiliaria/ai/cobranza/pagos',
+          icon: CreditCard,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.llamadas'),
+          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
+          icon: PhoneCall,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cartas'),
+          href: '/panel/inmobiliaria/ai/cobranza/cartas',
+          icon: Envelope,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          // Movido dentro del grupo cobranza — antes flotaba top-level.
+          label: t('inmobiliaria.ai.nav.siniestros'),
+          href: '/panel/inmobiliaria/ai/cobranza/siniestros',
+          icon: Siren,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaReporte'),
+          href: '/panel/inmobiliaria/ai/cobranza/reporte',
+          icon: ChartLine,
           module: 'cobranza',
         } as NavItemWithModule,
         {
@@ -111,36 +170,32 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
+          label: t('inmobiliaria.ai.nav.analitica'),
+          href: '/panel/inmobiliaria/ai/cobranza/analitica',
+          icon: ChartLineUp,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.compliance'),
+          href: '/panel/inmobiliaria/ai/cobranza/compliance',
+          icon: ClipboardText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.arco'),
+          href: '/panel/inmobiliaria/ai/cobranza/arco',
+          icon: ShieldCheck,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
           label: t('inmobiliaria.ai.nav.configuracion'),
           href: '/panel/inmobiliaria/ai/cobranza/configuracion',
           icon: SlidersHorizontal,
           module: 'cobranza',
           dataTourTarget: 'sidebar-configuraciones',
         } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.analitica'),
-          href: '/panel/inmobiliaria/ai/cobranza/analitica',
-          icon: ChartLineUp,
-          module: 'cobranza',
-        } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar, module: 'cobros' },
-    // ── PORTAFOLIO ──
-    { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
-    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,         module: 'portafolio' },
-    { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,     module: 'portafolio' },
-    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,    module: 'propietarios' },
-    { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline',     icon: Kanban,        module: 'pipeline' },
-    { label: t('inmobiliaria.nav.agentes'),      href: '/panel/inmobiliaria/agentes',      icon: Users,         module: 'agentes' },
-    // ── TESORERÍA ──
-    { kind: 'section', label: t('inmobiliaria.nav.secTesoreria'), href: '#sec-tesoreria', icon: Wallet, module: null },
-    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt, module: 'dispersiones' },
-    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,         module: null },
-    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,        module: null },
-    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,           module: null },
-    // ── COTIZADOR ──
-    { kind: 'section', label: t('inmobiliaria.nav.secCotizador'), href: '#sec-cotizador', icon: FileText, module: null },
     {
       label: t('inmobiliaria.ai.nav.cotizador'),
       href: '/panel/inmobiliaria/ai/cotizador',
@@ -148,6 +203,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       module: 'cotizador',
       dataTourTarget: 'sidebar-cotizador',
       children: [
+        {
+          label: t('inmobiliaria.ai.nav.cotizadorCola'),
+          href: '/panel/inmobiliaria/ai/cotizador/cola',
+          icon: ClipboardText,
+          module: 'cotizador',
+        } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),
           href: '/panel/inmobiliaria/ai/cotizador/aseguradoras',
@@ -166,10 +227,198 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           icon: CurrencyDollar,
           module: 'cotizador',
         } as NavItemWithModule,
+        {
+          // F9: autonomy posture (read-only AutonomiaPanel; t323 amber callout).
+          label: t('inmobiliaria.ai.cotizador.nav.configuracion'),
+          href: '/panel/inmobiliaria/ai/cotizador/configuracion',
+          icon: SlidersHorizontal,
+          module: 'cotizador',
+        } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    // ── INTELIGENCIA ──
-    { kind: 'section', label: t('inmobiliaria.nav.secInteligencia'), href: '#sec-inteligencia', icon: ChartLine, module: null },
+    {
+      // Avalúos (7º agente): standalone service proxied by the agent backend;
+      // read-only tracking workspace (la inmobiliaria solicita y consulta —
+      // la firma del certificado la gestiona el avaluador Portofino/Leasefy).
+      // Gated by the agent module 'avaluos' with the ABSENT-module = ALLOWED
+      // fallback (see agent-module-access.ts) so either repo merges first.
+      label: t('inmobiliaria.ai.nav.avaluos'),
+      href: '/panel/inmobiliaria/ai/avaluos',
+      icon: Scales,
+      module: 'avaluos',
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.avaluosCola'),
+          href: '/panel/inmobiliaria/ai/avaluos/cola',
+          icon: ClipboardText,
+          module: 'avaluos',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.avaluosConfiguracion'),
+          href: '/panel/inmobiliaria/ai/avaluos/configuracion',
+          icon: SlidersHorizontal,
+          module: 'avaluos',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F6: Conciliación is the first complete agent workspace — the parent
+      // now points at the Sala (/ai/conciliacion); the legacy /conciliacion
+      // movimientos page stays reachable from the Sala's domain slot.
+      label: t('inmobiliaria.nav.conciliacion'),
+      href: '/panel/inmobiliaria/ai/conciliacion',
+      icon: Bank,
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionCola'),
+          href: '/panel/inmobiliaria/ai/conciliacion/cola',
+          icon: ClipboardText,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10 (SPEC §4): the legacy movimientos/extractos page moved INTO the
+          // workspace; /conciliacion now redirects to the Sala.
+          label: t('inmobiliaria.ai.nav.conciliacionMovimientos'),
+          href: '/panel/inmobiliaria/ai/conciliacion/movimientos',
+          icon: ArrowsClockwise,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionConfiguracion'),
+          href: '/panel/inmobiliaria/ai/conciliacion/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — same icon as cobranza's child.
+          label: t('inmobiliaria.ai.nav.conciliacionAnalitica'),
+          href: '/panel/inmobiliaria/ai/conciliacion/analitica',
+          icon: ChartLineUp,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F7: Estudio del inquilino complete workspace. Gated by the agent
+      // module 'estudio' (my-permissions payload, agent-repo pair PR) with
+      // an ABSENT-module = ALLOWED fallback (see agent-module-access.ts) so
+      // either repo can merge first; backend still scopes by membership and
+      // decisions are audit-first per T-323.
+      label: t('inmobiliaria.ai.nav.estudio'),
+      href: '/panel/inmobiliaria/ai/estudio',
+      icon: ShieldCheck,
+      module: 'estudio',
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.estudioCola'),
+          href: '/panel/inmobiliaria/ai/estudio/cola',
+          icon: ClipboardText,
+          module: 'estudio',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.estudioConfiguracion'),
+          href: '/panel/inmobiliaria/ai/estudio/configuracion',
+          icon: SlidersHorizontal,
+          module: 'estudio',
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — same gate as the rest of estudio.
+          label: t('inmobiliaria.ai.nav.estudioAnalitica'),
+          href: '/panel/inmobiliaria/ai/estudio/analitica',
+          icon: ChartLineUp,
+          module: 'estudio',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F8: Matching complete workspace. Gated by the agent module 'matching'
+      // with the same ABSENT-module = ALLOWED fallback as estudio (see
+      // agent-module-access.ts); backend scopes by agency membership and
+      // outreach happens only with approval.
+      label: t('inmobiliaria.ai.nav.matching'),
+      href: '/panel/inmobiliaria/ai/matching',
+      icon: GitMerge,
+      module: 'matching',
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.matchingCola'),
+          href: '/panel/inmobiliaria/ai/matching/cola',
+          icon: ClipboardText,
+          module: 'matching',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.matchingConfiguracion'),
+          href: '/panel/inmobiliaria/ai/matching/configuracion',
+          icon: SlidersHorizontal,
+          module: 'matching',
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — same gate as the rest of matching.
+          label: t('inmobiliaria.ai.nav.matchingAnalitica'),
+          href: '/panel/inmobiliaria/ai/matching/analitica',
+          icon: ChartLineUp,
+          module: 'matching',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F9: Pagos (AP) complete workspace — the parent now points at the Sala
+      // (/ai/pagos); the deep AP/dispersiones ops stay in Tesorería and are
+      // cross-linked from the Sala's domain slot. The ADMIN|CONTADOR role gate
+      // from F4 is PRESERVED on the parent and both children.
+      label: t('inmobiliaria.ai.nav.pagos'),
+      href: '/panel/inmobiliaria/ai/pagos',
+      icon: CurrencyDollar,
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.pagosCola'),
+          href: '/panel/inmobiliaria/ai/pagos/cola',
+          icon: ClipboardText,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.pagosConfiguracion'),
+          href: '/panel/inmobiliaria/ai/pagos/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — ADMIN|CONTADOR gate preserved.
+          label: t('inmobiliaria.ai.nav.pagosAnalitica'),
+          href: '/panel/inmobiliaria/ai/pagos/analitica',
+          icon: ChartLineUp,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', icon: ClipboardText, module: null },
+    // ── PORTAFOLIO ──
+    { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
+    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,         module: 'portafolio' },
+    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos',    icon: FilePlus,      module: 'portafolio' },
+    { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,     module: 'portafolio' },
+    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,    module: 'propietarios' },
+    { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline',     icon: Kanban,        module: 'pipeline' },
+    { label: t('inmobiliaria.nav.equipo'),       href: '/panel/inmobiliaria/agentes',      icon: Users,         module: 'agentes' },
+    // ── FINANZAS ──
+    { kind: 'section', label: t('inmobiliaria.nav.secFinanzas'), href: '#sec-finanzas', icon: Wallet, module: null },
+    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar, module: 'cobros' },
+    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt, module: 'dispersiones' },
+    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,         module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    // ── ANÁLISIS ──
+    { kind: 'section', label: t('inmobiliaria.nav.secAnalisis'), href: '#sec-analisis', icon: ChartLine, module: null },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,     module: 'reportes' },
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,   module: 'analytics' },
     // ── OPERACIONES ──
@@ -180,14 +429,29 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes',     icon: Chat,          badge: 5, module: null },
     // ── BOTTOM ──
     { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,      module: 'documentos' },
+    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: null },
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
-    // While loading, show all items to avoid flash
-    if (permissionsLoading) return ALL_NAV_ITEMS;
-
+    // Always filter by permission/role. While permissions load, canAccess()
+    // returns false for every gated module (and isAdmin/agencyRole are null),
+    // so the result is the conservative always-visible subset — gated items
+    // (cobranza/cotizador/conciliación/…) only appear once access is confirmed
+    // and never flash in then disappear. The desktop sidebar shows a skeleton
+    // during this window instead (PlanSidebar `loading` prop below).
     const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
+      // Module-based gate (unchanged): cobranza/cotizador use agent permissions;
+      // other modules use the legacy effectivePermissions map.
       if (item.module && !canAccess(item.module, 'view')) return null;
+      // Role-based gate: if the item declares `roles`, the current user must
+      // be a super-admin (isAdmin) OR have an agencyRole that is in the list.
+      // isAdmin bypasses role gating so Supabase service-role users always pass.
+      if (item.roles && item.roles.length > 0) {
+        const roleAllowed =
+          isAdmin ||
+          (agencyRole !== null && (item.roles as string[]).includes(agencyRole));
+        if (!roleAllowed) return null;
+      }
       if (item.children && item.children.length > 0) {
         const filteredChildren = (item.children as NavItemWithModule[])
           .map(filterItem)
@@ -204,7 +468,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       const next = filtered[idx + 1];
       return next != null && next.kind !== 'section';
     });
-  }, [ALL_NAV_ITEMS, canAccess, permissionsLoading]);
+  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin, permissionsLoading]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -216,6 +480,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Inmobiliaria Sidebar */}
       <PlanSidebar
         navItems={INMOBILIARIA_NAV_ITEMS}
+        loading={permissionsLoading}
         logo={{
           title: t('inmobiliaria.common.title'),
           href: '/panel/inmobiliaria',
@@ -227,16 +492,18 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Main content area */}
       <div
         className={cn(
-          'transition-all duration-200 pb-20 md:pb-0',
+          // pb-20 reserves space for the mobile bottom nav, which is visible
+          // below lg (same breakpoint where the desktop sidebar appears).
+          'transition-all duration-200 pb-20 lg:pb-0',
           isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
         )}
       >
-        {/* Pass the search pill as an action to the top bar */}
-        <PlanHeader actions={<CommandPaletteTrigger />} />
+        {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar. */}
+        <PlanHeader showMagnifyingGlass={false} />
         <main id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
-      {/* Mobile bottom navigation — hidden at md+ breakpoints */}
+      {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
       <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
       {/* Toast notifications - Premium style */}

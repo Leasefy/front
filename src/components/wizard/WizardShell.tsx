@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -36,6 +37,19 @@ const STEP_DESCRIPTIONS: Record<number, string> = {
 };
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/** Scroll to and focus a form field by its id (no-op if not rendered). */
+function focusFieldById(fieldId: string | undefined) {
+  if (!fieldId) return;
+  const el = document.getElementById(fieldId);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.focus({ preventScroll: true });
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -67,6 +81,20 @@ export function WizardShell({
   } = useApplication();
 
   const currentStepConfig = WIZARD_STEPS[currentStep - 1];
+
+  // Ids of fields with errors, aligned 1:1 with currentStepMissingFields labels
+  const missingFieldIds = Object.keys(currentStepValidation.errors);
+
+  // On a failed advance attempt, scroll to and focus the first invalid field
+  const handleNext = useCallback(() => {
+    const advanced = tryAdvanceStep();
+    if (!advanced) {
+      // Wait one frame so the error summary renders before scrolling
+      requestAnimationFrame(() => {
+        focusFieldById(Object.keys(currentStepValidation.errors)[0]);
+      });
+    }
+  }, [tryAdvanceStep, currentStepValidation.errors]);
 
   return (
     <div className={cn('min-h-screen bg-muted', className)}>
@@ -301,7 +329,15 @@ export function WizardShell({
                       </p>
                       <ul className="mt-2 text-sm text-[#C4503B] list-disc list-inside space-y-1">
                         {currentStepMissingFields.map((field, idx) => (
-                          <li key={idx}>{field}</li>
+                          <li key={idx}>
+                            <button
+                              type="button"
+                              onClick={() => focusFieldById(missingFieldIds[idx])}
+                              className="underline-offset-2 hover:underline focus:underline text-left"
+                            >
+                              {field}
+                            </button>
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -315,7 +351,7 @@ export function WizardShell({
                   currentStep={currentStep}
                   totalSteps={totalSteps}
                   onBack={prevStep}
-                  onNext={tryAdvanceStep}
+                  onNext={handleNext}
                   onSubmit={submitApplication}
                   isSubmitting={isLoading}
                   isValid={currentStep === totalSteps ? canSubmit : true}

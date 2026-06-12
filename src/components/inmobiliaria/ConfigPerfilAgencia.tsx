@@ -66,6 +66,13 @@ export function ConfigPerfilAgencia({
     defaults: { ...config.defaults },
   });
 
+  // Defensive: the read-only view must not crash when the loaded config is
+  // partial (the backend may omit contact/legal/defaults). Fall back to {} so
+  // missing fields render blank instead of throwing on `.phone` etc.
+  const contact = config.contact ?? ({} as InmobiliariaConfigExtended['contact']);
+  const legal = config.legal ?? ({} as InmobiliariaConfigExtended['legal']);
+  const defaults = config.defaults ?? ({} as InmobiliariaConfigExtended['defaults']);
+
   const updateContact = useCallback(
     (field: keyof AgencyContactInfo, value: string) => {
       setFormData((prev) => ({
@@ -557,24 +564,24 @@ export function ConfigPerfilAgencia({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.phone')}:</span>
-              <span className="ml-2 text-foreground">{config.contact.phone}</span>
+              <span className="ml-2 text-foreground">{contact.phone}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.email')}:</span>
-              <span className="ml-2 text-foreground">{config.contact.email}</span>
+              <span className="ml-2 text-foreground">{contact.email}</span>
             </div>
             <div>
               <span className="text-muted-foreground">WhatsApp:</span>
-              <span className="ml-2 text-foreground">{config.contact.whatsapp || '-'}</span>
+              <span className="ml-2 text-foreground">{contact.whatsapp || '-'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.website')}:</span>
-              <span className="ml-2 text-foreground">{config.contact.website || '-'}</span>
+              <span className="ml-2 text-foreground">{contact.website || '-'}</span>
             </div>
             <div className="sm:col-span-2">
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.address')}:</span>
               <span className="ml-2 text-foreground">
-                {config.contact.address}, {config.contact.city}, {config.contact.department}
+                {[contact.address, contact.city, contact.department].filter(Boolean).join(', ') || '—'}
               </span>
             </div>
           </div>
@@ -701,27 +708,27 @@ export function ConfigPerfilAgencia({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.nit')}:</span>
-              <span className="ml-2 text-foreground font-mono">{config.legal.nit}</span>
+              <span className="ml-2 text-foreground font-mono">{legal.nit}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalName')}:</span>
-              <span className="ml-2 text-foreground">{config.legal.razonSocial}</span>
+              <span className="ml-2 text-foreground">{legal.razonSocial}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalRep')}:</span>
-              <span className="ml-2 text-foreground">{config.legal.representanteLegal}</span>
+              <span className="ml-2 text-foreground">{legal.representanteLegal}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalRepId')}:</span>
-              <span className="ml-2 text-foreground font-mono">{config.legal.representanteCedula}</span>
+              <span className="ml-2 text-foreground font-mono">{legal.representanteCedula}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.realEstateRegistration')}:</span>
-              <span className="ml-2 text-foreground">{config.legal.matriculaInmobiliaria || '-'}</span>
+              <span className="ml-2 text-foreground">{legal.matriculaInmobiliaria || '-'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.chamberRegistrationShort')}:</span>
-              <span className="ml-2 text-foreground">{config.legal.registroCamara || '-'}</span>
+              <span className="ml-2 text-foreground">{legal.registroCamara || '-'}</span>
             </div>
           </div>
         )}
@@ -924,37 +931,37 @@ export function ConfigPerfilAgencia({
               <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.commission')}</div>
                 <div className="text-foreground font-semibold">
-                  {config.defaults.defaultCommissionPercent}%
+                  {defaults.defaultCommissionPercent}%
                 </div>
               </div>
               <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.adminFee')}</div>
                 <div className="text-foreground font-semibold">
-                  {config.defaults.defaultAdminFeePercent}%
+                  {defaults.defaultAdminFeePercent}%
                 </div>
               </div>
               <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.lateFee')}</div>
                 <div className="text-foreground font-semibold">
-                  {config.defaults.defaultLateFeePercent}%
+                  {defaults.defaultLateFeePercent}%
                 </div>
               </div>
               <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>
                 <div className="text-foreground font-semibold">
-                  {config.defaults.paymentDueDay}
+                  {defaults.paymentDueDay}
                 </div>
               </div>
               <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.disbursementDayLabel')}</div>
                 <div className="text-foreground font-semibold">
-                  {config.defaults.disbursementDay}
+                  {defaults.disbursementDay}
                 </div>
               </div>
               <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.gracePeriodDays')}</div>
                 <div className="text-foreground font-semibold">
-                  {config.defaults.gracePeriodDays}
+                  {defaults.gracePeriodDays}
                 </div>
               </div>
             </div>
@@ -963,13 +970,13 @@ export function ConfigPerfilAgencia({
               <div>
                 <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersBefore')}:</span>
                 <span className="ml-2 text-foreground">
-                  {config.defaults.reminderDaysBefore.map((d) => `${d}d`).join(', ')}
+                  {(defaults.reminderDaysBefore ?? []).map((d) => `${d}d`).join(', ')}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersAfter')}:</span>
                 <span className="ml-2 text-foreground">
-                  {config.defaults.reminderDaysAfter.map((d) => `${d}d`).join(', ')}
+                  {(defaults.reminderDaysAfter ?? []).map((d) => `${d}d`).join(', ')}
                 </span>
               </div>
             </div>

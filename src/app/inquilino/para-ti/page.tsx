@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { Sparkle, ArrowLeft, TrendUp, Shield, SealCheck, Funnel, CaretDown, CaretLeft, CaretRight, Crosshair, Lightning, Medal, GridFour, List, Target, Trophy } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
-import { useProperties } from '@/lib/hooks/useProperties';
+import { useRecommendations } from '@/lib/hooks/useRecommendations';
+import type { RecommendedProperty } from '@/lib/api/recommendations.service';
 import {
   useTenantProfile,
   RISK_LEVEL_COLORS,
   RISK_LEVEL_LABELS,
   getAccessiblePropertiesPercentage,
 } from '@/lib/context/TenantProfileContext';
-import { getRecommendedProperties, type PropertyMatch } from '@/lib/scoring/propertyMatching';
 import { PropertyMatchCard } from '@/components/tenant/PropertyMatchCard';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { formatCurrency } from '@/lib/format';
@@ -40,10 +40,10 @@ export default function ParaTiPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Property detail sheet state
-  const [selectedMatch, setSelectedMatch] = useState<PropertyMatch | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<RecommendedProperty | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const handleViewProperty = (match: PropertyMatch) => {
+  const handleViewProperty = (match: RecommendedProperty) => {
     setSelectedMatch(match);
     setSheetOpen(true);
   };
@@ -52,14 +52,8 @@ export default function ParaTiPage() {
     setSheetOpen(false);
   };
 
-  // Fetch all available properties from API
-  const { properties: allProperties, isLoading: propertiesLoading } = useProperties({ limit: 100 });
-
-  // Get all recommendations (no limit)
-  const allRecommendations = useMemo(() => {
-    if (!profile || allProperties.length === 0) return [];
-    return getRecommendedProperties(allProperties, profile);
-  }, [profile, allProperties]);
+  // Get all recommendations from backend (no limit)
+  const { recommendations: allRecommendations, isLoading: recommendationsLoading } = useRecommendations();
 
   // Apply filters and sorting
   const filteredRecommendations = useMemo(() => {
@@ -129,7 +123,7 @@ export default function ParaTiPage() {
   }, [allRecommendations]);
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || recommendationsLoading) {
     return (
       <div className="min-h-screen bg-plan-page">
         <div className="max-w-6xl mx-auto px-6 py-8">

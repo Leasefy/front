@@ -1,10 +1,11 @@
 'use client';
 
-import { Sparkle, Copy, ArrowsClockwise, ThumbsUp, ThumbsDown } from '@phosphor-icons/react';
+import { Copy, ArrowsClockwise, ThumbsUp, ThumbsDown } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { LeasefyMark } from './LeasefyMark';
 
 interface AssistantBubbleProps {
   message: ChatMessage;
@@ -32,9 +33,9 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
 
   return (
     <div className={cn('flex gap-3', className)}>
-      {/* AI icon */}
+      {/* AI icon — real Leasefy mark */}
       <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-        <Sparkle className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" weight="fill" />
+        <LeasefyMark className="w-3.5 h-auto text-[#1A40FF] dark:text-neutral-200" />
       </div>
 
       <div className="flex-1 min-w-0">

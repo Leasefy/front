@@ -3,14 +3,38 @@
 // Permissions gate enforced by cotizador layout.tsx (Phase 29).
 // This page does NOT re-check canAccess — layout handles 403 before mount.
 
+import { Hourglass } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useInsights } from '@/lib/hooks/cotizador/use-insights'
 import { ApprovalRateMonthlyChart } from '@/components/inmobiliaria/cotizador/ApprovalRateMonthlyChart'
 import { PrimaDistributionChart } from '@/components/inmobiliaria/cotizador/PrimaDistributionChart'
 import { InsightsAssumptionTable } from '@/components/inmobiliaria/cotizador/InsightsAssumptionTable'
 import { InsightsMonthlyCostPreview } from '@/components/inmobiliaria/cotizador/InsightsMonthlyCostPreview'
-import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+
+/**
+ * Placeholder "Disponible próximamente" para los widgets aún no activos.
+ * Reemplaza al NoDataYetBadge aquí porque ese badge expone jerga de roadmap
+ * interno ("Fase 28" / "Requiere Phase 28…") que no le dice nada al usuario.
+ * Conserva `role="status"` + border-dashed (selector de los specs a11y 38-08).
+ */
+function ProximamentePlaceholder() {
+  const { t } = useI18n()
+  return (
+    <div
+      role="status"
+      className="rounded-xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/30 px-6 py-8 flex flex-col items-center gap-3 text-center"
+    >
+      <Hourglass weight="duotone" className="h-8 w-8 text-neutral-400" />
+      <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+        {t('inmobiliaria.ai.cotizador.noDataYet.heading')}
+      </p>
+      <span className="text-xs bg-neutral-200 dark:bg-neutral-700 rounded-full px-2 py-0.5 text-neutral-600 dark:text-neutral-300">
+        Disponible próximamente
+      </span>
+    </div>
+  )
+}
 
 export default function CotizadorInsightsPage() {
   const { t } = useI18n()
@@ -105,26 +129,20 @@ export default function CotizadorInsightsPage() {
             />
           </section>
 
-          {/* Widget 5 — Cohort Match Quality (NoDataYet — Phase 28) */}
+          {/* Widget 5 — Cohort Match Quality (aún sin datos) */}
           <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
             <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
               {t('inmobiliaria.ai.cotizador.insights.sections.cohortQuality')}
             </h2>
-            <NoDataYetBadge
-              phase={28}
-              reason={t('inmobiliaria.ai.cotizador.insights.cohortQuality.reason')}
-            />
+            <ProximamentePlaceholder />
           </section>
 
-          {/* Widget 6 — Drift Report (NoDataYet — Phase 28) */}
+          {/* Widget 6 — Drift Report (aún sin datos) */}
           <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
             <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
               {t('inmobiliaria.ai.cotizador.insights.sections.driftReport')}
             </h2>
-            <NoDataYetBadge
-              phase={28}
-              reason={t('inmobiliaria.ai.cotizador.insights.driftReport.reason')}
-            />
+            <ProximamentePlaceholder />
           </section>
         </div>
       )}

@@ -109,16 +109,18 @@ export function CotizadorRecentQuotesFeed({
                   href={`/panel/inmobiliaria/ai/cotizador/${q.id}`}
                   className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-md transition-colors"
                   aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.ariaRow')
-                    .replace('{{name}}', q.cedulaHashPrefix8)
+                    .replace('{{name}}', `Ref. ${q.cedulaHashPrefix8}`)
                     .replace('{{city}}', q.ciudad)
                     .replace('{{status}}', q.status)}
                 >
+                  {/* Identidad visual primaria = ciudad + canon (humano); el hash
+                      de cédula es solo una referencia técnica → "Ref. {hash}" */}
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium text-neutral-900 dark:text-white">
-                      {q.cedulaHashPrefix8}
-                    </span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
                       {q.ciudad} · ${formatCOP(q.canonCop)}/mes
+                    </span>
+                    <span className="text-xs font-mono text-neutral-500 dark:text-neutral-400">
+                      Ref. {q.cedulaHashPrefix8}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

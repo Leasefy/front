@@ -229,16 +229,17 @@ export function StepEmployment() {
             >
               <LightInput
                 id="timeAtJob"
-                type="number"
-                min={0}
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Ej: 12"
                 value={employment.timeAtJob ?? ''}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '');
                   handleInputChange(
                     'timeAtJob',
-                    e.target.value ? parseInt(e.target.value, 10) : undefined
-                  )
-                }
+                    digits ? parseInt(digits, 10) : undefined
+                  );
+                }}
                 onBlur={() => handleBlur('timeAtJob')}
                 icon={<Clock className="h-4 w-4" />}
                 hasError={!!getError('timeAtJob')}

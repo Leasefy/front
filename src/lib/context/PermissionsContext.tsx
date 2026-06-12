@@ -6,16 +6,19 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react';
 import { apiClient, getAccessToken } from '@/lib/api/client';
 import type { MemberPermissionsResponse } from '@/lib/api/inmobiliaria.service';
 import { useAuth } from '@/lib/auth';
+import {
+  isAgentModule,
+  resolveAgentModuleAccess,
+  type AgentModulePermissions,
+} from '@/lib/auth/agent-module-access';
 
-interface AgentPermissions {
-  cobranza: string[];
-  cotizador: string[];
-}
+type AgentPermissions = AgentModulePermissions;
 
 interface PermissionsContextValue {
   permissions: MemberPermissionsResponse | null;
@@ -87,12 +90,19 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
+      // Decouple the two fetches: a monolith outage must NOT reject the whole
+      // Promise.all and null out agent permissions (cobranza/cotizador access),
+      // and an agent-service outage must not block the legacy modules. Each
+      // call fails independently to null.
       const [legacy, agent] = await Promise.all([
-        apiClient.get<MemberPermissionsResponse>('/inmobiliaria/agency/my-permissions'),
+        apiClient
+          .get<MemberPermissionsResponse>('/inmobiliaria/agency/my-permissions')
+          .catch(() => null),
         agencyId ? fetchAgentPermissions(agencyId).catch(() => null) : Promise.resolve(null),
       ]);
       setPermissions(legacy);
       setAgentPerms(agent);
+      if (!legacy) setError('No se pudieron cargar los permisos de la agencia');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error fetching permissions';
       console.error('[PermissionsContext]', message);
@@ -109,13 +119,20 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const canAccess = useCallback(
     (module: string, action: string): boolean => {
       if (isLoading) return false;
-      if (module === 'cobranza' || module === 'cotizador') {
-        return agentPerms?.[module]?.includes(action) ?? false;
+      if (isAgentModule(module)) {
+        // Posture per module lives in agent-module-access.ts:
+        // cobranza/cotizador fail CLOSED; estudio/matching treat an ABSENT
+        // payload key as ALLOWED (mergeable in any order with the agent PR).
+        return resolveAgentModuleAccess(agentPerms, module, action);
       }
       if (!permissions) return false;
       if (permissions.isAdmin) return true;
       const effectivePerms = permissions.effectivePermissions;
-      if (!effectivePerms || effectivePerms === 'FULL_ACCESS') return true;
+      // Fail CLOSED: only the explicit sentinel grants full access. A missing,
+      // null, or malformed permissions payload must deny non-admin users
+      // instead of accidentally granting every module.
+      if (effectivePerms === 'FULL_ACCESS') return true;
+      if (!effectivePerms || typeof effectivePerms !== 'object') return false;
       const modulePerms = (effectivePerms as Record<string, string[]>)[module];
       if (!modulePerms) return false;
       return modulePerms.includes(action);
@@ -123,18 +140,21 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     [permissions, agentPerms, isLoading],
   );
 
+  const value = useMemo<PermissionsContextValue>(
+    () => ({
+      permissions,
+      isLoading,
+      error,
+      canAccess,
+      isAdmin: permissions?.isAdmin ?? false,
+      agencyRole: permissions?.role ?? null,
+      refetch: fetchPermissions,
+    }),
+    [permissions, isLoading, error, canAccess, fetchPermissions],
+  );
+
   return (
-    <PermissionsContext.Provider
-      value={{
-        permissions,
-        isLoading,
-        error,
-        canAccess,
-        isAdmin: permissions?.isAdmin ?? false,
-        agencyRole: permissions?.role ?? null,
-        refetch: fetchPermissions,
-      }}
-    >
+    <PermissionsContext.Provider value={value}>
       {children}
     </PermissionsContext.Provider>
   );

@@ -112,6 +112,7 @@ export function StepDocuments() {
             accept=".pdf,.jpg,.jpeg,.png"
             maxSizeMB={5}
             value={documents.idDocument || null}
+            id="idDocument"
             onChange={(data) => handleDocumentChange('idDocument', data)}
             onDelete={buildOnDelete('idDocument')}
             hint="Cédula de ciudadanía o extranjería por ambos lados"
@@ -124,6 +125,7 @@ export function StepDocuments() {
             accept=".pdf"
             maxSizeMB={5}
             value={documents.bankStatement || null}
+            id="bankStatement"
             onChange={(data) => handleDocumentChange('bankStatement', data)}
             onDelete={buildOnDelete('bankStatement')}
             hint="Últimos 3 meses de tu cuenta principal"
@@ -155,6 +157,7 @@ export function StepDocuments() {
             accept=".pdf"
             maxSizeMB={5}
             value={documents.employmentLetter || null}
+            id="employmentLetter"
             onChange={(data) => handleDocumentChange('employmentLetter', data)}
             onDelete={buildOnDelete('employmentLetter')}
             hint="Carta con fecha reciente indicando cargo y salario"
@@ -165,6 +168,7 @@ export function StepDocuments() {
             accept=".pdf,.jpg,.jpeg,.png"
             maxSizeMB={5}
             value={documents.incomeProof || null}
+            id="incomeProof"
             onChange={(data) => handleDocumentChange('incomeProof', data)}
             onDelete={buildOnDelete('incomeProof')}
             hint="Últimos 3 desprendibles de nómina o declaración de renta"
@@ -190,6 +194,7 @@ export function StepDocuments() {
             accept=".pdf,.jpg,.jpeg,.png"
             maxSizeMB={5}
             value={documents.payStub || null}
+            id="payStub"
             onChange={(data) => handleDocumentChange('payStub', data)}
             onDelete={buildOnDelete('payStub')}
             hint="Último desprendible de pago de tu empleador"
@@ -200,6 +205,7 @@ export function StepDocuments() {
             accept=".pdf"
             maxSizeMB={5}
             value={documents.creditReport || null}
+            id="creditReport"
             onChange={(data) => handleDocumentChange('creditReport', data)}
             onDelete={buildOnDelete('creditReport')}
             hint="Descarga gratuita de Datacrédito o TransUnion"

@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils"
 
 /**
  * ADAPTER fino sobre el Sheet de @leasefy/ui que preserva la API local del mvp:
- * - Root con scroll-lock propio (body/html overflow hidden mientras open).
  * - SheetContent: `side` passthrough (el DS ya lo soporta),
  *   `hideCloseButton` → `hideClose`, overlay `z-[300] bg-black/60`,
  *   contrato de layout legacy (p-6 default, w-3/4 sm:max-w-sm en left/right,
@@ -26,21 +25,10 @@ import { cn } from "@/lib/utils"
  * - Header/Footer mantienen las clases legacy (padding en el Content).
  */
 
-// Custom Sheet Root that blocks body scroll when open
-const Sheet = ({ children, ...props }: React.ComponentProps<typeof DSSheet>) => {
-  React.useEffect(() => {
-    if (props.open) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [props.open]);
-
-  return <DSSheet {...props}>{children}</DSSheet>;
-}
+// Scroll locking is handled by Radix (modal by default via react-remove-scroll).
+// The previous manual body-overflow effect only worked for controlled usage
+// (keyed off props.open) and caused scrollbar layout shift — removed.
+const Sheet = DSSheet
 
 const SheetTrigger = DSSheetTrigger
 

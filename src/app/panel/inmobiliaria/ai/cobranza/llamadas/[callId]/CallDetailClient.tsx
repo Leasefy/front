@@ -11,7 +11,6 @@ import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
-import { TranscriptPdf } from '@/lib/cobranza/transcript-pdf-document'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
@@ -115,7 +114,10 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
         debtorNameRedacted: string
         generatedAt: string
       }
-      const { pdf } = await import('@react-pdf/renderer')
+      const [{ pdf }, { TranscriptPdf }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/cobranza/transcript-pdf-document'),
+      ])
       const element = (
         <TranscriptPdf
           callId={callId}

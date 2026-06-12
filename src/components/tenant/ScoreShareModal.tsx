@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Copy, Check, WhatsappLogo, EnvelopeSimple, Link as LinkIcon } from '@phosphor-icons/react';
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
+import { useLenis } from '@/components/providers/SmoothScroll';
 
 interface ScoreShareModalProps {
   open: boolean;
@@ -20,8 +21,16 @@ interface ScoreShareModalProps {
 
 export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareModalProps) {
   const { locale } = useI18n();
+  const lenis = useLenis();
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Pause Lenis smooth scroll while the modal is open (DESIGN.md §8).
+  useEffect(() => {
+    if (open) lenis.stop();
+    else lenis.start();
+    return () => lenis.start();
+  }, [open, lenis]);
 
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verificar/${verificationCode}`;
   const shareMessage = locale === 'es'

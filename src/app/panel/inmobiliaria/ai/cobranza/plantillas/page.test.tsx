@@ -11,6 +11,11 @@
 
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+import { vi as _vi } from 'vitest'
+// Flake conocido: estos specs montan páginas pesadas y exceden los 5s default
+// bajo carga paralela del runner (pasan aislados). Timeout holgado a propósito.
+_vi.setConfig({ testTimeout: 20_000 })
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 

@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils"
  * Preserva la API local del mvp:
  * - Content: contrato de layout legacy (`p-6 grid gap-4 max-w-lg`), z-[300],
  *   overlay `z-[300] bg-black/60` y animación legacy in/out.
+ * - Mobile: gutter `w-[calc(100%-2rem)]` + `max-h-[min(640px,90dvh)]` con
+ *   overflow-y-auto/overscroll-contain para contenido largo en viewports cortos.
  * - Action/Cancel = los del DS, ya estilados con buttonVariants
  *   (Action acepta `tone="primary" | "danger"`; Cancel = secondary).
  * - Header/Footer mantienen las clases legacy (padding en el Content).
@@ -57,7 +59,9 @@ const AlertDialogContent = React.forwardRef<
     overlayClassName={cn(alertOverlayClasses, overlayClassName)}
     className={cn(
       // contrato de layout legacy — overridable por className del call site
-      "z-[300] grid w-full max-w-lg gap-4 p-6",
+      "z-[300] grid w-[calc(100%-2rem)] max-w-lg gap-4 p-6",
+      // mobile: nunca exceder el viewport; scroll interno contenido
+      "max-h-[min(640px,90dvh)] overflow-y-auto overscroll-contain",
       // animación legacy del mvp (in/out); animate-none apaga el scale-in del DS
       "animate-none duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
       className

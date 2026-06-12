@@ -4,8 +4,9 @@
 // Native <audio> consuming the range-byte proxy from Plan 31-05.
 // Browser handles Range/206 negotiation automatically; DO NOT add MediaSource.
 
-import { useEffect, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useI18n } from '@/lib/i18n'
+import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import {
   ALLOWED_SPEEDS,
   useAudioPlayer,
@@ -44,15 +45,44 @@ export default function CallAudioPlayer({
     }
   }, [callId, audioRef])
 
+  // The audio endpoint is Bearer-only — a native <audio src> (or crossOrigin
+  // "use-credentials") cannot attach the Authorization header, so it 401'd.
+  // Fetch the bytes with the bearer header and feed an object URL instead.
+  const [objectUrl, setObjectUrl] = useState<string>('')
+  const [audioError, setAudioError] = useState(false)
+
+  useEffect(() => {
+    if (!hasRecording) return
+    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+    if (!agentUrl || !agencyId || !callId) return
+    let cancelled = false
+    let createdUrl = ''
+    setAudioError(false)
+    setObjectUrl('')
+    const url = `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/audio`
+    void fetch(url, { headers: agentAuthHeaders() })
+      .then((r) => {
+        if (!r.ok) throw new Error(`audio ${r.status}`)
+        return r.blob()
+      })
+      .then((blob) => {
+        if (cancelled) return
+        createdUrl = URL.createObjectURL(blob)
+        setObjectUrl(createdUrl)
+      })
+      .catch(() => {
+        if (!cancelled) setAudioError(true)
+      })
+    return () => {
+      cancelled = true
+      if (createdUrl) URL.revokeObjectURL(createdUrl)
+    }
+  }, [hasRecording, agencyId, callId])
+
   if (!hasRecording) {
     // Parent handles the empty-state copy.
     return null
   }
-
-  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
-  const src = agentUrl
-    ? `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/audio`
-    : ''
 
   // Keyboard map (Phase 38 plan 38-04c / XR-06 / WCAG 2.1 AA 1.3.1 + 2.1.1):
   // - Space → togglePlay (pre-existing behavior, unchanged)
@@ -104,14 +134,13 @@ export default function CallAudioPlayer({
       <span id="audio-seek-help" className="sr-only">
         {t('inmobiliaria.ai.cobranza.call.player.seekHelp')}
       </span>
-      <audio
-        ref={audioRef}
-        src={src}
-        preload="metadata"
-        // httpOnly session cookie travels via fetch credentials; native <audio>
-        // sends credentials cross-origin only when crossOrigin="use-credentials".
-        crossOrigin="use-credentials"
-      />
+      <audio ref={audioRef} src={objectUrl} preload="metadata" />
+
+      {audioError && (
+        <p className="mb-2 text-xs text-red-600 dark:text-red-400" role="status">
+          {t('inmobiliaria.ai.cobranza.call.player.audioError')}
+        </p>
+      )}
 
       <div className="flex items-center gap-3">
         {/* Play / Pause */}

@@ -55,6 +55,8 @@ export interface LandlordCandidate extends CandidateBasic {
   statusChangedAt?: string;
   notes?: string;
   propertyId: string;
+  /** Human-readable property title — mapped from /landlord/candidates response. */
+  propertyTitle?: string;
 }
 
 // ============================================================================

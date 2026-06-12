@@ -48,16 +48,48 @@ export function FormField({
 }
 
 // ============================================================================
+// Field kind presets - mobile keyboard + autofill behavior
+// ============================================================================
+
+export type FieldKind = 'cedula' | 'tel' | 'email' | 'money' | 'text';
+
+const KIND_PRESETS: Record<FieldKind, InputHTMLAttributes<HTMLInputElement>> = {
+  cedula: {
+    inputMode: 'numeric',
+    pattern: '[0-9]*',
+    spellCheck: false,
+    autoComplete: 'off',
+  },
+  tel: {
+    type: 'tel',
+    inputMode: 'tel',
+    autoComplete: 'tel',
+  },
+  email: {
+    type: 'email',
+    inputMode: 'email',
+    autoComplete: 'email',
+    spellCheck: false,
+  },
+  money: {
+    inputMode: 'numeric',
+  },
+  text: {},
+};
+
+// ============================================================================
 // DarkInput - Luxterra-style dark input field
 // ============================================================================
 
 interface DarkInputProps extends InputHTMLAttributes<HTMLInputElement> {
   icon?: ReactNode;
   hasError?: boolean;
+  /** Preset for mobile keyboard, autofill and spellcheck. Explicit props win. */
+  kind?: FieldKind;
 }
 
 export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
-  ({ className, icon, hasError, ...props }, ref) => {
+  ({ className, icon, hasError, kind, ...props }, ref) => {
     return (
       <div className="relative">
         {icon && (
@@ -77,6 +109,7 @@ export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
             hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
             className
           )}
+          {...(kind ? KIND_PRESETS[kind] : {})}
           {...props}
         />
       </div>
@@ -155,7 +188,7 @@ export function DarkSelect({
 // ============================================================================
 
 export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
-  ({ className, icon, hasError, ...props }, ref) => {
+  ({ className, icon, hasError, kind, ...props }, ref) => {
     return (
       <div className="relative">
         {icon && (
@@ -175,6 +208,7 @@ export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
             hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
             className
           )}
+          {...(kind ? KIND_PRESETS[kind] : {})}
           {...props}
         />
       </div>

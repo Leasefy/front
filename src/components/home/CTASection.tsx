@@ -18,6 +18,7 @@ export function CTASection() {
         src="/cta-house.jpg"
         alt="Casa moderna con arquitectura contemporánea"
         fill
+        sizes="100vw"
         className="object-cover"
         priority
       />

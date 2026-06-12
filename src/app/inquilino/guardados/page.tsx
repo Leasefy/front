@@ -9,7 +9,7 @@ import { useWishlist } from '@/lib/stores/wishlist';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
-import { useFeaturedProperties } from '@/lib/hooks/useProperties';
+import { useWishlistedProperties } from '@/lib/hooks/useProperties';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { Button } from '@/components/ui/button';
@@ -18,16 +18,21 @@ import type { Property } from '@/lib/types/property';
 export default function GuardadosPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { getWishlistedProperties, removeFromWishlist, count } = useWishlist();
-  const { properties: allProperties } = useFeaturedProperties(100);
+  const { wishlist, removeFromWishlist } = useWishlist();
+  // Resolve the actual wishlisted properties directly by ID (no top-100 ceiling,
+  // so saved items never vanish just because they fall outside the featured page).
+  const { properties: resolvedProperties } = useWishlistedProperties(
+    isOnboardingComplete ? wishlist : [],
+  );
 
   // Property detail sheet state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Only show wishlist if onboarding is complete
-  const properties = isOnboardingComplete ? getWishlistedProperties(allProperties) : [];
-  const displayCount = isOnboardingComplete ? count : 0;
+  // Only show wishlist if onboarding is complete. Derive the count from what is
+  // actually resolved so the cards and the count always agree.
+  const properties = isOnboardingComplete ? resolvedProperties : [];
+  const displayCount = properties.length;
 
   const handleViewProperty = (property: Property) => {
     setSelectedProperty(property);

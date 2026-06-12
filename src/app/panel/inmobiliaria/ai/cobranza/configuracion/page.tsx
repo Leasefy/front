@@ -38,6 +38,7 @@ import {
 } from 'recharts'
 
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePoliciesConfig } from '@/lib/hooks/cobranza/use-policies-config'
 import { usePolicyVersions, type PolicyVersionRow } from '@/lib/hooks/cobranza/use-policy-versions'
@@ -167,6 +168,8 @@ export default function CobranzaConfiguracionPage() {
 
   const { data: simulatorData, isSimulating, simulate } = usePolicyImpact()
 
+  const { agency } = useAuth()
+
   // ── Local state ────────────────────────────────────────────────────────────
   const [localPolicy, setLocalPolicy] = useState<PolicyConfig>(DEFAULT_POLICY)
   const [simulatorOpen, setSimulatorOpen] = useState(false)
@@ -276,21 +279,28 @@ export default function CobranzaConfiguracionPage() {
   const handleRollback = useCallback(async () => {
     if (!rollbackTarget) return
     setRollbackError(null)
+    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+    // agencyId comes from the auth session — NOT from configData (which has no
+    // agencyId field, so the old read was always undefined and the POST never
+    // fired, silently closing the dialog as if rollback succeeded).
+    const agencyId = agency?.id ?? null
+    if (!agentUrl || !agencyId) {
+      setRollbackError(t('inmobiliaria.ai.policies.error.rollback'))
+      return
+    }
     try {
-      const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
-      const agencyId = (configData as unknown as { agencyId?: string })?.agencyId
-      if (agentUrl && agencyId) {
-        await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/policies/rollback/${rollbackTarget.versionNumber}`,
-          { method: 'POST', headers: agentAuthHeaders() },
-        )
-      }
+      const res = await globalThis.fetch(
+        `${agentUrl}/api/agency/${agencyId}/policies/rollback/${rollbackTarget.versionNumber}`,
+        { method: 'POST', headers: agentAuthHeaders() },
+      )
+      if (!res.ok) throw new Error(`${res.status}`)
       await Promise.all([refetchConfig(), refetchVersions()])
       setRollbackTarget(null)
     } catch {
+      // Keep the dialog open so the existing rollbackError banner is visible.
       setRollbackError(t('inmobiliaria.ai.policies.error.rollback'))
     }
-  }, [rollbackTarget, configData, refetchConfig, refetchVersions, t])
+  }, [rollbackTarget, agency, refetchConfig, refetchVersions, t])
 
   const runSimulator = useCallback(async () => {
     await simulate(localPolicy as unknown as object)

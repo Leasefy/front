@@ -56,7 +56,7 @@ export function HowItWorksSection() {
           className="text-center mb-16 md:mb-20"
         >
           {/* Main heading */}
-          <h2 className="text-[32px] md:text-[48px] font-heading font-normal text-foreground tracking-[-3px] leading-[1.1] mb-4 max-w-2xl mx-auto">
+          <h2 className="text-[32px] md:text-[48px] font-heading font-normal text-foreground tracking-[-0.0625em] leading-[1.1] mb-4 max-w-2xl mx-auto">
             Administra más con menos en 3 pasos
           </h2>
 

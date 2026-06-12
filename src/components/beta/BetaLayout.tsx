@@ -14,6 +14,14 @@ import { useBetaKeyboardShortcuts } from '@/lib/hooks/useBetaKeyboardShortcuts';
 interface BetaLayoutProps {
   children: React.ReactNode;
   basePath: string;
+  /**
+   * fullscreen (default): fixed inset overlay — the "separate universe" used
+   * by the /beta subtree.
+   * embedded: fills the classic panel's content area so the main backoffice
+   * sidebar + header stay visible (the INICIO chat — AI CHAT HOME F3 revisión:
+   * la sidebar principal debe seguir existiendo).
+   */
+  variant?: 'fullscreen' | 'embedded';
 }
 
 /**
@@ -31,7 +39,7 @@ interface BetaLayoutProps {
  * BetaChatProvider wraps all children so chat state persists across
  * tab switches and page navigation within the Beta section.
  */
-export function BetaLayout({ children, basePath }: BetaLayoutProps) {
+export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaLayoutProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<BetaTab>('conversations');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -46,7 +54,14 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
       <BetaKeyboardShortcuts onCloseDrawer={() => setDrawerOpen(false)} drawerOpen={drawerOpen} />
       <div
         className={cn(
-          'fixed inset-0 z-50',
+          variant === 'fullscreen'
+            ? // h-[100dvh] (not inset-0/100vh) keeps the chat input visible above
+              // the on-screen keyboard / collapsing URL bar on mobile.
+              'fixed inset-x-0 top-0 h-[100dvh] z-50'
+            : // Embedded: fill the classic panel content area. The sticky
+              // PlanHeader is h-16 (4rem); below lg the layout reserves pb-20
+              // (5rem) for the MobileNavBar.
+              'relative h-[calc(100dvh-4rem-5rem)] lg:h-[calc(100dvh-4rem)]',
           'flex flex-col md:flex-row',
           'bg-[#f5f5f7] dark:bg-[#0c0c0e]'
         )}
@@ -71,7 +86,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           <button
             onClick={() => setDrawerOpen(true)}
             className={cn(
-              'w-9 h-9 rounded-md',
+              'w-11 h-11 rounded-md',
               'flex items-center justify-center',
               'text-muted-foreground hover:text-foreground',
               'hover:bg-neutral-100 dark:hover:bg-neutral-800',
@@ -160,10 +175,10 @@ function MobileNewChatButton() {
     <button
       onClick={createConversation}
       className={cn(
-        'w-9 h-9 rounded-md',
+        'w-11 h-11 rounded-md',
         'flex items-center justify-center',
         'text-[#1A40FF] hover:text-[#1A40FF]',
-        'hover:bg-[#EEF1FF] dark:hover:opacity-90/10',
+        'hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/10',
         'transition-colors duration-150'
       )}
       aria-label={t('beta.mobile.newChat')}

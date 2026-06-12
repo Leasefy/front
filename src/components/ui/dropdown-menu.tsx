@@ -8,12 +8,12 @@ import {
   DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuRadioGroup,
-  DropdownMenuSubTrigger,
+  DropdownMenuSubTrigger as DSDropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuContent as DSDropdownMenuContent,
   DropdownMenuItem as DSDropdownMenuItem,
-  DropdownMenuCheckboxItem,
-  DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem as DSDropdownMenuCheckboxItem,
+  DropdownMenuRadioItem as DSDropdownMenuRadioItem,
   DropdownMenuLabel as DSDropdownMenuLabel,
   DropdownMenuSeparator as DSDropdownMenuSeparator,
   DropdownMenuShortcut,
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils"
 
 /**
  * ADAPTER fino sobre el DropdownMenu de @leasefy/ui, expuesto con los nombres
- * legacy del mvp (DropdownList*). Root/Trigger/Group/Portal/Sub/Radio/Checkbox/
+ * legacy del mvp (DropdownList*). Root/Trigger/Group/Portal/Sub/Radio/
  * Shortcut son re-exports con alias (misma API Radix; el Item del DS es
  * superset: inset/destructive/shortcut).
  *
@@ -39,10 +39,16 @@ import { cn } from "@/lib/utils"
  *    children ricos (user-card de PlanHeader) → se restaura la tipografía legacy.
  *  - Separator: -mx-1 full-bleed legacy.
  *
+ * Touch targets: todas las variantes de item (Item/CheckboxItem/RadioItem/
+ * SubTrigger) llevan [@media(pointer:coarse)]:py-2.5 para alcanzar ~44px en
+ * dispositivos táctiles (a11y del producto).
+ *
  * Dark mode: los tokens del DS (bg-surface/border-border/text-fg…) ya flipan
  * vía el bridge en globals.css (.dark), así que las clases dark: explícitas
  * del legacy ya no hacen falta.
  */
+const TOUCH_TARGET = "[@media(pointer:coarse)]:py-2.5"
+
 const DropdownListContent = React.forwardRef<
   React.ElementRef<typeof DSDropdownMenuContent>,
   React.ComponentPropsWithoutRef<typeof DSDropdownMenuContent>
@@ -68,12 +74,49 @@ const DropdownListItem = React.forwardRef<
     ref={ref}
     className={cn(
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4",
+      TOUCH_TARGET,
       className
     )}
     {...props}
   />
 ))
 DropdownListItem.displayName = "DropdownListItem"
+
+const DropdownListCheckboxItem = React.forwardRef<
+  React.ElementRef<typeof DSDropdownMenuCheckboxItem>,
+  React.ComponentPropsWithoutRef<typeof DSDropdownMenuCheckboxItem>
+>(({ className, ...props }, ref) => (
+  <DSDropdownMenuCheckboxItem
+    ref={ref}
+    className={cn(TOUCH_TARGET, className)}
+    {...props}
+  />
+))
+DropdownListCheckboxItem.displayName = "DropdownListCheckboxItem"
+
+const DropdownListRadioItem = React.forwardRef<
+  React.ElementRef<typeof DSDropdownMenuRadioItem>,
+  React.ComponentPropsWithoutRef<typeof DSDropdownMenuRadioItem>
+>(({ className, ...props }, ref) => (
+  <DSDropdownMenuRadioItem
+    ref={ref}
+    className={cn(TOUCH_TARGET, className)}
+    {...props}
+  />
+))
+DropdownListRadioItem.displayName = "DropdownListRadioItem"
+
+const DropdownListSubTrigger = React.forwardRef<
+  React.ElementRef<typeof DSDropdownMenuSubTrigger>,
+  React.ComponentPropsWithoutRef<typeof DSDropdownMenuSubTrigger>
+>(({ className, ...props }, ref) => (
+  <DSDropdownMenuSubTrigger
+    ref={ref}
+    className={cn(TOUCH_TARGET, className)}
+    {...props}
+  />
+))
+DropdownListSubTrigger.displayName = "DropdownListSubTrigger"
 
 const DropdownListLabel = React.forwardRef<
   React.ElementRef<typeof DSDropdownMenuLabel>,
@@ -103,8 +146,8 @@ export {
   DropdownMenuTrigger as DropdownListTrigger,
   DropdownListContent,
   DropdownListItem,
-  DropdownMenuCheckboxItem as DropdownListCheckboxItem,
-  DropdownMenuRadioItem as DropdownListRadioItem,
+  DropdownListCheckboxItem,
+  DropdownListRadioItem,
   DropdownListLabel,
   DropdownListSeparator,
   DropdownMenuShortcut as DropdownListShortcut,
@@ -112,6 +155,6 @@ export {
   DropdownMenuPortal as DropdownListPortal,
   DropdownMenuSub as DropdownListSub,
   DropdownMenuSubContent as DropdownListSubContent,
-  DropdownMenuSubTrigger as DropdownListSubTrigger,
+  DropdownListSubTrigger,
   DropdownMenuRadioGroup as DropdownListRadioGroup,
 }

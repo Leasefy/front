@@ -222,6 +222,8 @@ export function OTPVerification({
                   ref={(el) => { inputRefs.current[index] = el; }}
                   type="text"
                   inputMode="numeric"
+                  autoComplete="one-time-code"
+                  aria-label={`Dígito ${index + 1} de ${OTP_LENGTH}`}
                   maxLength={1}
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}

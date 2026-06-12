@@ -1,4 +1,7 @@
-// Mirror of ~/rent/agent/src/cartera/stages.ts — keep in sync when agent spec bumps (pnpm api:gen).
+// Mirror of ~/rent/agent/src/cartera/stages.ts — keep CODES in sync when agent spec bumps (pnpm api:gen).
+// NOTE: display labels diverge intentionally from the agent mirror (front-only enrichment):
+// human names lead with the day range appended where the canonical data defines one
+// (agent stages.ts: S1 day 1..15 · S2 16..45 · S3 46..89 · S5 ≥90). Codes/keys unchanged.
 
 // =============================================================================
 // Types
@@ -14,22 +17,31 @@ export const CARTERA_STAGES: CarteraStage[] = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5
 
 export const STAGE_LABELS_ES: Record<CarteraStage, string> = {
   S0: 'Pre-vencimiento',
-  S1: 'Cartera fresca',
-  S2: 'Mora administrativa',
-  S3: 'Mora pre-jurídica',
+  S1: 'Mora temprana · 1–15 días',
+  S2: 'Mora administrativa · 16–45 días',
+  S3: 'Mora pre-jurídica · 46–89 días',
   S4: 'Siniestro inmobiliario',
-  S5: 'Restitución / jurídico',
-  SX: 'Skip / Abandono',
+  S5: 'Restitución / jurídico · 90+ días',
+  SX: 'Ilocalizable',
 }
 
 export const STAGE_LABELS_EN: Record<CarteraStage, string> = {
   S0: 'Pre-due',
-  S1: 'Fresh delinquency',
-  S2: 'Administrative collections',
-  S3: 'Pre-judicial collections',
+  S1: 'Early delinquency · 1–15 days',
+  S2: 'Administrative collections · 16–45 days',
+  S3: 'Pre-judicial collections · 46–89 days',
   S4: 'Insurance claim',
-  S5: 'Judicial / eviction',
-  SX: 'Skip / abandoned',
+  S5: 'Judicial / eviction · 90+ days',
+  SX: 'Unlocatable',
+}
+
+/**
+ * Human stage name WITHOUT the day-range suffix — for tight UI (badges).
+ * The full label keeps "Nombre · rango"; this returns just "Nombre".
+ */
+export function stageDisplayName(stage: CarteraStage, locale: string): string {
+  const full = locale === 'es' ? STAGE_LABELS_ES[stage] : STAGE_LABELS_EN[stage]
+  return full.split(' · ')[0]
 }
 
 // =============================================================================

@@ -38,13 +38,7 @@ import {
   ReporteViewer,
   type ReporteFiltersState,
 } from '@/components/inmobiliaria';
-import {
-  exportCarteraEdades,
-  exportComisionesAgente,
-  exportVencimientos,
-  exportFlujoCaja,
-  exportOcupacion,
-} from '@/lib/utils/generate-report-excel';
+import { apiClient } from '@/lib/api/client';
 import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
 import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 import { OccupancyReport } from '@/components/inmobiliaria/reports/OccupancyReport';
@@ -342,55 +336,30 @@ function ReportesContent() {
     async (report: ReportDefinition, format: 'pdf' | 'excel') => {
       try {
         if (format === 'excel') {
-          // Generate and export based on report type
-          switch (report.id) {
-            case 'cartera-edades': {
-              if (!carteraReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportCarteraEdades(carteraReport.report);
-              break;
-            }
-            case 'comisiones-agente':
-            case 'rendimiento-agentes': {
-              if (!comisionesReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportComisionesAgente(comisionesReport.report);
-              break;
-            }
-            case 'vencimientos': {
-              if (!vencimientosReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportVencimientos(vencimientosReport.report);
-              break;
-            }
-            case 'flujo-caja': {
-              if (!flujoCajaReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportFlujoCaja(flujoCajaReport.report);
-              break;
-            }
-            case 'ocupacion-portafolio': {
-              if (!ocupacionReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportOcupacion(ocupacionReport.report);
-              break;
-            }
-            default:
-              toast.error(t('inmobiliaria.reportes.toasts.exportNotAvailable'), {
-                description: t('inmobiliaria.reportes.toasts.excelNotSupported'),
-              });
-              return;
+          const EXPORT_TYPE_MAP: Partial<Record<ReportId, string>> = {
+            'cartera-edades': 'cartera-edades',
+            'comisiones-agente': 'comisiones-agente',
+            'rendimiento-agentes': 'comisiones-agente',
+            'vencimientos': 'vencimientos',
+            'flujo-caja': 'flujo-caja',
+            'ocupacion-portafolio': 'ocupacion-portafolio',
+          };
+          const exportType = EXPORT_TYPE_MAP[report.id as ReportId];
+          if (!exportType) {
+            toast.error(t('inmobiliaria.reportes.toasts.exportNotAvailable'), {
+              description: t('inmobiliaria.reportes.toasts.excelNotSupported'),
+            });
+            return;
           }
+          const blob = await apiClient.getBlob(`/inmobiliaria/reports/export?type=${exportType}`);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${exportType}-${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
         } else {
           // PDF export - only extractos for now
           if (report.id === 'extractos-propietarios') {
@@ -416,7 +385,7 @@ function ReportesContent() {
         });
       }
     },
-    [t, carteraReport.report, comisionesReport.report, vencimientosReport.report, flujoCajaReport.report, ocupacionReport.report]
+    [t]
   );
 
   // Handle viewer export

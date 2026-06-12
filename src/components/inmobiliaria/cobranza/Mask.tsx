@@ -103,6 +103,28 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
     )
   }
 
+  const interactive = typeof onReveal === 'function'
+
+  // Non-interactive (onReveal unbound, e.g. plan 31-08): render a plain,
+  // non-actionable span — NO role=button / tabIndex / click handlers — so
+  // screen readers and keyboard nav don't announce a button that does nothing.
+  if (!interactive) {
+    return (
+      <span
+        aria-label={ARIA_LABEL_BY_FIELD[field]}
+        data-pii-field={field}
+        className={
+          'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
+          'text-neutral-700 dark:text-neutral-200 ' +
+          (className ?? '')
+        }
+      >
+        <span>{value}</span>
+        <LockGlyph />
+      </span>
+    )
+  }
+
   const handleClick = (e: MouseEvent<HTMLSpanElement>) => {
     e.stopPropagation()
     if (onReveal) onReveal(field)

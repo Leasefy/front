@@ -2,8 +2,18 @@
 
 import * as React from 'react'
 import { useState, useCallback, useMemo, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { FolderOpen } from '@phosphor-icons/react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import {
+  ChatCircleText,
+  ClipboardText,
+  CreditCard,
+  FileArrowUp,
+  FolderOpen,
+  UsersThree,
+  Warning,
+} from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
@@ -22,10 +32,19 @@ import type { CarteraStage } from '@/lib/cartera'
 // Pass empty string; Supabase Realtime will silently not connect until tenant is available.
 const TENANT_PLACEHOLDER = ''
 
+const PAGES_NS = 'inmobiliaria.ai.workspace.pages.cobranza'
+
+/** "¿Cómo funciona?" — el viaje de la cobranza en 4 pasos (patrón avalúos). */
+const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
+  { icon: ClipboardText, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
+  { icon: ChatCircleText, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
+  { icon: CreditCard, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
+  { icon: UsersThree, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
+]
+
 export default function CobranzaOverviewPage() {
   const { t, locale } = useI18n()
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   // Data hook
   const { data, isLoading, error } = useCarteraOverview()
@@ -57,14 +76,14 @@ export default function CobranzaOverviewPage() {
       .slice(0, 25)
   }, [realtimeTransitions, data?.lastTransitions])
 
-  // Stage click — update URL query param (Phase 31 builds the drill destination)
+  // Stage click — drill into /deudores, which prefills its filters from ?stage=
+  // (DeudoresListClient reads the querystring). Pushing ?stage= onto THIS page
+  // was a no-op: nobody here reads the param.
   const handleStageClick = useCallback(
     (stage: CarteraStage) => {
-      const params = new URLSearchParams(searchParams.toString())
-      params.set('stage', stage)
-      router.push(`/panel/inmobiliaria/ai/cobranza?${params.toString()}`)
+      router.push(`/panel/inmobiliaria/ai/cobranza/deudores?stage=${stage}`)
     },
-    [router, searchParams]
+    [router]
   )
 
   // ── Roving-tabindex composite-widget pattern (Phase 38 plan 38-04c / D-38-13) ─
@@ -115,16 +134,33 @@ export default function CobranzaOverviewPage() {
 
   if (!data && !isLoading && !error) {
     return (
-      <main className="p-6 lg:p-8">
+      <main className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={FolderOpen}
           title={t('inmobiliaria.ai.cobranza.overview.empty.title')}
           description={t('inmobiliaria.ai.cobranza.overview.empty.description')}
-          primaryCta={{
-            label: t('inmobiliaria.ai.cobranza.overview.empty.cta.label'),
-            href: '/panel/inmobiliaria/ai/cobranza/configuracion',
-          }}
         />
+        {/* Importar cartera — visible pero aún sin importador real (patrón avalúos):
+            el importador de /portafolio/importar solo carga propiedades, así que
+            la acción degrada a "próximamente" en vez de mentir con un link. */}
+        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
+              <FileArrowUp className="w-5 h-5 text-[#1A40FF] dark:text-indigo-300" weight="duotone" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <h2 className="text-base font-semibold text-foreground">
+                {t('inmobiliaria.ai.cobranza.overview.empty.cta.label')}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t(`${PAGES_NS}.importarNota`)}
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-muted text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              {t(`${PAGES_NS}.importarProximamente`)}
+            </span>
+          </div>
+        </div>
       </main>
     )
   }
@@ -158,7 +194,7 @@ export default function CobranzaOverviewPage() {
             {t('inmobiliaria.ai.cobranza.overview.title')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
-            {t('inmobiliaria.ai.cobranza.overview.subtitle')}
+            {t(`${PAGES_NS}.salaDesc`)}
           </p>
         </div>
         {data?.generatedAt && (
@@ -174,6 +210,64 @@ export default function CobranzaOverviewPage() {
           </p>
         )}
       </header>
+
+      {/* Acción principal + ¿Cómo funciona? — patrón avalúos (card + 4 pasos) */}
+      <section className="space-y-4" data-testid="cobranza-accion">
+        {/* Acción principal — revisar escalaciones pendientes */}
+        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
+              <Warning className="w-5 h-5 text-[#1A40FF] dark:text-indigo-300" weight="duotone" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <h2 className="text-base font-semibold text-foreground">
+                {t(`${PAGES_NS}.accionTitle`)}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t(`${PAGES_NS}.accionDesc`)}
+              </p>
+            </div>
+            <Link
+              href="/panel/inmobiliaria/ai/cobranza/escalaciones"
+              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.98] transition"
+              data-testid="cobranza-accion-cta"
+            >
+              {t('inmobiliaria.ai.nav.escalaciones')}
+              {(data?.kpis.escalacionesPendientes ?? 0) > 0 && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold">
+                  {data?.kpis.escalacionesPendientes}
+                </span>
+              )}
+            </Link>
+          </div>
+        </div>
+
+        {/* Cómo funciona — el viaje de la cobranza en 4 pasos */}
+        <div className="rounded-2xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="cobranza-como-funciona">
+          <h2 className="text-sm font-semibold text-foreground">
+            {t(`${PAGES_NS}.comoFunciona.title`)}
+          </h2>
+          <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {COMO_FUNCIONA_STEPS.map((step, i) => {
+              const StepIcon = step.icon
+              return (
+                <li key={step.titleKey} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                  </div>
+                  <p className="text-[13px] font-semibold text-foreground leading-tight">
+                    {t(step.titleKey)}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      </section>
 
       {/* KPI Strip */}
       <CobranzaKpiStrip

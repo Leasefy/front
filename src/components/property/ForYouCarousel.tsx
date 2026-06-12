@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { SectionLabel } from '@/components/ui/section-label';
 import type { Property } from '@/lib/types/property';
-import type { QualificationResult } from '@/lib/scoring/qualificationScore';
+import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
 export interface ScoredPropertyItem {
   property: Property;

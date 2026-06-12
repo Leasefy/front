@@ -29,6 +29,7 @@ import {
   Sparkle,
   ArrowRight,
 } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -118,6 +119,11 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
 
+  const notifyError = () => toast.error(t('header.notificationActionError'));
+  const handleMarkAsRead = (id: string) => markAsRead(id).catch(notifyError);
+  const handleMarkAllAsRead = () => markAllAsRead().catch(notifyError);
+  const handleDeleteNotification = (id: string) => deleteNotification(id).catch(notifyError);
+
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
   const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
@@ -127,7 +133,7 @@ export default function NotificacionesPage() {
 
   const handleNotificationClick = (notification: LandlordNotification) => {
     if (!notification.read) {
-      markAsRead(notification.id);
+      handleMarkAsRead(notification.id);
     }
     if (notification.actionUrl) {
       router.push(notification.actionUrl);
@@ -153,7 +159,7 @@ export default function NotificacionesPage() {
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <button
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
               className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
             >
               <Check className="w-4 h-4" />
@@ -309,7 +315,7 @@ export default function NotificacionesPage() {
                       <button
                         onClick={() => {
                           if (notification.actionUrl) {
-                            markAsRead(notification.id);
+                            handleMarkAsRead(notification.id);
                             router.push(notification.actionUrl);
                           }
                         }}
@@ -328,7 +334,7 @@ export default function NotificacionesPage() {
                   >
                     {!notification.read && (
                       <button
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => handleMarkAsRead(notification.id)}
                         className="p-2 text-neutral-400 hover:text-[#2C7A53] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/10 rounded-md transition-colors"
                         title={t('landlord.notifications.markAsRead')}
                       >
@@ -336,7 +342,7 @@ export default function NotificacionesPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => deleteNotification(notification.id)}
+                      onClick={() => handleDeleteNotification(notification.id)}
                       className="p-2 text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/10 rounded-md transition-colors"
                       title={t('landlord.notifications.deleteNotification')}
                     >

@@ -47,7 +47,7 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative bg-[#f8f8f8]">
+    <section className="relative overflow-hidden bg-[#f8f8f8]">
       {/* Ambient blue glow — atmosphere, not a clickable element (allowed by brand) */}
       <div
         className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 h-[420px] w-[820px] rounded-full opacity-[0.06]"
@@ -83,7 +83,7 @@ export function HeroSection() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Describe tu próximo arriendo: 2 hab en Chapinero, estudio amoblado cerca al centro…"
-                className="flex-1 resize-none bg-transparent py-0.5 text-[14.5px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none min-h-[48px]"
+                className="flex-1 resize-none bg-transparent py-0.5 text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none min-h-[48px]"
                 disabled={isSearching}
                 rows={2}
                 onKeyDown={(e) => {
@@ -101,7 +101,7 @@ export function HeroSection() {
               <button
                 onClick={() => startSearch(query)}
                 disabled={isSearching}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-primary text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-primary text-white transition-opacity hover:opacity-90 disabled:opacity-50 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
                 aria-label="Buscar"
               >
                 {isSearching ? (

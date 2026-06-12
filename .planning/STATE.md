@@ -1,15 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: — Backoffice Unificado ERP·CRM·Autopilot
-status: verifying
-last_updated: "2026-05-30T22:24:55.666Z"
-last_activity: "2026-05-30 — v6-08 Captura de propiedad foto+audio (cross-repo: Whisper+Claude en agent + captura móvil en mvp) done"
+milestone: avaluos-ui
+milestone_name: Avalúos UI — Public Valuation Flow
+status: complete
+stopped_at: null
+last_updated: "2026-06-03"
+last_activity: 2026-06-03 — Phase 34-avaluos-ui plan 05 (Agency panel pages — list, nuevo wizard, detail) DONE
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 18
-  completed_plans: 18
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 5
+  completed_plans: 5
   percent: 100
 ---
 
@@ -37,14 +38,27 @@ v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el r
 
 Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first) — ✅ COMPLETO
 Phase: **v6-01..v6-08 DONE** ✅ — milestone v6.0 cerrado (8/8)
-Plan: —
-Status: ✅ Complete — v6-01..v6-08 implementados + verificados (tsc limpio ambos repos, rutas 200, agent tests 11/11, reviews adversariales PASS)
-Last activity: 2026-05-30 — v6-08 Captura de propiedad foto+audio (cross-repo: Whisper+Claude en agent + captura móvil en mvp) done
 
-Progress: [█████████████████████████████] 100% — 8 de 8 fases (v6-01..v6-08 ✅)
+---
+
+## Current Position — Phase 34 (Avalúos UI)
+
+Milestone: avaluos-ui — Avalúos UI — Public Valuation Flow
+Phase: 34-avaluos-ui — ✅ COMPLETE (5/5 plans done)
+Plan: 34-05 DONE — phase complete
+Status: Complete
+Last activity: 2026-06-03 — 34-05 Agency panel pages (list, nuevo wizard, detail) DONE
+
+Progress: [█████████████████████████████] 100% — 5 de 5 planes
+
+**Plans (34-NN):**
+- [x] **34-01** Foundation — types, service client, /avaluo public landing — ✅ done (2026-06-03)
+- [x] **34-02** Wompi session route — server-side SHA-256 integrity hash — ✅ done (2026-06-03)
+- [x] **34-03** Wizard UI — AvaluoContext, AvaluoWizardShell, 4 step components, /avaluo/nuevo — ✅ done (2026-06-03)
+- [x] **34-04** Confirmation + status polling page — ✅ done (2026-06-03)
+- [x] **34-05** Agency panel pages — list, nuevo wizard (email pre-filled), detail — ✅ done (2026-06-03)
 
 **Phases (v6-NN):**
-
 - [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
 - [x] **v6-02** Facturación ⭐ (FACT) — ✅ done (sección frontend + contrato `facturacion.types.ts`; motor DIAN → M2)
 - [x] **v6-03** Conciliación bancaria (CONC) — ✅ done (sección frontend + contrato `conciliacion.types.ts`; motor → M2)
@@ -83,20 +97,19 @@ v5.0 (Agency Plan-Gated Features & AI Agent UX) quedó **pausado 2026-05-12**. P
 
 ## Session Continuity
 
-Last session: 2026-05-30T22:24:55.660Z
-Resume file: None
+Last session: 2026-06-03 — 34-05 done (panel list page, nuevo wizard, detail page; phase 34 COMPLETE).
+Stopped at: Completed 34-05-PLAN.md — phase 34-avaluos-ui fully done
+Resume file: None (milestone avaluos-ui complete)
 
 ## Accumulated Context
 
 ### Roadmap Evolution
-
 - 2026-05-29: Gap analysis de la visión ERP+CRM+Autopilot (workflow, 4 repos) → programa de 6 milestones en `ERP-CRM-AUTOPILOT-PROGRAM.md`.
 - 2026-05-29: v6.0 definido (frontend-first, v6-01..v6-08) tras feedback: incluir TODAS las secciones ERP, especialmente facturación, aditivo.
 - 2026-05-29: v6-01 implementado + verificado (sidebar agrupado, landing `/hoy`, secciones "Pronto"); fix de build pre-existente (4 directivas eslint huérfanas en cotizador).
 - 2026-05-29: renumbered 37-44 → v6-01..v6-08 para no colisionar con el stream `agent`.
 
 ### External blockers (programa)
-
 - Decisión de equipo: ¿qué monolito es el motor ERP? (`back-main` es scaffold; mvp consume otro backend vía `NEXT_PUBLIC_BACKEND_URL`). Bloquea M1.
 - DIAN: requiere proveedor tecnológico autorizado (D2/M2).
 - Credenciales: Vapi, 360dialog/Kapso, Wompi/Bold, DataCrédito, carriers Bolívar/Sekure (Phase 27 cotizador pausada).

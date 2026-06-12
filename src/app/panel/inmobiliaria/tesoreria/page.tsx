@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PageGuard } from '@/components/auth/PageGuard';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { calcularNeto } from '@/lib/api/tesoreria.types';
 
@@ -17,7 +18,7 @@ const COLUMNS = [
 const EJEMPLO = { canonRecibido: 2_500_000, comisionAdmin: 250_000, comisionPorcentaje: 10, ivaPorcentaje: 19, ivaComision: 47_500, descuentos: 0 };
 const EJEMPLO_NETO = calcularNeto(EJEMPLO);
 
-export default function TesoreriaPage() {
+function TesoreriaContent() {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.tesoreria.${s}`;
 
@@ -127,5 +128,13 @@ export default function TesoreriaPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function TesoreriaPage() {
+  return (
+    <PageGuard adminOnly>
+      <TesoreriaContent />
+    </PageGuard>
   );
 }

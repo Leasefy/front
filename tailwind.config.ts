@@ -14,6 +14,17 @@ const config: Config = {
     "./node_modules/@leasefy/ui/src/**/*.{ts,tsx}",
   ],
   theme: {
+  	container: {
+  		center: true,
+  		padding: {
+  			DEFAULT: '1rem',
+  			sm: '1.5rem',
+  			lg: '2rem',
+  		},
+  		screens: {
+  			'2xl': '1280px',
+  		},
+  	},
   	extend: {
   		fontFamily: {
   			sans: ['var(--font-sans)'],

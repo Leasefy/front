@@ -79,7 +79,8 @@
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "notificationActionError": "Could not complete the notification action"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -770,6 +771,18 @@
         "rappipay": "Rappipay"
       },
       "modals": {
+        "addAccount": {
+          "title": "Add collection account",
+          "methodType": "Account type",
+          "methodBank": "Bank account",
+          "methodWallet": "Digital wallet",
+          "assignProperties": "Assign properties (optional)",
+          "assignPropertiesHint": "Select the properties that will deposit into this account",
+          "allPropertiesAssigned": "All properties assigned",
+          "addButton": "Add account",
+          "adding": "Adding...",
+          "perMonth": "/mo"
+        },
         "addBankAccount": {
           "title": "Add bank account",
           "bank": "Bank",
@@ -844,6 +857,7 @@
       "pipeline": "Prospecting (Pipeline)",
       "agentes": "Agents",
       "cobros": "Manual Collections",
+      "contratos": "Contracts",
       "dispersiones": "Disbursements",
       "operaciones": "Maintenance",
       "documentos": "Documents",
@@ -852,9 +866,11 @@
       "mensajes": "Messages",
       "configuracion": "Settings",
       "aiBeta": "AI Beta",
+      "inicio": "Home",
       "hoy": "Today",
       "facturacion": "Invoicing",
       "conciliacion": "Reconciliation",
+      "postulaciones": "Applications",
       "pqrs": "Requests",
       "agenda": "Calendar",
       "pronto": "Soon",
@@ -870,6 +886,10 @@
       "secCotizador": "Quoter",
       "secInteligencia": "Intelligence",
       "secOperaciones": "Operations",
+      "secAgentes": "AI Agents",
+      "secFinanzas": "Finance",
+      "secAnalisis": "Analytics",
+      "equipo": "Team",
       "cmdPaletteTrigger": "Search everything…"
     },
     "mobileNav": {
@@ -4180,10 +4200,37 @@
       "nav": {
         "cobranza": "Collections",
         "cotizador": "Quoter",
-        "arco": "ARCO",
+        "arco": "Habeas Data",
         "plantillas": "Templates",
         "configuracion": "Configuration",
-        "analitica": "Analytics"
+        "analitica": "Analytics",
+        "deudores": "Debtors",
+        "pagos": "Payments",
+        "escalaciones": "Escalations",
+        "compliance": "Compliance",
+        "cartas": "Letters",
+        "llamadas": "Calls",
+        "siniestros": "Claims",
+        "conciliacionCola": "To review",
+        "conciliacionConfiguracion": "Settings",
+        "conciliacionAnalitica": "Analytics",
+        "conciliacionMovimientos": "Transactions",
+        "estudio": "Tenant screening",
+        "estudioCola": "Screenings to review",
+        "estudioConfiguracion": "Settings",
+        "estudioAnalitica": "Analytics",
+        "matching": "Matching",
+        "matchingCola": "Suggested candidates",
+        "matchingConfiguracion": "Settings",
+        "matchingAnalitica": "Analytics",
+        "pagosCola": "To approve",
+        "pagosConfiguracion": "Settings",
+        "pagosAnalitica": "Analytics",
+        "avaluos": "Appraisals",
+        "avaluosCola": "My requests",
+        "avaluosConfiguracion": "Settings",
+        "cotizadorCola": "To review",
+        "cobranzaReporte": "Daily report"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -4386,7 +4433,12 @@
         "nav": {
           "aseguradoras": "Carriers",
           "insights": "Insights",
-          "costos": "Costs"
+          "costos": "Costs",
+          "configuracion": "Settings"
+        },
+        "configuracion": {
+          "title": "Settings & autonomy",
+          "subtitle": "What the agent can do on its own and what always requires your approval. Read-only for now: today nothing is applied without your sign-off."
         },
         "aseguradoras": {
           "pageTitle": "Carriers",
@@ -4653,7 +4705,7 @@
       "cobranza": {
         "overview": {
           "title": "Collections",
-          "subtitle": "Current state of your debtor portfolio",
+          "subtitle": "The agent collects for you; you only decide the critical cases.",
           "lastUpdated": "Updated",
           "kpis": {
             "deudoresActivos": "Active debtors",
@@ -4667,7 +4719,7 @@
             "ariaLabel": "Stage {{stage}}, {{count}} debtors, click to drill down"
           },
           "funnel": {
-            "title": "Funnel distribution",
+            "title": "Your portfolio by stage",
             "ariaDescription": "Bar chart showing debtor distribution across stages",
             "tableCaption": "Alternative stage distribution table",
             "empty": "No data",
@@ -4677,7 +4729,7 @@
             }
           },
           "transitions": {
-            "title": "Recent transitions",
+            "title": "Recent movements",
             "empty": "No recent transitions",
             "emptyHelper": "Transitions will appear here when the agent moves debtors between stages",
             "agentActor": "AI Agent",
@@ -4687,8 +4739,7 @@
           "nextActions": {
             "title": "Today's actions",
             "empty": "No actions scheduled today",
-            "configCta": "Configure cadence",
-            "configCtaTooltip": "Available in a future update",
+            "configCta": "Adjust contact cadence",
             "channelVoice": "Call",
             "channelWhatsapp": "WhatsApp",
             "channelEmail": "Email"
@@ -4908,7 +4959,8 @@
             "pause": "Pause",
             "speed": "Speed",
             "speedLabel": "Speed {{speed}}x",
-            "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio."
+            "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio.",
+            "audioError": "Could not load the recording."
           },
           "transcript": {
             "title": "Transcript",
@@ -5068,7 +5120,8 @@
             "descuento": "Discount (%)",
             "cuotas": "Number of installments",
             "monto": "Amount per installment (COP)",
-            "fecha": "First payment date"
+            "fecha": "First payment date",
+            "duplicateRisk": "The counter-offer was created but the original plan could not be rejected. Two plans may be active — review before sending the payment link."
           }
         },
         "approval": {
@@ -5121,6 +5174,21 @@
             "label": "Reject",
             "submitting": "Rejecting...",
             "success": "Claim rejected successfully."
+          },
+          "list": {
+            "pageTitle": "Insurance claims",
+            "pageSubtitle": "AI-identified insurance claims pending filing",
+            "empty": {
+              "title": "No claims on record",
+              "description": "The AI has not identified any pending insurance claims at this time."
+            },
+            "columns": {
+              "aseguradora": "Insurer",
+              "status": "Status",
+              "createdAt": "Created",
+              "filedAt": "Filed",
+              "approvedBy": "Approved by"
+            }
           }
         },
         "cartas": {
@@ -5161,6 +5229,19 @@
             "label": "Reject",
             "submitting": "Rejecting...",
             "success": "Letter rejected successfully."
+          },
+          "pageTitle": "Pre-judicial letters",
+          "pageSubtitle": "AI-generated letters pending review and approval",
+          "empty": {
+            "title": "No letters generated",
+            "description": "The AI has not yet generated pre-judicial letters for this portfolio."
+          },
+          "columns": {
+            "kind": "Type",
+            "status": "Status",
+            "generatedAt": "Generated",
+            "sentAt": "Sent",
+            "sendMethod": "Send method"
           }
         },
         "escalaciones": {
@@ -5245,7 +5326,7 @@
           },
           "subPages": {
             "ley2300Title": "Ley 2300 — outside-hours attempts",
-            "optOutTitle": "Opt-out registry",
+            "optOutTitle": "Do not contact (opt-out)",
             "auditTitle": "Audit log"
           },
           "filters": {
@@ -5279,6 +5360,9 @@
             "empty": {
               "title": "No debtors on opt-out",
               "description": "Opt-outs will appear here when a debtor requests no contact."
+            },
+            "errors": {
+              "ackFailed": "Could not record the opt-out acknowledgement. Please try again."
             }
           }
         },
@@ -5361,7 +5445,7 @@
               "empty": "Not enough stage transitions in the last 30 days."
             },
             "topScripts": {
-              "title": "Top converting scripts",
+              "title": "Top converting call scripts",
               "empty": "No script data available.",
               "pendingPhase38": "Script tracking will be available in a future update.",
               "column": {
@@ -5369,7 +5453,7 @@
                 "stage": "Stage",
                 "nCalls": "Calls",
                 "conversionRate": "Conv. rate",
-                "lift": "Lift vs base",
+                "lift": "Improvement vs average",
                 "sparkline": "30d trend"
               }
             },
@@ -5383,7 +5467,7 @@
               }
             },
             "cadence": {
-              "title": "Cadence effectiveness",
+              "title": "Contact cadence effectiveness",
               "channelMix": {
                 "title": "Channel × outcome",
                 "outcome": {
@@ -5441,6 +5525,31 @@
           "empty": {
             "title": "No pending ARCO requests",
             "description": "Law 1581 requests will appear here."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "pageTitle": "Calls",
+            "pageSubtitle": "Global call and contact log across all channels",
+            "empty": {
+              "title": "No calls yet",
+              "description": "No calls have been logged for this portfolio. The list will appear here once the agent starts making contacts.",
+              "cta": "Go to Debtors"
+            },
+            "filters": {
+              "outcome": "Outcome",
+              "channel": "Channel",
+              "direction": "Direction"
+            },
+            "columns": {
+              "debtor": "Debtor",
+              "channel": "Channel",
+              "outcome": "Outcome",
+              "duration": "Duration",
+              "initiatedAt": "Started",
+              "qaScore": "QA",
+              "flags": "Flags"
+            }
           }
         }
       },
@@ -5725,10 +5834,484 @@
         "relaunch": "Panel tour",
         "stepOf": "Step {{current}} of {{total}}"
       },
+      "intro": {
+        "cobranza": {
+          "title": "Collections Agent",
+          "description": "Automate portfolio recovery: calls, WhatsApp and letters with Colombian compliance built in. The agent works standard delinquency on its own and only escalates critical cases."
+        },
+        "cotizador": {
+          "title": "Quoting Agent",
+          "description": "Evaluate applicants in seconds: scoring, co-signers and insurer verdicts in a single flow. Every decision is audited and you can ask the why behind each verdict."
+        },
+        "avaluos": {
+          "title": "Appraisals Agent",
+          "description": "Request certified appraisals and track every request from My requests without leaving the panel. The partner appraiser handles the visit and signature; you see the full trail."
+        },
+        "conciliacion": {
+          "title": "Reconciliation Agent",
+          "description": "Match bank statements against your collections automatically. The agent suggests matches and leaves only doubtful cases in the queue for your approval."
+        },
+        "estudio": {
+          "title": "Tenant Screening Agent",
+          "description": "Full tenant screening: identity, income and background verified in minutes, with an auditable, traceable decision for every applicant."
+        },
+        "matching": {
+          "title": "Matching Agent",
+          "description": "Connect vacant properties with pre-approved candidates. The agent proposes the best matches and outreach only happens with your approval."
+        },
+        "pagos": {
+          "title": "Payments Agent",
+          "description": "Manage accounts payable and disbursements with approval chains. Nothing gets paid without authorization: every disbursement is traced end to end."
+        }
+      },
       "hub": {
         "empty": {
           "title": "No recent activity yet",
           "description": "Metrics appear when agents process requests."
+        }
+      },
+      "workspace": {
+        "severidad": {
+          "critica": "Critical",
+          "alta": "High",
+          "media": "Medium",
+          "baja": "Low"
+        },
+        "estado": {
+          "detectado": "Detected",
+          "sugerido": "Suggested",
+          "en_revision": "In review",
+          "aprobado": "Approved",
+          "ejecutando": "Executing",
+          "resuelto": "Resolved",
+          "rechazado": "Rejected",
+          "fallo": "Failed"
+        },
+        "flag": {
+          "necesita_humano": "Needs a human",
+          "t323": "Decision about a person",
+          "en_espera": "On hold"
+        },
+        "actor": {
+          "user": "Human",
+          "agent": "Agent",
+          "system": "System"
+        },
+        "agente": {
+          "cobranza": "Collections",
+          "cotizador": "Quoter",
+          "conciliacion": "Reconciliation",
+          "pagos": "Vendor payments",
+          "estudio": "Tenant screening",
+          "matching": "Matching",
+          "avaluos": "Appraisals"
+        },
+        "rol": {
+          "cobrador": "Collector",
+          "analista_riesgo": "Risk analyst",
+          "contador": "Accountant",
+          "comercial": "Sales"
+        },
+        "tiempo": {
+          "s": "{{n}}s ago",
+          "m": "{{n}}m ago",
+          "h": "{{n}}h ago",
+          "d": "{{n}}d ago"
+        },
+        "acciones": {
+          "toastOk": "{{label}} · done",
+          "toastFail": "Failed: {{error}}",
+          "motivoPara": "Reason for {{accion}}",
+          "motivoPlaceholder": "Write the reason…",
+          "confirmar": "Confirm",
+          "cancelar": "Cancel",
+          "confianza": "{{pct}}% conf.",
+          "abrir": "Open {{titulo}}"
+        },
+        "cola": {
+          "error": "Could not load the queue: {{error}}",
+          "vacia": "Queue is empty",
+          "vaciaHint": "No cases pending review."
+        },
+        "sala": {
+          "eyebrow": "Agent · {{titulo}}",
+          "irACola": "To review",
+          "error": "Could not load the room: {{error}}",
+          "emptyTitle": "No activity yet",
+          "emptyBody": "The agent's activity will appear here as soon as it starts working.",
+          "pipelineTitle": "Cases by stage",
+          "pipelineEmpty": "No cases in the pipeline.",
+          "pipelineAria": "Pipeline: {{total}} cases",
+          "feedTitle": "Recent activity",
+          "feedEmpty": "No recent activity."
+        },
+        "traza": {
+          "error": "Could not load the trace: {{error}}",
+          "emptyTitle": "No recorded activity",
+          "emptyBody": "Agent and team actions will appear here.",
+          "detalles": "Details",
+          "accion": {
+            "detectado": "Detected by the agent",
+            "sugerido": "Agent suggestion",
+            "en_revision": "Sent to human review",
+            "aprobado": "Approved",
+            "rechazado": "Rejected",
+            "ejecutando": "Execution started",
+            "resuelto": "Resolved",
+            "fallo": "Failed",
+            "creado": "Created",
+            "match_sugerido": "Match suggested",
+            "match_confirmado": "Match confirmed",
+            "match_rechazado": "Match rejected"
+          }
+        },
+        "accionSugerida": {
+          "eyebrow": "The agent proposes"
+        },
+        "autonomia": {
+          "error": "Could not load the autonomy settings: {{error}}",
+          "emptyTitle": "Autonomy settings are not available yet",
+          "emptyBody": "This panel activates once the agent is active and publishes its limits.",
+          "grupoAria": "Autonomy mode",
+          "noDisponible": "Not available for this agent",
+          "t323": "Decision about persons — human review guaranteed (T-323/2024)",
+          "vallaTitle": "Agent limits",
+          "vallaEmpty": "No limits published for this agent yet.",
+          "modo": {
+            "sombra": "Shadow",
+            "sombraHint": "Only observes and suggests silently",
+            "copiloto": "Copilot",
+            "copilotoHint": "Suggests; nothing is applied without a human",
+            "autonomo": "Autonomous",
+            "autonomoHint": "Executes within the approved limits"
+          }
+        },
+        "analitica": {
+          "error": "Could not load analytics: {{error}}",
+          "emptyTitle": "The agent has no analytics yet",
+          "emptyBody": "This panel activates when the agent publishes its historical metrics.",
+          "serieEmpty": "No activity in 30 days.",
+          "serieAria": "{{label}}: {{dias}} days, max {{max}}",
+          "sinSeries": "No series to show."
+        },
+        "detalle": {
+          "error": "Could not load the case: {{error}}",
+          "notFoundTitle": "Case not found",
+          "notFoundBody": "It may already be resolved, or the link is invalid.",
+          "volverACola": "Back to the queue",
+          "decision": "Decision",
+          "decididoPor": "By {{nombre}}",
+          "decisionRegistrada": "Decision recorded",
+          "trazaTitle": "Case history"
+        },
+        "equipo": {
+          "error": "Could not load the agent team: {{error}}",
+          "emptyTitle": "The team has not reported its queues yet",
+          "emptyBody": "This panel activates once the agents start reporting their activity.",
+          "enColaAhora": "In queue now: {{n}}",
+          "actualizado": "Updated {{tiempo}}",
+          "enColaCount": "· {{n}} in queue",
+          "sinDatos": "no data",
+          "sinDatosTitle": "The agent has not reported its count yet",
+          "sala": "Room",
+          "cola": "Queue"
+        },
+        "pages": {
+          "comun": {
+            "colaTitle": "To review",
+            "configTitle": "Settings & autonomy",
+            "configDesc": "What the agent can do on its own and what always requires your approval. Read-only for now: today nothing is applied without your sign-off.",
+            "analiticaTitle": "Analytics",
+            "enCola": "Pending",
+            "pendientes": "Pending",
+            "detalleNoDisponibleTitle": "The detail view isn't available here yet",
+            "detalleNoDisponibleBody": "You can manage this case from the queue or open it in its source module.",
+            "datosTecnicos": "Technical details"
+          },
+          "conciliacion": {
+            "eyebrow": "Agent · Reconciliation",
+            "salaTitulo": "Bank reconciliation",
+            "salaDesc": "The agent matches bank-statement transactions against collections, payouts and fees, and leaves doubtful cases in your queue. Copilot mode: nothing is applied without your approval.",
+            "verMovimientos": "View transactions and upload statements",
+            "colaDesc": "Bank matches the agent suggests that need your review. Approving reconciles the transaction; rejecting returns it to unidentified. Copilot mode: nothing is applied without you.",
+            "colaEmptyHint": "Nothing to review. Upload a bank statement and the agent matches the transactions with your collections.",
+            "casoColaLabel": "Reconciliation queue",
+            "analiticaDesc": "Reconciliation agent performance over the last 30 days: matched cases, hit rate and reconciled amount per day.",
+            "colaTitle": "To review",
+            "colaLabel": "To review",
+            "accionTitle": "Upload bank statement",
+            "accionDesc": "The agent matches every transaction with your collections and leaves only the doubtful ones for you to review.",
+            "comoFunciona": {
+              "title": "How does it work?",
+              "step1": {
+                "title": "You upload the bank statement",
+                "desc": "A CSV file straight from your bank."
+              },
+              "step2": {
+                "title": "The agent matches each transaction with your collections",
+                "desc": "It identifies collections, payouts and fees automatically."
+              },
+              "step3": {
+                "title": "You approve the doubtful cases",
+                "desc": "Only the transactions that need your eye reach you."
+              }
+            },
+            "estado": {
+              "detectado": "New transaction",
+              "sugerido": "Match suggested",
+              "en_revision": "In your review",
+              "aprobado": "Approved",
+              "ejecutando": "Applying",
+              "resuelto": "Reconciled",
+              "rechazado": "Rejected",
+              "fallo": "Issue detected"
+            }
+          },
+          "estudio": {
+            "eyebrow": "Agent · Tenant screening",
+            "salaTitulo": "Tenant screening",
+            "salaDesc": "The agent screens every candidate — identity and ability to pay — and brings you only the doubtful cases so you decide.",
+            "colaDesc": "Review the screening result (level and score) and its evidence, and you make the call.",
+            "colaEmptyHint": "No screenings pending — a good sign. Screenings arrive when a candidate applies; doubtful cases will appear here for your decision.",
+            "casoColaLabel": "Screening queue",
+            "crossPregunta": "Which property fits them?",
+            "crossDestino": "Matching workspace",
+            "analiticaDesc": "Tenant-screening performance over the last 30 days: evaluations processed, decisions made and human-review escalation rate per day.",
+            "colaTitle": "Screenings to review",
+            "colaLabel": "Screenings to review",
+            "comoFunciona": {
+              "title": "How does it work?",
+              "step1": {
+                "title": "The candidate applies",
+                "desc": "Every application enters the screening automatically."
+              },
+              "step2": {
+                "title": "The agent verifies identity and ability to pay",
+                "desc": "It cross-checks documents, income and background in minutes."
+              },
+              "step3": {
+                "title": "Doubtful cases land here for your decision",
+                "desc": "You review the evidence and approve or reject."
+              },
+              "step4": {
+                "title": "Every decision is recorded and audited",
+                "desc": "With the right to human review guaranteed."
+              }
+            },
+            "estado": {
+              "detectado": "New",
+              "sugerido": "Recommendation ready",
+              "en_revision": "Awaiting your decision",
+              "aprobado": "Approved",
+              "ejecutando": "Verifying",
+              "resuelto": "Completed",
+              "rechazado": "Rejected",
+              "fallo": "Issue detected"
+            }
+          },
+          "matching": {
+            "eyebrow": "Agent · Matching",
+            "salaTitulo": "Matching",
+            "salaDesc": "It finds you already-validated tenants for your vacant properties. You review the best match and approve the outreach — nothing is sent without you.",
+            "colaDesc": "Candidates the agent paired with compatible properties. Review the best match and its fit factors, then action it (to reach out) or discard it. Copilot mode: nothing happens without you.",
+            "colaEmptyHint": "No matches yet. The agent crosses candidates approved in Tenant screening with your vacant properties — results will appear here.",
+            "casoColaLabel": "Matching queue",
+            "crossPregunta": "Is this candidate reliable?",
+            "crossDestino": "Tenant screening",
+            "analiticaDesc": "How many matches the agent proposed, how well they fit and how many candidates ended up contacted, day by day.",
+            "colaTitle": "Suggested candidates",
+            "colaLabel": "Suggested candidates",
+            "comoFunciona": {
+              "title": "How does it work?",
+              "step1": {
+                "title": "A candidate passes Screening",
+                "desc": "Only already-validated candidates come in."
+              },
+              "step2": {
+                "title": "The agent matches them with your vacant properties",
+                "desc": "It calculates how well they fit each one."
+              },
+              "step3": {
+                "title": "You review the best match and why it fits",
+                "desc": "With the fit factors in plain sight."
+              },
+              "step4": {
+                "title": "You approve and the agent reaches out",
+                "desc": "Nothing is sent without your sign-off."
+              }
+            },
+            "estado": {
+              "detectado": "New match",
+              "sugerido": "Match proposed",
+              "en_revision": "In your review",
+              "aprobado": "Contact approved",
+              "ejecutando": "Reaching out",
+              "resuelto": "Connected",
+              "rechazado": "Dismissed",
+              "fallo": "Issue detected"
+            }
+          },
+          "pagos": {
+            "eyebrow": "Agent · Vendor payments",
+            "salaTitulo": "Vendor payments",
+            "salaDesc": "The agent organizes your vendors' bills, calculates what's coming due and prepares each payment. You approve — nothing gets paid without authorization.",
+            "opsTitle": "Full management",
+            "opsTesoreria": "Treasury · Accounts payable",
+            "opsTesoreriaDetalle": "Bills, aging and approval matrix",
+            "opsDispersiones": "Payouts",
+            "opsDispersionesDetalle": "Payment orders and receipts",
+            "colaTitle": "Approval queue",
+            "colaDesc": "Vendor bills pending approval. Review the amount, the vendor and the due date, then approve or reject. The amount/cost-center matrix and segregation of duties are enforced server-side. Copilot mode: no payout goes out without you.",
+            "porAprobar": "To approve",
+            "colaEmptyHint": "All caught up: you have no bills to approve. New bills are recorded in Treasury and appear here when they need your signature.",
+            "casoColaLabel": "Payments queue",
+            "crossPregunta": "View the bill in Treasury?",
+            "crossDestino": "Treasury · Accounts payable",
+            "analiticaDesc": "Payments agent performance over the last 30 days: bills processed, approvals and amount disbursed per day.",
+            "colaLabel": "Approve bills",
+            "comoFunciona": {
+              "title": "How does it work?",
+              "step1": {
+                "title": "The agent receives and organizes the bills",
+                "desc": "Every vendor bill is recorded and classified."
+              },
+              "step2": {
+                "title": "It calculates due dates and prepares the payment",
+                "desc": "You know what's due and when, without chasing dates."
+              },
+              "step3": {
+                "title": "You approve — large amounts require a second signature",
+                "desc": "Nothing gets paid without your authorization."
+              },
+              "step4": {
+                "title": "The payment goes out and the receipt is kept",
+                "desc": "The full trail is stored and auditable."
+              }
+            },
+            "estado": {
+              "detectado": "Recorded",
+              "sugerido": "To approve",
+              "en_revision": "Under review",
+              "aprobado": "Approved",
+              "ejecutando": "Payment in progress",
+              "resuelto": "Paid",
+              "rechazado": "Rejected",
+              "fallo": "Issue detected"
+            }
+          },
+          "cotizador": {
+            "eyebrow": "Agent · Quoter",
+            "colaTitle": "Quotes to review",
+            "colaDescPre": "Quotes whose insurability verdict came back",
+            "colaDescStrong": "with conditions",
+            "colaDescPost": "(no clean approval). Open each one to pick a carrier, adjust the conditions or re-quote. Cases from the last 30 days.",
+            "porRevisar": "To review",
+            "colaEmptyHint": "All caught up: no quote came back with conditions.",
+            "colaLabel": "To review",
+            "salaSubtitle": "Find out in minutes whether your candidate is insurable: the agent queries several insurers at once and brings you each one's verdict.",
+            "comoFunciona": {
+              "title": "How does it work?",
+              "step1": {
+                "title": "You create the candidate's quote",
+                "desc": "Enter the candidate's and the property's details in a single form."
+              },
+              "step2": {
+                "title": "The agent queries several insurers at once",
+                "desc": "In parallel, without you having to call any of them."
+              },
+              "step3": {
+                "title": "It brings you each verdict with its why",
+                "desc": "Compare approvals, conditions and premiums in a single view."
+              },
+              "step4": {
+                "title": "Cases with conditions land in To review",
+                "desc": "You decide: pick an insurer, adjust conditions or re-quote."
+              }
+            },
+            "estado": {
+              "detectado": "New",
+              "sugerido": "Verdict ready",
+              "en_revision": "To review",
+              "aprobado": "Approved",
+              "ejecutando": "Quoting",
+              "resuelto": "Completed",
+              "rechazado": "Rejected",
+              "fallo": "Issue detected"
+            }
+          },
+          "avaluos": {
+            "eyebrow": "Agent · Appraisals",
+            "salaTitulo": "Appraisals",
+            "salaDesc": "Request certified appraisals of your properties without leaving the panel: you request and pay online, a certified appraiser visits the property and you receive the report with a signed certificate. Track every request here, end to end.",
+            "colaTitle": "My appraisal requests",
+            "colaDesc": "Every appraisal you requested, end to end: request → appraiser visit → report → signed certificate. You always see the up-to-date status; the visit and signature are handled by Leasefy's partner appraiser.",
+            "colaKpiLabel": "Active",
+            "colaEmptyTitle": "No requests yet",
+            "colaEmptyHint": "Request your first appraisal: the agent handles the request and you track every step here until the signed certificate.",
+            "casoColaLabel": "My requests",
+            "misSolicitudes": "My requests",
+            "solicitarTitle": "Request an appraisal",
+            "solicitarDetalle": "Open the wizard, enter the property details and pay online — the visit is scheduled within minutes.",
+            "solicitarCta": "Request appraisal",
+            "solicitarUnavailable": "The request wizard isn't enabled in this environment yet. Reach out to your Leasefy contact to activate it.",
+            "solicitarProximamente": "Coming soon",
+            "comoFunciona": {
+              "title": "How does it work?",
+              "step1": {
+                "title": "Request the appraisal",
+                "desc": "Enter the property details in the wizard and pay online."
+              },
+              "step2": {
+                "title": "Appraiser visit",
+                "desc": "A certified appraiser schedules and visits the property."
+              },
+              "step3": {
+                "title": "Market-data report",
+                "desc": "The agent's engine crunches market data and the appraiser prepares the report."
+              },
+              "step4": {
+                "title": "Signed certificate",
+                "desc": "Download the signed certificate from My requests."
+              }
+            },
+            "firmaNota": "The visit and the certificate signature are handled by Leasefy's partner appraiser.",
+            "estado": {
+              "detectado": "Requested",
+              "sugerido": "In preparation",
+              "en_revision": "Appraiser reviewing",
+              "aprobado": "Approved",
+              "ejecutando": "Visit & report underway",
+              "resuelto": "Certificate delivered",
+              "rechazado": "Rejected",
+              "fallo": "Issue detected"
+            }
+          },
+          "cobranza": {
+            "salaDesc": "The agent works standard delinquency for you — calls, WhatsApp and letters within the law — and escalates only the critical cases.",
+            "accionTitle": "Review pending escalations",
+            "accionDesc": "Cases the agent can't resolve on its own land here for your decision.",
+            "comoFunciona": {
+              "title": "How does it work?",
+              "step1": {
+                "title": "You import your portfolio",
+                "desc": "Upload your debtors and the agent gets going on its own."
+              },
+              "step2": {
+                "title": "The agent contacts every debtor within Ley 2300",
+                "desc": "Calls, WhatsApp and letters during permitted hours."
+              },
+              "step3": {
+                "title": "It records payments and promises automatically",
+                "desc": "Your portfolio stays up to date without you lifting a finger."
+              },
+              "step4": {
+                "title": "It escalates only the critical cases",
+                "desc": "You decide only where your judgment is needed."
+              }
+            },
+            "importarProximamente": "Coming soon",
+            "importarNota": "First portfolio? Write to your Leasefy contact to load it."
+          }
         }
       }
     },
@@ -5761,7 +6344,7 @@
       "new": "New invoice",
       "newSoon": "Invoice issuance is enabled with the DIAN engine (M2).",
       "m2BannerTitle": "Structure ready — the DIAN engine arrives in M2",
-      "m2BannerDesc": "This section already has the ERP structure. Issuance, CUFE and DIAN validation connect to the authorized provider in the backend phase (M2).",
+      "m2BannerDesc": "This section already has the ERP structure. Issuance, CUFE and DIAN validation connect to the authorized provider in a later phase (M2).",
       "tab_ventas": "Sales",
       "tab_compras": "Purchases",
       "tab_electronica": "Electronic (DIAN)",
@@ -5808,13 +6391,18 @@
       "label": "Reconciliation",
       "title": "Bank reconciliation",
       "subtitle": "Upload the bank file and reconcile movements against expected collections — automatic, with a review queue.",
-      "new": "New reconciliation",
-      "newSoon": "Reconciliation processing is enabled with the engine (M2).",
-      "m2BannerTitle": "Structure ready — the reconciliation engine arrives in M2",
-      "m2BannerDesc": "This section already has the structure. File ingestion (Bancolombia + multi-source) and automatic matching connect in the backend phase (M2).",
+      "m2BannerTitle": "Reconciliation live — human review and statement ingestion connected",
+      "m2BannerDesc": "Upload the bank statement and the agent suggests matches against collections, payouts and commissions. Matching runs in the background in shadow mode: it only suggests, nothing is auto-confirmed.",
       "uploadTitle": "Upload bank source",
-      "uploadHint": "Drag the Bancolombia file (or multi-source), or click to select.",
-      "uploadSoon": "Ingestion and matching connect to the engine (M2).",
+      "uploadHint": "Pick the bank and upload the statement CSV. Reconciliation runs in the background.",
+      "uploadBankLabel": "Bank",
+      "bankBancolombia": "Bancolombia",
+      "bankDavivienda": "Davivienda",
+      "uploadProcessing": "Processing statement…",
+      "uploadSuccess": "Statement uploaded",
+      "uploadSuccessDesc": "{{created}} new movements · {{skipped}} already existed. Reconciliation runs in the background; refresh in a few seconds.",
+      "uploadError": "Couldn't upload the statement",
+      "uploadEmptyFile": "The selected file is empty.",
       "resumenLabel": "Summary",
       "caso_conciliados": "Reconciled",
       "caso_parciales": "Partial",
@@ -5823,7 +6411,7 @@
       "caso_diferencias": "Value mismatch",
       "caso_fueraFecha": "Out of window",
       "movimientosTitle": "Movements",
-      "movimientosDesc": "Each movement is matched against contracts/parties; confirm or reject the suggested matches.",
+      "movimientosDesc": "Each movement is matched against contracts/parties; confirm or reject the suggested matches. Doubtful cases also await you in To review.",
       "colFecha": "Date",
       "colReferencia": "Reference",
       "colTercero": "Party",
@@ -5833,7 +6421,35 @@
       "colCaso": "Case",
       "colAccion": "Action",
       "emptyTitle": "No movements yet",
-      "emptyDesc": "Upload a bank source to view and reconcile movements. The reconciliation engine arrives in M2."
+      "emptyDesc": "Upload a bank source to view and reconcile movements. The reconciliation engine arrives in M2.",
+      "uploadDisabledTooltip": "Bank file ingestion will be enabled in M2.",
+      "uploadDisabledHint": "Available in M2.",
+      "totalMovimientos": "items in queue",
+      "errorTitle": "Error loading reconciliation queue",
+      "retry": "Retry",
+      "refresh": "Refresh",
+      "emptyQueueTitle": "Review queue empty",
+      "emptyQueueDesc": "The reconciliation agent has no pending suggestions. Upload a bank statement to reconcile new movements.",
+      "actionConfirm": "Approve",
+      "actionReject": "Reject",
+      "actionReverse": "Reverse",
+      "toastConfirmed": "Movement confirmed successfully.",
+      "toastRejected": "Movement rejected.",
+      "toastReversed": "Reconciliation reversed.",
+      "toastActionError": "Could not complete the action.",
+      "rejectDialogTitle": "Reject suggestion",
+      "rejectDialogDesc": "Enter the rejection reason. This field is required and will be recorded in the audit log.",
+      "rejectReasonPlaceholder": "Rejection reason…",
+      "rejectConfirm": "Reject",
+      "cancel": "Cancel",
+      "caso_badge_conciliado": "Reconciled",
+      "caso_badge_parcial": "Partial",
+      "caso_badge_duplicado": "Duplicate",
+      "caso_badge_no_identificado": "Unidentified",
+      "caso_badge_diferencia_valor": "Val. mismatch",
+      "caso_badge_fuera_de_fecha": "Out of window",
+      "caso_badge_confirmado": "Confirmed",
+      "caso_badge_rechazado": "Rejected"
     },
     "tesoreria": {
       "label": "Treasury",
@@ -5841,7 +6457,7 @@
       "subtitle": "The net amount payable to each owner, with full breakdown and receipt. Payment processing lives in Disbursements.",
       "processCta": "Process in Disbursements",
       "m2BannerTitle": "Structure ready — the authoritative ledger arrives in M1",
-      "m2BannerDesc": "This view shows the full net formula. The authoritative computation, discounts and accounting posting connect in the backend phase (M1).",
+      "m2BannerDesc": "This view shows the full net formula. The authoritative computation, discounts and accounting posting connect in a later phase (M1).",
       "formulaLabel": "Net formula",
       "ejemplo": "Example",
       "fCanon": "Rent collected",
@@ -5885,7 +6501,7 @@
         "statusRejected": "Rejected",
         "statusVoid": "Void",
         "m1BannerTitle": "AP Invoice detail",
-        "m1BannerDesc": "Payments and advanced approval flows connect in the backend phase (M1).",
+        "m1BannerDesc": "Payments and advanced approval flows connect in a later phase (M1).",
         "loadingError": "Error loading invoice",
         "fetching": "Loading invoice…"
       }
@@ -5897,7 +6513,7 @@
       "new": "New request",
       "newSoon": "Registration and assignment are enabled with the (AI) triage engine — M1.",
       "m1BannerTitle": "Structure ready — AI triage arrives in M1",
-      "m1BannerDesc": "This section already has the full lifecycle. Automatic classification, assignment, SLA and notifications connect to the agent (Mastra) in the backend phase (M1).",
+      "m1BannerDesc": "This section already has the full lifecycle. Automatic classification, assignment, SLA and notifications connect to the agent in a later phase (M1).",
       "resumenLabel": "By status",
       "estado_recibidas": "Received",
       "estado_asignadas": "Assigned",
@@ -5927,7 +6543,7 @@
       "new": "New task",
       "newSoon": "Task creation and event aggregation are enabled with the engine (M1).",
       "m1BannerTitle": "Structure ready — the calendar fills up with the engine in M1",
-      "m1BannerDesc": "This view aggregates system events and your tasks. Authoritative aggregation (visits, signatures, expiries, inspections) and reminders connect in the backend phase (M1).",
+      "m1BannerDesc": "This view aggregates system events and your tasks. Authoritative aggregation (visits, signatures, expiries, inspections) and reminders connect in a later phase (M1).",
       "resumenLabel": "Upcoming",
       "tipo_visitas": "Visits",
       "tipo_firmas": "Pending signatures",
@@ -6277,6 +6893,8 @@
       "perYear": "/year",
       "upTo": "up to {{limit}}",
       "payNow": "Pay now",
+      "planNotFound": "The selected plan was not found. Go back to the plans list.",
+      "planLoadError": "Error loading the plan. Try again.",
       "processing": "Processing...",
       "securePayment": "Secure payment processed by Stripe",
       "cancelAnytime": "Cancel anytime. No commitments.",
@@ -6378,6 +6996,7 @@
       "viewPropertyAction": "View property",
       "approvedToast": "Candidate approved",
       "approvedToastDesc": "Starting contract process with {{name}}",
+      "loadDetailError": "Could not load candidate details.",
       "rejectedToast": "Candidate rejected",
       "rejectedToastDesc": "{{name}} has been rejected and notified.",
       "riskAssessmentTitle": "Risk Assessment",
@@ -7022,6 +7641,7 @@
       "greeting_morning": "Good morning",
       "greeting_afternoon": "Good afternoon",
       "greeting_evening": "Good evening",
+      "heroTitle": "What can I do for you?",
       "subtitle": "I'm your rental management assistant. Select a topic or ask me anything you need.",
       "prompts": {
         "cobros": "Collections",
@@ -7060,6 +7680,34 @@
       "chatPanel": "Chat panel",
       "noSteps": "No steps defined",
       "stepsProgress": "{{completed}} of {{total}} completed"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "ID number"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navigated to {{page}}",
+    "routes": {
+      "search": "Search Properties",
+      "publish": "Publish Property",
+      "pricing": "Pricing",
+      "signIn": "Sign In",
+      "landlordPanel": "Landlord Panel",
+      "tenantPanel": "Tenant Panel",
+      "agencyPanel": "Agency Panel",
+      "agencyAi": "AI Agents",
+      "assistant": "Assistant",
+      "myApplications": "My Applications",
+      "myLease": "My Lease",
+      "apply": "Apply to Property",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "Could not update your saved properties. Please try again."
     }
   }
 }

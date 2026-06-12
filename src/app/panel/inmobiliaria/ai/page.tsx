@@ -25,6 +25,8 @@ import type { AIAgentDefinition } from '@/lib/types/ai-agents';
 import { useAgentMetrics } from '@/lib/hooks/use-agent-metrics';
 import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
 import { useAiHubLanding } from '@/lib/hooks/use-ai-hub-landing';
+import { useAiHubResumen } from '@/lib/hooks/ai/use-ai-hub-resumen';
+import { EquipoAgentes } from '@/components/inmobiliaria/ai/EquipoAgentes';
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton';
 
 // ── Relative time helper (XR-05 i18n for es-CO) ───────────────────────────
@@ -57,15 +59,15 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
 
   // Build detailed metrics
   const detailMetrics = isScoring ? [
-    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : metrics.scoring.evaluationsThisMonth },
-    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics.scoring.avgTimeMin },
-    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : metrics.scoring.accuracyRate },
-    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : metrics.scoring.escalationRate },
+    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : (metrics?.scoring.evaluationsThisMonth ?? '—') },
+    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics?.scoring.avgTimeMin ?? '—' },
+    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : (metrics?.scoring.accuracyRate ?? '—') },
+    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : (metrics?.scoring.escalationRate ?? '—') },
   ] : [
-    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : metrics.matching.suggestionsSent },
-    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : metrics.matching.conversionRate },
-    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : metrics.matching.candidatesRedirected },
-    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : metrics.matching.avgCompatibility },
+    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : (metrics?.matching.suggestionsSent ?? '—') },
+    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : (metrics?.matching.conversionRate ?? '—') },
+    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : (metrics?.matching.candidatesRedirected ?? '—') },
+    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : (metrics?.matching.avgCompatibility ?? '—') },
   ];
 
   // How it works steps
@@ -174,6 +176,10 @@ export default function AIAgentsPage() {
   const { activities } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 20 });
   const { metrics, isLoading } = useAgentMetrics(60_000);
   const { data: landing, isLoading: hubLoading } = useAiHubLanding();
+  // F10 — hub real: 6 colas por rol + vista agregada (decisión 2026-06-08).
+  // 404 / backend not deployed → graceful panel; the Phase 37 surfaces below
+  // keep working untouched.
+  const resumen = useAiHubResumen();
 
   // If an agent is selected, show detail view
   const selectedAgent = selectedAgentId ? activeAgents.find(a => a.id === selectedAgentId) : null;
@@ -187,17 +193,17 @@ export default function AIAgentsPage() {
 
   // Build metrics arrays from real data
   const scoringMetrics = [
-    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : metrics.scoring.evaluationsThisMonth },
-    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics.scoring.avgTimeMin },
-    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : metrics.scoring.accuracyRate },
-    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : metrics.scoring.escalationRate },
+    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : (metrics?.scoring.evaluationsThisMonth ?? '—') },
+    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics?.scoring.avgTimeMin ?? '—' },
+    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : (metrics?.scoring.accuracyRate ?? '—') },
+    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : (metrics?.scoring.escalationRate ?? '—') },
   ];
 
   const matchingMetrics = [
-    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : metrics.matching.suggestionsSent },
-    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : metrics.matching.conversionRate },
-    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : metrics.matching.candidatesRedirected },
-    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : metrics.matching.avgCompatibility },
+    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : (metrics?.matching.suggestionsSent ?? '—') },
+    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : (metrics?.matching.conversionRate ?? '—') },
+    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : (metrics?.matching.candidatesRedirected ?? '—') },
+    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : (metrics?.matching.avgCompatibility ?? '—') },
   ];
 
   // ── Cobranza card KPIs (from useAiHubLanding) ────────────────────────────
@@ -249,15 +255,18 @@ export default function AIAgentsPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      {/* Header */}
+      {/* Header — F10 "AGENTES IA · Equipo" tone */}
       <div className="flex flex-col gap-1 animate-stagger-in" style={{ animationDelay: '0s' }}>
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-neutral-100 dark:bg-neutral-800">
             <Robot weight="duotone" className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
+            <span className="text-[11px] font-mono uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+              {locale === 'es' ? 'Agentes IA · Equipo' : 'AI Agents · Team'}
+            </span>
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
-              {locale === 'es' ? 'Agentes AI' : 'AI Agents'}
+              {locale === 'es' ? 'Equipo de agentes' : 'Agent team'}
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400">
               {locale === 'es'
@@ -266,6 +275,17 @@ export default function AIAgentsPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* F10 — Equipo de agentes: 6 colas por rol + vista agregada. Leads the
+          page; the Phase 37 cards/feed below are PRESERVED. */}
+      <div className="animate-stagger-in" style={{ animationDelay: '0.04s' }}>
+        <EquipoAgentes
+          data={resumen.data}
+          isLoading={resumen.isLoading}
+          error={resumen.error}
+          notAvailable={resumen.notAvailable}
+        />
       </div>
 
       {/* Summary stats */}
@@ -290,7 +310,7 @@ export default function AIAgentsPage() {
             </div>
             <div>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                {isLoading ? '...' : metrics.summary.actionsThisWeek}
+                {isLoading ? '...' : (metrics?.summary.actionsThisWeek ?? '—')}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {locale === 'es' ? 'Acciones esta semana' : 'Actions this week'}
@@ -305,7 +325,7 @@ export default function AIAgentsPage() {
             </div>
             <div>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                {isLoading ? '...' : metrics.summary.hoursSavedThisMonth}
+                {isLoading ? '...' : (metrics?.summary.hoursSavedThisMonth ?? '—')}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {locale === 'es' ? 'Horas ahorradas este mes' : 'Hours saved this month'}

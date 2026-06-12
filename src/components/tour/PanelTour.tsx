@@ -88,7 +88,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
 const TOTAL_STEPS = TOUR_STEPS.length
 
 // Tooltip dimensions — used for viewport-edge clamping.
-const TOOLTIP_WIDTH = 340
+const TOOLTIP_WIDTH = 384
 const TOOLTIP_OFFSET = 12
 
 interface TooltipPosition {
@@ -246,7 +246,7 @@ export function PanelTour({ isOpen, onDismiss, isHub }: PanelTourProps) {
         onNext={handleNext}
         onDismiss={dismissWithFocusRestore}
         // Centered announcement: wider hero card (clamped to the viewport).
-        style={{ width: 420, maxWidth: 'calc(100vw - 2rem)' }}
+        style={{ width: 560, maxWidth: 'calc(100vw - 2rem)' }}
         centered
         // Stop the backdrop click from dismissing when interacting with the card.
         onCardClick={(e) => e.stopPropagation()}

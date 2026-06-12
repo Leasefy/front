@@ -182,7 +182,7 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
         dismissLabel={t('inmobiliaria.ai.tour.dismiss')}
         onNext={dismiss}
         onDismiss={dismiss}
-        style={{ width: 420, maxWidth: 'calc(100vw - 2rem)' }}
+        style={{ width: 560, maxWidth: 'calc(100vw - 2rem)' }}
         centered
         onCardClick={(e) => e.stopPropagation()}
       />

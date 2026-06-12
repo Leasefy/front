@@ -1,12 +1,16 @@
 'use client'
 
 /**
- * FeatureAnnouncementCard — the shared Relume/Givingli-style announcement card:
- * brand hero image on top (with floating close), "Nuevo" badge, Satoshi title,
- * body copy, and a footer with optional dismiss link + progress dots + CTA.
+ * FeatureAnnouncementCard — the shared brand announcement card.
+ *
+ * Anatomy (BRAND-CONTRACT): full-bleed brand photo on top (no veil — the
+ * photos ARE the brand moment), an Eyebrow row (BrandDot + mono "NUEVO" +
+ * mono step counter — the ONE progress signal, no duplicate dots), Satoshi
+ * title, quiet body copy, and a hairline-separated footer with the dismiss
+ * link and a primary CTA with the arrow signature.
  *
  * Used by:
- *   - PanelTour (multi-step panel tour — shows counter + dots + dismiss link)
+ *   - PanelTour (multi-step panel tour — shows counter + dismiss link)
  *   - AgentIntroModal (single-card per-agent presentation — CTA only)
  *
  * Brand image pool: public/images/features/leasefy-brand-01..16.jpg — every
@@ -14,8 +18,9 @@
  * TOUR_STEPS and AgentIntroModal AGENT_INTROS).
  */
 
+import * as React from 'react'
 import Image from 'next/image'
-import { X } from '@phosphor-icons/react'
+import { X, ArrowRight } from '@phosphor-icons/react'
 
 export interface FeatureAnnouncementCardProps {
   title: string
@@ -28,7 +33,7 @@ export interface FeatureAnnouncementCardProps {
   descId: string
   /** Zero-based step. For single-card announcements pass 0. */
   currentStep: number
-  /** Total steps. When 1, the counter + progress dots are hidden. */
+  /** Total steps. When 1, the step counter is hidden. */
   total: number
   primaryLabel: string
   /** aria-label for the floating X button. */
@@ -66,46 +71,57 @@ export function FeatureAnnouncementCard({
 }: FeatureAnnouncementCardProps) {
   const showProgress = total > 1
 
+  // Focus lands on the dialog itself (not the CTA) so keyboard/SR users are
+  // inside the card without painting a permanent focus ring on the button.
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    rootRef.current?.focus()
+  }, [])
+
   return (
     <div
+      ref={rootRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="false"
       aria-labelledby={titleId}
       aria-describedby={descId}
-      className="overflow-hidden rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-2xl motion-reduce:transition-none"
+      className="overflow-hidden rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-2xl outline-none motion-reduce:transition-none"
       style={style}
       onClick={onCardClick}
     >
-      {/* Brand hero image with floating close button */}
-      <div className={`relative w-full ${centered ? 'h-48' : 'h-36'}`}>
+      {/* Brand hero photo — full bleed, no veil. The hairline under it does
+          the separation work (zero-gradient per contract §3). */}
+      <div className={`relative w-full border-b border-neutral-200/80 dark:border-neutral-800 ${centered ? 'h-64' : 'h-40'}`}>
         <Image
           src={image}
           alt=""
           fill
-          sizes={centered ? '420px' : '340px'}
+          sizes={centered ? '560px' : '380px'}
           className="object-cover"
           priority
         />
-        {/* Soft bottom fade so the image melts into the card body */}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/90 dark:from-neutral-900/90 to-transparent" />
         <button
           type="button"
           onClick={onDismiss}
           aria-label={dismissLabel}
-          className="absolute top-3 right-3 w-8 h-8 rounded-md bg-white/90 dark:bg-neutral-900/80 backdrop-blur flex items-center justify-center text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white transition-colors"
+          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-md bg-white/95 dark:bg-neutral-900/90 backdrop-blur border border-black/[0.06] dark:border-white/10 flex items-center justify-center text-neutral-500 hover:text-[#0B1220] dark:text-neutral-400 dark:hover:text-white transition-colors"
         >
-          <X className="w-4 h-4" weight="bold" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Body */}
-      <div className={centered ? 'px-6 pb-6 pt-1' : 'px-5 pb-5 pt-1'}>
-        <div className="flex items-center gap-2 mb-2.5">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/20 text-[11px] font-mono uppercase tracking-[0.08em] text-[#1A40FF] dark:text-[#8FA3FF]">
+      <div className={centered ? 'px-8 pt-7 pb-7' : 'px-6 pt-5 pb-5'}>
+        {/* Eyebrow row — BrandDot + mono badge; counter mono a la derecha.
+            ONE progress signal (the counter); the old dots duplicated it. */}
+        <div className="flex items-center gap-2.5">
+          <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0" />
+          <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#1A40FF] dark:text-[#8FA3FF]">
             {newBadge}
           </span>
           {showProgress && (
-            <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+            <span className="ml-auto font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500 tabular-nums">
               {`${currentStep + 1} / ${total}`}
             </span>
           )}
@@ -113,13 +129,13 @@ export function FeatureAnnouncementCard({
 
         <h2
           id={titleId}
-          className={`font-medium tracking-[-0.01em] text-neutral-900 dark:text-white mb-2 leading-snug ${centered ? 'text-[24px]' : 'text-[20px]'}`}
+          className={`mt-3.5 font-medium tracking-[-0.02em] text-[#0B1220] dark:text-white leading-tight ${centered ? 'text-[26px]' : 'text-[20px]'}`}
         >
           {title}
         </h2>
         <p
           id={descId}
-          className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed mb-5"
+          className={`mt-2 text-neutral-500 dark:text-neutral-400 leading-relaxed ${centered ? 'text-[14.5px]' : 'text-[13.5px]'}`}
         >
           {description}
         </p>
@@ -131,12 +147,13 @@ export function FeatureAnnouncementCard({
           </span>
         )}
 
-        <div className="flex items-center justify-between gap-3">
+        {/* Footer — hairline-separated; quiet dismiss left, CTA right. */}
+        <div className={`flex items-center justify-between gap-4 border-t border-neutral-200/80 dark:border-neutral-800 ${centered ? 'mt-7 pt-5' : 'mt-5 pt-4'}`}>
           {dismissLinkLabel ? (
             <button
               type="button"
               onClick={onDismiss}
-              className="text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 underline underline-offset-2"
+              className="text-[13px] text-neutral-400 hover:text-[#0B1220] dark:text-neutral-500 dark:hover:text-neutral-200 transition-colors"
             >
               {dismissLinkLabel}
             </button>
@@ -144,32 +161,14 @@ export function FeatureAnnouncementCard({
             <span />
           )}
 
-          <div className="flex items-center gap-3">
-            {showProgress && (
-              <div className="flex items-center gap-1.5" aria-hidden="true">
-                {Array.from({ length: total }, (_, i) => (
-                  <span
-                    key={i}
-                    className={`rounded-full transition-all duration-200 motion-reduce:transition-none ${
-                      i === currentStep
-                        ? 'w-4 h-1.5 bg-[#1A40FF] dark:bg-[#5570FF]'
-                        : 'w-1.5 h-1.5 bg-neutral-300 dark:bg-neutral-600'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-
-            <button
-              type="button"
-              // autoFocus on the primary CTA keeps keyboard nav obvious.
-              autoFocus
-              onClick={onNext}
-              className="px-5 py-2.5 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] active:scale-[0.98] transition-all motion-reduce:transition-none"
-            >
-              {primaryLabel}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onNext}
+            className="group inline-flex items-center gap-2 h-10 px-5 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 transition-colors motion-reduce:transition-none"
+          >
+            {primaryLabel}
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+          </button>
         </div>
       </div>
     </div>

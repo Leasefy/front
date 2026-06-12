@@ -54,7 +54,7 @@ export default function EvaluacionPage() {
   return (
     <>
       <Navbar />
-      <main className="overflow-hidden bg-white">
+      <main className="overflow-hidden bg-background">
         {/* Hero Section */}
         <section className="relative h-[600px] bg-black">
           <Image
@@ -238,11 +238,11 @@ export default function EvaluacionPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                        <Shield className="w-4 h-4 text-emerald-600" />
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Sin antecedentes</p>
@@ -257,7 +257,7 @@ export default function EvaluacionPage() {
         </section>
 
         {/* Stats Bar */}
-        <section className="bg-white border-b border-border">
+        <section className="bg-background border-b border-border">
           <div className="container-platform py-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {[
@@ -278,7 +278,7 @@ export default function EvaluacionPage() {
         </section>
 
         {/* What We Evaluate - Problems Style Bento */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             {/* 3-column header */}
             <div className="mb-14 lg:mb-20">
@@ -410,14 +410,14 @@ export default function EvaluacionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-4 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
-                        <Fingerprint className="w-5 h-5 text-emerald-600" />
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
+                    <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center">
+                        <Fingerprint className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Identidad</p>
@@ -465,11 +465,11 @@ export default function EvaluacionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[220px] border border-neutral-100">
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[220px] border border-border">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Referencias verificadas</span>
                       <span className="text-[10px] text-emerald-600 font-medium">3/3</span>
@@ -481,7 +481,7 @@ export default function EvaluacionPage() {
                         { name: 'Referencia personal', rating: 4, comment: 'Muy recomendado' },
                       ].map((ref, i) => (
                         <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                          <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-bold text-violet-600 flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-[10px] font-bold text-violet-600 dark:text-violet-400 flex-shrink-0">
                             {ref.name.charAt(0)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -570,11 +570,11 @@ export default function EvaluacionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
                   <span className="text-[11px] font-mono font-normal text-foreground/30 uppercase tracking-wider mb-4 block">Paso 02</span>
-                  <div className="w-12 h-12 rounded-xl bg-sand-100 flex items-center justify-center mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-sand-100 dark:bg-muted flex items-center justify-center mb-6">
                     <FileText className="w-6 h-6 text-sand-700" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
@@ -586,7 +586,7 @@ export default function EvaluacionPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Datos personales', 'Info laboral', 'Referencias', 'Autorización'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -599,11 +599,11 @@ export default function EvaluacionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
                   <span className="text-[11px] font-mono font-normal text-foreground/30 uppercase tracking-wider mb-4 block">Paso 03</span>
-                  <div className="w-12 h-12 rounded-xl bg-sand-100 flex items-center justify-center mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-sand-100 dark:bg-muted flex items-center justify-center mb-6">
                     <Lightning className="w-6 h-6 text-sand-700" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
@@ -615,7 +615,7 @@ export default function EvaluacionPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['DataCrédito', 'Registraduría', 'Policía', 'Score IA'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -667,7 +667,7 @@ export default function EvaluacionPage() {
         </section>
 
         {/* Pricing Section */}
-        <section className="bg-white py-24 lg:py-32">
+        <section className="bg-background py-24 lg:py-32">
           <div className="container-platform">
             {/* 3-column header */}
             <div className="mb-14 lg:mb-20">
@@ -718,7 +718,7 @@ export default function EvaluacionPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.4 }}
-              className="mt-10 p-6 bg-muted/50 rounded-xl max-w-5xl mx-auto border border-neutral-200"
+              className="mt-10 p-6 bg-muted/50 rounded-xl max-w-5xl mx-auto border border-border"
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
@@ -741,7 +741,7 @@ export default function EvaluacionPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="bg-white overflow-hidden">
+        <section className="bg-background overflow-hidden">
           <div className="container-platform py-[80px] pb-[100px]">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
               <motion.div

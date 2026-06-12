@@ -4,10 +4,10 @@
  * These utilities are for non-component contexts (PDF generation, data processing, etc.)
  */
 
-type SupportedLocale = 'es-CL' | 'en-US';
+type SupportedLocale = 'es-CO' | 'en-US';
 
 function getLocaleString(locale?: 'es' | 'en'): SupportedLocale {
-  return locale === 'en' ? 'en-US' : 'es-CL';
+  return locale === 'en' ? 'en-US' : 'es-CO';
 }
 
 /**

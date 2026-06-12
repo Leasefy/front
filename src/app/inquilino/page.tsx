@@ -44,6 +44,10 @@ export default function InquilinoPage() {
   };
 
   const handleDownloadPDF = () => {
+    // TODO: migrar a GET /evaluations/:applicationId/certificate.pdf
+    // Bloqueado por: useEvaluation está mockeado (localStorage + IDs fake).
+    // Cuando useEvaluation se conecte al agente real → usar apiClient.getBlob con evaluation.id
+    // y eliminar generate-score-pdf.ts.
     if (!score || !evaluation?.verificationCode || !evaluation.paidAt || !evaluation.expiresAt) return;
     const name = user?.name || 'Inquilino';
     downloadScorePDF(name, score, evaluation.verificationCode, evaluation.paidAt, evaluation.expiresAt);
@@ -238,7 +242,7 @@ export default function InquilinoPage() {
                   {locale === 'es' ? 'Comienza ahora' : 'Get started'}
                 </p>
                 <p className="text-sm font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  {locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties'}
+                  {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
                 </p>
               </div>
             </Link>
@@ -386,7 +390,7 @@ export default function InquilinoPage() {
                   {
                     href: '/inquilino/explorar',
                     icon: MagnifyingGlass,
-                    label: locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties',
+                    label: locale === 'es' ? 'Buscar propiedades' : 'Search properties',
                     desc: locale === 'es' ? 'Explora el mercado' : 'Explore the market',
                   },
                   {
@@ -445,7 +449,7 @@ export default function InquilinoPage() {
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
                       {locale === 'es'
                         ? 'Guarda propiedades que te interesen tocando el corazón. Así podrás compararlas fácilmente.'
-                        : 'FloppyDisk properties you like by tapping the heart. This way you can easily compare them.'}
+                        : 'Save properties you like by tapping the heart. This way you can easily compare them.'}
                     </p>
                   </div>
                 </div>

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { permissionsApi } from '@/lib/api/inmobiliaria.service';
+import { settingsApi } from '@/lib/api/settings.service';
 
 // Setup steps definition
 interface SetupStep {
@@ -38,7 +39,7 @@ const AGENCY_ROLE_DESC: Record<string, string> = {
 
 export default function InmobiliariaPerfilPage() {
   const { t, locale } = useI18n();
-  const { user, agency, updateProfile } = useAuth();
+  const { user, agency, updateProfile, logout } = useAuth();
   const [memberRole, setMemberRole] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
 
@@ -55,6 +56,7 @@ export default function InmobiliariaPerfilPage() {
 
   // Avatar upload state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -123,9 +125,10 @@ export default function InmobiliariaPerfilPage() {
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
     try {
-      if (section === 'avatar' && avatarPreview) {
-        // Avatar upload not yet wired to storage — save preview locally for now
-        setSavedAvatar(avatarPreview);
+      if (section === 'avatar' && avatarFile) {
+        const { url } = await settingsApi.uploadAvatar(avatarFile);
+        setSavedAvatar(url);
+        setAvatarFile(null);
       } else if (section === 'personal') {
         await updateProfile({
           firstName: formData.firstName.trim(),
@@ -152,6 +155,7 @@ export default function InmobiliariaPerfilPage() {
   const handleCancelEdit = () => {
     setEditingSection(null);
     setAvatarPreview(null);
+    setAvatarFile(null);
   };
 
   // Avatar upload handlers
@@ -175,6 +179,7 @@ export default function InmobiliariaPerfilPage() {
       toast.error(locale === 'es' ? 'La imagen debe ser menor a 5MB' : 'Image must be less than 5MB');
       return;
     }
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       setAvatarPreview(e.target?.result as string);
@@ -203,6 +208,7 @@ export default function InmobiliariaPerfilPage() {
 
   const handleRemoveAvatar = () => {
     setAvatarPreview(null);
+    setAvatarFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -226,14 +232,18 @@ export default function InmobiliariaPerfilPage() {
     if (deleteConfirmText !== requiredText) return;
 
     setIsDeleting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDeleting(false);
-    setDeleteStep(3);
-
-    setTimeout(() => {
+    try {
+      await settingsApi.deleteAccount();
+      setDeleteStep(3);
       toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      handleCloseDeleteModal();
-    }, 2000);
+      // Right-to-erasure: actually sign out and leave the panel.
+      await logout();
+      window.location.replace('/auth');
+    } catch {
+      toast.error(locale === 'es' ? 'No se pudo eliminar tu cuenta. Intenta de nuevo.' : 'Could not delete your account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (

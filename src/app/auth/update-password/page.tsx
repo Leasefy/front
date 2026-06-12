@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { useAuth } from '@/lib/auth';
 import { getAccessToken } from '@/lib/api/client';
 
@@ -92,8 +91,7 @@ export default function UpdatePasswordPage() {
   };
 
   return (
-    <ForceLightMode>
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-[400px]">
           {/* Logo */}
           <div className="flex justify-center mb-8">
@@ -107,8 +105,8 @@ export default function UpdatePasswordPage() {
 
           {success ? (
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="h-9 w-9 text-green-600" />
+              <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h1 className="text-xl font-semibold text-foreground mb-2">
                 Contraseña actualizada
@@ -219,6 +217,5 @@ export default function UpdatePasswordPage() {
           )}
         </div>
       </div>
-    </ForceLightMode>
   );
 }

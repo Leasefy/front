@@ -169,8 +169,7 @@ function FlexCalculator() {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="mb-12 rounded-2xl overflow-hidden"
-      style={{ border: '1px solid rgba(0,0,0,0.08)' }}
+      className="mb-12 rounded-2xl overflow-hidden border border-border"
     >
       <div className="relative bg-foreground text-background px-6 py-5">
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400" />
@@ -185,7 +184,7 @@ function FlexCalculator() {
         </div>
       </div>
 
-      <div className="bg-white p-6">
+      <div className="bg-card p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div>
@@ -199,8 +198,7 @@ function FlexCalculator() {
                   max="1000"
                   value={units}
                   onChange={(e) => setUnits(Math.max(10, Math.min(1000, parseInt(e.target.value) || 10)))}
-                  className="w-16 h-8 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground/10"
-                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+                  className="w-16 h-8 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
                 />
               </div>
               <div className="relative h-10 flex items-center">
@@ -252,20 +250,19 @@ function FlexCalculator() {
                     const numValue = parseInt(rawValue, 10);
                     if (!isNaN(numValue) && numValue >= 0) setAvgRent(numValue);
                   }}
-                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
-                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium text-foreground rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
                 />
               </div>
             </div>
           </div>
           <div className="flex flex-col justify-center">
-            <div className="bg-muted/30 rounded-xl p-5" style={{ border: '1px solid rgba(0,0,0,0.04)' }}>
+            <div className="bg-muted/30 rounded-xl p-5 border border-border/50">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Costo mensual estimado</p>
               <p className="text-[36px] font-heading font-bold text-foreground tracking-tight leading-none tabular-nums">
                 ${monthlyFee.toLocaleString('es-CO')}
               </p>
               <p className="text-[12px] text-muted-foreground mt-1">COP/mes</p>
-              <div className="mt-4 pt-4 space-y-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <div className="mt-4 pt-4 space-y-2 border-t border-border/50">
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-muted-foreground">{units} unidades x ${avgRent.toLocaleString('es-CO')} canon</span>
                   <span className="text-foreground font-medium">= ${(units * avgRent).toLocaleString('es-CO')}</span>
@@ -445,10 +442,10 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer border-2 bg-white hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer border-2 bg-card hover:shadow-md hover:ring-1 hover:ring-indigo-200",
                 userTextT === 'owner-managed'
                   ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-neutral-200 hover:border-indigo-300"
+                  : "border-border hover:border-indigo-300"
               )}
             >
               {userTextT === 'owner-managed' && (
@@ -460,7 +457,7 @@ export default function PricingPage() {
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
                   <Shield className="w-4 h-4 text-indigo-600" />
                 </div>
                 <div className="mt-auto">
@@ -485,10 +482,10 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.1 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-card border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
                 userTextT === 'owner-diy'
                   ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-neutral-200 hover:border-indigo-300"
+                  : "border-border hover:border-indigo-300"
               )}
             >
               {userTextT === 'owner-diy' && (
@@ -500,7 +497,7 @@ export default function PricingPage() {
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
                   <House className="w-4 h-4 text-foreground" />
                 </div>
                 <div className="mt-auto">
@@ -525,10 +522,10 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.2 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-card border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
                 userTextT === 'evaluation'
                   ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-neutral-200 hover:border-indigo-300"
+                  : "border-border hover:border-indigo-300"
               )}
             >
               {userTextT === 'evaluation' && (
@@ -540,7 +537,7 @@ export default function PricingPage() {
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
                   <UserCheck className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="mt-auto">
@@ -566,10 +563,10 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.3 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-card border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
                 userTextT === 'agency'
                   ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-neutral-200 hover:border-indigo-300"
+                  : "border-border hover:border-indigo-300"
               )}
             >
               {userTextT === 'agency' && (
@@ -581,7 +578,7 @@ export default function PricingPage() {
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
                   <Briefcase className="w-4 h-4 text-sand-700" />
                 </div>
                 <div className="mt-auto">
@@ -612,7 +609,7 @@ export default function PricingPage() {
                   key={i}
                   src={`https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=100`}
                   alt=""
-                  className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-background"
                 />
               ))}
             </div>
@@ -649,7 +646,7 @@ export default function PricingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mb-10 p-5 rounded-xl bg-neutral-50 border border-neutral-200"
+              className="mb-10 p-5 rounded-xl bg-muted border border-border"
             >
               <div className="flex flex-col lg:flex-row lg:items-center gap-5">
                 {/* Input section */}
@@ -678,7 +675,7 @@ export default function PricingPage() {
                         }}
                         placeholder="2.000.000"
                         aria-label="Valor del arriendo mensual"
-                        className="w-full h-10 pl-7 pr-3 bg-white text-[15px] font-medium text-foreground rounded-lg border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                        className="w-full h-10 pl-7 pr-3 bg-card text-[15px] font-medium text-foreground rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
                       />
                     </div>
                     <span className="text-[12px] text-muted-foreground">/mes</span>
@@ -687,14 +684,14 @@ export default function PricingPage() {
 
                 {/* Results preview - compact */}
                 <div className="flex gap-3">
-                  <div className="px-4 py-3 rounded-lg bg-white border border-neutral-200 text-center min-w-[100px]">
+                  <div className="px-4 py-3 rounded-lg bg-card border border-border text-center min-w-[100px]">
                     <p className="text-[11px] text-muted-foreground mb-0.5">5%</p>
                     <p className="text-[18px] font-heading font-bold text-foreground">
                       ${(exampleRent * 0.05).toLocaleString('es-CL')}
                     </p>
                   </div>
-                  <div className="px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-center min-w-[100px]">
-                    <p className="text-[11px] text-emerald-600 mb-0.5">6%</p>
+                  <div className="px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 text-center min-w-[100px]">
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mb-0.5">6%</p>
                     <p className="text-[18px] font-heading font-bold text-foreground">
                       ${(exampleRent * 0.06).toLocaleString('es-CL')}
                     </p>
@@ -703,11 +700,11 @@ export default function PricingPage() {
               </div>
 
               {/* Savings indicator - compact */}
-              <div className="mt-4 pt-3 border-t border-neutral-200 flex flex-wrap items-center gap-4 text-[12px]">
+              <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center gap-4 text-[12px]">
                 <span className="text-muted-foreground">
-                  Ahorro: <span className="text-emerald-600 font-medium">${(exampleRent * 0.05).toLocaleString('es-CL')}</span>/mes
+                  Ahorro: <span className="text-emerald-600 dark:text-emerald-400 font-medium">${(exampleRent * 0.05).toLocaleString('es-CL')}</span>/mes
                 </span>
-                <span className="text-neutral-300">•</span>
+                <span className="text-muted-foreground/30">•</span>
                 <span className="text-muted-foreground">Sin compromisos</span>
               </div>
             </motion.div>
@@ -1162,14 +1159,14 @@ export default function PricingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="md:col-span-3 lg:col-span-5 rounded-xl p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 hover:shadow-lg transition-all relative overflow-hidden"
+              className="md:col-span-3 lg:col-span-5 rounded-xl p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 dark:from-sand-950/30 dark:to-sand-900/20 border border-sand-200 dark:border-sand-800 hover:shadow-lg transition-all relative overflow-hidden"
             >
               {/* Decorative corner */}
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sand-200/50 to-transparent rounded-bl-full" />
 
               <div className="flex flex-col h-full relative z-10">
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
-                  <Shield className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
+                  <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
                   Seguridad garantizada
@@ -1178,11 +1175,11 @@ export default function PricingPage() {
                   Verificación de identidad y antecedentes de todos los candidatos para tu tranquilidad.
                 </p>
                 {/* Visual */}
-                <div className="mt-auto p-3 rounded-lg bg-white border border-sand-200">
+                <div className="mt-auto p-3 rounded-lg bg-card border border-sand-200 dark:border-sand-800">
                   <div className="flex items-center gap-3">
                     <div className="flex -space-x-1.5">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-600 border-2 border-white">
+                        <div key={i} className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border-2 border-card">
                           ✓
                         </div>
                       ))}
@@ -1202,10 +1199,10 @@ export default function PricingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="md:col-span-3 lg:col-span-4 rounded-xl p-6 bg-white border border-neutral-200 hover:shadow-lg transition-all"
+              className="md:col-span-3 lg:col-span-4 rounded-xl p-6 bg-card border border-border hover:shadow-lg transition-all"
             >
-              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-4">
-                <Lightning className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-4">
+                <Lightning className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
               <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
                 Proceso rápido
@@ -1226,7 +1223,7 @@ export default function PricingPage() {
                   >
                     <div className={cn(
                       'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
-                      i === 2 ? 'bg-emerald-500 text-white' : 'bg-neutral-100 text-muted-foreground'
+                      i === 2 ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
                     )}>
                       {i + 1}
                     </div>
@@ -1243,9 +1240,9 @@ export default function PricingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="md:col-span-6 lg:col-span-3 rounded-xl p-6 bg-neutral-50 border border-neutral-200 hover:shadow-lg transition-all"
+              className="md:col-span-6 lg:col-span-3 rounded-xl p-6 bg-muted border border-border hover:shadow-lg transition-all"
             >
-              <div className="w-10 h-10 rounded-lg bg-neutral-200 flex items-center justify-center mb-4">
+              <div className="w-10 h-10 rounded-lg bg-muted-foreground/20 flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5 text-foreground" />
               </div>
               <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">

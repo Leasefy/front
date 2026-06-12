@@ -8,6 +8,9 @@ import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { useRouter } from 'next/navigation';
+import { settingsApi } from '@/lib/api/settings.service';
+import { getSupabase } from '@/lib/supabase/client';
 
 // Setup steps definition
 interface SetupStep {
@@ -23,7 +26,8 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PropietarioPerfilPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
+  const router = useRouter();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -33,19 +37,26 @@ export default function PropietarioPerfilPage() {
 
   // Avatar upload state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
+  // Form state — sourced from auth context, Colombian demo fallbacks
   const [formData, setFormData] = useState({
-    name: user?.name || 'Propietario',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
     email: user?.email || 'propietario@example.com',
-    phone: '+56 9 1234 5678',
-    rut: '12.345.678-9',
-    address: 'Av. Providencia 1234, Providencia',
-    birthDate: '1980-08-15',
-    emergencyContact: 'Ana López - +56 9 8765 4321',
+    phone: user?.phone || '+57 300 123 4567',
+    rut: user?.rut || '1.020.345.678',
+    address: user?.address || 'Cra. 7 #71-21, Bogotá',
+    birthDate: user?.birthDate || '1980-08-15',
+    emergencyContactName: user?.emergencyContactName || 'Ana López',
+    emergencyContactPhone: user?.emergencyContactPhone || '+57 301 876 5432',
   });
+
+  // Display helpers for the single-field UI (name + emergency contact)
+  const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || (locale === 'es' ? 'Propietario' : 'Landlord');
+  const emergencyContactDisplay = [formData.emergencyContactName, formData.emergencyContactPhone].filter(Boolean).join(' - ');
 
   // Setup steps
   const setupSteps: SetupStep[] = [
@@ -94,24 +105,60 @@ export default function PropietarioPerfilPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Single "Nombre completo" input → split into firstName / lastName
+  const handleNameChange = (value: string) => {
+    const parts = value.trim().split(/\s+/);
+    const firstName = parts.shift() ?? '';
+    const lastName = parts.join(' ');
+    setFormData(prev => ({ ...prev, firstName, lastName }));
+  };
+
+  // Single "Nombre - Teléfono" input → split into name / phone parts
+  const handleEmergencyContactChange = (value: string) => {
+    const [name, ...rest] = value.split(' - ');
+    setFormData(prev => ({
+      ...prev,
+      emergencyContactName: (name ?? '').trim(),
+      emergencyContactPhone: rest.join(' - ').trim(),
+    }));
+  };
+
   const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    if (section === 'avatar' && avatarPreview) {
-      setSavedAvatar(avatarPreview);
+    try {
+      if (section === 'avatar' && avatarFile) {
+        const { url } = await settingsApi.uploadAvatar(avatarFile);
+        setSavedAvatar(url);
+        setAvatarFile(null);
+      } else if (section === 'personal') {
+        await updateProfile({
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phone: formData.phone.trim() || undefined,
+          address: formData.address.trim() || undefined,
+          birthDate: formData.birthDate || undefined,
+        });
+      } else if (section === 'emergency') {
+        await updateProfile({
+          emergencyContactName: formData.emergencyContactName.trim() || undefined,
+          emergencyContactPhone: formData.emergencyContactPhone.trim() || undefined,
+        });
+      }
+      setEditingSection(null);
+      toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
+    } catch {
+      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    setEditingSection(null);
-    toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
   };
 
   const handleCancelEdit = () => {
     setEditingSection(null);
     setAvatarPreview(null);
+    setAvatarFile(null);
   };
 
   const handleAvatarClick = () => {
@@ -132,6 +179,7 @@ export default function PropietarioPerfilPage() {
       toast.error(locale === 'es' ? 'La imagen debe ser menor a 5MB' : 'Image must be less than 5MB');
       return;
     }
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = (e) => setAvatarPreview(e.target?.result as string);
     reader.readAsDataURL(file);
@@ -148,6 +196,7 @@ export default function PropietarioPerfilPage() {
 
   const handleRemoveAvatar = () => {
     setAvatarPreview(null);
+    setAvatarFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -158,13 +207,23 @@ export default function PropietarioPerfilPage() {
     const requiredText = locale === 'es' ? 'ELIMINAR' : 'DELETE';
     if (deleteConfirmText !== requiredText) return;
     setIsDeleting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDeleting(false);
-    setDeleteStep(3);
-    setTimeout(() => {
-      toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      handleCloseDeleteModal();
-    }, 2000);
+    try {
+      // Real, irreversible deletion (soft-delete + sign-out). Never show the
+      // success step without a persisted backend effect (Ley 1581 / ARCO).
+      await settingsApi.deleteAccount();
+      const supabase = getSupabase();
+      if (supabase) await supabase.auth.signOut();
+      setIsDeleting(false);
+      setDeleteStep(3);
+      setTimeout(() => {
+        toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
+        handleCloseDeleteModal();
+        router.push('/');
+      }, 1500);
+    } catch (err) {
+      setIsDeleting(false);
+      toast.error((err as Error)?.message || (locale === 'es' ? 'Error al eliminar cuenta' : 'Error deleting account'));
+    }
   };
 
   return (
@@ -321,7 +380,7 @@ export default function PropietarioPerfilPage() {
                       <Image src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!} alt="Avatar" width={112} height={112} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
-                        {formData.name.charAt(0).toUpperCase()}
+                        {fullName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -370,10 +429,10 @@ export default function PropietarioPerfilPage() {
                 )}
 
                 {editingSection === 'avatar' ? (
-                  <input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)}
+                  <input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)}
                     className="w-full px-3 py-2 text-lg font-semibold rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                 ) : (
-                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{formData.name}</h2>
+                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{fullName}</h2>
                 )}
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                   {locale === 'es' ? 'Propietario desde Enero 2024' : 'Landlord since January 2024'}
@@ -485,18 +544,18 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Nombre completo' : 'Full name'}</label>
                   {editingSection === 'personal' ? (
-                    <input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)}
+                    <input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                       <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.name}</span>
+                      <span className="text-sm text-neutral-900 dark:text-white">{fullName}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">RUT</label>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordProfile.fields.cedula')}</label>
                   <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                     <Shield className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                     <span className="text-sm text-neutral-900 dark:text-white">{formData.rut}</span>
@@ -585,13 +644,13 @@ export default function PropietarioPerfilPage() {
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}</label>
                 {editingSection === 'emergency' ? (
-                  <input type="text" value={formData.emergencyContact} onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                  <input type="text" value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                     placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
                 ) : (
                   <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
                     <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
+                    <span className="text-sm text-neutral-900 dark:text-white">{emergencyContactDisplay}</span>
                   </div>
                 )}
               </div>

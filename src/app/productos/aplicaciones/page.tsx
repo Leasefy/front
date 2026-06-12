@@ -242,11 +242,11 @@ export default function AplicacionesPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <Lightning className="w-4 h-4 text-indigo-600" />
+                      <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center">
+                        <Lightning className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Arriendo Pass</p>
@@ -261,7 +261,7 @@ export default function AplicacionesPage() {
         </section>
 
         {/* Problems Bento Section */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -389,13 +389,13 @@ export default function AplicacionesPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                        <ArrowsClockwise className="w-5 h-5 text-amber-600" />
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                        <ArrowsClockwise className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Formulario #7</p>
@@ -406,7 +406,7 @@ export default function AplicacionesPage() {
                       {['Nombre completo', 'Número de cédula', 'Ingresos mensuales', 'Empleo actual'].map((field, i) => (
                         <div key={i} className="flex items-center justify-between text-[10px]">
                           <span className="text-muted-foreground">{field}</span>
-                          <div className="w-16 h-2 bg-neutral-100 rounded" />
+                          <div className="w-16 h-2 bg-muted rounded" />
                         </div>
                       ))}
                     </div>
@@ -432,13 +432,13 @@ export default function AplicacionesPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Mis Aplicaciones</span>
-                      <MagnifyingGlass className="w-4 h-4 text-neutral-400" />
+                      <MagnifyingGlass className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="space-y-2">
                       {[
@@ -447,7 +447,7 @@ export default function AplicacionesPage() {
                         { name: 'Apto Poblado', status: '14 días...', color: 'red' },
                         { name: 'Loft Laureles', status: '???', color: 'neutral' },
                       ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between text-[10px] p-1.5 bg-neutral-50 rounded">
+                        <div key={i} className="flex items-center justify-between text-[10px] p-1.5 bg-muted rounded">
                           <span className="text-muted-foreground">{item.name}</span>
                           <span className={`${item.color === 'amber' ? 'text-amber-600' : item.color === 'red' ? 'text-red-500' : 'text-neutral-400'}`}>
                             {item.status}
@@ -523,11 +523,11 @@ export default function AplicacionesPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
-                    <SealCheck className="w-6 h-6 text-emerald-600" />
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center mb-6">
+                    <SealCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Verificación Completa
@@ -538,7 +538,7 @@ export default function AplicacionesPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Identidad', 'Empleo', 'Ingresos', 'Referencias'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -551,11 +551,11 @@ export default function AplicacionesPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
-                    <Bell className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center mb-6">
+                    <Bell className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Tracking en Tiempo Real
@@ -566,7 +566,7 @@ export default function AplicacionesPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Enviada', 'Vista', 'En revisión', 'Decidido'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -615,7 +615,7 @@ export default function AplicacionesPage() {
         </section>
 
         {/* Application Methods Section */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -766,9 +766,9 @@ export default function AplicacionesPage() {
                 <motion.div
                   key={item.label}
                   whileHover={{ scale: 1.02 }}
-                  className="flex items-center gap-4 p-4 bg-white rounded-xl border border-neutral-200 cursor-pointer hover:shadow-md hover:border-neutral-300 transition-all"
+                  className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border cursor-pointer hover:shadow-md hover:border-foreground/20 transition-all"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
                     <item.icon className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1">
@@ -805,10 +805,10 @@ export default function AplicacionesPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="md:col-span-8 bg-white rounded-xl p-6 min-h-[480px] border border-neutral-200 overflow-hidden"
+                className="md:col-span-8 bg-card rounded-xl p-6 min-h-[480px] border border-border overflow-hidden"
               >
                 {/* Dashboard Header */}
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-100">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
                       <Users className="w-5 h-5 text-white" />
@@ -819,11 +819,11 @@ export default function AplicacionesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 rounded-lg text-[12px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-[12px] text-muted-foreground">
                       <Funnel className="w-3.5 h-3.5" />
                       Filtros
                     </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 rounded-lg text-[12px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-[12px] text-muted-foreground">
                       <TrendUp className="w-3.5 h-3.5" />
                       Ordenar
                     </div>
@@ -846,14 +846,14 @@ export default function AplicacionesPage() {
                       transition={{ delay: 0.2 + i * 0.1 }}
                       className={`flex items-center gap-4 p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${
                         candidate.status === 'recommended'
-                          ? 'bg-emerald-50/50 border-emerald-200'
-                          : 'bg-white border-neutral-200 hover:border-neutral-300'
+                          ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-card border-border hover:border-foreground/20'
                       }`}
                     >
                       {/* Avatar */}
                       <div className="relative">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-medium text-[14px] ${
-                          candidate.status === 'recommended' ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-foreground'
+                          candidate.status === 'recommended' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-muted text-foreground'
                         }`}>
                           {candidate.image}
                         </div>
@@ -869,7 +869,7 @@ export default function AplicacionesPage() {
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="text-[14px] font-medium text-foreground truncate">{candidate.name}</p>
                           {candidate.status === 'recommended' && (
-                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-medium rounded-full">
+                            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
                               Recomendado
                             </span>
                           )}
@@ -880,7 +880,7 @@ export default function AplicacionesPage() {
                       {/* Score */}
                       <div className="text-center px-4">
                         <div className={`text-[24px] font-heading font-medium ${
-                          candidate.score >= 85 ? 'text-emerald-600' : candidate.score >= 75 ? 'text-amber-600' : 'text-neutral-500'
+                          candidate.score >= 85 ? 'text-emerald-600' : candidate.score >= 75 ? 'text-amber-600' : 'text-muted-foreground'
                         }`}>
                           {candidate.score}
                         </div>
@@ -895,7 +895,7 @@ export default function AplicacionesPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
-                        <button className="w-9 h-9 rounded-lg bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center transition-colors">
+                        <button className="w-9 h-9 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors">
                           <Eye className="w-4 h-4 text-muted-foreground" />
                         </button>
                         <button className="w-9 h-9 rounded-lg bg-foreground hover:bg-foreground/90 flex items-center justify-center transition-colors">
@@ -907,7 +907,7 @@ export default function AplicacionesPage() {
                 </div>
 
                 {/* Robottom Bar */}
-                <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between">
+                <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
                   <p className="text-[12px] text-muted-foreground">4 candidatos · 3 verificados</p>
                   <div className="flex items-center gap-2 text-[12px] text-foreground font-medium">
                     <SealCheck className="w-4 h-4 text-emerald-500" />
@@ -938,7 +938,7 @@ export default function AplicacionesPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.3 }}
-                  className="bg-white rounded-xl p-6 border border-neutral-200 flex-1 flex flex-col justify-center"
+                  className="bg-card rounded-xl p-6 border border-border flex-1 flex flex-col justify-center"
                 >
                   <p className="text-[56px] font-heading font-light text-foreground leading-none tracking-tight mb-2">
                     3.2x
@@ -952,7 +952,7 @@ export default function AplicacionesPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.4 }}
-                  className="bg-sand-50 rounded-xl p-6 flex-1 flex flex-col justify-center"
+                  className="bg-sand-50 dark:bg-card rounded-xl p-6 flex-1 flex flex-col justify-center"
                 >
                   <p className="text-[56px] font-heading font-light text-foreground leading-none tracking-tight mb-2">
                     100%
@@ -966,7 +966,7 @@ export default function AplicacionesPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="bg-white overflow-hidden">
+        <section className="bg-background overflow-hidden">
           <div className="container-platform py-[80px] pb-[100px]">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
               <motion.div
@@ -1017,7 +1017,7 @@ export default function AplicacionesPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.4, delay: offset * 0.1 }}
-                        className="bg-white rounded-xl p-8 flex flex-col"
+                        className="bg-card rounded-xl p-8 flex flex-col"
                       >
                         <div className="mb-6">
                           <svg className="w-10 h-10 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">

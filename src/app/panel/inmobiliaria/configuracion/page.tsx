@@ -24,7 +24,9 @@ import {
   Monitor,
   Shield,
   CaretRight,
+  Compass,
 } from '@phosphor-icons/react';
+import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
@@ -113,6 +115,11 @@ function ConfiguracionContent() {
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
   );
+
+  // Phase 38 plan 38-06 — AI panel tour preference (hybrid localStorage + DB persistence).
+  // tourDismissed === null means the context hasn't hydrated yet; show a spinner-state.
+  const { tourDismissed, setTourDismissed, relaunchTour } = usePanelPrefs();
+  const [isTogglingTour, setIsTogglingTour] = useState(false);
 
   // Real notification settings from backend
   const { settings: notifSettings, isLoading: notifLoading, updateSetting } = useNotificationSettings();
@@ -660,6 +667,76 @@ function ConfiguracionContent() {
                   </select>
                   <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
                 </div>
+              </div>
+              {/* AI panel tour toggle — Phase 38 plan 38-06 */}
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <Compass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.panelTour')}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.panelTourDesc')}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={tourDismissed === false}
+                  aria-busy={isTogglingTour || tourDismissed === null}
+                  aria-label={t('inmobiliaria.config.preferences.panelTour')}
+                  disabled={isTogglingTour || tourDismissed === null}
+                  onClick={async () => {
+                    if (tourDismissed === null) return;
+                    setIsTogglingTour(true);
+                    try {
+                      // Switch is "ON" when tour is enabled (dismissed=false).
+                      // Toggling flips dismissed; toast reflects the NEW state.
+                      const nextDismissed = !tourDismissed;
+                      await setTourDismissed(nextDismissed);
+                      toast.success(
+                        nextDismissed
+                          ? t('inmobiliaria.config.preferences.panelTourDismissed')
+                          : t('inmobiliaria.config.preferences.panelTourEnabled')
+                      );
+                    } finally {
+                      setIsTogglingTour(false);
+                    }
+                  }}
+                  className={cn(
+                    'relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                    tourDismissed === false ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
+                      tourDismissed === false && 'translate-x-5'
+                    )}
+                  />
+                </button>
+              </div>
+              {/* Relaunch tour button — session-only, does not persist */}
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <Compass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.relaunchTour')}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.relaunchTourDesc')}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    relaunchTour();
+                    toast.success(t('inmobiliaria.config.preferences.relaunchTourStarted'));
+                  }}
+                  className="px-4 py-2 text-sm font-medium rounded-xl bg-white dark:bg-[#1f1f21] border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  {t('inmobiliaria.config.preferences.relaunchTour')}
+                </button>
               </div>
             </div>
           </div>

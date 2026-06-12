@@ -8,7 +8,7 @@ import { Heart, MapPin, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatArea } from '@/lib/format';
 import type { Property } from '@/lib/types/property';
-import type { QualificationResult } from '@/lib/scoring/qualificationScore';
+import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
 export interface PropertyCardProps {
   property: Property;

@@ -104,7 +104,7 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
         month: 'short',
         year: 'numeric',
       };
-      const localeString = locale === 'es' ? 'es-CL' : 'en-US';
+      const localeString = locale === 'es' ? 'es-CO' : 'en-US';
       return dateObj.toLocaleDateString(localeString, options || defaultOptions);
     },
     [locale]
@@ -166,4 +166,14 @@ export function useI18n(): I18nContextValue {
     throw new Error('useI18n must be used within an I18nProvider');
   }
   return context;
+}
+
+/**
+ * Non-throwing variant of useI18n. Returns the context when an I18nProvider
+ * is present in the tree, otherwise undefined. Use this for components mounted
+ * at the root layout (outside any route-group provider), e.g. RouteAnnouncer,
+ * so they can localize when a provider exists without crashing public routes.
+ */
+export function useOptionalI18n(): I18nContextValue | undefined {
+  return useContext(I18nContext);
 }

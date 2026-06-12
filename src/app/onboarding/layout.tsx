@@ -1,7 +1,6 @@
 'use client';
 
 import { I18nProvider } from '@/lib/i18n';
-import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { Toaster } from 'sonner';
 
 interface OnboardingLayoutProps {
@@ -10,15 +9,12 @@ interface OnboardingLayoutProps {
 
 /**
  * Onboarding Layout - Provides i18n context for all onboarding flows
- * Forces light mode for all onboarding pages (public/pre-login flows)
  */
 export default function OnboardingLayout({ children }: OnboardingLayoutProps) {
   return (
-    <ForceLightMode>
-      <I18nProvider>
-        {children}
-        <Toaster position="top-center" richColors />
-      </I18nProvider>
-    </ForceLightMode>
+    <I18nProvider>
+      {children}
+      <Toaster position="top-center" richColors />
+    </I18nProvider>
   );
 }

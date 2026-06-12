@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: {
@@ -18,5 +17,5 @@ export default function ProductosLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <ForceLightMode>{children}</ForceLightMode>;
+  return <>{children}</>;
 }

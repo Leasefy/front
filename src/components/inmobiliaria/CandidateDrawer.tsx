@@ -11,6 +11,7 @@ import {
   ArrowClockwise,
   MagnifyingGlass,
   ShieldCheck,
+  ShieldWarning,
   WarningCircle,
   CheckCircle,
   XCircle,
@@ -21,9 +22,12 @@ import {
   Info,
   FileText,
   DownloadSimple,
+  UserPlus,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { partitionScoreBreakdown } from '@/lib/utils/score-breakdown';
 import { formatCurrency } from '@/lib/format';
+import { CreditCheckBlock } from './CreditCheckBlock';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
@@ -38,6 +42,7 @@ import type {
   Observation,
   ScoreBreakdown,
   SmartMatchingResponse,
+  ProtectionOption,
 } from '@/lib/api/applications.types';
 import type { AgentCreditsBalance } from '@/lib/api/agent-credits.service';
 
@@ -618,6 +623,23 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                   </div>
                 )}
 
+                {/* Protection options — insurance/bond carriers panel */}
+                {evaluation?.protection_options && evaluation.protection_options.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Opciones de protección
+                    </p>
+                    {evaluation.protection_options.map((option) => (
+                      <ProtectionOptionCard
+                        key={`${option.carrier}-${option.productType}`}
+                        option={option}
+                        formatCurrency={formatCurrency}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 {/* Requires manual review banner */}
                 {requiresManualReview && (
                   <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 flex items-start gap-2">
@@ -634,19 +656,46 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                   </div>
                 )}
 
-                {/* Score breakdown */}
-                {evaluation?.score_breakdown && Object.keys(evaluation.score_breakdown).length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(evaluation.score_breakdown).map(([key, factor]) => (
-                      <SubscoreBar
-                        key={key}
-                        label={SCORE_BREAKDOWN_LABELS[key] ?? key}
-                        value={factor.value}
-                        weight={factor.weight}
-                      />
-                    ))}
-                  </div>
+                {/* Credit bureau check block — rules over score/level for credit verdict.
+                    not_evaluated and absent credit_check → renders nothing. */}
+                {evaluation?.credit_check && (
+                  <CreditCheckBlock
+                    creditCheck={evaluation.credit_check}
+                    formatCurrency={formatCurrency}
+                  />
                 )}
+
+                {/* Score breakdown — only the five real dimensions (weights sum 100).
+                    bureau/asegurabilidad are sub-components of credito and nest inside its card. */}
+                {evaluation?.score_breakdown && Object.keys(evaluation.score_breakdown).length > 0 && (() => {
+                  const { main, creditDetail } = partitionScoreBreakdown(evaluation.score_breakdown);
+                  return (
+                    <div className="grid grid-cols-2 gap-2">
+                      {main.map(([key, factor]) => (
+                        <SubscoreBar
+                          key={key}
+                          label={SCORE_BREAKDOWN_LABELS[key] ?? key}
+                          value={factor.value}
+                          weight={factor.weight}
+                          detail={key === 'credito' && creditDetail ? (
+                            <div className="mt-1.5 pt-1.5 border-t border-border/60 space-y-0.5">
+                              <p className="text-[10px] text-muted-foreground tabular-nums">
+                                {creditDetail.bureau && <>Buró {creditDetail.bureau.value}</>}
+                                {creditDetail.bureau && creditDetail.asegurabilidad && ' · '}
+                                {creditDetail.asegurabilidad && <>Asegurabilidad {creditDetail.asegurabilidad.value}</>}
+                              </p>
+                              {creditDetail.bureauUnavailable && (
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                                  Buró externo no disponible durante el estudio
+                                </p>
+                              )}
+                            </div>
+                          ) : undefined}
+                        />
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {/* Fallback: legacy subscores */}
                 {!evaluation?.score_breakdown && evaluation?.subscores && (
@@ -955,7 +1004,18 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 // Helpers
 // ============================================================================
 
-function SubscoreBar({ label, value, weight }: { label: string; value: number; weight?: number }) {
+function SubscoreBar({
+  label,
+  value,
+  weight,
+  detail,
+}: {
+  label: string;
+  value: number;
+  weight?: number;
+  /** Optional sub-component breakdown rendered under the bar (e.g. credito = bureau + asegurabilidad). */
+  detail?: React.ReactNode;
+}) {
   const color = value >= 75 ? 'bg-emerald-500' : value >= 50 ? 'bg-amber-500' : 'bg-rose-500';
   return (
     <div className="rounded-lg bg-white/60 dark:bg-neutral-900/60 p-2 border border-border">
@@ -971,6 +1031,7 @@ function SubscoreBar({ label, value, weight }: { label: string; value: number; w
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${value}%` }} />
       </div>
+      {detail}
     </div>
   );
 }
@@ -1087,6 +1148,87 @@ function ObservationCard({ observation }: { observation: Observation }) {
       <p className="flex items-start gap-1.5">
         <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
         <span>{observation.message}</span>
+      </p>
+    </div>
+  );
+}
+
+function ProtectionOptionCard({
+  option,
+  formatCurrency,
+}: {
+  option: ProtectionOption;
+  formatCurrency: (amount: number | null | undefined) => string;
+}) {
+  const carrierDisplay = option.carrier.charAt(0).toUpperCase() + option.carrier.slice(1);
+  const productLabel = option.productType === 'seguro' ? 'Seguro' : 'Fianza';
+
+  // Case 1: available carrier
+  if (option.status === 'available') {
+    return (
+      <div className="rounded-lg bg-white/60 dark:bg-neutral-900/60 border border-emerald-200 dark:border-emerald-800 px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            <span className="text-xs font-semibold text-foreground">{carrierDisplay}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+              {productLabel}
+            </span>
+            {option.isDemo && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                Demo
+              </span>
+            )}
+          </div>
+          {option.monthlyPremiumCop !== null && (
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums flex-shrink-0">
+              {formatCurrency(option.monthlyPremiumCop)}<span className="font-normal text-muted-foreground">/mes</span>
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Case 2: rejected carrier WITH maxBackedCanonCop — actionable card (fianly case)
+  if (option.status === 'not_available' && option.maxBackedCanonCop !== null) {
+    return (
+      <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 px-3 py-2.5 space-y-1">
+        <div className="flex items-center gap-1.5">
+          <ShieldWarning className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">{carrierDisplay}</span>
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+            {productLabel}
+          </span>
+        </div>
+        {option.rejectionReason && (
+          <p className="text-[10px] text-amber-600 dark:text-amber-300 pl-5">{option.rejectionReason}</p>
+        )}
+        <p className="text-[10px] text-amber-700 dark:text-amber-300 pl-5 flex items-start gap-1">
+          <UserPlus className="w-3 h-3 flex-shrink-0 mt-0.5" />
+          <span>
+            Respaldaría un canon de hasta {formatCurrency(option.maxBackedCanonCop)} — sugerí un codeudor o un canon menor.
+          </span>
+        </p>
+      </div>
+    );
+  }
+
+  // Case 3: rejected carrier WITHOUT maxBackedCanonCop — muted/disabled card
+  return (
+    <div className="rounded-lg bg-muted border border-border px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <XCircle className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs text-muted-foreground font-medium">{carrierDisplay}</span>
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
+            {productLabel}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground flex-shrink-0">No disponible</span>
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1 pl-5">
+        {option.rejectionReason ?? 'No disponible para este perfil'}
       </p>
     </div>
   );

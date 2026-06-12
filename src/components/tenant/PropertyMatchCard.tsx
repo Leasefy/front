@@ -6,7 +6,7 @@ import { MapPin, CaretRight, Check } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatArea } from '@/lib/format';
-import type { PropertyMatch } from '@/lib/scoring/propertyMatching';
+import type { RecommendedProperty } from '@/lib/api/recommendations.service';
 import {
   getMatchScoreBgColor,
   getAcceptanceProbabilityColors,
@@ -18,7 +18,7 @@ import {
 // ============================================================================
 
 export interface PropertyMatchCardProps {
-  match: PropertyMatch;
+  match: RecommendedProperty;
   variant?: 'default' | 'compact';
   className?: string;
   /** When provided, opens a sheet/modal instead of navigating */

@@ -1,4 +1,36 @@
-# Leasefy AI Agents Sandbox
+# Leasefy Frontend (rent/mvp)
+
+## ⚠️ UI Work — Read FIRST
+
+**Before building, modifying, or reviewing ANY UI in this repo, you MUST read [`docs/DESIGN.md`](./docs/DESIGN.md).**
+
+That file is the source of truth for:
+- Design principles + anti-patterns (no glass morphism, no gradients on bubbles, uppercase primary buttons, etc.)
+- Canonical component patterns (drawers, buttons, inputs, cards, banners) with file:line references
+- Tokens (colors, radius, shadows, motion, typography)
+- Lenis smooth scroll integration (mandatory `data-lenis-prevent` + `useLenis().stop()` for modals)
+- Accessibility rules
+
+When the user asks for UI work — no matter how small — read DESIGN.md first and apply it strictly. Do NOT invent patterns when a canonical one exists. If something seems missing from DESIGN.md, ASK or extend it; don't drift.
+
+For color specifics: [`docs/COLOR_SYSTEM.md`](./docs/COLOR_SYSTEM.md) (referenced from DESIGN.md).
+
+---
+
+## Architectural Update (2026-04-07)
+
+**Mastra and the AI agents now live in a separate microservice repo: [`Leasefy/agent`](https://github.com/Leasefy/agent).**
+
+This frontend repo (`Leasefy/front`) no longer contains `src/mastra/`. The frontend consumes the agent service via HTTP API. Local dev requires cloning `Leasefy/agent` as a sibling directory and running it alongside this app:
+
+```
+~/rent/
+  ├── mvp/      ← this repo (frontend, Next.js 14)
+  ├── agent/    ← Leasefy/agent (microservice, runs on :4000)
+  └── back-main/ ← Leasefy/back (monolith backend)
+```
+
+To run agents locally, see `~/rent/agent/INTEGRATION_CHECKLIST.md`.
 
 ## ⚠️ UI Work — Read FIRST
 
@@ -19,7 +51,7 @@ For color specifics: [`docs/COLOR_SYSTEM.md`](./docs/COLOR_SYSTEM.md) (reference
 
 ## What This Is
 
-Sandbox branch (`sandbox/mastra-agents`) for building Leasefy's first 2 AI agents using **Mastra** framework. This is isolated from `main` — experiment freely.
+This repo is the **frontend** for Leasefy's agency dashboard. It used to host the first 2 AI agents (tenant-scoring, smart-matching) directly, but the agent code was extracted into the `Leasefy/agent` microservice on 2026-04-07 (commit `60e773c`). The frontend keeps the UI for agents (cards, activity feed, execution panel) and calls the microservice via API.
 
 ## The Goal
 
@@ -90,18 +122,24 @@ Build 2 production-ready autonomous agents that power Leasefy's agentic experien
 ## Architecture
 
 ```
-Mastra (agent orchestrator)
-  ├── Agent: Tenant Scoring
-  ├── Agent: Smart Matching
-  ├── Workflows (multi-step pipelines)
-  ├── Memory (shared context)
-  └── Tools (Supabase, Claude Vision, Twilio, DataCrédito)
-         │
-         ▼
-Inngest (event triggers + durable execution)
-         │
-         ▼
-Frontend (execution panel already built in main branch)
+Frontend (this repo, Leasefy/front)
+   ├── Agent UI (cards, execution panel, activity feed)
+   └── HTTP client → AGENT_SERVICE_URL
+                       │
+                       ▼
+        Leasefy/agent (microservice, port :4000)
+          ├── Mastra (agent orchestrator)
+          │   ├── Agents: tenant-scoring, smart-matching, suggestion-email
+          │   └── Tools: calculate-score, calculate-compatibility,
+          │              extract-document, escalate-to-human, etc.
+          ├── Inngest functions (durable pipelines)
+          │   ├── tenant-scoring-pipeline
+          │   ├── smart-matching-pipeline
+          │   └── daily-stale-property-report
+          ├── Express server with JWT auth + role checks
+          ├── Prisma + Supabase Postgres
+          └── lib/ — credit-score, fraud-detection, income-analysis,
+                     consistency-check, document-freshness
 ```
 
 ## Future Agents (19 total)
@@ -138,34 +176,36 @@ The frontend for these agents is already built:
 ## How to Run
 
 ```bash
-# Install dependencies
+# Frontend (this repo)
 pnpm install
-
-# Dev server
 pnpm dev
-
-# The app runs on localhost:3000 (or 3005 if port specified)
-# Login: auto-login as agency user (no Supabase needed)
+# → localhost:3000 (or 3005)
 # Dashboard: /panel/inmobiliaria
 # Agent Hub: /panel/inmobiliaria/ai
+
+# Agent microservice (sibling repo, required for end-to-end agent testing)
+cd ~/rent/agent
+npm install
+npm run db:generate
+npx inngest-cli@latest dev   # Terminal A — Inngest Dev Server
+npm run dev                  # Terminal B — service on :4000
+curl http://localhost:4000/health   # → { "status": "ok" }
 ```
 
 ## Environment Variables Needed
 
 ```env
-# Required for agents
-ANTHROPIC_API_KEY=sk-ant-...        # Claude API
-SUPABASE_URL=https://...            # Supabase project
-SUPABASE_ANON_KEY=eyJ...            # Supabase anon key
-SUPABASE_SERVICE_ROLE_KEY=eyJ...    # Supabase service role (for admin ops)
+# Frontend → agent service
+AGENT_SERVICE_URL=http://localhost:4000   # microservice URL
+AGENT_API_KEY=leasefy-agent-secret-2026   # shared secret for /metrics etc.
 
-# Optional (for full functionality)
-TWILIO_ACCOUNT_SID=...              # WhatsApp/SMS
-TWILIO_AUTH_TOKEN=...
-TWILIO_WHATSAPP_FROM=whatsapp:+1... # WhatsApp sender number
-DATACREDITO_API_KEY=...             # Credit bureau (when available)
-INNGEST_EVENT_KEY=...               # Inngest triggers
-INNGEST_SIGNING_KEY=...             # Inngest verification
+# Supabase (shared with agent service)
+SUPABASE_URL=https://...
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# ⚠️ NOTE: ANTHROPIC_API_KEY, INNGEST_*, TWILIO_*, DATACREDITO_API_KEY
+# live in the AGENT microservice's .env, NOT here.
 ```
 
 ## Decisions Already Made
@@ -179,3 +219,4 @@ INNGEST_SIGNING_KEY=...             # Inngest verification
 | Colors | Neutral/sobrio | No flashy colors for agent UI |
 | Plan gating | Flex plans only | AI agents are Flex plan differentiator |
 | Default plan | Flex | Demo shows all features |
+| Mastra location | Separate repo `Leasefy/agent` | Microservice owns agents; frontend calls via HTTP. Decided 2026-04-07 (commit `60e773c`) |

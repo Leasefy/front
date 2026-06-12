@@ -26,6 +26,7 @@ import {
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useLenis } from '@/components/providers/SmoothScroll';
 import type { AgentExecutionTrace, ExecutionStep, ExecutionStepStatus } from '@/lib/types/ai-agents';
 import { getAgentById } from '@/lib/types/ai-agents';
 
@@ -157,7 +158,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
           /* Step content — simulated computer view */
           <div className="h-full flex flex-col">
             {/* Simulated screen content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto" data-lenis-prevent style={{ overscrollBehavior: 'contain' }}>
               {step.stepType === 'browser' && (
                 <div className="space-y-4">
                   {/* Simulated DataCrédito page */}
@@ -409,6 +410,7 @@ interface AIAgentExecutionPanelProps {
 
 export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelProps) {
   const { locale } = useI18n();
+  const lenis = useLenis();
   const agent = getAgentById(trace.agentId);
   const AgentIcon = AGENT_ICONS[trace.agentId] || ShieldCheck;
   const isRunning = trace.status === 'running';
@@ -436,8 +438,9 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  // Lock body scroll
+  // Pause Lenis smooth scroll + lock body scroll while the overlay is open
   useEffect(() => {
+    lenis.stop();
     const scrollY = window.scrollY;
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
@@ -449,8 +452,9 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
       document.body.style.top = '';
       document.body.style.width = '';
       window.scrollTo(0, scrollY);
+      lenis.start();
     };
-  }, []);
+  }, [lenis]);
 
   if (typeof window === 'undefined') return null;
 
@@ -509,7 +513,11 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
       {/* Main content: split screen */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left panel — Timeline */}
-        <div className="w-80 xl:w-96 flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111113] overflow-y-auto">
+        <div
+          className="w-80 xl:w-96 flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111113] overflow-y-auto"
+          data-lenis-prevent
+          style={{ overscrollBehavior: 'contain' }}
+        >
           <div className="p-4">
             <h3 className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Lightning weight="fill" className="h-3 w-3" />

@@ -504,7 +504,7 @@ function ContractVisual() {
               <motion.svg width="90" height="18" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <motion.path
                   d="M8 18 Q18 4 28 14 Q38 24 48 10 Q58 2 68 12 Q78 20 88 8 L100 6"
-                  fill="none" stroke="hsl(var(--neutral-900))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
+                  fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
                   initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 />
@@ -586,12 +586,12 @@ function PublishVisual() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
         whileHover={{ y: -3, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
-        className="bg-white p-3 mb-4 cursor-pointer"
+        className="bg-card p-3 mb-4 cursor-pointer"
         style={{ border: "1px solid rgba(0,0,0,0.06)" }}
       >
         <div className="flex gap-3">
           <motion.div
-            className="w-16 h-12 bg-gradient-to-br from-amber-100 to-orange-100 flex-shrink-0 flex items-center justify-center overflow-hidden relative"
+            className="w-16 h-12 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950/40 dark:to-orange-950/30 flex-shrink-0 flex items-center justify-center overflow-hidden relative"
             whileHover={{ scale: 1.05 }}
           >
             {/* Shimmer effect */}
@@ -631,7 +631,7 @@ function PublishVisual() {
               className="flex items-center gap-1 mt-1"
             >
               <motion.span
-                className="text-[7px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 font-medium"
+                className="text-[7px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 font-medium"
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 8px 2px rgba(16,185,129,0.3)", "0 0 0 0 rgba(16,185,129,0)"]
                 }}
@@ -923,11 +923,11 @@ export default function PropietariosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Pago recibido</p>
@@ -942,7 +942,7 @@ export default function PropietariosPage() {
         </section>
 
         {/* Bento Section - Problems */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -1067,14 +1067,14 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-muted rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-neutral-400" />
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <Users className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Candidato #1</p>
@@ -1084,15 +1084,15 @@ export default function PropietariosPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Ingresos</span>
-                        <span className="text-[10px] text-neutral-300">— — —</span>
+                        <span className="text-[10px] text-muted-foreground/40">— — —</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Historial</span>
-                        <span className="text-[10px] text-neutral-300">— — —</span>
+                        <span className="text-[10px] text-muted-foreground/40">— — —</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Score</span>
-                        <span className="text-[10px] text-neutral-300">— — —</span>
+                        <span className="text-[10px] text-muted-foreground/40">— — —</span>
                       </div>
                     </div>
                   </div>
@@ -1118,13 +1118,13 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-muted rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[220px] border border-neutral-100">
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[220px] border border-border">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-[11px] font-medium text-foreground bg-amber-100 px-2 py-0.5 rounded">Cuenta de arriendo</span>
+                      <span className="text-[11px] font-medium text-foreground bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">Cuenta de arriendo</span>
                       <span className="text-[10px] text-muted-foreground">2024</span>
                     </div>
                     <div className="space-y-2">
@@ -1136,8 +1136,8 @@ export default function PropietariosPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-[11px]">
                           <div className="flex items-center gap-2">
-                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.paid ? 'bg-emerald-100' : 'bg-red-100'}`}>
-                              <span className={`text-[8px] ${item.paid ? 'text-emerald-600' : 'text-red-600'}`}>
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.paid ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
+                              <span className={`text-[8px] ${item.paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                                 {item.paid ? '✓' : '✕'}
                               </span>
                             </div>
@@ -1147,7 +1147,7 @@ export default function PropietariosPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="h-px bg-border my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Deuda acumulada:</span>
                       <span className="text-[12px] text-red-600 font-bold">$5.0M</span>
@@ -1225,11 +1225,11 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
-                    <Wallet className="w-6 h-6 text-emerald-600" />
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-6">
+                    <Wallet className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Cobro Automático
@@ -1240,7 +1240,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['PSE y tarjeta', 'Recordatorios', 'Reporte mensual'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1253,7 +1253,7 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -1268,7 +1268,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Firma electrónica', 'Plantillas legales', 'Descarga PDF'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}

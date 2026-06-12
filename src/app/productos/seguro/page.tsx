@@ -224,11 +224,11 @@ export default function SeguroPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">98% siniestros</p>
@@ -243,7 +243,7 @@ export default function SeguroPage() {
         </section>
 
         {/* Problems Bento Section */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -371,13 +371,13 @@ export default function SeguroPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                        <TrendDown className="w-5 h-5 text-red-500" />
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
+                      <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                        <TrendDown className="w-5 h-5 text-red-500 dark:text-red-400" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Flujo de caja</p>
@@ -399,7 +399,7 @@ export default function SeguroPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="h-px bg-border my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Pérdida acumulada:</span>
                       <span className="text-[12px] text-red-500 font-bold">-$5M</span>
@@ -423,10 +423,10 @@ export default function SeguroPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Gastos inesperados</span>
                       <Warning className="w-4 h-4 text-amber-500" />
@@ -438,13 +438,13 @@ export default function SeguroPage() {
                         { item: 'Reparar pisos', amount: '$1.8M' },
                         { item: 'Deuda de servicios', amount: '$800K' },
                       ].map((expense, i) => (
-                        <div key={i} className="flex items-center justify-between text-[10px] p-1.5 bg-neutral-50 rounded">
+                        <div key={i} className="flex items-center justify-between text-[10px] p-1.5 bg-muted rounded">
                           <span className="text-muted-foreground">{expense.item}</span>
                           <span className="text-red-500">{expense.amount}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="h-px bg-border my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Total:</span>
                       <span className="text-[14px] text-red-500 font-bold">$8.3M</span>
@@ -517,11 +517,11 @@ export default function SeguroPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
-                    <Gavel className="w-6 h-6 text-emerald-600" />
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center mb-6">
+                    <Gavel className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Gastos Legales
@@ -532,7 +532,7 @@ export default function SeguroPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Abogado dedicado', 'Honorarios incluidos', 'Proceso completo'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -545,11 +545,11 @@ export default function SeguroPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
-                    <House className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center mb-6">
+                    <House className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Daños al Inmueble
@@ -560,7 +560,7 @@ export default function SeguroPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Hasta $10M', 'Sin deducible', 'Reparación directa'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -609,7 +609,7 @@ export default function SeguroPage() {
         </section>
 
         {/* How it Works Section */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -637,11 +637,11 @@ export default function SeguroPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="bg-sand-50 rounded-xl p-6 min-h-[240px] flex flex-col"
+                  className="bg-sand-50 dark:bg-card rounded-xl p-6 min-h-[240px] flex flex-col"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-[11px] font-mono font-normal text-foreground/40 uppercase tracking-wider">Paso {step.number}</span>
-                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shadow-sm">
                       <step.icon className="w-5 h-5 text-foreground/60" />
                     </div>
                   </div>
@@ -720,7 +720,7 @@ export default function SeguroPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="bg-white overflow-hidden">
+        <section className="bg-background overflow-hidden">
           <div className="container-platform py-[80px] pb-[100px]">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
               <motion.div
@@ -771,7 +771,7 @@ export default function SeguroPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.4, delay: offset * 0.1 }}
-                        className="bg-white rounded-xl p-8 flex flex-col"
+                        className="bg-card rounded-xl p-8 flex flex-col"
                       >
                         <div className="mb-6">
                           <svg className="w-10 h-10 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">

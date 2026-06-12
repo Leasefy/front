@@ -82,7 +82,7 @@ function MagnifyingGlassVisual() {
         </motion.div>
         <span className="text-[10px] text-white/40 flex-1">Apartamento pet-friendly en Chapinero...</span>
         <motion.div
-          className="bg-white text-foreground text-[8px] font-semibold px-2.5 py-1.5 flex items-center gap-1"
+          className="bg-white text-neutral-900 text-[8px] font-semibold px-2.5 py-1.5 flex items-center gap-1"
           animate={{ boxShadow: ["0 0 0 0 rgba(255,255,255,0)", "0 0 12px 2px rgba(255,255,255,0.2)", "0 0 0 0 rgba(255,255,255,0)"] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
@@ -157,7 +157,7 @@ function MagnifyingGlassVisual() {
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.9, type: "spring", stiffness: 200 }}
               whileHover={{ scale: 1.1 }}
-              className="absolute top-2 right-2 bg-white text-foreground text-[8px] font-bold px-2 py-1 flex items-center gap-1"
+              className="absolute top-2 right-2 bg-white text-neutral-900 text-[8px] font-bold px-2 py-1 flex items-center gap-1"
             >
               <motion.div
                 animate={{ rotate: [0, 15, -15, 0] }}
@@ -429,10 +429,10 @@ function VerifiedVisual() {
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
         whileHover={{ scale: 1.02, y: -2 }}
-        className="w-full bg-white overflow-hidden cursor-pointer"
+        className="w-full bg-card overflow-hidden cursor-pointer"
         style={{ border: "1px solid rgba(0,0,0,0.06)" }}
       >
-        <div className="h-[50px] bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-50 relative flex items-center justify-center overflow-hidden">
+        <div className="h-[50px] bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-50 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 relative flex items-center justify-center overflow-hidden">
           {/* Animated shimmer */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
@@ -509,7 +509,7 @@ function VerifiedVisual() {
                 stiffness: 400,
                 damping: 10
               }}
-              className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0"
+              className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0"
             >
               <CheckCircle className="w-3 h-3 text-emerald-600" />
             </motion.div>
@@ -531,7 +531,7 @@ function VerifiedVisual() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: 1.1, type: "spring" }}
         whileHover={{ scale: 1.05 }}
-        className="flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-emerald-50 cursor-pointer"
+        className="flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/30 cursor-pointer"
         style={{ border: "1px solid rgba(16,185,129,0.15)" }}
       >
         <motion.div
@@ -624,7 +624,7 @@ function ContractVisual() {
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
         whileHover={{ y: -3, boxShadow: "0 15px 30px rgba(0,0,0,0.1)" }}
-        className="bg-white overflow-hidden relative cursor-pointer"
+        className="bg-card overflow-hidden relative cursor-pointer"
         style={{ border: "1px solid rgba(0,0,0,0.08)" }}
       >
         <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
@@ -658,7 +658,7 @@ function ContractVisual() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring" }}
             className={`text-[8px] font-semibold px-2 py-1 ${
-              signed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+              signed ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400'
             }`}
           >
             {signed ? '✓ Firmado' : 'Tu turno'}
@@ -712,7 +712,7 @@ function ContractVisual() {
               <motion.svg width="100" height="20" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <motion.path
                   d="M8 18 Q18 4 28 14 Q38 24 48 10 Q58 2 68 12 Q78 20 88 8 L100 6"
-                  fill="none" stroke="hsl(var(--neutral-900))" strokeWidth="1.5" strokeLinecap="round" opacity={0.5}
+                  fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.5" strokeLinecap="round" opacity={0.5}
                   initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
                   transition={{ duration: 0.8 }}
                 />
@@ -953,7 +953,7 @@ export default function InquilinosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -972,7 +972,7 @@ export default function InquilinosPage() {
         </section>
 
         {/* Bento Section - Problems */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -1097,13 +1097,13 @@ export default function InquilinosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-muted rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
-                    <div className="aspect-video bg-neutral-200 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-[10px] text-neutral-400">Foto no disponible</span>
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
+                    <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center">
+                      <span className="text-[10px] text-muted-foreground">Foto no disponible</span>
                     </div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[12px] font-medium text-foreground">Apto Chapinero</span>
@@ -1136,11 +1136,11 @@ export default function InquilinosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-muted rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
                     <p className="text-[11px] font-medium text-foreground mb-3">Documentos requeridos</p>
                     <div className="space-y-2">
                       {[
@@ -1151,7 +1151,7 @@ export default function InquilinosPage() {
                         'Declaración de renta',
                       ].map((doc, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded border border-neutral-300 flex items-center justify-center">
+                          <div className="w-4 h-4 rounded border border-border flex items-center justify-center">
                             {i < 2 && <Check className="w-2.5 h-2.5 text-emerald-600" />}
                           </div>
                           <span className="text-[10px] text-muted-foreground">{doc}</span>
@@ -1230,7 +1230,7 @@ export default function InquilinosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -1245,7 +1245,7 @@ export default function InquilinosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Aplicaciones ilimitadas', '60 días', 'Sin repetir docs'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1258,11 +1258,11 @@ export default function InquilinosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
-                    <Shield className="w-6 h-6 text-emerald-600" />
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-6">
+                    <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     100% Verificado
@@ -1273,7 +1273,7 @@ export default function InquilinosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Fotos verificadas', 'Visitas reales', 'Cero estafas'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}

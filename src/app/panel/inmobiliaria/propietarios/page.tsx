@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   UserPlus,
+  Sparkle,
   Buildings,
   CurrencyDollar,
   Warning,
@@ -29,7 +30,9 @@ import {
   PropietarioTable,
   PropietarioForm,
 } from '@/components/inmobiliaria';
+import { TerceroIACapture } from '@/components/inmobiliaria/TerceroIACapture';
 import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
+import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -175,8 +178,10 @@ function PropietariosContent() {
   }, [apiPropietarios]);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showIACapture, setShowIACapture] = useState(false);
   const [editingPropietario, setEditingPropietario] = useState<Propietario | null>(null);
   const [deletingPropietario, setDeletingPropietario] = useState<Propietario | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -240,66 +245,58 @@ function PropietariosContent() {
     setDeletingPropietario(propietario);
   };
 
-  const handleConfirmDelete = () => {
-    if (deletingPropietario) {
+  const handleConfirmDelete = async () => {
+    if (!deletingPropietario) return;
+
+    setIsDeleting(true);
+    try {
+      await propietariosApi.delete(deletingPropietario.id);
+      // Only remove from local state once the backend confirms deletion
       setPropietarios((prev) => prev.filter((p) => p.id !== deletingPropietario.id));
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: deletingPropietario.name }));
       setDeletingPropietario(null);
+    } catch (err) {
+      console.error('Delete propietario error:', err);
+      toast.error(t('inmobiliaria.propietarios.toasts.deleteError'));
+      // Keep the item and the modal open so the user can retry
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleCreateSubmit = async (data: PropietarioFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const newPropietario: Propietario = {
-      id: `prop-${Date.now()}`,
-      ...data,
-      bankAccount: {
-        bank: data.bankCode as any,
-        accountType: data.accountType as any,
-        accountNumber: data.accountNumber,
-        accountHolder: data.accountHolder,
-      },
-      propertyCount: 0,
-      activeLeases: 0,
-      totalMonthlyRent: 0,
-      pendingBalance: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setPropietarios((prev) => [newPropietario, ...prev]);
-    toast.success(t('inmobiliaria.propietarios.toasts.created', { name: data.name }));
-    setShowAddModal(false);
-    setCurrentPage(1); // Reset to first page to show new item
+    try {
+      const created = await propietariosApi.create(data);
+      // Use the persisted object returned by the backend (real id, computed fields)
+      setPropietarios((prev) => [created, ...prev]);
+      toast.success(t('inmobiliaria.propietarios.toasts.created', { name: created.name }));
+      setShowAddModal(false);
+      setCurrentPage(1); // Reset to first page to show new item
+    } catch (err) {
+      console.error('Create propietario error:', err);
+      toast.error(t('inmobiliaria.propietarios.toasts.createError'));
+      // Re-throw so the form keeps the modal open and resets its submitting state
+      throw err;
+    }
   };
 
   const handleEditSubmit = async (data: PropietarioFormData) => {
     if (!editingPropietario) return;
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setPropietarios((prev) =>
-      prev.map((p) =>
-        p.id === editingPropietario.id
-          ? {
-              ...p,
-              ...data,
-              bankAccount: {
-                bank: data.bankCode as any,
-                accountType: data.accountType as any,
-                accountNumber: data.accountNumber,
-                accountHolder: data.accountHolder,
-              },
-              updatedAt: new Date().toISOString(),
-            }
-          : p
-      )
-    );
-    toast.success(t('inmobiliaria.propietarios.toasts.updated'));
-    setEditingPropietario(null);
+    try {
+      const updated = await propietariosApi.update(editingPropietario.id, data);
+      // Replace with the persisted object returned by the backend
+      setPropietarios((prev) =>
+        prev.map((p) => (p.id === editingPropietario.id ? updated : p))
+      );
+      toast.success(t('inmobiliaria.propietarios.toasts.updated'));
+      setEditingPropietario(null);
+    } catch (err) {
+      console.error('Update propietario error:', err);
+      toast.error(t('inmobiliaria.propietarios.toasts.updateError'));
+      // Re-throw so the form keeps the modal open and resets its submitting state
+      throw err;
+    }
   };
 
   const handleExport = () => {
@@ -325,13 +322,22 @@ function PropietariosContent() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
-        >
-          <UserPlus className="w-5 h-5" />
-          {t('inmobiliaria.propietarios.addOwner')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowIACapture(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground uppercase tracking-wide font-mono font-medium transition-colors"
+          >
+            <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+            {t('inmobiliaria.propietarios.addOwnerIA')}
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
+          >
+            <UserPlus className="w-5 h-5" />
+            {t('inmobiliaria.propietarios.addOwner')}
+          </button>
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -577,6 +583,19 @@ function PropietariosContent() {
         />
       </Modal>
 
+      {/* AI Capture Modal (v6-07 — additive; reuses the create handler) */}
+      <Modal
+        open={showIACapture}
+        onClose={() => setShowIACapture(false)}
+        title={t('inmobiliaria.propietarios.addOwnerIA')}
+        size="lg"
+      >
+        <TerceroIACapture
+          onCreated={handleCreateSubmit}
+          onClose={() => setShowIACapture(false)}
+        />
+      </Modal>
+
       {/* Edit Modal */}
       <Modal
         open={!!editingPropietario}
@@ -619,13 +638,15 @@ function PropietariosContent() {
             <div className="flex items-center gap-3 justify-end pt-4">
               <button
                 onClick={() => setDeletingPropietario(null)}
-                className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('inmobiliaria.common.cancel')}
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white uppercase tracking-wide font-mono font-medium transition-colors"
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('inmobiliaria.common.delete')}
               </button>

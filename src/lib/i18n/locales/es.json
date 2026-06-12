@@ -79,7 +79,8 @@
     "theme": "Tema",
     "light": "Claro",
     "dark": "Oscuro",
-    "system": "Sistema"
+    "system": "Sistema",
+    "notificationActionError": "No se pudo completar la acción sobre la notificación"
   },
   "dashboard": {
     "title": "Panel",
@@ -850,21 +851,47 @@
   "inmobiliaria": {
     "nav": {
       "dashboard": "Dashboard",
-      "aiAgents": "Agentes AI",
+      "aiAgents": "Resumen",
       "propietarios": "Propietarios",
-      "portafolio": "Portafolio",
-      "propiedades": "Propiedades",
-      "pipeline": "Pipeline",
+      "portafolio": "Consignaciones",
+      "propiedades": "Inmuebles",
+      "pipeline": "Prospección (Pipeline)",
       "agentes": "Agentes",
-      "cobros": "Cobros",
+      "cobros": "Cobros manuales",
+      "contratos": "Contratos",
       "dispersiones": "Dispersiones",
-      "operaciones": "Operaciones",
+      "operaciones": "Mantenimientos",
       "documentos": "Documentos",
       "reportes": "Reportes",
-      "analitica": "Analítica",
+      "analitica": "Métricas IA",
       "mensajes": "Mensajes",
       "configuracion": "Configuración",
-      "aiBeta": "AI Beta"
+      "aiBeta": "AI Beta",
+      "hoy": "Hoy",
+      "facturacion": "Facturación",
+      "conciliacion": "Conciliación",
+      "pqrs": "PQRS",
+      "agenda": "Agenda",
+      "pronto": "Pronto",
+      "secInicio": "Inicio",
+      "secAutopilot": "Agentes IA",
+      "secCrm": "CRM · Comercial",
+      "secFinanciero": "Financiero · ERP",
+      "secOperacion": "Operación · Docs",
+      "tesoreria": "Tesorería",
+      "secCartera": "Cartera",
+      "secPortafolio": "Portafolio",
+      "secTesoreria": "Tesorería",
+      "secCotizador": "Cotizador",
+      "secInteligencia": "Inteligencia",
+      "secOperaciones": "Operaciones",
+      "cmdPaletteTrigger": "Buscar todo…"
+    },
+    "mobileNav": {
+      "moreButton": "Más",
+      "moreAriaLabel": "Ver más opciones de navegación",
+      "sheetTitle": "Más opciones",
+      "closeButton": "Cerrar"
     },
     "common": {
       "title": "Inmobiliaria",
@@ -1023,7 +1050,15 @@
         "language": "Idioma",
         "languageDesc": "Idioma de la plataforma",
         "langChangedEs": "Idioma cambiado a Español",
-        "langChangedEn": "Language changed to English"
+        "langChangedEn": "Language changed to English",
+        "panelTour": "Tour del panel IA",
+        "panelTourDesc": "Recorrido guiado de 3 pasos al ingresar al panel",
+        "panelTourEnabled": "Tour activado — se mostrará en tu próximo ingreso",
+        "panelTourDismissed": "Tour silenciado en este dispositivo",
+        "panelTourSyncing": "Sincronizando preferencia…",
+        "relaunchTour": "Iniciar tour ahora",
+        "relaunchTourDesc": "Vuelve a ver el recorrido sin cambiar tu preferencia",
+        "relaunchTourStarted": "Tour iniciado — sigue las pistas en pantalla"
       },
       "security": {
         "title": "Seguridad",
@@ -1393,6 +1428,7 @@
       "crmTitle": "CRM de Propietarios",
       "search": "Buscar propietario...",
       "addOwner": "Nuevo propietario",
+      "addOwnerIA": "Crear con IA",
       "editOwner": "Editar propietario",
       "deleteOwner": "Eliminar propietario",
       "deleteConfirm": "¿Estás seguro de eliminar a {{name}}?",
@@ -1438,7 +1474,10 @@
         "deleted": "{{name}} eliminado correctamente",
         "created": "{{name}} agregado correctamente",
         "updated": "Propietario actualizado correctamente",
-        "exporting": "Exportando propietarios a Excel..."
+        "exporting": "Exportando propietarios a Excel...",
+        "createError": "No se pudo crear el propietario. Intenta de nuevo.",
+        "updateError": "No se pudo actualizar el propietario. Intenta de nuevo.",
+        "deleteError": "No se pudo eliminar el propietario. Intenta de nuevo."
       },
       "detail": {
         "title": "Detalle del Propietario",
@@ -3240,7 +3279,9 @@
         "inventory": "Inventario",
         "incrementLetter": "Carta de Incremento",
         "actaCreated": "Acta creada",
-        "actaSaved": "El acta de {{type}} ha sido guardada"
+        "actaSaved": "El acta de {{type}} ha sido guardada",
+        "actaError": "Error al crear acta",
+        "actaErrorDesc": "Hubo un error al crear el acta. Intenta de nuevo."
       }
     },
     "mensajes": {
@@ -4149,6 +4190,1951 @@
         "viewContract": "Ver contrato",
         "warning3160d": "Atención 31-60d"
       }
+    },
+    "ai": {
+      "nav": {
+        "cobranza": "Cobranza",
+        "cotizador": "Cotizador",
+        "arco": "ARCO",
+        "plantillas": "Plantillas",
+        "configuracion": "Configuración",
+        "analitica": "Analítica",
+        "deudores": "Deudores",
+        "pagos": "Pagos",
+        "escalaciones": "Escalaciones",
+        "compliance": "Compliance",
+        "cartas": "Cartas",
+        "llamadas": "Llamadas",
+        "siniestros": "Siniestros"
+      },
+      "breadcrumb": {
+        "aiAgents": "Agentes AI",
+        "cobranza": "Cobranza",
+        "cotizador": "Cotizador"
+      },
+      "cotizador": {
+        "placeholder": {
+          "title": "Próximamente",
+          "subtitle": "El módulo de Cotización estará disponible en la siguiente actualización.",
+          "phase": "Phase 30",
+          "backLink": "Volver a Agentes AI"
+        },
+        "overview": {
+          "title": "Cotizador",
+          "subtitle": "Estado de las cotizaciones y aseguradoras activas",
+          "lastUpdated": "Actualizado hace",
+          "newQuoteCta": "Nueva cotización",
+          "kpis": {
+            "quotesToday": "Cotizaciones hoy",
+            "approvalRate": "Tasa de aprobación",
+            "primaPromedio": "Prima promedio/mes",
+            "costPerQuote": "Costo por cotización"
+          },
+          "recentQuotes": {
+            "title": "Últimas cotizaciones",
+            "empty": "Aún no hay cotizaciones hoy",
+            "emptyHelper": "Las cotizaciones aparecerán aquí cuando se creen nuevas solicitudes",
+            "statusPending": "Pendiente",
+            "statusPartial": "Parcial",
+            "statusComplete": "Completo",
+            "statusError": "Error",
+            "ariaRow": "Cotización para {{name}}, {{city}}, estado {{status}}"
+          },
+          "carriers": {
+            "title": "Estado de aseguradoras",
+            "routeModeRest": "REST",
+            "routeModeStub": "Stub",
+            "routeModeDisabled": "Deshabilitada",
+            "slaOk": "OK",
+            "slaWarning": "Alerta",
+            "slaBreach": "Incumplimiento",
+            "lastVerdict": "Último veredicto",
+            "neverSeen": "Sin veredictos",
+            "allBreachBanner": "Todas las aseguradoras en incumplimiento de SLA — resultados pueden ser lentos"
+          },
+          "errorLoading": "Error al cargar datos del cotizador",
+          "empty": {
+            "title": "Aún no hay cotizaciones",
+            "description": "Generá la primera para empezar a ver métricas y verdictos.",
+            "cta": {
+              "label": "Nueva cotización"
+            }
+          }
+        },
+        "nueva": {
+          "title": "Nueva cotización",
+          "subtitle": "Completa los datos del candidato y la propiedad",
+          "step1": {
+            "heading": "Datos del candidato",
+            "cedulaLabel": "Número de cédula",
+            "cedulaPlaceholder": "Ej: 1234567890",
+            "nombreLabel": "Nombre completo",
+            "nombrePlaceholder": "Ej: Juan Pérez",
+            "ciudadLabel": "Ciudad",
+            "ciudadPlaceholder": "Ej: Bogotá"
+          },
+          "step2": {
+            "heading": "Datos de la propiedad",
+            "canonLabel": "Canon mensual (COP)",
+            "canonPlaceholder": "Ej: 1500000",
+            "tipoLabel": "Tipo de inmueble",
+            "tipoOptions": {
+              "apartamento": "Apartamento",
+              "casa": "Casa",
+              "oficina": "Oficina",
+              "local": "Local"
+            },
+            "codeudoresLabel": "Número de codeudores",
+            "codeudoresHint": "0 si el candidato no tiene codeudores"
+          },
+          "step3": {
+            "heading": "Revisa los datos",
+            "cedulaRow": "Cédula",
+            "nombreRow": "Nombre",
+            "ciudadRow": "Ciudad",
+            "canonRow": "Canon mensual",
+            "tipoRow": "Tipo de inmueble",
+            "codeudoresRow": "Codeudores"
+          },
+          "restoreBanner": {
+            "message": "Tienes una cotización en progreso. ¿Continuar donde la dejaste?"
+          },
+          "actions": {
+            "siguiente": "Siguiente",
+            "atras": "Atrás",
+            "enviar": "Enviar cotización",
+            "continuar": "Continuar",
+            "empezarDeNuevo": "Empezar de nuevo"
+          },
+          "errors": {
+            "cedulaInvalida": "La cédula debe tener entre 7 y 10 dígitos",
+            "requerido": "Este campo es requerido",
+            "canonPositivo": "El canon debe ser mayor a cero",
+            "tipoRequerido": "Selecciona un tipo de inmueble",
+            "arcoBloqueado": "Esta cédula tiene una oposición activa — contacta al administrador",
+            "sinPermiso": "No tienes permiso para crear cotizaciones"
+          }
+        },
+        "reQuote": {
+          "cedulaNotice": {
+            "ariaLabel": "Estado de cédula del candidato",
+            "message": "Re-usando cédula de cotización anterior",
+            "changeButton": "Cambiar candidato"
+          },
+          "prefillFailed": {
+            "banner": "No pudimos cargar la cotización original. Empieza una nueva o vuelve atrás.",
+            "volver": "Volver",
+            "continuar": "Continuar"
+          },
+          "sessionCapHit": "Has alcanzado el límite de re-cotizaciones de esta sesión. Se reinicia con una nueva cotización original."
+        },
+        "askWhy": {
+          "title": "¿Qué pasaría si…?",
+          "costEstimate": "Costo estimado: $0.001 USD",
+          "costActual": "Costo: ${{cost}} USD",
+          "remaining": "Te quedan {{n}} de {{m}} hoy",
+          "calculating": "Calculando…",
+          "tardando": "Tardando más de lo esperado…",
+          "submitButton": "Pedir explicación",
+          "capExhausted": {
+            "title": "Límite alcanzado",
+            "body": "Has usado tus {{cap}} explicaciones de hoy. Se reinicia mañana a las {{time}} (Bogotá).",
+            "tooltip": "Límite diario alcanzado"
+          },
+          "originalColumn": "Original",
+          "hypotheticalColumn": "Hipotético",
+          "noResultPlaceholder": "Selecciona una variable y envía para ver el hipotético",
+          "flipBadge": "{{from}} → {{to}}",
+          "retryButton": "Reintentar",
+          "errorGeneric": "Error al obtener la explicación. Intenta de nuevo.",
+          "error404": "Esta cotización ya no está disponible",
+          "error400Prefix": "Error de validación: ",
+          "variableLabels": {
+            "canon": "Canon mensual",
+            "ciudad": "Ciudad",
+            "tipo": "Tipo de inmueble",
+            "codeudores": "Codeudores"
+          }
+        },
+        "detail": {
+          "header": {
+            "breadcrumbQuote": "Cotización",
+            "canon": "Canon",
+            "ciudad": "Ciudad",
+            "tipo": "Tipo",
+            "codeudores": "Codeudores",
+            "liveLabel": "En vivo",
+            "disconnectedLabel": "Desconectado",
+            "totalCost": "Costo total"
+          },
+          "carrier": {
+            "pendingLabel": "Procesando",
+            "approvedLabel": "Aprobado",
+            "conditionalLabel": "Condicional",
+            "rejectedLabel": "Rechazado",
+            "errorLabel": "Error",
+            "stubLabel": "Demo",
+            "latencyMs": "ms",
+            "condicionesTitle": "Condiciones",
+            "motivoRechazoTitle": "Motivo de rechazo",
+            "stubModeBadge": "Modo demostración",
+            "timeoutPill": "Tiempo de espera"
+          },
+          "banner": {
+            "allReadyTemplate": "{count} de {total} listos · Total ${cost}",
+            "stubModeWarning": "Modo demostración — sin conexión real a aseguradoras",
+            "reQuoteButton": "Re-cotizar",
+            "reQuoteTooltip": "Disponible en la próxima actualización",
+            "downloadPdfButton": "Descargar PDF",
+            "backButton": "Volver al cotizador"
+          },
+          "connectionInterrupted": "Conexión interrumpida. Verifica tu conexión y reintenta.",
+          "retry": "Reintentar",
+          "reQuoteOfBadge": "Re-cotización de #{{shortId}}",
+          "pedirExplicacionButton": "Pedir explicación",
+          "reQuoteButton": "Re-cotizar con cambios",
+          "liveRegion": {
+            "carrierVerdict": "{{carrier}}: {{result}}"
+          }
+        },
+        "pdf": {
+          "download": "Descargar PDF",
+          "downloading": "Generando PDF...",
+          "errorToast": "Error al generar el PDF. Intenta de nuevo."
+        },
+        "noDataYet": {
+          "heading": "Sin datos aún"
+        },
+        "nav": {
+          "aseguradoras": "Aseguradoras",
+          "insights": "Insights",
+          "costos": "Costos"
+        },
+        "aseguradoras": {
+          "pageTitle": "Aseguradoras",
+          "pageSubtitle": "Configuración y rendimiento de las aseguradoras",
+          "table": {
+            "colName": "Aseguradora",
+            "colMode": "Modo",
+            "colGlobalEnabled": "Global habilitada",
+            "colTenantEnabled": "Tu configuración",
+            "colGlobalPriority": "Prioridad global",
+            "colTenantPriority": "Tu prioridad",
+            "colBreachStatus": "Estado SLA",
+            "colActions": "Acciones",
+            "inheritsMuted": "Hereda — {{value}}",
+            "overridePill": "Personalizado",
+            "actionEdit": "Editar",
+            "actionReset": "Restablecer al global",
+            "emptyRegistry": "Sin aseguradoras configuradas",
+            "emptyRegistryHelper": "Contacta al equipo de Leasefy para activar aseguradoras en tu cuenta.",
+            "actionsAriaLabel": "Acciones para {{carrier}}",
+            "conflictWarning": "Esta aseguradora está deshabilitada globalmente. Tu configuración local no tendrá efecto hasta que Leasefy la reactive.",
+            "inherits": "Hereda — {{value}}"
+          },
+          "popover": {
+            "title": "Editar configuración",
+            "fieldEnabled": "Habilitada",
+            "fieldPriority": "Prioridad (1–10)",
+            "fieldMode": "Modo",
+            "fieldMaxCanon": "Canon máximo (COP)",
+            "priorityRangeError": "La prioridad debe ser entre 1 y 10",
+            "save": "Guardar cambios",
+            "cancel": "Cancelar",
+            "reset": "Restablecer al global",
+            "saving": "Guardando…",
+            "saveSuccess": "Configuración guardada",
+            "saveError": "No se pudo guardar el cambio. Verifica tu conexión e intenta de nuevo.",
+            "resetConfirmTitle": "¿Restablecer al global?",
+            "resetConfirmBody": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
+            "resetConfirm": "Restablecer",
+            "resetCancel": "Cancelar",
+            "enabledLabel": "Habilitada",
+            "priorityLabel": "Prioridad (1–10)",
+            "modeLabel": "Modo",
+            "maxCanonLabel": "Canon máximo (COP)",
+            "saveBtn": "Guardar cambios",
+            "cancelBtn": "Cancelar"
+          },
+          "overrideConflictWarning": "Esta aseguradora está deshabilitada globalmente. Tu configuración local no tendrá efecto hasta que Leasefy la reactive.",
+          "sla": {
+            "pageTitle": "SLA — {{carrier}}",
+            "stateHealthy": "Operando normalmente",
+            "stateDegraded": "Degradado",
+            "stateBreached": "Incumplimiento SLA",
+            "stateUnknown": "Estado desconocido",
+            "since": "Desde hace {{duration}}",
+            "sinceUnknown": "Estado actual",
+            "breachHistoryTitle": "Historial de incumplimientos (últimos 90 días)",
+            "breachColDate": "Fecha",
+            "breachColSeverity": "Severidad",
+            "breachColDuration": "Duración",
+            "breachColResolution": "Resolución",
+            "noBreaches": "Sin incumplimientos en los últimos 90 días",
+            "empty": {
+              "title": "Aún no hay datos de SLA para esta aseguradora",
+              "description": "Los SLA se calculan a partir de la actividad histórica."
+            }
+          },
+          "detail": {
+            "pageTitle": "{{carrier}} — Detalle",
+            "kpiLatencyP95": "Latencia p95",
+            "kpiErrorRate": "Tasa de error (24h)",
+            "kpiApprovalRate": "Aprobación (30d)",
+            "kpiCostPerQuote": "Costo por cotización (30d)",
+            "latencySparklineTitle": "Latencia p95 — últimos 30 días",
+            "errorRateTitle": "Tasa de error — últimos 30 días",
+            "approvalByCanonTitle": "Aprobación por rango de canon",
+            "canonRange0to1M": "[0–1M]",
+            "canonRange1to3M": "[1M–3M]",
+            "canonRange3to5M": "[3M–5M]",
+            "canonRange5MPlus": "[5M+]",
+            "recentQuotesTitle": "Últimas 50 cotizaciones",
+            "recentQuotesEmpty": "Sin cotizaciones recientes",
+            "recentQuotesEmptyHelper": "Las últimas 50 cotizaciones de esta aseguradora aparecerán aquí.",
+            "quotesColDate": "Fecha/hora",
+            "quotesColCedula": "Cédula",
+            "quotesColCanon": "Canon",
+            "quotesColVerdict": "Veredicto",
+            "quotesColPrima": "Prima mensual",
+            "quotesColLatency": "Latencia",
+            "quotesColLink": "Ver",
+            "verdictApproved": "Aprobado",
+            "verdictRejected": "Rechazado",
+            "noSlaMetricData": "Sin datos de latencia",
+            "noSlaMetricDataHelper": "Esta aseguradora opera en modo simulado. Los datos de latencia se generarán cuando se active en modo real.",
+            "viewSlaLink": "Ver SLA",
+            "loadError": "No se pudo cargar el detalle de esta aseguradora. Intenta de nuevo.",
+            "retry": "Reintentar"
+          },
+          "charts": {
+            "latencySparkline": {
+              "xAxisLabel": "Fecha",
+              "yAxisLabel": "Latencia (ms)",
+              "tooltip": "{{value}} ms"
+            },
+            "errorRate": {
+              "xAxisLabel": "Día",
+              "yAxisLabel": "Tasa de error",
+              "tooltip": "{{value}}%",
+              "referenceLine": "Umbral 5%"
+            },
+            "approvalByCanon": {
+              "xAxisLabel": "Aprobación (%)",
+              "yAxisLabel": "Rango de canon",
+              "tooltip": "{{value}}%"
+            }
+          },
+          "loadError": "No se pudo cargar el listado de aseguradoras. Intenta de nuevo.",
+          "retry": "Reintentar",
+          "title": "Aseguradoras",
+          "subtitle": "Configuración y rendimiento de las aseguradoras",
+          "refresh": "Actualizar",
+          "errorLoading": "No se pudo cargar el listado de aseguradoras. Intenta de nuevo.",
+          "emptyRegistry": "Sin aseguradoras configuradas",
+          "resetDialog": {
+            "title": "¿Restablecer al global?",
+            "body": "Se eliminará tu configuración para {{carrier}} y heredará los valores globales de Leasefy. Esta acción no se puede deshacer.",
+            "confirm": "Restablecer"
+          },
+          "empty": {
+            "title": "Aún no hay aseguradoras activas",
+            "description": "Contactá soporte para activar Sura, Mapfre o Bolívar.",
+            "cta": {
+              "label": "Contactar soporte"
+            }
+          }
+        },
+        "insights": {
+          "pageTitle": "Insights de cotizador",
+          "pageSubtitle": "Análisis agregado de rendimiento y costos",
+          "approvalRateMonthlyTitle": "Tasa de aprobación por aseguradora",
+          "primaDistributionTitle": "Distribución de prima por rango de canon",
+          "assumptionsTitle": "Registro de supuestos",
+          "assumptionColName": "Supuesto",
+          "assumptionColState": "Estado",
+          "assumptionColUpdated": "Actualizado",
+          "monthlyCostTrendTitle": "Tendencia de costos mensual",
+          "cohortMatchQualityTitle": "Calidad de match de cohorte",
+          "cohortMatchReason": "Requiere Phase 28 (ingesta de resultados)",
+          "driftReportTitle": "Reporte de drift",
+          "driftReportReason": "Requiere Phase 28 (productor de drift)",
+          "charts": {
+            "approvalRateMonthly": {
+              "xAxisLabel": "Mes",
+              "yAxisLabel": "Tasa de aprobación (%)",
+              "tooltip": "{{carrier}}: {{value}}%"
+            },
+            "primaDistribution": {
+              "xAxisLabel": "Rango de canon",
+              "yAxisLabel": "Prima mensual (COP)",
+              "tooltip": "p25: {{p25}} · p50: {{p50}} · p75: {{p75}}"
+            },
+            "monthlyCostTrend": {
+              "xAxisLabel": "Mes",
+              "yAxisLabel": "Costo (USD)",
+              "tooltip": "${{value}}",
+              "todayLabel": "Hoy"
+            }
+          },
+          "loadError": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
+          "retry": "Reintentar",
+          "title": "Insights de cotizador",
+          "subtitle": "Análisis agregado de rendimiento y costos",
+          "errorLoading": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
+          "sections": {
+            "approvalRate": "Tasa de aprobación por aseguradora",
+            "primaDistribution": "Distribución de prima por rango de canon",
+            "assumptions": "Registro de supuestos",
+            "costTrend": "Tendencia de costos mensual",
+            "cohortQuality": "Calidad de match de cohorte",
+            "driftReport": "Reporte de drift"
+          },
+          "assumptions": {
+            "columns": {
+              "name": "Supuesto",
+              "description": "Descripción",
+              "state": "Estado",
+              "updatedAt": "Actualizado"
+            },
+            "states": {
+              "active": "Activo",
+              "deprecated": "Obsoleto",
+              "under_review": "En revisión"
+            },
+            "empty": "Sin datos de supuestos"
+          },
+          "cohortQuality": {
+            "reason": "Requiere Phase 28 (ingesta de resultados)"
+          },
+          "driftReport": {
+            "reason": "Requiere Phase 28 (productor de drift)"
+          },
+          "costPreview": {
+            "viewAll": "Ver detalle de costos",
+            "empty": "Sin datos de costos mensuales aún"
+          },
+          "empty": {
+            "title": "Sin datos suficientes aún",
+            "description": "Los datos aparecen a medida que se acumula actividad."
+          }
+        },
+        "costos": {
+          "pageTitle": "Dashboard de costos",
+          "pageSubtitle": "Resumen de costos de cotización por fuente",
+          "kpiCostPerQuote": "Costo por cotización",
+          "kpiMonthlyBurn": "Gasto mensual",
+          "kpiForecast30d": "Proyección 30 días",
+          "forecastCaption": "Proyección basada en el promedio diario de los últimos 7 días",
+          "forecastTooltip": "promedio_diario × 30",
+          "sourceBreakdownTitle": "Desglose por fuente",
+          "sourceAnthropicLabel": "Anthropic (IA)",
+          "sourceCarrierApiLabel": "API aseguradoras",
+          "sourceSekureLabel": "Comisión Sekure",
+          "sourceDatacreditoLabel": "Datacredito",
+          "noCostSources": "Sin gastos registrados",
+          "noCostSourcesHelper": "Los gastos aparecerán aquí cuando se procesen cotizaciones reales.",
+          "charts": {
+            "costSourcePie": {
+              "title": "Gasto por fuente",
+              "tooltip": "{{source}}: ${{amount}} · {{status}}"
+            },
+            "monthlyCostTrend": {
+              "title": "Tendencia mensual de costos",
+              "xAxisLabel": "Mes",
+              "yAxisLabel": "Costo (USD)",
+              "tooltip": "${{value}}",
+              "historicalSeries": "Histórico",
+              "forecastSeries": "Proyección",
+              "todayLabel": "Hoy"
+            }
+          },
+          "sourceBreakdown": {
+            "colSource": "Fuente",
+            "colTotal": "Total (USD)",
+            "colStatus": "Estado",
+            "statusPopulated": "Con datos",
+            "statusEmpty": "Sin datos aún"
+          },
+          "loadError": "No se pudo cargar el resumen de costos. Intenta de nuevo.",
+          "retry": "Reintentar",
+          "empty": {
+            "title": "Sin datos suficientes aún",
+            "description": "Los datos aparecen a medida que se acumula actividad."
+          }
+        },
+        "quote": {
+          "exportPdf": "Descargar PDF"
+        }
+      },
+      "access": {
+        "noAccessCobranza": "No tienes acceso a Cobranza",
+        "noAccessCotizador": "No tienes acceso a Cotizador",
+        "contactAdmin": "Contacta al administrador de tu inmobiliaria para solicitar acceso."
+      },
+      "cobranza": {
+        "overview": {
+          "title": "Cobranza",
+          "subtitle": "Estado actual de tu cartera de deudores",
+          "lastUpdated": "Actualizado hace",
+          "kpis": {
+            "deudoresActivos": "Deudores activos",
+            "pagadoHoy": "Pagado hoy",
+            "llamadasHoy": "Llamadas hoy",
+            "escalacionesPendientes": "Escalaciones pendientes"
+          },
+          "stages": {
+            "title": "Estado por etapa",
+            "avgDays": "días promedio",
+            "ariaLabel": "Etapa {{stage}}, {{count}} deudores, click para ver detalle"
+          },
+          "funnel": {
+            "title": "Distribución del funnel",
+            "ariaDescription": "Gráfico de barras mostrando distribución de deudores por etapa",
+            "tableCaption": "Tabla alternativa de distribución por etapa",
+            "empty": "Sin datos",
+            "tableHeader": {
+              "stage": "Etapa",
+              "debtors": "Deudores"
+            }
+          },
+          "transitions": {
+            "title": "Últimas transiciones",
+            "empty": "Sin transiciones recientes",
+            "emptyHelper": "Las transiciones aparecerán aquí cuando el agente mueva deudores entre etapas",
+            "agentActor": "Agente AI",
+            "humanActor": "Operador",
+            "timeAgo": "hace"
+          },
+          "nextActions": {
+            "title": "Acciones de hoy",
+            "empty": "Sin acciones programadas hoy",
+            "configCta": "Configurar cadence",
+            "configCtaTooltip": "Disponible en una próxima actualización",
+            "channelVoice": "Llamada",
+            "channelWhatsapp": "WhatsApp",
+            "channelEmail": "Email"
+          },
+          "errorLoading": "Error cargando datos",
+          "empty": {
+            "title": "Aún no tenés cartera de cobranza",
+            "description": "Importá tu primera cartera para empezar.",
+            "cta": {
+              "label": "Importar cartera"
+            }
+          },
+          "liveRegion": {
+            "newTransition": "{{count}} nueva(s) transición(es) de etapa"
+          }
+        },
+        "deudores": {
+          "title": "Deudores",
+          "subtitle": "Lista de cartera — todos los deudores activos",
+          "filters": {
+            "title": "Filtros",
+            "stage": "Etapa",
+            "channel": "Canal",
+            "daysInStage": "Días en etapa",
+            "search": {
+              "placeholder": "Nombre o cédula (4+ dígitos)",
+              "label": "Buscar deudor"
+            },
+            "clear": "Limpiar filtros"
+          },
+          "sort": {
+            "daysInStageDesc": "Más estancados primero"
+          },
+          "error": "Error cargando deudores",
+          "errorRetry": "Reintentar",
+          "loadingMore": "Cargando más…",
+          "openFilters": "Mostrar filtros",
+          "closeFilters": "Cerrar filtros",
+          "searchMinChars": "Escribe al menos 4 dígitos para buscar por cédula",
+          "columns": {
+            "name": "Nombre",
+            "stage": "Etapa",
+            "daysInStage": "Días",
+            "channel": "Canal",
+            "cedula": "Cédula",
+            "phone": "Teléfono",
+            "email": "Email",
+            "lastActivity": "Última actividad"
+          },
+          "channels": {
+            "voice": "Llamada",
+            "whatsapp": "WhatsApp",
+            "email": "Email"
+          },
+          "emptyFiltered": "Sin deudores con estos filtros",
+          "empty": {
+            "title": "Aún no hay deudores",
+            "description": "Importá una cartera CSV o agregá manualmente.",
+            "cta": {
+              "label": "Importar cartera"
+            }
+          }
+        },
+        "detail": {
+          "title": "Deudor",
+          "loading": "Cargando deudor…",
+          "error": "Error cargando el deudor",
+          "errorRetry": "Reintentar",
+          "empty": "Sin datos para este deudor",
+          "header": {
+            "stage": "Etapa",
+            "daysInStage": "Días en etapa",
+            "paused": "En pausa"
+          },
+          "tabs": {
+            "timeline": "Timeline",
+            "llamadas": "Llamadas",
+            "memos": "Memos",
+            "compromisos": "Compromisos",
+            "acciones": "Acciones",
+            "switcher": "Cambiar pestaña",
+            "closeSwitcher": "Cerrar"
+          },
+          "sidebar": {
+            "title": "Próximos pasos",
+            "nextAction": "Próxima acción",
+            "noNextAction": "Sin acción programada",
+            "contactAttempts": "Intentos restantes",
+            "paused": "En pausa hasta {{date}}",
+            "openSidebar": "Ver detalles",
+            "closeSidebar": "Cerrar"
+          },
+          "timeline": {
+            "loading": "Cargando timeline…",
+            "error": "Error cargando timeline",
+            "errorRetry": "Reintentar",
+            "empty": "Sin eventos registrados",
+            "eventStageTransition": "Cambio de etapa",
+            "eventCall": "Llamada",
+            "eventPayment": "Pago",
+            "eventMemo": "Memo"
+          },
+          "llamadas": {
+            "loading": "Cargando llamadas…",
+            "error": "Error cargando llamadas",
+            "errorRetry": "Reintentar",
+            "empty": "Sin llamadas para este deudor",
+            "columns": {
+              "startedAt": "Inicio",
+              "duration": "Duración",
+              "outcome": "Resultado",
+              "qa": "QA",
+              "compliance": "Marcas"
+            }
+          },
+          "memos": {
+            "loading": "Cargando memos…",
+            "error": "Error cargando memos",
+            "errorRetry": "Reintentar",
+            "empty": "Sin memos para este deudor"
+          },
+          "compromisos": {
+            "loading": "Cargando compromisos…",
+            "error": "Error cargando compromisos",
+            "errorRetry": "Reintentar",
+            "empty": "Sin compromisos registrados",
+            "paymentPlans": "Planes de pago",
+            "insuranceClaims": "Siniestros",
+            "legalArtifacts": "Documentos legales"
+          },
+          "acciones": {
+            "title": "Acciones",
+            "auditTitle": "Historial reciente",
+            "auditEmpty": "Sin actividad reciente",
+            "adminOnlyTooltip": "Requiere rol administrador",
+            "pause": {
+              "cta": "Pausar cobranza",
+              "modalTitle": "Pausar cobranza",
+              "modalDescription": "La cobranza queda pausada hasta la fecha seleccionada. Se registra en el log de auditoría.",
+              "untilLabel": "Pausar hasta",
+              "reasonLabel": "Motivo",
+              "reasonPlaceholder": "Motivo de la pausa…",
+              "confirm": "Confirmar pausa",
+              "confirming": "Pausando…",
+              "successToast": "Cobranza pausada"
+            },
+            "forceStage": {
+              "cta": "Forzar etapa",
+              "modalTitle": "Forzar etapa",
+              "modalDescription": "Acción de administrador. Sobrescribe la máquina de estados y queda registrada en el log de auditoría.",
+              "targetLabel": "Etapa destino",
+              "reasonLabel": "Motivo (requerido)",
+              "reasonPlaceholder": "Razón del override (mínimo 10 caracteres)…",
+              "confirm": "Confirmar — registrar override",
+              "confirming": "Forzando…",
+              "successToast": "Etapa forzada",
+              "adminOnly": "Solo administradores",
+              "accessDenied": "Acceso denegado"
+            },
+            "manualWA": {
+              "cta": "Enviar WhatsApp manual",
+              "modalTitle": "Enviar WhatsApp manual",
+              "modalDescription": "Solo plantillas aprobadas. Sin texto libre en esta versión.",
+              "templateLabel": "Plantilla",
+              "variablesLabel": "Variables",
+              "templatePlaceholder": "Selecciona plantilla…",
+              "noTemplates": "No hay plantillas aprobadas disponibles",
+              "loadingTemplates": "Cargando plantillas…",
+              "confirm": "Enviar",
+              "confirming": "Enviando…",
+              "successToast": "WhatsApp enviado"
+            },
+            "manualCall": {
+              "cta": "Llamar manualmente",
+              "modalTitle": "Llamada manual",
+              "modalDescription": "Esta llamada se inicia inmediatamente y no puede cancelarse durante el marcado. Acción de administrador, queda registrada.",
+              "reasonLabel": "Motivo (requerido)",
+              "reasonPlaceholder": "Por qué llamas manualmente…",
+              "confirm": "Confirmar — iniciar llamada",
+              "confirming": "Iniciando…",
+              "successToast": "Llamada iniciada",
+              "adminOnly": "Solo administradores"
+            },
+            "envMissing": "Configuración no disponible",
+            "genericError": "Acción fallida — intenta de nuevo"
+          },
+          "pii": {
+            "revealCta": "Revelar",
+            "expiredTooltip": "Revelación expirada — clic para revelar de nuevo",
+            "countdownLabel": "Tiempo restante",
+            "modalTitle": "Revelar dato sensible",
+            "modalBody": "Esta acción queda registrada en el log de auditoría por 5 minutos.",
+            "auditNote": "Esta acción queda registrada en el log de auditoría",
+            "modalConfirm": "Confirmar — registrar y revelar",
+            "modalCancel": "Cancelar",
+            "modalMinting": "Revelando…",
+            "errorGeneric": "No se pudo revelar el dato"
+          }
+        },
+        "call": {
+          "title": "Llamada",
+          "back": "Volver al deudor",
+          "loading": "Cargando llamada…",
+          "error": "Error cargando la llamada",
+          "errorRetry": "Reintentar",
+          "empty": "Sin datos para esta llamada",
+          "header": {
+            "startedAt": "Inicio",
+            "duration": "Duración",
+            "outcome": "Resultado",
+            "qaOverall": "QA general",
+            "complianceCount": "marcas",
+            "noRecording": "Esta llamada no tiene grabación disponible."
+          },
+          "player": {
+            "play": "Reproducir",
+            "pause": "Pausar",
+            "speed": "Velocidad",
+            "speedLabel": "Velocidad {{speed}}x",
+            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio.",
+            "audioError": "No se pudo cargar la grabación."
+          },
+          "transcript": {
+            "title": "Transcripción",
+            "empty": "Esta llamada no tiene transcripción disponible.",
+            "loading": "Cargando transcripción…",
+            "error": "Error cargando la transcripción",
+            "errorRetry": "Reintentar",
+            "speakerOperador": "Operador",
+            "speakerDeudor": "Deudor",
+            "speakerBot": "Bot",
+            "seekAria": "Saltar a {{time}}"
+          },
+          "qa": {
+            "title": "Calidad de la llamada",
+            "overall": "General",
+            "tone": "Tono",
+            "compliance": "Cumplimiento",
+            "recovery": "Recuperación",
+            "clarity": "Claridad",
+            "empty": "QA pendiente."
+          },
+          "stateTrace": {
+            "title": "Trazabilidad de estado",
+            "empty": "Sin transiciones de estado.",
+            "transition": "{{from}} → {{to}}"
+          },
+          "cost": {
+            "title": "Costos",
+            "llm": "LLM",
+            "voice": "Voz",
+            "whatsapp": "WhatsApp",
+            "total": "Total",
+            "empty": "Sin costo registrado."
+          },
+          "compliance": {
+            "pillAria": "Marca de cumplimiento: {{label}}"
+          },
+          "exportTranscriptPdf": "Exportar transcript PDF"
+        },
+        "pagos": {
+          "title": "Pagos",
+          "subtitle": "Funnel de pagos y desembolsos",
+          "kpi": {
+            "approved": "Aprobados",
+            "pending": "Pendientes",
+            "declined": "Rechazados",
+            "recaudado": "Total recaudado",
+            "disbursed": "Total desembolsado",
+            "avgFee": "Comisión promedio"
+          },
+          "dateWindow": {
+            "today": "Hoy",
+            "7d": "7 días",
+            "30d": "30 días",
+            "90d": "90 días",
+            "mtd": "Mes actual"
+          },
+          "filter": {
+            "provider": "Proveedor",
+            "status": "Estado",
+            "clear": "Limpiar filtros",
+            "wompi": "Wompi",
+            "bold": "Bold"
+          },
+          "status": {
+            "approved": "Aprobado",
+            "pending": "Pendiente",
+            "declined": "Rechazado",
+            "disbursed": "Desembolsado"
+          },
+          "sort": {
+            "createdAt": "Más recientes",
+            "amountDesc": "Mayor monto",
+            "disbursementPendingDays": "Desembolso pendiente"
+          },
+          "columns": {
+            "nombre": "Nombre",
+            "monto": "Monto",
+            "fee": "Comisión",
+            "provider": "Proveedor",
+            "status": "Estado",
+            "fecha": "Fecha"
+          },
+          "pill": {
+            "disbursementPending": "Desembolso pendiente"
+          },
+          "error": "Error al cargar pagos",
+          "errorRetry": "Reintentar",
+          "loading": "Cargando pagos...",
+          "loadingMore": "Cargando más...",
+          "detail": {
+            "title": "Detalle de pago",
+            "provider": "Proveedor",
+            "status": "Estado",
+            "amount": "Monto",
+            "fee": "Comisión",
+            "createdAt": "Fecha",
+            "debtor": "Deudor",
+            "back": "Volver a pagos",
+            "notFound": "Pago no encontrado"
+          },
+          "emptyFiltered": "Sin pagos en este período",
+          "empty": {
+            "title": "Aún no hay pagos procesados",
+            "description": "Los pagos aparecerán acá cuando un deudor liquide.",
+            "cta": {
+              "label": "Ver deudores"
+            }
+          }
+        },
+        "planes": {
+          "title": "Aprobar plan de pago",
+          "loading": "Cargando plan...",
+          "loadError": "Error al cargar el plan. Intenta de nuevo.",
+          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "verDeudor": "Ver deudor",
+          "aprobar": "Aprobar",
+          "rechazar": "Rechazar",
+          "modificar": "Modificar",
+          "maxDiscountBanner": "Excede el límite de tu agencia ({{max}}%). Cambia la política en Configuración para aprobar este plan.",
+          "configLink": "Ir a Configuración",
+          "aprobarDisabledBanner": "El descuento propuesto supera el límite de la agencia.",
+          "aprobarDisabledPerm": "Necesitas permiso cobranza:aprobar.",
+          "wompiLinkTitle": "Plan aprobado. Enlace de pago:",
+          "wompiLinkLabel": "Abrir enlace Wompi",
+          "comparisonHeader": {
+            "campo": "Campo",
+            "propuesto": "Propuesto por IA",
+            "limite": "Límite agencia"
+          },
+          "comparison": {
+            "descuento": "Descuento",
+            "cuotas": "Cuotas",
+            "monto": "Monto/cuota",
+            "fecha": "Fecha primer pago"
+          },
+          "rechazarForm": {
+            "submit": "Confirmar rechazo",
+            "cancel": "Cancelar",
+            "commentPlaceholder": "Comentario opcional (máx. 500 caracteres)",
+            "success": "Plan rechazado correctamente.",
+            "reasonLabel": "Razón",
+            "reasonPlaceholder": "Selecciona una razón",
+            "reasons": {
+              "discount_too_high": "Descuento demasiado alto",
+              "debtor_history_poor": "Historial del deudor deficiente",
+              "wrong_cuota_count": "Número de cuotas incorrecto",
+              "policy_violation": "Violación de política",
+              "out_of_scope": "Fuera del alcance",
+              "other": "Otro"
+            }
+          },
+          "modificarForm": {
+            "submit": "Enviar contrapropuesta",
+            "cancel": "Cancelar",
+            "success": "Contrapropuesta enviada correctamente.",
+            "descuento": "Descuento (%)",
+            "cuotas": "Número de cuotas",
+            "monto": "Monto por cuota (COP)",
+            "fecha": "Fecha primer pago",
+            "duplicateRisk": "Se creó la contraoferta pero el plan original no pudo rechazarse. Pueden existir dos planes activos — revísalo antes de enviar el link de pago."
+          }
+        },
+        "approval": {
+          "rechazarForm": {
+            "title": "Rechazar",
+            "confirm": "Confirmar rechazo",
+            "cancel": "Cancelar",
+            "reasonLabel": "Razón",
+            "reasonPlaceholder": "Selecciona una razón",
+            "commentLabel": "Comentario (opcional)",
+            "charsRemaining": "{{remaining}} caracteres restantes",
+            "reason": {
+              "discount_too_high": "Descuento demasiado alto",
+              "debtor_history_poor": "Historial del deudor deficiente",
+              "wrong_cuota_count": "Número de cuotas incorrecto",
+              "policy_violation": "Violación de política",
+              "out_of_scope": "Fuera del alcance",
+              "other": "Otro"
+            }
+          }
+        },
+        "siniestros": {
+          "title": "Aprobar siniestro",
+          "loading": "Cargando siniestro...",
+          "error": "Error al cargar el siniestro. Intenta de nuevo.",
+          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "back": "Volver",
+          "permissionTooltip": "Solo ADMIN/OWNER puede aprobar",
+          "pdfPreview": {
+            "title": "Vista previa del paquete",
+            "error": "No se pudo cargar la vista previa del PDF."
+          },
+          "insurers": {
+            "title": "Aseguradoras a notificar",
+            "sura": "Sura",
+            "mapfre": "Mapfre",
+            "solidaria": "Solidaria",
+            "accion": "Acción",
+            "atLeastOne": "Selecciona al menos una aseguradora para aprobar"
+          },
+          "aprobar": {
+            "label": "Aprobar",
+            "submitting": "Enviando...",
+            "success": {
+              "title": "Siniestro radicado correctamente.",
+              "partial": "Enviado con resultados parciales — revisa cada aseguradora"
+            }
+          },
+          "rechazar": {
+            "label": "Rechazar",
+            "submitting": "Rechazando...",
+            "success": "Siniestro rechazado correctamente."
+          },
+          "list": {
+            "pageTitle": "Siniestros",
+            "pageSubtitle": "Reclamaciones de seguro generadas por IA pendientes de radicación",
+            "empty": {
+              "title": "Sin siniestros registrados",
+              "description": "La IA no ha identificado siniestros pendientes de radicación en este momento."
+            },
+            "columns": {
+              "aseguradora": "Aseguradora",
+              "status": "Estado",
+              "createdAt": "Creado",
+              "filedAt": "Radicado",
+              "approvedBy": "Aprobado por"
+            }
+          }
+        },
+        "cartas": {
+          "title": "Aprobar carta prejurídica",
+          "loading": "Cargando carta...",
+          "error": "Error al cargar la carta. Intenta de nuevo.",
+          "envMissing": "Entorno no configurado (NEXT_PUBLIC_AGENT_URL).",
+          "back": "Volver",
+          "permissionTooltip": "Solo ADMIN/OWNER puede aprobar",
+          "pdfPreview": {
+            "title": "Vista previa de la carta",
+            "error": "No se pudo cargar la vista previa del PDF."
+          },
+          "physicalSend": {
+            "label": "Método de envío físico",
+            "placeholder": "Selecciona un método",
+            "servicio472": "Servicio 4-72 (correo certificado)",
+            "emailOnly": "Solo correo electrónico",
+            "operatorManual": "Entrega manual por operador"
+          },
+          "sentToAddress": {
+            "label": "Dirección o correo destino",
+            "placeholder": "Calle 123 #45-67, Bogotá / correo@dominio.com"
+          },
+          "aprobar": {
+            "label": "Aprobar",
+            "submitting": "Aprobando...",
+            "success": {
+              "title": "Carta aprobada correctamente."
+            },
+            "download": {
+              "label": "Descargar PDF firmado",
+              "ttl": "El enlace expira en {{days}} días"
+            },
+            "legalNotice": "Recuerda: la entrega debe ser por correo certificado físico para validez legal en Colombia."
+          },
+          "rechazar": {
+            "label": "Rechazar",
+            "submitting": "Rechazando...",
+            "success": "Carta rechazada correctamente."
+          },
+          "pageTitle": "Cartas prejudiciales",
+          "pageSubtitle": "Cartas generadas por IA pendientes de revisión y aprobación",
+          "empty": {
+            "title": "Sin cartas generadas",
+            "description": "La IA aún no ha generado cartas prejudiciales para este portafolio."
+          },
+          "columns": {
+            "kind": "Tipo",
+            "status": "Estado",
+            "generatedAt": "Generada",
+            "sentAt": "Enviada",
+            "sendMethod": "Método de envío"
+          }
+        },
+        "escalaciones": {
+          "pageTitle": "Escalaciones",
+          "kanbanColumns": {
+            "open": "Abiertas",
+            "assigned": "Asignadas",
+            "resolved": "Resueltas (últimos 7 días)"
+          },
+          "urgency": {
+            "live": "En vivo",
+            "high": "Alta",
+            "medium": "Media",
+            "low": "Baja"
+          },
+          "actions": {
+            "claim": "Tomar",
+            "assign": "Asignar",
+            "resolve": "Resolver",
+            "cancel": "Cancelar"
+          },
+          "assignDialog": {
+            "title": "Asignar escalación a un agente",
+            "placeholder": "Selecciona un agente"
+          },
+          "resolveModal": {
+            "title": "Resolver escalación",
+            "categoryLabel": "Categoría",
+            "textLabel": "Detalle de la resolución",
+            "submit": "Cerrar escalación",
+            "escalatedToLegalWarning": "Al cerrar como ‘Pasa a jurídico’ el deudor avanza a etapa prejurídica automáticamente."
+          },
+          "resolveTemplates": {
+            "compromise": "Acordamos plan de pago con el deudor",
+            "customerRejected": "El cliente rechazó las ofertas",
+            "escalatedToLegal": "Pasa a jurídico",
+            "falsePositive": "Falsa alarma del agente",
+            "other": "Otro"
+          },
+          "errors": {
+            "tooShort": "Mínimo 80 caracteres",
+            "tooLong": "Máximo 2.000 caracteres",
+            "forbidden": "No tienes permiso para esta acción",
+            "notFound": "La escalación ya no existe o fue resuelta"
+          },
+          "detail": {
+            "linkedCall": "Llamada asociada",
+            "reason": "Motivo del agente",
+            "stateTrace": "Estado del agente al escalar",
+            "assignee": "Asignada a",
+            "timing": "Tiempos"
+          },
+          "empty": {
+            "title": "¡Buen trabajo!",
+            "description": "No hay escalaciones pendientes en este momento."
+          },
+          "liveRegion": {
+            "newEscalacion": "{{count}} nueva(s) escalación(es) recibida(s)"
+          }
+        },
+        "compliance": {
+          "pageTitle": "Cumplimiento",
+          "overview": {
+            "ley2300Heading": "Ley 2300 — intentos fuera de horario",
+            "habeasDataHeading": "Habeas Data — SLA de 15 días",
+            "retentionHeading": "Retención de datos",
+            "sparklineHeading": "Tasa de banderas (últimos 30 días)"
+          },
+          "habeasData": {
+            "remaining": {
+              "days": "Quedan {{days}}d {{hours}}h",
+              "hours": "Quedan {{hours}}h"
+            },
+            "overdue": "VENCIDO HACE {{days}}d",
+            "banner": "Hay solicitudes Habeas Data próximas a vencer el plazo legal de 15 días."
+          },
+          "trafficLight": {
+            "green": "Más de 7 días restantes",
+            "yellow": "Entre 3 y 7 días restantes",
+            "red": "Menos de 3 días restantes",
+            "redPulse": "Vence en menos de 24 horas"
+          },
+          "subPages": {
+            "ley2300Title": "Ley 2300 — intentos fuera de horario",
+            "optOutTitle": "Registro de opt-out",
+            "auditTitle": "Auditoría"
+          },
+          "filters": {
+            "actor": "Actor",
+            "action": "Acción",
+            "dateRange": "Rango de fechas",
+            "search": "Cédula (hash) o ID de cotización"
+          },
+          "actions": {
+            "acknowledge": "Reconocer",
+            "export": "Exportar"
+          },
+          "empty": {
+            "title": "Sin alertas de compliance",
+            "description": "Todas las llamadas cumplen con T-323/2024 y Ley 2300."
+          },
+          "audit": {
+            "empty": {
+              "title": "Sin eventos de auditoría",
+              "description": "El log se llena cuando un operador revela PII o aprueba acciones."
+            },
+            "exportCsv": "Exportar CSV"
+          },
+          "ley2300": {
+            "empty": {
+              "title": "Sin infracciones a Ley 2300 detectadas",
+              "description": "Las llamadas se monitorean en tiempo real."
+            }
+          },
+          "optOut": {
+            "empty": {
+              "title": "Sin deudores en opt-out",
+              "description": "Los opt-outs aparecerán acá cuando un deudor solicite no ser contactado."
+            },
+            "errors": {
+              "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."
+            }
+          }
+        },
+        "reporte": {
+          "pageTitle": "Reporte diario",
+          "kpis": {
+            "pkr": "PKR (% recuperado)",
+            "morosidad": "Índice de morosidad",
+            "outsideHours": "Llamadas fuera de horario"
+          },
+          "topDebtors": {
+            "heading": "Top deudores",
+            "empty": "No hay deudores destacados hoy"
+          },
+          "history": {
+            "heading": "Histórico (últimos 30 días)",
+            "exportCsv": "Exportar CSV"
+          },
+          "thresholds": {
+            "pageTitle": "Umbrales del reporte",
+            "fields": {
+              "topN": "Top-N deudores a mostrar",
+              "moraBoundaries": "Cortes de días de mora",
+              "pkrAlertBelow": "Alerta si PKR cae por debajo de (%)",
+              "morosidadAlertAbove": "Alerta si morosidad supera (%)",
+              "violationsAtLeast": "Mínimo de violaciones para alertar",
+              "callsOutsideAtLeast": "Mínimo de llamadas fuera de horario para alertar"
+            },
+            "submit": "Guardar umbrales",
+            "versionsHeading": "Versiones anteriores",
+            "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
+            "rolledBackToast": "Umbrales reversados a la versión {{version}}",
+            "empty": {
+              "title": "Usando thresholds por defecto",
+              "description": "Ajustá los umbrales según las políticas de tu inmobiliaria.",
+              "cta": {
+                "label": "Editar thresholds"
+              }
+            }
+          },
+          "subscription": {
+            "pageTitle": "Mi suscripción al reporte diario",
+            "emailToggle": "Recibir por correo",
+            "whatsappToggle": "Recibir por WhatsApp",
+            "aggregateStat": "{{subscribed}} de {{total}} miembros suscritos"
+          },
+          "empty": {
+            "title": "Aún no hay datos para el reporte diario",
+            "description": "El reporte se genera cada noche a partir de la actividad del día.",
+            "cta": {
+              "label": "Configurar suscripción"
+            }
+          },
+          "suscripcion": {
+            "empty": {
+              "title": "Aún no hay suscriptores al reporte",
+              "description": "Agregá emails para recibir el reporte diario automáticamente.",
+              "cta": {
+                "label": "Agregar suscriptor"
+              }
+            }
+          }
+        },
+        "analitica": {
+          "title": "Analítica de Cobranza",
+          "subtitle": "Métricas agregadas de recuperación, objeciones y cadencia del agente.",
+          "sampleDataWatermark": "Datos de muestra",
+          "agencyGate": {
+            "title": "Sin datos suficientes",
+            "reason": "Necesitás al menos 5 llamadas en los últimos 30 días para ver analítica.",
+            "ctaLabel": "Ir al agente de cobranza"
+          },
+          "widgets": {
+            "recoveryRate": {
+              "title": "Tasa de recuperación por etapa",
+              "legend": {
+                "transitions": "Deudores recuperados",
+                "cop": "COP recuperado"
+              },
+              "empty": "Sin suficientes transiciones de etapa en los últimos 30 días."
+            },
+            "topScripts": {
+              "title": "Scripts con mayor conversión",
+              "empty": "Sin datos de scripts disponibles.",
+              "pendingPhase38": "El seguimiento de scripts estará disponible en una próxima actualización.",
+              "column": {
+                "script": "Script",
+                "stage": "Etapa",
+                "nCalls": "Llamadas",
+                "conversionRate": "Tasa conv.",
+                "lift": "Lift vs base",
+                "sparkline": "Tendencia 30d"
+              }
+            },
+            "topObjections": {
+              "title": "Principales objeciones (últimos 30 días)",
+              "empty": "Sin objeciones registradas en los últimos 30 días.",
+              "column": {
+                "literal": "Objeción",
+                "count": "Frecuencia",
+                "pct": "% de llamadas"
+              }
+            },
+            "cadence": {
+              "title": "Efectividad de cadencia",
+              "channelMix": {
+                "title": "Canal × resultado",
+                "outcome": {
+                  "paid": "Pagado",
+                  "brokenPromise": "Promesa rota",
+                  "escalated": "Escalado",
+                  "noAnswer": "Sin respuesta",
+                  "completed": "Completado"
+                }
+              },
+              "heatmap": {
+                "title": "Mejor hora para llamar",
+                "legend": "Intensidad = volumen + tasa positiva",
+                "dayLabels": {
+                  "sun": "Dom",
+                  "mon": "Lun",
+                  "tue": "Mar",
+                  "wed": "Mié",
+                  "thu": "Jue",
+                  "fri": "Vie",
+                  "sat": "Sáb"
+                }
+              },
+              "empty": "Sin llamadas suficientes para calcular cadencia."
+            },
+            "costPerPeso": {
+              "title": "Costo por peso recuperado",
+              "subtitle": "Costo de voz por COP recuperado (últimos 30 días)",
+              "sparklineLabel": "Tendencia 90 días",
+              "empty": "Sin pagos ni llamadas registradas en los últimos 30 días."
+            }
+          },
+          "errors": {
+            "loading": "Error al cargar analítica de cobranza.",
+            "retry": "Reintentar"
+          },
+          "empty": {
+            "title": "Hacé tu primera llamada para empezar a ver analítica",
+            "description": "Los widgets se activan con 5 o más llamadas.",
+            "cta": {
+              "label": "Ir a deudores"
+            }
+          }
+        },
+        "plantillas": {
+          "empty": {
+            "title": "Estás usando las plantillas por defecto",
+            "description": "Personalizá scripts y mensajes para tu inmobiliaria.",
+            "cta": {
+              "label": "Crear plantilla"
+            }
+          }
+        },
+        "arco": {
+          "empty": {
+            "title": "Sin solicitudes ARCO pendientes",
+            "description": "Las solicitudes Ley 1581 aparecerán acá."
+          }
+        },
+        "llamadas": {
+          "list": {
+            "empty": {
+              "title": "Vista global de llamadas no disponible",
+              "description": "Las llamadas se gestionan por deudor. Busca el deudor en la lista para acceder a su historial de llamadas.",
+              "cta": "Ir a Deudores"
+            }
+          }
+        }
+      },
+      "arco": {
+        "title": "Solicitudes ARCO",
+        "breadcrumb": "ARCO",
+        "kpis": {
+          "pending": "Pendientes",
+          "onTime": "En plazo",
+          "overdue": "Vencidas",
+          "resolved": "Resueltas (últimos 30d)"
+        },
+        "tabs": {
+          "all": "Todas",
+          "acceso": "Acceso",
+          "rectificacion": "Rectificación",
+          "cancelacion": "Cancelación",
+          "oposicion": "Oposición"
+        },
+        "table": {
+          "tipo": "Tipo",
+          "nombre": "Nombre / Cédula",
+          "email": "Correo",
+          "estado": "Estado",
+          "plazo": "Plazo",
+          "recibida": "Recibida",
+          "actions": "Acciones",
+          "ariaViewRow": "Ver solicitud {type} de {name}"
+        },
+        "status": {
+          "pending_email_verification": "Verificación pendiente",
+          "pending_admin_triage": "En triage",
+          "in_progress": "En proceso",
+          "pending_counsel_review": "Revisión de asesor",
+          "resolved": "Resuelto",
+          "rejected": "Rechazado"
+        },
+        "sla": {
+          "overdue": "VENCIDA",
+          "days": "{count} días hábiles"
+        },
+        "detail": {
+          "requester": {
+            "nombre": "Nombre",
+            "cedula": "Cédula",
+            "email": "Correo",
+            "tipo": "Tipo de solicitud",
+            "descripcion": "Descripción",
+            "enviada": "Enviada",
+            "verificada": "Verificada",
+            "pendiente": "Pendiente"
+          },
+          "resolve": {
+            "urlLabel": "URL de datos",
+            "rowsLabel": "Filas afectadas",
+            "tablesLabel": "Tablas eliminadas",
+            "notesLabel": "Notas de resolución",
+            "privateNotesLabel": "Notas adicionales (no se comparte con el solicitante)"
+          }
+        },
+        "resolve": "Resolver solicitud",
+        "reject": "Rechazar solicitud",
+        "viewAudit": "Ver en auditoría",
+        "counselGate": {
+          "title": "Requiere revisión de asesor",
+          "description": "Esta función requiere activación por el equipo de Leasefy y confirmación de asesor jurídico. Contacta a compliance@leasefy.co para habilitar la resolución de solicitudes ARCO."
+        },
+        "dialog": {
+          "reject": {
+            "title": "¿Rechazar esta solicitud?",
+            "body": "La solicitud quedará marcada como rechazada y se notificará al solicitante. Esta acción no se puede deshacer.",
+            "confirm": "Rechazar",
+            "cancel": "Cancelar"
+          }
+        },
+        "empty": {
+          "title": "Sin solicitudes ARCO",
+          "body": "Cuando los solicitantes envíen solicitudes de acceso, rectificación, cancelación u oposición, aparecerán aquí.",
+          "filteredTitle": "Sin solicitudes de este tipo",
+          "filteredBody": "No hay solicitudes de {type} pendientes."
+        },
+        "error": {
+          "load": "No se pudo cargar las solicitudes ARCO. Intenta de nuevo.",
+          "resolve": "No se pudo guardar la resolución. Verifica tu conexión e intenta de nuevo.",
+          "retry": "Reintentar"
+        },
+        "public": {
+          "title": "Solicitud de derechos ARCO",
+          "subtitle": "Ejerza sus derechos de Acceso, Rectificación, Cancelación u Oposición sobre sus datos personales conforme a la Ley 1581 de 2012.",
+          "nombreLabel": "Nombre completo",
+          "cedulaLabel": "Número de cédula",
+          "cedulaHint": "Solo números, sin puntos ni comas",
+          "emailLabel": "Correo electrónico",
+          "tipoLabel": "Tipo de solicitud",
+          "descripcionLabel": "Descripción",
+          "descripcionPlaceholder": "Describe de manera específica qué datos deseas que tratemos...",
+          "submit": "Enviar solicitud",
+          "submitting": "Enviando…",
+          "successTitle": "Revisa tu correo electrónico",
+          "successBody": "Enviamos un enlace de confirmación a {{email}}. Sigue el enlace para completar tu solicitud.",
+          "successNote": "El enlace expira en 24 horas. Si no lo recibes, revisa tu carpeta de spam.",
+          "legalFooter": "Al enviar esta solicitud, aceptas que tus datos sean procesados para atender tu solicitud conforme a nuestra",
+          "privacyLink": "política de privacidad",
+          "rateLimitTitle": "Límite alcanzado",
+          "rateLimitBody": "Has enviado demasiadas solicitudes. Intenta de nuevo en 1 hora.",
+          "submitError": "No se pudo enviar la solicitud. Intenta de nuevo.",
+          "submitAnother": "Enviar otra solicitud"
+        },
+        "verify": {
+          "confirmed": "Solicitud confirmada — un administrador la revisará pronto",
+          "sla": "El equipo de cumplimiento revisará tu solicitud en el plazo establecido por la Ley 1581 de 2012 (10–15 días hábiles)."
+        }
+      },
+      "templates": {
+        "title": "Plantillas de cobranza",
+        "breadcrumb": "Plantillas",
+        "tabs": {
+          "stages": "Etapas de cobranza (14)",
+          "whatsapp": "WhatsApp (8)",
+          "objections": "Manejadores de objeciones (5)"
+        },
+        "status": {
+          "draft": "Borrador",
+          "published": "Publicada"
+        },
+        "waStatus": {
+          "pending": "Pendiente Meta",
+          "approved": "Aprobada Meta",
+          "rejected": "Rechazada Meta"
+        },
+        "tokens": {
+          "badge": "{count} tokens"
+        },
+        "card": {
+          "lastEdited": "Última edición",
+          "edit": "Editar",
+          "ariaEdit": "Editar plantilla {name}"
+        },
+        "editor": {
+          "variables": "Variables disponibles",
+          "ariaInsertVar": "Insertar variable {name}",
+          "bodyLabel": "Cuerpo de la plantilla",
+          "previewTitle": "Vista previa",
+          "waStatusTitle": "Estado en Meta Business API",
+          "waLastChecked": "Última verificación"
+        },
+        "saveDraft": "Guardar borrador",
+        "publish": "Publicar",
+        "updateWaStatus": "Actualizar estado",
+        "dialog": {
+          "publishWa": {
+            "title": "¿Publicar y enviar a Meta?",
+            "body": "La plantilla se enviará a Meta Business API para aprobación. Los cambios entrarán en vigencia cuando Meta la apruebe (1–3 días hábiles).",
+            "confirm": "Publicar",
+            "cancel": "Cancelar"
+          },
+          "publish": {
+            "title": "¿Publicar esta plantilla?",
+            "body": "La plantilla reemplazará la versión publicada actual y comenzará a usarse en llamadas activas de inmediato.",
+            "confirm": "Publicar",
+            "cancel": "Cancelar"
+          }
+        },
+        "empty": {
+          "title": "Sin plantillas configuradas",
+          "body": "Configura plantillas de cobranza para que el agente las use en llamadas y mensajes."
+        },
+        "error": {
+          "load": "No se pudo cargar las plantillas. Intenta de nuevo.",
+          "saveDraft": "No se pudo guardar el borrador. Intenta de nuevo.",
+          "publish": "No se pudo publicar la plantilla. Intenta de nuevo.",
+          "waStatus": "No se pudo obtener el estado de Meta. Intenta de nuevo.",
+          "retry": "Reintentar"
+        }
+      },
+      "policies": {
+        "title": "Configuración de políticas",
+        "breadcrumb": "Configuración",
+        "cadencia": {
+          "title": "Cadencia de contacto",
+          "description": "Define la frecuencia máxima de contacto con los deudores por canal."
+        },
+        "negociacion": {
+          "title": "Negociación",
+          "description": "Configura los límites de descuento y planes de pago que el agente puede ofrecer."
+        },
+        "escalacion": {
+          "title": "Escalación",
+          "description": "Define cuándo y cómo el agente escala un caso."
+        },
+        "compliance": {
+          "title": "Compliance",
+          "description": "Configuraciones regulatorias requeridas por la normativa colombiana. Algunas no pueden desactivarse."
+        },
+        "fields": {
+          "maxCallsPerWeek": "Máx. llamadas por semana",
+          "maxWaPerWeek": "Máx. WhatsApp por semana",
+          "contactStartTime": "Hora inicio de contacto",
+          "contactEndTime": "Hora fin de contacto",
+          "blockDays": "Días de bloqueo",
+          "maxDiscountTier": "Descuento máximo (tier)",
+          "maxPaymentMonths": "Plan de pago máximo (meses)",
+          "minPromiseAmount": "Monto mínimo de promesa (COP)",
+          "maxDaysBeforeEscalation": "Días máx. antes de escalar",
+          "brokenPromiseThreshold": "Umbral promesas rotas",
+          "autoEscalateToLegal": "Auto-escalar a legal",
+          "verifyRne": "Verificar RNE antes de llamada",
+          "aiDisclosure": "Divulgación IA",
+          "recordCalls": "Grabación de llamadas",
+          "lockedTooltip": "Requerido por normativa colombiana. No puede desactivarse.",
+          "lockedAriaLabel": "Requerido por normativa. No se puede desactivar."
+        },
+        "unsavedChanges": "Cambios sin guardar",
+        "save": "Guardar cambios",
+        "cancel": "Cancelar",
+        "simulator": {
+          "trigger": "Simular impacto",
+          "simulating": "Simulando…",
+          "title": "Simulación de impacto",
+          "disclaimer": "Estimación basada en cambios deterministas; el agente LLM puede ajustar su tono o estrategia en formas no reflejadas aquí.",
+          "colDecision": "Decisión",
+          "colCurrent": "Sin cambios",
+          "colProposed": "Con cambios propuestos",
+          "flippedLabel": "decisiones cambiarían en los últimos 30 días",
+          "dismiss": "Descartar simulación",
+          "empty": {
+            "title": "Sin datos para simular",
+            "body": "No hay llamadas en los últimos 30 días. El simulador requiere historial de llamadas para calcular el impacto."
+          },
+          "error": "No se pudo ejecutar la simulación. Intenta de nuevo.",
+          "retry": "Reintentar"
+        },
+        "dialog": {
+          "save": {
+            "title": "¿Guardar cambios de política?",
+            "body": "Los cambios se aplicarán al agente de cobranza de inmediato. Revisa la simulación de impacto antes de confirmar.",
+            "confirm": "Guardar cambios",
+            "cancel": "Cancelar"
+          },
+          "restore": {
+            "title": "¿Restaurar versión {version}?",
+            "body": "Se creará una nueva versión activa con la configuración de la versión {version}. Las versiones anteriores no se eliminan.",
+            "confirm": "Restaurar",
+            "cancel": "Cancelar"
+          }
+        },
+        "history": {
+          "title": "Historial de versiones",
+          "version": "Versión",
+          "savedBy": "Guardada por",
+          "date": "Fecha",
+          "note": "Nota",
+          "actions": "Acciones",
+          "active": "Activa",
+          "restore": "Restaurar",
+          "ariaRestore": "Restaurar versión {version} de la política",
+          "empty": "Sin historial de versiones aún"
+        },
+        "error": {
+          "load": "No se pudo cargar la configuración de políticas. Intenta de nuevo.",
+          "save": "No se pudo guardar la política. Verifica tu conexión e intenta de nuevo.",
+          "rollback": "No se pudo restaurar la versión. Intenta de nuevo.",
+          "retry": "Reintentar"
+        }
+      },
+      "tour": {
+        "step1": {
+          "title": "Agente de Cobranza",
+          "description": "Automatizá el cobro de mora con llamadas, WhatsApp y seguimiento inteligente. Sin intervención humana para cartera estándar."
+        },
+        "step2": {
+          "title": "Agente Cotizador",
+          "description": "Evaluá a tus postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo."
+        },
+        "step3": {
+          "title": "Configuraciones y Políticas",
+          "description": "Personalizá cadencias, plantillas, políticas de escalación y compliance desde un solo panel."
+        },
+        "dismiss": "No mostrar de nuevo",
+        "next": "Siguiente",
+        "finish": "Entendido",
+        "relaunch": "Tour del panel",
+        "stepOf": "Paso {{current}} de {{total}}"
+      },
+      "hub": {
+        "empty": {
+          "title": "Aún no hay actividad reciente",
+          "description": "Las métricas aparecen cuando los agentes procesan solicitudes."
+        }
+      }
+    },
+    "hoy": {
+      "title": "Hoy",
+      "heading": "Tu inmobiliaria, en piloto",
+      "subtitle": "ERP · CRM · Autopilot, todo en uno. El sistema opera; tú tomas las decisiones.",
+      "insightsTitle": "Insights & Alertas",
+      "insightsDesc": "Pronto: qué pasa hoy y qué hacer — contratos por vencer, cartera en mora y egresos por dispersar, convertidos en acciones.",
+      "insightsExample1": "18 contratos por vencer · 6 sin gestión",
+      "insightsExample2": "42 inquilinos en mora · 11 prioritarios",
+      "insightsExample3": "$84M por dispersar · cubres 62%",
+      "insightsPronto": "Llega con la fase de Informes & Insights.",
+      "systemLabel": "Tu sistema",
+      "crmTitle": "CRM · Comercial",
+      "crmDesc": "Capta, gestiona y cierra.",
+      "erpTitle": "Financiero · ERP",
+      "erpDesc": "Recauda, factura, concilia y dispersa.",
+      "autopilotTitle": "Autopilot",
+      "autopilotDesc": "Agentes que ejecutan por ti.",
+      "opsTitle": "Operación · Docs",
+      "opsDesc": "Solicitudes, agenda y documentos.",
+      "autopilotActiveLabel": "Autopilot activo",
+      "autopilotRunning": "{{count}} agentes ejecutando"
+    },
+    "facturacion": {
+      "label": "Facturación",
+      "title": "Facturación",
+      "subtitle": "Facturas de venta y compra, facturación electrónica DIAN y notas crédito/débito — en un solo lugar.",
+      "new": "Nueva factura",
+      "newSoon": "La emisión de facturas se habilita con el motor DIAN (M2).",
+      "m2BannerTitle": "Estructura lista — el motor DIAN llega en M2",
+      "m2BannerDesc": "Esta sección ya tiene la estructura del ERP. La emisión, el CUFE y la validación DIAN se conectan con el proveedor autorizado en la fase de backend (M2).",
+      "tab_ventas": "Ventas",
+      "tab_compras": "Compras",
+      "tab_electronica": "Electrónica (DIAN)",
+      "tab_notas": "Notas (NC/ND)",
+      "desc_ventas": "Facturas por conceptos distintos al canon: reparaciones, honorarios, cobros extraordinarios, servicios.",
+      "desc_compras": "Costos y gastos de la operación: proveedores, reparaciones, servicios contratados.",
+      "desc_electronica": "Documentos electrónicos con CUFE y su estado frente a la DIAN.",
+      "desc_notas": "Notas crédito y débito asociadas a una factura.",
+      "estadosLabel": "Estados",
+      "estadoAceptada": "Aceptada DIAN",
+      "estadoPendiente": "Pendiente",
+      "estadoVencida": "Vencida",
+      "estadoBorrador": "Borrador",
+      "estadoPagada": "Pagada",
+      "estadoCredito": "A crédito",
+      "estadoEmitida": "Emitida",
+      "estadoRechazada": "Rechazada",
+      "estadoAnulada": "Anulada",
+      "estadoNotaCredito": "Nota crédito",
+      "estadoNotaDebito": "Nota débito",
+      "colNumero": "N°",
+      "colTercero": "Tercero",
+      "colConcepto": "Concepto",
+      "colFecha": "Fecha",
+      "colSubtotal": "Subtotal",
+      "colIva": "IVA",
+      "colTotal": "Total",
+      "colPago": "Pago",
+      "colDian": "DIAN",
+      "colProveedor": "Proveedor",
+      "colVence": "Vence",
+      "colTipo": "Tipo",
+      "colCufe": "CUFE",
+      "colFacturaRef": "Factura ref.",
+      "colMotivo": "Motivo",
+      "colValor": "Valor",
+      "empty_ventas_title": "Sin facturas de venta aún",
+      "empty_compras_title": "Sin facturas de compra aún",
+      "empty_electronica_title": "Sin documentos electrónicos aún",
+      "empty_notas_title": "Sin notas crédito/débito aún",
+      "emptyDesc": "Se conectarán automáticamente cuando el motor de facturación (M2) esté activo."
+    },
+    "conciliacion": {
+      "label": "Conciliación",
+      "title": "Conciliación bancaria",
+      "subtitle": "Carga el archivo del banco y concilia los movimientos contra los recaudos esperados — automático, con cola de revisión.",
+      "new": "Nueva conciliación",
+      "newSoon": "El procesamiento de la conciliación se habilita con el motor (M2).",
+      "m2BannerTitle": "Estructura lista — el motor de conciliación llega en M2",
+      "m2BannerDesc": "Esta sección ya tiene la estructura. La ingesta de archivos (Bancolombia + multi-fuente) y el matching automático se conectan en la fase de backend (M2).",
+      "uploadTitle": "Cargar fuente bancaria",
+      "uploadHint": "Arrastra el archivo de Bancolombia (o multi-fuente), o haz clic para seleccionar.",
+      "uploadSoon": "La ingesta y el matching se conectan con el motor (M2).",
+      "resumenLabel": "Resumen",
+      "caso_conciliados": "Conciliados",
+      "caso_parciales": "Parciales",
+      "caso_duplicados": "Duplicados",
+      "caso_noIdentificados": "No identificados",
+      "caso_diferencias": "Diferencia valor",
+      "caso_fueraFecha": "Fuera de fecha",
+      "movimientosTitle": "Movimientos",
+      "movimientosDesc": "Cada movimiento se cruza contra contratos/terceros; confirma o rechaza las coincidencias sugeridas.",
+      "colFecha": "Fecha",
+      "colReferencia": "Referencia",
+      "colTercero": "Tercero",
+      "colContrato": "Contrato",
+      "colValorBanco": "Valor banco",
+      "colValorEsperado": "Valor esperado",
+      "colCaso": "Caso",
+      "colAccion": "Acción",
+      "emptyTitle": "Sin movimientos aún",
+      "emptyDesc": "Carga una fuente bancaria para ver y conciliar movimientos. El motor de conciliación llega en M2."
+    },
+    "tesoreria": {
+      "label": "Tesorería",
+      "title": "Egresos a propietarios",
+      "subtitle": "El neto a pagar a cada propietario, con su desglose completo y comprobante. El procesamiento del pago vive en Dispersiones.",
+      "processCta": "Procesar en Dispersiones",
+      "m2BannerTitle": "Estructura lista — el ledger autoritativo llega en M1",
+      "m2BannerDesc": "Esta vista muestra la fórmula completa del neto. El cómputo autoritativo, los descuentos y el posteo contable se conectan en la fase de backend (M1).",
+      "formulaLabel": "Fórmula del neto",
+      "ejemplo": "Ejemplo",
+      "fCanon": "Canon recibido",
+      "fComision": "Comisión admin",
+      "fIva": "IVA sobre comisión",
+      "fDescuentos": "Descuentos",
+      "fNeto": "Neto al propietario",
+      "egresosTitle": "Egresos",
+      "egresosDesc": "Neto por propietario del periodo, con cuenta destino y comprobante.",
+      "colPropietario": "Propietario",
+      "colCanon": "Canon",
+      "colComision": "Comisión",
+      "colIva": "IVA com.",
+      "colDescuentos": "Descuentos",
+      "colNeto": "Neto",
+      "colCuenta": "Cuenta destino",
+      "colEstado": "Estado",
+      "colComprobante": "Comprobante",
+      "emptyTitle": "Sin egresos aún",
+      "emptyDesc": "Los egresos netos se calcularán cuando el motor (M1) esté activo. El procesamiento del pago se hace en Dispersiones."
+    },
+    "ap": {
+      "bill": {
+        "title": "Factura AP",
+        "backToList": "Volver a Tesorería",
+        "notFound": "Factura no encontrada",
+        "notFoundDesc": "La factura solicitada no existe o no tienes acceso.",
+        "labelInvoiceNumber": "Número de factura",
+        "labelVendor": "Proveedor",
+        "labelCostCenter": "Centro de costos",
+        "labelStatus": "Estado",
+        "labelAmount": "Monto",
+        "labelIssued": "Emitida",
+        "labelDue": "Vencimiento",
+        "labelApprovedBy": "Aprobada por",
+        "labelCreatedBy": "Creada por",
+        "noApprover": "Sin aprobador aún",
+        "statusPaid": "Pagada",
+        "statusApproved": "Aprobada",
+        "statusPendingApproval": "Pdte. aprobación",
+        "statusRejected": "Rechazada",
+        "statusVoid": "Anulada",
+        "m1BannerTitle": "Detalle de la factura AP",
+        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en la fase de backend (M1).",
+        "loadingError": "Error al cargar la factura",
+        "fetching": "Cargando factura…"
+      }
+    },
+    "pqrs": {
+      "label": "PQRS",
+      "title": "PQRS y solicitudes",
+      "subtitle": "Registra, asigna, haz seguimiento y cierra cualquier petición, queja, reclamo o solicitud de inquilinos, propietarios y terceros — en un solo lugar.",
+      "new": "Nueva solicitud",
+      "newSoon": "El registro y la asignación se habilitan con el motor de triage (IA) — M1.",
+      "m1BannerTitle": "Estructura lista — el triage con IA llega en M1",
+      "m1BannerDesc": "Esta sección ya tiene el ciclo completo. La clasificación automática, la asignación, el SLA y las notificaciones se conectan con el agente (Mastra) en la fase de backend (M1).",
+      "resumenLabel": "Por estado",
+      "estado_recibidas": "Recibidas",
+      "estado_asignadas": "Asignadas",
+      "estado_enProceso": "En proceso",
+      "estado_enCotizacion": "En cotización",
+      "estado_resueltas": "Resueltas",
+      "estado_cerradas": "Cerradas",
+      "repairFlowTitle": "Reparaciones → cotización con proveedor",
+      "repairFlowDesc": "Una solicitud de reparación pasa al flujo de cotización y aprobación en Operaciones.",
+      "listTitle": "Solicitudes",
+      "listDesc": "Cada solicitud queda radicada con su solicitante, tipo, inmueble, responsable y estado.",
+      "colRadicado": "Radicado",
+      "colSolicitante": "Solicitante",
+      "colTipo": "Tipo",
+      "colInmueble": "Inmueble / contrato",
+      "colAsignado": "Asignado a",
+      "colEstado": "Estado",
+      "colSla": "SLA",
+      "colAccion": "Acción",
+      "emptyTitle": "Sin solicitudes aún",
+      "emptyDesc": "Las PQRS y solicitudes aparecerán aquí. El registro y el triage con IA llegan en M1."
+    },
+    "agenda": {
+      "label": "Agenda",
+      "title": "Agenda interna",
+      "subtitle": "Los eventos que el sistema ya conoce —visitas, firmas pendientes, vencimientos, seguimientos e inspecciones— junto con tus tareas, ligadas a contratos, propiedades y terceros.",
+      "new": "Nueva tarea",
+      "newSoon": "La creación de tareas y la agregación de eventos se habilitan con el motor (M1).",
+      "m1BannerTitle": "Estructura lista — la agenda se llena con el motor en M1",
+      "m1BannerDesc": "Esta vista agrega eventos del sistema y tus tareas. La agregación autoritativa (visitas, firmas, vencimientos, inspecciones) y los recordatorios se conectan en la fase de backend (M1).",
+      "resumenLabel": "Próximos",
+      "tipo_visitas": "Visitas",
+      "tipo_firmas": "Firmas pendientes",
+      "tipo_vencimientos": "Vencimientos",
+      "tipo_seguimientos": "Seguimientos",
+      "tipo_inspecciones": "Inspecciones",
+      "tipo_tareas": "Tareas",
+      "listTitle": "Eventos y tareas",
+      "listDesc": "Cada evento muestra su fecha, tipo, origen (sistema o tuyo) y su vínculo con un contrato, propiedad o tercero.",
+      "colFecha": "Fecha",
+      "colEvento": "Evento",
+      "colTipo": "Tipo",
+      "colOrigen": "Origen",
+      "colVinculo": "Vínculo",
+      "colResponsable": "Responsable",
+      "colEstado": "Estado",
+      "emptyTitle": "Sin eventos aún",
+      "emptyDesc": "Tus visitas, firmas, vencimientos y tareas aparecerán aquí. La agenda se conecta con el motor en M1."
+    },
+    "terceroIA": {
+      "errorTooLarge": "La imagen supera el tamaño máximo (8 MB). Usa una foto más liviana.",
+      "docKindLabel": "Tipo de documento",
+      "intro": "Sube una foto de la cédula o el RUT y la IA prellenará el formulario del tercero. Revisa y corrige antes de guardar.",
+      "kindCedula": "Cédula",
+      "kindRut": "RUT",
+      "uploadTitle": "Subir foto del documento",
+      "uploadHint": "Arrastra o haz clic — cédula (CC/CE) o RUT, en imagen.",
+      "uploadChange": "Cambiar foto",
+      "extract": "Extraer datos",
+      "cancel": "Cancelar",
+      "extracting": "Leyendo el documento…",
+      "reviewBannerTitle": "Revisa y corrige",
+      "reviewBannerDesc": "La IA prellenó los datos (confianza {{confidence}}%). Verifícalos y completa lo que falte antes de guardar.",
+      "manualNote": "Completa los datos del tercero manualmente.",
+      "errorTitle": "No pudimos leer el documento",
+      "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes llenar el formulario manualmente.",
+      "errorGeneric": "Ocurrió un error al procesar el documento. Intenta de nuevo o llena el formulario manualmente.",
+      "errorImageOnly": "Sube una imagen (foto del documento).",
+      "retry": "Reintentar",
+      "fillManual": "Llenar manual"
+    },
+    "propertyIA": {
+      "errorAudioTooLarge": "El audio es demasiado largo. Graba una descripción más corta.",
+      "autoStopped": "Grabación detenida automáticamente (máximo 4 minutos).",
+      "confirmReextract": "Volver a procesar reemplazará los datos que editaste. ¿Continuar?",
+      "errorMicDenied": "Permiso de micrófono denegado. Habilítalo en el navegador para grabar.",
+      "errorMicNotFound": "No se encontró un micrófono.",
+      "errorMicUnsupported": "Tu navegador no permite grabar audio aquí (requiere HTTPS).",
+      "assignWarning": "La propiedad se creó, pero no se pudo asignar el agente. Asígnalo desde la lista.",
+      "photoFormatUnsupported": "Algunas fotos tienen un formato no compatible (p. ej. HEIC) y se omitieron. Usa JPG o PNG.",
+      "pageTitle": "Capturar propiedad con IA",
+      "pageSubtitle": "Graba una descripción y agrega fotos; la IA arma la ficha para que la revises.",
+      "back": "Volver a propiedades",
+      "intro": "Describe la propiedad por voz (tipo, barrio, habitaciones, baños, canon, administración, restricciones). La IA transcribe y arma la ficha; las fotos la enriquecen.",
+      "recordTitle": "Descripción por voz",
+      "startRecording": "Toca para grabar",
+      "stopRecording": "Grabando… toca para detener",
+      "recordHint": "Describe la propiedad en voz alta.",
+      "reRecord": "Grabar de nuevo",
+      "photosTitle": "Fotos (opcional)",
+      "photosHint": "Hasta 4 fotos para enriquecer la ficha.",
+      "addPhotos": "Agregar",
+      "removePhoto": "Quitar foto",
+      "cancel": "Cancelar",
+      "process": "Procesar con IA",
+      "processing": "Transcribiendo y armando la ficha…",
+      "errorMic": "No pudimos acceder al micrófono. Revisa los permisos.",
+      "errorNoAudio": "Graba una descripción primero.",
+      "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes crear la propiedad manualmente.",
+      "errorGeneric": "Ocurrió un error al procesar la captura. Intenta de nuevo o usa el formulario manual.",
+      "errorTitle": "No pudimos procesar la captura",
+      "retry": "Reintentar",
+      "manualFlow": "Crear manual",
+      "reviewBannerTitle": "Revisa y corrige",
+      "reviewBannerDesc": "La IA armó la ficha (confianza {{confidence}}%). Verifícala y ajusta lo que falte antes de crear.",
+      "fTitle": "Título",
+      "fDescription": "Descripción",
+      "fType": "Tipo de inmueble",
+      "fCity": "Ciudad",
+      "fNeighborhood": "Barrio / Zona",
+      "fAddress": "Dirección",
+      "fBedrooms": "Habitaciones",
+      "fBathrooms": "Baños",
+      "fArea": "Área (m²)",
+      "fRent": "Canon mensual (COP)",
+      "fAdminFee": "Administración (COP)",
+      "fStratum": "Estrato",
+      "selectCity": "Selecciona una ciudad",
+      "typeApartment": "Apartamento",
+      "typeHouse": "Casa",
+      "typeStudio": "Estudio",
+      "typeRoom": "Habitación",
+      "create": "Crear propiedad",
+      "creating": "Creando…",
+      "created": "Propiedad creada",
+      "createError": "Error al crear la propiedad"
+    },
+    "insights": {
+      "label": "Insights & Alertas",
+      "subtitle": "Qué pasa hoy y qué hacer — no informes estáticos, sino acciones.",
+      "previewBadge": "Vista previa",
+      "previewNote": "Ejemplos ilustrativos — se conectan con tus datos cuando el motor esté activo.",
+      "emptyTitle": "Todo al día",
+      "emptyDesc": "No hay alertas que requieran tu atención ahora.",
+      "title_contratos_por_vencer": "{{total}} contratos por vencer · {{sinGestion}} sin gestión",
+      "title_mora_prioritaria": "{{total}} inquilinos en mora · {{prioritarios}} prioritarios",
+      "title_por_dispersar": "{{monto}} por dispersar · cubres {{cobertura}}%",
+      "title_propiedad_estancada": "{{total}} propiedades estancadas (7+ días sin candidatos)",
+      "title_firma_pendiente": "{{total}} contratos esperando firma",
+      "action_contratos": "Ver contratos",
+      "action_cobranza": "Ir a cobranza",
+      "action_tesoreria": "Ver tesorería",
+      "action_propiedades": "Ver propiedades",
+      "action_firma": "Ver firmas"
+    },
+    "commandPalette": {
+      "title": "Buscar en Leasefy",
+      "inputLabel": "Buscar o escribir un comando",
+      "placeholder": "Buscar…",
+      "triggerAriaLabel": "Abrir buscador (⌘K)",
+      "resultsLabel": "Resultados de búsqueda",
+      "noResults": "Sin resultados para \"{{query}}\"",
+      "novedades": "Novedades",
+      "sources": {
+        "debtors": "Deudores",
+        "propietarios": "Propietarios",
+        "agentes": "Agentes",
+        "propiedades": "Propiedades",
+        "contratos": "Contratos",
+        "cotizaciones": "Cotizaciones",
+        "apBills": "Facturas AP"
+      },
+      "quickActions": {
+        "title": "Acciones rápidas",
+        "cobranza": "Ir a Cobranza",
+        "cotizador": "Ir a Cotizador",
+        "reportes": "Ver reportes",
+        "portafolio": "Ver portafolio",
+        "hoy": "Ver Hoy"
+      },
+      "hintNavigate": "navegar",
+      "hintOpen": "abrir",
+      "hintClose": "cerrar"
     }
   },
   "validation": {
@@ -4355,6 +6341,8 @@
       "perYear": "/ano",
       "upTo": "hasta {{limit}}",
       "payNow": "Pagar ahora",
+      "planNotFound": "No se encontró el plan seleccionado. Volvé a la lista de planes.",
+      "planLoadError": "Error al cargar el plan. Intentá de nuevo.",
       "processing": "Procesando...",
       "securePayment": "Pago seguro procesado por Stripe",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
@@ -4456,6 +6444,7 @@
       "viewPropertyAction": "Ver propiedad",
       "approvedToast": "Candidato aprobado",
       "approvedToastDesc": "Iniciando proceso de contrato con {{name}}",
+      "loadDetailError": "No se pudieron cargar los detalles del candidato.",
       "rejectedToast": "Candidato rechazado",
       "rejectedToastDesc": "{{name}} ha sido rechazado y notificado.",
       "riskAssessmentTitle": "Evaluación de Riesgo",
@@ -5138,6 +7127,34 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
+    }
+  },
+  "landlordProfile": {
+    "fields": {
+      "cedula": "Cédula"
+    }
+  },
+  "a11y": {
+    "routeAnnounce": "Navegaste a {{page}}",
+    "routes": {
+      "search": "Buscar Inmuebles",
+      "publish": "Publicar Inmueble",
+      "pricing": "Precios",
+      "signIn": "Iniciar Sesión",
+      "landlordPanel": "Panel de Propietario",
+      "tenantPanel": "Panel de Inquilino",
+      "agencyPanel": "Panel de Inmobiliaria",
+      "agencyAi": "Agentes IA",
+      "assistant": "Asistente",
+      "myApplications": "Mis Aplicaciones",
+      "myLease": "Mi Arriendo",
+      "apply": "Aplicar a Propiedad",
+      "demo": "Demo"
+    }
+  },
+  "wishlist": {
+    "errors": {
+      "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
     }
   }
 }

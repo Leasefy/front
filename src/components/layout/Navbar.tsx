@@ -145,7 +145,7 @@ export function Navbar() {
       <div className={cn(
         "rounded-2xl backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300 overflow-visible",
         isScrolled
-          ? "bg-white/95 border border-border"
+          ? "bg-white/95 dark:bg-[#18181B]/95 border border-border"
           : "bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10"
       )}>
         <div className="px-4">
@@ -285,13 +285,13 @@ export function Navbar() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.96 }}
                         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-card border border-border dark:border-border rounded-xl shadow-lg z-50 origin-top-right"
+                        className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-lg z-50 origin-top-right"
                       >
                         {/* User info */}
                         <div className="px-4 py-3 border-b border-border">
                           <p className="text-sm font-medium text-foreground">{user.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-black/5 rounded-full text-muted-foreground">
+                          <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-muted rounded-full text-muted-foreground">
                             {user.role === 'landlord' ? 'Propietario' : user.role === 'agency' ? 'Inmobiliaria' : 'Inquilino'}
                           </span>
                         </div>
@@ -301,7 +301,7 @@ export function Navbar() {
                           <Link
                             href={getDashboardLink()}
                             onClick={() => setIsUserListOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground/70 hover:text-foreground hover:bg-black/5 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground/70 hover:text-foreground hover:bg-muted transition-colors"
                           >
                             {user.role === 'landlord' ? (
                               <SquaresFour className="w-4 h-4" />
@@ -313,14 +313,14 @@ export function Navbar() {
                           <Link
                             href={getLeasesLink()}
                             onClick={() => setIsUserListOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground/70 hover:text-foreground hover:bg-black/5 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground/70 hover:text-foreground hover:bg-muted transition-colors"
                           >
                             <House className="w-4 h-4" />
                             {getLeasesLabel()}
                           </Link>
                           <button
                             onClick={handleLogout}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-foreground/70 hover:text-foreground hover:bg-black/5 transition-colors"
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-foreground/70 hover:text-foreground hover:bg-muted transition-colors"
                           >
                             <SignOut className="w-4 h-4" />
                             Cerrar sesion
@@ -626,7 +626,7 @@ export function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            className="md:hidden bg-white dark:bg-card border-t border-border dark:border-border overflow-hidden"
+            className="md:hidden bg-card border-t border-border overflow-hidden"
           >
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -645,7 +645,7 @@ export function Navbar() {
                   onClick={() => setIsMobileListOpen(false)}
                 >
                   Publicar Inmueble
-                  {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
+                  {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-foreground" />}
                 </Link>
               )}
               <Link
@@ -657,7 +657,7 @@ export function Navbar() {
                 onClick={() => setIsMobileListOpen(false)}
               >
                 Buscar Inmueble
-                {isActive('/propiedades') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
+                {isActive('/propiedades') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-foreground" />}
               </Link>
               <Link
                 href="/pricing"
@@ -668,7 +668,7 @@ export function Navbar() {
                 onClick={() => setIsMobileListOpen(false)}
               >
                 Precios
-                {isActive('/pricing') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-black" />}
+                {isActive('/pricing') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-foreground" />}
               </Link>
 
               {/* Para quién - Mobile */}
@@ -686,11 +686,11 @@ export function Navbar() {
                       )}
                       onClick={() => setIsMobileListOpen(false)}
                     >
-                      <div className="w-7 h-7 rounded-xl bg-black/[0.04] flex items-center justify-center flex-shrink-0">
+                      <div className="w-7 h-7 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
                         <Icon className="w-3.5 h-3.5 text-foreground/60" strokeWidth={1.5} />
                       </div>
                       {item.label}
-                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-black" />}
+                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-foreground" />}
                     </Link>
                   );
                 })}
@@ -709,7 +709,7 @@ export function Navbar() {
                         key={item.href}
                         className="flex items-center gap-3 min-h-[44px] py-3 text-sm text-foreground/40 cursor-not-allowed"
                       >
-                        <div className="w-7 h-7 rounded-xl bg-black/[0.04] flex items-center justify-center flex-shrink-0">
+                        <div className="w-7 h-7 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
                           <Icon className="w-3.5 h-3.5 text-foreground/30" strokeWidth={1.5} />
                         </div>
                         {item.label}
@@ -730,11 +730,11 @@ export function Navbar() {
                       )}
                       onClick={() => setIsMobileListOpen(false)}
                     >
-                      <div className="w-7 h-7 rounded-xl bg-black/[0.04] flex items-center justify-center flex-shrink-0">
+                      <div className="w-7 h-7 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
                         <Icon className="w-3.5 h-3.5 text-foreground/60" strokeWidth={1.5} />
                       </div>
                       {item.label}
-                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-black" />}
+                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-foreground" />}
                     </Link>
                   );
                 })}
@@ -745,7 +745,7 @@ export function Navbar() {
                   {/* User info */}
                   <div className="pt-3 mt-3 border-t border-border">
                     <div className="flex items-center gap-3 py-3">
-                      <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
                         <User className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div>

@@ -172,7 +172,7 @@ function DocumentosContent() {
   // API Hooks
   const { documents, isLoading: isLoadingDocuments } = usePropertyDocuments();
   const { templates, isLoading: isLoadingTemplates } = useDocumentTemplates();
-  const { actas, isLoading: isLoadingActas } = useActasEntrega();
+  const { actas, isLoading: isLoadingActas, setData: setActas } = useActasEntrega();
   const { consignaciones, isLoading: isLoadingConsignaciones } = useConsignaciones({ status: 'active' });
 
   // State
@@ -317,11 +317,29 @@ function DocumentosContent() {
     setIsActaFormOpen(true);
   };
 
-  const handleSaveActa = (data: ActaEntrega) => {
-    setIsActaFormOpen(false);
-    toast.success(t('inmobiliaria.documentos.toasts.actaCreated'), {
-      description: t('inmobiliaria.documentos.toasts.actaSaved', { type: data.type === 'entrega' ? t('inmobiliaria.documentos.actas.typeEntrega').toLowerCase() : t('inmobiliaria.documentos.actas.typeDevolucion').toLowerCase() }),
-    });
+  const handleSaveActa = async (data: ActaEntrega) => {
+    try {
+      // Persist via the real API. The form builds the acta object; the backend
+      // assigns the canonical id/timestamps and returns the persisted record.
+      const created = await actasApi.create(data);
+
+      // Update the local list with the persisted record returned by the API
+      // (not a client-fabricated object).
+      setActas((prev) => [created, ...(prev ?? [])]);
+
+      setIsActaFormOpen(false);
+      toast.success(t('inmobiliaria.documentos.toasts.actaCreated'), {
+        description: t('inmobiliaria.documentos.toasts.actaSaved', { type: created.type === 'entrega' ? t('inmobiliaria.documentos.actas.typeEntrega').toLowerCase() : t('inmobiliaria.documentos.actas.typeDevolucion').toLowerCase() }),
+      });
+    } catch (error) {
+      // Real failure: surface an error and keep the form open so the user can retry.
+      console.error('Error creating acta:', error);
+      toast.error(t('inmobiliaria.documentos.toasts.actaError'), {
+        description: t('inmobiliaria.documentos.toasts.actaErrorDesc'),
+      });
+      // Re-throw so the form's submit handler can react (clear isSubmitting / skip its own success toast).
+      throw error;
+    }
   };
 
   const handleCancelActa = () => {

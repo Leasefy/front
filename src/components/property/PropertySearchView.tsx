@@ -7,12 +7,20 @@ import { CaretDown, X } from '@phosphor-icons/react';
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
-import { PropertyMap, MapToggle } from '@/components/map';
+import dynamic from 'next/dynamic';
+import { MapToggle } from '@/components/map';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperties } from '@/lib/hooks/useProperties';
 import { cn } from '@/lib/utils';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 import type { Property } from '@/lib/types/property';
+
+// Lazy-load the map (maplibre) so its chunk is only fetched when the map panel
+// is actually mounted. ssr:false because PropertyMap touches `window`.
+const PropertyMap = dynamic(
+  () => import('@/components/map').then((m) => ({ default: m.PropertyMap })),
+  { ssr: false, loading: () => <div className="h-full w-full" /> }
+);
 
 const SORT_OPTIONS = [
   { value: 'recommended', label: 'Recomendado' },
@@ -55,6 +63,9 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
   const [showAiResults, setShowAiResults] = useState(false);
   const [aiResults, setAiResults] = useState<Property[]>([]);
   const [mapKey, setMapKey] = useState(0);
+  // On desktop the map panel is part of the split-view (always visible via lg:block),
+  // so it should mount there; on mobile it only exists when the user toggles the map.
+  const [isDesktop, setIsDesktop] = useState(false);
   const [sortBy, setSortBy] = useState('recommended');
   const [showSortList, setShowSortList] = useState(false);
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -97,6 +108,17 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
   useEffect(() => {
     const timer = setTimeout(() => setMapKey(prev => prev + 1), 100);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Track the lg breakpoint so we only mount the map (and fetch its chunk) when
+  // the split-view panel is actually visible — never in mobile list-only view.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
   }, []);
 
   // Handle AI search via backend naturalQuery
@@ -413,15 +435,17 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
                 )
           )}
         >
-          <PropertyMap
-            key={mapKey}
-            properties={mappableProperties}
-            selectedPropertyId={selectedPropertyId}
-            hoveredPropertyId={hoveredPropertyId}
-            onPropertySelect={handlePropertySelect}
-            onPropertyHover={setHoveredPropertyId}
-            className="h-full w-full"
-          />
+          {(showMap || isDesktop) && (
+            <PropertyMap
+              key={mapKey}
+              properties={mappableProperties}
+              selectedPropertyId={selectedPropertyId}
+              hoveredPropertyId={hoveredPropertyId}
+              onPropertySelect={handlePropertySelect}
+              onPropertyHover={setHoveredPropertyId}
+              className="h-full w-full"
+            />
+          )}
         </div>
       </div>
 

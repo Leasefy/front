@@ -225,11 +225,11 @@ export default function ContratosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl shadow-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                        <Scales className="w-4 h-4 text-emerald-600" />
+                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center">
+                        <Scales className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Ley 820/2003</p>
@@ -244,7 +244,7 @@ export default function ContratosPage() {
         </section>
 
         {/* Problems Bento Section */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -372,12 +372,12 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
+                      <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
                         <FileX className="w-5 h-5 text-red-500" />
                       </div>
                       <div>
@@ -425,10 +425,10 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl shadow-lg p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Proceso Legal</span>
                       <Gavel className="w-4 h-4 text-amber-500" />
@@ -442,7 +442,7 @@ export default function ContratosPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-[10px]">
                           <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full flex items-center justify-center ${item.done ? 'bg-amber-100' : 'bg-neutral-100'}`}>
+                            <div className={`w-3 h-3 rounded-full flex items-center justify-center ${item.done ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-muted'}`}>
                               {item.done && <span className="text-amber-600 text-[8px]">✓</span>}
                             </div>
                             <span className="text-muted-foreground">{item.step}</span>
@@ -451,7 +451,7 @@ export default function ContratosPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="h-px bg-border my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Total estimado:</span>
                       <span className="text-[12px] text-amber-600 font-bold">+14 meses</span>
@@ -524,11 +524,11 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-6">
-                    <PenNib className="w-6 h-6 text-emerald-600" />
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center mb-6">
+                    <PenNib className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-3">
                     Firma Digital Certificada
@@ -539,7 +539,7 @@ export default function ContratosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Ley 527/1999', 'Código OTP', 'Certificado'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -552,7 +552,7 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -567,7 +567,7 @@ export default function ContratosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['10 años', 'AES-256', 'Backup 24/7'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -616,7 +616,7 @@ export default function ContratosPage() {
         </section>
 
         {/* Contract TextTs Section */}
-        <section id="plantillas" className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section id="plantillas" className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -646,14 +646,14 @@ export default function ContratosPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className={`relative bg-sand-50 rounded-xl p-6 min-h-[180px] flex flex-col hover:shadow-lg transition-shadow cursor-pointer ${type.popular ? 'ring-2 ring-foreground/20' : ''}`}
+                  className={`relative bg-sand-50 dark:bg-card rounded-xl p-6 min-h-[180px] flex flex-col hover:shadow-lg transition-shadow cursor-pointer ${type.popular ? 'ring-2 ring-foreground/20' : ''}`}
                 >
                   {type.popular && (
                     <span className="absolute -top-2.5 left-4 px-3 py-1 text-[10px] font-mono font-normal uppercase tracking-wider bg-foreground text-white rounded-full">
                       Más usado
                     </span>
                   )}
-                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center mb-4 shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center mb-4 shadow-sm">
                     <type.icon className="w-6 h-6 text-foreground/70" />
                   </div>
                   <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">{type.name}</h3>
@@ -666,7 +666,7 @@ export default function ContratosPage() {
         </section>
 
         {/* Legal Compliance Section - Premium Redesign */}
-        <section className="bg-white py-24 lg:py-32 overflow-hidden">
+        <section className="bg-background py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             {/* Section Header */}
             <div className="mb-14 lg:mb-20">
@@ -733,10 +733,10 @@ export default function ContratosPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 }}
-                  className="bg-sand-50 rounded-xl p-6 flex-1"
+                  className="bg-sand-50 dark:bg-card rounded-xl p-6 flex-1"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center shadow-sm">
                       <PenNib className="w-6 h-6 text-foreground/70" />
                     </div>
                     <div>
@@ -772,7 +772,7 @@ export default function ContratosPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.35 }}
-                    className="bg-white rounded-xl p-5 border border-neutral-200"
+                    className="bg-card rounded-xl p-5 border border-border"
                   >
                     <p className="text-[40px] font-heading font-light text-foreground leading-none tracking-tight mb-1">
                       10
@@ -788,17 +788,17 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="md:col-span-4 bg-white rounded-xl p-6 border border-neutral-200 flex flex-col"
+                className="md:col-span-4 bg-card rounded-xl p-6 border border-border flex flex-col"
               >
-                <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
-                  <SealCheck className="w-5 h-5 text-emerald-600" />
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
+                  <SealCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h4 className="text-[17px] font-mono uppercase font-normal text-foreground mb-2">Certificado Digital</h4>
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Cada contrato incluye certificado de autenticidad con hash único verificable.
                 </p>
-                <div className="mt-4 pt-4 border-t border-neutral-100">
-                  <div className="font-mono text-[10px] text-muted-foreground bg-neutral-50 rounded-lg px-3 py-2 truncate">
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="font-mono text-[10px] text-muted-foreground bg-muted rounded-lg px-3 py-2 truncate">
                     SHA-256: a7f3c9d...e4b2
                   </div>
                 </div>
@@ -809,7 +809,7 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.45 }}
-                className="md:col-span-4 bg-white rounded-xl p-6 border border-neutral-200 flex flex-col"
+                className="md:col-span-4 bg-card rounded-xl p-6 border border-border flex flex-col"
               >
                 <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                   <Clock className="w-5 h-5 text-primary" />
@@ -818,7 +818,7 @@ export default function ContratosPage() {
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Registro inmutable de fecha y hora de cada firma con validez probatoria.
                 </p>
-                <div className="mt-4 pt-4 border-t border-neutral-100">
+                <div className="mt-4 pt-4 border-t border-border">
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     ISO 8601 + Timezone
@@ -831,16 +831,16 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="md:col-span-4 bg-white rounded-xl p-6 border border-neutral-200 flex flex-col"
+                className="md:col-span-4 bg-card rounded-xl p-6 border border-border flex flex-col"
               >
-                <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center mb-4">
-                  <Lock className="w-5 h-5 text-amber-600" />
+                <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center mb-4">
+                  <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <h4 className="text-[17px] font-mono uppercase font-normal text-foreground mb-2">Encriptación AES-256</h4>
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Datos personales protegidos con el estándar de encriptación más seguro.
                 </p>
-                <div className="mt-4 pt-4 border-t border-neutral-100">
+                <div className="mt-4 pt-4 border-t border-border">
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <Shield className="w-3.5 h-3.5" />
                     Cumple Ley 1581/2012
@@ -852,7 +852,7 @@ export default function ContratosPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="bg-white overflow-hidden">
+        <section className="bg-background overflow-hidden">
           <div className="container-platform py-[80px] pb-[100px]">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
               <motion.div
@@ -903,7 +903,7 @@ export default function ContratosPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.4, delay: offset * 0.1 }}
-                        className="bg-white rounded-xl p-8 flex flex-col"
+                        className="bg-card rounded-xl p-8 flex flex-col"
                       >
                         <div className="mb-6">
                           <svg className="w-10 h-10 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">

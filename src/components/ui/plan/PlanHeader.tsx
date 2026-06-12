@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart } from '@phosphor-icons/react';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -14,6 +14,7 @@ import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { TEAM_ROLES, AGENTE_TEAM_ENTRY, type TeamRole } from '@/lib/types/team';
 import { getTeamMembers, getPendingInvites } from '@/lib/constants/team-data';
@@ -81,6 +82,7 @@ export function PlanHeader({
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [searchFocused, setMagnifyingGlassFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [teamInviteOpen, setTeamInviteOpen] = useState(false);
@@ -105,6 +107,12 @@ export function PlanHeader({
   const permsCtx = usePermissionsContextSafe();
   const canShowAdminActions = !isInmobiliaria || (permsCtx?.isAdmin ?? false);
 
+  // Phase 38 plan 38-06 (D-38-07) — PanelPrefsContext is only mounted under
+  // /panel/inmobiliaria/*, so this header (rendered across multiple layouts)
+  // must use the safe variant and gate the "Tour del panel" link on its
+  // presence. relaunchTour is session-only (no localStorage / DB write).
+  const panelPrefs = usePanelPrefsSafe();
+
   // Route destinations depend on context
   const upgradePlanHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade';
   const manageSubscriptionHref = isInmobiliaria ? '/panel/inmobiliaria/configuracion' : '/panel/configuracion';
@@ -118,7 +126,9 @@ export function PlanHeader({
 
   const handleNotificationClick = (notification: BaseNotification) => {
     if (!notification.read) {
-      activeNotifs.markAsRead(notification.id);
+      activeNotifs.markAsRead(notification.id).catch(() => {
+        toast.error(t('header.notificationActionError'));
+      });
     }
     setNotificationsOpen(false);
     if (notification.actionUrl) {
@@ -145,6 +155,8 @@ export function PlanHeader({
     } else {
       setSearchResults([]);
     }
+    // Reset keyboard navigation whenever the query / result set changes.
+    setActiveIndex(-1);
   }, [searchQuery, isLandlord]);
 
   // Close search on click outside
@@ -173,6 +185,40 @@ export function PlanHeader({
   const groupedResults = groupSearchResults(searchResults, isLandlord);
   const recentSearches = getRecentSearches(isLandlord);
   const quickLinks = getQuickLinks(isLandlord);
+
+  // Flatten the navigable items in render order so ArrowUp/ArrowDown index math
+  // matches what the listbox shows. When the query is < 2 chars we show quick
+  // links; otherwise we show the grouped results (recent searches are not
+  // included here because they re-fill the query rather than navigate).
+  const flatResults: SearchResult[] =
+    searchQuery.length >= 2
+      ? Object.values(groupedResults).flat()
+      : quickLinks;
+  const activeOptionId =
+    activeIndex >= 0 && flatResults[activeIndex]
+      ? `plan-search-opt-${flatResults[activeIndex].id}`
+      : undefined;
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (flatResults.length === 0) return;
+      setActiveIndex((i) => Math.min(i + 1, flatResults.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (flatResults.length === 0) return;
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && flatResults[activeIndex]) {
+        e.preventDefault();
+        handleMagnifyingGlassSelect(flatResults[activeIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setMagnifyingGlassFocused(false);
+      setActiveIndex(-1);
+      e.currentTarget.blur();
+    }
+  };
 
   const getCategoryIcon = (category: SearchCategory) => {
     const icons: Record<SearchCategory, React.ReactNode> = {
@@ -205,11 +251,20 @@ export function PlanHeader({
             <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
             <input
               type="text"
+              role="combobox"
+              aria-expanded={searchFocused}
+              aria-controls="plan-search-listbox"
+              aria-autocomplete="list"
+              aria-activedescendant={activeOptionId}
+              aria-label={isLandlord
+                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
+                : t('header.search')}
               value={searchQuery}
               onChange={handleMagnifyingGlass}
               onFocus={() => setMagnifyingGlassFocused(true)}
+              onKeyDown={handleSearchKeyDown}
               placeholder={isLandlord
-                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "MagnifyingGlass properties, candidates...")
+                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
                 : t('header.search')}
               className={cn(
                 'w-full h-10 pl-10 pr-4',
@@ -222,7 +277,10 @@ export function PlanHeader({
 
             {/* MagnifyingGlass Dropdown */}
             {searchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl max-h-[400px] overflow-y-auto z-50 overflow-hidden">
+              <div
+                id="plan-search-listbox"
+                role="listbox"
+                className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-white/10 shadow-lg rounded-2xl max-h-[400px] overflow-y-auto z-50 overflow-hidden">
                 {searchQuery.length >= 2 ? (
                   // Show search results
                   searchResults.length > 0 ? (
@@ -234,11 +292,21 @@ export function PlanHeader({
                               {getCategoryLabel(category as SearchCategory)}
                             </p>
                           </div>
-                          {items.map((result) => (
+                          {items.map((result) => {
+                            const optIndex = flatResults.indexOf(result);
+                            const isActive = optIndex === activeIndex;
+                            return (
                             <button
                               key={result.id}
+                              id={`plan-search-opt-${result.id}`}
+                              role="option"
+                              aria-selected={isActive}
                               onClick={() => handleMagnifyingGlassSelect(result)}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"
+                              onMouseEnter={() => setActiveIndex(optIndex)}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
+                                isActive ? "bg-neutral-50 dark:bg-white/5" : "hover:bg-neutral-50 dark:hover:bg-white/5"
+                              )}
                             >
                               <div className="w-9 h-9 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                                 {getCategoryIcon(result.category)}
@@ -252,7 +320,8 @@ export function PlanHeader({
                                 </p>
                               </div>
                             </button>
-                          ))}
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
@@ -279,11 +348,21 @@ export function PlanHeader({
                         {locale === 'es' ? 'Accesos rápidos' : 'Quick Links'}
                       </p>
                     </div>
-                    {quickLinks.map((link) => (
+                    {quickLinks.map((link) => {
+                      const optIndex = flatResults.indexOf(link);
+                      const isActive = optIndex === activeIndex;
+                      return (
                       <button
                         key={link.id}
+                        id={`plan-search-opt-${link.id}`}
+                        role="option"
+                        aria-selected={isActive}
                         onClick={() => handleMagnifyingGlassSelect(link)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"
+                        onMouseEnter={() => setActiveIndex(optIndex)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
+                          isActive ? "bg-neutral-50 dark:bg-white/5" : "hover:bg-neutral-50 dark:hover:bg-white/5"
+                        )}
                       >
                         <div className="w-9 h-9 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center text-neutral-500 dark:text-neutral-400">
                           {getCategoryIcon(link.category)}
@@ -297,14 +376,15 @@ export function PlanHeader({
                           </p>
                         </div>
                       </button>
-                    ))}
+                      );
+                    })}
 
                     {/* Recent MagnifyingGlasses */}
                     {recentSearches.length > 0 && (
                       <>
                         <div className="px-4 py-2.5 bg-neutral-50 dark:bg-white/5 border-t border-b border-neutral-100 dark:border-white/10">
                           <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                            {locale === 'es' ? 'Búsquedas recientes' : 'Recent MagnifyingGlasses'}
+                            {locale === 'es' ? 'Búsquedas recientes' : 'Recent searches'}
                           </p>
                         </div>
                         {recentSearches.map((search, index) => (
@@ -354,6 +434,7 @@ export function PlanHeader({
                       <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">Tu Suscripción</h3>
                       <button
                         onClick={() => setSubscriptionOpen(false)}
+                        aria-label={t('common.close')}
                         className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -461,6 +542,7 @@ export function PlanHeader({
                       <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">Invitar al Equipo</h3>
                       <button
                         onClick={() => setTeamInviteOpen(false)}
+                        aria-label={t('common.close')}
                         className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -668,9 +750,10 @@ export function PlanHeader({
                 <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white">{t('header.notifications')}</h3>
                 <button
                   onClick={() => setNotificationsOpen(false)}
+                  aria-label={t('common.close')}
                   className="text-plan-muted hover:text-plan-secondary"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -777,7 +860,9 @@ export function PlanHeader({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            activeNotifs.deleteNotification(notification.id);
+                            activeNotifs.deleteNotification(notification.id).catch(() => {
+                              toast.error(t('header.notificationActionError'));
+                            });
                           }}
                           className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
                           title="Eliminar"
@@ -896,6 +981,22 @@ export function PlanHeader({
                     {locale === 'es' ? 'Mi Plan' : 'My Plan'}
                   </Link>
                 </DropdownListItem>
+              )}
+              {/* Phase 38 plan 38-06 (XR-08) — "Tour del panel" relaunch link.
+                  Only rendered for agency users on routes where PanelPrefsContext
+                  is mounted (the inmobiliaria layout). Session-only flip; no
+                  localStorage or DB write. */}
+              {user?.role === 'agency' && panelPrefs && (
+                <>
+                  <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
+                  <DropdownListItem
+                    onClick={() => panelPrefs.relaunchTour()}
+                    className="flex items-center gap-3 px-3 py-2 text-[13px] text-neutral-700 dark:!text-white hover:bg-neutral-50 dark:hover:bg-white/10 rounded-xl cursor-pointer"
+                  >
+                    <Compass className="w-4 h-4 stroke-[1.5px] text-neutral-500 dark:!text-neutral-300" aria-hidden="true" />
+                    {t('inmobiliaria.ai.tour.relaunch')}
+                  </DropdownListItem>
+                </>
               )}
               <DropdownListSeparator className="bg-neutral-100 dark:bg-white/10 my-1" />
               <DropdownListItem asChild>

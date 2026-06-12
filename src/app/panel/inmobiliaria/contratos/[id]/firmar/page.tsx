@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
+import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 
 // ─── Content ─────────────────────────────────────────────────────────────────
 
@@ -189,7 +190,7 @@ function FirmarContratoContent() {
           ) : preview?.origin === 'GENERATED' ? (
             <div
               className="prose prose-sm max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: preview.html }}
+              {...sanitizeContractHtml(preview.html)}
             />
           ) : (
             <p className="text-sm text-muted-foreground text-center py-10">

@@ -134,8 +134,8 @@ export default function EmpresasCalculadoraPage() {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="lg:col-span-5"
               >
-                <div className="bg-white rounded-sm overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
-                  <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                <div className="bg-card rounded-sm overflow-hidden border border-border">
+                  <div className="px-6 py-4 border-b border-border">
                     <h2 className="text-[16px] font-heading font-medium text-foreground">
                       ¿Cuántas evaluaciones al mes?
                     </h2>
@@ -154,8 +154,7 @@ export default function EmpresasCalculadoraPage() {
                           max="200"
                           value={quantity}
                           onChange={(e) => setQuantity(Math.max(1, Math.min(200, parseInt(e.target.value) || 1)))}
-                          className="w-16 h-9 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-sm focus:outline-none focus:ring-2 focus:ring-foreground/10"
-                          style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+                          className="w-16 h-9 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-sm border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
                         />
                       </div>
 
@@ -201,11 +200,11 @@ export default function EmpresasCalculadoraPage() {
                       <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
                         Costo por plan
                       </label>
-                      <div className="rounded-sm overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div className="rounded-sm overflow-hidden border border-border">
                         {/* Starter */}
                         <div className={cn(
                           'flex items-center justify-between px-4 py-3 transition-all duration-200',
-                          bestPlan === 'starter' ? 'bg-foreground text-background' : 'bg-white'
+                          bestPlan === 'starter' ? 'bg-foreground text-background' : 'bg-card'
                         )}>
                           <div className="flex items-center gap-2">
                             <span className={cn("text-[13px] font-medium", bestPlan === 'starter' ? 'text-background' : 'text-foreground')}>
@@ -248,7 +247,7 @@ export default function EmpresasCalculadoraPage() {
                         {/* Flex */}
                         <div className={cn(
                           'flex items-center justify-between px-4 py-3 transition-all duration-200',
-                          bestPlan === 'flex' ? 'bg-foreground text-background' : 'bg-white'
+                          bestPlan === 'flex' ? 'bg-foreground text-background' : 'bg-card'
                         )}>
                           <div className="flex items-center gap-2">
                             <span className={cn("text-[13px] font-medium", bestPlan === 'flex' ? 'text-background' : 'text-foreground')}>
@@ -351,13 +350,13 @@ export default function EmpresasCalculadoraPage() {
                     {/* CTA */}
                     {bestPlan === 'flex' ? (
                       <a href="mailto:ventas@leasefy.co?subject=Plan%20Flex%20-%20Consulta">
-                        <Button className="w-full h-12 rounded-sm bg-white text-foreground hover:bg-white/90 text-[14px] font-medium">
+                        <Button className="w-full h-12 rounded-sm bg-white text-neutral-900 hover:bg-white/90 text-[14px] font-medium">
                           Contactar ventas
                         </Button>
                       </a>
                     ) : (
                       <Link href="/auth">
-                        <Button className="w-full h-12 rounded-sm bg-white text-foreground hover:bg-white/90 text-[14px] font-medium">
+                        <Button className="w-full h-12 rounded-sm bg-white text-neutral-900 hover:bg-white/90 text-[14px] font-medium">
                           {bestPlan === 'starter' ? 'Empezar gratis' : 'Empezar con Pro'}
                         </Button>
                       </Link>
@@ -366,7 +365,7 @@ export default function EmpresasCalculadoraPage() {
                 </div>
 
                 {/* Features comparison */}
-                <div className="bg-white rounded-sm p-6" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
+                <div className="bg-card rounded-sm p-6 border border-border">
                   <h3 className="text-[14px] font-medium text-foreground mb-5">Comparación de evaluaciones por plan</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -402,8 +401,7 @@ export default function EmpresasCalculadoraPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="relative bg-muted/50 rounded-sm p-6 overflow-hidden"
-                    style={{ border: '1px solid rgba(0,0,0,0.08)' }}
+                    className="relative bg-muted/50 rounded-sm p-6 overflow-hidden border border-border"
                   >
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-sm bg-foreground/5 flex items-center justify-center flex-shrink-0">
@@ -443,7 +441,7 @@ export default function EmpresasCalculadoraPage() {
         </section>
 
         {/* Cost Comparison Table */}
-        <section className="py-16 lg:py-20 bg-white">
+        <section className="py-16 lg:py-20 bg-background">
           <div className="container-platform">
             <div className="mb-12">
               <SectionLabel>Referencia</SectionLabel>

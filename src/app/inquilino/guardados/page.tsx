@@ -9,7 +9,7 @@ import { useWishlist } from '@/lib/stores/wishlist';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
-import { useFeaturedProperties } from '@/lib/hooks/useProperties';
+import { useWishlistedProperties } from '@/lib/hooks/useProperties';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { Button } from '@/components/ui/button';
@@ -18,16 +18,21 @@ import type { Property } from '@/lib/types/property';
 export default function GuardadosPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { getWishlistedProperties, removeFromWishlist, count } = useWishlist();
-  const { properties: allProperties } = useFeaturedProperties(100);
+  const { wishlist, removeFromWishlist } = useWishlist();
+  // Resolve the actual wishlisted properties directly by ID (no top-100 ceiling,
+  // so saved items never vanish just because they fall outside the featured page).
+  const { properties: resolvedProperties } = useWishlistedProperties(
+    isOnboardingComplete ? wishlist : [],
+  );
 
   // Property detail sheet state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Only show wishlist if onboarding is complete
-  const properties = isOnboardingComplete ? getWishlistedProperties(allProperties) : [];
-  const displayCount = isOnboardingComplete ? count : 0;
+  // Only show wishlist if onboarding is complete. Derive the count from what is
+  // actually resolved so the cards and the count always agree.
+  const properties = isOnboardingComplete ? resolvedProperties : [];
+  const displayCount = properties.length;
 
   const handleViewProperty = (property: Property) => {
     setSelectedProperty(property);
@@ -70,7 +75,7 @@ export default function GuardadosPage() {
               </h1>
               <p className="mt-2 text-neutral-500 dark:text-neutral-400">
                 {displayCount === 0
-                  ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'FloppyDisk properties you like to view them later')
+                  ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'Save properties you like to view them later')
                   : displayCount === 1
                   ? (locale === 'es' ? '1 propiedad guardada' : '1 saved property')
                   : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)}
@@ -81,7 +86,7 @@ export default function GuardadosPage() {
               className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
             >
               <MagnifyingGlass className="w-4 h-4" />
-              {locale === 'es' ? 'Buscar propiedades' : 'MagnifyingGlass properties'}
+              {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
             </Link>
           </div>
         </motion.header>
@@ -122,7 +127,7 @@ export default function GuardadosPage() {
                   <div className="w-8 h-8 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
                     <MagnifyingGlass className="w-4 h-4" />
                   </div>
-                  <span>{locale === 'es' ? 'Busca propiedades' : 'MagnifyingGlass properties'}</span>
+                  <span>{locale === 'es' ? 'Busca propiedades' : 'Search properties'}</span>
                 </div>
                 <CaretRight className="w-4 h-4 hidden sm:block" />
                 <div className="flex items-center gap-2">

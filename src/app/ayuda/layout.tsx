@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { FAQJsonLd } from "@/components/seo/JsonLd";
-import { ForceLightMode } from "@/components/providers/ForceLightMode";
 
 export const metadata: Metadata = {
   title: "Centro de Ayuda y Preguntas Frecuentes",
@@ -29,5 +28,5 @@ export default function AyudaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <ForceLightMode>{children}</ForceLightMode>;
+  return <>{children}</>;
 }

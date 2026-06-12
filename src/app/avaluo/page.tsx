@@ -1,0 +1,152 @@
+import Link from "next/link";
+import {
+  Buildings,
+  CreditCard,
+  FileText,
+  Seal,
+} from "@phosphor-icons/react/dist/ssr";
+import { Button } from "@/components/ui/button";
+
+// ---------------------------------------------------------------------------
+// Metadata for this specific page is inherited from avaluo/layout.tsx
+// ---------------------------------------------------------------------------
+
+const HOW_IT_WORKS = [
+  {
+    step: "01",
+    icon: FileText,
+    title: "SOLICITAR",
+    tagline: "EN MINUTOS, NO SEMANAS",
+    body: "Ingresá los datos del inmueble, subí unas fotos y aceptá las autorizaciones de datos. Sin papeleo físico.",
+  },
+  {
+    step: "02",
+    icon: CreditCard,
+    title: "PAGAR",
+    tagline: "PAGO SEGURO EN LÍNEA",
+    body: "Una vez revisada tu solicitud, recibís el link de pago. Tarjeta, PSE o transferencia bancaria.",
+  },
+  {
+    step: "03",
+    icon: Seal,
+    title: "RECIBIR CERTIFICADO",
+    tagline: "INFORME FIRMADO POR VALUADOR",
+    body: "Descargá tu avalúo comercial certificado en PDF. Válido ante entidades financieras, notarías y juzgados.",
+  },
+] as const;
+
+export default function AvaluoPage() {
+  return (
+    <main className="min-h-screen bg-background">
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="flex flex-col items-center justify-center px-4 pt-24 pb-16 text-center section-padding">
+        {/* Overline label */}
+        <p className="text-overline text-indigo-600 mb-6 tracking-widest">
+          LEASEFY VALUACIONES
+        </p>
+
+        {/* Headline — §10.2 highlighted word treatment */}
+        <h1 className="text-display max-w-3xl mx-auto leading-tight">
+          Avalúo comercial{" "}
+          <span className="inline-block px-4 py-1 rounded-2xl bg-indigo-500 text-white font-mono uppercase">
+            CERTIFICADO
+          </span>
+        </h1>
+
+        {/* Description */}
+        <p className="text-body-lg text-muted-foreground max-w-xl mx-auto mt-6 leading-relaxed">
+          Valoración profesional de tu inmueble para compraventa, arrendamiento,
+          crédito hipotecario o procesos legales. Emitido por valuadores
+          certificados. Entrega en&nbsp;48&nbsp;h.
+        </p>
+
+        {/* CTA — primary button uppercase (DESIGN.md §4 buttons hard rule) */}
+        <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+          <Button asChild size="lg">
+            <Link href="/avaluo/nuevo">SOLICITAR AVALÚO</Link>
+          </Button>
+        </div>
+
+        {/* Trust micro-copy */}
+        <p className="mt-5 text-xs text-muted-foreground font-mono tracking-wide uppercase">
+          Sin compromiso · Pago solo si aprobás · 100% en línea
+        </p>
+      </section>
+
+      {/* ── Cómo funciona — Step cards (DESIGN.md §10.4) ─────────────────── */}
+      <section className="px-4 pb-24 max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <p className="text-overline text-muted-foreground tracking-widest mb-2">
+            EL PROCESO
+          </p>
+          <h2 className="text-h2">Cómo funciona</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {HOW_IT_WORKS.map(({ step, icon: Icon, title, tagline, body }) => (
+            <article
+              key={step}
+              className="rounded-2xl border border-border bg-card p-8 space-y-6"
+            >
+              {/* Number + icon row */}
+              <div className="flex items-start justify-between">
+                <span className="text-7xl font-light text-indigo-100 font-mono leading-none">
+                  {step}
+                </span>
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-6 h-6 text-indigo-600" aria-hidden="true" />
+                </div>
+              </div>
+
+              {/* Step title */}
+              <h3 className="text-2xl font-mono uppercase tracking-tight">
+                {title}
+              </h3>
+
+              {/* Indigo tagline */}
+              <p className="text-xs font-mono uppercase tracking-wider text-indigo-600">
+                {tagline}
+              </p>
+
+              {/* Body */}
+              <p className="text-body-sm text-muted-foreground">{body}</p>
+            </article>
+          ))}
+        </div>
+
+        {/* Secondary CTA at bottom */}
+        <div className="mt-12 text-center">
+          <Button asChild size="lg">
+            <Link href="/avaluo/nuevo">SOLICITAR AVALÚO</Link>
+          </Button>
+          <p className="mt-4 text-xs text-muted-foreground">
+            También podés escribirnos a{" "}
+            <a
+              href="mailto:avaluos@leasefy.co"
+              className="underline underline-offset-2"
+            >
+              avaluos@leasefy.co
+            </a>
+          </p>
+        </div>
+      </section>
+
+      {/* ── Buildings icon strip — visual anchor above footer ─────────────── */}
+      <section className="bg-muted/50 border-t border-border py-10 px-4">
+        <div className="max-w-3xl mx-auto flex flex-col items-center gap-4 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
+            <Buildings className="w-7 h-7 text-indigo-600" aria-hidden="true" />
+          </div>
+          <p className="text-body-sm text-muted-foreground max-w-md">
+            Avaluadores registrados en la{" "}
+            <span className="font-semibold text-foreground">
+              Lonja de Propiedad Raíz
+            </span>
+            . Informes aceptados por bancos, notarías y despachos judiciales en
+            todo el territorio nacional.
+          </p>
+        </div>
+      </section>
+    </main>
+  );
+}

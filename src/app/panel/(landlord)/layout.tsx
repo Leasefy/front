@@ -171,7 +171,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
       )}>
         <PlanHeader />
-        <main>
+        <main id="main-content" tabIndex={-1}>
           {children}
         </main>
       </div>

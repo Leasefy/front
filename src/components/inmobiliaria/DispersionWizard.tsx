@@ -32,6 +32,7 @@ import {
   useConsignaciones,
   useDispersiones,
 } from '@/lib/hooks/useInmobiliaria';
+import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { ComisionDesglose } from './ComisionDesglose';
 
 interface DispersionWizardProps {
@@ -365,19 +366,26 @@ export function DispersionWizard({
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Mark as completed
-      const completedDispersiones = state.generatedDispersiones.map((d) =>
+      // Persist each selected dispersion via the real API. The backend
+      // assigns id/status/transferReference — we never fabricate them here.
+      const toPersist = state.generatedDispersiones.filter((d) =>
         state.selectedForApproval.includes(d.id)
-          ? {
-              ...d,
-              status: 'completed' as DispersionStatus,
-              processedAt: new Date().toISOString(),
-              transferReference: `TRF-${state.month.replace('-', '')}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-            }
-          : d
+      );
+
+      const completedDispersiones = await Promise.all(
+        toPersist.map((d) => {
+          const payload: Partial<Dispersion> = {
+            propietarioId: d.propietarioId,
+            propietarioName: d.propietarioName,
+            propietarioBankAccount: d.propietarioBankAccount,
+            month: d.month,
+            items: d.items,
+            totalCollected: d.totalCollected,
+            totalCommission: d.totalCommission,
+            netToPropietario: d.netToPropietario,
+          };
+          return dispersionesApi.create(payload);
+        })
       );
 
       toast.success('Dispersiones generadas correctamente', {

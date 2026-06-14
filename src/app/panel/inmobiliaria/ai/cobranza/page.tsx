@@ -19,6 +19,7 @@ import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import { CobranzaKpiStrip } from '@/components/inmobiliaria/cobranza/CobranzaKpiStrip'
+import { CobranzaWowBanner } from '@/components/inmobiliaria/cobranza/CobranzaWowBanner'
 import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
 import { CobranzaFunnelChart } from '@/components/inmobiliaria/cobranza/CobranzaFunnelChart'
 import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed'
@@ -76,6 +77,20 @@ export default function CobranzaOverviewPage() {
       })
       .slice(0, 25)
   }, [realtimeTransitions, data?.lastTransitions])
+
+  // ── Momento wow (visión #21) — datos del overview para el banner ──────────
+  // enMora = suma de counts de S1..SX (S0 = al día, queda fuera).
+  const enMora = useMemo(
+    () =>
+      (data?.stages ?? [])
+        .filter((s) => s.stage !== 'S0')
+        .reduce((acc, s) => acc + s.count, 0),
+    [data?.stages],
+  )
+  const prejuridicoCount = useMemo(
+    () => data?.stages.find((s) => s.stage === 'S3')?.count ?? 0,
+    [data?.stages],
+  )
 
   // Stage click — drill into /deudores, which prefills its filters from ?stage=
   // (DeudoresListClient reads the querystring). Pushing ?stage= onto THIS page
@@ -221,6 +236,17 @@ export default function CobranzaOverviewPage() {
           </p>
         )}
       </header>
+
+      {/* Momento wow — banner narrativo + 4 cards de beneficio (visión #21).
+          Daily-report / cartas / siniestros se cargan dentro del banner; si
+          fallan, degrada a los datos del overview sin romper la página. */}
+      <CobranzaWowBanner
+        enMora={enMora}
+        gestionados={data?.kpis.llamadasHoy ?? 0}
+        escalacionesPendientes={data?.kpis.escalacionesPendientes ?? 0}
+        prejuridicoCount={prejuridicoCount}
+        pagadoHoyCopFallback={data?.kpis.pagadoHoyCop ?? 0}
+      />
 
       {/* Acción principal + ¿Cómo funciona? — patrón avalúos (card + 4 pasos) */}
       <section className="space-y-4" data-testid="cobranza-accion">

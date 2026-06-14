@@ -4231,7 +4231,12 @@
         "avaluosCola": "Mis solicitudes",
         "avaluosConfiguracion": "Configuración",
         "cotizadorCola": "Por revisar",
-        "cobranzaReporte": "Reporte diario"
+        "cobranzaReporte": "Reporte diario",
+        "cobranzaResumen": "Resumen",
+        "cobranzaCasos": "Casos",
+        "cobranzaPendientes": "Pendientes",
+        "cobranzaPlaybooks": "Playbooks",
+        "cobranzaReportes": "Reportes"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -4704,6 +4709,63 @@
         "contactAdmin": "Contacta al administrador de tu inmobiliaria para solicitar acceso."
       },
       "cobranza": {
+        "resumen": {
+          "wow": {
+            "titulo": "Tu cobranza hoy",
+            "frase": "Tienes {{enMora}} casos en mora. El agente ya gestionó {{gestionados}} hoy, recaudó {{recuperadoCop}}, hay {{promesas}} promesas de pago activas y {{porAprobar}} decisiones esperan tu aprobación."
+          },
+          "bloques": {
+            "recuperadoHoy": "Recaudado hoy",
+            "promesasHoy": "Promesas de hoy",
+            "porAprobar": "Esperan tu aprobación",
+            "riesgoJuridico": "Candidatos a prejurídico",
+            "verPendientes": "Ver pendientes"
+          }
+        },
+        "pendientes": {
+          "pageTitle": "Qué necesita tu atención",
+          "desc": "Las decisiones del día, priorizadas: el agente trabaja solo lo demás.",
+          "vacio": "Todo al día",
+          "vacioHint": "El agente está gestionando la cartera. Cuando algo requiera tu decisión, aparecerá aquí.",
+          "grupoEscalaciones": "Escalaciones",
+          "grupoCartas": "Cartas prejurídicas por aprobar",
+          "grupoSiniestros": "Siniestros por aprobar",
+          "grupoPlanes": "Acuerdos de pago por aprobar",
+          "grupoPromesas": "Promesas de pago de hoy",
+          "prioridadAlta": "Alta",
+          "prioridadMedia": "Media",
+          "prioridadBaja": "Baja",
+          "motivo": "Motivo",
+          "accionSugerida": "Acción sugerida",
+          "resolver": "Resolver",
+          "aprobar": "Aprobar",
+          "revisar": "Revisar",
+          "seguimiento": "Dar seguimiento"
+        },
+        "estados": {
+          "alDia": "Al día",
+          "porVencer": "Por vencer",
+          "enRecordatorio": "En recordatorio",
+          "esperandoRespuesta": "Esperando respuesta",
+          "promesaActiva": "Promesa de pago activa",
+          "promesaIncumplida": "Promesa incumplida",
+          "pagoEnVerificacion": "Pago en verificación",
+          "acuerdoParcial": "Acuerdo parcial",
+          "escalado": "Escalado a humano",
+          "prejuridicoSugerido": "Prejurídico sugerido",
+          "pausado": "Pausado"
+        },
+        "detalle": {
+          "contexto": "Contexto",
+          "conversacion": "Conversación e historial",
+          "recomendacion": "Recomendación del agente",
+          "proximaAccionTitulo": "Próxima acción programada",
+          "porQue": "Por qué",
+          "saldoPendiente": "Saldo pendiente",
+          "pagosRecibidos": "Pagos recibidos",
+          "llamadasRealizadas": "Llamadas realizadas",
+          "accionesRapidas": "Acciones rápidas"
+        },
         "overview": {
           "title": "Cobranza",
           "subtitle": "El agente cobra por ti; tú decides solo los casos críticos.",

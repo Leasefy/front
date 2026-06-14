@@ -89,6 +89,65 @@ export function stageChannelIcon(channel: 'voice' | 'whatsapp' | 'email'): strin
 }
 
 // =============================================================================
+// Human case state (vision #13 — estados humanos sobre etapas técnicas)
+// =============================================================================
+
+/**
+ * Maps a case's raw signals to the human-readable state i18n key
+ * (`inmobiliaria.ai.cobranza.estados.*`).
+ *
+ * Precedence (first match wins):
+ *  1. `isPaused`            → `pausado`            (a paused case is paused, no matter what)
+ *  2. `escalated`           → `escalado`           (human took over / urgent queue)
+ *  3. `hasBrokenPromise`    → `promesaIncumplida`  (a broken promise outranks an open one)
+ *  4. `hasOpenPromise`      → `promesaActiva`
+ *  5. Otherwise, by stage:
+ *     - S0        → `porVencer`
+ *     - S1        → `enRecordatorio`
+ *     - S2        → `esperandoRespuesta`
+ *     - S3        → `prejuridicoSugerido`
+ *     - S4 / S5   → `escalado`
+ *     - SX (and any unknown stage) → `esperandoRespuesta`
+ *
+ * Returns the FULL i18n key — render with `t(humanCaseState(...))`.
+ */
+export function humanCaseState({
+  stage,
+  isPaused,
+  hasOpenPromise,
+  hasBrokenPromise,
+  escalated,
+}: {
+  stage: string
+  isPaused?: boolean
+  hasOpenPromise?: boolean
+  hasBrokenPromise?: boolean
+  escalated?: boolean
+}): string {
+  const NS = 'inmobiliaria.ai.cobranza.estados'
+  if (isPaused) return `${NS}.pausado`
+  if (escalated) return `${NS}.escalado`
+  if (hasBrokenPromise) return `${NS}.promesaIncumplida`
+  if (hasOpenPromise) return `${NS}.promesaActiva`
+  switch (stage) {
+    case 'S0':
+      return `${NS}.porVencer`
+    case 'S1':
+      return `${NS}.enRecordatorio`
+    case 'S2':
+      return `${NS}.esperandoRespuesta`
+    case 'S3':
+      return `${NS}.prejuridicoSugerido`
+    case 'S4':
+    case 'S5':
+      return `${NS}.escalado`
+    case 'SX':
+    default:
+      return `${NS}.esperandoRespuesta`
+  }
+}
+
+// =============================================================================
 // Relative time utility (shared across cobranza components — no date-fns)
 // =============================================================================
 

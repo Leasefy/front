@@ -4230,7 +4230,12 @@
         "avaluosCola": "My requests",
         "avaluosConfiguracion": "Settings",
         "cotizadorCola": "To review",
-        "cobranzaReporte": "Daily report"
+        "cobranzaReporte": "Daily report",
+        "cobranzaResumen": "Overview",
+        "cobranzaCasos": "Cases",
+        "cobranzaPendientes": "Pending",
+        "cobranzaPlaybooks": "Playbooks",
+        "cobranzaReportes": "Reports"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -4703,6 +4708,63 @@
         "contactAdmin": "Contact your agency administrator to request access."
       },
       "cobranza": {
+        "resumen": {
+          "wow": {
+            "titulo": "Your collections today",
+            "frase": "You have {{enMora}} overdue cases. The agent already handled {{gestionados}} today, collected {{recuperadoCop}}, there are {{promesas}} active payment promises and {{porAprobar}} decisions awaiting your approval."
+          },
+          "bloques": {
+            "recuperadoHoy": "Collected today",
+            "promesasHoy": "Today's promises",
+            "porAprobar": "Awaiting your approval",
+            "riesgoJuridico": "Pre-legal candidates",
+            "verPendientes": "View pending"
+          }
+        },
+        "pendientes": {
+          "pageTitle": "What needs your attention",
+          "desc": "Today's decisions, prioritized: the agent handles everything else on its own.",
+          "vacio": "All caught up",
+          "vacioHint": "The agent is managing the portfolio. When something needs your decision, it will show up here.",
+          "grupoEscalaciones": "Escalations",
+          "grupoCartas": "Pre-legal letters to approve",
+          "grupoSiniestros": "Claims to approve",
+          "grupoPlanes": "Payment agreements to approve",
+          "grupoPromesas": "Today's payment promises",
+          "prioridadAlta": "High",
+          "prioridadMedia": "Medium",
+          "prioridadBaja": "Low",
+          "motivo": "Reason",
+          "accionSugerida": "Suggested action",
+          "resolver": "Resolve",
+          "aprobar": "Approve",
+          "revisar": "Review",
+          "seguimiento": "Follow up"
+        },
+        "estados": {
+          "alDia": "On track",
+          "porVencer": "Due soon",
+          "enRecordatorio": "In reminders",
+          "esperandoRespuesta": "Waiting for reply",
+          "promesaActiva": "Active payment promise",
+          "promesaIncumplida": "Broken promise",
+          "pagoEnVerificacion": "Payment under verification",
+          "acuerdoParcial": "Partial agreement",
+          "escalado": "Escalated to human",
+          "prejuridicoSugerido": "Pre-legal suggested",
+          "pausado": "Paused"
+        },
+        "detalle": {
+          "contexto": "Context",
+          "conversacion": "Conversation & history",
+          "recomendacion": "Agent's recommendation",
+          "proximaAccionTitulo": "Next scheduled action",
+          "porQue": "Why",
+          "saldoPendiente": "Outstanding balance",
+          "pagosRecibidos": "Payments received",
+          "llamadasRealizadas": "Calls made",
+          "accionesRapidas": "Quick actions"
+        },
         "overview": {
           "title": "Collections",
           "subtitle": "The agent collects for you; you only decide the critical cases.",

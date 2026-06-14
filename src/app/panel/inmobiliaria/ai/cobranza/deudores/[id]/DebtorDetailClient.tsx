@@ -1,16 +1,22 @@
 'use client'
 
 /**
- * DebtorDetailClient — Phase 31 plan 31-09 (COBR-UI-03, COBR-UI-14).
+ * DebtorDetailClient — Phase 31 plan 31-09 (COBR-UI-03, COBR-UI-14),
+ * reorganized per visión #14 (vista de caso en 3 zonas).
  *
  * Orchestrator for /panel/inmobiliaria/ai/cobranza/deudores/[id]:
- *  - Single useDebtorDetail() call → feeds header + sidebar
+ *  - Single useDebtorDetail() call → feeds header + the 3 zones
+ *  - 3 zones at lg+ (stacked below):
+ *      IZQUIERDA  → DebtorSidebar (contexto: estado humano + KPIs + PII)
+ *      CENTRO     → the 5 tabs (conversación e historial) — unchanged
+ *      DERECHA    → DebtorActionRail (próxima acción + acciones rápidas)
+ *  - useDebtorCompromisos() here feeds humanCaseState() with the open/broken
+ *    promise booleans (escalated omitted — no cheap per-debtor source).
  *  - Lazy-mount tabs per D-31-09 (non-active tab unmounts, hooks idle)
- *  - sm: bottom-drawer tab switcher + sidebar collapsed to sticky bottom bar
- *  - md+: horizontal tab nav + sticky right sidebar
  *  - PIIRevealContextProvider wraps everything; single shared PIIRevealModal
  *    lifted to this level (Task 6 wiring)
  *  - ?tab=… deep links read on mount and written on tab change (shallow)
+ *  - Realtime channels (31-11) unchanged: stage_transitions + calls.
  */
 
 import * as React from 'react'
@@ -18,8 +24,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
-import { stageColorClasses } from '@/lib/cartera'
+import { stageColorClasses, humanCaseState } from '@/lib/cartera'
 import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
+import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromisos'
 import { useDebtorStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-debtor-stage-transitions-realtime'
 import { useDebtorCallsRealtime } from '@/lib/hooks/cobranza/use-debtor-calls-realtime'
 import {
@@ -29,6 +36,7 @@ import {
 import { PIIRevealModal } from '@/components/inmobiliaria/cobranza/PIIRevealModal'
 
 import { DebtorSidebar } from './DebtorSidebar'
+import { DebtorActionRail } from './DebtorActionRail'
 import { TimelineTab } from './tabs/TimelineTab'
 import { LlamadasTab } from './tabs/LlamadasTab'
 import { MemosTab } from './tabs/MemosTab'
@@ -40,6 +48,10 @@ void React
 
 type TabKey = 'timeline' | 'llamadas' | 'memos' | 'compromisos' | 'acciones'
 const TAB_KEYS: TabKey[] = ['timeline', 'llamadas', 'memos', 'compromisos', 'acciones']
+
+/** Payment-plan statuses that count as an OPEN promise (agent state machine:
+ * offered → accepted → active; defaulted = broken). */
+const OPEN_PLAN_STATUSES = new Set(['offered', 'accepted', 'active'])
 
 function isTabKey(s: string | null): s is TabKey {
   return s !== null && (TAB_KEYS as string[]).includes(s)
@@ -79,13 +91,29 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab)
   const [tabSwitcherOpen, setTabSwitcherOpen] = useState<boolean>(false)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false)
 
   // Single shared PII reveal modal — driven by lifted state (Task 6).
   const [revealModal, setRevealModal] = useState<{ field: PIIFieldKey } | null>(null)
 
   const { data, isLoading, error, refetch } = useDebtorDetail({ debtorId })
   const debtorName = data?.fullName ?? ''
+
+  // Compromisos feed the human case state (open/broken promise booleans).
+  // The Compromisos tab keeps its own lazy-mounted hook instance (D-31-09).
+  const { data: compromisosData } = useDebtorCompromisos({ debtorId })
+
+  const caseStateKey = useMemo(() => {
+    if (!data) return null
+    const plans = compromisosData?.paymentPlans ?? []
+    return humanCaseState({
+      stage: data.currentStage,
+      isPaused: data.isPaused,
+      hasOpenPromise: plans.some((p) => OPEN_PLAN_STATUSES.has(p.status)),
+      hasBrokenPromise: plans.some((p) => p.status === 'defaulted'),
+      // escalated: omitted — the detail response carries no per-debtor
+      // escalation flag and fetching the agency-wide list here is not cheap.
+    })
+  }, [data, compromisosData])
 
   // -----------------------------------------------------------------------
   // Phase 31 plan 31-11: Supabase Realtime (XR-01, D-31-16, D-31-18)
@@ -143,6 +171,10 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
     setRevealModal({ field })
   }, [])
 
+  const onIntervention = useCallback(() => {
+    void refetch()
+  }, [refetch])
+
   // Write back ?tab=… on tab change (shallow).
   const onTabChange = useCallback(
     (tab: TabKey) => {
@@ -172,7 +204,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
   if (isLoading && !data) return <CobranzaDeudorDetailSkeleton />
 
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-24 md:pb-8">
+    <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-8">
       {/* Header */}
       <header className="mb-5">
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
@@ -230,9 +262,32 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Main content */}
-        <section className="flex-1 min-w-0">
+      {/* 3 zonas — lg+: contexto | conversación | recomendación; below lg the
+          zones stack in that same order (visión #14). */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_280px] xl:grid-cols-[320px_minmax(0,1fr)_320px] lg:items-start">
+        {/* IZQUIERDA — contexto */}
+        <div className="lg:sticky lg:top-4 min-w-0">
+          <DebtorSidebar
+            data={data}
+            isLoading={isLoading}
+            onRevealRequest={onRevealRequest}
+            caseStateKey={caseStateKey}
+          />
+        </div>
+
+        {/* CENTRO — conversación e historial (los tabs, como está) */}
+        <section className="min-w-0">
+          {/* Zone eyebrow */}
+          <h2 className="flex items-center gap-2.5 mb-3">
+            <span
+              aria-hidden="true"
+              className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0"
+            />
+            <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500">
+              {t('inmobiliaria.ai.cobranza.detalle.conversacion')}
+            </span>
+          </h2>
+
           {/* Tab nav — md+ horizontal */}
           <nav
             role="tablist"
@@ -337,78 +392,20 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               prefill={{
                 nombre: debtorName,
               }}
-              onIntervention={() => {
-                void refetch()
-              }}
+              onIntervention={onIntervention}
             />
           )}
         </section>
 
-        {/* Sidebar — md+ sticky right */}
-        <aside className="hidden md:block md:w-80 md:shrink-0 md:sticky md:top-4 md:self-start">
-          <DebtorSidebar
+        {/* DERECHA — recomendación */}
+        <div className="lg:sticky lg:top-4 min-w-0">
+          <DebtorActionRail
             data={data}
-            isLoading={isLoading}
-            onRevealRequest={onRevealRequest}
+            debtorId={debtorId}
+            debtorName={debtorName}
+            onIntervention={onIntervention}
           />
-        </aside>
-
-        {/* Sticky bottom bar — sm */}
-        {data?.sidebar?.nextAction && (
-          <div className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 px-4 py-3 flex items-center justify-between">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                {t('inmobiliaria.ai.cobranza.detail.sidebar.nextAction')}
-              </p>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                {data.sidebar.nextAction.channel}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMobileSidebarOpen(true)}
-              className="ml-3 text-sm font-medium text-[#6B6B6B] dark:text-[#6B6B6B]"
-              data-testid="mobile-sidebar-open"
-            >
-              {t('inmobiliaria.ai.cobranza.detail.sidebar.openSidebar')} ›
-            </button>
-          </div>
-        )}
-
-        {/* Mobile sidebar drawer */}
-        {mobileSidebarOpen && (
-          <div
-            className="md:hidden fixed inset-0 z-50 flex items-end"
-            role="dialog"
-            aria-modal="true"
-          >
-            <button
-              type="button"
-              aria-label={t('inmobiliaria.ai.cobranza.detail.sidebar.closeSidebar')}
-              onClick={() => setMobileSidebarOpen(false)}
-              className="absolute inset-0 bg-black/40"
-            />
-            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-xl p-4 max-h-[80vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
-                  {t('inmobiliaria.ai.cobranza.detail.sidebar.title')}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className="text-sm text-neutral-500"
-                >
-                  {t('inmobiliaria.ai.cobranza.detail.sidebar.closeSidebar')}
-                </button>
-              </div>
-              <DebtorSidebar
-                data={data}
-                isLoading={isLoading}
-                onRevealRequest={onRevealRequest}
-              />
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Shared PII reveal modal — single instance lifted here */}

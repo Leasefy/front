@@ -30,7 +30,6 @@ import {
   Wallet,
   FilePlus,
   CreditCard,
-  Warning,
   ClipboardText,
   Envelope,
   PhoneCall,
@@ -38,6 +37,7 @@ import {
   GitMerge,
   ArrowsClockwise,
   Scales,
+  ListChecks,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -116,20 +116,32 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: ChatCircleText,
       module: 'cobranza',
       dataTourTarget: 'sidebar-cobranza',
-      // Children ordered by frequency of use (audit 2026-06-11): operación
-      // diaria primero (deudores/escalaciones/pagos/llamadas/cartas/siniestros/
-      // reporte), luego configuración y compliance.
+      // Visión #13 (2026-06-12): IA humana en 3 capas — entender (Resumen),
+      // operar (Casos/Pendientes/Pagos/Llamadas/Cartas/Siniestros), aprender
+      // (Reporte/Analítica/Playbooks) y gobernar (Cumplimiento/Habeas Data/
+      // Configuración). "Escalaciones" ya no es entrada propia: la cola vive
+      // agrupada dentro de Pendientes (la página /escalaciones sigue ruteable).
       children: [
         {
-          label: t('inmobiliaria.ai.nav.deudores'),
+          // Exact: solo se ilumina en la portada del agente, no en subrutas.
+          label: t('inmobiliaria.ai.nav.cobranzaResumen'),
+          href: '/panel/inmobiliaria/ai/cobranza',
+          icon: SquaresFour,
+          exact: true,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaCasos'),
           href: '/panel/inmobiliaria/ai/cobranza/deudores',
           icon: Users,
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.escalaciones'),
-          href: '/panel/inmobiliaria/ai/cobranza/escalaciones',
-          icon: Warning,
+          // Bandeja unificada: escalaciones + cartas por aprobar + siniestros
+          // + planes + promesas a vencer.
+          label: t('inmobiliaria.ai.nav.cobranzaPendientes'),
+          href: '/panel/inmobiliaria/ai/cobranza/pendientes',
+          icon: ListChecks,
           module: 'cobranza',
         } as NavItemWithModule,
         {
@@ -151,7 +163,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          // Movido dentro del grupo cobranza — antes flotaba top-level.
           label: t('inmobiliaria.ai.nav.siniestros'),
           href: '/panel/inmobiliaria/ai/cobranza/siniestros',
           icon: Siren,
@@ -164,15 +175,16 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.plantillas'),
-          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
-          icon: FileText,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
           label: t('inmobiliaria.ai.nav.analitica'),
           href: '/panel/inmobiliaria/ai/cobranza/analitica',
           icon: ChartLineUp,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          // Playbooks = la antigua "Plantillas" con nombre de la visión.
+          label: t('inmobiliaria.ai.nav.cobranzaPlaybooks'),
+          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
+          icon: FileText,
           module: 'cobranza',
         } as NavItemWithModule,
         {

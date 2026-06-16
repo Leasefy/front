@@ -4199,7 +4199,7 @@
     "ai": {
       "nav": {
         "cobranza": "Collections",
-        "cotizador": "Quoter",
+        "cotizador": "Insurability",
         "arco": "Habeas Data",
         "plantillas": "Templates",
         "configuracion": "Configuration",
@@ -4240,7 +4240,7 @@
       "breadcrumb": {
         "aiAgents": "AI Agents",
         "cobranza": "Collections",
-        "cotizador": "Quoter"
+        "cotizador": "Insurability"
       },
       "cotizador": {
         "placeholder": {
@@ -4250,7 +4250,7 @@
           "backLink": "Back to AI Agents"
         },
         "overview": {
-          "title": "Quoter",
+          "title": "Insurability",
           "subtitle": "Status of quotes and active insurers",
           "lastUpdated": "Updated",
           "newQuoteCta": "New quote",
@@ -4425,6 +4425,155 @@
           "reQuoteButton": "Re-quote with changes",
           "liveRegion": {
             "carrierVerdict": "{{carrier}}: {{result}}"
+          },
+          "veredicto": {
+            "regionLabel": "Conclusion and recommendation",
+            "estimadoBadge": "Estimate · Leasefy pre-check",
+            "confirmadoBadge": "Confirmed by the insurer",
+            "asegurableLabel": "Insurable",
+            "asegurableConCondicionesLabel": "Insurable with conditions",
+            "noAsegurableLabel": "Not insurable today",
+            "headline": "The candidate is {{status}} · {{count}} options found",
+            "headlineNo": "We couldn't find an insurer to cover them today",
+            "cohort": "In similar cases ({{label}}), confidence {{confidence}}%.",
+            "recomendadaEyebrow": "Recommended",
+            "recomendamos": "We recommend moving forward with {{carrier}}",
+            "primaPorMes": "per month",
+            "porQue": "Why",
+            "porQueMejorPrecio": "It's the option that best balances price and conditions among the insurers that accept."
+          },
+          "matriz": {
+            "titulo": "Compare the options",
+            "subtitle": "{{n}} insurers queried",
+            "colAseguradora": "Insurer",
+            "colResultado": "Result",
+            "colCondicion": "Condition",
+            "colCosto": "Estimated cost",
+            "colTiempo": "Response time",
+            "colRecomendacion": "Recommendation",
+            "verMatriz": "View comparison table",
+            "verTarjetas": "View as cards",
+            "viewToggleLabel": "Switch between table and card view",
+            "recomendada": "Recommended",
+            "condicionesCount": "{{n}} conditions to resolve",
+            "prevalidacionNote": "Costs and results are an estimated Leasefy pre-validation. Not yet confirmed by the insurer; use them as a guide before filing.",
+            "estimadoDisclaimer": "Cost estimated by Leasefy's pre-validation — subject to insurer confirmation."
+          },
+          "fuente": {
+            "estimado": "Estimate · Leasefy Pre-validation",
+            "estimadoTooltip": "Result estimated by Leasefy's pre-validation. Not yet confirmed by the insurer; use it as a guide before filing.",
+            "confirmado": "Confirmed by the insurer",
+            "confirmadoTooltip": "Result confirmed directly by the insurer through their portal.",
+            "manual": "Manual review"
+          },
+          "recovery": {
+            "titulo": "We still have paths forward",
+            "eyebrow": "Paths forward",
+            "intro": "No carrier approved this time, but you can try another route:",
+            "introPaths": "No carrier approved this time. These adjustments could change the outcome:",
+            "asesorHint": "We don't have an automatic adjustment to suggest for this case. Talk to a Leasefy advisor to review options manually.",
+            "footerNote": "Re-quoting opens the form with the current data so you can adjust what's needed.",
+            "recotizar": "Re-quote with changes",
+            "sugerirAsesor": "Talk to an advisor"
+          },
+          "condiciones": {
+            "titulo": "Conditions to resolve",
+            "subtitle": "{{n}} conditions across the insurers that accept with requirements.",
+            "unspecified": "Condition pending detail from the insurer.",
+            "resolver": "Resolve conditions"
+          },
+          "carrierCard": {
+            "porQueTitle": "Why",
+            "porQueApproved": "Approved at the estimated premium above, with no additional conditions to resolve.",
+            "porQueConditional": "Accepts the case, but with {{n}} conditions you must resolve before filing.",
+            "porQueRejected": "Did not approve this case with the current data.",
+            "porQueRejectedWithReason": "Did not approve this case for the reason shown above.",
+            "porQueError": "We couldn't get a response from this insurer; try again later.",
+            "porQueStub": "Demo result — this insurer isn't connected in live mode yet.",
+            "porQuePending": "We're still querying this insurer.",
+            "condicionesVisibleHint": "Conditions listed above",
+            "avanzarAction": "Proceed",
+            "proximamente": "Coming soon"
+          }
+        },
+        "detalle": {
+          "conclusion": {
+            "asegurableTitulo": "Your candidate is insurable",
+            "parcialTitulo": "Your candidate is insurable with conditions",
+            "noAsegurableTitulo": "We couldn't find an insurable option for now",
+            "opcionesEncontradas": "We found {{count}} options for you"
+          },
+          "recomendacion": {
+            "titulo": "Our recommendation",
+            "porque": "Why we suggest it"
+          },
+          "matriz": {
+            "titulo": "Compare the options",
+            "subtitle": "{{n}} insurers queried",
+            "colAseguradora": "Insurer",
+            "colResultado": "Result",
+            "colCondicion": "Condition",
+            "colCosto": "Estimated cost",
+            "colTiempo": "Response time",
+            "colRecomendacion": "Recommendation",
+            "verMatriz": "View comparison table",
+            "verTarjetas": "View as cards",
+            "viewToggleLabel": "Switch between table and card view",
+            "recomendada": "Recommended",
+            "condicionesCount": "{{n}} conditions to resolve",
+            "prevalidacionNote": "Costs and results are an estimated Leasefy pre-validation. Not yet confirmed by the insurer; use them as a guide before filing.",
+            "estimadoDisclaimer": "Cost estimated by Leasefy's pre-validation — subject to insurer confirmation."
+          },
+          "estados": {
+            "noConsultada": "Not queried",
+            "consultando": "Querying…",
+            "pendiente": "Pending",
+            "asegurable": "Insurable",
+            "condicionado": "Insurable with conditions",
+            "noAsegurable": "Not insurable",
+            "revisionManual": "Manual review",
+            "portalNoDisponible": "Portal unavailable",
+            "vencido": "No response in time",
+            "listoAvanzar": "Ready to proceed"
+          },
+          "recovery": {
+            "titulo": "We still have paths forward",
+            "eyebrow": "Paths forward",
+            "intro": "No carrier approved this time, but you can try another route:",
+            "introPaths": "No carrier approved this time. These adjustments could change the outcome:",
+            "asesorHint": "We don't have an automatic adjustment to suggest for this case. Talk to a Leasefy advisor to review options manually.",
+            "footerNote": "Re-quoting opens the form with the current data so you can adjust what's needed.",
+            "recotizar": "Re-quote with changes",
+            "sugerirAsesor": "Talk to an advisor"
+          },
+          "condiciones": {
+            "titulo": "Conditions to resolve",
+            "subtitle": "{{n}} conditions across the insurers that accept with requirements.",
+            "unspecified": "Condition pending detail from the insurer.",
+            "resolver": "Resolve conditions"
+          },
+          "fuente": {
+            "estimado": "Estimate · Leasefy Pre-validation",
+            "estimadoTooltip": "Result estimated by Leasefy's pre-validation. Not yet confirmed by the insurer; use it as a guide before filing.",
+            "confirmado": "Confirmed by the insurer",
+            "confirmadoTooltip": "Result confirmed directly by the insurer through their portal.",
+            "manual": "Manual review"
+          },
+          "cohorte": {
+            "enCasosSimilares": "In similar cases, this was the best option {{percent}} of the time"
+          },
+          "carrierCard": {
+            "porQueTitle": "Why",
+            "porQueApproved": "Approved at the estimated premium above, with no additional conditions to resolve.",
+            "porQueConditional": "Accepts the case, but with {{n}} conditions you must resolve before filing.",
+            "porQueRejected": "Did not approve this case with the current data.",
+            "porQueRejectedWithReason": "Did not approve this case for the reason shown above.",
+            "porQueError": "We couldn't get a response from this insurer; try again later.",
+            "porQueStub": "Demo result — this insurer isn't connected in live mode yet.",
+            "porQuePending": "We're still querying this insurer.",
+            "condicionesVisibleHint": "Conditions listed above",
+            "avanzarAction": "Proceed",
+            "proximamente": "Coming soon"
           }
         },
         "pdf": {
@@ -4581,7 +4730,7 @@
           }
         },
         "insights": {
-          "pageTitle": "Cotizador insights",
+          "pageTitle": "Insurability insights",
           "pageSubtitle": "Aggregate performance and cost analysis",
           "approvalRateMonthlyTitle": "Approval rate by carrier",
           "primaDistributionTitle": "Premium distribution by canon range",
@@ -4614,7 +4763,7 @@
           },
           "loadError": "Could not load insights data. Try again.",
           "retry": "Retry",
-          "title": "Cotizador insights",
+          "title": "Insurability insights",
           "subtitle": "Aggregate performance and cost analysis",
           "errorLoading": "Could not load insights data. Try again.",
           "sections": {
@@ -4704,7 +4853,7 @@
       },
       "access": {
         "noAccessCobranza": "You don't have access to Collections",
-        "noAccessCotizador": "You don't have access to Quoter",
+        "noAccessCotizador": "You don't have access to Insurability",
         "contactAdmin": "Contact your agency administrator to request access."
       },
       "cobranza": {
@@ -5883,7 +6032,7 @@
           "description": "Automate rent collection with calls, WhatsApp, and intelligent follow-up. No human intervention needed for standard portfolios."
         },
         "step2": {
-          "title": "Quote Agent",
+          "title": "Insurability Agent",
           "description": "Evaluate applicants in seconds: scoring, co-signers, and insurer verdicts in a single flow."
         },
         "step3": {
@@ -5902,7 +6051,7 @@
           "description": "Automate portfolio recovery: calls, WhatsApp and letters with Colombian compliance built in. The agent works standard delinquency on its own and only escalates critical cases."
         },
         "cotizador": {
-          "title": "Quoting Agent",
+          "title": "Insurability Agent",
           "description": "Evaluate applicants in seconds: scoring, co-signers and insurer verdicts in a single flow. Every decision is audited and you can ask the why behind each verdict."
         },
         "avaluos": {
@@ -5961,7 +6110,7 @@
         },
         "agente": {
           "cobranza": "Collections",
-          "cotizador": "Quoter",
+          "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
           "pagos": "Vendor payments",
           "estudio": "Tenant screening",
@@ -6263,7 +6412,7 @@
             }
           },
           "cotizador": {
-            "eyebrow": "Agent · Quoter",
+            "eyebrow": "Agent · Insurability",
             "colaTitle": "Quotes to review",
             "colaDescPre": "Quotes whose insurability verdict came back",
             "colaDescStrong": "with conditions",
@@ -6742,7 +6891,7 @@
       "quickActions": {
         "title": "Quick actions",
         "cobranza": "Go to Collections",
-        "cotizador": "Go to Quoter",
+        "cotizador": "Go to Insurability",
         "reportes": "View reports",
         "portafolio": "View portfolio",
         "hoy": "View Today"

@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CotizadorWizardSkeleton — Phase 38 plan 38-04b (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cotizador/nueva`.
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/asegurabilidad/nueva`.
  * Mirrors the wizard page composition:
  *   - Top header bar (h1 + subtitle)
  *   - 3-step WizardStepIndicator (circles + connectors)

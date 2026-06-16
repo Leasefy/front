@@ -388,7 +388,7 @@ export default function AIAgentsPage() {
           {cotizadorAgent && (
             <div
               className="relative cursor-pointer"
-              onClick={() => router.push('/panel/inmobiliaria/ai/cotizador')}
+              onClick={() => router.push('/panel/inmobiliaria/ai/asegurabilidad')}
               data-testid="cotizador-agent-card"
               data-tour-target="cotizador-card"
             >

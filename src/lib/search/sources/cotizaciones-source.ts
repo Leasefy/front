@@ -14,7 +14,7 @@
  *   kept verbatim as the fallback path.
  *
  * Permission: cotizador:view
- * href: /panel/inmobiliaria/ai/cotizador/:id
+ * href: /panel/inmobiliaria/ai/asegurabilidad/:id
  */
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
@@ -99,7 +99,7 @@ export const cotizacionesSource: SearchSource = {
           title: item.title,
           subtitle: item.ref ? `Cédula: ${item.ref}…` : (item.subtitle ?? undefined),
           badges,
-          href: `/panel/inmobiliaria/ai/cotizador/${item.id}`,
+          href: `/panel/inmobiliaria/ai/asegurabilidad/${item.id}`,
           // Preview degrades gracefully — panel already null-guards all fields.
           preview: {
             type: 'cotizacion',
@@ -145,7 +145,7 @@ export const cotizacionesSource: SearchSource = {
             ? [{ label: `${item.approvedCount}/${item.totalCarriers} ok`, color: 'green' as const }]
             : []),
         ],
-        href: `/panel/inmobiliaria/ai/cotizador/${item.id}`,
+        href: `/panel/inmobiliaria/ai/asegurabilidad/${item.id}`,
         preview: {
           type: 'cotizacion',
           id: item.id,

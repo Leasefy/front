@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CotizadorOverviewSkeleton — Phase 38 plan 38-04b (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cotizador`. Mirrors
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/asegurabilidad`. Mirrors
  * the real overview page composition: header → 4-KPI strip → recent quotes feed
  * (table-like list) → carriers status strip (3-card grid).
  *

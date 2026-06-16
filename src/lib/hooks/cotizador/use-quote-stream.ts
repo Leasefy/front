@@ -24,6 +24,11 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { parseSSEEvent, type ParsedSSEEvent } from '@/lib/cotizador/sse-schemas'
+import type {
+  SSEFinalVerdictSchema,
+  SSEPartialRankingSchema,
+} from '@/lib/cotizador/sse-schemas'
+import type { z } from 'zod'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 
 // ---------------------------------------------------------------------------
@@ -41,10 +46,18 @@ export interface CarrierState {
   startedAtMs: number | null
 }
 
+// The agent's natural-language conclusion + recommendation payload (terminal
+// SSE frame). The CONCLUSIÓN / RECOMENDACIÓN block (VeredictoAsegurabilidad)
+// reads these structured fields, which the carrier-grid pipeline used to drop.
+export type FinalVerdict = z.infer<typeof SSEFinalVerdictSchema>
+export type PartialRanking = z.infer<typeof SSEPartialRankingSchema>
+
 export interface UseQuoteStreamResult {
   events: ParsedSSEEvent[]
   carriers: CarrierState[]     // ordered per current sort rule
   totalCostUsd: number         // running total from agent.cost_recorded events
+  finalVerdict: FinalVerdict | null    // agent.final_verdict (natural-language conclusion + best option)
+  partialRanking: PartialRanking | null  // agent.partial_ranking (carrier ordering + accepting_count)
   isConnected: boolean
   error: string | null
   reconnect: () => void        // manual trigger for "Reintentar" button
@@ -112,6 +125,8 @@ export function useQuoteStream(
   const [events, setEvents] = useState<ParsedSSEEvent[]>([])
   const [carriersMap, setCarriersMap] = useState<Map<string, CarrierState>>(new Map())
   const [totalCostUsd, setTotalCostUsd] = useState(0)
+  const [finalVerdict, setFinalVerdict] = useState<FinalVerdict | null>(null)
+  const [partialRanking, setPartialRanking] = useState<PartialRanking | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [allFinal, setAllFinal] = useState(false)
@@ -230,7 +245,15 @@ export function useQuoteStream(
       setTotalCostUsd(parsed.data.running_total_usd)
     }
 
+    // agent.partial_ranking can arrive multiple times as carriers settle —
+    // keep the latest so VeredictoAsegurabilidad orders the recommendation by
+    // total_score and shows the live accepting_count.
+    if (parsed.type === 'agent.partial_ranking') {
+      setPartialRanking(parsed.data)
+    }
+
     if (parsed.type === 'agent.final_verdict') {
+      setFinalVerdict(parsed.data)
       setAllFinal(true)
       setIsConnected(false)
       abortRef.current?.abort()
@@ -367,5 +390,5 @@ export function useQuoteStream(
   // Derive sorted carriers array
   const carriers = sortCarriers(Array.from(carriersMap.values()), allFinal)
 
-  return { events, carriers, totalCostUsd, isConnected, error, reconnect }
+  return { events, carriers, totalCostUsd, finalVerdict, partialRanking, isConnected, error, reconnect }
 }

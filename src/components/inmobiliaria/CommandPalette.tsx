@@ -147,7 +147,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     id: 'qa-cotizador',
     labelKey: 'inmobiliaria.commandPalette.quickActions.cotizador',
     icon: FileText,
-    href: '/panel/inmobiliaria/ai/cotizador',
+    href: '/panel/inmobiliaria/ai/asegurabilidad',
     permission: { module: 'cotizador', action: 'view' },
   },
   {

@@ -125,7 +125,7 @@ export default function NuevaCotizacionPage() {
     // Phase 33 D-33-10: in re-quote mode, discard re-quote draft and navigate away from ?from=
     if (isReQuoteMode && parentQuoteId && typeof window !== 'undefined') {
       localStorage.removeItem(`${RE_QUOTE_DRAFT_KEY_PREFIX}${parentQuoteId}`)
-      router.replace('/panel/inmobiliaria/ai/cotizador/nueva')
+      router.replace('/panel/inmobiliaria/ai/asegurabilidad/nueva')
       return
     }
     clear()
@@ -301,7 +301,7 @@ export default function NuevaCotizacionPage() {
       if (isReQuoteMode && parentQuoteId && typeof window !== 'undefined') {
         localStorage.removeItem(`${RE_QUOTE_DRAFT_KEY_PREFIX}${parentQuoteId}`)
       }
-      router.push(`/panel/inmobiliaria/ai/cotizador/${quoteId}`)
+      router.push(`/panel/inmobiliaria/ai/asegurabilidad/${quoteId}`)
     } catch (err) {
       if (err instanceof CedulaValidationError) {
         setStep1Errors({ cedula: t('inmobiliaria.ai.cotizador.nueva.errors.cedulaInvalida') })
@@ -358,7 +358,7 @@ export default function NuevaCotizacionPage() {
                   onClick={() => {
                     const hist = typeof window !== 'undefined' ? window.history.length : 0
                     if (hist > 1) router.back()
-                    else router.push('/panel/inmobiliaria/ai/cotizador')
+                    else router.push('/panel/inmobiliaria/ai/asegurabilidad')
                   }}
                   className="rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
                 >

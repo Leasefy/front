@@ -222,8 +222,8 @@ const AGENTS: AIAgentDefinition[] = [
   },
   {
     id: 'cotizador',
-    nameEn: 'Quoting',
-    nameEs: 'Cotizador',
+    nameEn: 'Insurability',
+    nameEs: 'Asegurabilidad',
     descriptionEn: 'Multi-carrier insurance quoting for rental applicants — streaming verdicts from Sura, Mapfre, and Bolívar in under 10 seconds.',
     descriptionEs: 'Cotización de seguro multivehículo para aplicantes — veredictos en streaming de Sura, Mapfre y Bolívar en menos de 10 segundos.',
     icon: 'ShieldStar',

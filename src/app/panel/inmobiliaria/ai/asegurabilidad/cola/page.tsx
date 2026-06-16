@@ -1,11 +1,11 @@
 'use client'
 
 /**
- * /ai/cotizador/cola — F5 of the Agent Workspace initiative.
+ * /ai/asegurabilidad/cola — F5 of the Agent Workspace initiative.
  *
  * Read-only TRIAGE cola of borderline asegurabilidad verdicts ("con
  * condiciones"), via the unified WorkItem endpoint (?agente=cotizador). Each
- * card deep-links (onOpen) into the EXISTING rich /ai/cotizador/[quoteId]
+ * card deep-links (onOpen) into the EXISTING rich /ai/asegurabilidad/[quoteId]
  * workflow, where the operator chooses a carrier, adjusts, or re-quotes — F5
  * never duplicates that decision surface. Owned by the comercial role.
  */
@@ -29,11 +29,11 @@ export default function CotizadorColaPage() {
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
           <MigaDePan
-            backHref="/panel/inmobiliaria/ai/cotizador"
+            backHref="/panel/inmobiliaria/ai/asegurabilidad"
             icon={ShieldCheck}
             crumbs={[
               { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.cotizador'), href: '/panel/inmobiliaria/ai/cotizador' },
+              { label: t('inmobiliaria.ai.workspace.agente.cotizador'), href: '/panel/inmobiliaria/ai/asegurabilidad' },
               { label: t('inmobiliaria.ai.workspace.pages.cotizador.colaTitle') },
             ]}
           />
@@ -63,7 +63,7 @@ export default function CotizadorColaPage() {
         isLoading={isLoading}
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
-        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/cotizador/${encodeURIComponent(item.id)}`)}
+        onOpen={(item) => router.push(`/panel/inmobiliaria/ai/asegurabilidad/${encodeURIComponent(item.id)}`)}
         emptyHint={t('inmobiliaria.ai.workspace.pages.cotizador.colaEmptyHint')}
       />
     </div>

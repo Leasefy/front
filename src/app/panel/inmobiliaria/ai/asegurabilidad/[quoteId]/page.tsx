@@ -18,6 +18,10 @@ import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import { AccionSugerida } from '@/components/inmobiliaria/ai/AccionSugerida'
 import { QuoteHeader } from '@/components/inmobiliaria/cotizador/QuoteHeader'
 import { CarrierStreamGrid } from '@/components/inmobiliaria/cotizador/CarrierStreamGrid'
+import { VeredictoAsegurabilidad } from '@/components/inmobiliaria/cotizador/VeredictoAsegurabilidad'
+import { MatrizAsegurabilidad } from '@/components/inmobiliaria/cotizador/MatrizAsegurabilidad'
+import { RecoveryAsegurabilidad } from '@/components/inmobiliaria/cotizador/RecoveryAsegurabilidad'
+import { deriveRecovery } from '@/lib/cotizador/verdict-derive'
 import { StreamCompleteBanner } from '@/components/inmobiliaria/cotizador/StreamCompleteBanner'
 import { CounterfactualModal } from '@/components/cotizador/CounterfactualModal'
 import { ReQuoteOfBadge } from '@/components/cotizador/ReQuoteOfBadge'
@@ -38,10 +42,15 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
   const canView = canAccess('cotizador', 'view')
 
-  const { carriers, totalCostUsd, isConnected, error, reconnect } = useQuoteStream(
+  const { events, carriers, totalCostUsd, finalVerdict, partialRanking, isConnected, error, reconnect } = useQuoteStream(
     quoteId,
     agency?.id ?? null,
   )
+
+  // W2: the agent.recovery frame is accumulated in `events` but not projected
+  // into a named hook field — derive the latest one here. Feeds the recovery
+  // "nadie lo asegura" paths (visión #10). Null when no recovery arrived.
+  const recovery = deriveRecovery(events)
 
   // F-02 fix: fetch persisted quote metadata in parallel with the SSE stream.
   // Surfaces canon/ciudad/tipo + cedulaHashPrefix8 + createdAt into the page
@@ -112,12 +121,12 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   // the prior in-component PDF props construction is removed.
   const pdfFilenamePrefix = `cotizacion-${metadata?.cedulaHashPrefix8 ?? quoteId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}`
 
-  const handleBack = () => router.push('/panel/inmobiliaria/ai/cotizador')
+  const handleBack = () => router.push('/panel/inmobiliaria/ai/asegurabilidad')
 
   // D-33-10: navigate to the re-quote wizard with the current quoteId as the
   // ?from= seed (Plan 33-06 wizard pre-fills from this).
   const handleReQuote = () => {
-    router.push(`/panel/inmobiliaria/ai/cotizador/nueva?from=${quoteId}`)
+    router.push(`/panel/inmobiliaria/ai/asegurabilidad/nueva?from=${quoteId}`)
   }
 
   // D-33-11: open the counterfactual modal.
@@ -215,6 +224,19 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
           </div>
         )}
 
+        {/* CONCLUSIÓN + RECOMENDACIÓN en lenguaje natural — aparece cuando el
+            agente emite agent.final_verdict. Mientras tanto, el grid de abajo
+            muestra el estado de carga (skeletons pending). Si asegurabilidad
+            es 'no' el componente NO renderiza recomendación (W2 = recovery). */}
+        {finalVerdict && (
+          <VeredictoAsegurabilidad
+            finalVerdict={finalVerdict}
+            partialRanking={partialRanking}
+            carriers={carriers}
+            stubMode={isStubMode}
+          />
+        )}
+
         {/* Completion banner — appears when all carriers final */}
         {allFinal && (
           <StreamCompleteBanner
@@ -248,6 +270,33 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
 
         {/* Carrier cards grid (always rendered — shows pending skeletons while streaming) */}
         <CarrierStreamGrid carriers={carriers} locale={locale} />
+
+        {/* ════════════════════════════════════════════════════════════════
+            W2 — SECCIONES INFERIORES (debajo de la conclusión de W1).
+            Propiedad de W2: matriz comparativa + recovery + condicionado.
+            Editar SOLO dentro de este bloque para no chocar con W1/W3.
+            ════════════════════════════════════════════════════════════════ */}
+
+        {/* MATRIZ comparativa (visión #8, #13) — aseguradora × {resultado,
+            condición, costo estimado, tiempo, recomendación}. Toggle matriz /
+            tarjetas. Aparece cuando ≥1 aseguradora tiene veredicto; los stubs
+            van etiquetados "Estimado · Prevalidación Leasefy". */}
+        {hasAnyVerdict && <MatrizAsegurabilidad carriers={carriers} />}
+
+        {/* RECOVERY "nadie lo asegura" (visión #10) + CONDICIONADO (visión #11).
+            - Recovery: solo cuando final_verdict.asegurabilidad === 'no'.
+              CTA "Re-cotizar con cambios" reutiliza el flujo existente
+              (handleReQuote → wizard ?from=).
+            - Condicionado: cuando hay carriers conditional; "Resolver
+              condiciones" abre el CounterfactualModal (handlePedirExplicacion). */}
+        <RecoveryAsegurabilidad
+          asegurabilidad={finalVerdict?.asegurabilidad ?? null}
+          recovery={recovery}
+          carriers={carriers}
+          onReQuote={handleReQuote}
+          onResolverCondiciones={handlePedirExplicacion}
+        />
+        {/* ════════════════ FIN SECCIONES INFERIORES W2 ═══════════════════ */}
       </main>
 
       {/* Phase 33 counterfactual modal — mounted at root so portal stacking

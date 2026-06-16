@@ -4200,7 +4200,7 @@
     "ai": {
       "nav": {
         "cobranza": "Cobranza",
-        "cotizador": "Cotizador",
+        "cotizador": "Asegurabilidad",
         "arco": "Habeas Data",
         "plantillas": "Plantillas",
         "configuracion": "Configuración",
@@ -4241,7 +4241,7 @@
       "breadcrumb": {
         "aiAgents": "Agentes AI",
         "cobranza": "Cobranza",
-        "cotizador": "Cotizador"
+        "cotizador": "Asegurabilidad"
       },
       "cotizador": {
         "placeholder": {
@@ -4251,7 +4251,7 @@
           "backLink": "Volver a Agentes AI"
         },
         "overview": {
-          "title": "Cotizador",
+          "title": "Asegurabilidad",
           "subtitle": "Estado de las cotizaciones y aseguradoras activas",
           "lastUpdated": "Actualizado hace",
           "newQuoteCta": "Nueva cotización",
@@ -4426,6 +4426,155 @@
           "reQuoteButton": "Re-cotizar con cambios",
           "liveRegion": {
             "carrierVerdict": "{{carrier}}: {{result}}"
+          },
+          "veredicto": {
+            "regionLabel": "Conclusión y recomendación",
+            "estimadoBadge": "Estimado · Prevalidación Leasefy",
+            "confirmadoBadge": "Confirmado por la aseguradora",
+            "asegurableLabel": "Asegurable",
+            "asegurableConCondicionesLabel": "Asegurable con condiciones",
+            "noAsegurableLabel": "No asegurable hoy",
+            "headline": "El candidato es {{status}} · {{count}} opciones encontradas",
+            "headlineNo": "Hoy no encontramos una aseguradora que lo cubra",
+            "cohort": "En casos similares ({{label}}), confianza {{confidence}}%.",
+            "recomendadaEyebrow": "Recomendada",
+            "recomendamos": "Recomendamos avanzar con {{carrier}}",
+            "primaPorMes": "al mes",
+            "porQue": "Por qué",
+            "porQueMejorPrecio": "Es la opción que mejor equilibra precio y condiciones entre las aseguradoras que aceptan."
+          },
+          "matriz": {
+            "titulo": "Compara las opciones",
+            "subtitle": "{{n}} aseguradoras consultadas",
+            "colAseguradora": "Aseguradora",
+            "colResultado": "Resultado",
+            "colCondicion": "Condición",
+            "colCosto": "Costo estimado",
+            "colTiempo": "Tiempo de respuesta",
+            "colRecomendacion": "Recomendación",
+            "verMatriz": "Ver tabla comparativa",
+            "verTarjetas": "Ver en tarjetas",
+            "viewToggleLabel": "Cambiar entre vista de tabla y tarjetas",
+            "recomendada": "Recomendada",
+            "condicionesCount": "{{n}} condiciones por resolver",
+            "prevalidacionNote": "Los costos y resultados son una prevalidación estimada de Leasefy. Aún no están confirmados por la aseguradora; úsalos como guía antes de radicar.",
+            "estimadoDisclaimer": "Costo estimado por la prevalidación de Leasefy — sujeto a confirmación de la aseguradora."
+          },
+          "fuente": {
+            "estimado": "Estimado · Prevalidación Leasefy",
+            "estimadoTooltip": "Resultado estimado por la prevalidación de Leasefy. Aún no está confirmado por la aseguradora; sirve como guía antes de radicar.",
+            "confirmado": "Confirmado por la aseguradora",
+            "confirmadoTooltip": "Resultado confirmado directamente por la aseguradora a través de su portal.",
+            "manual": "Revisión manual"
+          },
+          "recovery": {
+            "titulo": "Todavía tenemos caminos",
+            "eyebrow": "Caminos a seguir",
+            "intro": "Ninguna aseguradora aprobó esta vez, pero puedes intentar otra ruta:",
+            "introPaths": "Ninguna aseguradora aprobó esta vez. Estos ajustes podrían cambiar el resultado:",
+            "asesorHint": "No tenemos un ajuste automático que sugerir para este caso. Habla con un asesor de Leasefy para revisar opciones manualmente.",
+            "footerNote": "Re-cotizar abre el formulario con los datos actuales para que ajustes lo necesario.",
+            "recotizar": "Re-cotizar con cambios",
+            "sugerirAsesor": "Hablar con un asesor"
+          },
+          "condiciones": {
+            "titulo": "Condiciones por resolver",
+            "subtitle": "{{n}} condiciones entre las aseguradoras que aceptan con requisitos.",
+            "unspecified": "Condición pendiente de detalle por parte de la aseguradora.",
+            "resolver": "Resolver condiciones"
+          },
+          "carrierCard": {
+            "porQueTitle": "Por qué",
+            "porQueApproved": "Aprobada con la prima estimada de arriba, sin condiciones adicionales por resolver.",
+            "porQueConditional": "Acepta el caso, pero con {{n}} condiciones que debes resolver antes de radicar.",
+            "porQueRejected": "No aprobó este caso con los datos actuales.",
+            "porQueRejectedWithReason": "No aprobó este caso por el motivo indicado arriba.",
+            "porQueError": "No pudimos obtener una respuesta de esta aseguradora; intenta de nuevo más tarde.",
+            "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
+            "porQuePending": "Todavía estamos consultando a esta aseguradora.",
+            "condicionesVisibleHint": "Condiciones listadas arriba",
+            "avanzarAction": "Avanzar",
+            "proximamente": "Próximamente"
+          }
+        },
+        "detalle": {
+          "conclusion": {
+            "asegurableTitulo": "Tu candidato es asegurable",
+            "parcialTitulo": "Tu candidato es asegurable con condiciones",
+            "noAsegurableTitulo": "Por ahora no encontramos opción asegurable",
+            "opcionesEncontradas": "Encontramos {{count}} opciones para ti"
+          },
+          "recomendacion": {
+            "titulo": "Nuestra recomendación",
+            "porque": "Por qué te la sugerimos"
+          },
+          "matriz": {
+            "titulo": "Compara las opciones",
+            "subtitle": "{{n}} aseguradoras consultadas",
+            "colAseguradora": "Aseguradora",
+            "colResultado": "Resultado",
+            "colCondicion": "Condición",
+            "colCosto": "Costo estimado",
+            "colTiempo": "Tiempo de respuesta",
+            "colRecomendacion": "Recomendación",
+            "verMatriz": "Ver tabla comparativa",
+            "verTarjetas": "Ver en tarjetas",
+            "viewToggleLabel": "Cambiar entre vista de tabla y tarjetas",
+            "recomendada": "Recomendada",
+            "condicionesCount": "{{n}} condiciones por resolver",
+            "prevalidacionNote": "Los costos y resultados son una prevalidación estimada de Leasefy. Aún no están confirmados por la aseguradora; úsalos como guía antes de radicar.",
+            "estimadoDisclaimer": "Costo estimado por la prevalidación de Leasefy — sujeto a confirmación de la aseguradora."
+          },
+          "estados": {
+            "noConsultada": "No consultada",
+            "consultando": "Consultando…",
+            "pendiente": "Pendiente",
+            "asegurable": "Asegurable",
+            "condicionado": "Asegurable con condiciones",
+            "noAsegurable": "No asegurable",
+            "revisionManual": "Revisión manual",
+            "portalNoDisponible": "Portal no disponible",
+            "vencido": "Sin respuesta a tiempo",
+            "listoAvanzar": "Listo para avanzar"
+          },
+          "recovery": {
+            "titulo": "Todavía tenemos caminos",
+            "eyebrow": "Caminos a seguir",
+            "intro": "Ninguna aseguradora aprobó esta vez, pero puedes intentar otra ruta:",
+            "introPaths": "Ninguna aseguradora aprobó esta vez. Estos ajustes podrían cambiar el resultado:",
+            "asesorHint": "No tenemos un ajuste automático que sugerir para este caso. Habla con un asesor de Leasefy para revisar opciones manualmente.",
+            "footerNote": "Re-cotizar abre el formulario con los datos actuales para que ajustes lo necesario.",
+            "recotizar": "Re-cotizar con cambios",
+            "sugerirAsesor": "Hablar con un asesor"
+          },
+          "condiciones": {
+            "titulo": "Condiciones por resolver",
+            "subtitle": "{{n}} condiciones entre las aseguradoras que aceptan con requisitos.",
+            "unspecified": "Condición pendiente de detalle por parte de la aseguradora.",
+            "resolver": "Resolver condiciones"
+          },
+          "fuente": {
+            "estimado": "Estimado · Prevalidación Leasefy",
+            "estimadoTooltip": "Resultado estimado por la prevalidación de Leasefy. Aún no está confirmado por la aseguradora; sirve como guía antes de radicar.",
+            "confirmado": "Confirmado por la aseguradora",
+            "confirmadoTooltip": "Resultado confirmado directamente por la aseguradora a través de su portal.",
+            "manual": "Revisión manual"
+          },
+          "cohorte": {
+            "enCasosSimilares": "En casos similares, esta fue la mejor opción el {{percent}} de las veces"
+          },
+          "carrierCard": {
+            "porQueTitle": "Por qué",
+            "porQueApproved": "Aprobada con la prima estimada de arriba, sin condiciones adicionales por resolver.",
+            "porQueConditional": "Acepta el caso, pero con {{n}} condiciones que debes resolver antes de radicar.",
+            "porQueRejected": "No aprobó este caso con los datos actuales.",
+            "porQueRejectedWithReason": "No aprobó este caso por el motivo indicado arriba.",
+            "porQueError": "No pudimos obtener una respuesta de esta aseguradora; intenta de nuevo más tarde.",
+            "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
+            "porQuePending": "Todavía estamos consultando a esta aseguradora.",
+            "condicionesVisibleHint": "Condiciones listadas arriba",
+            "avanzarAction": "Avanzar",
+            "proximamente": "Próximamente"
           }
         },
         "pdf": {
@@ -4582,7 +4731,7 @@
           }
         },
         "insights": {
-          "pageTitle": "Insights de cotizador",
+          "pageTitle": "Insights de Asegurabilidad",
           "pageSubtitle": "Análisis agregado de rendimiento y costos",
           "approvalRateMonthlyTitle": "Tasa de aprobación por aseguradora",
           "primaDistributionTitle": "Distribución de prima por rango de canon",
@@ -4615,7 +4764,7 @@
           },
           "loadError": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
           "retry": "Reintentar",
-          "title": "Insights de cotizador",
+          "title": "Insights de Asegurabilidad",
           "subtitle": "Análisis agregado de rendimiento y costos",
           "errorLoading": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
           "sections": {
@@ -4705,7 +4854,7 @@
       },
       "access": {
         "noAccessCobranza": "No tienes acceso a Cobranza",
-        "noAccessCotizador": "No tienes acceso a Cotizador",
+        "noAccessCotizador": "No tienes acceso a Asegurabilidad",
         "contactAdmin": "Contacta al administrador de tu inmobiliaria para solicitar acceso."
       },
       "cobranza": {
@@ -5884,7 +6033,7 @@
           "description": "Automatiza el cobro de mora con llamadas, WhatsApp y seguimiento inteligente. Sin intervención humana para cartera estándar."
         },
         "step2": {
-          "title": "Agente Cotizador",
+          "title": "Agente de Asegurabilidad",
           "description": "Evalúa a tus postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo."
         },
         "step3": {
@@ -5903,7 +6052,7 @@
           "description": "Automatiza la recuperación de cartera: llamadas, WhatsApp y cartas con cumplimiento de Ley 2300 integrado. El agente trabaja la mora estándar solo y te escala únicamente los casos críticos."
         },
         "cotizador": {
-          "title": "Agente Cotizador",
+          "title": "Agente de Asegurabilidad",
           "description": "Evalúa postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo. Cada decisión queda auditada y puedes pedir el porqué de cada veredicto."
         },
         "avaluos": {
@@ -5962,7 +6111,7 @@
         },
         "agente": {
           "cobranza": "Cobranza",
-          "cotizador": "Cotizador",
+          "cotizador": "Asegurabilidad",
           "conciliacion": "Conciliación",
           "pagos": "Pagos a proveedores",
           "estudio": "Estudio del inquilino",
@@ -6264,7 +6413,7 @@
             }
           },
           "cotizador": {
-            "eyebrow": "Agente · Cotizador",
+            "eyebrow": "Agente · Asegurabilidad",
             "colaTitle": "Cotizaciones por revisar",
             "colaDescPre": "Cotizaciones cuyo veredicto de asegurabilidad quedó",
             "colaDescStrong": "con condiciones",
@@ -6743,7 +6892,7 @@
       "quickActions": {
         "title": "Acciones rápidas",
         "cobranza": "Ir a Cobranza",
-        "cotizador": "Ir a Cotizador",
+        "cotizador": "Ir a Asegurabilidad",
         "reportes": "Ver reportes",
         "portafolio": "Ver portafolio",
         "hoy": "Ver Hoy"

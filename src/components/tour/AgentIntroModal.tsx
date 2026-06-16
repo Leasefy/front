@@ -42,7 +42,7 @@ export const AGENT_INTROS: AgentIntroConfig[] = [
   },
   {
     id: 'cotizador',
-    pathPrefix: '/panel/inmobiliaria/ai/cotizador',
+    pathPrefix: '/panel/inmobiliaria/ai/asegurabilidad',
     titleKey: 'inmobiliaria.ai.intro.cotizador.title',
     descriptionKey: 'inmobiliaria.ai.intro.cotizador.description',
     image: '/images/features/leasefy-brand-03.jpg',

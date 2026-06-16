@@ -74,7 +74,7 @@ const BLOCKS: SystemBlock[] = [
     cta: '/panel/inmobiliaria/ai',
     items: [
       { labelKey: 'inmobiliaria.ai.nav.cobranza', href: '/panel/inmobiliaria/ai/cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizador', href: '/panel/inmobiliaria/ai/cotizador' },
+      { labelKey: 'inmobiliaria.ai.nav.cotizador', href: '/panel/inmobiliaria/ai/asegurabilidad' },
     ],
   },
   {

@@ -156,12 +156,12 @@ describe('WorkItemDetalle — states', () => {
     render({
       data: null,
       notAvailable: true,
-      notFoundAction: { label: 'Ver cotizaciones', href: '/panel/inmobiliaria/ai/cotizador' },
+      notFoundAction: { label: 'Ver cotizaciones', href: '/panel/inmobiliaria/ai/asegurabilidad' },
     })
     const cta = container.querySelector('[data-testid="caso-not-found-action"]')
     expect(cta).not.toBeNull()
     expect(cta!.textContent).toContain('Ver cotizaciones')
-    expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/ai/cotizador')
+    expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/ai/asegurabilidad')
   })
 
   it('renders header (with t323 flag) + AccionSugerida + contexto + traza on happy path', () => {

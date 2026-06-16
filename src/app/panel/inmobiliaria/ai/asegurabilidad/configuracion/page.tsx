@@ -4,7 +4,7 @@
 // This page does NOT re-check canAccess — layout handles 403 before mount.
 
 /**
- * /ai/cotizador/configuracion — F9: the Cotizador autonomy posture.
+ * /ai/asegurabilidad/configuracion — F9: the Cotizador autonomy posture.
  *
  * The only workspace surface the rich Cotizador section was missing: read-only
  * GET /ai-hub/agentes/cotizador/autonomia feeds the transversal

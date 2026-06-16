@@ -45,7 +45,7 @@ export default function CarrierDeepDivePage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link
-              href="/panel/inmobiliaria/ai/cotizador/aseguradoras"
+              href="/panel/inmobiliaria/ai/asegurabilidad/aseguradoras"
               className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />

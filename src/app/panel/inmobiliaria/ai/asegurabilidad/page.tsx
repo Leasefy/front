@@ -121,7 +121,7 @@ export default function CotizadorOverviewPage() {
           description={t('inmobiliaria.ai.cotizador.overview.empty.description')}
           primaryCta={{
             label: t('inmobiliaria.ai.cotizador.overview.empty.cta.label'),
-            href: '/panel/inmobiliaria/ai/cotizador/nueva',
+            href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
           }}
         />
         {/* ¿Cómo funciona? — especialmente útil cuando aún no hay cotizaciones */}
@@ -159,7 +159,7 @@ export default function CotizadorOverviewPage() {
           {/* CTA secundario — cola de verdicts por revisar (sin N: el overview
               no trae ese count barato; la cola lo calcula al abrir) */}
           <Link
-            href="/panel/inmobiliaria/ai/cotizador/cola"
+            href="/panel/inmobiliaria/ai/asegurabilidad/cola"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1A40FF]"
           >
             <Tray className="h-4 w-4" weight="duotone" />
@@ -167,7 +167,7 @@ export default function CotizadorOverviewPage() {
           </Link>
           {/* Nueva cotización CTA — per COTI-UI-01 */}
           <Link
-            href="/panel/inmobiliaria/ai/cotizador/nueva"
+            href="/panel/inmobiliaria/ai/asegurabilidad/nueva"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-[#1A40FF] hover:opacity-90 active:bg-[#1A40FF] text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1A40FF]"
           >
             <Plus className="h-4 w-4" weight="bold" />

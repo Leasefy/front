@@ -30,7 +30,7 @@ describe('backendAgentToFrontType', () => {
 describe('targetToHref', () => {
   it('routes known targets and falls back to the hub for the rest', () => {
     expect(targetToHref('cobranza')).toBe('/panel/inmobiliaria/ai/cobranza');
-    expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/ai/cotizador');
+    expect(targetToHref('cotizador')).toBe('/panel/inmobiliaria/ai/asegurabilidad');
     expect(targetToHref('pagos')).toBe('/panel/inmobiliaria/ai/pagos');
     expect(targetToHref('cartera')).toBe('/panel/inmobiliaria/ai/cobranza');
     expect(targetToHref('estudio')).toBe('/panel/inmobiliaria/ai');

@@ -198,7 +198,7 @@ describe('QuoteDetailPage — Phase 33 header actions', () => {
     expect(findButtonByText('reQuoteButton')).not.toBeNull()
   })
 
-  it('clicking "Re-cotizar" calls router.push with /cotizador/nueva?from={quoteId}', () => {
+  it('clicking "Re-cotizar" calls router.push with /asegurabilidad/nueva?from={quoteId}', () => {
     mockCarriers = [{ carrier: 'sura', status: 'approved', isStub: false, condiciones: [], motivoRechazo: null, primaMensualCop: null }]
     mount()
     const btn = findButtonByText('reQuoteButton')
@@ -208,7 +208,7 @@ describe('QuoteDetailPage — Phase 33 header actions', () => {
     })
     expect(mockRouterPush).toHaveBeenCalledTimes(1)
     const url = mockRouterPush.mock.calls[0][0] as string
-    expect(url).toContain('/cotizador/nueva?from=')
+    expect(url).toContain('/asegurabilidad/nueva?from=')
     expect(url).toContain(TEST_QUOTE_ID)
   })
 

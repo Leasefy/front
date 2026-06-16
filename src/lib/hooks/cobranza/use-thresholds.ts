@@ -122,7 +122,7 @@ export function useThresholds(): UseThresholdsResult {
   }, [base])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchAll()
   }, [agencyId, fetchAll])
 

@@ -209,7 +209,7 @@ export function useConciliacionQueue(
   }, [agencyId, filters?.status, filters?.page, filters?.pageSize])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchData()
   }, [fetchData, agencyId])
 

@@ -80,7 +80,7 @@ export function useCarrierDetail(carrier: string): UseCarrierDetailResult {
   }, [agencyId, carrier])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchOnce()
     const id = setInterval(() => {
       void fetchOnce()

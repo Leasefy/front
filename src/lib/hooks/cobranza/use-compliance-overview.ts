@@ -94,7 +94,7 @@ export function useComplianceOverview(): UseComplianceOverviewResult {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchOnce()
   }, [fetchOnce, agencyId])
 

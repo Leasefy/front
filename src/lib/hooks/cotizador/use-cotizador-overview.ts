@@ -106,7 +106,7 @@ export function useCotizadorOverview(): {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     fetchData()
     const id = setInterval(fetchData, 30_000)
     return () => clearInterval(id)

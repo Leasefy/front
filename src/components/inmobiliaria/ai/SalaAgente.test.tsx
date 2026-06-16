@@ -128,8 +128,8 @@ describe('SalaAgente — states', () => {
   it('renders header + KPIs + pipeline + feed on happy path', () => {
     render({ overview: OVERVIEW, colaCount: 12 })
 
-    // Header + CTA with count
-    expect(container.textContent).toContain('Agente · Conciliación bancaria')
+    // Header + CTA with count — breadcrumb (MigaDePan): "Agentes IA · <título>"
+    expect(container.textContent).toContain('Conciliación bancaria')
     const cta = container.querySelector('[data-testid="sala-cola-cta"]')
     expect(cta).not.toBeNull()
     expect(cta!.textContent).toContain('Por revisar (12)')

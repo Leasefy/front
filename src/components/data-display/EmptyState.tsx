@@ -1,32 +1,23 @@
 'use client'
 
 import * as React from 'react'
-import { BrandMotif } from '@/components/brand'
 
 /**
- * EmptyState — Phase 38 plan 38-02 (D-38-03 / D-38-04).
+ * EmptyState — primitiva universal de estado vacío ("nada todavía": cero
+ * cotizaciones, cero deudores, etc.). NO para casos "bajo umbral" — esos
+ * siguen usando <NoDataYetBadge /> y <SampleDataWatermark />.
  *
- * Universal empty-state primitive for "truly nothing" cases (zero quotes ever, no
- * deudores ever, etc.). NOT for "below threshold" cases — those keep using
- * <NoDataYetBadge /> and <SampleDataWatermark /> (Phases 35 / 37).
+ * Estilo (rediseño 2026-06-16, pedido de Nico): limpio y MONOCROMO —
+ * sin caja, sin borde punteado, sin fondo gris, sin líneas decorativas ni
+ * ícono en azul de marca. Ícono mudo en gris dentro de un chip neutro,
+ * título + descripción neutros, y el ÚNICO elemento con énfasis es el CTA
+ * (si existe). Referencia visual: empty states de ElevenLabs.
  *
- * - icon prop accepts any React component that consumes Phosphor-style props
- *   (className, size, weight). Per RESEARCH Topic 11 + D-38-02. The prop type
- *   uses the structural shape that aligns with `@phosphor-icons/react` IconProps
- *   so callers pass concrete icons (FolderOpen, Users, CheckCircle, ...) directly.
- * - title + description arrive PRE-TRANSLATED from the calling page. The primitive
- *   does NOT call useI18n — keeps it reusable across any tenant/locale context.
- * - Wrapper carries `role="status"` + `aria-label={title}` so the empty state is
- *   announced once by screen readers when it mounts (D-38-03).
- * - CTA renders as `<a>` when `href` is set; falls back to `<button>` when only
- *   `onClick` is set (D-38-04 supports both link and inline-form CTAs).
+ * - icon: componente Phosphor-style (className, size, weight).
+ * - title + description llegan PRE-traducidos desde la página (no usa useI18n).
+ * - role="status" + aria-label={title} para anuncio único a lectores.
+ * - CTA: <a> si hay href; <button> si solo hay onClick.
  */
-
-type PhosphorIconProps = {
-  className?: string
-  size?: string | number
-  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'
-}
 
 export type EmptyStateCta = {
   label: string
@@ -35,10 +26,6 @@ export type EmptyStateCta = {
 }
 
 export type EmptyStateProps = {
-  // Phase 38 plan 38-04a — widened to `any` props at the type boundary so any
-  // Phosphor icon (ForwardRefExoticComponent<IconProps>) flows in without
-  // requiring callers to cast. The runtime contract is unchanged: the
-  // component is rendered with `weight` + `className` props below.
   icon: React.ComponentType<any>
   title: string
   description: string
@@ -46,10 +33,16 @@ export type EmptyStateProps = {
   secondaryCta?: EmptyStateCta
 }
 
-const PRIMARY_LINK_CLASSES =
-  'text-xs font-medium text-[#1A40FF] hover:text-[#1A40FF] dark:text-[#5570FF] dark:hover:text-[#1A40FF] underline underline-offset-2'
+// CTA primario: botón discreto con borde (white/dark), estilo ElevenLabs —
+// el único elemento con énfasis del empty state. El secundario es link mudo.
+const PRIMARY_CTA_CLASSES =
+  'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium ' +
+  'bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 ' +
+  'border border-neutral-200 dark:border-neutral-700 ' +
+  'hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm ' +
+  'active:scale-[0.98] transition-all duration-150'
 
-const SECONDARY_LINK_CLASSES =
+const SECONDARY_CTA_CLASSES =
   'text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300 underline underline-offset-2'
 
 function renderCta(cta: EmptyStateCta, classes: string): React.ReactElement | null {
@@ -81,29 +74,28 @@ export function EmptyState({
     <div
       role="status"
       aria-label={title}
-      className="rounded-xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/30 px-6 py-10 flex flex-col items-center gap-3 text-center"
+      className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
     >
-      {/* Brand-textured icon: faint hairline pinstripe dome behind a brand-blue glyph */}
-      <div className="relative flex items-end justify-center w-28 h-12">
-        <div className="absolute inset-x-0 bottom-0 h-9 opacity-50 pointer-events-none">
-          <BrandMotif tone="on-light" shape="dome" pitch={7} weight={1} />
-        </div>
+      {/* Ícono mudo en chip neutro — sin azul, sin líneas, sin caja */}
+      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
         <Icon
           weight="duotone"
-          className="relative h-10 w-10 text-[#1A40FF]"
+          className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
           aria-hidden="true"
         />
       </div>
-      <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-        {title}
-      </p>
-      <p className="text-xs text-neutral-500 max-w-xs leading-relaxed">
-        {description}
-      </p>
+      <div className="space-y-1.5">
+        <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+          {title}
+        </p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+          {description}
+        </p>
+      </div>
       {primaryCta ? (
-        <div className="mt-1">{renderCta(primaryCta, PRIMARY_LINK_CLASSES)}</div>
+        <div className="mt-1">{renderCta(primaryCta, PRIMARY_CTA_CLASSES)}</div>
       ) : null}
-      {secondaryCta ? <div>{renderCta(secondaryCta, SECONDARY_LINK_CLASSES)}</div> : null}
+      {secondaryCta ? <div>{renderCta(secondaryCta, SECONDARY_CTA_CLASSES)}</div> : null}
     </div>
   )
 }

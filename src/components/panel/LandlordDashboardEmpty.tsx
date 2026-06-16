@@ -370,9 +370,6 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'We protect your investment',
                   descEs: 'Seguro contra impago hasta 24 meses',
                   descEn: 'Non-payment insurance up to 24 months',
-                  gradient: 'from-[#2C7A53] to-[#6B6B6B] dark:from-[#2C7A53]/30 dark:to-[#6B6B6B]/20',
-                  iconBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-                  iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
                 },
                 {
                   icon: Users,
@@ -380,9 +377,6 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'Verified tenants',
                   descEs: 'Evaluación crediticia completa',
                   descEn: 'Complete credit evaluation',
-                  gradient: 'from-[#1A40FF] to-[#1A40FF] dark:from-[#1A40FF]/30 dark:to-[#1A40FF]/20',
-                  iconBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-                  iconColor: 'text-[#1A40FF] dark:text-[#5570FF]',
                 },
                 {
                   icon: Lightning,
@@ -390,17 +384,14 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'Automatic collection',
                   descEs: 'Recibe el arriendo puntual cada mes',
                   descEn: 'Receive rent on time every month',
-                  gradient: 'from-[#B7791F] to-[#B7791F] dark:from-[#B7791F]/30 dark:to-[#B7791F]/20',
-                  iconBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-                  iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
                 },
-              ].map((card, index) => (
+              ].map((card) => (
                 <div
                   key={card.titleEs}
-                  className={cn('rounded-xl p-5 bg-gradient-to-br', card.gradient)}
+                  className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
                 >
-                  <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center mb-4', card.iconBg)}>
-                    <card.icon className={cn('w-5 h-5', card.iconColor)} />
+                  <div className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 flex items-center justify-center mb-4">
+                    <card.icon weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <h3 className="font-semibold text-neutral-900 dark:text-white mb-1">
                     {locale === 'es' ? card.titleEs : card.titleEn}
@@ -412,31 +403,35 @@ export function LandlordDashboardEmpty() {
               ))}
             </motion.div>
 
-            {/* Empty state for properties */}
+            {/* Empty state for properties — estilo limpio canónico */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-8 text-center"
+              className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
             >
-              <div className="w-16 h-16 rounded-xl bg-white dark:bg-[#222224] flex items-center justify-center mx-auto mb-4">
-                <Buildings className="w-8 h-8 text-neutral-400" />
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+                <Buildings weight="duotone" className="h-6 w-6 text-neutral-400 dark:text-neutral-500" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-md mx-auto">
-                {locale === 'es'
-                  ? 'Publica tu primera propiedad y comienza a recibir aplicaciones de inquilinos verificados.'
-                  : 'List your first property and start receiving applications from verified tenants.'}
-              </p>
-              <Link
-                href="/publicar?from=panel"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                {locale === 'es' ? 'Publicar propiedad' : 'List property'}
-              </Link>
+              <div className="space-y-1.5">
+                <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+                  {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
+                </p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+                  {locale === 'es'
+                    ? 'Publica tu primera propiedad y comienza a recibir aplicaciones de inquilinos verificados.'
+                    : 'List your first property and start receiving applications from verified tenants.'}
+                </p>
+              </div>
+              <div className="mt-1">
+                <Link
+                  href="/publicar?from=panel"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                >
+                  <Plus className="w-4 h-4" />
+                  {locale === 'es' ? 'Publicar propiedad' : 'List property'}
+                </Link>
+              </div>
             </motion.div>
           </div>
 
@@ -448,9 +443,9 @@ export function LandlordDashboardEmpty() {
             className="space-y-6"
           >
             {/* Quick Stats (placeholder) */}
-            <div className="rounded-xl bg-neutral-100 dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 p-6">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center gap-3 mb-4">
-                <TrendUp className="w-5 h-5 text-[#B7791F]" />
+                <TrendUp weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                 <span className="text-sm font-medium text-neutral-600 dark:text-white/80">
                   {locale === 'es' ? 'Tu potencial mensual' : 'Your monthly potential'}
                 </span>
@@ -492,8 +487,8 @@ export function LandlordDashboardEmpty() {
             {/* Need help */}
             <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 flex items-center justify-center flex-shrink-0">
+                  <Clock weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <div>
                   <h4 className="font-medium text-neutral-900 dark:text-white mb-1">
@@ -506,7 +501,7 @@ export function LandlordDashboardEmpty() {
                   </p>
                   <Link
                     href="/ayuda"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
                   >
                     {locale === 'es' ? 'Contactar soporte' : 'Contact support'}
                     <ArrowRight className="w-4 h-4" />

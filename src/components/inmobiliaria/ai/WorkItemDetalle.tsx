@@ -157,21 +157,17 @@ export function WorkItemDetalle({
     )
   }
 
-  // The CTA out of the empty states: the page's notFoundAction (primary pill)
-  // or the classic "Volver a la cola" link.
+  // CTA de los empty states (estilo limpio: pill outlined ElevenLabs, único
+  // elemento con énfasis): el notFoundAction de la página o, si no llega, el
+  // clásico "Volver a la cola". Ambos comparten el mismo pill mudo.
+  const EMPTY_CTA_CLS =
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150'
   const emptyStateCta = notFoundAction ? (
-    <Link
-      href={notFoundAction.href}
-      className="inline-flex items-center gap-1 mt-3 text-xs font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
-      data-testid="caso-not-found-action"
-    >
+    <Link href={notFoundAction.href} className={EMPTY_CTA_CLS} data-testid="caso-not-found-action">
       {notFoundAction.label}
     </Link>
   ) : (
-    <Link
-      href={colaHref}
-      className="inline-flex items-center gap-1 mt-3 text-xs font-medium px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
-    >
+    <Link href={colaHref} className={EMPTY_CTA_CLS}>
       {t(`${NS}.volverACola`)}
     </Link>
   )
@@ -184,21 +180,27 @@ export function WorkItemDetalle({
       <div className="p-6 lg:p-8 space-y-4">
         {backToCola}
         <div
-          className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+          role="status"
+          aria-label={t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
+          className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-no-disponible"
         >
-          <Robot
-            className="w-8 h-8 mx-auto text-muted-foreground mb-2"
-            weight="duotone"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-foreground">
-            {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleBody')}
-          </p>
-          {emptyStateCta}
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+            <BreadcrumbIcon
+              weight="duotone"
+              className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+              aria-hidden="true"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+              {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+              {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleBody')}
+            </p>
+          </div>
+          <div className="mt-1">{emptyStateCta}</div>
         </div>
       </div>
     )
@@ -210,17 +212,27 @@ export function WorkItemDetalle({
       <div className="p-6 lg:p-8 space-y-4">
         {backToCola}
         <div
-          className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+          role="status"
+          aria-label={t(`${NS}.notFoundTitle`)}
+          className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-not-found"
         >
-          <MagnifyingGlass
-            className="w-8 h-8 mx-auto text-muted-foreground mb-2"
-            weight="duotone"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-foreground">{t(`${NS}.notFoundTitle`)}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.notFoundBody`)}</p>
-          {emptyStateCta}
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+            <MagnifyingGlass
+              weight="duotone"
+              className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+              aria-hidden="true"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+              {t(`${NS}.notFoundTitle`)}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+              {t(`${NS}.notFoundBody`)}
+            </p>
+          </div>
+          <div className="mt-1">{emptyStateCta}</div>
         </div>
       </div>
     )

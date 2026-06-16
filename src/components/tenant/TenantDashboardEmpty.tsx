@@ -159,12 +159,12 @@ export function TenantDashboardEmpty() {
             transition={{ delay: 0.1 }}
             className="lg:col-span-2 space-y-6"
           >
-            {/* Progress Card - Soft Style */}
-            <div className="rounded-xl bg-gradient-to-br from-[#1A40FF] to-white dark:from-[#1A40FF]/40 dark:to-[#1a1a1c] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6 md:p-8">
+            {/* Progress Card - Clean Style */}
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6 md:p-8">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-white dark:bg-[#1a1a1c] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-center">
-                    <ClipboardText className="w-7 h-7 text-[#1A40FF] dark:text-[#5570FF]" />
+                  <div className="w-14 h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 flex items-center justify-center">
+                    <ClipboardText weight="duotone" className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
@@ -180,7 +180,7 @@ export function TenantDashboardEmpty() {
                 {nextIncompleteStep && (
                   <Link
                     href={nextIncompleteStep.href}
-                    className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
+                    className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
                   >
                     {locale === 'es' ? 'Continuar' : 'Continue'}
                     <ArrowRight className="w-4 h-4" />
@@ -190,19 +190,19 @@ export function TenantDashboardEmpty() {
 
               {/* Progress bar */}
               <div className="relative">
-                <div className="h-2 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-full overflow-hidden">
+                <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-[#1A40FF] dark:bg-[#5570FF] rounded-full"
+                    className="h-full bg-neutral-900 dark:bg-white rounded-full"
                   />
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">
                     {progressPercentage}% {locale === 'es' ? 'completado' : 'complete'}
                   </span>
-                  <span className="text-sm text-[#1A40FF] dark:text-[#5570FF] font-medium">
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">
                     {locale === 'es' ? `${totalSteps - completedCount} restantes` : `${totalSteps - completedCount} remaining`}
                   </span>
                 </div>
@@ -212,7 +212,7 @@ export function TenantDashboardEmpty() {
               {nextIncompleteStep && (
                 <Link
                   href={nextIncompleteStep.href}
-                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#1A40FF] text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
+                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
                 >
                   {locale === 'es' ? 'Continuar' : 'Continue'}
                   <ArrowRight className="w-4 h-4" />
@@ -237,9 +237,9 @@ export function TenantDashboardEmpty() {
                       className={cn(
                         'flex items-center gap-4 p-4 rounded-xl transition-all group',
                         step.completed
-                          ? 'bg-white dark:bg-[#222224] border border-[#2C7A53]/30 dark:border-[#2C7A53]/40'
+                          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                           : isNext
-                          ? 'bg-white dark:bg-[#222224] border-2 border-[#1A40FF]/30 dark:border-[#1A40FF]/40'
+                          ? 'bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
                           : 'bg-white/50 dark:bg-[#1f1f21] border border-neutral-100 dark:border-neutral-800 opacity-60 hover:opacity-100'
                       )}
                     >
@@ -248,13 +248,13 @@ export function TenantDashboardEmpty() {
                         step.completed
                           ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                           : isNext
-                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                          ? 'bg-neutral-900 dark:bg-white'
                           : 'bg-neutral-100 dark:bg-neutral-800'
                       )}>
                         {step.completed ? (
                           <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                         ) : isNext ? (
-                          <Play className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] fill-current" />
+                          <Play className="w-5 h-5 text-white dark:text-neutral-900 fill-current" />
                         ) : (
                           <Icon className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                         )}
@@ -278,19 +278,12 @@ export function TenantDashboardEmpty() {
                         'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all',
                         step.completed
                           ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
-                          : isNext
-                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 group-hover:bg-[#EEF1FF] dark:group-hover:bg-[#1A40FF]/50'
                           : 'bg-neutral-100 dark:bg-neutral-800'
                       )}>
                         {step.completed ? (
                           <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
                         ) : (
-                          <CaretRight className={cn(
-                            'w-4 h-4 transition-transform group-hover:translate-x-0.5',
-                            isNext
-                              ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                              : 'text-neutral-400 dark:text-neutral-500'
-                          )} />
+                          <CaretRight className="w-4 h-4 text-neutral-400 dark:text-neutral-500 transition-transform group-hover:translate-x-0.5" />
                         )}
                       </div>
                     </Link>
@@ -308,9 +301,6 @@ export function TenantDashboardEmpty() {
                   titleEn: 'Apply faster',
                   descEs: 'Postula en segundos',
                   descEn: 'Apply in seconds',
-                  color: 'text-[#B7791F] dark:text-[#D2992F]',
-                  bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-                  border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
                 },
                 {
                   icon: Shield,
@@ -318,9 +308,6 @@ export function TenantDashboardEmpty() {
                   titleEn: 'More trust',
                   descEs: 'Perfil verificado',
                   descEn: 'Verified profile',
-                  color: 'text-[#2C7A53] dark:text-[#3EAE70]',
-                  bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-                  border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
                 },
                 {
                   icon: Star,
@@ -328,9 +315,6 @@ export function TenantDashboardEmpty() {
                   titleEn: 'Better position',
                   descEs: 'Destaca entre otros',
                   descEn: 'Stand out',
-                  color: 'text-[#1A40FF] dark:text-[#5570FF]',
-                  bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-                  border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
                 },
               ].map((benefit, index) => (
                 <motion.div
@@ -338,10 +322,10 @@ export function TenantDashboardEmpty() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.1 }}
-                  className={cn('rounded-xl p-5 border', benefit.bg, benefit.border)}
+                  className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
                 >
-                  <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', benefit.bg)}>
-                    <benefit.icon className={cn('w-5 h-5', benefit.color)} />
+                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 flex items-center justify-center mb-3">
+                    <benefit.icon weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <p className="font-semibold text-neutral-900 dark:text-white text-sm">
                     {locale === 'es' ? benefit.titleEs : benefit.titleEn}
@@ -373,29 +357,29 @@ export function TenantDashboardEmpty() {
                     href={action.href}
                     className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#222224] hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors group border border-neutral-100 dark:border-neutral-800"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center group-hover:bg-[#EEF1FF] dark:group-hover:bg-[#1A40FF]/30 transition-colors">
-                      <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors" />
+                    <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700 transition-colors">
+                      <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors" />
                     </div>
                     <span className="flex-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors">
                       {locale === 'es' ? action.labelEs : action.labelEn}
                     </span>
-                    <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] group-hover:translate-x-0.5 transition-all" />
+                    <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 group-hover:translate-x-0.5 transition-all" />
                   </Link>
                 ))}
               </div>
             </div>
 
             {/* Tip Card */}
-            <div className="rounded-xl bg-gradient-to-br from-[#B7791F] to-[#B7791F]/50 dark:from-[#B7791F]/20 dark:to-[#B7791F]/10 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-5">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#B7791F]/30 border border-[#B7791F]/30 dark:border-[#B7791F]/40 flex items-center justify-center flex-shrink-0">
-                  <TrendUp className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 flex items-center justify-center flex-shrink-0">
+                  <TrendUp weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-[#B7791F] dark:text-[#D2992F] text-sm mb-1">
+                  <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-1">
                     {locale === 'es' ? '¿Sabías que?' : 'Did you know?'}
                   </h4>
-                  <p className="text-sm text-[#B7791F] dark:text-[#D2992F]/80 leading-relaxed">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
                     {locale === 'es'
                       ? 'Los perfiles completos tienen 3x más probabilidades de ser aprobados.'
                       : 'Complete profiles are 3x more likely to be approved.'}
@@ -405,7 +389,7 @@ export function TenantDashboardEmpty() {
             </div>
 
             {/* Help Card */}
-            <div className="rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 p-5">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
               <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-2">
                 {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
               </h4>
@@ -416,7 +400,7 @@ export function TenantDashboardEmpty() {
               </p>
               <Link
                 href="/ayuda"
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
               >
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
                 <ArrowRight className="w-4 h-4" />

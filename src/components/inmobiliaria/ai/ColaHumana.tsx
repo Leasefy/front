@@ -401,28 +401,41 @@ export function ColaHumana({
   }
 
   if (sorted.length === 0) {
+    // Empty state limpio y MONOCROMO: chip neutro + ícono mudo + título +
+    // hint, y a lo sumo un CTA pill outlined (estilo ElevenLabs).
+    const emptyTitleText = emptyTitle ?? t(`${WORKSPACE_NS}.cola.vacia`)
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+        role="status"
+        aria-label={emptyTitleText}
+        className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="cola-humana-empty"
       >
-        <span className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-2">
-          <CheckCircle className="w-6 h-6 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
-        </span>
-        <p className="text-sm font-medium text-foreground">
-          {emptyTitle ?? t(`${WORKSPACE_NS}.cola.vacia`)}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
-        </p>
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+          <CheckCircle
+            weight="duotone"
+            className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+            {emptyTitleText}
+          </p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+            {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
+          </p>
+        </div>
         {emptyAction && (
-          <Link
-            href={emptyAction.href}
-            className="inline-flex items-center gap-1 mt-3 text-xs font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
-            data-testid="cola-humana-empty-action"
-          >
-            {emptyAction.label}
-          </Link>
+          <div className="mt-1">
+            <Link
+              href={emptyAction.href}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+              data-testid="cola-humana-empty-action"
+            >
+              {emptyAction.label}
+            </Link>
+          </div>
         )}
       </div>
     )

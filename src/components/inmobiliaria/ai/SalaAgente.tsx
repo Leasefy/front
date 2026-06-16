@@ -100,10 +100,13 @@ function OverviewBody({
   isLoading,
   error,
   agente,
+  icon,
   pipelineTitle,
   emptyHint,
-}: Pick<SalaAgenteProps, 'overview' | 'isLoading' | 'error' | 'agente' | 'pipelineTitle' | 'emptyHint'>) {
+}: Pick<SalaAgenteProps, 'overview' | 'isLoading' | 'error' | 'agente' | 'icon' | 'pipelineTitle' | 'emptyHint'>) {
   const { t } = useI18n()
+  // Empty-state ícono mudo: usa el ícono del agente si llega, o Robot.
+  const EmptyIcon = icon ?? Robot
   if (isLoading) {
     return (
       <div className="space-y-4" data-testid="sala-agente-loading">
@@ -130,17 +133,29 @@ function OverviewBody({
   }
 
   if (!overview) {
-    // 404 / notAvailable — graceful empty state, NOT an error banner.
+    // 404 / notAvailable — empty state limpio y MONOCROMO, NO banner de error.
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+        role="status"
+        aria-label={t(`${WORKSPACE_NS}.sala.emptyTitle`)}
+        className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="sala-agente-empty"
       >
-        <Robot className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.sala.emptyTitle`)}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {emptyHint ?? t(`${WORKSPACE_NS}.sala.emptyBody`)}
-        </p>
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+          <EmptyIcon
+            weight="duotone"
+            className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+            {t(`${WORKSPACE_NS}.sala.emptyTitle`)}
+          </p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+            {emptyHint ?? t(`${WORKSPACE_NS}.sala.emptyBody`)}
+          </p>
+        </div>
       </div>
     )
   }
@@ -301,6 +316,7 @@ export function SalaAgente({
         isLoading={isLoading}
         error={error}
         agente={agente}
+        icon={HeaderIcon}
         pipelineTitle={pipelineTitle}
         emptyHint={emptyHint}
       />

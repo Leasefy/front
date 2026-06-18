@@ -4204,7 +4204,8 @@
         "compliance": "Compliance",
         "cartas": "Letters",
         "llamadas": "Calls",
-        "siniestros": "Claims"
+        "siniestros": "Claims",
+        "pagosHome": "Payments AI"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -5792,6 +5793,93 @@
         "empty": {
           "title": "No recent activity yet",
           "description": "Metrics appear when agents process requests."
+        }
+      },
+      "pagos_home": {
+        "title": "Payments AI",
+        "subtitle": "Charges, received payments and owner payouts, orchestrated by the agent.",
+        "disabled": {
+          "title": "Payments AI isn't active yet",
+          "description": "This feature is in preview and not enabled for your agency yet. We'll let you know when it's ready."
+        },
+        "errors": {
+          "loading": "We couldn't load this section",
+          "retry": "Retry"
+        },
+        "metrics": {
+          "sectionTitle": "Today's summary",
+          "cobrosProgramados": "Scheduled charges",
+          "cobrosEnviados": "Charges sent",
+          "pagosRecibidos": "Payments received",
+          "linksPendientes": "Pending links",
+          "pagosFallidos": "Failed payments",
+          "valorRecaudadoCop": "Amount collected",
+          "propietariosListos": "Owners ready",
+          "valorPendienteLiquidarCop": "Pending to settle",
+          "empty": "No metrics available yet."
+        },
+        "attention": {
+          "title": "Needs attention",
+          "subtitle": "Cases prioritized by the payments agent.",
+          "empty": {
+            "title": "All caught up",
+            "description": "There are no payments that need your attention right now."
+          },
+          "priority": {
+            "alta": "High",
+            "media": "Medium",
+            "baja": "Low"
+          },
+          "kind": {
+            "cobro_fallido": "Failed charge",
+            "link_vencido": "Expired link",
+            "proximo_a_vencer": "Due soon",
+            "pago_en_proceso": "Payment in progress"
+          },
+          "openDetail": "View detail"
+        },
+        "detail": {
+          "title": "Payment detail",
+          "description": "Context, activity and the agent's recommendation.",
+          "loading": "Loading detail…",
+          "notFound": {
+            "title": "Detail unavailable",
+            "description": "We couldn't find information for this payment."
+          },
+          "contexto": {
+            "title": "Context",
+            "periodo": "Period",
+            "total": "Total",
+            "status": "Status",
+            "dueDate": "Due",
+            "tenant": "Tenant",
+            "phone": "Phone",
+            "property": "Property",
+            "noDueDate": "No date"
+          },
+          "actividad": {
+            "title": "Activity",
+            "empty": "No activity recorded."
+          },
+          "recomendacion": {
+            "title": "Agent's recommendation"
+          },
+          "close": "Close"
+        },
+        "ownerInbox": {
+          "title": "Owner inbox",
+          "subtitle": "Owners with payouts to process.",
+          "columns": {
+            "propietario": "Owner",
+            "inmuebles": "Properties",
+            "valorAPagar": "Amount to pay",
+            "estado": "Status",
+            "accion": "Action"
+          },
+          "empty": {
+            "title": "No pending owners",
+            "description": "There are no owner payouts to process right now."
+          }
         }
       }
     },

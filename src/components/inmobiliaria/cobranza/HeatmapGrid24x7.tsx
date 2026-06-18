@@ -177,7 +177,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
                     className={
                       'aspect-square rounded-[2px] ' +
                       (isSelected
-                        ? 'ring-2 ring-[#1A40FF] ring-offset-1 relative z-10'
+                        ? 'ring-2 ring-primary ring-offset-1 relative z-10'
                         : '')
                     }
                     style={{ backgroundColor: cellBgColor(cell.call_count, cell.positive_outcome_pct, effectiveMax) }}

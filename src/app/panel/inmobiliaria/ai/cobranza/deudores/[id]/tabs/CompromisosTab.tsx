@@ -11,6 +11,7 @@ import * as React from 'react'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromisos'
+import { Button } from '@/components/ui'
 
 void React
 
@@ -37,17 +38,19 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
+      <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.compromisos.error')}: {error}
         </p>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
+          hideArrow
         >
           {t('inmobiliaria.ai.cobranza.detail.compromisos.errorRetry')}
-        </button>
+        </Button>
       </div>
     )
   }

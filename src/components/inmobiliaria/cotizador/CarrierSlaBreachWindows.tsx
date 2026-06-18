@@ -58,69 +58,69 @@ export function CarrierSlaBreachWindows({
   const { t } = useI18n()
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
-      <p className="text-xs font-mono uppercase tracking-wide text-neutral-500 mb-3">
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-3">
         {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.title')}
       </p>
 
       {isLoading && (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-10 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+            <div key={i} className="h-10 rounded bg-surface-muted animate-pulse" />
           ))}
         </div>
       )}
 
       {!isLoading && (!breachWindows || breachWindows.length === 0) && (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-6">
+        <p className="text-sm text-fg-muted text-center py-6">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.empty')}
         </p>
       )}
 
       {!isLoading && breachWindows && breachWindows.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-            <thead className="bg-neutral-50 dark:bg-neutral-800/50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-surface-muted/60">
               <tr>
-                <th className="px-3 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wide text-left">
+                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.start')}
                 </th>
-                <th className="px-3 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wide text-left">
+                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.end')}
                 </th>
-                <th className="px-3 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">
+                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.duration')}
                 </th>
-                <th className="px-3 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">
+                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.maxP95')}
                 </th>
-                <th className="px-3 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">
+                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.maxErrorRate')}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <tbody className="divide-y divide-border">
               {breachWindows.map((w, idx) => (
-                <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
-                  <td className="px-3 py-2.5 text-sm text-neutral-600 dark:text-neutral-300 whitespace-nowrap">
+                <tr key={idx} className="hover:bg-surface-muted/50 transition-colors">
+                  <td className="px-3 py-2.5 text-sm text-fg-muted whitespace-nowrap">
                     {formatDate(w.startedAt)}
                   </td>
                   <td className="px-3 py-2.5 text-sm whitespace-nowrap">
                     {w.endedAt ? (
-                      <span className="text-neutral-600 dark:text-neutral-300">{formatDate(w.endedAt)}</span>
+                      <span className="text-fg-muted">{formatDate(w.endedAt)}</span>
                     ) : (
-                      <span className="text-[#B7791F] dark:text-[#D2992F] text-xs font-medium">
+                      <span className="text-warning text-xs font-medium">
                         {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.ongoing')}
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-sm text-neutral-600 dark:text-neutral-300 text-right font-mono tabular-nums whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                     {formatDuration(w.durationMinutes)}
                   </td>
-                  <td className="px-3 py-2.5 text-sm text-neutral-600 dark:text-neutral-300 text-right font-mono tabular-nums whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                     {w.maxP95LatencyMs}ms
                   </td>
-                  <td className="px-3 py-2.5 text-sm text-neutral-600 dark:text-neutral-300 text-right font-mono tabular-nums whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                     {(w.maxErrorRate * 100).toFixed(1)}%
                   </td>
                 </tr>

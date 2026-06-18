@@ -115,7 +115,7 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
         </p>
 
         {envMissing ? (
-          <p className="mt-3 text-sm text-[#B7791F] dark:text-[#D2992F]">
+          <p className="mt-3 text-sm text-warning">
             {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
           </p>
         ) : (
@@ -150,7 +150,7 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
         )}
 
         {error && (
-          <p className="mt-3 text-xs text-[#C4503B] dark:text-[#E0664D]">{error}</p>
+          <p className="mt-3 text-xs text-danger">{error}</p>
         )}
 
         <div className="mt-6 flex items-center justify-end gap-2">
@@ -166,7 +166,7 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting || envMissing}
-            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-neutral-500 text-white hover:bg-[#6B6B6B] disabled:opacity-50"
+            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-neutral-500 text-white hover:bg-fg-muted disabled:opacity-50"
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.pause.confirming')

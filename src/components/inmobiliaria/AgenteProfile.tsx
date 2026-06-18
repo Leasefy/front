@@ -25,8 +25,8 @@ interface AgenteProfileProps {
 const ROLE_CONFIG: Record<AgenteRole, { label: string; bg: string; text: string }> = {
   agent: {
     label: 'Agente',
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   coordinator: {
     label: 'Coordinador',
@@ -35,8 +35,8 @@ const ROLE_CONFIG: Record<AgenteRole, { label: string; bg: string; text: string 
   },
   director: {
     label: 'Director',
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
 };
 
@@ -44,7 +44,7 @@ const ROLE_CONFIG: Record<AgenteRole, { label: string; bg: string; text: string 
 const STATUS_CONFIG: Record<AgenteStatus, { label: string; dot: string }> = {
   active: {
     label: 'Activo',
-    dot: 'bg-[#2C7A53]',
+    dot: 'bg-success',
   },
   inactive: {
     label: 'Inactivo',
@@ -52,7 +52,7 @@ const STATUS_CONFIG: Record<AgenteStatus, { label: string; dot: string }> = {
   },
   on_leave: {
     label: 'En licencia',
-    dot: 'bg-[#B7791F]',
+    dot: 'bg-warning',
   },
 };
 
@@ -119,8 +119,8 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
                 className="w-20 h-20 rounded-xl object-cover"
               />
             ) : (
-              <div className="w-20 h-20 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center">
-                <span className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
+              <div className="w-20 h-20 rounded-xl bg-primary-soft flex items-center justify-center">
+                <span className="text-2xl font-bold text-primary">
                   {agente.name.split(' ').map(n => n.charAt(0)).slice(0, 2).join('')}
                 </span>
               </div>
@@ -158,7 +158,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
                 <Envelope className="w-4 h-4 shrink-0" />
                 <a
                   href={`mailto:${agente.email}`}
-                  className="text-sm hover:text-[#1A40FF] transition-colors truncate"
+                  className="text-sm hover:text-primary transition-colors truncate"
                 >
                   {agente.email}
                 </a>
@@ -167,7 +167,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
                 <Phone className="w-4 h-4 shrink-0" />
                 <a
                   href={`tel:${agente.phone}`}
-                  className="text-sm hover:text-[#1A40FF] transition-colors"
+                  className="text-sm hover:text-primary transition-colors"
                 >
                   {agente.phone}
                 </a>
@@ -222,7 +222,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Split Bar */}
           <div className="h-3 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex mb-3">
             <div
-              className="bg-[#1A40FF] dark:bg-[#5570FF] transition-all"
+              className="bg-primary transition-all"
               style={{ width: `${agentPercent}%` }}
             />
             <div
@@ -234,7 +234,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Labels */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#1A40FF] dark:bg-[#5570FF]" />
+              <div className="w-3 h-3 rounded-full bg-primary" />
               <span className="text-neutral-600 dark:text-neutral-400">
                 {t('inmobiliaria.agente.agentLabel')}: <span className="font-semibold text-neutral-900 dark:text-white">{agentPercent}%</span>
               </span>
@@ -252,7 +252,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
         <div className="flex flex-wrap items-center gap-2">
           <a
             href={`mailto:${agente.email}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-medium hover:opacity-90 transition-colors"
           >
             <Envelope className="w-4 h-4" />
             Email
@@ -268,7 +268,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
             href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C7A53] text-white font-medium hover:bg-[#2C7A53] transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-success text-white font-medium hover:bg-success transition-colors"
           >
             <WhatsappLogo className="w-4 h-4" />
             WhatsApp

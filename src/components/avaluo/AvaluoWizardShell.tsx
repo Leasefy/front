@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, WarningCircle } from '@phosphor-icons/react';
+import { Eyebrow } from '@leasefy/ui';
 import { cn } from '@/lib/utils';
 import { WizardNavigation } from '@/components/wizard/WizardNavigation';
 import { useAvaluo } from './AvaluoContext';
@@ -72,7 +73,7 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
             {currentStepConfig?.label}
           </span>
         </div>
-        <div className="h-1 bg-black/10 rounded-full overflow-hidden">
+        <div className="h-1 bg-border rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-500"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -86,10 +87,8 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
         <aside className="hidden lg:flex lg:flex-col lg:w-[280px] xl:w-[320px] bg-card border-r border-border lg:sticky lg:top-0 lg:h-screen">
           {/* Brand / title */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <p className="font-mono text-xs text-muted-foreground uppercase tracking-[0.08em] mb-1">
-              Leasefy
-            </p>
-            <h1 className="text-lg font-medium text-foreground leading-tight tracking-[-0.01em]">
+            <Eyebrow className="mb-1.5">Leasefy</Eyebrow>
+            <h1 className="text-lg font-semibold text-foreground leading-tight tracking-tight">
               Avalúo comercial
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -113,7 +112,7 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
                       <div
                         className={cn(
                           'absolute left-[11px] top-[28px] w-[2px] h-[32px]',
-                          isCompleted ? 'bg-primary' : 'bg-black/10'
+                          isCompleted ? 'bg-primary' : 'bg-border'
                         )}
                       />
                     )}

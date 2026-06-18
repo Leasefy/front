@@ -42,7 +42,7 @@ export function ErrorState({
   className,
 }: ErrorStateProps) {
   return (
-    <Card className={cn('border border-[#C4503B]/30 bg-[#F8EAE7]/30', className)}>
+    <Card className={cn('border border-danger/30 bg-danger-soft/40', className)}>
       <CardContent className="p-0">
         <DSErrorState
           title={title}

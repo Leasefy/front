@@ -22,14 +22,14 @@ export default function AiWorkspaceError({
     <div className="p-6 lg:p-8" data-testid="ai-workspace-error">
       <div
         role="alert"
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-8 text-center"
+        className="rounded-xl border border-danger/30 bg-danger-soft p-8 text-center"
       >
         <WarningCircle
-          className="w-8 h-8 mx-auto text-[#C4503B] dark:text-[#E0664D] mb-2"
+          className="w-8 h-8 mx-auto text-danger mb-2"
           weight="duotone"
           aria-hidden="true"
         />
-        <p className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">
+        <p className="text-sm font-medium text-danger">
           Algo salió mal en este workspace
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">

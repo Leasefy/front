@@ -46,7 +46,7 @@ export function InviteFirstMemberForm({ data, onChange }: InviteFirstMemberFormP
           value={data.email}
           onChange={(e) => onChange({ email: e.target.value })}
           placeholder="colaborador@tuagencia.com"
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
         />
       </div>
 
@@ -67,20 +67,20 @@ export function InviteFirstMemberForm({ data, onChange }: InviteFirstMemberFormP
               className={cn(
                 'w-full flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all',
                 data.role === option.value
-                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                  ? 'border-primary/30 bg-primary-soft'
                   : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-transparent hover:border-neutral-300 dark:hover:border-neutral-600'
               )}
             >
               <div className={cn(
                 'w-4 h-4 rounded-full border-2 mt-0.5 flex-shrink-0 transition-colors',
                 data.role === option.value
-                  ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
+                  ? 'border-primary/30 bg-primary'
                   : 'border-neutral-300 dark:border-neutral-600'
               )} />
               <div>
                 <p className={cn(
                   'text-sm font-medium',
-                  data.role === option.value ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-800 dark:text-neutral-200'
+                  data.role === option.value ? 'text-primary' : 'text-neutral-800 dark:text-neutral-200'
                 )}>
                   {option.label}
                 </p>

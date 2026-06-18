@@ -333,7 +333,7 @@ function AuditContent() {
             className="w-full px-2 py-1.5 rounded-sm border border-border bg-background text-sm font-mono"
           />
           {qInput.length > 0 && qInput.length < 8 && (
-            <p className="mt-1 text-xs text-[#B7791F] dark:text-[#D2992F]">
+            <p className="mt-1 text-xs text-warning">
               {locale.startsWith('es')
                 ? 'Ingrese al menos 8 caracteres'
                 : 'Enter at least 8 characters'}
@@ -351,7 +351,7 @@ function AuditContent() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -413,7 +413,7 @@ function AuditContent() {
                       {row.actor_id}
                     </td>
                     <td className="px-3 py-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono uppercase bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/30 dark:text-[#1A40FF]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono uppercase bg-primary-soft text-primary dark:bg-primary/30 dark:text-primary">
                         {row.action}
                       </span>
                     </td>

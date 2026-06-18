@@ -159,7 +159,7 @@ function OptOutContent() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -200,12 +200,12 @@ function OptOutContent() {
                     <td className="px-3 py-2 text-foreground">{row.source}</td>
                     <td className="px-3 py-2 font-mono tabular-nums text-xs">
                       {isAcked ? (
-                        <span className="inline-flex items-center gap-1 text-[#2C7A53] dark:text-[#3EAE70]">
+                        <span className="inline-flex items-center gap-1 text-success">
                           <Check className="w-3.5 h-3.5" aria-hidden="true" />
                           {new Date(row.acknowledged_at as string).toLocaleDateString(locale)}
                         </span>
                       ) : (
-                        <span className="text-[#B7791F] dark:text-[#D2992F]">
+                        <span className="text-warning">
                           {locale.startsWith('es') ? 'Pendiente' : 'Pending'}
                         </span>
                       )}

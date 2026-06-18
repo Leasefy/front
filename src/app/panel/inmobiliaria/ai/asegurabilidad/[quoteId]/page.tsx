@@ -26,9 +26,14 @@ import { StreamCompleteBanner } from '@/components/inmobiliaria/cotizador/Stream
 import { CounterfactualModal } from '@/components/cotizador/CounterfactualModal'
 import { ReQuoteOfBadge } from '@/components/cotizador/ReQuoteOfBadge'
 import { CotizadorQuoteDetailSkeleton } from '@/components/skeleton/panel/CotizadorQuoteDetailSkeleton'
+import { usePdfDownload } from '@/lib/cotizador/use-pdf-download'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
+import { CasoSidebar } from './CasoSidebar'
+import { RecomendacionRail } from './RecomendacionRail'
+import { MatrizActionBar, type MatrizActionCode } from './MatrizActionBar'
+import type { PostSeleccionCode } from './PostSeleccionSheet'
 
 // ---------------------------------------------------------------------------
 // Inner component (rendered inside PageGuard — auth is guaranteed)
@@ -132,6 +137,57 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
   // D-33-11: open the counterfactual modal.
   const handlePedirExplicacion = () => setModalOpen(true)
 
+  // Descargar PDF — reusa el endpoint backend (mismo path que StreamCompleteBanner).
+  // El botón de la barra de acciones delega aquí cuando hay agency + quote.
+  const { downloadPdf } = usePdfDownload({
+    agencyId: agency?.id ?? '',
+    quoteId,
+    filenamePrefix: pdfFilenamePrefix,
+  })
+
+  // Patrón de honestidad: las acciones que aún NO tienen backend (avanzar /
+  // comparar / codeudor / compartir / contrato + radicar / expediente /
+  // notificar / propietario / guardar) NO inventan un endpoint — muestran un
+  // aviso inline "Próximamente" (NO toast — aquí no hay sistema de toast para
+  // estados informativos persistentes). Las que SÍ tienen destino natural
+  // reutilizan los handlers existentes (descargar PDF / re-cotizar / resolver).
+  const [proximamente, setProximamente] = useState<string | null>(null)
+
+  // Barra de acciones (visión #8/#21): mapea cada código a su comportamiento.
+  const handleMatrizAction = (code: MatrizActionCode) => {
+    setProximamente(null)
+    switch (code) {
+      case 'descargar':
+        void downloadPdf()
+        return
+      // Sin backend todavía → aviso honesto inline.
+      case 'avanzar':
+      case 'comparar':
+      case 'codeudor':
+      case 'compartir':
+      case 'contrato':
+        setProximamente(
+          t(`inmobiliaria.ai.cotizador.detail.acciones.${code}`),
+        )
+        return
+      default:
+        return
+    }
+  }
+
+  // Pasos post-selección (visión #22): los de destino natural navegan; el resto
+  // queda como "Próximamente".
+  const handlePostSeleccion = (code: PostSeleccionCode) => {
+    setProximamente(null)
+    if (code === 'contrato') {
+      // mismo destino que "Enviar a contrato" — aún sin backend.
+      setProximamente(t('inmobiliaria.ai.cotizador.detail.postSeleccion.contrato'))
+      return
+    }
+    // radicar / expediente / notificar / propietario / guardar → próximamente.
+    setProximamente(t(`inmobiliaria.ai.cotizador.detail.postSeleccion.${code}`))
+  }
+
   // D-33-13: when the wrapper returns 404 (quote stale / wrong tenant), close
   // the modal and surface a toast — the user can navigate back to the index.
   const handleQuote404 = () => {
@@ -168,8 +224,9 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
         isConnected={isConnected}
       />
 
-      {/* Main content */}
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      {/* Main content — ficha del caso en 3 columnas (visión #14):
+          contexto (izq) | comparación + acciones (centro) | recomendación (der). */}
+      <main className="max-w-7xl mx-auto px-4 py-6">
         {/* ARIA live region — announces carrier verdict transitions to SR */}
         <div
           role="status"
@@ -180,123 +237,195 @@ function QuoteDetailContent({ quoteId }: { quoteId: string }) {
           {lastVerdictAnnouncement}
         </div>
 
-        {/* Re-quote lineage subtitle (D-33-11) — visible only when this quote
-            originated as a re-quote of a previous one. */}
-        {metadata?.reQuoteOf && (
-          <ReQuoteOfBadge parentId={metadata.reQuoteOf} />
-        )}
-
-        {/* Phase 33 header action row (D-33-10): visible when operator has
-            cotizador:view AND at least one carrier has a final verdict. */}
-        {canView && hasAnyVerdict && (
-          <div className="flex gap-2 justify-end" data-testid="phase33-action-row">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePedirExplicacion}
-              aria-label={t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
-            >
-              {t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReQuote}
-              aria-label={t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
-            >
-              {t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
-            </Button>
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[300px_minmax(0,1fr)_320px] lg:items-start">
+          {/* ── IZQUIERDA — Caso (contexto) ──────────────────────────────── */}
+          <div className="lg:sticky lg:top-4 min-w-0">
+            <CasoSidebar
+              metadata={metadata ?? null}
+              finalVerdict={finalVerdict}
+              isConnected={isConnected}
+            />
           </div>
-        )}
 
-        {/* Reconnection error banner */}
-        {error && !isConnected && (
-          <div
-            role="alert"
-            className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-4 flex items-center justify-between gap-3"
-          >
-            <span className="text-body-sm text-[#B7791F] dark:text-[#D2992F]">
-              {t('inmobiliaria.ai.cotizador.detail.connectionInterrupted')}
-            </span>
-            <Button variant="outline" size="sm" onClick={reconnect}>
-              {t('inmobiliaria.ai.cotizador.detail.retry')}
-            </Button>
+          {/* ── CENTRO — comparación + acciones (cableado UNCHANGED) ──────── */}
+          <section className="min-w-0 space-y-6">
+            {/* Re-quote lineage subtitle (D-33-11) — visible only when this quote
+                originated as a re-quote of a previous one. */}
+            {metadata?.reQuoteOf && (
+              <ReQuoteOfBadge parentId={metadata.reQuoteOf} />
+            )}
+
+            {/* Phase 33 header action row (D-33-10): visible when operator has
+                cotizador:view AND at least one carrier has a final verdict. */}
+            {canView && hasAnyVerdict && (
+              <div className="flex gap-2 justify-end" data-testid="phase33-action-row">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePedirExplicacion}
+                  aria-label={t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
+                >
+                  {t('inmobiliaria.ai.cotizador.detail.pedirExplicacionButton')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReQuote}
+                  aria-label={t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
+                >
+                  {t('inmobiliaria.ai.cotizador.detail.reQuoteButton')}
+                </Button>
+              </div>
+            )}
+
+            {/* Reconnection error banner */}
+            {error && !isConnected && (
+              <div
+                role="alert"
+                className="rounded-xl border border-warning/30 bg-warning-soft p-4 flex items-center justify-between gap-3"
+              >
+                <span className="text-sm text-warning">
+                  {t('inmobiliaria.ai.cotizador.detail.connectionInterrupted')}
+                </span>
+                <Button variant="outline" size="sm" hideArrow onClick={reconnect}>
+                  {t('inmobiliaria.ai.cotizador.detail.retry')}
+                </Button>
+              </div>
+            )}
+
+            {/* CONCLUSIÓN + RECOMENDACIÓN en lenguaje natural — aparece cuando el
+                agente emite agent.final_verdict. Mientras tanto, el grid de abajo
+                muestra el estado de carga (skeletons pending). Si asegurabilidad
+                es 'no' el componente NO renderiza recomendación (W2 = recovery). */}
+            {finalVerdict && (
+              <VeredictoAsegurabilidad
+                finalVerdict={finalVerdict}
+                partialRanking={partialRanking}
+                carriers={carriers}
+                stubMode={isStubMode}
+              />
+            )}
+
+            {/* Completion banner — appears when all carriers final */}
+            {allFinal && (
+              <StreamCompleteBanner
+                carrierCount={carriers.length}
+                totalCostUsd={totalCostUsd}
+                isStubMode={isStubMode}
+                onReQuote={handleReQuote}
+                onBack={handleBack}
+                locale={locale}
+                agencyId={agency?.id}
+                quoteId={quoteId}
+                pdfFilenamePrefix={pdfFilenamePrefix}
+              />
+            )}
+
+            {/* F10 — verdict del agente como AccionSugerida (compact panel).
+                Renders ONLY when the work-item detail resolves; cotizador items
+                are read-only triage so `actions` is usually [] and the card shows
+                the verdict narrative (label + confianza + razón + evidencia). */}
+            {verdictItem.data && (
+              <AccionSugerida
+                accion={verdictItem.data.item.accionSugerida}
+                actions={verdictItem.data.item.actions}
+                onAction={async (action, body) => {
+                  const res = await runWorkItemAction(action, body)
+                  if (res.ok) void verdictItem.refetch()
+                  return res
+                }}
+              />
+            )}
+
+            {/* Carrier cards grid (always rendered — shows pending skeletons while streaming) */}
+            <CarrierStreamGrid carriers={carriers} locale={locale} />
+
+            {/* ════════════════════════════════════════════════════════════
+                W2 — SECCIONES INFERIORES (debajo de la conclusión de W1).
+                Propiedad de W2: matriz comparativa + recovery + condicionado.
+                Editar SOLO dentro de este bloque para no chocar con W1/W3.
+                ════════════════════════════════════════════════════════════ */}
+
+            {/* MATRIZ comparativa (visión #8, #13) — aseguradora × {resultado,
+                condición, costo estimado, tiempo, recomendación}. Toggle matriz /
+                tarjetas. Aparece cuando ≥1 aseguradora tiene veredicto; los stubs
+                van etiquetados "Estimado · Prevalidación Leasefy". */}
+            {hasAnyVerdict && <MatrizAsegurabilidad carriers={carriers} />}
+
+            {/* Barra de acciones (visión #8/#21) — debajo de la matriz. Aparece
+                con ≥1 veredicto. Descargar reusa el path de PDF; re-cotizar /
+                resolver / reconectar usan los handlers existentes; el resto
+                degrada a "Próximamente" (aviso inline abajo). */}
+            {hasAnyVerdict && (
+              <MatrizActionBar
+                carriers={carriers}
+                onReQuote={handleReQuote}
+                onResolver={handlePedirExplicacion}
+                onReconnect={reconnect}
+                onDownload={allFinal && !isStubMode ? downloadPdf : undefined}
+                onAction={handleMatrizAction}
+              />
+            )}
+
+            {/* Aviso "Próximamente" (patrón de honestidad — NO toast): las
+                acciones sin backend explican que están por llegar en lugar de
+                fallar en silencio. */}
+            {proximamente && (
+              <div
+                role="status"
+                className="rounded-xl border border-border bg-surface-muted p-3 flex items-center justify-between gap-3"
+              >
+                <span className="text-sm text-fg-muted">
+                  <span className="font-medium text-fg">
+                    {proximamente}
+                  </span>{' '}
+                  {t('inmobiliaria.ai.cotizador.detail.acciones.proximamente') ===
+                  'inmobiliaria.ai.cotizador.detail.acciones.proximamente'
+                    ? 'estará disponible próximamente.'
+                    : t('inmobiliaria.ai.cotizador.detail.acciones.proximamente')}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  hideArrow
+                  onClick={() => setProximamente(null)}
+                  className="shrink-0 text-fg-muted"
+                >
+                  {t('inmobiliaria.ai.cotizador.detail.acciones.cerrar') ===
+                  'inmobiliaria.ai.cotizador.detail.acciones.cerrar'
+                    ? 'Cerrar'
+                    : t('inmobiliaria.ai.cotizador.detail.acciones.cerrar')}
+                </Button>
+              </div>
+            )}
+
+            {/* RECOVERY "nadie lo asegura" (visión #10) + CONDICIONADO (visión #11).
+                - Recovery: solo cuando final_verdict.asegurabilidad === 'no'.
+                  CTA "Re-cotizar con cambios" reutiliza el flujo existente
+                  (handleReQuote → wizard ?from=).
+                - Condicionado: cuando hay carriers conditional; "Resolver
+                  condiciones" abre el CounterfactualModal (handlePedirExplicacion). */}
+            <RecoveryAsegurabilidad
+              asegurabilidad={finalVerdict?.asegurabilidad ?? null}
+              recovery={recovery}
+              carriers={carriers}
+              onReQuote={handleReQuote}
+              onResolverCondiciones={handlePedirExplicacion}
+            />
+            {/* ═══════════════ FIN SECCIONES INFERIORES W2 ════════════════ */}
+          </section>
+
+          {/* ── DERECHA — Recomendación + post-selección ─────────────────── */}
+          <div className="lg:sticky lg:top-4 min-w-0">
+            <RecomendacionRail
+              finalVerdict={finalVerdict}
+              carriers={carriers}
+              onAvanzar={() => handleMatrizAction('avanzar')}
+              onReQuote={handleReQuote}
+              onPostSeleccion={handlePostSeleccion}
+            />
           </div>
-        )}
-
-        {/* CONCLUSIÓN + RECOMENDACIÓN en lenguaje natural — aparece cuando el
-            agente emite agent.final_verdict. Mientras tanto, el grid de abajo
-            muestra el estado de carga (skeletons pending). Si asegurabilidad
-            es 'no' el componente NO renderiza recomendación (W2 = recovery). */}
-        {finalVerdict && (
-          <VeredictoAsegurabilidad
-            finalVerdict={finalVerdict}
-            partialRanking={partialRanking}
-            carriers={carriers}
-            stubMode={isStubMode}
-          />
-        )}
-
-        {/* Completion banner — appears when all carriers final */}
-        {allFinal && (
-          <StreamCompleteBanner
-            carrierCount={carriers.length}
-            totalCostUsd={totalCostUsd}
-            isStubMode={isStubMode}
-            onReQuote={handleReQuote}
-            onBack={handleBack}
-            locale={locale}
-            agencyId={agency?.id}
-            quoteId={quoteId}
-            pdfFilenamePrefix={pdfFilenamePrefix}
-          />
-        )}
-
-        {/* F10 — verdict del agente como AccionSugerida (compact panel).
-            Renders ONLY when the work-item detail resolves; cotizador items
-            are read-only triage so `actions` is usually [] and the card shows
-            the verdict narrative (label + confianza + razón + evidencia). */}
-        {verdictItem.data && (
-          <AccionSugerida
-            accion={verdictItem.data.item.accionSugerida}
-            actions={verdictItem.data.item.actions}
-            onAction={async (action, body) => {
-              const res = await runWorkItemAction(action, body)
-              if (res.ok) void verdictItem.refetch()
-              return res
-            }}
-          />
-        )}
-
-        {/* Carrier cards grid (always rendered — shows pending skeletons while streaming) */}
-        <CarrierStreamGrid carriers={carriers} locale={locale} />
-
-        {/* ════════════════════════════════════════════════════════════════
-            W2 — SECCIONES INFERIORES (debajo de la conclusión de W1).
-            Propiedad de W2: matriz comparativa + recovery + condicionado.
-            Editar SOLO dentro de este bloque para no chocar con W1/W3.
-            ════════════════════════════════════════════════════════════════ */}
-
-        {/* MATRIZ comparativa (visión #8, #13) — aseguradora × {resultado,
-            condición, costo estimado, tiempo, recomendación}. Toggle matriz /
-            tarjetas. Aparece cuando ≥1 aseguradora tiene veredicto; los stubs
-            van etiquetados "Estimado · Prevalidación Leasefy". */}
-        {hasAnyVerdict && <MatrizAsegurabilidad carriers={carriers} />}
-
-        {/* RECOVERY "nadie lo asegura" (visión #10) + CONDICIONADO (visión #11).
-            - Recovery: solo cuando final_verdict.asegurabilidad === 'no'.
-              CTA "Re-cotizar con cambios" reutiliza el flujo existente
-              (handleReQuote → wizard ?from=).
-            - Condicionado: cuando hay carriers conditional; "Resolver
-              condiciones" abre el CounterfactualModal (handlePedirExplicacion). */}
-        <RecoveryAsegurabilidad
-          asegurabilidad={finalVerdict?.asegurabilidad ?? null}
-          recovery={recovery}
-          carriers={carriers}
-          onReQuote={handleReQuote}
-          onResolverCondiciones={handlePedirExplicacion}
-        />
-        {/* ════════════════ FIN SECCIONES INFERIORES W2 ═══════════════════ */}
+        </div>
       </main>
 
       {/* Phase 33 counterfactual modal — mounted at root so portal stacking

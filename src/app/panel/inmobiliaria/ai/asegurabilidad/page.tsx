@@ -18,10 +18,12 @@ import {
   type QuoteInsertEvent,
 } from '@/lib/hooks/cotizador/use-cotizador-overview'
 import { CotizadorKpiStrip } from '@/components/inmobiliaria/cotizador/CotizadorKpiStrip'
+import { CotizadorPriorityInbox } from '@/components/inmobiliaria/cotizador/CotizadorPriorityInbox'
 import { CotizadorRecentQuotesFeed } from '@/components/inmobiliaria/cotizador/CotizadorRecentQuotesFeed'
 import { CotizadorCarriersStatus } from '@/components/inmobiliaria/cotizador/CotizadorCarriersStatus'
 import { CotizadorOverviewSkeleton } from '@/components/skeleton/panel/CotizadorOverviewSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui/button'
 import { relativeTime } from '@/lib/cartera'
 
 // Permissions gate is enforced by the cotizador layout (Phase 29).
@@ -37,32 +39,37 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] =
   { icon: CheckCircle, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
 ]
 
-/** Sección "¿Cómo funciona?" — pasos numerados, mismo patrón que avaluos/page.tsx. */
+/** Sección "¿Cómo funciona?" — step-strip 4-up parejo (UI-DS-CONTRACT §7). */
 function ComoFuncionaCotizador() {
   const { t } = useI18n()
   return (
     <div
-      className="rounded-2xl border border-border bg-card p-5 max-w-3xl space-y-4"
+      className="rounded-xl border border-border bg-card p-5 space-y-4"
       data-testid="cotizador-como-funciona"
     >
-      <h2 className="text-sm font-semibold text-foreground">
+      <h2 className="text-base font-semibold text-fg">
         {t(`${PAGES_NS}.comoFunciona.title`)}
       </h2>
-      <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {COMO_FUNCIONA_STEPS.map((step, i) => {
           const StepIcon = step.icon
           return (
-            <li key={step.titleKey} className="space-y-1.5">
+            <li
+              key={step.titleKey}
+              className="h-full rounded-lg border border-border bg-surface p-4 flex flex-col gap-2"
+            >
               <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
+                <span className="grid size-8 place-items-center rounded-md bg-primary-soft text-primary shrink-0">
+                  <StepIcon className="size-4" weight="duotone" aria-hidden="true" />
                 </span>
-                <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                <span className="text-xs font-medium tabular-nums text-fg-muted">
+                  {i + 1}
+                </span>
               </div>
-              <p className="text-[13px] font-semibold text-foreground leading-tight">
+              <p className="text-sm font-semibold text-fg leading-snug">
                 {t(step.titleKey)}
               </p>
-              <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
+              <p className="text-xs text-fg-muted leading-snug">{t(step.descKey)}</p>
             </li>
           )
         })}
@@ -73,6 +80,11 @@ function ComoFuncionaCotizador() {
 
 export default function CotizadorOverviewPage() {
   const { t, locale } = useI18n()
+  // t() with raw-key fallback so a missing key never renders the path.
+  const tf = (k: string, fb: string) => {
+    const r = t(k)
+    return r === k ? fb : r
+  }
 
   const {
     data,
@@ -124,6 +136,9 @@ export default function CotizadorOverviewPage() {
             href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
           }}
         />
+        {/* La cola de consultas es independiente del feed de cotizaciones:
+            puede haber casos pendientes aunque hoy no se haya creado ninguna. */}
+        <CotizadorPriorityInbox />
         {/* ¿Cómo funciona? — especialmente útil cuando aún no hay cotizaciones */}
         <ComoFuncionaCotizador />
       </main>
@@ -134,23 +149,27 @@ export default function CotizadorOverviewPage() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.ai.cotizador.overview.title')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
-            {/* Subtítulo de beneficio (el anterior era mecánico: "Estado de las cotizaciones…") */}
-            {t(`${PAGES_NS}.salaSubtitle`)}
+          <p className="text-sm text-fg-muted max-w-2xl">
+            {/* Positioning copy (visión #1: "radar de asegurabilidad"). Cae al
+                subtítulo de beneficio existente si la clave nueva falta. */}
+            {tf(
+              'inmobiliaria.ai.cotizador.overview.radarSubtitle',
+              t(`${PAGES_NS}.salaSubtitle`),
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {data?.generatedAt && (
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap flex items-center gap-2">
+            <p className="text-xs text-fg-muted whitespace-nowrap flex items-center gap-2 mr-1">
               {t('inmobiliaria.ai.cotizador.overview.lastUpdated')}{' '}
               {relativeTime(data.generatedAt, locale)}
               {isRealtimeConnected && (
                 <span
-                  className="inline-flex h-1.5 w-1.5 rounded-full bg-[#2C7A53] animate-ping"
+                  className="inline-flex h-1.5 w-1.5 rounded-full bg-success animate-ping"
                   aria-hidden="true"
                 />
               )}
@@ -158,30 +177,32 @@ export default function CotizadorOverviewPage() {
           )}
           {/* CTA secundario — cola de verdicts por revisar (sin N: el overview
               no trae ese count barato; la cola lo calcula al abrir) */}
-          <Link
-            href="/panel/inmobiliaria/ai/asegurabilidad/cola"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1A40FF]"
-          >
-            <Tray className="h-4 w-4" weight="duotone" />
-            {t(`${PAGES_NS}.colaLabel`)}
-          </Link>
-          {/* Nueva cotización CTA — per COTI-UI-01 */}
-          <Link
-            href="/panel/inmobiliaria/ai/asegurabilidad/nueva"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-[#1A40FF] hover:opacity-90 active:bg-[#1A40FF] text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1A40FF]"
-          >
-            <Plus className="h-4 w-4" weight="bold" />
-            {t('inmobiliaria.ai.cotizador.overview.newQuoteCta')}
-          </Link>
+          <Button variant="secondary" size="sm" hideArrow asChild>
+            <Link href="/panel/inmobiliaria/ai/asegurabilidad/cola">
+              <Tray className="h-4 w-4" weight="duotone" />
+              {t(`${PAGES_NS}.colaLabel`)}
+            </Link>
+          </Button>
+          {/* Nueva cotización — único CTA primario de la vista (COTI-UI-01) */}
+          <Button size="sm" hideArrow asChild>
+            <Link href="/panel/inmobiliaria/ai/asegurabilidad/nueva">
+              <Plus className="h-4 w-4" weight="bold" />
+              {t('inmobiliaria.ai.cotizador.overview.newQuoteCta')}
+            </Link>
+          </Button>
         </div>
       </header>
 
       {/* KPI Strip */}
       <CotizadorKpiStrip kpis={data?.kpis ?? null} isLoading={isLoading} />
 
+      {/* Consultas que necesitan atención (visión #4) — cola priorizada arriba
+          del feed, lo primero accionable que ve el operador. */}
+      <CotizadorPriorityInbox />
+
       {/* Recent Quotes Feed */}
       <section aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.title')}>
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-base font-semibold text-fg mb-3">
           {t('inmobiliaria.ai.cotizador.overview.recentQuotes.title')}
         </h2>
         <CotizadorRecentQuotesFeed quotes={mergedQuotes} isLoading={isLoading} />
@@ -189,7 +210,7 @@ export default function CotizadorOverviewPage() {
 
       {/* Carriers Status */}
       <section aria-label={t('inmobiliaria.ai.cotizador.overview.carriers.title')}>
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-base font-semibold text-fg mb-3">
           {t('inmobiliaria.ai.cotizador.overview.carriers.title')}
         </h2>
         <CotizadorCarriersStatus carriers={data?.carriers ?? []} isLoading={isLoading} />
@@ -202,7 +223,7 @@ export default function CotizadorOverviewPage() {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
           {t('inmobiliaria.ai.cotizador.overview.errorLoading')}: {error}
         </div>
       )}

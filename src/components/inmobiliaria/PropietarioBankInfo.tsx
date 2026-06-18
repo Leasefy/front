@@ -72,8 +72,8 @@ export function PropietarioBankInfo({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-            <Bank className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
+            <Bank className="w-5 h-5 text-success" />
           </div>
           <div>
             <h4 className="font-semibold text-neutral-900 dark:text-white">
@@ -138,7 +138,7 @@ export function PropietarioBankInfo({
                   title={t('inmobiliaria.propietario.bankInfo.copy')}
                 >
                   {copied ? (
-                    <Check className="w-4 h-4 text-[#2C7A53]" />
+                    <Check className="w-4 h-4 text-success" />
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}
@@ -159,7 +159,7 @@ export function PropietarioBankInfo({
 
       {/* Verification Badge */}
       <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-        <div className="flex items-center gap-2 text-[#2C7A53] dark:text-[#3EAE70]">
+        <div className="flex items-center gap-2 text-success">
           <ShieldCheck className="w-4 h-4" />
           <span className="text-xs font-medium">{t('inmobiliaria.propietario.bankInfo.verified')}</span>
         </div>
@@ -189,8 +189,8 @@ export function PropietarioBankInfoCompact({
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <div className="w-8 h-8 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center shrink-0">
-        <Bank className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
+      <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center shrink-0">
+        <Bank className="w-4 h-4 text-success" />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">

@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { PropietarioCard } from './PropietarioCard';
 import { PropietarioForm } from './PropietarioForm';
@@ -91,18 +92,18 @@ export function PropietarioSelector({
       {/* Search and Add New */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('inmobiliaria.propietario.selector.searchPlaceholder')}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-card text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
             </button>
@@ -110,13 +111,15 @@ export function PropietarioSelector({
         </div>
 
         {!showNewForm && (
-          <button
+          <Button
+            variant="secondary"
+            hideArrow
             onClick={handleStartNewPropietario}
-            className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 font-medium text-sm hover:border-[#1A40FF]/30 hover:text-[#1A40FF] dark:hover:border-[#1A40FF]/30 dark:hover:text-[#1A40FF] transition-colors"
+            className="shrink-0"
           >
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">{t('inmobiliaria.propietario.selector.addNew')}</span>
-          </button>
+          </Button>
         )}
       </div>
 
@@ -127,14 +130,14 @@ export function PropietarioSelector({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="p-4 rounded-xl border-2 border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+            className="p-4 rounded-xl border-2 border-primary/30 bg-primary-soft"
           >
             <div className="flex items-start gap-3">
               <div className={cn(
                 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
                 newPropietarioData.documentType === 'NIT'
-                  ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
-                  : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                  ? 'bg-muted text-muted-foreground'
+                  : 'bg-card text-primary'
               )}>
                 {newPropietarioData.documentType === 'NIT' ? (
                   <Buildings className="w-6 h-6" />
@@ -144,30 +147,32 @@ export function PropietarioSelector({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium">
+                  <span className="px-2 py-0.5 rounded-full bg-card text-primary text-xs font-medium">
                     {t('inmobiliaria.propietario.selector.newOwner')}
                   </span>
                 </div>
-                <h3 className="font-semibold text-neutral-900 dark:text-white truncate">
+                <h3 className="text-base font-semibold text-foreground truncate">
                   {newPropietarioData.name}
                 </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <p className="text-sm text-muted-foreground">
                   {newPropietarioData.email} - {newPropietarioData.phone}
                 </p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <p className="text-sm text-muted-foreground">
                   {newPropietarioData.documentType}: {newPropietarioData.documentNumber}
                 </p>
               </div>
-              <button
+              <Button
+                variant="link"
+                hideArrow
                 onClick={() => {
                   setIsCreating(false);
                   setShowNewForm(true);
                   onChange('');
                 }}
-                className="shrink-0 px-3 py-1.5 rounded-md text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/40 transition-colors"
+                className="shrink-0"
               >
                 {t('inmobiliaria.propietario.selector.edit')}
-              </button>
+              </Button>
             </div>
           </motion.div>
         )}
@@ -182,14 +187,14 @@ export function PropietarioSelector({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+            <div className="p-5 rounded-xl border border-border bg-card">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-neutral-900 dark:text-white">
+                <h3 className="text-base font-semibold text-foreground">
                   {t('inmobiliaria.propietario.selector.newOwner')}
                 </h3>
                 <button
                   onClick={handleCancelNewPropietario}
-                  className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -220,18 +225,15 @@ export function PropietarioSelector({
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416]">
-              <User className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
-              <p className="text-neutral-500 dark:text-neutral-400 mb-2">
+            <div className="p-8 text-center rounded-xl border border-border bg-muted/40">
+              <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground/60" />
+              <p className="text-sm text-muted-foreground mb-3">
                 {search ? t('inmobiliaria.propietario.selector.noResults') : t('inmobiliaria.propietario.selector.noRegistered')}
               </p>
-              <button
-                onClick={handleStartNewPropietario}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
-              >
+              <Button hideArrow onClick={handleStartNewPropietario}>
                 <Plus className="w-4 h-4" />
                 {t('inmobiliaria.propietario.selector.addNewOwner')}
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -239,8 +241,8 @@ export function PropietarioSelector({
 
       {/* Selected Count */}
       {!showNewForm && value && !hasNewPropietario && (
-        <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+        <p className="text-sm text-success flex items-center gap-2">
+          <span className="w-5 h-5 rounded-full bg-success-soft flex items-center justify-center">
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}

@@ -230,9 +230,9 @@ export interface PipelineItem {
 // Tech progression: in-progress = neutral gray, active step = info blue,
 // positive milestones (approved/completed) = success, lost = critical.
 const _STAGE_NEUTRAL = 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300';
-const _STAGE_INFO = 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]';
-const _STAGE_SUCCESS = 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]';
-const _STAGE_CRITICAL = 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]';
+const _STAGE_INFO = 'bg-primary-soft text-primary';
+const _STAGE_SUCCESS = 'bg-success-soft text-success';
+const _STAGE_CRITICAL = 'bg-danger-soft text-danger';
 export const PIPELINE_STAGES: { stage: PipelineStage; labelEs: string; labelEn: string; color: string }[] = [
   { stage: 'lead', labelEs: 'Interesado', labelEn: 'Lead', color: _STAGE_NEUTRAL },
   { stage: 'visit_scheduled', labelEs: 'Visita prog.', labelEn: 'Visit sched.', color: _STAGE_INFO },
@@ -713,21 +713,21 @@ export function calculateNetToPropietario(collected: number, commissionPercent: 
 
 export function getCobroStatusColor(status: CobroStatus): string {
   const colors: Record<CobroStatus, string> = {
-    pending: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    paid: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    partial: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
-    late: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
-    defaulted: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    pending: 'bg-warning-soft text-warning',
+    paid: 'bg-success-soft text-success',
+    partial: 'bg-primary-soft text-primary',
+    late: 'bg-danger-soft text-danger',
+    defaulted: 'bg-danger-soft text-danger',
   };
   return colors[status];
 }
 
 export function getDispersionStatusColor(status: DispersionStatus): string {
   const colors: Record<DispersionStatus, string> = {
-    pending: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    processing: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
-    completed: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    failed: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    pending: 'bg-warning-soft text-warning',
+    processing: 'bg-primary-soft text-primary',
+    completed: 'bg-success-soft text-success',
+    failed: 'bg-danger-soft text-danger',
   };
   return colors[status];
 }
@@ -815,8 +815,8 @@ export interface ReportFiltersState {
 // Helper functions for reports
 export function getReportCategoryColor(category: ReportCategory): string {
   const colors: Record<ReportCategory, string> = {
-    financiero: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    operativo: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+    financiero: 'bg-success-soft text-success',
+    operativo: 'bg-primary-soft text-primary',
     agentes: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
   };
   return colors[category];
@@ -833,8 +833,8 @@ export function getReportCategoryLabel(category: ReportCategory): string {
 
 export function getReportFormatColor(format: ReportFormat): string {
   const colors: Record<ReportFormat, string> = {
-    pdf: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
-    excel: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    pdf: 'bg-danger-soft text-danger',
+    excel: 'bg-success-soft text-success',
   };
   return colors[format];
 }
@@ -918,12 +918,12 @@ export interface Renovacion {
 export function getRenovacionStatusColor(status: RenovacionStatus): string {
   const colors: Record<RenovacionStatus, string> = {
     pending: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-    notified: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
-    negotiating: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    approved: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    signed: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    completed: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    terminated: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    notified: 'bg-primary-soft text-primary',
+    negotiating: 'bg-warning-soft text-warning',
+    approved: 'bg-success-soft text-success',
+    signed: 'bg-success-soft text-success',
+    completed: 'bg-success-soft text-success',
+    terminated: 'bg-danger-soft text-danger',
   };
   return colors[status];
 }
@@ -944,10 +944,10 @@ export function getRenovacionStatusLabel(status: RenovacionStatus): string {
 export function getUrgencyColor(bucket: '0-30' | '31-60' | '61-90' | '90+'): string {
   // Ascending severity by days overdue: warning → critical.
   const colors = {
-    '0-30': 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    '31-60': 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
-    '61-90': 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
-    '90+': 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    '0-30': 'bg-warning-soft text-warning',
+    '31-60': 'bg-danger-soft text-danger',
+    '61-90': 'bg-danger-soft text-danger',
+    '90+': 'bg-danger-soft text-danger',
   };
   return colors[bucket];
 }
@@ -1222,10 +1222,10 @@ export function getIntegrationCategoryLabel(category: IntegrationCategory): stri
 
 export function getIntegrationStatusColor(status: IntegrationStatus): string {
   const colors: Record<IntegrationStatus, string> = {
-    active: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    active: 'bg-success-soft text-success',
     inactive: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-    pending: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    error: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    pending: 'bg-warning-soft text-warning',
+    error: 'bg-danger-soft text-danger',
   };
   return colors[status];
 }
@@ -1348,8 +1348,8 @@ export function getRoleLabel(role: AgencyRole): string {
 export function getRoleColor(role: AgencyRole): string {
   const colors: Record<AgencyRole, string> = {
     admin: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-    agente: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
-    contador: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    agente: 'bg-primary-soft text-primary',
+    contador: 'bg-success-soft text-success',
     viewer: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   return colors[role];
@@ -1357,8 +1357,8 @@ export function getRoleColor(role: AgencyRole): string {
 
 export function getUserStatusColor(status: AgencyUser['status']): string {
   const colors = {
-    active: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    invited: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    active: 'bg-success-soft text-success',
+    invited: 'bg-warning-soft text-warning',
     inactive: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   return colors[status];
@@ -1573,10 +1573,10 @@ export function getDocumentCategoryLabel(category: DocumentCategory): string {
 export function getDocumentCategoryColor(category: DocumentCategory): string {
   const colors: Record<DocumentCategory, string> = {
     contrato: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-    acta: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    inventario: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    acta: 'bg-success-soft text-success',
+    inventario: 'bg-warning-soft text-warning',
     poliza: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-    carta: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+    carta: 'bg-primary-soft text-primary',
     otro: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   return colors[category];
@@ -1596,9 +1596,9 @@ export function getDocumentStatusLabel(status: DocumentStatus): string {
 export function getDocumentStatusColor(status: DocumentStatus): string {
   const colors: Record<DocumentStatus, string> = {
     draft: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
-    pending_signature: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    signed: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    expired: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    pending_signature: 'bg-warning-soft text-warning',
+    signed: 'bg-success-soft text-success',
+    expired: 'bg-danger-soft text-danger',
     cancelled: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   return colors[status];
@@ -1883,10 +1883,10 @@ export function getConditionLabel(condition: ItemCondition): string {
 
 export function getConditionColor(condition: ItemCondition): string {
   const colors: Record<ItemCondition, string> = {
-    excelente: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    bueno: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-    regular: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    malo: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    excelente: 'bg-success-soft text-success',
+    bueno: 'bg-success-soft text-success',
+    regular: 'bg-warning-soft text-warning',
+    malo: 'bg-danger-soft text-danger',
     no_aplica: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
   return colors[condition];
@@ -1909,9 +1909,9 @@ export function getActaStatusLabel(status: ActaEntrega['status']): string {
 export function getActaStatusColor(status: ActaEntrega['status']): string {
   const colors: Record<ActaEntrega['status'], string> = {
     draft: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
-    in_progress: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
-    pending_signatures: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    completed: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    in_progress: 'bg-primary-soft text-primary',
+    pending_signatures: 'bg-warning-soft text-warning',
+    completed: 'bg-success-soft text-success',
   };
   return colors[status];
 }
@@ -2072,9 +2072,9 @@ export interface ForecastData {
 // Helper functions for trends & forecasting
 export function getAnomalySeverityColor(severity: TrendAnomaly['severity']): string {
   const colors = {
-    low: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    medium: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
-    high: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    low: 'bg-warning-soft text-warning',
+    medium: 'bg-danger-soft text-danger',
+    high: 'bg-danger-soft text-danger',
   };
   return colors[severity];
 }
@@ -2085,7 +2085,7 @@ export function formatConfidence(confidence: number): string {
 
 export function getSeasonColor(isHighSeason: boolean): string {
   return isHighSeason
-    ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
+    ? 'bg-success-soft text-success'
     : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400';
 }
 
@@ -2099,8 +2099,8 @@ export function getMonthName(month: number): string {
 
 export function getTrendDirectionColor(direction: TrendDirection): string {
   const colors = {
-    up: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    down: 'text-[#C4503B] dark:text-[#E0664D]',
+    up: 'text-success',
+    down: 'text-danger',
     stable: 'text-neutral-600 dark:text-neutral-400',
   };
   return colors[direction];
@@ -2108,8 +2108,8 @@ export function getTrendDirectionColor(direction: TrendDirection): string {
 
 export function getImpactColor(impact: 'positive' | 'negative' | 'neutral'): string {
   const colors = {
-    positive: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    negative: 'text-[#C4503B] dark:text-[#E0664D]',
+    positive: 'text-success',
+    negative: 'text-danger',
     neutral: 'text-neutral-600 dark:text-neutral-400',
   };
   return colors[impact];
@@ -2117,9 +2117,9 @@ export function getImpactColor(impact: 'positive' | 'negative' | 'neutral'): str
 
 export function getScenarioColor(id: string): string {
   const colors: Record<string, string> = {
-    optimistic: 'bg-[#2C7A53] dark:bg-[#3EAE70]',
-    conservative: 'bg-[#1A40FF] dark:bg-[#5570FF]',
-    pessimistic: 'bg-[#C4503B] dark:bg-[#E0664D]',
+    optimistic: 'bg-success',
+    conservative: 'bg-primary',
+    pessimistic: 'bg-danger',
     baseline: 'bg-neutral-500 dark:bg-neutral-400',
   };
   return colors[id] || colors.baseline;
@@ -2198,13 +2198,13 @@ export interface AnalyticsData {
 export function getTrendColor(direction: TrendDirection, isPositiveGood: boolean = true): string {
   if (direction === 'stable') return 'text-neutral-500 dark:text-neutral-400';
   const isGood = isPositiveGood ? direction === 'up' : direction === 'down';
-  return isGood ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-[#C4503B] dark:text-[#E0664D]';
+  return isGood ? 'text-success' : 'text-danger';
 }
 
 export function getTrendBgColor(direction: TrendDirection, isPositiveGood: boolean = true): string {
   if (direction === 'stable') return 'bg-neutral-100 dark:bg-neutral-800';
   const isGood = isPositiveGood ? direction === 'up' : direction === 'down';
-  return isGood ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' : 'bg-[#F8EAE7] dark:bg-[#C4503B]/15';
+  return isGood ? 'bg-success-soft' : 'bg-danger-soft';
 }
 
 export function getTrendIcon(direction: TrendDirection): string {

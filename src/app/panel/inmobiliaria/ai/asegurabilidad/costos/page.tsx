@@ -57,13 +57,13 @@ export default function CostosPage() {
   }))
 
   return (
-    <main className="p-6 lg:p-8 space-y-8">
+    <main className="p-6 lg:p-8 space-y-6">
       {/* Page heading */}
-      <div>
-        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-white">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">
           {t('inmobiliaria.ai.cotizador.costos.pageTitle')}
         </h1>
-        <p className="text-sm text-neutral-500 mt-1">
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.cotizador.costos.pageSubtitle')}
         </p>
       </div>
@@ -73,8 +73,8 @@ export default function CostosPage() {
 
       {/* Main charts row: pie (left) + trend line (right) — side-by-side on md+ (D-35-09 / XR-03) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
-          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
+        <section className="rounded-xl border border-border bg-card p-5">
+          <h2 className="text-base font-semibold text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.costSourcePie.title')}
           </h2>
           <CostSourcePieChart
@@ -84,8 +84,8 @@ export default function CostosPage() {
           />
         </section>
 
-        <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
-          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">
+        <section className="rounded-xl border border-border bg-card p-5">
+          <h2 className="text-base font-semibold text-fg mb-4">
             {t('inmobiliaria.ai.cotizador.costos.charts.monthlyCostTrend.title')}
           </h2>
           <MonthlyCostTrendChart
@@ -101,43 +101,43 @@ export default function CostosPage() {
       </div>
 
       {/* Per-source breakdown table */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-        <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-700">
-          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cotizador.costos.sourceBreakdownTitle')}
           </h2>
         </div>
         <div className="overflow-x-auto overscroll-contain">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-          <thead className="bg-neutral-50 dark:bg-neutral-800/50">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-surface-muted/60">
             <tr>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-left">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colSource')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colTotal')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-left">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colStatus')}
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <tbody className="divide-y divide-border">
             {tableRows.map(row => (
-              <tr key={row.key} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30">
-                <td className="px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100">
+              <tr key={row.key} className="hover:bg-surface-muted/50">
+                <td className="px-4 py-3 text-sm text-fg">
                   {row.label}
                 </td>
-                <td className="px-4 py-3 text-sm font-mono tabular-nums text-right text-neutral-900 dark:text-neutral-100">
+                <td className="px-4 py-3 text-sm font-mono tabular-nums text-right text-fg">
                   {row.total > 0 ? `$${row.total.toFixed(4)}` : '—'}
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {row.populated ? (
-                    <Badge variant="outline" className="text-[#2C7A53] border-[#2C7A53]/30">
+                    <Badge variant="outline" className="text-success border-success/30">
                       {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.statusPopulated')}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-neutral-400">
+                    <Badge variant="outline" className="text-fg-muted">
                       {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.statusEmpty')}
                     </Badge>
                   )}
@@ -151,13 +151,13 @@ export default function CostosPage() {
         {/* Loading skeleton for table when no data yet */}
         {(isLoadingSummary || isLoadingSeries) && tableRows.length === 0 && (
           <div className="px-4 py-8 text-center">
-            <div className="h-4 w-48 mx-auto rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+            <div className="h-4 w-48 mx-auto rounded bg-surface-muted animate-pulse" />
           </div>
         )}
 
         {/* Empty state when loaded but no cost sources */}
         {!isLoadingSummary && tableRows.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-neutral-500">
+          <div className="px-4 py-8 text-center text-sm text-fg-muted">
             {t('inmobiliaria.ai.cotizador.costos.noCostSources')}
           </div>
         )}
@@ -165,11 +165,12 @@ export default function CostosPage() {
 
       {/* Error state */}
       {(summaryError || seriesError) && (
-        <div className="rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm flex items-center justify-between">
+        <div className="rounded-xl border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
           <span>{t('inmobiliaria.ai.cotizador.costos.loadError')}</span>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
+            hideArrow
             onClick={() => {
               void refetchSummary()
               void refetchSeries()

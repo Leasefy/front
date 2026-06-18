@@ -234,7 +234,7 @@ export function OTPVerification({
                     'focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
                     digit ? 'border-foreground/30' : 'border-border',
                     status === 'error' && 'border-destructive animate-shake',
-                    status === 'verified' && 'border-[#2C7A53]/30 bg-[#E8F3EC]',
+                    status === 'verified' && 'border-success/30 bg-success-soft',
                     (status === 'verifying' || status === 'verified') && 'opacity-70'
                   )}
                 />
@@ -259,7 +259,7 @@ export function OTPVerification({
           )}
 
           {status === 'verified' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-[#2C7A53]">
+            <div className="flex items-center justify-center gap-2 text-sm text-success">
               <CheckCircle className="h-4 w-4" />
               Verificación exitosa
             </div>

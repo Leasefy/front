@@ -38,8 +38,8 @@ const REMINDER_TYPE_META: ReminderTypeMeta[] = [
     descriptionKey: 'inmobiliaria.reminders.types.prePayment.description',
     descriptionFallback: 'Se envia {days} dias antes del vencimiento',
     daysLabel: 'Dias antes',
-    iconBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    iconColor: 'text-[#1A40FF] dark:text-[#5570FF]',
+    iconBg: 'bg-primary-soft',
+    iconColor: 'text-primary',
   },
   {
     type: 'overdue',
@@ -49,8 +49,8 @@ const REMINDER_TYPE_META: ReminderTypeMeta[] = [
     descriptionKey: 'inmobiliaria.reminders.types.overdue.description',
     descriptionFallback: 'Se envia {days} dias despues del vencimiento',
     daysLabel: 'Dias despues',
-    iconBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
+    iconBg: 'bg-warning-soft',
+    iconColor: 'text-warning',
   },
   {
     type: 'escalation',
@@ -60,8 +60,8 @@ const REMINDER_TYPE_META: ReminderTypeMeta[] = [
     descriptionKey: 'inmobiliaria.reminders.types.escalation.description',
     descriptionFallback: 'Segundo aviso {days} dias despues del vencimiento',
     daysLabel: 'Dias despues',
-    iconBg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    iconColor: 'text-[#C4503B] dark:text-[#E0664D]',
+    iconBg: 'bg-danger-soft',
+    iconColor: 'text-danger',
   },
   {
     type: 'contract-expiry',

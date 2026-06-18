@@ -14,16 +14,38 @@
  * Jerarquía invertida (patrón avalúos): el domain slot abre con la acción
  * principal — "Subir extracto del banco" → ./movimientos#upload — seguida de
  * la sección "¿Cómo funciona?" de 3 pasos.
+ *
+ * Build C: el slot también muestra el RESUMEN real del backend
+ * (GET …/conciliacion/summary: taxonomía + totales + tasa) y un botón principal
+ * "Conciliar ahora" (POST …/conciliacion/run, acción HUMANA con confirmación,
+ * T-323). Fail-soft: 404/error → el resumen no se renderiza y la pantalla
+ * conserva su estado actual (Sala overview / vacíos).
  */
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { ArrowsClockwise, Bank, CheckCircle, UploadSimple } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
+import {
+  Button,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
+import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
+import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
+import { ConciliacionResumen } from '@/components/inmobiliaria/ai/ConciliacionResumen'
 import { useI18n } from '@/lib/i18n'
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.conciliacion'
@@ -42,8 +64,33 @@ function ConciliacionSala() {
   const { t } = useI18n()
   const { data, isLoading, error } = useAgentOverview('conciliacion')
 
-  // CTA count: prefer the backend's "en_cola" KPI; absent → CTA without count.
-  const colaCount = data?.kpis.find((kpi) => kpi.id === 'en_cola')?.value
+  // Resumen real del backend (taxonomía + totales + tasa). Fail-soft: null → no se muestra.
+  const { data: summary, refetch: refetchSummary } = useConciliacionSummary()
+  // Disparo de conciliación on-demand (acción humana, T-323).
+  const { isRunning, requestRun } = useConciliacionRun()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // CTA count: prefer the backend's "en_cola" KPI; absent → fall back to summary; else CTA without count.
+  const colaCount =
+    data?.kpis.find((kpi) => kpi.id === 'en_cola')?.value ?? summary?.totals.en_cola
+
+  // T-323: la conciliación se dispara SOLO tras confirmación humana explícita.
+  async function handleConciliarAhora() {
+    setConfirmOpen(false)
+    const res = await requestRun()
+    if (res.ok && res.enqueued) {
+      toast.success('Conciliación encolada. Las sugerencias aparecerán en la cola en unos minutos.')
+      // Refresca el resumen para reflejar el nuevo estado.
+      void refetchSummary()
+    } else if (res.ok && !res.enqueued) {
+      // Backend respondió pero no pudo encolar (db/inngest no disponible).
+      toast.error('No se pudo iniciar la conciliación en este momento. Intenta de nuevo más tarde.')
+    } else if (res.reason === 'not_available') {
+      toast.error('La conciliación bajo demanda aún no está disponible.')
+    } else {
+      toast.error('No se pudo iniciar la conciliación. Intenta de nuevo.')
+    }
+  }
 
   return (
     <SalaAgente
@@ -60,7 +107,7 @@ function ConciliacionSala() {
     >
       {/* Domain slot: acción principal + cómo funciona (patrón avalúos) */}
       <section className="space-y-4" data-testid="conciliacion-subir-extracto">
-        {/* Acción principal — subir el extracto del banco */}
+        {/* Acción principal — subir el extracto del banco + conciliar ahora */}
         <div className="rounded-xl border border-border bg-card p-5 max-w-3xl">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
@@ -74,20 +121,33 @@ function ConciliacionSala() {
                 {t(`${PAGES_NS}.accionDesc`)}
               </p>
             </div>
-            <Link
-              href={SUBIR_EXTRACTO_HREF}
-              className="shrink-0 inline-flex items-center gap-2 h-10 px-5 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] transition-colors"
-              data-testid="conciliacion-subir-cta"
-            >
-              {t(`${PAGES_NS}.accionTitle`)}
-              <UploadSimple className="w-4 h-4" aria-hidden="true" />
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              <Button asChild hideArrow variant="secondary" data-testid="conciliacion-subir-cta">
+                <Link href={SUBIR_EXTRACTO_HREF}>
+                  {t(`${PAGES_NS}.accionTitle`)}
+                  <UploadSimple className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              </Button>
+              {/* Acción PRINCIPAL del slot: conciliar ahora (T-323, confirmación humana) */}
+              <Button
+                hideArrow
+                disabled={isRunning}
+                onClick={() => setConfirmOpen(true)}
+                data-testid="conciliacion-run-cta"
+              >
+                <ArrowsClockwise className="w-4 h-4" aria-hidden="true" />
+                {isRunning ? 'Conciliando…' : 'Conciliar ahora'}
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* Resumen real del backend: taxonomía + totales + tasa (fail-soft: null → nada) */}
+        <ConciliacionResumen data={summary} />
+
         {/* Cómo funciona — el viaje de la conciliación en 3 pasos */}
         <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="conciliacion-como-funciona">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="text-base font-semibold text-foreground">
             {t(`${PAGES_NS}.comoFunciona.title`)}
           </h2>
           <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -99,9 +159,9 @@ function ConciliacionSala() {
                     <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
                       <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
                     </span>
-                    <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground leading-tight">
+                  <p className="text-sm font-semibold text-foreground leading-tight">
                     {t(step.titleKey)}
                   </p>
                   <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
@@ -111,6 +171,24 @@ function ConciliacionSala() {
           </ol>
         </div>
       </section>
+
+      {/* Confirmación humana de "Conciliar ahora" (T-323) */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Conciliar ahora?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se ejecutará la conciliación sobre los movimientos recientes. Las coincidencias se
+              dejarán como sugerencias para tu revisión — no se mueve ni se aplica dinero
+              automáticamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConciliarAhora}>Conciliar ahora</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SalaAgente>
   )
 }

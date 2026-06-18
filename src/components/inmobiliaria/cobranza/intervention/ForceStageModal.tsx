@@ -121,7 +121,7 @@ export function ForceStageModal({
         </h2>
 
         {!allowed ? (
-          <p className="mt-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+          <p className="mt-3 text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.accessDenied')}
           </p>
         ) : (
@@ -130,7 +130,7 @@ export function ForceStageModal({
               {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalDescription')}
             </p>
             {envMissing ? (
-              <p className="mt-3 text-sm text-[#B7791F] dark:text-[#D2992F]">
+              <p className="mt-3 text-sm text-warning">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
               </p>
             ) : (
@@ -172,7 +172,7 @@ export function ForceStageModal({
         )}
 
         {error && (
-          <p className="mt-3 text-xs text-[#C4503B] dark:text-[#E0664D]">{error}</p>
+          <p className="mt-3 text-xs text-danger">{error}</p>
         )}
 
         <div className="mt-6 flex items-center justify-end gap-2">
@@ -188,7 +188,7 @@ export function ForceStageModal({
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting || envMissing || !allowed}
-            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-[#B7791F] text-white hover:bg-[#B7791F] disabled:opacity-50"
+            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-warning text-white hover:bg-warning disabled:opacity-50"
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.confirming')

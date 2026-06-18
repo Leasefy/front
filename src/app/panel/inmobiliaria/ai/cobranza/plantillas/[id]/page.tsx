@@ -149,12 +149,12 @@ const SAMPLE_VALUES: Record<string, string> = {
 
 function tokenBadgeClass(count: number): string {
   if (count >= TOKEN_BUDGET) {
-    return 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+    return 'bg-danger-soft text-danger'
   }
   if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
+    return 'bg-warning-soft text-warning'
   }
-  return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+  return 'bg-surface-muted text-fg-muted'
 }
 
 function estimateTokenCount(text: string): number {
@@ -175,21 +175,21 @@ function StatusPill({
 }) {
   if (status === 'published') {
     return (
-      <span className="inline-flex items-center text-xs rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-2 py-0.5">
+      <span className="inline-flex items-center text-xs rounded-full bg-success-soft text-success px-2 py-0.5">
         {t('inmobiliaria.ai.templates.status.published')}
       </span>
     )
   }
   if (status === 'wa_pending') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-warning-soft text-warning px-2 py-0.5">
         <Clock className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.pending')}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center text-xs rounded-full border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 px-2 py-0.5">
+    <span className="inline-flex items-center text-xs rounded-full border border-border text-fg-muted px-2 py-0.5">
       {t('inmobiliaria.ai.templates.status.draft')}
     </span>
   )
@@ -208,7 +208,7 @@ function WaStatusPill({
 }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-success-soft text-success px-2 py-0.5">
         <CheckCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.approved')}
       </span>
@@ -216,14 +216,14 @@ function WaStatusPill({
   }
   if (status === 'rejected') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-2 py-0.5">
+      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-danger-soft text-danger px-2 py-0.5">
         <WarningCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.rejected')}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] px-2 py-0.5">
+    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-warning-soft text-warning px-2 py-0.5">
       <Clock className="h-3 w-3" weight="fill" />
       {t('inmobiliaria.ai.templates.waStatus.pending')}
     </span>
@@ -255,7 +255,7 @@ function VariablePill({
           onInsert(varName)
         }
       }}
-      className="cursor-pointer select-none rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] px-2 py-0.5 text-xs font-mono hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/40 min-h-[44px] flex items-center transition-colors"
+      className="cursor-pointer select-none rounded-md bg-primary-soft text-primary px-2 py-0.5 text-xs font-mono hover:opacity-80 min-h-[44px] flex items-center transition-colors"
     >
       {`{{${varName}}}`}
     </span>
@@ -484,7 +484,8 @@ function TemplateEditorContent({
                 variant="default"
                 size="sm"
                 disabled={isPublishing}
-                className="min-h-[44px] bg-[#1A40FF] hover:opacity-90 text-white"
+                hideArrow
+                className="min-h-[44px]"
               >
                 {isPublishing ? (
                   <CircleNotch className="h-4 w-4 animate-spin mr-1" />
@@ -519,9 +520,9 @@ function TemplateEditorContent({
         {unknownVars.length > 0 && (
           <Alert
             data-unknown-var-alert
-            className="border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]"
+            className="border-warning/30 bg-warning-soft text-warning"
           >
-            <WarningCircle className="h-4 w-4 text-[#B7791F] dark:text-[#D2992F]" />
+            <WarningCircle className="h-4 w-4 text-warning" />
             <AlertDescription>
               {unknownVars
                 .map(
@@ -629,14 +630,14 @@ function TemplateEditorContent({
 
       {/* Success toast */}
       {successToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] px-4 py-3 text-sm">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-success/30 bg-success-soft text-success px-4 py-3 text-sm">
           {successToast}
         </div>
       )}
 
       {/* Error toast */}
       {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
           {errorToast}
         </div>
       )}

@@ -38,30 +38,30 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_LEFT_COLORS: Record<string, string> = {
-  emerald: 'border-l-[#2C7A53] dark:border-l-[#2C7A53]',
-  blue: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
-  amber: 'border-l-[#B7791F] dark:border-l-[#B7791F]',
-  purple: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
-  pink: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
-  indigo: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
+  emerald: 'border-l-success',
+  blue: 'border-l-primary',
+  amber: 'border-l-warning',
+  purple: 'border-l-border-strong',
+  pink: 'border-l-border-strong',
+  indigo: 'border-l-primary',
 };
 
 const ICON_COLORS: Record<string, string> = {
-  emerald: 'text-[#2C7A53] dark:text-[#3EAE70]',
-  blue: 'text-[#1A40FF] dark:text-[#5570FF]',
-  amber: 'text-[#B7791F] dark:text-[#D2992F]',
-  purple: 'text-neutral-600 dark:text-neutral-300',
-  pink: 'text-neutral-600 dark:text-neutral-300',
-  indigo: 'text-[#1A40FF] dark:text-[#5570FF]',
+  emerald: 'text-success',
+  blue: 'text-primary',
+  amber: 'text-warning',
+  purple: 'text-fg-muted',
+  pink: 'text-fg-muted',
+  indigo: 'text-primary',
 };
 
 const ACTION_BTN_COLORS: Record<string, string> = {
-  emerald: 'text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border-[#2C7A53]/30 dark:border-[#2C7A53]/40 hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20',
-  blue: 'text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border-[#1A40FF]/30 dark:border-[#1A40FF]/40 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20',
-  amber: 'text-[#B7791F] dark:text-[#D2992F] bg-[#F8F0E0] dark:bg-[#B7791F]/15 border-[#B7791F]/30 dark:border-[#B7791F]/40 hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20',
-  purple: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-100 dark:bg-neutral-800/20',
-  pink: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-100 dark:bg-neutral-800/20',
-  indigo: 'text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border-[#1A40FF]/30 dark:border-[#1A40FF]/40 hover:bg-[#EEF1FF] dark:hover:opacity-90/20',
+  emerald: 'text-success bg-success-soft border-success/30 hover:opacity-90',
+  blue: 'text-primary bg-primary-soft border-primary/30 hover:opacity-90',
+  amber: 'text-warning bg-warning-soft border-warning/30 hover:opacity-90',
+  purple: 'text-fg-muted bg-surface-muted border-border hover:opacity-90',
+  pink: 'text-fg-muted bg-surface-muted border-border hover:opacity-90',
+  indigo: 'text-primary bg-primary-soft border-primary/30 hover:opacity-90',
 };
 
 // ============================================================================
@@ -103,11 +103,11 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
   return (
     <div
       className={cn(
-        'border border-neutral-200/60 dark:border-border/50',
+        'border border-border',
         'border-l-[3px]',
         borderColor,
         'rounded-md overflow-hidden',
-        'bg-white/60 dark:bg-card/60',
+        'bg-surface',
         'transition-all duration-200'
       )}
     >
@@ -119,19 +119,19 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
         className={cn(
           'w-full flex items-center gap-2 px-3 py-2.5',
           'text-left text-xs',
-          'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30',
+          'hover:bg-surface-hover',
           'transition-colors duration-150'
         )}
       >
         {SectionIcon && (
           <SectionIcon className={cn('w-4 h-4 flex-shrink-0', iconColor)} weight="duotone" />
         )}
-        <span className="font-medium text-foreground flex-1 truncate text-[13px]">
+        <span className="font-medium text-fg flex-1 truncate text-sm">
           {section.title}
         </span>
         <CaretDown
           className={cn(
-            'w-3.5 h-3.5 text-muted-foreground flex-shrink-0',
+            'w-3.5 h-3.5 text-fg-muted flex-shrink-0',
             'transition-transform duration-200',
             isExpanded && 'rotate-180'
           )}
@@ -141,7 +141,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
 
       {/* Summary — always visible */}
       <div className="px-3 pb-2">
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-fg-muted leading-relaxed">
           {section.summary}
         </p>
       </div>
@@ -158,8 +158,8 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
             {/* Detail bullets */}
             <ul className="space-y-1.5">
               {section.details.map((detail, idx) => (
-                <li key={idx} className="flex gap-2 text-xs text-muted-foreground leading-relaxed">
-                  <span className="text-muted-foreground/50 mt-0.5 flex-shrink-0">-</span>
+                <li key={idx} className="flex gap-2 text-xs text-fg-muted leading-relaxed">
+                  <span className="text-fg-muted/50 mt-0.5 flex-shrink-0">-</span>
                   <span>{detail}</span>
                 </li>
               ))}
@@ -175,7 +175,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
                 }}
                 className={cn(
                   'inline-flex items-center gap-1.5',
-                  'px-2.5 py-1.5 rounded-sm',
+                  'px-2.5 py-1.5 rounded-md',
                   'text-xs font-medium',
                   'border',
                   'transition-colors duration-150',
@@ -240,7 +240,7 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <p className="text-xs text-muted-foreground font-medium">
+          <p className="text-xs text-fg-muted font-medium">
             {formattedDate}
           </p>
           {briefing.isNew && (
@@ -248,7 +248,7 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
               className={cn(
                 'inline-flex items-center gap-1',
                 'px-1.5 py-0.5 rounded-full',
-                'bg-[#1A40FF]/10 text-[#1A40FF]',
+                'bg-primary-soft text-primary',
                 'text-[10px] font-semibold'
               )}
             >
@@ -257,10 +257,10 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
             </span>
           )}
         </div>
-        <p className="text-[13px] text-foreground font-medium leading-snug">
+        <p className="text-sm text-fg font-medium leading-snug">
           {briefing.greeting}
         </p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-fg-muted leading-relaxed">
           {briefing.overallSummary}
         </p>
       </div>

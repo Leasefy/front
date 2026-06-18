@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { SquaresFour } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { LeasefyMark } from './LeasefyMark';
 
@@ -35,33 +35,26 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
 
   return (
     <div className="flex items-center justify-between">
-      {/* Brand — real Leasefy mark (white on dark, brand blue on light) */}
+      {/* Brand — real Leasefy mark (brand blue on light, white on dark) */}
       <div className="flex items-center gap-2.5">
-        <LeasefyMark className="w-7 h-auto shrink-0 text-[#1A40FF] dark:text-white" />
-        <span className="text-[15px] font-bold text-foreground tracking-tight">
+        <LeasefyMark className="w-7 h-auto shrink-0 text-primary dark:text-white" />
+        <span className="text-sm font-bold text-fg tracking-tight">
           Leasefy
-          <span className="text-[#1A40FF] dark:text-[#5570FF] ml-1">AI</span>
+          <span className="text-primary ml-1">AI</span>
         </span>
       </div>
 
       {/* Workspace switch */}
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={() => router.push(targetPath)}
-        className={cn(
-          'p-2 rounded-md',
-          'inline-flex items-center justify-center',
-          // ≥44px touch target on coarse pointers
-          '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
-          'text-neutral-400 dark:text-neutral-500',
-          'hover:text-neutral-600 dark:hover:text-neutral-300',
-          'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-          'transition-colors duration-150'
-        )}
+        className="text-fg-muted hover:text-fg"
         title={isDashboard ? t('beta.appSwitcher.goToBeta') : t('beta.appSwitcher.goToDashboard')}
         aria-label={isDashboard ? t('beta.appSwitcher.goToBeta') : t('beta.appSwitcher.goToDashboard')}
       >
         <SquaresFour className="w-[18px] h-[18px]" />
-      </button>
+      </Button>
     </div>
   );
 }

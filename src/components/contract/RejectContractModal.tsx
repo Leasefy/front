@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, WarningCircle, XCircle, PencilSimple, SpinnerGap } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import type { RejectionType } from '@/lib/types/contract';
 
 const REASON_MIN = 5;
@@ -70,33 +71,33 @@ export function RejectContractModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#1a1a1c] rounded-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
+            className="bg-card rounded-xl w-full max-w-lg border border-border"
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-4 p-5 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center',
                   lockToType === 'MODIFICATIONS'
-                    ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15'
-                    : 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
+                    ? 'bg-warning-soft'
+                    : 'bg-danger-soft'
                 )}>
                   <WarningCircle className={cn(
                     'w-5 h-5',
                     lockToType === 'MODIFICATIONS'
-                      ? 'text-[#B7791F] dark:text-[#D2992F]'
-                      : 'text-[#C4503B] dark:text-[#E0664D]'
+                      ? 'text-warning'
+                      : 'text-danger'
                   )} />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+                  <h2 className="text-base font-semibold text-foreground">
                     {lockToType === 'MODIFICATIONS'
                       ? 'Pedir cambios al propietario'
                       : lockToType === 'DEFINITIVE'
                         ? 'Rechazar contrato definitivamente'
                         : 'Rechazar contrato'}
                   </h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {lockToType === 'MODIFICATIONS'
                       ? 'El propietario recibirá tu pedido y podrá corregir el contrato.'
                       : lockToType === 'DEFINITIVE'
@@ -109,7 +110,7 @@ export function RejectContractModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors disabled:opacity-40"
+                className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
                 aria-label="Cerrar"
               >
                 <X className="w-5 h-5" />
@@ -144,7 +145,7 @@ export function RejectContractModal({
 
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-foreground">
-                  Motivo <span className="text-[#C4503B]">*</span>
+                  Motivo <span className="text-danger">*</span>
                 </label>
                 <textarea
                   value={reason}
@@ -161,13 +162,13 @@ export function RejectContractModal({
                   className={cn(
                     'w-full px-3 py-2 rounded-md border bg-background text-sm resize-none',
                     reasonError
-                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]'
-                      : 'border-border focus:ring-2 focus:ring-[#1A40FF] dark:focus:ring-[#1A40FF]/40'
+                      ? 'border-danger/30 focus:ring-danger'
+                      : 'border-border focus:ring-2 focus:ring-primary'
                   )}
                 />
                 <div className="flex items-center justify-between">
                   {reasonError ? (
-                    <p className="text-xs text-[#C4503B]">{reasonError}</p>
+                    <p className="text-xs text-danger">{reasonError}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       Mínimo {REASON_MIN} caracteres. El propietario va a verlo.
@@ -175,7 +176,7 @@ export function RejectContractModal({
                   )}
                   <p className={cn(
                     'text-xs tabular-nums',
-                    reasonTrimmed.length > REASON_MAX ? 'text-[#C4503B]' : 'text-muted-foreground'
+                    reasonTrimmed.length > REASON_MAX ? 'text-danger' : 'text-muted-foreground'
                   )}>
                     {reasonTrimmed.length}/{REASON_MAX}
                   </p>
@@ -184,29 +185,31 @@ export function RejectContractModal({
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-2">
-              <button
+            <div className="p-5 border-t border-border flex items-center justify-end gap-2">
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                hideArrow
                 onClick={handleSubmit}
                 disabled={!canSubmit}
                 className={cn(
-                  'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                  'gap-2 text-white',
                   type === 'DEFINITIVE'
-                    ? 'bg-[#C4503B] hover:bg-[#C4503B]'
-                    : 'bg-[#B7791F] hover:bg-[#B7791F]'
+                    ? 'bg-danger hover:bg-danger/90'
+                    : 'bg-warning hover:bg-warning/90'
                 )}
               >
                 {isSubmitting && <SpinnerGap className="w-4 h-4 animate-spin" />}
                 {type === 'DEFINITIVE' ? 'Rechazar definitivamente' : 'Enviar cambios solicitados'}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </motion.div>
@@ -234,13 +237,13 @@ function RejectOption({
 }) {
   const accentClasses = selected
     ? accent === 'amber'
-      ? 'border-[#B7791F]/30 bg-[#F8F0E0] dark:bg-[#B7791F]/15'
-      : 'border-[#C4503B]/30 bg-[#F8EAE7] dark:bg-[#C4503B]/15'
-    : 'border-border hover:border-neutral-300 dark:hover:border-neutral-600';
+      ? 'border-warning/30 bg-warning-soft'
+      : 'border-danger/30 bg-danger-soft'
+    : 'border-border hover:border-border-strong';
 
   const iconClasses = accent === 'amber'
-    ? 'text-[#B7791F] dark:text-[#D2992F]'
-    : 'text-[#C4503B] dark:text-[#E0664D]';
+    ? 'text-warning'
+    : 'text-danger';
 
   return (
     <button
@@ -254,13 +257,13 @@ function RejectOption({
       <div className={cn(
         'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
         selected
-          ? accent === 'amber' ? 'border-[#B7791F]/30' : 'border-[#C4503B]/30'
+          ? accent === 'amber' ? 'border-warning/30' : 'border-danger/30'
           : 'border-neutral-300 dark:border-neutral-600'
       )}>
         {selected && (
           <div className={cn(
             'w-2.5 h-2.5 rounded-full',
-            accent === 'amber' ? 'bg-[#B7791F]' : 'bg-[#C4503B]'
+            accent === 'amber' ? 'bg-warning' : 'bg-danger'
           )} />
         )}
       </div>

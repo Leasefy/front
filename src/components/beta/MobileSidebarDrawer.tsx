@@ -64,7 +64,7 @@ export function MobileSidebarDrawer({ open, onClose, children }: MobileSidebarDr
           'fixed inset-y-0 left-0 z-[61]',
           'w-[280px]',
           'flex flex-col',
-          'bg-white dark:bg-[#141416]',
+          'bg-card',
           'transition-transform duration-200 ease-out',
           open ? 'translate-x-0' : '-translate-x-full'
         )}

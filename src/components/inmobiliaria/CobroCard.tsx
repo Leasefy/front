@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 
@@ -29,11 +30,11 @@ interface CobroCardProps {
 
 // Status border colors for left accent
 const STATUS_BORDER_COLORS: Record<CobroStatus, string> = {
-  pending: 'border-l-[#B7791F]',
-  paid: 'border-l-[#2C7A53]',
-  partial: 'border-l-[#1A40FF]',
-  late: 'border-l-[#B7791F]',
-  defaulted: 'border-l-[#C4503B]',
+  pending: 'border-l-warning',
+  paid: 'border-l-success',
+  partial: 'border-l-primary',
+  late: 'border-l-warning',
+  defaulted: 'border-l-danger',
 };
 
 /**
@@ -77,7 +78,7 @@ export function CobroCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onClick?.(cobro)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:',
+          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-card border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:shadow-sm',
           borderColor
         )}
       >
@@ -97,7 +98,7 @@ export function CobroCard({
             {formatCurrency(cobro.totalAmount)}
           </p>
           {cobro.status === 'partial' && (
-            <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
+            <p className="text-xs text-primary">
               {formatCurrency(cobro.paidAmount)} {t('inmobiliaria.cobros.card.paid')}
             </p>
           )}
@@ -110,7 +111,7 @@ export function CobroCard({
 
         {/* Days late indicator */}
         {cobro.daysLate > 0 && (
-          <div className="flex items-center gap-1 text-[#B7791F] dark:text-[#D2992F] shrink-0">
+          <div className="flex items-center gap-1 text-warning shrink-0">
             <Warning className="w-4 h-4" weight="fill" />
             <span className="text-xs font-medium">{cobro.daysLate}d</span>
           </div>
@@ -124,7 +125,7 @@ export function CobroCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:',
+        'w-full rounded-xl border-l-4 border bg-card overflow-hidden transition-all duration-200 group',
         borderColor,
         'border-neutral-200 dark:border-neutral-700',
         onClick && 'cursor-pointer'
@@ -154,8 +155,8 @@ export function CobroCard({
       {/* Tenant Section */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-            <User className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+            <User className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-medium text-neutral-900 dark:text-white truncate">
@@ -165,7 +166,7 @@ export function CobroCard({
               <a
                 href={`tel:${cobro.tenantPhone}`}
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-primary transition-colors"
               >
                 <Phone className="w-3.5 h-3.5" />
                 {cobro.tenantPhone}
@@ -175,7 +176,7 @@ export function CobroCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/50 transition-colors"
+                className="p-1.5 rounded-md bg-success-soft text-success hover:bg-success/20 transition-colors"
               >
                 <WhatsappLogo className="w-4 h-4" weight="fill" />
               </a>
@@ -201,14 +202,14 @@ export function CobroCard({
             <span>{formatCurrency(cobro.totalAmount)}</span>
           </div>
           {cobro.lateFee > 0 && (
-            <div className="flex items-center justify-between text-[#B7791F] dark:text-[#D2992F]">
+            <div className="flex items-center justify-between text-warning">
               <span>{t('inmobiliaria.cobros.card.lateFee')}</span>
               <span>+ {formatCurrency(cobro.lateFee)}</span>
             </div>
           )}
           {cobro.status === 'partial' && (
             <>
-              <div className="flex items-center justify-between text-[#2C7A53] dark:text-[#3EAE70]">
+              <div className="flex items-center justify-between text-success">
                 <span>{t('inmobiliaria.cobros.card.paidLabel')}</span>
                 <span>- {formatCurrency(cobro.paidAmount)}</span>
               </div>
@@ -222,7 +223,7 @@ export function CobroCard({
       </div>
 
       {/* Status Section */}
-      <div className="px-5 py-4 bg-neutral-50 dark:bg-[#141416] space-y-2">
+      <div className="px-5 py-4 bg-neutral-50 dark:bg-muted/20 space-y-2">
         {/* Due Date */}
         <div className="flex items-center gap-2 text-sm">
           <CalendarBlank className="w-4 h-4 text-neutral-400" />
@@ -238,7 +239,7 @@ export function CobroCard({
 
         {/* Late indicator */}
         {cobro.daysLate > 0 && (
-          <div className="flex items-center gap-2 text-sm text-[#B7791F] dark:text-[#D2992F]">
+          <div className="flex items-center gap-2 text-sm text-warning">
             <Warning className="w-4 h-4" weight="fill" />
             <span className="font-medium">{t('inmobiliaria.cobros.card.daysLate', { count: cobro.daysLate })}</span>
           </div>
@@ -246,7 +247,7 @@ export function CobroCard({
 
         {/* Paid date */}
         {cobro.status === 'paid' && cobro.paidDate && (
-          <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
+          <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
             <span>{t('inmobiliaria.cobros.card.paidOn', { date: new Date(cobro.paidDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
               day: 'numeric',
@@ -267,25 +268,26 @@ export function CobroCard({
       {/* Actions */}
       <div className="px-5 py-4 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800">
         {cobro.status !== 'paid' && onRegisterPayment && (
-          <button
+          <Button
+            size="sm"
+            hideArrow
             onClick={(e) => {
               e.stopPropagation();
               onRegisterPayment(cobro);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
           >
             <CurrencyCircleDollar className="w-4 h-4" />
             {t('inmobiliaria.cobros.card.registerPayment')}
-          </button>
+          </Button>
         )}
         {cobro.status === 'paid' && (
-          <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
+          <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
             <span>{t('inmobiliaria.cobros.card.paymentComplete')}</span>
           </div>
         )}
         {onClick && (
-          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors ml-auto">
+          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-primary transition-colors ml-auto">
             {t('inmobiliaria.cobros.card.viewDetail')}
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>

@@ -234,7 +234,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
                     {/* Agent activity summary (collapsed) for older messages */}
                     {(liveActivity || storedActivity) && (
                       <div className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53] inline-block" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
                         {(liveActivity || storedActivity)!.agents.length} {t('beta.agents.results').toLowerCase()}
                         {' · '}
                         {formatDuration(

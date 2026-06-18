@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { formatRelativeTime } from '@/lib/format';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -236,12 +237,12 @@ export function ConfigIntegraciones({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-foreground">{t('inmobiliaria.config.integrations.title')}</h2>
-            <Badge variant="secondary" className="bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]">
+            <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.integrations.title')}</h2>
+            <Badge variant="secondary" className="bg-success-soft text-success">
               {activeCount} {t('inmobiliaria.config.integrations.active')}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             {t('inmobiliaria.config.integrations.subtitleFull')}
           </p>
         </div>
@@ -254,7 +255,7 @@ export function ConfigIntegraciones({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('inmobiliaria.config.integrations.searchPlaceholder')}
-            className="w-full pl-9 pr-4 py-2 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="w-full pl-9 pr-4 py-2 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
           />
         </div>
       </div>
@@ -272,7 +273,7 @@ export function ConfigIntegraciones({
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
                 selectedCategory === tab.value
-                  ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
+                  ? 'bg-primary-soft text-primary'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
@@ -299,24 +300,23 @@ export function ConfigIntegraciones({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 className={cn(
-                  'p-5 rounded-xl bg-card border transition-all',
+                  'p-5 rounded-xl bg-card border transition-colors',
                   integration.status === 'error'
-                    ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
-                    : 'border-border',
-                  'hover:'
+                    ? 'border-danger/30'
+                    : 'border-border'
                 )}
               >
                 <div className="flex items-start gap-4">
                   {/* Icon */}
                   <div
                     className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                      'w-12 h-12 rounded-lg flex items-center justify-center shrink-0',
                       integration.isEnabled && integration.status === 'active'
-                        ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/30 dark:text-[#1A40FF]'
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-primary-soft text-primary'
+                        : 'bg-surface-muted text-fg-muted'
                     )}
                   >
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-6 h-6" weight="duotone" />
                   </div>
 
                   {/* Content */}
@@ -334,7 +334,7 @@ export function ConfigIntegraciones({
                       {/* Toggle Switch */}
                       <div className="flex items-center gap-2">
                         {isToggling && (
-                          <SpinnerGap className="w-4 h-4 text-[#1A40FF] animate-spin" />
+                          <SpinnerGap className="w-4 h-4 text-primary animate-spin" />
                         )}
                         <Switch
                           checked={integration.isEnabled}
@@ -374,10 +374,10 @@ export function ConfigIntegraciones({
 
                     {/* Error Message */}
                     {integration.status === 'error' && integration.errorMessage && (
-                      <div className="mt-3 p-2.5 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
+                      <div className="mt-3 p-2.5 rounded-md bg-danger-soft border border-danger/30">
                         <div className="flex items-start gap-2">
-                          <Warning className="w-4 h-4 text-[#C4503B] shrink-0 mt-0.5" />
-                          <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">
+                          <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" />
+                          <p className="text-xs text-danger">
                             {integration.errorMessage}
                           </p>
                         </div>
@@ -388,10 +388,10 @@ export function ConfigIntegraciones({
                     {integration.isEnabled &&
                       integration.status === 'pending' &&
                       !integration.apiKeyConfigured && (
-                        <div className="mt-3 p-2.5 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+                        <div className="mt-3 p-2.5 rounded-md bg-warning-soft border border-warning/30">
                           <div className="flex items-start gap-2">
-                            <Key className="w-4 h-4 text-[#B7791F] shrink-0 mt-0.5" />
-                            <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
+                            <Key className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                            <p className="text-xs text-warning">
                               {t('inmobiliaria.config.integrations.apiKeyNotConfigured')}
                             </p>
                           </div>
@@ -402,7 +402,7 @@ export function ConfigIntegraciones({
                     {integration.isEnabled && (
                       <button
                         onClick={() => handleConfigure(integration)}
-                        className="mt-3 flex items-center gap-1.5 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium transition-colors"
+                        className="mt-3 flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline font-medium transition-colors"
                       >
                         <Gear className="w-4 h-4" />
                         {t('inmobiliaria.config.integrations.configure')}
@@ -434,7 +434,7 @@ export function ConfigIntegraciones({
               {selectedIntegration && ICON_MAP[selectedIntegration.icon] && (
                 (() => {
                   const IconComponent = ICON_MAP[selectedIntegration.icon];
-                  return <IconComponent className="w-5 h-5 text-[#1A40FF]" />;
+                  return <IconComponent className="w-5 h-5 text-fg-muted" weight="duotone" />;
                 })()
               )}
               {t('inmobiliaria.config.integrations.configureTitle', { name: selectedIntegration?.name ?? '' })}
@@ -446,10 +446,10 @@ export function ConfigIntegraciones({
 
           <div className="space-y-4 py-4">
             {/* Info Banner */}
-            <div className="p-3 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
+            <div className="p-3 rounded-md bg-primary-soft border border-primary/30">
               <div className="flex gap-2">
-                <Info className="w-4 h-4 text-[#1A40FF] shrink-0 mt-0.5" />
-                <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
+                <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" weight="fill" />
+                <p className="text-xs text-primary">
                   {t('inmobiliaria.config.integrations.apiKeyInfo', { name: selectedIntegration?.name ?? '' })}
                 </p>
               </div>
@@ -458,7 +458,7 @@ export function ConfigIntegraciones({
             {/* API Key Input */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-foreground">
-                API Key <span className="text-[#C4503B]">*</span>
+                API Key <span className="text-danger">*</span>
               </label>
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -467,21 +467,18 @@ export function ConfigIntegraciones({
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="sk_live_xxxxxxxxxxxxx"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
                 />
               </div>
             </div>
 
             {/* Test Connection Button */}
-            <button
+            <Button
+              variant="outline"
+              hideArrow
+              className="w-full justify-center"
               onClick={handleTestConnection}
               disabled={!apiKey || isSaving}
-              className={cn(
-                'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md border text-sm font-medium transition-colors',
-                !apiKey || isSaving
-                  ? 'border-border bg-muted text-muted-foreground cursor-not-allowed'
-                  : 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/30'
-              )}
             >
               {isSaving ? (
                 <SpinnerGap className="w-4 h-4 animate-spin" />
@@ -489,26 +486,22 @@ export function ConfigIntegraciones({
                 <ArrowsClockwise className="w-4 h-4" />
               )}
               {t('inmobiliaria.config.integrations.testConnection')}
-            </button>
+            </Button>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <button
+            <Button
+              variant="secondary"
+              hideArrow
               onClick={() => setIsDialogOpen(false)}
               disabled={isSaving}
-              className="px-4 py-2 rounded-md border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
             >
               {t('inmobiliaria.config.integrations.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={handleSaveConfig}
               disabled={!apiKey || isSaving}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-                !apiKey || isSaving
-                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                  : 'bg-[#1A40FF] hover:opacity-90 text-white'
-              )}
             >
               {isSaving ? (
                 <>
@@ -521,7 +514,7 @@ export function ConfigIntegraciones({
                   {t('inmobiliaria.config.integrations.save')}
                 </>
               )}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

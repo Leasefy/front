@@ -56,7 +56,7 @@ function IPCTrendChart({ data, t }: { data: IPCRecord[]; t: (key: string) => str
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">{t('inmobiliaria.finance.ipc.trend12m')}</span>
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70]">
+        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-soft text-xs font-medium text-success">
           <TrendDown className="h-3.5 w-3.5" weight="bold" />
           <span>{t('inmobiliaria.finance.ipc.decreasing')}</span>
         </span>
@@ -73,15 +73,15 @@ function IPCTrendChart({ data, t }: { data: IPCRecord[]; t: (key: string) => str
                   <div
                     className={`flex-1 rounded-full transition-all cursor-pointer hover:scale-105 ${
                       isCurrentMonth
-                        ? 'bg-[#1A40FF]'
-                        : 'bg-[#EEF1FF] hover:bg-[#1A40FF] dark:bg-[#1A40FF] dark:hover:opacity-90'
+                        ? 'bg-primary'
+                        : 'bg-primary-soft hover:bg-primary dark:bg-primary dark:hover:opacity-90'
                     }`}
                     style={{ height: `${height}%` }}
                   />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="font-semibold">{record.description}</p>
-                  <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">{record.rate.toFixed(2)}%</p>
+                  <p className="text-sm text-primary">{record.rate.toFixed(2)}%</p>
                 </TooltipContent>
               </Tooltip>
             );
@@ -108,8 +108,8 @@ function CurrentIPCDisplay({ ipc }: { ipc: IPCRecord }) {
   return (
     <div className="flex items-center gap-6">
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-          <Percent className="h-7 w-7 text-[#1A40FF] dark:text-[#5570FF]" weight="bold" />
+        <div className="w-14 h-14 rounded-xl bg-primary-soft flex items-center justify-center">
+          <Percent className="h-7 w-7 text-primary" weight="bold" />
         </div>
         <div>
           <div className="flex items-baseline gap-1">
@@ -121,8 +121,8 @@ function CurrentIPCDisplay({ ipc }: { ipc: IPCRecord }) {
       </div>
       <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
         isDown
-          ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
-          : 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
+          ? 'bg-success-soft text-success dark:bg-success/15 dark:text-success'
+          : 'bg-danger-soft text-danger dark:bg-danger/15 dark:text-danger'
       }`}>
         {isDown ? (
           <TrendDown className="h-4 w-4" weight="bold" />
@@ -202,8 +202,8 @@ function CalculatorForm({
       {/* Current Rent Input */}
       <div className="space-y-2.5">
         <Label htmlFor="currentRent" className="flex items-center gap-2 text-sm font-medium">
-          <div className="w-6 h-6 rounded-sm bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-            <CurrencyDollar className="h-3.5 w-3.5 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="w-6 h-6 rounded-sm bg-success-soft flex items-center justify-center">
+            <CurrencyDollar className="h-3.5 w-3.5 text-success" />
           </div>
           {t('inmobiliaria.finance.ipc.currentRent')}
         </Label>
@@ -223,8 +223,8 @@ function CalculatorForm({
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
           <Label className="flex items-center gap-2 text-sm font-medium">
-            <div className="w-6 h-6 rounded-sm bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-              <Percent className="h-3.5 w-3.5 text-[#1A40FF] dark:text-[#5570FF]" />
+            <div className="w-6 h-6 rounded-sm bg-primary-soft flex items-center justify-center">
+              <Percent className="h-3.5 w-3.5 text-primary" />
             </div>
             {t('inmobiliaria.finance.ipc.ipcRate')}
           </Label>
@@ -233,7 +233,7 @@ function CalculatorForm({
             onClick={() => setUseCustomRate(!useCustomRate)}
             className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
               useCustomRate
-                ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/40 dark:text-[#1A40FF]'
+                ? 'bg-primary-soft text-primary dark:bg-primary/15 dark:text-primary dark:bg-primary/40 dark:text-primary'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
           >
@@ -251,9 +251,9 @@ function CalculatorForm({
             placeholder="Ej: 5.20"
           />
         ) : (
-          <div className="h-12 px-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-between">
-            <span className="text-xl font-bold text-[#1A40FF] dark:text-[#5570FF]">{ipcRate.toFixed(2)}%</span>
-            <span className="text-xs font-medium text-[#1A40FF]/70 dark:text-[#1A40FF]/70 flex items-center gap-1.5">
+          <div className="h-12 px-4 rounded-xl bg-primary-soft border border-primary/30 dark:border-primary/40 flex items-center justify-between">
+            <span className="text-xl font-bold text-primary">{ipcRate.toFixed(2)}%</span>
+            <span className="text-xs font-medium text-primary/70 dark:text-primary/70 flex items-center gap-1.5">
               <Info className="h-3.5 w-3.5" />
               DANE Colombia
             </span>
@@ -264,8 +264,8 @@ function CalculatorForm({
       {/* Effective Date */}
       <div className="space-y-2.5">
         <Label htmlFor="effectiveDate" className="flex items-center gap-2 text-sm font-medium">
-          <div className="w-6 h-6 rounded-sm bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-            <Calendar className="h-3.5 w-3.5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-6 h-6 rounded-sm bg-primary-soft flex items-center justify-center">
+            <Calendar className="h-3.5 w-3.5 text-primary" />
           </div>
           {t('inmobiliaria.finance.ipc.effectiveDate')}
         </Label>
@@ -279,7 +279,7 @@ function CalculatorForm({
       </div>
 
       {/* Calculate Button */}
-      <Button onClick={handleCalculate} className="w-full h-12 text-base font-medium bg-[#1A40FF] hover:opacity-90" size="lg">
+      <Button onClick={handleCalculate} className="w-full h-12 text-base font-medium bg-primary hover:opacity-90" size="lg">
         <Calculator className="h-5 w-5 mr-2" />
         {t('inmobiliaria.finance.ipc.calculateIncrease')}
       </Button>
@@ -292,22 +292,22 @@ function CalculatorForm({
               <p className="text-xs font-medium text-muted-foreground mb-1">{t('inmobiliaria.finance.ipc.currentRent')}</p>
               <p className="text-xl font-bold text-foreground">{formatCurrency(result.currentRent)}</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-[#1A40FF] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
               <ArrowRight className="h-5 w-5 text-white" weight="bold" />
             </div>
-            <div className="text-center p-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex-1 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
-              <p className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] mb-1">{t('inmobiliaria.finance.ipc.newRent')}</p>
-              <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">{formatCurrency(result.newRent)}</p>
+            <div className="text-center p-4 rounded-xl bg-primary-soft flex-1 border border-primary/30 dark:border-primary/40">
+              <p className="text-xs font-medium text-primary mb-1">{t('inmobiliaria.finance.ipc.newRent')}</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(result.newRent)}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 rounded-xl bg-card border border-border">
               <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('inmobiliaria.finance.ipc.increase')}</p>
-              <p className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF]">+{formatCurrency(result.increase)}</p>
+              <p className="text-lg font-bold text-primary">+{formatCurrency(result.increase)}</p>
             </div>
             <div className="text-center p-3 rounded-xl bg-card border border-border">
               <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('inmobiliaria.finance.ipc.percentage')}</p>
-              <p className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF]">+{result.ipcRate.toFixed(2)}%</p>
+              <p className="text-lg font-bold text-primary">+{result.ipcRate.toFixed(2)}%</p>
             </div>
           </div>
         </div>
@@ -324,8 +324,8 @@ function InfoSection({ t }: { t: (key: string) => string }) {
   return (
     <div className="p-5 rounded-xl border border-border bg-muted/20">
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-          <Info className="h-5 w-5 text-[#1A40FF] dark:text-[#5570FF]" />
+        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+          <Info className="h-5 w-5 text-primary" />
         </div>
         <div className="space-y-2">
           <h4 className="font-semibold text-foreground">{t('inmobiliaria.finance.ipc.rentIncrease')}</h4>
@@ -336,7 +336,7 @@ function InfoSection({ t }: { t: (key: string) => string }) {
             href="https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary dark:hover:text-primary transition-colors"
           >
             <LinkIcon className="h-4 w-4" />
             {t('inmobiliaria.finance.ipc.viewOfficialIPC')}
@@ -366,8 +366,8 @@ export function IPCCalculator({
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
-                <Calculator className="h-6 w-6 text-[#2C7A53] dark:text-[#3EAE70]" />
+              <div className="p-2 rounded-md bg-success-soft">
+                <Calculator className="h-6 w-6 text-success" />
               </div>
               <div>
                 <CardTitle className="text-lg">{t('inmobiliaria.finance.ipc.calculator')}</CardTitle>
@@ -376,7 +376,7 @@ export function IPCCalculator({
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="bg-[#E8F3EC] border-[#2C7A53]/30 text-[#2C7A53] dark:bg-[#2C7A53]/30 dark:border-[#2C7A53]/30 dark:text-[#2C7A53]">
+            <Badge variant="outline" className="bg-success-soft border-success/30 text-success dark:bg-success/30 dark:border-success/30 dark:text-success">
               DANE Colombia
             </Badge>
           </div>
@@ -397,8 +397,8 @@ export function IPCCalculator({
       <Card className="rounded-xl">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
-              <Calculator className="h-5 w-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-success-soft">
+              <Calculator className="h-5 w-5 text-success" />
             </div>
             <div>
               <CardTitle className="text-lg">{t('inmobiliaria.finance.ipc.calculateIncrease')}</CardTitle>

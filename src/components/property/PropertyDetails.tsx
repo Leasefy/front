@@ -80,7 +80,7 @@ export function PropertyDetails({
             onClick={onWishlistToggle}
             className={cn(
               'h-12 w-12 rounded-full flex-shrink-0',
-              isWishlisted && 'text-[#C4503B] hover:text-[#C4503B]'
+              isWishlisted && 'text-danger hover:text-danger'
             )}
             aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
           >

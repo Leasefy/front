@@ -35,7 +35,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
     <div className={cn('flex gap-3', className)}>
       {/* AI icon — real Leasefy mark */}
       <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-        <LeasefyMark className="w-3.5 h-auto text-[#1A40FF] dark:text-neutral-200" />
+        <LeasefyMark className="w-3.5 h-auto text-primary dark:text-neutral-200" />
       </div>
 
       <div className="flex-1 min-w-0">

@@ -206,7 +206,7 @@ export function PropertyCard({
               'transition-all duration-300',
               'hover:bg-white/30',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
-              isWishlisted ? 'text-[#C4503B]' : 'text-white/80'
+              isWishlisted ? 'text-danger' : 'text-white/80'
             )}
             aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
           >

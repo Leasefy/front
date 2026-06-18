@@ -33,26 +33,26 @@ const TYPE_META: Record<
   'pre-payment': {
     icon: Clock,
     label: 'Recordatorio de pago',
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    color: 'text-[#1A40FF] dark:text-[#5570FF]',
-    badgeBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    badgeText: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    color: 'text-primary',
+    badgeBg: 'bg-primary-soft',
+    badgeText: 'text-primary',
   },
   overdue: {
     icon: Warning,
     label: 'Aviso de mora',
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    color: 'text-[#B7791F] dark:text-[#D2992F]',
-    badgeBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    badgeText: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    color: 'text-warning',
+    badgeBg: 'bg-warning-soft',
+    badgeText: 'text-warning',
   },
   escalation: {
     icon: ShieldWarning,
     label: 'Escalacion',
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    color: 'text-[#C4503B] dark:text-[#E0664D]',
-    badgeBg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    badgeText: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    color: 'text-danger',
+    badgeBg: 'bg-danger-soft',
+    badgeText: 'text-danger',
   },
   'contract-expiry': {
     icon: FileText,
@@ -72,19 +72,19 @@ const STATUS_META: Record<
     label: 'Enviado',
     bg: 'bg-neutral-700 dark:bg-neutral-600',
     text: 'text-white',
-    dot: 'bg-[#2C7A53]',
+    dot: 'bg-success',
   },
   scheduled: {
     label: 'Programado',
     bg: 'bg-neutral-200 dark:bg-neutral-700',
     text: 'text-neutral-700 dark:text-neutral-200',
-    dot: 'bg-[#1A40FF]',
+    dot: 'bg-primary',
   },
   failed: {
     label: 'Fallido',
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    dot: 'bg-[#C4503B]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    dot: 'bg-danger',
   },
   cancelled: {
     label: 'Cancelado',
@@ -298,8 +298,8 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                         className={cn(
                           'inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium mt-0.5',
                           entry.recipientType === 'tenant'
-                            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                            : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+                            ? 'bg-primary-soft text-primary'
+                            : 'bg-success-soft text-success'
                         )}
                       >
                         {entry.recipientType === 'tenant' ? 'Inquilino' : 'Propietario'}
@@ -416,8 +416,8 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                     className={cn(
                       'inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium',
                       entry.recipientType === 'tenant'
-                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                        : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+                        ? 'bg-primary-soft text-primary'
+                        : 'bg-success-soft text-success'
                     )}
                   >
                     {entry.recipientType === 'tenant' ? 'Inquilino' : 'Propietario'}

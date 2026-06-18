@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Chip } from '@leasefy/ui';
 import type { AdvancedKPI, TrendDirection } from '@/lib/types/inmobiliaria';
 import { getCategoryLabel } from '@/lib/types/inmobiliaria';
 
@@ -119,12 +120,12 @@ function KPICard({
     <motion.div
       whileHover={{ y: -2 }}
       onClick={onClick}
-      className="flex flex-col h-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover: hover: hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 transition-all cursor-pointer"
+      className="flex flex-col h-full p-5 rounded-xl border border-border bg-card transition-all cursor-pointer hover:border-primary/30"
     >
       {/* Header - Icon + Title */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
-          <CategoryIcon className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
+        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+          <CategoryIcon className="w-5 h-5 text-primary" weight="duotone" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-medium text-neutral-600 dark:text-neutral-400 truncate">
@@ -143,8 +144,8 @@ function KPICard({
         <div
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0',
-            isPositiveTrend && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-            isNegativeTrend && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
+            isPositiveTrend && 'bg-success-soft text-success',
+            isNegativeTrend && 'bg-danger-soft text-danger',
             !isPositiveTrend && !isNegativeTrend && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
           )}
         >
@@ -168,7 +169,7 @@ function KPICard({
             </div>
             <span className={cn(
               'font-semibold',
-              progress >= 100 ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-[#1A40FF] dark:text-[#5570FF]'
+              progress >= 100 ? 'text-success' : 'text-primary'
             )}>
               {progress.toFixed(0)}%
             </span>
@@ -177,7 +178,7 @@ function KPICard({
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
-                progress >= 100 ? 'bg-[#2C7A53]' : 'bg-[#1A40FF]'
+                progress >= 100 ? 'bg-success' : 'bg-primary'
               )}
               style={{ width: `${Math.min(100, progress)}%` }}
             />
@@ -218,10 +219,10 @@ function CompactKPICard({
     <motion.div
       whileHover={{ x: 2 }}
       onClick={onClick}
-      className="flex items-center gap-4 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 transition-all cursor-pointer"
+      className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card transition-all cursor-pointer hover:border-primary/30"
     >
-      <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
-        <CategoryIcon className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
+      <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+        <CategoryIcon className="w-5 h-5 text-primary" weight="duotone" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{kpi.label}</p>
@@ -230,8 +231,8 @@ function CompactKPICard({
       <div
         className={cn(
           'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0',
-          isPositiveTrend && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-          isNegativeTrend && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
+          isPositiveTrend && 'bg-success-soft text-success',
+          isNegativeTrend && 'bg-danger-soft text-danger',
           !isPositiveTrend && !isNegativeTrend && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
         )}
       >
@@ -273,30 +274,20 @@ export function AnalyticsKPICards({
     <div className="space-y-5">
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 flex-wrap">
-        <button
+        <Chip
+          selected={selectedCategory === null}
           onClick={() => setSelectedCategory(null)}
-          className={cn(
-            'px-4 py-2 rounded-xl text-sm font-medium transition-all',
-            selectedCategory === null
-              ? 'bg-[#1A40FF] text-white'
-              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-          )}
         >
           {t('inmobiliaria.analytics.kpiCards.all')} ({kpis.length})
-        </button>
+        </Chip>
         {categories.map((category) => (
-          <button
+          <Chip
             key={category}
+            selected={selectedCategory === category}
             onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
-            className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium transition-all',
-              selectedCategory === category
-                ? 'bg-[#1A40FF] text-white'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            )}
           >
             {getCategoryLabel(category)} ({groupedKPIs[category].length})
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -352,12 +343,12 @@ export function AnalyticsKPICards({
 
             return (
               <div key={category} className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                  <CategoryIcon className="w-3.5 h-3.5 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
+                <div className="w-7 h-7 rounded-md bg-primary-soft flex items-center justify-center">
+                  <CategoryIcon className="w-3.5 h-3.5 text-primary" weight="duotone" />
                 </div>
                 <span className="text-sm text-neutral-600 dark:text-neutral-400">
                   {getCategoryLabel(category)}:{' '}
-                  <span className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
+                  <span className="font-semibold text-success">
                     {upTrends}/{categoryKpis.length}
                   </span>
                   <span className="text-neutral-400 dark:text-neutral-500 ml-1">{t('inmobiliaria.analytics.kpiCards.positive')}</span>

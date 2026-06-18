@@ -226,13 +226,13 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
                       type="button"
                       onClick={() => setAgentRole(opt.value)}
                       className={cn(
-                        'p-2.5 rounded-xl border text-center transition-all text-xs',
+                        'p-2.5 rounded-md border text-center transition-all text-xs',
                         agentRole === opt.value
-                          ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                          ? 'border-primary/30 bg-primary-soft'
                           : 'border-border hover:bg-muted'
                       )}
                     >
-                      <p className={cn('font-medium', agentRole === opt.value ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-foreground')}>{opt.label}</p>
+                      <p className={cn('font-medium', agentRole === opt.value ? 'text-primary' : 'text-foreground')}>{opt.label}</p>
                       <p className="text-muted-foreground mt-0.5">{opt.desc}</p>
                     </button>
                   ))}
@@ -279,7 +279,7 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
                     max={100}
                     value={commissionSplit}
                     onChange={(e) => setCommissionSplit(Number(e.target.value))}
-                    className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-[#1A40FF]"
+                    className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
                   />
                   <span className="text-sm font-medium text-foreground w-10 text-right">{commissionSplit}%</span>
                 </div>
@@ -432,19 +432,19 @@ function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#C4503B] dark:text-[#E0664D]">{t('inmobiliaria.config.users.deleteUser')}</DialogTitle>
+          <DialogTitle className="text-danger">{t('inmobiliaria.config.users.deleteUser')}</DialogTitle>
           <DialogDescription>
             {t('inmobiliaria.config.users.deleteModal.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
-          <div className="p-4 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
-            <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+          <div className="p-4 rounded-md bg-danger-soft border border-danger/30">
+            <p className="text-sm text-danger">
               {t('inmobiliaria.config.users.deleteModal.confirmMessage', { name: user?.name ?? '' })}
             </p>
             {user?.email && (
-              <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">
+              <p className="text-sm text-danger mt-1">
                 {user.email}
               </p>
             )}
@@ -570,15 +570,15 @@ export function ConfigUsuarios({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.config.users.title')}
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.config.users.userCount', { total: userCounts.total, active: userCounts.active, invited: userCounts.invited })}
           </p>
         </div>
-        <Button onClick={() => setInviteModalOpen(true)}>
+        <Button hideArrow onClick={() => setInviteModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           {t('inmobiliaria.config.users.invite')}
         </Button>
@@ -627,7 +627,7 @@ export function ConfigUsuarios({
       </div>
 
       {/* Users Table */}
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full min-w-[800px]">
           <thead>
             <tr className="border-b border-neutral-100 dark:border-neutral-800">
@@ -668,7 +668,7 @@ export function ConfigUsuarios({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ delay: index * 0.02 }}
-                    className="border-b border-neutral-50 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-[#141416] transition-colors"
+                    className="border-b border-border hover:bg-muted/40 transition-colors"
                   >
                     {/* User Info */}
                     <td className="p-4">
@@ -729,7 +729,7 @@ export function ConfigUsuarios({
                           <span>{formatRelativeTime(user.lastLoginAt)}</span>
                         </div>
                       ) : user.status === 'invited' && user.invitedAt ? (
-                        <div className="flex items-center gap-1.5 text-sm text-[#B7791F] dark:text-[#D2992F]">
+                        <div className="flex items-center gap-1.5 text-sm text-warning">
                           <EnvelopeSimple className="w-4 h-4 shrink-0" />
                           <span>{t('inmobiliaria.config.users.invitedOn')} {formatRelativeTime(user.invitedAt)}</span>
                         </div>
@@ -754,7 +754,7 @@ export function ConfigUsuarios({
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.95 }}
-                              className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10"
+                              className="absolute right-0 top-full mt-1 w-48 p-2 rounded-lg border border-border bg-card z-10"
                             >
                               {/* Edit Role */}
                               <button
@@ -814,7 +814,7 @@ export function ConfigUsuarios({
                                   setDeleteModalOpen(true);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-danger hover:bg-danger-soft transition-colors"
                               >
                                 <Trash className="w-4 h-4" />
                                 <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
@@ -833,20 +833,22 @@ export function ConfigUsuarios({
 
         {/* Empty State */}
         {filteredUsers.length === 0 && (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              <Users className="w-8 h-8 text-neutral-400" />
+          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-surface-muted flex items-center justify-center">
+              <Users className="w-6 h-6 text-fg-muted" weight="duotone" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
-              {t('inmobiliaria.config.users.noUsersFound')}
-            </h3>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-4">
-              {search || filterRole !== 'all' || filterStatus !== 'all'
-                ? t('inmobiliaria.config.users.adjustFilters')
-                : t('inmobiliaria.config.users.inviteFirst')}
-            </p>
+            <div className="space-y-1.5">
+              <h3 className="text-base font-semibold text-fg">
+                {t('inmobiliaria.config.users.noUsersFound')}
+              </h3>
+              <p className="max-w-sm text-sm text-fg-muted">
+                {search || filterRole !== 'all' || filterStatus !== 'all'
+                  ? t('inmobiliaria.config.users.adjustFilters')
+                  : t('inmobiliaria.config.users.inviteFirst')}
+              </p>
+            </div>
             {!search && filterRole === 'all' && filterStatus === 'all' && (
-              <Button onClick={() => setInviteModalOpen(true)}>
+              <Button hideArrow className="mt-1" onClick={() => setInviteModalOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 {t('inmobiliaria.config.users.invite')}
               </Button>

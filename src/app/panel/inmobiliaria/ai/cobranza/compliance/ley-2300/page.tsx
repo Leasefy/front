@@ -119,7 +119,7 @@ function Ley2300Content() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -159,8 +159,8 @@ function Ley2300Content() {
                       className={[
                         'inline-flex items-center px-2 py-0.5 rounded text-xs font-mono uppercase',
                         row.direction === 'inbound'
-                          ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/30 dark:text-[#1A40FF]'
-                          : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]',
+                          ? 'bg-primary-soft text-primary dark:bg-primary/30 dark:text-primary'
+                          : 'bg-warning-soft text-warning dark:bg-warning/30 dark:text-warning',
                       ].join(' ')}
                     >
                       {row.direction}

@@ -80,36 +80,36 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     id: 'reported',
     titleKey: 'inmobiliaria.mantenimiento.colReported',
     icon: ListBullets,
-    color: 'text-[#6B6B6B] dark:text-[#6B6B6B]',
-    bgColor: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]/50',
+    color: 'text-fg-muted dark:text-fg-muted',
+    bgColor: 'bg-fg-muted dark:bg-fg-muted/50',
   },
   {
     id: 'quoted',
     titleKey: 'inmobiliaria.mantenimiento.colQuoted',
     icon: CurrencyCircleDollar,
-    color: 'text-[#1A40FF] dark:text-[#5570FF]',
-    bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    color: 'text-primary',
+    bgColor: 'bg-primary-soft',
   },
   {
     id: 'approved',
     titleKey: 'inmobiliaria.mantenimiento.colApproved',
     icon: Check,
-    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    color: 'text-success',
+    bgColor: 'bg-success-soft',
   },
   {
     id: 'in_progress',
     titleKey: 'inmobiliaria.mantenimiento.colInProgress',
     icon: Clock,
-    color: 'text-[#B7791F] dark:text-[#D2992F]',
-    bgColor: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    color: 'text-warning',
+    bgColor: 'bg-warning-soft',
   },
   {
     id: 'completed',
     titleKey: 'inmobiliaria.mantenimiento.colCompleted',
     icon: CheckCircle,
-    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    color: 'text-success',
+    bgColor: 'bg-success-soft',
   },
 ];
 
@@ -160,21 +160,21 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
           className={cn(
             'w-7 h-7 rounded-sm flex items-center justify-center flex-shrink-0',
             solicitud.priority === 'emergency'
-              ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
-              : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+              ? 'bg-danger-soft'
+              : 'bg-primary-soft'
           )}
         >
           <TypeIcon
             className={cn(
               'w-4 h-4',
               solicitud.priority === 'emergency'
-                ? 'text-[#C4503B] dark:text-[#E0664D]'
-                : 'text-[#1A40FF] dark:text-[#5570FF]'
+                ? 'text-danger'
+                : 'text-primary'
             )}
           />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-2 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+          <h4 className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-2 group-hover:text-primary dark:group-hover:text-primary transition-colors">
             {solicitud.title}
           </h4>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -210,8 +210,8 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
             className={cn(
               'px-1.5 py-0.5 rounded text-xs font-medium',
               solicitud.priority === 'emergency'
-                ? 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
-                : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
+                ? 'bg-danger-soft text-danger'
+                : 'bg-warning-soft text-warning'
             )}
           >
             {solicitud.priority === 'emergency' && <Warning className="w-3 h-3 inline mr-0.5" weight="fill" />}
@@ -221,7 +221,7 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
 
         {/* Approved Amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
+          <span className="font-medium text-success">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}
@@ -355,8 +355,8 @@ export function MantenimientoKanban({ data, onViewDetails }: MantenimientoKanban
 
       {/* Cancelled items notice */}
       {groupedData.cancelled.length > 0 && (
-        <div className="mt-4 p-3 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
-          <div className="flex items-center gap-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="mt-4 p-3 rounded-md bg-danger-soft border border-danger/30">
+          <div className="flex items-center gap-2 text-sm text-danger">
             <XCircle className="w-4 h-4" />
             <span>
               {t('inmobiliaria.mantenimiento.cancelledNotice', { count: groupedData.cancelled.length })}

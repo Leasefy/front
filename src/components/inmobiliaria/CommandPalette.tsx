@@ -177,9 +177,9 @@ const QUICK_ACTIONS: QuickAction[] = [
 // ──────────────────────────────────────────────────────────────────────────────
 
 const BADGE_COLORS = {
-  green: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-  amber: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
-  red: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
+  green: 'bg-success-soft text-success border-success/30',
+  amber: 'bg-warning-soft text-warning border-warning/30',
+  red: 'bg-danger-soft text-danger border-danger/30',
   violet: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
   neutral: 'bg-muted text-muted-foreground border-border',
 };
@@ -302,9 +302,9 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
 
       {/* Paused banner */}
       {data.isPaused && (
-        <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
-          <Warning className="w-3.5 h-3.5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-[#B7791F] dark:text-[#D2992F] leading-snug">
+        <div className="flex items-start gap-2 p-2.5 rounded-md bg-warning-soft border border-warning/30">
+          <Warning className="w-3.5 h-3.5 text-warning mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] text-warning leading-snug">
             {locale === 'es' ? 'Cobranza pausada' : 'Collections paused'}
           </p>
         </div>
@@ -399,11 +399,11 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
         </div>
       </div>
       {totalMonthlyRent > 0 && (
-        <div className="bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 rounded-md p-2.5">
-          <p className="text-[10px] text-[#2C7A53] dark:text-[#3EAE70] font-medium">
+        <div className="bg-success-soft border border-success/30 rounded-md p-2.5">
+          <p className="text-[10px] text-success font-medium">
             {locale === 'es' ? 'Renta mensual total' : 'Total monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
+          <p className="text-[14px] font-semibold text-success">
             ${totalMonthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -433,10 +433,10 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
   const status = String(data.status ?? '');
 
   const STATUS_COLORS: Record<string, string> = {
-    available: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-    published: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-    rented: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#8FA3FF] border-[#1A40FF]/20 dark:border-[#1A40FF]/30',
-    pending: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    available: 'bg-success-soft text-success border-success/30',
+    published: 'bg-success-soft text-success border-success/30',
+    rented: 'bg-primary-soft text-primary dark:text-[#8FA3FF] border-primary/30',
+    pending: 'bg-warning-soft text-warning border-warning/30',
     draft: 'bg-muted text-muted-foreground border-border',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
@@ -515,15 +515,15 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
   const endDate = data.endDate != null ? String(data.endDate) : null;
 
   const STATUS_COLORS_PILL: Record<string, string> = {
-    ACTIVE: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    ACTIVE: 'bg-success-soft text-success border-success/30',
     SIGNED: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
-    PENDING_TENANT: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
-    PENDING_TENANT_SIGNATURE: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
-    PENDING_LANDLORD: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
-    PENDING_LANDLORD_SIGNATURE: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    PENDING_TENANT: 'bg-warning-soft text-warning border-warning/30',
+    PENDING_TENANT_SIGNATURE: 'bg-warning-soft text-warning border-warning/30',
+    PENDING_LANDLORD: 'bg-warning-soft text-warning border-warning/30',
+    PENDING_LANDLORD_SIGNATURE: 'bg-warning-soft text-warning border-warning/30',
     DRAFT: 'bg-muted text-muted-foreground border-border',
-    EXPIRED: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
-    CANCELLED: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
+    EXPIRED: 'bg-danger-soft text-danger border-danger/30',
+    CANCELLED: 'bg-danger-soft text-danger border-danger/30',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
     ACTIVE: 'Activo',

@@ -31,8 +31,8 @@ function EstudioAnalitica() {
             { label: t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle') },
           ]}
         />
-        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <h1 className="text-2xl font-semibold text-fg tracking-tight">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.estudio.analiticaDesc')}
         </p>
       </header>

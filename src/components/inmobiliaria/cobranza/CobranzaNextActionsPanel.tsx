@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Phone, ChatTeardropDots, EnvelopeSimple, CaretDown } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui'
 import { type CarteraStage, stageColorClasses, stageDisplayName } from '@/lib/cartera'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 
@@ -14,8 +15,8 @@ interface CobranzaNextActionsPanelProps {
 
 function ChannelIcon({ channel }: { channel: 'voice' | 'whatsapp' | 'email' }) {
   if (channel === 'voice') return <Phone size={14} className="text-neutral-600 dark:text-neutral-300" />
-  if (channel === 'whatsapp') return <ChatTeardropDots size={14} className="text-[#2C7A53]" />
-  return <EnvelopeSimple size={14} className="text-[#1A40FF]" />
+  if (channel === 'whatsapp') return <ChatTeardropDots size={14} className="text-success" />
+  return <EnvelopeSimple size={14} className="text-primary" />
 }
 
 function formatTime(iso: string): string {
@@ -57,12 +58,11 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       <p className="text-sm text-neutral-500 dark:text-neutral-400">
         {t('inmobiliaria.ai.cobranza.overview.nextActions.empty')}
       </p>
-      <Link
-        href="/panel/inmobiliaria/ai/cobranza/configuracion"
-        className="px-4 py-2 rounded-md text-sm font-medium bg-[#1A40FF] text-white hover:opacity-90 active:scale-[0.98] transition"
-      >
-        {t('inmobiliaria.ai.cobranza.overview.nextActions.configCta')}
-      </Link>
+      <Button asChild hideArrow>
+        <Link href="/panel/inmobiliaria/ai/cobranza/configuracion">
+          {t('inmobiliaria.ai.cobranza.overview.nextActions.configCta')}
+        </Link>
+      </Button>
     </div>
   )
 
@@ -102,7 +102,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
   return (
     <>
       {/* Flat list — md+ */}
-      <div className="hidden md:block rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+      <div className="hidden md:block rounded-xl border border-border bg-card">
         <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
           <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}
@@ -112,7 +112,7 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
       </div>
 
       {/* Accordion — sm */}
-      <details className="md:hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] group">
+      <details className="md:hidden rounded-xl border border-border bg-card group">
         <summary className="px-5 py-4 cursor-pointer flex items-center justify-between list-none">
           <span className="text-base font-semibold text-neutral-900 dark:text-white">
             {t('inmobiliaria.ai.cobranza.overview.nextActions.title')}

@@ -88,7 +88,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               onClick={() => setShowCertificate(true)}
               className="shrink-0"
             >
-              <SealCheck className="mr-2 h-4 w-4 text-[#2C7A53]" />
+              <SealCheck className="mr-2 h-4 w-4 text-success" />
               Ver Certificado
             </Button>
           )}
@@ -139,7 +139,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
             <Shield className="h-4 w-4 text-muted-foreground" />
             Poliza de Seguro
           </h3>
-          <div className="rounded-sm border border-[#2C7A53]/30 bg-[#E8F3EC] p-4">
+          <div className="rounded-sm border border-success/30 bg-success-soft p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-foreground">{insurancePolicy.name}</p>
@@ -153,7 +153,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               </div>
             </div>
             {insurancePolicy.features.length > 0 && (
-              <ul className="mt-3 pt-3 border-t border-[#2C7A53]/30 grid gap-1 text-sm text-muted-foreground">
+              <ul className="mt-3 pt-3 border-t border-success/30 grid gap-1 text-sm text-muted-foreground">
                 {insurancePolicy.features.slice(0, 4).map((feature, i) => (
                   <li key={i}>• {feature}</li>
                 ))}
@@ -217,7 +217,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
               {tenantEmail}
             </p>
             {!isContractSigned && (
-              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-[#B7791F]">
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-warning">
                 <Lock className="h-3 w-3" />
                 <span>Datos completos al firmar contrato</span>
               </div>
@@ -300,7 +300,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
             className={cn(
               'rounded-sm border p-4',
               contract.landlordSignature
-                ? 'border-[#2C7A53]/30 bg-[#E8F3EC]'
+                ? 'border-success/30 bg-success-soft'
                 : 'border-dashed border-border bg-muted'
             )}
           >
@@ -309,10 +309,10 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
             </p>
             {contract.landlordSignature ? (
               <>
-                <p className="mt-2 font-medium text-[#2C7A53]">
+                <p className="mt-2 font-medium text-success">
                   {contract.landlordSignature.signedBy}
                 </p>
-                <p className="text-xs text-[#2C7A53]">
+                <p className="text-xs text-success">
                   Firmado: {formatDate(contract.landlordSignature.signedAt)}
                 </p>
               </>
@@ -326,7 +326,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
             className={cn(
               'rounded-sm border p-4',
               contract.tenantSignature
-                ? 'border-[#2C7A53]/30 bg-[#E8F3EC]'
+                ? 'border-success/30 bg-success-soft'
                 : 'border-dashed border-border bg-muted'
             )}
           >
@@ -335,10 +335,10 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
             </p>
             {contract.tenantSignature ? (
               <>
-                <p className="mt-2 font-medium text-[#2C7A53]">
+                <p className="mt-2 font-medium text-success">
                   {contract.tenantSignature.signedBy}
                 </p>
-                <p className="text-xs text-[#2C7A53]">
+                <p className="text-xs text-success">
                   Firmado: {formatDate(contract.tenantSignature.signedAt)}
                 </p>
               </>

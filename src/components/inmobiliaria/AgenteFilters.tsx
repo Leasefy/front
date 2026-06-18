@@ -116,7 +116,7 @@ export function AgenteFilters({
             placeholder={t('inmobiliaria.agente.searchPlaceholder')}
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
           />
           {filters.search && (
             <button
@@ -132,16 +132,16 @@ export function AgenteFilters({
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all',
+            'flex items-center gap-2 px-4 py-2.5 rounded-md border transition-all',
             showFilters || activeFiltersCount > 0
-              ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-              : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
+              ? 'border-primary/30 bg-primary-soft text-primary'
+              : 'border-border bg-background text-fg-muted hover:text-fg hover:border-fg/30'
           )}
         >
           <Funnel className="w-4 h-4" />
           <span className="text-sm font-medium">{t('inmobiliaria.agente.filters')}</span>
           {activeFiltersCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground tabular-nums text-xs font-semibold min-w-[20px] text-center">
               {activeFiltersCount}
             </span>
           )}
@@ -167,10 +167,10 @@ export function AgenteFilters({
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'role' ? null : 'role')}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all min-w-[130px] justify-between',
+                      'flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.role !== 'all'
-                        ? 'bg-[#1A40FF] text-white'
-                        : 'bg-background text-muted-foreground hover:bg-muted'
+                        ? 'border-primary/30 bg-primary-soft text-primary'
+                        : 'border-border bg-background text-fg-muted hover:bg-muted'
                     )}
                   >
                     <span>{getRoleLabel()}</span>
@@ -191,7 +191,7 @@ export function AgenteFilters({
                             className={cn(
                               'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                               filters.role === option.value
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'bg-primary-soft text-primary'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -211,10 +211,10 @@ export function AgenteFilters({
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all min-w-[130px] justify-between',
+                      'flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.status !== 'all'
-                        ? 'bg-[#1A40FF] text-white'
-                        : 'bg-background text-muted-foreground hover:bg-muted'
+                        ? 'border-primary/30 bg-primary-soft text-primary'
+                        : 'border-border bg-background text-fg-muted hover:bg-muted'
                     )}
                   >
                     <span>{getStatusLabel()}</span>
@@ -235,7 +235,7 @@ export function AgenteFilters({
                             className={cn(
                               'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                               filters.status === option.value
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'bg-primary-soft text-primary'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -255,10 +255,10 @@ export function AgenteFilters({
                   <button
                     onClick={() => setOpenDropdown(openDropdown === 'sortBy' ? null : 'sortBy')}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all min-w-[130px] justify-between',
+                      'flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-all min-w-[130px] justify-between',
                       filters.sortBy !== 'name'
-                        ? 'bg-[#1A40FF] text-white'
-                        : 'bg-background text-muted-foreground hover:bg-muted'
+                        ? 'border-primary/30 bg-primary-soft text-primary'
+                        : 'border-border bg-background text-fg-muted hover:bg-muted'
                     )}
                   >
                     <span>{getSortLabel()}</span>
@@ -279,7 +279,7 @@ export function AgenteFilters({
                             className={cn(
                               'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                               filters.sortBy === option.value
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'bg-primary-soft text-primary'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -296,7 +296,7 @@ export function AgenteFilters({
               {activeFiltersCount > 0 && (
                 <button
                   onClick={clearAllFilters}
-                  className="mt-4 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                  className="mt-4 text-sm text-primary underline-offset-4 hover:underline font-medium"
                 >
                   {t('inmobiliaria.agente.clearFilters')}
                 </button>

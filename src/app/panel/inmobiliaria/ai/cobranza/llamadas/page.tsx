@@ -18,6 +18,8 @@ import { ArrowClockwise, PhoneCall, Warning } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui'
+import { Chip } from '@leasefy/ui'
 import {
   useCalls,
   type CallOutcomeFilter,
@@ -28,42 +30,28 @@ import {
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
 function outcomeBadgeClasses(outcome: string | null): string {
+  // Semantic status tints vía tokens del DS (contrato §8)
   switch (outcome) {
     case 'completed':
-      return 'bg-[#E8F3EC] text-[#2C7A53] ring-1 ring-[#2C7A53]/30 dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:ring-[#2C7A53]/40'
+      return 'bg-success-soft text-success ring-1 ring-success/30'
     case 'no_answer':
     case 'voicemail':
-      return 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'
+      return 'bg-muted text-muted-foreground ring-1 ring-border'
     case 'wrong_party':
     case 'failed':
-      return 'bg-[#F8EAE7] text-[#C4503B] ring-1 ring-[#C4503B]/30 dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:ring-[#C4503B]/40'
+      return 'bg-danger-soft text-danger ring-1 ring-danger/30'
     case 'opt_out':
-      return 'bg-[#F8F0E0] text-[#B7791F] ring-1 ring-[#B7791F]/30 dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:ring-[#B7791F]/40'
+      return 'bg-warning-soft text-warning ring-1 ring-warning/30'
     case 'escalated':
-      return 'bg-[#EEF1FF] text-[#1A40FF] ring-1 ring-[#1A40FF]/30 dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:ring-[#1A40FF]/40'
+      return 'bg-primary-soft text-primary ring-1 ring-primary/30'
     default:
-      return 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'
+      return 'bg-muted text-muted-foreground ring-1 ring-border'
   }
 }
 
-function channelBadgeClasses(channel: string): string {
+function channelBadgeClasses(_channel: string): string {
   // Channel is metadata, not a state signal — gray-first per brand contract §2.
-  switch (channel) {
-    case 'voice':
-    case 'whatsapp':
-    case 'sms':
-    case 'email':
-    default:
-      return 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'
-  }
-}
-
-// ── Filter chip helper ────────────────────────────────────────────────────────
-
-function chipClasses(active: boolean): string {
-  return active
-    ? 'bg-[#EEF1FF] text-[#1A40FF] border-[#1A40FF]/30 dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:border-[#1A40FF]/40'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+  return 'bg-muted text-muted-foreground ring-1 ring-border'
 }
 
 // ── Label maps ────────────────────────────────────────────────────────────────
@@ -205,23 +193,25 @@ function LlamadasContent() {
     <main className="p-4 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
             {t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
           </p>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition shrink-0"
           aria-label={isEs ? 'Actualizar' : 'Refresh'}
+          className="shrink-0"
         >
           <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
           {isEs ? 'Actualizar' : 'Refresh'}
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
@@ -233,18 +223,14 @@ function LlamadasContent() {
           </legend>
           <div className="flex flex-wrap gap-2">
             {OUTCOME_OPTIONS.map((o) => (
-              <button
+              <Chip
                 key={o}
-                type="button"
+                size="sm"
+                selected={outcomeFilter === o}
                 onClick={() => setOutcomeFilter((prev) => (prev === o ? undefined : o))}
-                aria-pressed={outcomeFilter === o}
-                className={
-                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
-                  chipClasses(outcomeFilter === o)
-                }
               >
                 {OUTCOME_LABELS[o][isEs ? 'es' : 'en']}
-              </button>
+              </Chip>
             ))}
           </div>
         </fieldset>
@@ -256,18 +242,14 @@ function LlamadasContent() {
           </legend>
           <div className="flex flex-wrap gap-2">
             {CHANNEL_OPTIONS.map((c) => (
-              <button
+              <Chip
                 key={c}
-                type="button"
+                size="sm"
+                selected={channelFilter === c}
                 onClick={() => setChannelFilter((prev) => (prev === c ? undefined : c))}
-                aria-pressed={channelFilter === c}
-                className={
-                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
-                  chipClasses(channelFilter === c)
-                }
               >
                 {CHANNEL_LABELS[c][isEs ? 'es' : 'en']}
-              </button>
+              </Chip>
             ))}
           </div>
         </fieldset>
@@ -279,34 +261,32 @@ function LlamadasContent() {
           </legend>
           <div className="flex flex-wrap gap-2">
             {DIRECTION_OPTIONS.map((d) => (
-              <button
+              <Chip
                 key={d}
-                type="button"
+                size="sm"
+                selected={directionFilter === d}
                 onClick={() => setDirectionFilter((prev) => (prev === d ? undefined : d))}
-                aria-pressed={directionFilter === d}
-                className={
-                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
-                  chipClasses(directionFilter === d)
-                }
               >
                 {DIRECTION_LABELS[d][isEs ? 'es' : 'en']}
-              </button>
+              </Chip>
             ))}
           </div>
         </fieldset>
 
         {hasFilters && (
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={() => {
               setOutcomeFilter(undefined)
               setChannelFilter(undefined)
               setDirectionFilter(undefined)
             }}
-            className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline self-center"
+            className="self-center px-0 h-auto"
           >
             {isEs ? 'Limpiar filtros' : 'Clear filters'}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -314,7 +294,7 @@ function LlamadasContent() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2 mb-4"
+          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2 mb-4"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -326,25 +306,25 @@ function LlamadasContent() {
         <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
           <thead className="bg-neutral-50 dark:bg-neutral-950/50">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.debtor')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.channel')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.outcome')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.duration')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.initiatedAt')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.qaScore')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.flags')}
               </th>
             </tr>
@@ -370,14 +350,14 @@ function LlamadasContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigateToCall(call.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF]"
+                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {/* Debtor (masked) */}
                 <td className="px-3 py-2">
                   <div className="font-medium text-neutral-900 dark:text-white text-sm whitespace-nowrap">
                     {call.debtorNameMasked}
                   </div>
-                  <div className="text-xs text-neutral-400 dark:text-neutral-500 font-mono tabular-nums">
+                  <div className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
                     {call.debtorCedulaMasked}
                   </div>
                 </td>
@@ -417,7 +397,7 @@ function LlamadasContent() {
                 </td>
 
                 {/* Duration */}
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums font-mono whitespace-nowrap">
+                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
                   {formatDuration(call.durationSeconds, isEs)}
                 </td>
 
@@ -427,15 +407,15 @@ function LlamadasContent() {
                 </td>
 
                 {/* QA score */}
-                <td className="px-3 py-2 text-xs tabular-nums font-mono whitespace-nowrap">
+                <td className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
                   {call.qaScore != null ? (
                     <span
                       className={
                         call.qaScore >= 80
-                          ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                          ? 'text-success'
                           : call.qaScore >= 60
-                            ? 'text-[#B7791F] dark:text-[#D2992F]'
-                            : 'text-[#C4503B] dark:text-[#E0664D]'
+                            ? 'text-warning'
+                            : 'text-danger'
                       }
                     >
                       {call.qaScore}
@@ -446,9 +426,9 @@ function LlamadasContent() {
                 </td>
 
                 {/* Compliance flags */}
-                <td className="px-3 py-2 text-xs tabular-nums font-mono whitespace-nowrap">
+                <td className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
                   {call.complianceFlagsCount > 0 ? (
-                    <span className="inline-flex items-center gap-0.5 text-[#B7791F] dark:text-[#D2992F] font-medium">
+                    <span className="inline-flex items-center gap-0.5 text-warning font-medium">
                       <Warning className="w-3 h-3" weight="fill" aria-hidden="true" />
                       {call.complianceFlagsCount}
                     </span>

@@ -19,6 +19,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
@@ -53,14 +54,14 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 // Category colors for icon backgrounds
 const CATEGORY_BG_COLORS: Record<string, string> = {
-  financiero: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-  operativo: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  financiero: 'bg-success-soft',
+  operativo: 'bg-primary-soft',
   agentes: 'bg-neutral-100 dark:bg-neutral-800',
 };
 
 const CATEGORY_ICON_COLORS: Record<string, string> = {
-  financiero: 'text-[#2C7A53] dark:text-[#3EAE70]',
-  operativo: 'text-[#1A40FF] dark:text-[#5570FF]',
+  financiero: 'text-success',
+  operativo: 'text-primary',
   agentes: 'text-neutral-600 dark:text-neutral-300',
 };
 
@@ -82,9 +83,9 @@ function getGenerationStatus(lastGenerated: string | undefined, t: (key: string,
   );
 
   if (diffDays === 0) {
-    return { color: 'bg-[#2C7A53]', label: t('inmobiliaria.reporte.generatedToday') };
+    return { color: 'bg-success', label: t('inmobiliaria.reporte.generatedToday') };
   } else if (diffDays <= 7) {
-    return { color: 'bg-[#B7791F]', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
+    return { color: 'bg-warning', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   } else {
     return { color: 'bg-neutral-400', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   }
@@ -126,7 +127,7 @@ export function ReporteCard({
       <motion.div
         whileHover={{ y: -2 }}
         className={cn(
-          'w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover: transition-all cursor-pointer',
+          'w-full p-4 rounded-xl border border-border bg-card transition-all cursor-pointer hover:border-foreground/15',
           isLocked && 'opacity-75'
         )}
         onClick={isLocked ? onUpgrade : onPreview}
@@ -156,13 +157,13 @@ export function ReporteCard({
                 {report.title}
               </h3>
               {isLocked && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-[10px] font-medium shrink-0">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-soft text-primary text-[10px] font-medium shrink-0">
                   Pro
                 </span>
               )}
               {!isLocked && report.isFavorite && (
                 <Star
-                  className="w-4 h-4 text-[#B7791F] shrink-0"
+                  className="w-4 h-4 text-warning shrink-0"
                   weight="fill"
                 />
               )}
@@ -194,7 +195,7 @@ export function ReporteCard({
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all hover:"
+      className="w-full rounded-xl border border-border bg-card overflow-hidden transition-all hover:border-foreground/15"
     >
       {/* Header Section */}
       <div className="p-5 pb-4">
@@ -218,7 +219,7 @@ export function ReporteCard({
                   {report.title}
                 </h3>
                 {isLocked && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-[10px] font-medium shrink-0">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-soft text-primary text-[10px] font-medium shrink-0">
                     Pro
                   </span>
                 )}
@@ -242,8 +243,8 @@ export function ReporteCard({
                 className={cn(
                   'w-5 h-5',
                   report.isFavorite
-                    ? 'text-[#B7791F]'
-                    : 'text-neutral-400 hover:text-[#B7791F]'
+                    ? 'text-warning'
+                    : 'text-neutral-400 hover:text-warning'
                 )}
                 weight={report.isFavorite ? 'fill' : 'regular'}
               />
@@ -294,34 +295,31 @@ export function ReporteCard({
       </div>
 
       {/* Actions Section */}
-      <div className="px-5 py-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center gap-2">
+      <div className="px-5 py-4 border-t border-border flex items-center gap-2">
         {isLocked ? (
-          <button
+          <Button
+            hideArrow
             onClick={(e) => {
               e.stopPropagation();
               onUpgrade?.();
             }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
+            className="flex-1 gap-2"
           >
             <Lock className="w-4 h-4" />
             {t('inmobiliaria.reporte.upgradeToAccess') || 'Mejorar plan'}
-          </button>
+          </Button>
         ) : (
           <>
             {/* Generate Button */}
             {onGenerate && (
-              <button
+              <Button
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onGenerate();
                 }}
                 disabled={isGenerating}
-                className={cn(
-                  'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
-                  isGenerating
-                    ? 'bg-neutral-100 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                    : 'bg-[#1A40FF] text-white hover:opacity-90'
-                )}
+                className="flex-1 gap-2"
               >
                 {isGenerating ? (
                   <>
@@ -334,35 +332,39 @@ export function ReporteCard({
                     {t('inmobiliaria.reporte.generate')}
                   </>
                 )}
-              </button>
+              </Button>
             )}
 
             {/* Preview Button */}
             {onPreview && (
-              <button
+              <Button
+                variant="secondary"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onPreview();
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                className="gap-2"
               >
                 <Eye className="w-4 h-4" />
                 {t('inmobiliaria.reporte.preview')}
-              </button>
+              </Button>
             )}
 
             {/* Download Button */}
             {onDownload && report.lastGenerated && (
-              <button
+              <Button
+                variant="secondary"
+                size="icon"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onDownload();
                 }}
-                className="flex items-center justify-center p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
                 title={t('inmobiliaria.reporte.download')}
               >
                 <DownloadSimple className="w-4 h-4" />
-              </button>
+              </Button>
             )}
           </>
         )}

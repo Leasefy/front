@@ -63,12 +63,12 @@ export function BetaWelcome({ onPromptClick, inputSlot, className }: BetaWelcome
     <div className={cn('flex flex-col items-center justify-center h-full px-4 sm:px-6', className)}>
       <div className="w-full max-w-[660px] flex flex-col items-center -mt-8">
         {/* Time greeting — mono eyebrow */}
-        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500 mb-3">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-fg-muted mb-3">
           {t(greetingKey)}
         </p>
 
         {/* Hero question */}
-        <h1 className="text-[32px] sm:text-[40px] font-bold text-foreground mb-8 text-center tracking-tight leading-tight">
+        <h1 className="text-[32px] sm:text-[40px] font-bold text-fg mb-8 text-center tracking-tight leading-tight">
           {t('beta.welcome.heroTitle')}
         </h1>
 
@@ -87,11 +87,11 @@ export function BetaWelcome({ onPromptClick, inputSlot, className }: BetaWelcome
                 className={cn(
                   'inline-flex items-center gap-2',
                   'px-3.5 py-2 rounded-md',
-                  'text-[13px] font-medium text-muted-foreground',
-                  'bg-white dark:bg-neutral-900',
-                  'border border-neutral-200/90 dark:border-neutral-800',
-                  'hover:border-neutral-300 dark:hover:border-neutral-600',
-                  'hover:text-foreground',
+                  'text-sm font-medium text-fg-muted',
+                  'bg-surface',
+                  'border border-border',
+                  'hover:border-border-strong',
+                  'hover:text-fg',
                   'transition-all duration-150',
                   'cursor-pointer'
                 )}

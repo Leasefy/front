@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { CaretLeft, Spinner, WarningCircle, SealCheck, ArrowRight, Info } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
@@ -75,11 +76,11 @@ function FirmarContratoContent() {
   if (error || !contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[#C4503B]">No se pudo cargar el contrato</p>
-            <p className="text-sm text-[#C4503B] mt-1">{error ?? 'Contrato no encontrado'}</p>
+            <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
+            <p className="text-sm text-danger mt-1">{error ?? 'Contrato no encontrado'}</p>
           </div>
         </div>
       </div>
@@ -89,22 +90,23 @@ function FirmarContratoContent() {
   if (contract.status !== 'pending_landlord') {
     return (
       <div className="max-w-2xl mx-auto p-8 space-y-4">
-        <div className="rounded-xl border border-[#B7791F]/30 bg-[#F8F0E0] p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-[#B7791F] flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[#B7791F]">Este contrato no está pendiente de tu firma</p>
-            <p className="text-sm text-[#B7791F] mt-1">
+            <p className="font-semibold text-amber-700 dark:text-amber-400">Este contrato no está pendiente de tu firma</p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
               Estado actual: <strong>{contract.status}</strong>.
             </p>
           </div>
         </div>
-        <button
+        <Button
           onClick={() => router.push(`/panel/inmobiliaria/contratos/${contract.id}`)}
-          className="inline-flex items-center gap-1 text-sm font-medium text-[#1A40FF] hover:text-[#1A40FF]"
+          variant="link"
+          className="h-auto gap-1 px-0"
         >
           Ver detalle del contrato
           <ArrowRight className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
     );
   }
@@ -112,23 +114,24 @@ function FirmarContratoContent() {
   if (signed) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-[#2C7A53]/30 bg-[#E8F3EC] p-8 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-[#E8F3EC] flex items-center justify-center mx-auto">
-            <SealCheck className="w-8 h-8 text-[#2C7A53]" />
+        <div className="rounded-xl border border-emerald-600/30 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-900/15 p-8 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mx-auto">
+            <SealCheck className="w-8 h-8 text-emerald-700 dark:text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-[#2C7A53]">Contrato firmado</h2>
-            <p className="text-sm text-[#2C7A53] mt-1">
+            <h2 className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Contrato firmado</h2>
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
               El inquilino ya fue notificado para que firme digitalmente.
             </p>
           </div>
-          <button
+          <Button
             onClick={() => router.push(`/panel/inmobiliaria/contratos/${contract.id}`)}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#2C7A53] hover:bg-[#2C7A53] text-white text-sm font-semibold transition-colors"
+            hideArrow
+            className="gap-1.5"
           >
             Ver detalle del contrato
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -137,13 +140,15 @@ function FirmarContratoContent() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div>
-        <button
+        <Button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
+          variant="link"
+          hideArrow
+          className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
         >
           <CaretLeft className="w-4 h-4" /> Volver
-        </button>
-        <h1 className="text-2xl font-semibold text-foreground">Firmar contrato</h1>
+        </Button>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Firmar contrato</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Revisá el documento y firmá digitalmente para enviarlo al inquilino.
         </p>
@@ -152,13 +157,13 @@ function FirmarContratoContent() {
       {/* Preview */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <h3 className="font-semibold text-sm text-foreground">Documento a firmar</h3>
+          <h3 className="text-base font-semibold text-foreground">Documento a firmar</h3>
         </div>
         <div className="p-5 space-y-3">
           {hasTenantSignature && (
-            <div className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 px-4 py-2.5 flex items-start gap-2">
-              <Info className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F] flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
+            <div className="rounded-xl border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
+              <Info className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-400">
                 Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
                 Revisalo antes de firmar.
               </p>

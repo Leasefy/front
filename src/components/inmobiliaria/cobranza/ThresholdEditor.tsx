@@ -127,7 +127,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
   const labelClass = 'text-xs font-mono uppercase tracking-wide text-muted-foreground'
   const inputClass =
     'w-full rounded-sm border border-border bg-background px-3 py-2 text-sm font-mono tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30'
-  const errorClass = 'text-xs text-[#C4503B] dark:text-[#E0664D] font-mono mt-1'
+  const errorClass = 'text-xs text-danger font-mono mt-1'
 
   return (
     <form
@@ -250,13 +250,13 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
       </div>
 
       {errors.form && (
-        <div className="rounded-sm border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-2 text-xs text-[#C4503B] dark:text-[#E0664D] font-mono">
+        <div className="rounded-sm border border-danger/30 bg-danger-soft text-danger font-mono">
           {errors.form}
         </div>
       )}
 
       {successVersion !== null && (
-        <div className="rounded-sm border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-2 text-xs text-[#2C7A53] dark:text-[#3EAE70] font-mono">
+        <div className="rounded-sm border border-success/30 bg-success-soft text-success font-mono">
           {locale.startsWith('es')
             ? `Versión ${successVersion} creada`
             : `Version ${successVersion} created`}

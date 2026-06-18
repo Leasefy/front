@@ -46,23 +46,23 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
 // Availability status colors (labels resolved via i18n in component)
 const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; labelKey: string }> = {
   available: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     labelKey: 'inmobiliaria.consignaciones.availability.available',
   },
   rented: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
     labelKey: 'inmobiliaria.consignaciones.availability.rented',
   },
   in_process: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
     labelKey: 'inmobiliaria.consignaciones.availability.inProcess',
   },
   maintenance: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
     labelKey: 'inmobiliaria.consignaciones.availability.maintenance',
   },
 };
@@ -303,8 +303,8 @@ export function ConsignacionTable({
                           className="w-7 h-7 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                        <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                          <span className="text-xs font-medium text-primary">
                             {agenteInfo.name.charAt(0)}
                           </span>
                         </div>

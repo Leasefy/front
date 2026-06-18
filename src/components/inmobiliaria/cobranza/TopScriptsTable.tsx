@@ -134,8 +134,8 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
                     className={
                       'px-3 py-2 text-right tabular-nums font-medium ' +
                       (row.lift >= 1
-                        ? 'text-[#2C7A53] dark:text-[#3EAE70]'
-                        : 'text-[#B7791F] dark:text-[#D2992F]')
+                        ? 'text-success'
+                        : 'text-warning')
                     }
                   >
                     {row.lift >= 0 ? '+' : ''}

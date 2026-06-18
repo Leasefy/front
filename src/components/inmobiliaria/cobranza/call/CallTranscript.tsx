@@ -41,12 +41,12 @@ function speakerTone(speaker: TranscriptSpeaker): {
     case 'operador':
       return {
         label: 'speakerOperador',
-        cls: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-[#6B6B6B]/30 dark:text-neutral-600 dark:text-neutral-300',
+        cls: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-fg-muted/30 dark:text-neutral-600 dark:text-neutral-300',
       }
     case 'bot':
       return {
         label: 'speakerBot',
-        cls: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]',
+        cls: 'bg-warning-soft text-warning dark:bg-warning/30 dark:text-warning',
       }
     case 'deudor':
     default:
@@ -99,7 +99,7 @@ export default function CallTranscript({
 
       {error && !data && (
         <div className="p-4">
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.call.transcript.error')}
           </p>
           <button
@@ -143,7 +143,7 @@ export default function CallTranscript({
                         'inmobiliaria.ai.cobranza.call.transcript.seekAria',
                         { time: formatSec(turn.startSec) },
                       )}
-                      className="inline-flex items-center justify-center min-h-11 min-w-11 px-2 py-1 rounded-sm text-xs tabular-nums text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-[#6B6B6B]/20 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] font-medium"
+                      className="inline-flex items-center justify-center min-h-11 min-w-11 px-2 py-1 rounded-sm text-xs tabular-nums text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-fg-muted/20 focus:outline-none focus:ring-2 focus:ring-fg-muted font-medium"
                     >
                       {formatSec(turn.startSec)}
                     </button>

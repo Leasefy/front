@@ -49,26 +49,26 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
 // Availability status colors (labels resolved via i18n in component)
 const AVAILABILITY_STYLES: Record<PropertyAvailability, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
   available: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     labelKey: 'inmobiliaria.consignaciones.availability.available',
     icon: CheckCircle,
   },
   rented: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
     labelKey: 'inmobiliaria.consignaciones.availability.rented',
     icon: House,
   },
   in_process: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
     labelKey: 'inmobiliaria.consignaciones.availability.inProcess',
     icon: Timer,
   },
   maintenance: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
     labelKey: 'inmobiliaria.consignaciones.availability.maintenance',
     icon: Wrench,
   },
@@ -77,13 +77,13 @@ const AVAILABILITY_STYLES: Record<PropertyAvailability, { bg: string; text: stri
 // Consignacion status colors (labels resolved via i18n in component)
 const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; labelKey: string }> = {
   active: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     labelKey: 'inmobiliaria.consignaciones.status.active',
   },
   pending: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
     labelKey: 'inmobiliaria.consignaciones.status.pending',
   },
   expired: {
@@ -92,8 +92,8 @@ const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; labe
     labelKey: 'inmobiliaria.consignaciones.status.expired',
   },
   terminated: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
     labelKey: 'inmobiliaria.consignaciones.status.terminated',
   },
 };
@@ -217,7 +217,7 @@ export function ConsignacionHeader({
             {/* Edit Button */}
             <button
               onClick={onEdit}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white font-medium hover:opacity-90 transition-colors"
             >
               <PencilSimple className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.header.edit')}
@@ -268,7 +268,7 @@ export function ConsignacionHeader({
                         <Icon className={cn('w-4 h-4', style.text)} />
                         <span className="text-neutral-700 dark:text-neutral-300">{t(style.labelKey)}</span>
                         {consignacion.availability === key && (
-                          <CheckCircle className="w-4 h-4 ml-auto text-[#1A40FF]" />
+                          <CheckCircle className="w-4 h-4 ml-auto text-primary" />
                         )}
                       </button>
                     );
@@ -307,7 +307,7 @@ export function ConsignacionHeader({
                       onTerminate?.();
                       setShowMoreMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors rounded-b-xl"
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-danger hover:bg-danger-soft dark:hover:bg-danger/20 transition-colors rounded-b-xl"
                   >
                     <XCircle className="w-4 h-4" />
                     {t('inmobiliaria.consignaciones.header.terminateConsignment')}

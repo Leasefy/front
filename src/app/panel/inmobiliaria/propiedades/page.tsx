@@ -13,12 +13,16 @@ import {
   Users,
   Plus,
   Sparkle,
+  CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
+import { Button, Input, EmptyState } from '@/components/ui';
+import { ErrorState } from '@/components/ui/error-state';
+import { SegmentedControl } from '@leasefy/ui';
 import type { AgencyProperty } from '@/lib/types/property';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -27,18 +31,18 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 const STATUS_CONFIG = {
   available: {
     label: 'Disponible',
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   rented: {
     label: 'Arrendada',
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   pending: {
     label: 'Borrador',
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
 } as const;
 
@@ -98,88 +102,87 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
-            <h2 className="font-semibold text-foreground">Cambiar agente</h2>
-            <p className="text-sm text-muted-foreground mt-0.5 truncate max-w-[280px]">
+            <h2 className="text-base font-semibold text-fg">Cambiar agente</h2>
+            <p className="text-sm text-fg-muted mt-0.5 truncate max-w-[280px]">
               {property.title}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
-          >
+          <Button variant="ghost" size="icon" hideArrow onClick={onClose} aria-label="Cerrar">
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
 
         <div className="p-6 space-y-5">
           {/* Current agent */}
           {currentAgent && (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-muted border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                  <span className="text-xs font-medium text-primary">
                     {currentAgent.firstName.charAt(0)}{currentAgent.lastName.charAt(0)}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-fg">
                     {currentAgent.firstName} {currentAgent.lastName}
                   </p>
-                  <p className="text-xs text-muted-foreground">{currentAgent.email}</p>
+                  <p className="text-xs text-fg-muted">{currentAgent.email}</p>
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                hideArrow
                 onClick={handleRemoveAgent}
                 disabled={isSubmitting}
-                className="text-xs text-[#C4503B] hover:text-[#C4503B] font-medium px-2 py-1 rounded-md hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors disabled:opacity-50"
+                className="text-danger hover:text-danger hover:bg-danger-soft"
               >
                 Quitar
-              </button>
+              </Button>
             </div>
           )}
 
           {/* New agent email */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-fg">
                 {currentAgent ? 'Asignar nuevo agente' : 'Asignar agente'}
               </label>
-              <input
+              <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="agente@inmobiliaria.com"
-                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm transition-all"
                 autoFocus
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-fg-muted">
                 El usuario debe tener rol de Agente en el sistema.
               </p>
             </div>
 
             {error && (
-              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
+              <p className="text-sm text-danger">{error}</p>
             )}
 
             <div className="flex items-center gap-3 pt-1">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
+                className="flex-1"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                hideArrow
+                isLoading={isSubmitting}
                 disabled={!email.trim() || isSubmitting}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1"
               >
-                {isSubmitting ? (
-                  <Spinner className="w-4 h-4 animate-spin" />
-                ) : (
-                  currentAgent ? 'Cambiar agente' : 'Asignar agente'
-                )}
-              </button>
+                {currentAgent ? 'Cambiar agente' : 'Asignar agente'}
+              </Button>
             </div>
           </form>
         </div>
@@ -260,17 +263,15 @@ function PropiedadesContent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-[#C4503B] dark:text-[#E0664D] text-sm">
-          {error}
-        </div>
+      <div className="p-4 md:p-6">
+        <ErrorState description={error} onRetry={fetchProperties} />
       </div>
     );
   }
@@ -278,62 +279,43 @@ function PropiedadesContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {isAgent ? 'Mis propiedades' : 'Propiedades'}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1 text-sm">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {isAgent
               ? 'Propiedades asignadas a tu cuenta'
               : 'Todas las propiedades de la inmobiliaria'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchProperties}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-muted-foreground hover:bg-muted transition-colors text-sm"
-          >
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="secondary" hideArrow onClick={fetchProperties} aria-label="Actualizar">
             <ArrowsClockwise className="w-4 h-4" />
             Actualizar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
+            hideArrow
             onClick={() => router.push('/panel/inmobiliaria/propiedades/captura')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted transition-colors text-sm font-medium"
           >
-            <Sparkle className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
+            <Sparkle className="w-4 h-4 text-primary" weight="fill" />
             Capturar con IA
-          </button>
-          <button
-            onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white hover:opacity-90 transition-colors text-sm font-medium"
-          >
+          </Button>
+          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}>
             <Plus className="w-4 h-4" />
             Nueva propiedad
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-4 rounded-xl border border-border bg-card">
-          <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Total</p>
-        </div>
-        <div className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
-          <p className="text-2xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">{stats.available}</p>
-          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70] mt-0.5">Disponibles</p>
-        </div>
-        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
-          <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">{stats.rented}</p>
-          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mt-0.5">Arrendadas</p>
-        </div>
-        {!isAgent && (
-          <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
-            <p className="text-2xl font-bold text-[#B7791F] dark:text-[#D2992F]">{stats.unassigned}</p>
-            <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-0.5">Sin agente</p>
-          </div>
-        )}
+        <StatTile value={stats.total} label="Total" tone="neutral" />
+        <StatTile value={stats.available} label="Disponibles" tone="ok" />
+        <StatTile value={stats.rented} label="Arrendadas" tone="info" />
+        {!isAgent && <StatTile value={stats.unassigned} label="Sin agente" tone="warn" />}
       </div>
 
       {/* Filters */}
@@ -341,70 +323,66 @@ function PropiedadesContent() {
         <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Search */}
           <div className="relative flex-1 max-w-sm">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted z-10 pointer-events-none" />
+            <Input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nombre, dirección..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+              className="pl-9 pr-9"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg transition-colors z-10"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          {/* Status tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-muted">
-            {(['all', 'available', 'rented', 'pending'] as FilterStatus[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap',
-                  filterStatus === s
-                    ? 'bg-background text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {s === 'all' ? 'Todas' : STATUS_CONFIG[s].label}
-              </button>
-            ))}
-          </div>
+          {/* Status filter (selector excluyente) */}
+          <SegmentedControl<FilterStatus>
+            aria-label="Filtrar por estado"
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={(['all', 'available', 'rented', 'pending'] as FilterStatus[]).map((s) => ({
+              value: s,
+              label: s === 'all' ? 'Todas' : STATUS_CONFIG[s].label,
+            }))}
+          />
         </div>
 
         {/* Table */}
         {filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-4">
-              <Buildings className="w-6 h-6 text-muted-foreground" />
-            </div>
-            <p className="font-medium text-foreground">Sin propiedades</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {search || filterStatus !== 'all'
+          <EmptyState
+            icon={Buildings}
+            title="Sin propiedades"
+            description={
+              search || filterStatus !== 'all'
                 ? 'Ninguna propiedad coincide con los filtros'
                 : isAgent
                 ? 'No tenés propiedades asignadas'
-                : 'Aún no hay propiedades publicadas'}
-            </p>
-          </div>
+                : 'Aún no hay propiedades publicadas'
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px]">
               <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <tr className="border-b border-border bg-surface-muted">
+                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
                     Propiedad
                   </th>
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
                     Canon
                   </th>
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
                     Estado
                   </th>
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
                     Agente
                   </th>
                   <th className="w-20 p-4" />
@@ -432,15 +410,15 @@ function PropiedadesContent() {
                               />
                             </div>
                           ) : (
-                            <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
-                              <House className="w-5 h-5 text-muted-foreground" />
+                            <div className="w-12 h-12 rounded-md bg-surface-muted flex items-center justify-center shrink-0">
+                              <House className="w-5 h-5 text-fg-muted" weight="duotone" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate max-w-[220px]">
+                            <p className="text-sm font-medium text-fg truncate max-w-[220px]">
                               {property.title}
                             </p>
-                            <p className="text-sm text-muted-foreground truncate max-w-[220px]">
+                            <p className="text-sm text-fg-muted truncate max-w-[220px]">
                               {property.neighborhood}, {property.city}
                             </p>
                           </div>
@@ -449,7 +427,7 @@ function PropiedadesContent() {
 
                       {/* Canon */}
                       <td className="p-4">
-                        <p className="font-semibold text-foreground tabular-nums">
+                        <p className="text-sm font-semibold text-fg tabular-nums">
                           {formatCurrency(property.monthlyRent)}
                         </p>
                       </td>
@@ -465,19 +443,19 @@ function PropiedadesContent() {
                       <td className="p-4">
                         {agent ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                              <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                            <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                              <span className="text-xs font-medium text-primary">
                                 {agent.firstName.charAt(0)}{agent.lastName.charAt(0)}
                               </span>
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm text-foreground truncate max-w-[120px]">
+                              <p className="text-sm text-fg truncate max-w-[120px]">
                                 {agent.firstName} {agent.lastName}
                               </p>
                             </div>
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">Sin asignar</span>
+                          <span className="text-sm text-fg-muted">Sin asignar</span>
                         )}
                       </td>
 
@@ -485,33 +463,39 @@ function PropiedadesContent() {
                       <td className="p-4">
                         <div className="flex items-center gap-1 justify-end">
                           <IconTooltip label="Ver propiedad">
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              hideArrow
                               onClick={() => router.push(`/propiedades/${property.id}`)}
-                              className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                               aria-label="Ver propiedad"
                             >
                               <Eye className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </IconTooltip>
                           {isAdmin && (
                             <>
                               <IconTooltip label="Ver candidatos">
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
                                   onClick={() => router.push(`/panel/inmobiliaria/propiedades/${property.id}/candidatos`)}
-                                  className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                                   aria-label="Ver candidatos"
                                 >
                                   <Users className="w-4 h-4" />
-                                </button>
+                                </Button>
                               </IconTooltip>
                               <IconTooltip label="Cambiar agente">
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
                                   onClick={() => setChangingAgent(property)}
-                                  className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                                   aria-label="Cambiar agente"
                                 >
                                   <ArrowsClockwise className="w-4 h-4" />
-                                </button>
+                                </Button>
                               </IconTooltip>
                             </>
                           )}
@@ -534,6 +518,46 @@ function PropiedadesContent() {
           onSuccess={handleAgentChanged}
         />
       )}
+    </div>
+  );
+}
+
+// KPI tile — número, label e ícono parejos; tint semántico por token.
+const TILE_TONES = {
+  neutral: 'bg-surface-muted text-fg-muted',
+  ok: 'bg-success-soft text-success',
+  info: 'bg-primary-soft text-primary',
+  warn: 'bg-warning-soft text-warning',
+  bad: 'bg-danger-soft text-danger',
+} as const;
+
+const TILE_ICONS: Record<keyof typeof TILE_TONES, typeof Buildings> = {
+  neutral: Buildings,
+  ok: CheckCircle,
+  info: House,
+  warn: Users,
+  bad: Buildings,
+};
+
+function StatTile({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: keyof typeof TILE_TONES;
+}) {
+  const Icon = TILE_ICONS[tone];
+  return (
+    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
+      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
+        <Icon className="w-5 h-5" weight="duotone" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">{value}</p>
+        <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
+      </div>
     </div>
   );
 }

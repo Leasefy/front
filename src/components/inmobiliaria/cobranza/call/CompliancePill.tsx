@@ -19,9 +19,9 @@ interface CompliancePillProps {
 function severityTone(severity: string): string {
   switch (severity) {
     case 'critical':
-      return 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D] ring-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B] dark:ring-[#C4503B]'
+      return 'bg-danger-soft text-danger ring-danger dark:bg-danger/30 dark:text-danger dark:ring-danger'
     case 'warning':
-      return 'bg-[#F8F0E0] text-[#B7791F] ring-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:ring-[#B7791F]'
+      return 'bg-warning-soft text-warning ring-warning dark:bg-warning/30 dark:text-warning dark:ring-warning'
     case 'info':
     default:
       return 'bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700'

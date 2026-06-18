@@ -221,7 +221,7 @@ export function RegistrarPagoModal({
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="p-6 pb-0 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-foreground">
-            <CurrencyCircleDollar className="w-5 h-5 text-[#1A40FF]" />
+            <CurrencyCircleDollar className="w-5 h-5 text-primary" />
             {t('inmobiliaria.cobros.registerModal.title')}
           </DialogTitle>
           <DialogDescription>
@@ -251,7 +251,7 @@ export function RegistrarPagoModal({
                     className={cn(
                       'w-full p-3 rounded-xl border text-left transition-all',
                       selectedCobroId === c.id
-                        ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                        ? 'border-primary/30 bg-primary-soft'
                         : 'border-border hover:border-foreground/30 bg-background'
                     )}
                   >
@@ -265,12 +265,12 @@ export function RegistrarPagoModal({
                         </p>
                       </div>
                       <div className="text-right ml-3">
-                        <p className="text-sm font-semibold text-[#B7791F] dark:text-[#D2992F]">
+                        <p className="text-sm font-semibold text-warning">
                           {formatCurrency(c.pendingAmount)}
                         </p>
                         <p className={cn(
                           'text-xs',
-                          c.status === 'late' ? 'text-[#C4503B]' : 'text-muted-foreground'
+                          c.status === 'late' ? 'text-danger' : 'text-muted-foreground'
                         )}>
                           {c.status === 'late'
                             ? t('inmobiliaria.cobros.registerModal.statusOverdue')
@@ -299,20 +299,20 @@ export function RegistrarPagoModal({
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              <div className="p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+              <div className="p-4 rounded-xl bg-warning-soft border border-warning/30 dark:border-warning/40">
                 <div className="flex gap-3">
-                  <Warning className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" weight="fill" />
+                  <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" weight="fill" />
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
+                    <h4 className="text-sm font-medium text-warning">
                       {t('inmobiliaria.cobros.registerModal.partialPayment')}
                     </h4>
-                    <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
+                    <p className="text-sm text-warning">
                       {t('inmobiliaria.cobros.registerModal.partialPaymentMessage', {
                         amount: formatCurrency(parsedAmount),
                         remaining: formatCurrency(cobro.pendingAmount - parsedAmount),
                       })}
                     </p>
-                    <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
+                    <p className="text-sm text-warning">
                       {t('inmobiliaria.cobros.registerModal.partialPaymentConfirm')}
                     </p>
                   </div>
@@ -331,7 +331,7 @@ export function RegistrarPagoModal({
                 </Button>
                 <Button
                   type="button"
-                  className="flex-1 bg-[#1A40FF] hover:opacity-90 text-white"
+                  className="flex-1 bg-primary hover:opacity-90 text-white"
                   onClick={handleSubmit(handleFormSubmit)}
                   disabled={isSubmitting}
                 >
@@ -414,14 +414,14 @@ export function RegistrarPagoModal({
                   {cobro.paidAmount > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.registerModal.advancedLabel')}</p>
-                      <p className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                      <p className="text-sm font-medium text-primary">
                         {formatCurrency(cobro.paidAmount)}
                       </p>
                     </div>
                   )}
                   <div>
                     <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.registerModal.pendingLabel')}</p>
-                    <p className="text-sm font-semibold text-[#B7791F] dark:text-[#D2992F]">
+                    <p className="text-sm font-semibold text-warning">
                       {formatCurrency(cobro.pendingAmount)}
                     </p>
                   </div>
@@ -429,7 +429,7 @@ export function RegistrarPagoModal({
 
                 {/* Late Fee Warning */}
                 {cobro.lateFee > 0 && (
-                  <div className="flex items-center gap-2 pt-2 text-xs text-[#B7791F] dark:text-[#D2992F]">
+                  <div className="flex items-center gap-2 pt-2 text-xs text-warning">
                     <Warning className="w-4 h-4" />
                     <span>{t('inmobiliaria.cobros.registerModal.lateFeeWarning', { amount: formatCurrency(cobro.lateFee) })}</span>
                   </div>
@@ -447,7 +447,7 @@ export function RegistrarPagoModal({
                     <button
                       type="button"
                       onClick={handleFullPayment}
-                      className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                      className="text-xs font-medium text-primary hover:underline"
                     >
                       {t('inmobiliaria.cobros.registerModal.fullPayment')}
                     </button>
@@ -471,11 +471,11 @@ export function RegistrarPagoModal({
                       placeholder="0"
                       className={cn(
                         'w-full h-12 pl-8 pr-4 rounded-xl border bg-background text-foreground text-lg font-semibold',
-                        'focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent',
+                        'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
                         errors.amount
                           ? 'border-destructive'
                           : isPartialPayment
-                          ? 'border-[#B7791F]/30'
+                          ? 'border-warning/30'
                           : 'border-border'
                       )}
                     />
@@ -484,7 +484,7 @@ export function RegistrarPagoModal({
                     <p className="text-xs text-destructive">{errors.amount.message}</p>
                   )}
                   {isPartialPayment && !errors.amount && (
-                    <p className="text-xs text-[#B7791F] dark:text-[#D2992F] flex items-center gap-1">
+                    <p className="text-xs text-warning flex items-center gap-1">
                       <Warning className="w-3.5 h-3.5" />
                       {t('inmobiliaria.cobros.registerModal.partialWarning', { remaining: formatCurrency(cobro.pendingAmount - parsedAmount) })}
                     </p>
@@ -508,7 +508,7 @@ export function RegistrarPagoModal({
                           className={cn(
                             'flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all',
                             isSelected
-                              ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                              ? 'border-primary/30 bg-primary-soft'
                               : 'border-border hover:border-foreground/30 bg-background'
                           )}
                         >
@@ -516,7 +516,7 @@ export function RegistrarPagoModal({
                             className={cn(
                               'w-5 h-5',
                               isSelected
-                                ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'text-primary'
                                 : 'text-muted-foreground'
                             )}
                           />
@@ -524,7 +524,7 @@ export function RegistrarPagoModal({
                             className={cn(
                               'text-xs font-medium',
                               isSelected
-                                ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'text-primary'
                                 : 'text-muted-foreground'
                             )}
                           >
@@ -555,7 +555,7 @@ export function RegistrarPagoModal({
                     max={today}
                     className={cn(
                       'w-full h-11 px-4 rounded-xl border bg-background text-foreground',
-                      'focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent',
+                      'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
                       errors.date ? 'border-destructive' : 'border-border'
                     )}
                   />
@@ -575,7 +575,7 @@ export function RegistrarPagoModal({
                     {...register('reference')}
                     type="text"
                     placeholder={t('inmobiliaria.cobros.registerModal.referencePlaceholder')}
-                    className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent"
+                    className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
 
@@ -590,7 +590,7 @@ export function RegistrarPagoModal({
                     {...register('notes')}
                     rows={2}
                     placeholder={t('inmobiliaria.cobros.registerModal.notesPlaceholder')}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent resize-none text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-sm"
                   />
                 </div>
               </div>
@@ -608,7 +608,7 @@ export function RegistrarPagoModal({
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-[#1A40FF] hover:opacity-90 text-white"
+                  className="flex-1 bg-primary hover:opacity-90 text-white"
                   disabled={isSubmitting || !isValid}
                 >
                   {isSubmitting ? (

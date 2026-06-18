@@ -18,6 +18,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { SegmentedControl } from '@leasefy/ui';
 import type {
   ForecastData,
   ForecastScenario,
@@ -168,7 +170,7 @@ function ForecastChart({
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-[#1A40FF] rounded" />
+            <span className="w-3 h-0.5 bg-primary rounded" />
             <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.historic')}</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -456,9 +458,9 @@ function ScenarioCard({
           <div
             className={cn(
               'w-3 h-3 rounded-full',
-              scenario.id === 'optimistic' && 'bg-[#2C7A53]',
-              scenario.id === 'conservative' && 'bg-[#1A40FF]',
-              scenario.id === 'pessimistic' && 'bg-[#C4503B]'
+              scenario.id === 'optimistic' && 'bg-success',
+              scenario.id === 'conservative' && 'bg-primary',
+              scenario.id === 'pessimistic' && 'bg-danger'
             )}
           />
           <h4 className="font-medium text-neutral-900 dark:text-white text-sm">
@@ -468,9 +470,9 @@ function ScenarioCard({
         <span
           className={cn(
             'px-2 py-0.5 rounded-full text-xs font-medium',
-            scenario.id === 'optimistic' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-            scenario.id === 'conservative' && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
-            scenario.id === 'pessimistic' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+            scenario.id === 'optimistic' && 'bg-success-soft text-success',
+            scenario.id === 'conservative' && 'bg-primary-soft text-primary',
+            scenario.id === 'pessimistic' && 'bg-danger-soft text-danger'
           )}
         >
           {(scenario.probability * 100).toFixed(0)}%
@@ -568,10 +570,10 @@ function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit:
                         className={cn(
                           'h-full rounded-full',
                           point.confidence >= 0.8
-                            ? 'bg-[#2C7A53]'
+                            ? 'bg-success'
                             : point.confidence >= 0.6
-                            ? 'bg-[#B7791F]'
-                            : 'bg-[#C4503B]'
+                            ? 'bg-warning'
+                            : 'bg-danger'
                         )}
                       />
                     </div>
@@ -619,16 +621,16 @@ function FactorsPanel({
             <div
               className={cn(
                 'w-6 h-6 rounded-md flex items-center justify-center shrink-0',
-                factor.impact === 'positive' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-                factor.impact === 'negative' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+                factor.impact === 'positive' && 'bg-success-soft',
+                factor.impact === 'negative' && 'bg-danger-soft',
                 factor.impact === 'neutral' && 'bg-neutral-100 dark:bg-neutral-800'
               )}
             >
               {factor.impact === 'positive' && (
-                <TrendUp className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]" weight="bold" />
+                <TrendUp className="w-3.5 h-3.5 text-success" weight="bold" />
               )}
               {factor.impact === 'negative' && (
-                <TrendDown className="w-3.5 h-3.5 text-[#C4503B] dark:text-[#E0664D]" weight="bold" />
+                <TrendDown className="w-3.5 h-3.5 text-danger" weight="bold" />
               )}
               {factor.impact === 'neutral' && (
                 <Minus className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400" weight="bold" />
@@ -649,8 +651,8 @@ function FactorsPanel({
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className={cn(
                     'h-full rounded-full',
-                    factor.impact === 'positive' && 'bg-[#2C7A53]',
-                    factor.impact === 'negative' && 'bg-[#C4503B]',
+                    factor.impact === 'positive' && 'bg-success',
+                    factor.impact === 'negative' && 'bg-danger',
                     factor.impact === 'neutral' && 'bg-neutral-500'
                   )}
                 />
@@ -724,8 +726,8 @@ export function AnalyticsForecasting({
             <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="bold" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.forecastComp.projections')}</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.analytics.forecastComp.projections')}</h2>
+            <p className="text-sm text-fg-muted">
               {t('inmobiliaria.analytics.forecastComp.confidenceIntervals')}
             </p>
           </div>
@@ -734,15 +736,18 @@ export function AnalyticsForecasting({
         <div className="flex items-center gap-2 flex-wrap">
           {/* Metric Selector */}
           <div className="relative">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
+              hideArrow
               onClick={() => setIsMetricDropdownOpen(!isMetricDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              className="gap-2"
             >
               {currentForecast.metricLabel}
               <CaretDown
                 className={cn('w-4 h-4 transition-transform', isMetricDropdownOpen && 'rotate-180')}
               />
-            </button>
+            </Button>
 
             <AnimatePresence>
               {isMetricDropdownOpen && (
@@ -750,7 +755,7 @@ export function AnalyticsForecasting({
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-56 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10 overflow-hidden"
+                  className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card z-10 overflow-hidden"
                 >
                   {data.map((item) => (
                     <button
@@ -759,8 +764,8 @@ export function AnalyticsForecasting({
                       className={cn(
                         'w-full px-4 py-2.5 text-left text-sm transition-colors',
                         activeMetric === item.metricId
-                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 font-medium'
-                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                          ? 'bg-muted text-fg font-medium'
+                          : 'text-fg hover:bg-muted'
                       )}
                     >
                       {item.metricLabel}
@@ -772,32 +777,27 @@ export function AnalyticsForecasting({
           </div>
 
           {/* Horizon Selector */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800">
-            {[3, 6, 12].map((months) => (
-              <button
-                key={months}
-                onClick={() => handleHorizonChange(months)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                  activeHorizon === months
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                )}
-              >
-                {months}M
-              </button>
-            ))}
-          </div>
+          <SegmentedControl<string>
+            value={String(activeHorizon)}
+            onChange={(v) => handleHorizonChange(Number(v))}
+            options={[3, 6, 12].map((months) => ({
+              value: String(months),
+              label: `${months}M`,
+            }))}
+          />
 
           {/* Export Button */}
           {onExport && (
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
+              hideArrow
               onClick={onExport}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              className="gap-2"
             >
               <Export className="w-4 h-4" />
               {t('inmobiliaria.analytics.forecastComp.export')}
-            </button>
+            </Button>
           )}
         </div>
       </div>

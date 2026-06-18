@@ -35,6 +35,8 @@ import { usePropietarios } from '@/lib/hooks/useInmobiliaria';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { Button } from '@/components/ui/button';
+import { SegmentedControl, KpiCard } from '@leasefy/ui';
 
 type ViewMode = 'table' | 'grid';
 
@@ -119,20 +121,21 @@ function Modal({
         {/* Modal */}
         <div
           className={cn(
-            'relative bg-white dark:bg-[#141416] w-full rounded-xl flex flex-col',
+            'relative bg-card w-full rounded-xl flex flex-col',
             sizeClasses[size]
           )}
           style={{ maxHeight: '85vh' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header - fixed */}
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-border">
+            <h3 className="text-base font-semibold text-foreground">
               {title}
             </h3>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
+              aria-label="Cerrar"
+              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -307,118 +310,60 @@ function PropietariosContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{t('inmobiliaria.common.title')}</span>
             <CaretRight className="w-3 h-3" />
-            <span className="text-neutral-900 dark:text-white">{t('inmobiliaria.propietarios.title')}</span>
+            <span className="text-foreground">{t('inmobiliaria.propietarios.title')}</span>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {t('inmobiliaria.propietarios.crmTitle')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.propietarios.subtitle')}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowIACapture(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-medium transition-colors"
-          >
-            <Sparkle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)}>
+            <Sparkle className="w-5 h-5 text-primary" weight="fill" />
             {t('inmobiliaria.propietarios.addOwnerIA')}
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors"
-          >
+          </Button>
+          <Button hideArrow onClick={() => setShowAddModal(true)}>
             <UserPlus className="w-5 h-5" />
             {t('inmobiliaria.propietarios.addOwner')}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-              <Users className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                {stats.totalPropietarios}
-              </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.title')}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              <Buildings className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                {stats.totalProperties}
-              </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.properties')}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-              <CurrencyDollar className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                {formatCurrency(stats.totalMonthlyRent)}
-              </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.monthlyRevenue')}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className={cn(
-          'p-4 rounded-xl border',
-          stats.pendingCount > 0
-            ? 'border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15'
-            : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]'
-        )}>
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center',
-              stats.pendingCount > 0
-                ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15'
-                : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
-            )}>
-              <Warning className={cn(
-                'w-5 h-5',
-                stats.pendingCount > 0
-                  ? 'text-[#B7791F] dark:text-[#D2992F]'
-                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
-              )} />
-            </div>
-            <div>
-              <p className={cn(
-                'text-2xl font-bold',
-                stats.pendingCount > 0
-                  ? 'text-[#B7791F] dark:text-[#D2992F]'
-                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
-              )}>
-                {stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate')}
-              </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                {stats.pendingCount > 0 ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount }) : t('inmobiliaria.propietarios.noPending')}
-              </p>
-            </div>
-          </div>
-        </div>
+        <KpiCard
+          label={t('inmobiliaria.propietarios.title')}
+          value={String(stats.totalPropietarios)}
+          icon={<Users />}
+        />
+        <KpiCard
+          label={t('inmobiliaria.propietarios.properties')}
+          value={String(stats.totalProperties)}
+          icon={<Buildings />}
+        />
+        <KpiCard
+          label={t('inmobiliaria.propietarios.monthlyRevenue')}
+          value={formatCurrency(stats.totalMonthlyRent)}
+          icon={<CurrencyDollar />}
+        />
+        <KpiCard
+          label={
+            stats.pendingCount > 0
+              ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
+              : t('inmobiliaria.propietarios.noPending')
+          }
+          value={stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate')}
+          icon={stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
+          deltaDirection={stats.pendingCount > 0 ? 'down' : 'up'}
+        />
       </div>
 
       {/* Unified Data Card - View Toggle + Content + Pagination */}
@@ -430,32 +375,33 @@ function PropietariosContent() {
       >
         {/* View Toggle Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
-            <button
-              onClick={() => setViewMode('table')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                viewMode === 'table'
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <List className="w-4 h-4" />
-              {t('inmobiliaria.propietarios.viewTable')}
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                viewMode === 'grid'
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <GridFour className="w-4 h-4" />
-              {t('inmobiliaria.propietarios.viewCards')}
-            </button>
-          </div>
+          <SegmentedControl<ViewMode>
+            value={viewMode}
+            onChange={setViewMode}
+            aria-label={t('inmobiliaria.propietarios.viewTable')}
+            options={[
+              {
+                value: 'table',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <List className="w-4 h-4" />
+                    {t('inmobiliaria.propietarios.viewTable')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.propietarios.viewTable'),
+              },
+              {
+                value: 'grid',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <GridFour className="w-4 h-4" />
+                    {t('inmobiliaria.propietarios.viewCards')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.propietarios.viewCards'),
+              },
+            ]}
+          />
           <span className="text-sm text-muted-foreground tabular-nums">
             {paginationData.totalItems} {t('inmobiliaria.propietarios.title').toLowerCase()}
           </span>
@@ -622,12 +568,12 @@ function PropietariosContent() {
       >
         {deletingPropietario && (
           <div className="space-y-4">
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-muted-foreground">
               {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
             </p>
             {deletingPropietario.propertyCount > 0 && (
-              <div className="p-3 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
-                <div className="flex items-center gap-2 text-[#B7791F] dark:text-[#D2992F]">
+              <div className="p-3 rounded-xl bg-warning-soft border border-warning/30">
+                <div className="flex items-center gap-2 text-warning">
                   <Warning className="w-4 h-4" />
                   <p className="text-sm">
                     {t('inmobiliaria.propietarios.deleteWarningProperties', { count: deletingPropietario.propertyCount })}
@@ -636,20 +582,23 @@ function PropietariosContent() {
               </div>
             )}
             <div className="flex items-center gap-3 justify-end pt-4">
-              <button
+              <Button
+                variant="secondary"
+                hideArrow
                 onClick={() => setDeletingPropietario(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('inmobiliaria.common.cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
+                hideArrow
                 onClick={handleConfirmDelete}
+                isLoading={isDeleting}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl bg-[#C4503B] hover:bg-[#C4503B] text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('inmobiliaria.common.delete')}
-              </button>
+              </Button>
             </div>
           </div>
         )}

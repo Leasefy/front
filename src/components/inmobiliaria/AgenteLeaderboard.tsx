@@ -106,8 +106,8 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       {/* Header with Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" weight="fill" />
+          <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-warning" weight="fill" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -194,7 +194,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   onClick={() => handleRowClick(agente.id)}
                   className={cn(
                     'grid grid-cols-12 gap-4 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 cursor-pointer transition-all duration-200',
-                    isFirst && 'bg-[#F8F0E0]/50 dark:bg-[#B7791F]/10',
+                    isFirst && 'bg-warning-soft/50 dark:bg-warning/10',
                     !isFirst && 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
                   )}
                 >
@@ -216,8 +216,8 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                     <div className={cn(
                       'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0',
                       isFirst
-                        ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/12'
-                        : 'bg-gradient-to-br from-[#1A40FF] to-[#6B6B6B]'
+                        ? 'bg-warning-soft'
+                        : 'bg-gradient-to-br from-primary to-fg-muted'
                     )}>
                       {agente.avatar ? (
                         <img
@@ -233,7 +233,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                       <p className={cn(
                         'font-medium truncate text-sm',
                         isFirst
-                          ? 'text-[#B7791F] dark:text-[#D2992F]'
+                          ? 'text-warning'
                           : 'text-neutral-900 dark:text-white'
                       )}>
                         {agente.name}
@@ -249,7 +249,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                     <span className={cn(
                       'text-lg font-bold',
                       closings > 0
-                        ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                        ? 'text-success'
                         : 'text-neutral-400 dark:text-neutral-500'
                     )}>
                       {closings}
@@ -271,9 +271,9 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                     <span className={cn(
                       'text-sm font-medium',
                       agente.metrics.conversionRate >= 0.6
-                        ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                        ? 'text-success'
                         : agente.metrics.conversionRate >= 0.4
-                          ? 'text-[#B7791F] dark:text-[#D2992F]'
+                          ? 'text-warning'
                           : 'text-neutral-500 dark:text-neutral-400'
                     )}>
                       {Math.round(agente.metrics.conversionRate * 100)}%
@@ -283,13 +283,13 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   {/* Trend */}
                   <div className="col-span-1 flex items-center justify-center">
                     {trend === 'up' && (
-                      <div className="w-6 h-6 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-                        <TrendUp className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]" weight="bold" />
+                      <div className="w-6 h-6 rounded-full bg-success-soft flex items-center justify-center">
+                        <TrendUp className="w-3.5 h-3.5 text-success" weight="bold" />
                       </div>
                     )}
                     {trend === 'down' && (
-                      <div className="w-6 h-6 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
-                        <TrendDown className="w-3.5 h-3.5 text-[#C4503B] dark:text-[#E0664D]" weight="bold" />
+                      <div className="w-6 h-6 rounded-full bg-danger-soft flex items-center justify-center">
+                        <TrendDown className="w-3.5 h-3.5 text-danger" weight="bold" />
                       </div>
                     )}
                     {trend === 'stable' && (

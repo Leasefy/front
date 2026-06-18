@@ -12,12 +12,12 @@ import type { DecisionEntry } from '@/lib/hooks/useBetaChat';
 // ============================================================================
 
 const CATEGORY_BADGE: Record<string, string> = {
-  emerald: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:bg-[#2C7A53]/15 dark:text-[#2C7A53]',
-  blue: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/15 dark:text-[#1A40FF]',
-  amber: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:bg-[#B7791F]/15 dark:text-[#B7791F]',
-  purple: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600 dark:text-neutral-300',
-  pink: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600 dark:text-neutral-300',
-  indigo: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/15 dark:text-[#1A40FF]',
+  emerald: 'bg-success-soft text-success',
+  blue: 'bg-primary-soft text-primary',
+  amber: 'bg-warning-soft text-warning',
+  purple: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600',
+  pink: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600',
+  indigo: 'bg-primary-soft text-primary',
 };
 
 // ============================================================================
@@ -58,8 +58,8 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
         'w-full text-left p-3 rounded-xl',
         'border transition-colors',
         isResolved
-          ? 'border-[#2C7A53]/30 dark:border-[#2C7A53]/30 hover:bg-[#E8F3EC]/50 dark:hover:bg-[#2C7A53]/5'
-          : 'border-[#B7791F]/30 dark:border-[#B7791F]/30 hover:bg-[#F8F0E0]/50 dark:hover:bg-[#B7791F]/5'
+          ? 'border-success/30 hover:bg-success-soft'
+          : 'border-warning/30 hover:bg-warning-soft'
       )}
     >
       {/* Title + category */}
@@ -80,7 +80,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
       {/* Status line */}
       {isResolved && selectedOption ? (
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53] shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
           <span className="text-[12px] text-muted-foreground truncate">
             {selectedOption.label}
           </span>
@@ -92,7 +92,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
         </div>
       ) : (
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#B7791F] shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
           <span className="text-[12px] text-muted-foreground">
             {decision.options.length} {t('beta.decisions.optionsAvailable')}
           </span>
@@ -134,7 +134,7 @@ export function DecisionHistory() {
       {/* Pending decisions */}
       {pending.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#B7791F] dark:text-[#D2992F] mb-2 px-1">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-warning mb-2 px-1">
             {t('beta.decisions.pending')} ({pending.length})
           </h3>
           <div className="space-y-2">
@@ -152,7 +152,7 @@ export function DecisionHistory() {
       {/* Resolved decisions */}
       {resolved.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#2C7A53] dark:text-[#3EAE70] mb-2 px-1">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-success mb-2 px-1">
             {t('beta.decisions.resolved')} ({resolved.length})
           </h3>
           <div className="space-y-2">

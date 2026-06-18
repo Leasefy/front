@@ -214,8 +214,8 @@ export function DispersionTable({
                 {/* Propietario */}
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                      <User className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                    <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[180px]">
@@ -254,7 +254,7 @@ export function DispersionTable({
 
                 {/* Commission */}
                 <td className="p-4">
-                  <span className="font-medium text-[#1A40FF] dark:text-[#5570FF] tabular-nums">
+                  <span className="font-medium text-primary tabular-nums">
                     {formatCurrency(dispersion.totalCommission)}
                   </span>
                 </td>
@@ -294,7 +294,7 @@ export function DispersionTable({
                       </span>
                     </div>
                   ) : dispersion.status === 'failed' ? (
-                    <div className="flex items-center gap-1.5 text-[#C4503B] dark:text-[#E0664D]">
+                    <div className="flex items-center gap-1.5 text-danger">
                       <Warning className="w-4 h-4" weight="fill" />
                       <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.error')}</span>
                     </div>
@@ -350,7 +350,7 @@ export function DispersionTable({
                                 onProcess(dispersion);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft dark:hover:bg-primary/20 transition-colors"
                             >
                               <PaperPlaneTilt className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.process')}</span>
@@ -364,7 +364,7 @@ export function DispersionTable({
                                 onProcess(dispersion);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#B7791F] dark:text-[#D2992F] hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20 transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-warning hover:bg-warning-soft dark:hover:bg-warning/20 transition-colors"
                             >
                               <ArrowsClockwise className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.retry')}</span>
@@ -406,12 +406,12 @@ export function DispersionTable({
                   </span>
                   <div className="flex items-center gap-3 text-xs">
                     {summary.pending > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F] tabular-nums">
+                      <span className="px-2 py-0.5 rounded-full bg-warning-soft text-warning dark:bg-warning/15 dark:text-warning tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.pendingAbbr', { count: summary.pending })}
                       </span>
                     )}
                     {summary.processing > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] tabular-nums">
+                      <span className="px-2 py-0.5 rounded-full bg-primary-soft text-primary dark:bg-primary/15 dark:text-primary tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.processingAbbr', { count: summary.processing })}
                       </span>
                     )}
@@ -421,7 +421,7 @@ export function DispersionTable({
                       </span>
                     )}
                     {summary.failed > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D] tabular-nums">
+                      <span className="px-2 py-0.5 rounded-full bg-danger-soft text-danger dark:bg-danger/15 dark:text-danger tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.failedAbbr', { count: summary.failed })}
                       </span>
                     )}
@@ -434,7 +434,7 @@ export function DispersionTable({
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-[#1A40FF] dark:text-[#5570FF] tabular-nums">
+                <span className="font-bold text-primary tabular-nums">
                   {formatCurrency(summary.totalCommissions)}
                 </span>
               </td>

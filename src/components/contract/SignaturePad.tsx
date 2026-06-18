@@ -61,7 +61,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between">
         <label className="text-xs font-medium text-foreground inline-flex items-center gap-1.5">
-          <PencilSimple className="w-3.5 h-3.5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <PencilSimple className="w-3.5 h-3.5 text-primary" />
           Dibujá tu firma {signerName && <span className="text-muted-foreground">({signerName})</span>}
         </label>
         <button
@@ -85,7 +85,7 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
           'relative rounded-xl border-2 border-dashed bg-white overflow-hidden transition-colors',
           isEmpty
             ? 'border-neutral-300 dark:border-neutral-600'
-            : 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
+            : 'border-primary/30',
           disabled && 'opacity-50 pointer-events-none'
         )}
         style={{ height: canvasSize.height }}

@@ -38,6 +38,7 @@ import {
   SquaresFour,
 } from '@phosphor-icons/react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
+import { SegmentedControl } from '@leasefy/ui'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
@@ -47,7 +48,12 @@ import {
   formatLatency,
   type MatrizRow,
 } from '@/lib/cotizador/verdict-derive'
+import {
+  deriveCarrierLabelsForSet,
+  type CarrierLabel,
+} from '@/lib/cotizador/carrier-labels'
 import { CarrierCardExpandible } from './CarrierCardExpandible'
+import { CarrierLabelChips } from './CarrierLabelChips'
 
 // ---------------------------------------------------------------------------
 // Status icon (compact, table-cell sized)
@@ -59,17 +65,17 @@ function ResultIcon({ status }: { status: Status }) {
   const cls = 'w-4 h-4 shrink-0'
   switch (status) {
     case 'approved':
-      return <CheckCircle weight="fill" className={cn(cls, 'text-[#2C7A53]')} />
+      return <CheckCircle weight="fill" className={cn(cls, 'text-success')} />
     case 'conditional':
-      return <Info weight="fill" className={cn(cls, 'text-[#B7791F]')} />
+      return <Info weight="fill" className={cn(cls, 'text-warning')} />
     case 'rejected':
-      return <XCircle weight="fill" className={cn(cls, 'text-[#C4503B]')} />
+      return <XCircle weight="fill" className={cn(cls, 'text-danger')} />
     case 'error':
-      return <Warning weight="fill" className={cn(cls, 'text-neutral-500')} />
+      return <Warning weight="fill" className={cn(cls, 'text-fg-muted')} />
     case 'stub':
-      return <Question weight="fill" className={cn(cls, 'text-neutral-500')} />
+      return <Question weight="fill" className={cn(cls, 'text-fg-muted')} />
     case 'pending':
-      return <Spinner weight="bold" className={cn(cls, 'text-[#1A40FF] animate-spin')} />
+      return <Spinner weight="bold" className={cn(cls, 'text-primary animate-spin')} />
     default:
       return null
   }
@@ -78,13 +84,13 @@ function ResultIcon({ status }: { status: Status }) {
 function resultTextClass(status: Status): string {
   switch (status) {
     case 'approved':
-      return 'text-[#2C7A53] dark:text-[#3EAE70]'
+      return 'text-success'
     case 'conditional':
-      return 'text-[#B7791F] dark:text-[#D2992F]'
+      return 'text-warning'
     case 'rejected':
-      return 'text-[#C4503B] dark:text-[#E0664D]'
+      return 'text-danger'
     default:
-      return 'text-neutral-500 dark:text-neutral-400'
+      return 'text-fg-muted'
   }
 }
 
@@ -100,33 +106,23 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
     { id: 'matriz', label: t('inmobiliaria.ai.cotizador.detail.matriz.verMatriz'), Icon: TableIcon },
     { id: 'tarjetas', label: t('inmobiliaria.ai.cotizador.detail.matriz.verTarjetas'), Icon: SquaresFour },
   ]
+  // Selector excluyente (UI-DS-CONTRACT §3).
   return (
-    <div
-      role="group"
+    <SegmentedControl<ViewMode>
       aria-label={t('inmobiliaria.ai.cotizador.detail.matriz.viewToggleLabel')}
-      className="inline-flex items-center rounded-full border border-neutral-200 dark:border-neutral-700 p-0.5"
-    >
-      {opts.map(({ id, label, Icon }) => {
-        const active = value === id
-        return (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onChange(id)}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors',
-              active
-                ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200',
-            )}
-          >
-            <Icon className="w-3.5 h-3.5" weight={active ? 'fill' : 'regular'} />
+      value={value}
+      onChange={onChange}
+      options={opts.map(({ id, label, Icon }) => ({
+        value: id,
+        ariaLabel: label,
+        label: (
+          <span className="inline-flex items-center gap-1.5">
+            <Icon className="w-3.5 h-3.5" weight={value === id ? 'fill' : 'regular'} />
             {label}
-          </button>
-        )
-      })}
-    </div>
+          </span>
+        ),
+      }))}
+    />
   )
 }
 
@@ -137,7 +133,7 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
 function RecomendadaChip() {
   const { t } = useI18n()
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 px-2 py-0.5 text-[10px] font-semibold text-[#1A40FF] dark:text-[#8FA3FF]">
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
       <Star weight="fill" className="w-3 h-3" />
       {t('inmobiliaria.ai.cotizador.detail.matriz.recomendada')}
     </span>
@@ -148,31 +144,39 @@ function RecomendadaChip() {
 // Desktop table
 // ---------------------------------------------------------------------------
 
-function MatrizTable({ rows, recommendedCarrier }: { rows: MatrizRow[]; recommendedCarrier: string | null }) {
+function MatrizTable({
+  rows,
+  recommendedCarrier,
+  labelsByCarrier,
+}: {
+  rows: MatrizRow[]
+  recommendedCarrier: string | null
+  labelsByCarrier: Map<string, CarrierLabel[]>
+}) {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-neutral-200/80 dark:border-neutral-800">
+    <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="border-b border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-800/30">
-            <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+          <tr className="border-b border-border bg-surface-muted/60">
+            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colAseguradora')}
             </th>
-            <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colResultado')}
             </th>
-            <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colCondicion')}
             </th>
-            <th className="px-4 py-2.5 text-right text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+            <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colCosto')}
             </th>
-            <th className="px-4 py-2.5 text-right text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+            <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colTiempo')}
             </th>
-            <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colRecomendacion')}
             </th>
             <th className="px-2 py-2.5 w-8" aria-hidden="true" />
@@ -200,57 +204,61 @@ function MatrizTable({ rows, recommendedCarrier }: { rows: MatrizRow[]; recommen
                   id={rowId}
                   onClick={() => setExpanded(o => (o === carrier.carrier ? null : carrier.carrier))}
                   className={cn(
-                    'border-b border-neutral-100 dark:border-neutral-800/60 cursor-pointer transition-colors',
-                    'hover:bg-neutral-50 dark:hover:bg-neutral-800/40',
-                    isRecommended && 'bg-[#1A40FF]/[0.035] dark:bg-[#1A40FF]/[0.08]',
+                    'border-b border-border cursor-pointer transition-colors',
+                    'hover:bg-surface-muted/50',
+                    isRecommended && 'bg-primary-soft/50',
                   )}
                 >
-                  <th scope="row" className="px-4 py-3 font-normal">
-                    <span className="font-medium text-neutral-800 dark:text-neutral-100">
+                  <th scope="row" className="px-4 py-3 font-normal align-top">
+                    <span className="block font-medium text-fg">
                       {carrier.carrier}
                     </span>
+                    <CarrierLabelChips
+                      labels={labelsByCarrier.get(carrier.carrier) ?? []}
+                      className="mt-1.5"
+                    />
                   </th>
                   <td className="px-4 py-3">
-                    <span className={cn('inline-flex items-center gap-1.5 text-[13px] font-medium', resultTextClass(carrier.status))}>
+                    <span className={cn('inline-flex items-center gap-1.5 text-sm font-medium', resultTextClass(carrier.status))}>
                       <ResultIcon status={carrier.status} />
                       {t(`inmobiliaria.ai.cotizador.detail.carrier.${carrier.status}Label`)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[13px] text-neutral-500 dark:text-neutral-400 max-w-[14rem] truncate">
+                  <td className="px-4 py-3 text-sm text-fg-muted max-w-[14rem] truncate">
                     {condicionResumen}
                   </td>
                   <td className="px-4 py-3 text-right">
                     {prima ? (
                       <span className="inline-flex flex-col items-end">
-                        <span className="font-mono tabular-nums text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                        <span className="font-mono tabular-nums text-sm font-semibold text-fg">
                           {prima}
                         </span>
                         {isPriced && carrier.isStub && (
-                          <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                          <span className="text-[10px] text-fg-muted">
                             {t('inmobiliaria.ai.cotizador.detail.fuente.estimado')}
                           </span>
                         )}
                       </span>
                     ) : (
-                      <span className="text-neutral-300 dark:text-neutral-600">—</span>
+                      <span className="text-fg-muted">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-[13px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                  <td className="px-4 py-3 text-right text-sm tabular-nums text-fg-muted">
                     {tiempo ?? '—'}
                   </td>
                   <td className="px-4 py-3">
-                    {isRecommended ? <RecomendadaChip /> : <span className="text-neutral-300 dark:text-neutral-600">—</span>}
+                    {isRecommended ? <RecomendadaChip /> : <span className="text-fg-muted">—</span>}
                   </td>
                   <td className="px-2 py-3 text-right">
                     <CaretDown
                       weight="bold"
                       aria-hidden="true"
-                      className={cn('w-4 h-4 text-neutral-400 transition-transform duration-200', isOpen && 'rotate-180')}
+                      className={cn('w-4 h-4 text-fg-muted transition-transform duration-200', isOpen && 'rotate-180')}
                     />
                   </td>
                 </tr>
                 {isOpen && (
-                  <tr id={detailId} className="bg-neutral-50/40 dark:bg-neutral-800/20">
+                  <tr id={detailId} className="bg-surface-muted/40">
                     <td colSpan={7} className="p-0">
                       <CarrierCardExpandible carrier={carrier} bare />
                     </td>
@@ -290,6 +298,10 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
     c => c.isStub && (c.status === 'approved' || c.status === 'conditional'),
   )
 
+  // Comparative etiquetas (visión #12) — purely derived from the carriers we
+  // already have; no backend signal. Computed once per render over the set.
+  const labelsByCarrier = deriveCarrierLabelsForSet(carriers)
+
   return (
     <section
       aria-labelledby="matriz-heading"
@@ -299,11 +311,11 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
         <div>
           <h2
             id="matriz-heading"
-            className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100"
+            className="text-base font-semibold text-fg"
           >
             {t('inmobiliaria.ai.cotizador.detail.matriz.titulo')}
           </h2>
-          <p className="text-[13px] text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.matriz.subtitle', { n: carriers.length })}
           </p>
         </div>
@@ -312,7 +324,7 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
 
       {/* Prevalidación disclaimer line — honest framing for the whole matriz. */}
       {anyEstimado && (
-        <p className="flex items-start gap-1.5 text-[12px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
+        <p className="flex items-start gap-1.5 text-xs text-fg-muted leading-relaxed">
           <Info weight="regular" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           {t('inmobiliaria.ai.cotizador.detail.matriz.prevalidacionNote')}
         </p>
@@ -323,7 +335,11 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
       {view === 'matriz' ? (
         <>
           <div className="hidden md:block">
-            <MatrizTable rows={rows} recommendedCarrier={recommended} />
+            <MatrizTable
+              rows={rows}
+              recommendedCarrier={recommended}
+              labelsByCarrier={labelsByCarrier}
+            />
           </div>
           <div className="md:hidden space-y-2.5">
             {rows.map(({ carrier }) => (
@@ -333,6 +349,10 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
                     <RecomendadaChip />
                   </div>
                 )}
+                <CarrierLabelChips
+                  labels={labelsByCarrier.get(carrier.carrier) ?? []}
+                  className="mb-1.5 px-1"
+                />
                 <CarrierCardExpandible carrier={carrier} />
               </div>
             ))}
@@ -347,6 +367,10 @@ export function MatrizAsegurabilidad({ carriers }: MatrizAsegurabilidadProps) {
                   <RecomendadaChip />
                 </div>
               )}
+              <CarrierLabelChips
+                labels={labelsByCarrier.get(carrier.carrier) ?? []}
+                className="mb-1.5 px-1"
+              />
               <CarrierCardExpandible carrier={carrier} />
             </div>
           ))}

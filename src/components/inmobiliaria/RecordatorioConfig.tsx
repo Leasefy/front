@@ -116,7 +116,7 @@ function DaySelector({
               className={cn(
                 'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                 isSelected
-                  ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] ring-1 ring-[#1A40FF] dark:ring-[#1A40FF]'
+                  ? 'bg-primary-soft text-primary ring-1 ring-primary'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
@@ -157,7 +157,7 @@ function ChannelToggle({
       className={cn(
         'flex items-center justify-between p-4 rounded-xl border transition-colors',
         enabled
-          ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:border-[#1A40FF]/30 dark:bg-[#1A40FF]/20'
+          ? 'border-primary/30 bg-primary-soft/50 dark:border-primary/30 dark:bg-primary/20'
           : 'border-border bg-card'
       )}
     >
@@ -166,7 +166,7 @@ function ChannelToggle({
           className={cn(
             'w-10 h-10 rounded-md flex items-center justify-center',
             enabled
-              ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+              ? 'bg-primary-soft'
               : 'bg-muted'
           )}
         >
@@ -174,7 +174,7 @@ function ChannelToggle({
             className={cn(
               'w-5 h-5',
               enabled
-                ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                ? 'text-primary'
                 : 'text-muted-foreground'
             )}
           />
@@ -206,7 +206,7 @@ function MessagePreview({
   // Highlight variables in template
   const highlightedTemplate = template.replace(
     /\{([^}]+)\}/g,
-    '<span class="px-1.5 py-0.5 rounded bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium">{$1}</span>'
+    '<span class="px-1.5 py-0.5 rounded bg-primary-soft text-primary text-xs font-medium">{$1}</span>'
   );
 
   return (
@@ -293,7 +293,7 @@ export function RecordatorioConfig({
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">
-            <Gear className="w-5 h-5 text-[#1A40FF]" />
+            <Gear className="w-5 h-5 text-primary" />
             {t('inmobiliaria.cobros.recordatorioConfig.title')}
           </SheetTitle>
           <SheetDescription>
@@ -310,7 +310,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Calendar className="w-4 h-4 text-[#1A40FF]" />
+              <Calendar className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
               </h3>
@@ -331,7 +331,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Warning className="w-4 h-4 text-[#B7791F]" />
+              <Warning className="w-4 h-4 text-warning" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
               </h3>
@@ -352,7 +352,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Bell className="w-4 h-4 text-[#1A40FF]" />
+              <Bell className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
               </h3>
@@ -383,7 +383,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Envelope className="w-4 h-4 text-[#1A40FF]" />
+              <Envelope className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
               </h3>
@@ -419,7 +419,7 @@ export function RecordatorioConfig({
             </Button>
             <Button
               type="button"
-              className="flex-1 bg-[#1A40FF] hover:opacity-90 text-white"
+              className="flex-1 bg-primary hover:opacity-90 text-white"
               onClick={handleSave}
               disabled={!isValid || isSaving}
             >

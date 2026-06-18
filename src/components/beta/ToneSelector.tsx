@@ -94,9 +94,9 @@ export function ToneSelector({ className }: ToneSelectorProps) {
               className={cn(
                 'flex flex-col items-start gap-2 p-3.5 rounded-xl',
                 'border text-left transition-all duration-150',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 isSelected
-                  ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/5'
+                  ? 'border-primary/30 ring-2 ring-primary/20 bg-primary-soft'
                   : 'border-neutral-200 dark:border-border bg-white dark:bg-card hover:border-neutral-300 dark:hover:border-neutral-600'
               )}
             >
@@ -105,7 +105,7 @@ export function ToneSelector({ className }: ToneSelectorProps) {
                   className={cn(
                     'w-4.5 h-4.5',
                     isSelected
-                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                      ? 'text-primary'
                       : 'text-muted-foreground'
                   )}
                   weight={isSelected ? 'duotone' : 'regular'}
@@ -114,7 +114,7 @@ export function ToneSelector({ className }: ToneSelectorProps) {
                   className={cn(
                     'text-[13px] font-semibold',
                     isSelected
-                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                      ? 'text-primary'
                       : 'text-foreground'
                   )}
                 >

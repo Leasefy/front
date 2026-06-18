@@ -48,10 +48,10 @@ function ConfidencePill({ confidence }: { confidence: AISuggestion['confidence']
       className={cn(
         'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono uppercase tracking-wide shrink-0',
         confidence === 'alta'
-          ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
+          ? 'bg-success-soft text-success'
           : confidence === 'media'
-            ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
-            : 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
+            ? 'bg-warning-soft text-warning'
+            : 'bg-danger-soft text-danger'
       )}
     >
       {confidence}
@@ -79,7 +79,7 @@ function SuggestionRow({
       className={cn(
         'flex items-start gap-3 p-3 rounded-md transition-colors',
         suggestion.accepted === true
-          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+          ? 'bg-success-soft'
           : suggestion.accepted === false
             ? 'bg-neutral-50 dark:bg-neutral-800/50 opacity-60'
             : 'bg-white dark:bg-neutral-900'
@@ -99,7 +99,7 @@ function SuggestionRow({
             suggestion.accepted === false
               ? 'line-through text-neutral-400 dark:text-neutral-600'
               : suggestion.accepted === true
-                ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                ? 'text-success'
                 : 'text-neutral-900 dark:text-white'
           )}
         >
@@ -121,7 +121,7 @@ function SuggestionRow({
             type="button"
             onClick={() => onAccept(rowIndex, suggestion.field)}
             title="Aceptar sugerencia"
-            className="w-7 h-7 flex items-center justify-center rounded-sm border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-sm border border-success/30 text-success hover:bg-success-soft transition-colors"
           >
             <Check className="w-3.5 h-3.5" weight="bold" />
           </button>
@@ -138,7 +138,7 @@ function SuggestionRow({
         <span
           className={cn(
             'text-xs font-mono uppercase tracking-wide shrink-0 mt-1',
-            suggestion.accepted ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-neutral-400 dark:text-neutral-500'
+            suggestion.accepted ? 'text-success' : 'text-neutral-400 dark:text-neutral-500'
           )}
         >
           {suggestion.accepted
@@ -174,15 +174,15 @@ export function AISuggestionCard({
   })();
 
   const statusDotClass = (() => {
-    if (property.hasErrors) return 'bg-[#C4503B]';
-    if (pendingSuggestions.length > 0) return 'bg-[#B7791F]';
-    return 'bg-[#2C7A53]';
+    if (property.hasErrors) return 'bg-danger';
+    if (pendingSuggestions.length > 0) return 'bg-warning';
+    return 'bg-success';
   })();
 
   const statusTextClass = (() => {
-    if (property.hasErrors) return 'text-[#C4503B] dark:text-[#E0664D]';
-    if (pendingSuggestions.length > 0) return 'text-[#B7791F] dark:text-[#D2992F]';
-    return 'text-[#2C7A53] dark:text-[#3EAE70]';
+    if (property.hasErrors) return 'text-danger';
+    if (pendingSuggestions.length > 0) return 'text-warning';
+    return 'text-success';
   })();
 
   const displayTitle =
@@ -202,7 +202,7 @@ export function AISuggestionCard({
           type="checkbox"
           checked={property.selected}
           onChange={() => onToggleSelect(property._rowIndex)}
-          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-[#1A40FF] focus:ring-[#1A40FF] cursor-pointer shrink-0"
+          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-primary focus:ring-primary cursor-pointer shrink-0"
           disabled={property.hasErrors}
           title={property.hasErrors ? 'No se puede importar: tiene errores sin resolver' : undefined}
         />
@@ -262,7 +262,7 @@ export function AISuggestionCard({
               </span>
             )}
             {property.monthlyRent && property.monthlyRent > 0 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-xs font-mono text-[#1A40FF] dark:text-[#5570FF]">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary-soft text-primary">
                 {formatCOP(property.monthlyRent)}/mes
               </span>
             )}
@@ -273,7 +273,7 @@ export function AISuggestionCard({
             <>
               <div className="border-t border-neutral-100 dark:border-neutral-800 pt-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkle className="w-3.5 h-3.5 text-[#1A40FF]" />
+                  <Sparkle className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                     Sugerencias AI
                   </span>
@@ -296,7 +296,7 @@ export function AISuggestionCard({
                     <button
                       type="button"
                       onClick={() => onAcceptAll(property._rowIndex)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors font-medium"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border border-primary/30 text-primary hover:bg-primary-soft transition-colors font-medium"
                     >
                       <Sparkle className="w-3 h-3" />
                       Aceptar todas
@@ -313,10 +313,10 @@ export function AISuggestionCard({
               {property.errorMessages.map((msg, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-2 p-2 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40"
+                  className="flex items-start gap-2 p-2 rounded-md bg-danger-soft border border-danger/30"
                 >
-                  <Warning className="w-4 h-4 text-[#C4503B] shrink-0 mt-0.5" />
-                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{msg}</p>
+                  <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" />
+                  <p className="text-xs text-danger">{msg}</p>
                 </div>
               ))}
             </div>

@@ -120,22 +120,22 @@ export function SignatureForm({
     return (
       <div className={cn('space-y-4', className)}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-            <SealCheck className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
+            <SealCheck className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white">Firma electrónica</h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Como {role}</p>
+            <h3 className="font-semibold text-foreground">Firma electrónica</h3>
+            <p className="text-xs text-muted-foreground">Como {role}</p>
           </div>
         </div>
-        <div className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-4">
+        <div className="rounded-xl border border-success/30 bg-success-soft p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2C7A53]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success">
               <Check className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-[#2C7A53] dark:text-[#3EAE70]">Contrato firmado</p>
-              <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">
+              <p className="font-semibold text-success">Contrato firmado</p>
+              <p className="text-sm text-success">
                 {signerName ? `Por ${signerName}` : 'Firma completada exitosamente'}
               </p>
             </div>
@@ -150,8 +150,8 @@ export function SignatureForm({
       <div className={cn('space-y-4', className)}>
         {/* Header - Simplified */}
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-neutral-900 dark:text-white">Firma electrónica</h3>
-          <span className="px-2.5 py-1 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
+          <h3 className="font-semibold text-foreground">Firma electrónica</h3>
+          <span className="px-2.5 py-1 rounded-md bg-primary-soft text-xs font-medium text-primary">
             {role}
           </span>
         </div>
@@ -164,18 +164,18 @@ export function SignatureForm({
         />
 
         {/* Checkboxes - Single card with dividers */}
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           {/* Terms checkbox */}
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedTerms
-              ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10'
+              ? 'bg-primary-soft/50'
               : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
           )}>
             <div className={cn(
               'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedTerms
-                ? 'bg-[#1A40FF] border-[#1A40FF]/30'
+                ? 'bg-primary border-primary/30'
                 : 'border-neutral-300 dark:border-neutral-600'
             )}>
               {acceptedTerms && <Check className="w-3 h-3 text-white" />}
@@ -190,27 +190,27 @@ export function SignatureForm({
             <span className={cn(
               'text-sm transition-colors',
               acceptedTerms
-                ? 'text-neutral-900 dark:text-white'
-                : 'text-neutral-600 dark:text-neutral-400'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
             )}>
               Acepto los terminos del contrato incluyendo obligaciones, pagos y terminacion.
             </span>
           </label>
 
           {/* Divider */}
-          <div className="border-t border-neutral-200 dark:border-neutral-700" />
+          <div className="border-t border-border" />
 
           {/* Legal checkbox */}
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedLegal
-              ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10'
+              ? 'bg-primary-soft/50'
               : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
           )}>
             <div className={cn(
               'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedLegal
-                ? 'bg-[#1A40FF] border-[#1A40FF]/30'
+                ? 'bg-primary border-primary/30'
                 : 'border-neutral-300 dark:border-neutral-600'
             )}>
               {acceptedLegal && <Check className="w-3 h-3 text-white" />}
@@ -225,27 +225,27 @@ export function SignatureForm({
             <span className={cn(
               'text-sm transition-colors',
               acceptedLegal
-                ? 'text-neutral-900 dark:text-white'
-                : 'text-neutral-600 dark:text-neutral-400'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
             )}>
               Entiendo que esta firma es legalmente vinculante.
             </span>
           </label>
 
           {/* Divider */}
-          <div className="border-t border-neutral-200 dark:border-neutral-700" />
+          <div className="border-t border-border" />
 
           {/* Data checkbox */}
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedData
-              ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/10'
+              ? 'bg-primary-soft/50'
               : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
           )}>
             <div className={cn(
               'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedData
-                ? 'bg-[#1A40FF] border-[#1A40FF]/30'
+                ? 'bg-primary border-primary/30'
                 : 'border-neutral-300 dark:border-neutral-600'
             )}>
               {acceptedData && <Check className="w-3 h-3 text-white" />}
@@ -260,8 +260,8 @@ export function SignatureForm({
             <span className={cn(
               'text-sm transition-colors',
               acceptedData
-                ? 'text-neutral-900 dark:text-white'
-                : 'text-neutral-600 dark:text-neutral-400'
+                ? 'text-foreground'
+                : 'text-muted-foreground'
             )}>
               Autorizo el tratamiento de datos personales (Ley 1581/2012).
             </span>
@@ -275,8 +275,8 @@ export function SignatureForm({
           className={cn(
             'w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm transition-all',
             canSign && !isLoading
-              ? 'bg-[#1A40FF] hover:opacity-90 text-white'
-              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+              ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+              : 'bg-muted text-muted-foreground cursor-not-allowed'
           )}
         >
           {isLoading ? (
@@ -299,7 +299,7 @@ export function SignatureForm({
         </button>
 
         {/* Legal footnote */}
-        <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
+        <p className="text-center text-[11px] text-muted-foreground">
           Firma válida según Ley 527/1999 · Verificación por correo requerida
         </p>
       </div>

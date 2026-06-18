@@ -49,7 +49,7 @@ function AvaluosCola() {
           <p className="text-2xl font-semibold text-foreground tabular-nums">
             {isLoading ? '—' : total}
           </p>
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground">
             {t('inmobiliaria.ai.workspace.pages.avaluos.colaKpiLabel')}
           </p>
         </div>

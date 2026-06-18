@@ -29,15 +29,15 @@ type WorkloadLevel = 'low' | 'optimal' | 'high' | 'overloaded';
 
 function getWorkloadLevel(count: number): { level: WorkloadLevel; color: string } {
   if (count <= 5) {
-    return { level: 'low', color: 'text-[#2C7A53] dark:text-[#3EAE70]' };
+    return { level: 'low', color: 'text-success' };
   }
   if (count <= RECOMMENDED_MAX) {
-    return { level: 'optimal', color: 'text-[#1A40FF] dark:text-[#5570FF]' };
+    return { level: 'optimal', color: 'text-primary' };
   }
   if (count <= OVERLOADED_THRESHOLD) {
-    return { level: 'high', color: 'text-[#B7791F] dark:text-[#D2992F]' };
+    return { level: 'high', color: 'text-warning' };
   }
-  return { level: 'overloaded', color: 'text-[#C4503B] dark:text-[#E0664D]' };
+  return { level: 'overloaded', color: 'text-danger' };
 }
 
 /**
@@ -89,8 +89,8 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       <div className="px-5 py-4 border-b border-border bg-muted/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-              <ChartBar className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
+            <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
+              <ChartBar className="w-5 h-5 text-primary" weight="fill" />
             </div>
             <div>
               <h2 className="text-base font-semibold text-foreground">
@@ -107,15 +107,15 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
             <div className="flex items-center gap-2">
               {stats.overloaded > 0 ? (
                 <>
-                  <Warning className="w-4 h-4 text-[#B7791F]" weight="fill" />
-                  <span className="text-sm text-[#B7791F] dark:text-[#D2992F] font-medium">
+                  <Warning className="w-4 h-4 text-warning" weight="fill" />
+                  <span className="text-sm text-warning font-medium">
                     {stats.overloaded} {t('inmobiliaria.agente.overloaded')}
                   </span>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-4 h-4 text-[#2C7A53]" weight="fill" />
-                  <span className="text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
+                  <CheckCircle className="w-4 h-4 text-success" weight="fill" />
+                  <span className="text-sm text-success font-medium">
                     {t('inmobiliaria.agente.balanced')}
                   </span>
                 </>
@@ -181,8 +181,8 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                         className="w-8 h-8 rounded-full object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">
+                      <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                        <span className="text-xs font-semibold text-primary">
                           {getInitials(agente.name)}
                         </span>
                       </div>
@@ -226,10 +226,10 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                       className={cn(
                         'h-full rounded-full',
                         propertyCount > OVERLOADED_THRESHOLD
-                          ? 'bg-[#C4503B]'
+                          ? 'bg-danger'
                           : propertyCount > RECOMMENDED_MAX
-                          ? 'bg-[#B7791F]'
-                          : 'bg-[#1A40FF]'
+                          ? 'bg-warning'
+                          : 'bg-primary'
                       )}
                     />
                   </div>
@@ -250,15 +250,15 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       {/* Legend Footer */}
       <div className="px-5 py-3 border-t border-border bg-muted/10 flex flex-wrap items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#1A40FF]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-primary" />
           <span className="text-muted-foreground">{t('inmobiliaria.agente.legendNormal')}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#B7791F]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-warning" />
           <span className="text-muted-foreground">{t('inmobiliaria.agente.legendHigh')}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#C4503B]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-danger" />
           <span className="text-muted-foreground">{t('inmobiliaria.agente.legendOverloaded')}</span>
         </div>
       </div>

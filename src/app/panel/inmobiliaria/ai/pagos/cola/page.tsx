@@ -39,18 +39,18 @@ function PagosCola() {
               { label: t('inmobiliaria.ai.workspace.pages.pagos.colaTitle') },
             ]}
           />
-          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.pagos.colaTitle')}</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.ai.workspace.pages.pagos.colaTitle')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.pagos.colaDesc')}
           </p>
         </div>
 
         {/* Pending KPI */}
         <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
-          <p className="text-2xl font-semibold text-foreground tabular-nums">
+          <p className="text-2xl font-semibold text-fg tabular-nums">
             {isLoading ? '—' : total}
           </p>
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
+          <p className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.workspace.pages.pagos.porAprobar')}
           </p>
         </div>

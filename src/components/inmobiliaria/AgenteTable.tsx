@@ -28,32 +28,32 @@ interface AgenteTableProps {
 // Role badge colors (labels moved inside component for i18n)
 const ROLE_STYLES: Record<AgenteRole, { bg: string; text: string }> = {
   agent: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   coordinator: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-surface-muted',
+    text: 'text-fg-muted',
   },
   director: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
 };
 
 // Status badge colors (labels moved inside component for i18n)
 const STATUS_STYLES: Record<AgenteStatus, { bg: string; text: string }> = {
   active: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   inactive: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-400',
+    bg: 'bg-surface-muted',
+    text: 'text-fg-muted',
   },
   on_leave: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
 };
 
@@ -337,7 +337,7 @@ export function AgenteTable({
 
                 {/* Commission Split */}
                 <td className="p-4 hidden lg:table-cell">
-                  <span className="inline-flex px-2.5 py-1 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-sm font-medium">
+                  <span className="inline-flex px-2.5 py-1 rounded-full bg-primary-soft text-primary text-sm font-medium tabular-nums">
                     {agente.commissionSplit}%
                   </span>
                 </td>
@@ -398,16 +398,18 @@ export function AgenteTable({
 
       {/* Empty State */}
       {sortedAgentes.length === 0 && (
-        <div className="p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <Users className="w-8 h-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-surface-muted flex items-center justify-center">
+            <Users className="w-6 h-6 text-fg-muted" weight="duotone" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            {t('inmobiliaria.agente.noAgentsFound')}
-          </h3>
-          <p className="text-muted-foreground">
-            {t('inmobiliaria.agente.adjustFiltersOrAdd')}
-          </p>
+          <div className="space-y-1.5">
+            <h3 className="text-base font-semibold text-fg">
+              {t('inmobiliaria.agente.noAgentsFound')}
+            </h3>
+            <p className="max-w-sm text-sm text-fg-muted">
+              {t('inmobiliaria.agente.adjustFiltersOrAdd')}
+            </p>
+          </div>
         </div>
       )}
     </div>

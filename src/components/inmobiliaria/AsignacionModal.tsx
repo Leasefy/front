@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AgenteSelector } from './AgenteSelector';
 import type { Consignacion, Agente } from '@/lib/types/inmobiliaria';
@@ -111,7 +112,7 @@ export function AsignacionModal({
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader className="pb-4 border-b border-neutral-200 dark:border-neutral-700">
           <SheetTitle className="flex items-center gap-2 text-neutral-900 dark:text-white">
-            <User className="w-5 h-5 text-[#1A40FF]" />
+            <User className="w-5 h-5 text-primary" />
             {t('inmobiliaria.agente.reassignProperty')}
           </SheetTitle>
         </SheetHeader>
@@ -141,7 +142,7 @@ export function AsignacionModal({
                   <MapPin className="w-3.5 h-3.5" />
                   <span className="truncate">{consignacion.propertyAddress}</span>
                 </div>
-                <p className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] mt-2">
+                <p className="text-sm font-medium text-primary mt-2">
                   {formatCurrency(consignacion.monthlyRent)}{t('inmobiliaria.agente.perMonth')}
                 </p>
               </div>
@@ -155,7 +156,7 @@ export function AsignacionModal({
             </label>
             {currentAgente ? (
               <div className="flex items-center gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1A40FF] to-[#6B6B6B] flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-semibold shrink-0">
                   {currentAgente.avatar ? (
                     <img
                       src={currentAgente.avatar}
@@ -184,8 +185,8 @@ export function AsignacionModal({
 
           {/* Arrow Divider */}
           <div className="flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-              <ArrowRight className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+            <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center">
+              <ArrowRight className="w-5 h-5 text-primary" />
             </div>
           </div>
 
@@ -212,33 +213,33 @@ export function AsignacionModal({
               onChange={(e) => setReason(e.target.value)}
               placeholder={t('inmobiliaria.agente.changeReasonPlaceholder')}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-sm"
             />
           </div>
 
           {/* Preview Summary */}
           {selectedAgente && currentAgente && (
-            <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
-              <h4 className="font-medium text-[#1A40FF] dark:text-[#5570FF] text-sm mb-3 flex items-center gap-2">
+            <div className="p-4 rounded-xl border border-primary/30 bg-primary-soft">
+              <h4 className="font-medium text-primary text-sm mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.agente.reassignmentSummary')}
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agente.summaryProperty')}:</span>
-                  <span className="font-medium text-[#1A40FF] dark:text-[#5570FF] truncate ml-2 max-w-[200px]">
+                  <span className="text-primary">{t('inmobiliaria.agente.summaryProperty')}:</span>
+                  <span className="font-medium text-primary truncate ml-2 max-w-[200px]">
                     {consignacion.propertyTitle}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agente.summaryFrom')}:</span>
-                  <span className="font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                  <span className="text-primary">{t('inmobiliaria.agente.summaryFrom')}:</span>
+                  <span className="font-medium text-primary">
                     {currentAgente.name}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agente.summaryTo')}:</span>
-                  <span className="font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                  <span className="text-primary">{t('inmobiliaria.agente.summaryTo')}:</span>
+                  <span className="font-medium text-primary">
                     {selectedAgente.name}
                   </span>
                 </div>
@@ -248,9 +249,9 @@ export function AsignacionModal({
 
           {/* Warning for same agent */}
           {selectedAgenteId === consignacion.agenteId && (
-            <div className="flex items-start gap-3 p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
-              <Warning className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" />
-              <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-warning/30 bg-warning-soft">
+              <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+              <p className="text-sm text-warning">
                 {t('inmobiliaria.agente.sameAgentWarning')}
               </p>
             </div>
@@ -272,7 +273,7 @@ export function AsignacionModal({
             className={cn(
               'flex-1 px-4 py-2.5 rounded-xl font-medium transition-all',
               canConfirm
-                ? 'bg-[#1A40FF] hover:opacity-90 text-white'
+                ? 'bg-primary hover:opacity-90 text-white'
                 : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
             )}
           >

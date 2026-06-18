@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import type { ChatConversation } from '@/lib/api/messages.types';
@@ -67,7 +68,7 @@ function formatMessageTime(isoStr: string): string {
 
 function ConversationsSkeleton() {
   return (
-    <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
+    <div className="divide-y divide-border">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex items-start gap-3 px-4 py-4 animate-pulse">
           <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
@@ -94,7 +95,7 @@ function MessagesSkeleton() {
             'h-12 rounded-xl',
             i % 2 === 0
               ? 'w-3/5 bg-neutral-200 dark:bg-neutral-700 rounded-bl-sm'
-              : 'w-2/5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-br-sm'
+              : 'w-2/5 bg-primary-soft rounded-br-sm'
           )} />
         </div>
       ))}
@@ -216,7 +217,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-white dark:bg-[#0f0f10] overflow-hidden flex flex-col">
+    <div className="h-[calc(100vh-64px)] bg-bg overflow-hidden flex flex-col">
       <div className="flex-1 flex flex-col max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full overflow-hidden">
         {/* Header */}
         <motion.header
@@ -224,19 +225,19 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 flex-shrink-0"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold text-foreground tracking-tight">
                 {headerTitle}
               </h1>
-              <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground max-w-2xl">
                 {headerSubtitle}
               </p>
             </div>
             {totalUnread > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-full">
-                <div className="w-2 h-2 bg-[#1A40FF] rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
+              <div className="flex items-center gap-2 px-4 py-2 bg-primary-soft rounded-full shrink-0">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-primary">
                   {totalUnread} {locale === 'es' ? 'sin leer' : 'unread'}
                 </span>
               </div>
@@ -249,27 +250,27 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden flex-1 min-h-0"
+          className="rounded-xl border border-border bg-card overflow-hidden flex-1 min-h-0"
         >
           <div className="h-full flex">
             {/* Conversations List */}
             <div
               className={cn(
-                'w-full md:w-80 lg:w-96 border-r border-neutral-100 dark:border-neutral-700 flex flex-col bg-neutral-50/50 dark:bg-[#0f0f10]/50',
+                'w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-muted/30',
                 showMobileChat && 'hidden md:flex',
               )}
             >
               {/* Search Header */}
-              <div className="p-4 border-b border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+              <div className="p-4 border-b border-border bg-card">
                 <div className="relative">
-                  <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={locale === 'es' ? 'Buscar conversacion...' : 'Search conversation...'}
                     aria-label={locale === 'es' ? 'Buscar conversacion' : 'Search conversation'}
-                    className="w-full h-11 pl-11 pr-4 bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 transition-all"
+                    className="w-full h-11 pl-11 pr-4 bg-muted text-foreground rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
               </div>
@@ -280,13 +281,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   <ConversationsSkeleton />
                 ) : filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                    <div className="w-14 h-14 rounded-full bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-                      <Chat className="w-6 h-6 text-neutral-400" />
+                    <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                      <Chat className="w-6 h-6 text-muted-foreground" weight="duotone" />
                     </div>
-                    <p className="font-medium text-neutral-900 dark:text-white mb-1">
+                    <p className="text-sm font-semibold text-foreground mb-1">
                       {locale === 'es' ? 'Sin conversaciones' : 'No conversations'}
                     </p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    <p className="text-sm text-muted-foreground max-w-xs">
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
@@ -295,7 +296,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
+                  <div className="divide-y divide-border">
                     {filteredConversations.map((conversation, index) => (
                       <motion.button
                         key={conversation.id}
@@ -306,12 +307,12 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         className={cn(
                           'w-full flex items-start gap-3 px-4 py-4 text-left transition-all',
                           selectedApplicationId === conversation.applicationId
-                            ? 'bg-white dark:bg-[#1a1a1c] border-l-2 border-l-[#1A40FF]'
-                            : 'hover:bg-white/80 dark:hover:bg-[#1a1a1c]/80',
+                            ? 'bg-card border-l-2 border-l-primary'
+                            : 'hover:bg-card/80',
                         )}
                       >
                         <div className="relative flex-shrink-0">
-                          <div className="w-12 h-12 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center text-[#1A40FF] dark:text-[#5570FF] font-semibold text-sm overflow-hidden">
+                          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-sm overflow-hidden">
                             {getInitials(conversation.name)}
                           </div>
                         </div>
@@ -320,19 +321,17 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                           <div className="flex items-center justify-between mb-0.5">
                             <p
                               className={cn(
-                                'truncate text-sm',
-                                conversation.unreadCount > 0
-                                  ? 'font-semibold text-neutral-900 dark:text-white'
-                                  : 'font-medium text-neutral-900 dark:text-white',
+                                'truncate text-sm text-foreground',
+                                conversation.unreadCount > 0 ? 'font-semibold' : 'font-medium',
                               )}
                             >
                               {conversation.name}
                             </p>
-                            <span className="text-xs text-neutral-400 flex-shrink-0 ml-2">
+                            <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
                               {conversation.lastMessageTime}
                             </span>
                           </div>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mb-1">
+                          <p className="text-xs text-muted-foreground truncate mb-1">
                             {conversation.property
                               ? `${conversation.role} · ${conversation.property}`
                               : conversation.role}
@@ -341,8 +340,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             className={cn(
                               'text-sm truncate',
                               conversation.unreadCount > 0
-                                ? 'text-neutral-900 dark:text-white font-medium'
-                                : 'text-neutral-500 dark:text-neutral-400',
+                                ? 'text-foreground font-medium'
+                                : 'text-muted-foreground',
                             )}
                           >
                             {conversation.lastMessage}
@@ -350,7 +349,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         </div>
 
                         {conversation.unreadCount > 0 && (
-                          <span className="w-5 h-5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="min-w-5 h-5 px-1 bg-primary text-primary-foreground tabular-nums text-xs font-semibold rounded-full flex items-center justify-center flex-shrink-0">
                             {conversation.unreadCount}
                           </span>
                         )}
@@ -364,7 +363,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
             {/* Chat Area */}
             <div
               className={cn(
-                'flex-1 flex flex-col bg-white dark:bg-[#1a1a1c]',
+                'flex-1 flex flex-col bg-card',
                 !showMobileChat && 'hidden md:flex',
               )}
             >
@@ -379,22 +378,23 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
               ) : (
                 <>
                   {/* Chat Header */}
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-700">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-border">
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setShowMobileChat(false)}
-                        className="md:hidden p-2 -ml-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] text-neutral-600 dark:text-neutral-400"
+                        aria-label={locale === 'es' ? 'Volver' : 'Back'}
+                        className="md:hidden p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
                       >
                         <ArrowLeft className="w-5 h-5" />
                       </button>
-                      <div className="w-11 h-11 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center text-[#1A40FF] dark:text-[#5570FF] font-semibold text-sm">
+                      <div className="w-11 h-11 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-sm">
                         {getInitials(selectedConversation.name)}
                       </div>
                       <div>
-                        <p className="font-semibold text-neutral-900 dark:text-white">
+                        <p className="text-sm font-semibold text-foreground">
                           {selectedConversation.name}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        <p className="text-xs text-muted-foreground">
                           {selectedConversation.role}
                           {selectedConversation.property && ` · ${selectedConversation.property}`}
                         </p>
@@ -406,8 +406,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         className={cn(
                           'p-2.5 rounded-full transition-colors',
                           showInfoPanel
-                            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                            : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]',
+                            ? 'bg-primary-soft text-primary'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                         )}
                         aria-label={locale === 'es' ? 'Informacion' : 'Information'}
                       >
@@ -420,8 +420,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                           className={cn(
                             'p-2.5 rounded-full transition-colors',
                             showOptionsList
-                              ? 'bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-700 dark:text-neutral-300'
-                              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]',
+                              ? 'bg-muted text-foreground'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                           )}
                           aria-label={locale === 'es' ? 'Mas opciones' : 'More options'}
                         >
@@ -435,27 +435,27 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: -10 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 py-2 z-50"
+                              className="absolute right-0 top-full mt-2 w-52 bg-card rounded-xl border border-border py-2 z-50"
                             >
                               <button
                                 onClick={handleArchive}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                               >
-                                <Archive className="w-4 h-4 text-neutral-400" />
+                                <Archive className="w-4 h-4 text-muted-foreground" />
                                 {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}
                               </button>
                               <button
                                 onClick={handleMute}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                               >
-                                <BellSlash className="w-4 h-4 text-neutral-400" />
+                                <BellSlash className="w-4 h-4 text-muted-foreground" />
                                 {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
                               </button>
                               <button
                                 onClick={handleReport}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                               >
-                                <Flag className="w-4 h-4 text-neutral-400" />
+                                <Flag className="w-4 h-4 text-muted-foreground" />
                                 {locale === 'es' ? 'Reportar' : 'Report'}
                               </button>
                             </motion.div>
@@ -469,18 +469,18 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   <div className="flex-1 flex overflow-hidden">
                     {/* Messages Area */}
                     <div className={cn('flex-1 flex flex-col', showInfoPanel && 'hidden lg:flex')}>
-                      <div className="flex-1 overflow-y-auto p-6 bg-neutral-50/50 dark:bg-[#0f0f10]/50">
+                      <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
                         {isLoadingMessages ? (
                           <MessagesSkeleton />
                         ) : messages.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                            <div className="w-14 h-14 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4 border border-neutral-100 dark:border-neutral-700">
-                              <ChatCircle className="w-6 h-6 text-neutral-400" />
+                            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4 border border-border">
+                              <ChatCircle className="w-6 h-6 text-muted-foreground" weight="duotone" />
                             </div>
-                            <p className="font-medium text-neutral-900 dark:text-white mb-1">
+                            <p className="text-sm font-semibold text-foreground mb-1">
                               {locale === 'es' ? 'Sin mensajes' : 'No messages'}
                             </p>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
+                            <p className="text-sm text-muted-foreground max-w-xs">
                               {locale === 'es'
                                 ? 'Envia un mensaje para iniciar la conversacion.'
                                 : 'Send a message to start the conversation.'}
@@ -501,8 +501,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                     className={cn(
                                       'max-w-[75%] px-4 py-3 rounded-xl',
                                       message.isMine
-                                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 rounded-br-sm'
-                                        : 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-700 rounded-bl-sm',
+                                        ? 'bg-primary-soft text-primary border border-primary/30 rounded-br-sm'
+                                        : 'bg-card text-foreground border border-border rounded-bl-sm',
                                     )}
                                   >
                                     <p className="text-sm leading-relaxed">{message.content}</p>
@@ -510,13 +510,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                       className={cn(
                                         'flex items-center justify-end gap-1.5 mt-1.5',
                                         message.isMine
-                                          ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                                          : 'text-neutral-400',
+                                          ? 'text-primary'
+                                          : 'text-muted-foreground',
                                       )}
                                     >
-                                      <span className="text-[11px]">{formatMessageTime(message.createdAt)}</span>
+                                      <span className="text-xs">{formatMessageTime(message.createdAt)}</span>
                                       {message.isMine && (message.readAt ? (
-                                        <Checks className="w-3.5 h-3.5 text-[#1A40FF]" />
+                                        <Checks className="w-3.5 h-3.5 text-primary" />
                                       ) : (
                                         <Check className="w-3.5 h-3.5" />
                                       ))}
@@ -531,17 +531,17 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                       </div>
 
                       {/* Message Input */}
-                      <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+                      <div className="px-6 py-4 border-t border-border bg-card">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1">
                             <button
-                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                              className="p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
                             >
                               <Paperclip className="w-5 h-5" />
                             </button>
                             <button
-                              className="p-2.5 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                              className="p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
                             >
                               <Image className="w-5 h-5" />
@@ -556,28 +556,25 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                               placeholder={locale === 'es' ? 'Escribe un mensaje...' : 'Type a message...'}
                               aria-label={locale === 'es' ? 'Escribe un mensaje' : 'Type a message'}
-                              className="w-full h-12 pl-5 pr-12 bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-900 dark:text-white rounded-full text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 transition-all"
+                              className="w-full h-12 pl-5 pr-12 bg-muted text-foreground rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                             />
                             <button
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors"
                               aria-label="Emoji"
                             >
                               <Smiley className="w-5 h-5" />
                             </button>
                           </div>
-                          <button
+                          <Button
+                            size="icon"
                             onClick={handleSendMessage}
                             disabled={!messageText.trim() || isSending}
                             aria-label={locale === 'es' ? 'Enviar mensaje' : 'Send message'}
-                            className={cn(
-                              'p-3 rounded-full transition-all',
-                              messageText.trim() && !isSending
-                                ? 'bg-[#1A40FF] text-white hover:opacity-90'
-                                : 'bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-300 dark:text-neutral-600 cursor-not-allowed',
-                            )}
+                            hideArrow
+                            className="rounded-full shrink-0"
                           >
                             <PaperPlaneTilt className="w-5 h-5" />
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -590,16 +587,16 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 20 }}
                           transition={{ duration: 0.2 }}
-                          className="w-full lg:w-80 border-l border-neutral-100 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-y-auto"
+                          className="w-full lg:w-80 border-l border-border bg-card overflow-y-auto"
                         >
                           {/* Panel Header */}
-                          <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-700">
-                            <h3 className="font-semibold text-neutral-900 dark:text-white">
+                          <div className="flex items-center justify-between p-4 border-b border-border">
+                            <h3 className="text-base font-semibold text-foreground">
                               {locale === 'es' ? 'Informacion' : 'Information'}
                             </h3>
                             <button
                               onClick={() => setShowInfoPanel(false)}
-                              className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 transition-colors"
+                              className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -607,28 +604,28 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
 
                           <div className="p-6">
                             <div className="text-center mb-6">
-                              <div className="w-20 h-20 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/12 flex items-center justify-center text-[#1A40FF] dark:text-[#5570FF] font-bold text-2xl mx-auto mb-3">
+                              <div className="w-20 h-20 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-2xl mx-auto mb-3">
                                 {getInitials(selectedConversation.name)}
                               </div>
-                              <h4 className="font-semibold text-neutral-900 dark:text-white text-lg">
+                              <h4 className="text-base font-semibold text-foreground">
                                 {selectedConversation.name}
                               </h4>
-                              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                              <p className="text-sm text-muted-foreground">
                                 {selectedConversation.role}
                               </p>
                             </div>
 
                             <div className="space-y-4">
                               {selectedConversation.property && (
-                                <div className="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-[#2a2a2c] rounded-xl">
-                                  <div className="w-9 h-9 rounded-md bg-white dark:bg-[#1a1a1c] flex items-center justify-center">
-                                    <House className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                                <div className="flex items-start gap-3 p-3 bg-muted rounded-xl">
+                                  <div className="w-9 h-9 rounded-md bg-card flex items-center justify-center">
+                                    <House className="w-4 h-4 text-muted-foreground" />
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
+                                    <p className="text-xs text-muted-foreground mb-0.5">
                                       {locale === 'es' ? 'Propiedad' : 'Property'}
                                     </p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-sm font-medium text-foreground">
                                       {selectedConversation.property}
                                     </p>
                                   </div>
@@ -636,15 +633,15 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               )}
 
                               {selectedConversation.email && (
-                                <div className="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-[#2a2a2c] rounded-xl">
-                                  <div className="w-9 h-9 rounded-md bg-white dark:bg-[#1a1a1c] flex items-center justify-center">
-                                    <Envelope className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                                <div className="flex items-start gap-3 p-3 bg-muted rounded-xl">
+                                  <div className="w-9 h-9 rounded-md bg-card flex items-center justify-center">
+                                    <Envelope className="w-4 h-4 text-muted-foreground" />
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
+                                    <p className="text-xs text-muted-foreground mb-0.5">
                                       {locale === 'es' ? 'Correo' : 'Email'}
                                     </p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-sm font-medium text-foreground">
                                       {selectedConversation.email}
                                     </p>
                                   </div>
@@ -653,23 +650,23 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             </div>
 
                             {/* Quick Actions */}
-                            <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-neutral-700">
-                              <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+                            <div className="mt-6 pt-6 border-t border-border">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
                                 {locale === 'es' ? 'Acciones rapidas' : 'Quick actions'}
                               </p>
                               <div className="space-y-2">
                                 <button
                                   onClick={handleMute}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"
                                 >
-                                  <BellSlash className="w-4 h-4 text-neutral-400" />
+                                  <BellSlash className="w-4 h-4 text-muted-foreground" />
                                   {locale === 'es' ? 'Silenciar notificaciones' : 'Mute notifications'}
                                 </button>
                                 <button
                                   onClick={handleArchive}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] rounded-xl transition-colors"
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"
                                 >
-                                  <Archive className="w-4 h-4 text-neutral-400" />
+                                  <Archive className="w-4 h-4 text-muted-foreground" />
                                   {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}
                                 </button>
                               </div>

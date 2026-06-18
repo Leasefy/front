@@ -22,46 +22,46 @@ function verdictColorClasses(status: CarrierState['status']): ColorClasses {
   switch (status) {
     case 'approved':
       return {
-        text:   'text-[#2C7A53] dark:text-[#3EAE70]',
-        bg:     'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-        border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-        badge:  'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+        text:   'text-success',
+        bg:     'bg-success-soft',
+        border: 'border-success/30',
+        badge:  'bg-success-soft text-success',
       }
     case 'conditional':
       return {
-        text:   'text-[#B7791F] dark:text-[#D2992F]',
-        bg:     'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-        border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
-        badge:  'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
+        text:   'text-warning',
+        bg:     'bg-warning-soft',
+        border: 'border-warning/30',
+        badge:  'bg-warning-soft text-warning',
       }
     case 'rejected':
       return {
-        text:   'text-[#C4503B] dark:text-[#E0664D]',
-        bg:     'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-        border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
-        badge:  'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
+        text:   'text-danger',
+        bg:     'bg-danger-soft',
+        border: 'border-danger/30',
+        badge:  'bg-danger-soft text-danger',
       }
     case 'error':
       return {
-        text:   'text-[#6B6B6B] dark:text-[#6B6B6B]',
-        bg:     'bg-[#6B6B6B] dark:bg-[#6B6B6B]/20',
-        border: 'border-[#6B6B6B] dark:border-[#6B6B6B]',
-        badge:  'bg-[#6B6B6B] dark:bg-[#6B6B6B] text-[#6B6B6B] dark:text-[#6B6B6B]',
+        text:   'text-fg-muted',
+        bg:     'bg-surface-muted',
+        border: 'border-border',
+        badge:  'bg-surface-muted text-fg-muted',
       }
     case 'stub':
       return {
-        text:   'text-neutral-600 dark:text-neutral-300',
-        bg:     'bg-neutral-100 dark:bg-neutral-800',
-        border: 'border-neutral-200 dark:border-neutral-700',
-        badge:  'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+        text:   'text-fg-muted',
+        bg:     'bg-surface-muted',
+        border: 'border-border',
+        badge:  'bg-surface-muted text-fg-muted',
       }
     case 'pending':
     default:
       return {
-        text:   'text-[#1A40FF] dark:text-[#5570FF]',
-        bg:     'bg-[#EEF1FF]/60 dark:bg-[#1A40FF]/20',
-        border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
-        badge:  'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+        text:   'text-primary',
+        bg:     'bg-primary-soft/60',
+        border: 'border-primary/30',
+        badge:  'bg-primary-soft text-primary',
       }
   }
 }
@@ -69,15 +69,15 @@ function verdictColorClasses(status: CarrierState['status']): ColorClasses {
 function StatusIcon({ status }: { status: CarrierState['status'] }) {
   switch (status) {
     case 'approved':
-      return <CheckCircle weight="fill" className="w-4 h-4 text-[#2C7A53]" />
+      return <CheckCircle weight="fill" className="w-4 h-4 text-success" />
     case 'rejected':
-      return <XCircle weight="fill" className="w-4 h-4 text-[#C4503B]" />
+      return <XCircle weight="fill" className="w-4 h-4 text-danger" />
     case 'error':
-      return <Warning weight="fill" className="w-4 h-4 text-[#6B6B6B]" />
+      return <Warning weight="fill" className="w-4 h-4 text-fg-muted" />
     case 'stub':
-      return <Question weight="fill" className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+      return <Question weight="fill" className="w-4 h-4 text-fg-muted" />
     case 'pending':
-      return <Spinner weight="bold" className="w-4 h-4 text-[#1A40FF] animate-spin" />
+      return <Spinner weight="bold" className="w-4 h-4 text-primary animate-spin" />
     default:
       return null
   }
@@ -135,7 +135,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
           )}
           <span
             className={[
-              'rounded-full font-mono uppercase tracking-wide text-[10px] font-label px-2 py-0.5',
+              'rounded-full uppercase tracking-wide text-[10px] font-medium px-2 py-0.5',
               colors.badge,
             ].join(' ')}
           >
@@ -147,7 +147,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       {/* Pending skeleton */}
       {carrier.status === 'pending' && (
         <div className="space-y-2 animate-pulse">
-          <div className="h-6 w-28 rounded-sm bg-[#EEF1FF] dark:bg-[#1A40FF]/15" />
+          <div className="h-6 w-28 rounded-sm bg-primary-soft" />
           <div className="h-3 w-40 rounded bg-muted" />
         </div>
       )}
@@ -185,7 +185,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
               <p className="text-caption text-muted-foreground font-medium">
                 {t('inmobiliaria.ai.cotizador.detail.carrier.motivoRechazoTitle')}
               </p>
-              <p className="text-body-sm text-[#C4503B] dark:text-[#E0664D] mt-0.5">
+              <p className="text-body-sm text-danger mt-0.5">
                 {carrier.motivoRechazo}
               </p>
             </div>
@@ -196,7 +196,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       {/* Error */}
       {carrier.status === 'error' && (
         <div className="flex items-start gap-2">
-          <Warning weight="bold" className="w-4 h-4 text-[#6B6B6B] shrink-0 mt-0.5" />
+          <Warning weight="bold" className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" />
           <p className="text-body-sm text-muted-foreground">
             {carrier.motivoRechazo ?? t('inmobiliaria.ai.cotizador.detail.carrier.errorLabel')}
           </p>

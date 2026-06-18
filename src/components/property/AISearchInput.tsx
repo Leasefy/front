@@ -112,7 +112,7 @@ export function AISearchInput({
         <div className="relative px-5 pt-5 pb-3">
           <div className="flex items-start gap-4">
             {/* AI Sparkle Icon */}
-            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-[#1A40FF]/10 rounded-xl">
+            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-primary/10 rounded-xl">
               {isMagnifyingGlassing ? (
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -204,9 +204,9 @@ export function AISearchInput({
                       Analizando tu búsqueda...
                     </p>
                     {/* Progress bar */}
-                    <div className="h-1 bg-neutral-100 rounded-full overflow-hidden mt-2">
+                    <div className="h-1 bg-surface-muted rounded-full overflow-hidden mt-2">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-primary to-[#1A40FF] rounded-full"
+                        className="h-full bg-gradient-to-r from-primary to-primary rounded-full"
                         initial={{ width: '0%' }}
                         animate={{ width: '100%' }}
                         transition={{ duration: 1.8, ease: 'easeInOut' }}
@@ -258,10 +258,10 @@ export function AISearchInput({
                     >
                       <Link
                         href={`/propiedades/${property.id}`}
-                        className="group flex gap-3 p-3 bg-neutral-50 hover:bg-neutral-100 rounded-xl border border-border/50 hover:border-border transition-all"
+                        className="group flex gap-3 p-3 bg-surface-muted hover:bg-surface-hover rounded-xl border border-border/50 hover:border-border transition-all"
                       >
                         {/* Property Image */}
-                        <div className="w-16 h-16 rounded-md bg-neutral-200 flex-shrink-0 overflow-hidden">
+                        <div className="w-16 h-16 rounded-md bg-surface-muted flex-shrink-0 overflow-hidden">
                           {property.images?.[0] ? (
                             <img
                               src={property.images[0]}

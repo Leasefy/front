@@ -171,7 +171,7 @@ export function PipelineFilters({
           placeholder={t('inmobiliaria.pipeline.searchPlaceholder')}
           value={filters.search || ''}
           onChange={(e) => updateFilter('search', e.target.value || undefined)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all text-sm"
+          className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-sm"
         />
         {filters.search && (
           <button
@@ -190,9 +190,9 @@ export function PipelineFilters({
           <button
             onClick={() => setOpenDropdown(openDropdown === 'agente' ? null : 'agente')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
+              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all border',
               filters.agenteId
-                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
+                ? 'bg-primary-soft text-primary border-primary/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -215,7 +215,7 @@ export function PipelineFilters({
                   className={cn(
                     'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     !filters.agenteId
-                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                      ? 'bg-primary-soft text-primary'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -233,7 +233,7 @@ export function PipelineFilters({
                       className={cn(
                         'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
                         filters.agenteId === agente.id
-                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                          ? 'bg-primary-soft text-primary'
                           : 'text-foreground hover:bg-muted'
                       )}
                     >
@@ -244,7 +244,7 @@ export function PipelineFilters({
                           className="w-6 h-6 rounded-full"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                        <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center text-xs font-medium text-primary">
                           {getInitials(agente.name)}
                         </div>
                       )}
@@ -264,9 +264,9 @@ export function PipelineFilters({
           <button
             onClick={() => setOpenDropdown(openDropdown === 'property' ? null : 'property')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
+              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all border',
               filters.consignacionId
-                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
+                ? 'bg-primary-soft text-primary border-primary/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -289,7 +289,7 @@ export function PipelineFilters({
                   className={cn(
                     'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     !filters.consignacionId
-                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                      ? 'bg-primary-soft text-primary'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -305,7 +305,7 @@ export function PipelineFilters({
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
                       filters.consignacionId === consignacion.id
-                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                        ? 'bg-primary-soft text-primary'
                         : 'text-foreground hover:bg-muted'
                     )}
                   >
@@ -362,14 +362,14 @@ export function PipelineFilters({
             type="date"
             value={filters.dateFrom || ''}
             onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
-            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+            className="px-3 py-2 rounded-md text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
           <input
             type="date"
             value={filters.dateTo || ''}
             onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
-            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+            className="px-3 py-2 rounded-md text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
           />
         </div>
 
@@ -379,7 +379,7 @@ export function PipelineFilters({
             <div className="hidden sm:block w-px h-6 bg-border" />
             <button
               onClick={clearAllFilters}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-danger hover:bg-danger-soft transition-colors"
             >
               <X className="w-4 h-4" />
               {t('inmobiliaria.pipeline.clear')}

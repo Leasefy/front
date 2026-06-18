@@ -56,32 +56,32 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <table className="min-w-full divide-y divide-border">
+            <tbody className="divide-y divide-border">
               {[1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="h-4 w-24 rounded bg-surface-muted animate-pulse" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="h-4 w-20 rounded bg-surface-muted animate-pulse" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="h-4 w-16 rounded bg-surface-muted animate-pulse" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="h-4 w-20 rounded bg-surface-muted animate-pulse" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="h-4 w-16 rounded bg-surface-muted animate-pulse" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-8 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="h-4 w-8 rounded bg-surface-muted animate-pulse" />
                   </td>
                 </tr>
               ))}
@@ -94,8 +94,8 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
 
   if (!quotes || quotes.length === 0) {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-8 text-center">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+      <div className="rounded-xl border border-border bg-card p-8 text-center">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.empty')}
         </p>
       </div>
@@ -103,42 +103,42 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-          <thead className="bg-neutral-50 dark:bg-neutral-800/50">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-surface-muted/60">
             <tr>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-left">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.date')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-left">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.cedula')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.canon')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-left">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.verdict')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.prima')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-right">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.latency')}
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide text-center">
+              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-center">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.view')}
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <tbody className="divide-y divide-border">
             {quotes.map((quote) => (
               <tr
                 key={quote.id}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
+                className="hover:bg-surface-muted/50 transition-colors"
               >
                 {/* Fecha/hora */}
-                <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 whitespace-nowrap">
+                <td className="px-4 py-3 text-sm text-fg-muted whitespace-nowrap">
                   {new Date(quote.createdAt).toLocaleString('es-CO', {
                     day: '2-digit',
                     month: '2-digit',
@@ -153,7 +153,7 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
                 </td>
 
                 {/* Canon */}
-                <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 text-right whitespace-nowrap">
+                <td className="px-4 py-3 text-sm text-fg-muted text-right whitespace-nowrap">
                   {formatCOP(quote.canonMensualCop)}
                 </td>
 
@@ -163,12 +163,12 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
                 </td>
 
                 {/* Prima mensual */}
-                <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 text-right font-mono tabular-nums whitespace-nowrap">
+                <td className="px-4 py-3 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                   {quote.primaMensualCop != null ? formatCOP(quote.primaMensualCop) : '—'}
                 </td>
 
                 {/* Latencia */}
-                <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 text-right font-mono tabular-nums whitespace-nowrap">
+                <td className="px-4 py-3 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                   {quote.latencyMs != null ? `${quote.latencyMs}ms` : '—'}
                 </td>
 
@@ -176,7 +176,7 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
                 <td className="px-4 py-3 text-center">
                   <Link
                     href={`/panel/inmobiliaria/ai/asegurabilidad/${quote.id}`}
-                    className="text-neutral-400 hover:text-[#1A40FF] transition-colors inline-flex items-center justify-center"
+                    className="text-fg-muted hover:text-primary transition-colors inline-flex items-center justify-center"
                     aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.viewAriaLabel')}
                   >
                     <ArrowSquareOut className="h-4 w-4" />

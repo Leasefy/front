@@ -10,6 +10,7 @@ import * as React from 'react'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorMemos } from '@/lib/hooks/cobranza/use-debtor-memos'
+import { Button } from '@/components/ui'
 
 void React
 
@@ -36,17 +37,19 @@ export function MemosTab({ debtorId }: MemosTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
+      <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.memos.error')}: {error}
         </p>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
+          hideArrow
         >
           {t('inmobiliaria.ai.cobranza.detail.memos.errorRetry')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -85,7 +88,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
               </span>
             )}
             {m.open_ptp_amount_cop != null && m.open_ptp_date && (
-              <span className="px-1.5 py-0.5 rounded bg-[#6B6B6B] dark:bg-[#6B6B6B]/30 text-[#6B6B6B] dark:text-[#6B6B6B]">
+              <span className="px-1.5 py-0.5 rounded bg-surface-muted text-fg">
                 PTP {m.open_ptp_amount_cop} · {m.open_ptp_date}
               </span>
             )}

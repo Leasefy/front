@@ -43,13 +43,13 @@ const SECTION_ICONS: Record<AdvancedKPI['category'], {
 }> = {
   financial: {
     icon: CurrencyDollar,
-    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    color: 'text-success',
+    bgColor: 'bg-success-soft',
   },
   operational: {
     icon: Buildings,
-    color: 'text-[#1A40FF] dark:text-[#5570FF]',
-    bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    color: 'text-primary',
+    bgColor: 'bg-primary-soft',
   },
   performance: {
     icon: ChartLineUp,
@@ -97,15 +97,15 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
   return (
     <motion.div
       whileHover={{ y: -1 }}
-      className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover: transition-all"
+      className="p-4 rounded-xl border border-border bg-card transition-all hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-2">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">{kpi.label}</p>
         <div
           className={cn(
             'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium',
-            isPositiveTrend && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-            isNegativeTrend && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
+            isPositiveTrend && 'bg-success-soft text-success',
+            isNegativeTrend && 'bg-danger-soft text-danger',
             !isPositiveTrend && !isNegativeTrend && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
           )}
         >
@@ -125,7 +125,7 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
             </span>
             <span className={cn(
               'font-medium',
-              progress >= 100 ? 'text-[#2C7A53]' : 'text-neutral-500'
+              progress >= 100 ? 'text-success' : 'text-neutral-500'
             )}>
               {progress.toFixed(0)}%
             </span>
@@ -134,7 +134,7 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
             <div
               className={cn(
                 'h-full rounded-full transition-all',
-                progress >= 100 ? 'bg-[#2C7A53]' : 'bg-[#1A40FF]'
+                progress >= 100 ? 'bg-success' : 'bg-primary'
               )}
               style={{ width: `${Math.min(100, progress)}%` }}
             />
@@ -375,7 +375,7 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover: hover:shadow-neutral-500/5 transition-all"
+      className="p-5 rounded-xl border border-border bg-card transition-all hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -425,7 +425,7 @@ export function AnalyticsDashboard({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -444,8 +444,8 @@ export function AnalyticsDashboard({
       {/* Section 4: Visualizations */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
-            <ChartBar className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" weight="duotone" />
+          <div className="w-9 h-9 rounded-xl bg-warning-soft flex items-center justify-center">
+            <ChartBar className="w-5 h-5 text-warning" weight="duotone" />
           </div>
           <div>
             <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>

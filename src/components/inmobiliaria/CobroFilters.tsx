@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui';
 import type { Consignacion, Propietario, CobroStatus } from '@/lib/types/inmobiliaria';
 
 export interface CobroFiltersState {
@@ -143,7 +144,7 @@ export function CobroFilters({
             placeholder={t('inmobiliaria.cobros.filters.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all text-sm"
+            className="w-full pl-10 pr-4 py-2 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
           />
           {searchInput && (
             <button
@@ -164,14 +165,14 @@ export function CobroFilters({
           className={cn(
             'flex items-center gap-2 px-4 py-2 rounded-md border transition-all text-sm font-medium',
             showFilters || activeFiltersCount > 0
-              ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+              ? 'border-primary/30 bg-primary-soft text-primary'
               : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
           )}
         >
           <Funnel className="w-4 h-4" />
           <span>{t('inmobiliaria.cobros.filters.filtersLabel')}</span>
           {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
+            <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold min-w-[20px] text-center tabular-nums">
               {activeFiltersCount}
             </span>
           )}
@@ -222,7 +223,7 @@ export function CobroFilters({
                             className={cn(
                               'w-full px-3 py-2 rounded-md text-left text-sm capitalize transition-colors',
                               filters.month === month.value
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
+                                ? 'bg-primary-soft text-primary font-medium'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -260,7 +261,7 @@ export function CobroFilters({
                             <span className={cn(
                               'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
                               isActive
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'bg-primary-soft text-primary'
                                 : 'bg-muted-foreground/20 text-muted-foreground'
                             )}>
                               {count}
@@ -285,7 +286,7 @@ export function CobroFilters({
                     className={cn(
                       'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all min-w-[180px] justify-between border',
                       filters.consignacionId
-                        ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                        ? 'border-primary/30 bg-primary-soft text-primary'
                         : 'border-border bg-background text-foreground hover:border-foreground/30'
                     )}
                   >
@@ -309,7 +310,7 @@ export function CobroFilters({
                           className={cn(
                             'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                             !filters.consignacionId
-                              ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                              ? 'bg-primary-soft text-primary'
                               : 'text-foreground hover:bg-muted'
                           )}
                         >
@@ -325,7 +326,7 @@ export function CobroFilters({
                             className={cn(
                               'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                               filters.consignacionId === consignacion.id
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'bg-primary-soft text-primary'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -350,7 +351,7 @@ export function CobroFilters({
                     className={cn(
                       'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all min-w-[180px] justify-between border',
                       filters.propietarioId
-                        ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                        ? 'border-primary/30 bg-primary-soft text-primary'
                         : 'border-border bg-background text-foreground hover:border-foreground/30'
                     )}
                   >
@@ -374,7 +375,7 @@ export function CobroFilters({
                           className={cn(
                             'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                             !filters.propietarioId
-                              ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                              ? 'bg-primary-soft text-primary'
                               : 'text-foreground hover:bg-muted'
                           )}
                         >
@@ -390,7 +391,7 @@ export function CobroFilters({
                             className={cn(
                               'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                               filters.propietarioId === propietario.id
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                                ? 'bg-primary-soft text-primary'
                                 : 'text-foreground hover:bg-muted'
                             )}
                           >
@@ -405,12 +406,9 @@ export function CobroFilters({
                 {/* Clear Filters */}
                 {activeFiltersCount > 0 && (
                   <div className="flex items-end">
-                    <button
-                      onClick={clearAllFilters}
-                      className="px-3 py-2 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 rounded-md transition-colors"
-                    >
+                    <Button variant="link" hideArrow onClick={clearAllFilters}>
                       {t('inmobiliaria.cobros.filters.clearFilters')}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

@@ -199,13 +199,13 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
             'mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50',
           )}>
             {isRunning && (
-              <div className="flex items-center gap-2 text-sm text-[#1A40FF] dark:text-[#5570FF]">
+              <div className="flex items-center gap-2 text-sm text-primary">
                 <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
                 <span>{locale === 'es' ? 'Ejecutando...' : 'Running...'}</span>
               </div>
             )}
             {!isRunning && error && (
-              <div className="flex items-center gap-2 text-sm text-[#C4503B]">
+              <div className="flex items-center gap-2 text-sm text-danger">
                 <Warning weight="fill" className="h-4 w-4" />
                 <span className="truncate flex-1">{error}</span>
                 <button
@@ -219,13 +219,13 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
             )}
             {!isRunning && resultLabel && (
               <div className="flex items-center gap-2 text-sm">
-                <CheckCircle weight="fill" className="h-4 w-4 text-[#2C7A53]" />
+                <CheckCircle weight="fill" className="h-4 w-4 text-success" />
                 <span className="font-medium text-neutral-900 dark:text-white truncate flex-1">
                   {resultLabel}
                 </span>
                 <button
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (trace) setShowExecution(true); }}
-                  className="text-xs font-medium text-[#1A40FF] hover:text-[#1A40FF] transition-colors whitespace-nowrap"
+                  className="text-xs font-medium text-primary hover:text-primary transition-colors whitespace-nowrap"
                 >
                   {locale === 'es' ? 'Ver trace' : 'View trace'}
                 </button>
@@ -262,7 +262,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
         )}
 
         {/* View detail hint */}
-        <div className="mt-2.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+        <div className="mt-2.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 group-hover:text-primary dark:group-hover:text-primary transition-colors">
           {locale === 'es' ? 'Ver detalle del agente' : 'View agent detail'}
           <ArrowRight className="h-3 w-3" />
         </div>

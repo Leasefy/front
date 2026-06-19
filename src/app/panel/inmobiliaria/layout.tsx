@@ -233,9 +233,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
-    // While loading, show all items to avoid flash
-    if (permissionsLoading) return ALL_NAV_ITEMS;
-
+    // Always filter by permission/role. While permissions load, canAccess()
+    // returns false for every gated module (and isAdmin/agencyRole are null),
+    // so the result is the conservative always-visible subset — gated items
+    // (cobranza/cotizador/conciliación/…) only appear once access is confirmed
+    // and never flash in then disappear. The desktop sidebar shows a skeleton
+    // during this window instead (PlanSidebar `loading` prop below).
     const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
       // Module-based gate (unchanged): cobranza/cotizador use agent permissions;
       // other modules use the legacy effectivePermissions map.
@@ -265,7 +268,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       const next = filtered[idx + 1];
       return next != null && next.kind !== 'section';
     });
-  }, [ALL_NAV_ITEMS, canAccess, permissionsLoading, isAdmin, agencyRole]);
+  }, [ALL_NAV_ITEMS, canAccess, isAdmin, agencyRole]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -277,6 +280,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Inmobiliaria Sidebar */}
       <PlanSidebar
         navItems={INMOBILIARIA_NAV_ITEMS}
+        loading={permissionsLoading}
         logo={{
           title: t('inmobiliaria.common.title'),
           href: '/panel/inmobiliaria',

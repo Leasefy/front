@@ -63,6 +63,9 @@ export interface PlanSidebarProps {
   profileCompletion?: ProfileCompletionConfig;
   /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger). */
   aboveNav?: React.ReactNode;
+  /** When true, the nav list is replaced by a skeleton placeholder (e.g. while
+   *  permissions load) so permission-gated items never flash in then disappear. */
+  loading?: boolean;
 }
 
 interface NavItemComponentProps {
@@ -206,6 +209,44 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
   );
 }
 
+/**
+ * Placeholder shown while permissions load. Mirrors the real nav's rhythm
+ * (a group label + a few item rows) so the sidebar holds its shape and gated
+ * items never flash in then disappear. Widths are fixed so the SSR markup and
+ * the hydrated client markup match exactly (no hydration mismatch).
+ */
+function NavSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
+  const groups: number[][] = [[68, 52], [60, 74, 48, 56], [64, 50, 70]];
+  return (
+    <div className="space-y-3" aria-hidden="true" data-testid="sidebar-nav-skeleton">
+      {groups.map((rows, gi) => (
+        <div key={gi} className="space-y-1.5">
+          {!isCollapsed && (
+            <div className="ml-4 h-2 w-16 rounded bg-neutral-200/80 dark:bg-neutral-700/50 animate-pulse" />
+          )}
+          {rows.map((w, ri) => (
+            <div
+              key={ri}
+              className={cn(
+                'flex items-center gap-3 py-2',
+                isCollapsed ? 'justify-center px-2' : 'px-3'
+              )}
+            >
+              <div className="h-[18px] w-[18px] flex-shrink-0 rounded-md bg-neutral-200/80 dark:bg-neutral-700/50 animate-pulse" />
+              {!isCollapsed && (
+                <div
+                  className="h-3 rounded bg-neutral-200/70 dark:bg-neutral-700/40 animate-pulse"
+                  style={{ width: `${w}%` }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface SidebarContentProps {
   navItems: NavItem[];
   logo?: PlanSidebarProps['logo'];
@@ -218,6 +259,7 @@ interface SidebarContentProps {
   showCollapseButton?: boolean;
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
+  loading?: boolean;
 }
 
 function SidebarContent({
@@ -229,6 +271,7 @@ function SidebarContent({
   showCollapseButton = true,
   profileCompletion,
   aboveNav,
+  loading = false,
 }: SidebarContentProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -298,17 +341,21 @@ function SidebarContent({
           isCollapsed ? 'px-2' : 'px-3'
         )}
       >
-        <div className="space-y-0.5">
-          {navItems.map((item) => (
-            <NavItemComponent
-              key={item.href}
-              item={item}
-              isActive={isActive(item)}
-              isCollapsed={isCollapsed}
-              onClick={onItemClick}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <NavSkeleton isCollapsed={isCollapsed} />
+        ) : (
+          <div className="space-y-0.5">
+            {navItems.map((item) => (
+              <NavItemComponent
+                key={item.href}
+                item={item}
+                isActive={isActive(item)}
+                isCollapsed={isCollapsed}
+                onClick={onItemClick}
+              />
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Profile Completion Widget */}
@@ -421,6 +468,7 @@ export function PlanSidebar({
   upgradeLabel,
   profileCompletion,
   aboveNav,
+  loading = false,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -447,6 +495,7 @@ export function PlanSidebar({
           upgradeLabel={upgradeLabel}
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
+          loading={loading}
         />
       </aside>
 
@@ -479,6 +528,7 @@ export function PlanSidebar({
             showCollapseButton={false}
             profileCompletion={profileCompletion}
             aboveNav={aboveNav}
+            loading={loading}
           />
         </SheetContent>
       </Sheet>

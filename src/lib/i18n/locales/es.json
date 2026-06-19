@@ -4205,7 +4205,8 @@
         "compliance": "Compliance",
         "cartas": "Cartas",
         "llamadas": "Llamadas",
-        "siniestros": "Siniestros"
+        "siniestros": "Siniestros",
+        "pagosHome": "Pagos IA"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -5793,6 +5794,93 @@
         "empty": {
           "title": "Aún no hay actividad reciente",
           "description": "Las métricas aparecen cuando los agentes procesan solicitudes."
+        }
+      },
+      "pagos_home": {
+        "title": "Pagos IA",
+        "subtitle": "Cobros, pagos recibidos y liquidaciones a propietarios, orquestados por el agente.",
+        "disabled": {
+          "title": "Pagos IA no está activo todavía",
+          "description": "Esta funcionalidad está en vista previa y aún no está habilitada para tu inmobiliaria. Te avisaremos cuando esté lista."
+        },
+        "errors": {
+          "loading": "No pudimos cargar esta sección",
+          "retry": "Reintentar"
+        },
+        "metrics": {
+          "sectionTitle": "Resumen de hoy",
+          "cobrosProgramados": "Cobros programados",
+          "cobrosEnviados": "Cobros enviados",
+          "pagosRecibidos": "Pagos recibidos",
+          "linksPendientes": "Links pendientes",
+          "pagosFallidos": "Pagos fallidos",
+          "valorRecaudadoCop": "Valor recaudado",
+          "propietariosListos": "Propietarios listos",
+          "valorPendienteLiquidarCop": "Pendiente por liquidar",
+          "empty": "Sin métricas disponibles todavía."
+        },
+        "attention": {
+          "title": "Requiere atención",
+          "subtitle": "Casos priorizados por el agente de pagos.",
+          "empty": {
+            "title": "Todo al día",
+            "description": "No hay pagos que requieran tu atención en este momento."
+          },
+          "priority": {
+            "alta": "Alta",
+            "media": "Media",
+            "baja": "Baja"
+          },
+          "kind": {
+            "cobro_fallido": "Cobro fallido",
+            "link_vencido": "Link vencido",
+            "proximo_a_vencer": "Próximo a vencer",
+            "pago_en_proceso": "Pago en proceso"
+          },
+          "openDetail": "Ver detalle"
+        },
+        "detail": {
+          "title": "Detalle del pago",
+          "description": "Contexto, actividad y recomendación del agente.",
+          "loading": "Cargando detalle…",
+          "notFound": {
+            "title": "Detalle no disponible",
+            "description": "No encontramos información para este pago."
+          },
+          "contexto": {
+            "title": "Contexto",
+            "periodo": "Período",
+            "total": "Total",
+            "status": "Estado",
+            "dueDate": "Vence",
+            "tenant": "Inquilino",
+            "phone": "Teléfono",
+            "property": "Inmueble",
+            "noDueDate": "Sin fecha"
+          },
+          "actividad": {
+            "title": "Actividad",
+            "empty": "Sin actividad registrada."
+          },
+          "recomendacion": {
+            "title": "Recomendación del agente"
+          },
+          "close": "Cerrar"
+        },
+        "ownerInbox": {
+          "title": "Bandeja de propietarios",
+          "subtitle": "Propietarios con liquidaciones por procesar.",
+          "columns": {
+            "propietario": "Propietario",
+            "inmuebles": "Inmuebles",
+            "valorAPagar": "Valor a pagar",
+            "estado": "Estado",
+            "accion": "Acción"
+          },
+          "empty": {
+            "title": "Sin propietarios pendientes",
+            "description": "No hay liquidaciones de propietarios por procesar en este momento."
+          }
         }
       }
     },

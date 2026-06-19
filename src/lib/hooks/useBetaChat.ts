@@ -11,21 +11,24 @@ import type {
   AgentExecution,
   AgentExecutionStatus,
   PendingDecision,
+  ResponseMeta,
   BetaPreferences,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
-import { getMockResponse, getMockResponseMeta } from '@/lib/data/mock-chat-responses';
-import { getMockAgentScenario } from '@/lib/data/mock-agent-executions';
-import { getMockDecisionScenario } from '@/lib/data/mock-decisions';
 import { getTodayBriefing, getMockBriefings } from '@/lib/data/mock-briefings';
 import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
+import { useAuth } from '@/lib/auth/use-auth';
+import {
+  postChatTurn,
+  suggestedActionToResponseAction,
+  backendAgentToFrontType,
+  type BackendDispatch,
+} from '@/lib/api/ai-hub-chat';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const RESPONSE_DELAY_MIN = 800;
-const RESPONSE_DELAY_MAX = 1500;
 const CHARS_PER_SECOND = 40;
 const LONG_PAUSE_CHARS = new Set(['.', '!', '?']);
 const SHORT_PAUSE_CHARS = new Set([',', ';', ':']);
@@ -39,13 +42,6 @@ const PREFERENCES_STORAGE_KEY = 'leasefy-beta-preferences';
 const TITLE_MAX_LENGTH = 50;
 const PREVIEW_MAX_LENGTH = 80;
 
-/** Delay between agent status transitions (ms) */
-const AGENT_DISPATCH_STAGGER = 300;
-/** Base delay for dispatching → running transition */
-const AGENT_DISPATCH_DURATION = 400;
-/** Probability of an agent failing (~10%) */
-const AGENT_FAILURE_PROBABILITY = 0.1;
-
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -55,12 +51,6 @@ function generateId(): string {
     return crypto.randomUUID();
   }
   return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function randomDelay(): number {
-  return Math.floor(
-    Math.random() * (RESPONSE_DELAY_MAX - RESPONSE_DELAY_MIN) + RESPONSE_DELAY_MIN
-  );
 }
 
 /** Auto-generate conversation title from first user message */
@@ -260,6 +250,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   const onTabChangeRef = useRef(options?.onTabChange);
   onTabChangeRef.current = options?.onTabChange;
 
+  // Agency tenant for the AI chat backend calls (F2). Null outside the agency
+  // layout → sendMessage degrades to an honest error.
+  const { agency } = useAuth();
+  const agencyId = agency?.id ?? null;
+
   // Initialize from localStorage (only on client)
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const stored = loadFromStorage();
@@ -419,139 +414,134 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   // ========================================================================
-  // Agent execution simulation
+  // F2 backend wiring — turn helpers (replace the mock agent simulation)
   // ========================================================================
 
-  const simulateAgentExecution = useCallback(
+  /** Set the response-card metadata on the assistant message (so ResponseCard renders). */
+  const attachResponseMeta = useCallback(
+    (assistantId: string, conversationId: string, responseMeta: ResponseMeta) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id !== conversationId
+            ? c
+            : {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === assistantId ? { ...m, responseMeta } : m
+                ),
+              }
+        )
+      );
+    },
+    []
+  );
+
+  /** Finalize the assistant message with an honest error (never leaves it 'sending'). */
+  const finalizeError = useCallback(
+    (assistantId: string, conversationId: string, message: string) => {
+      clearTimeouts();
+      setIsThinking(false);
+      setIsStreaming(false);
+      setStreamingContent('');
+      setActiveAgentBlock(null);
+      setIsAgentsRunning(false);
+      pendingStreamRef.current = null;
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id !== conversationId
+            ? c
+            : {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: message, status: 'complete' as MessageStatus }
+                    : m
+                ),
+                updatedAt: new Date(),
+              }
+        )
+      );
+    },
+    [clearTimeouts]
+  );
+
+  /**
+   * Drive the agent-activity block from REAL backend dispatches: show the
+   * specialists "running" briefly (live indicator), settle to their real
+   * terminal status, attach the block + responseMeta to the message, then
+   * stream the answer. Deterministic — the specialists already ran server-side.
+   */
+  const driveAgentBlock = useCallback(
     (
-      agentScenario: Array<{ agentType: string; taskDescription: string; durationMs: number }>,
+      dispatches: BackendDispatch[],
       assistantId: string,
       responseText: string,
-      conversationId: string
+      conversationId: string,
+      responseMeta: ResponseMeta
     ) => {
-      const now = new Date();
-      const blockId = generateId();
-
-      // Pick one random agent to fail (~10% chance per scenario)
-      const shouldFailIndex = Math.random() < AGENT_FAILURE_PROBABILITY
-        ? Math.floor(Math.random() * agentScenario.length)
-        : -1;
-
-      // Create initial agent executions in "dispatching" state
-      const agentExecutions: AgentExecution[] = agentScenario.map((scenario, idx) => ({
+      const startedAt = new Date();
+      const running: AgentExecution[] = dispatches.map((d) => ({
         id: generateId(),
-        agentType: scenario.agentType as AgentExecution['agentType'],
-        taskDescription: scenario.taskDescription,
-        status: 'dispatching' as AgentExecutionStatus,
-        startedAt: now,
-        ...(idx === shouldFailIndex ? { _willFail: true } : {}),
+        agentType: backendAgentToFrontType(d.agent),
+        taskDescription: d.taskDescription,
+        status: 'running' as AgentExecutionStatus,
+        startedAt,
       }));
-
-      // Store failure flags separately (not in the type)
-      const failureMap = new Map<string, boolean>();
-      agentExecutions.forEach((agent, idx) => {
-        if (idx === shouldFailIndex) failureMap.set(agent.id, true);
-      });
-
-      const activityBlock: AgentActivityBlock = {
-        id: blockId,
+      const block: AgentActivityBlock = {
+        id: generateId(),
         messageId: assistantId,
-        agents: agentExecutions,
-        startedAt: now,
+        agents: running,
+        startedAt,
       };
 
-      setActiveAgentBlock(activityBlock);
+      setIsThinking(false);
+      setActiveAgentBlock(block);
       setIsAgentsRunning(true);
-
-      // Store pending stream params
       pendingStreamRef.current = { assistantId, responseText, conversationId };
 
-      // Stagger agent transitions: dispatching → running → completed/failed
-      let completedCount = 0;
-      const totalAgents = agentExecutions.length;
-
-      agentExecutions.forEach((agent, index) => {
-        const staggerDelay = index * AGENT_DISPATCH_STAGGER;
-
-        // dispatching → running
-        const toRunning = setTimeout(() => {
-          setActiveAgentBlock((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              agents: prev.agents.map((a) =>
-                a.id === agent.id ? { ...a, status: 'running' as AgentExecutionStatus } : a
-              ),
-            };
-          });
-        }, staggerDelay + AGENT_DISPATCH_DURATION);
-        agentTimeoutsRef.current.push(toRunning);
-
-        // running → completed/failed
-        const scenario = agentScenario[index];
-        const toComplete = setTimeout(() => {
-          const willFail = failureMap.get(agent.id) ?? false;
-
-          setActiveAgentBlock((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              agents: prev.agents.map((a) =>
-                a.id === agent.id
-                  ? {
-                      ...a,
-                      status: (willFail ? 'failed' : 'completed') as AgentExecutionStatus,
-                      completedAt: new Date(),
-                      durationMs: scenario.durationMs,
-                      ...(willFail ? { error: 'Error de conexion con el servicio' } : {}),
-                    }
-                  : a
-              ),
-            };
-          });
-
-          completedCount += 1;
-          if (completedCount === totalAgents) {
-            // All agents done — attach activity block to message, then stream response
-            const finishTimeout = setTimeout(() => {
-              setActiveAgentBlock((prev) => {
-                if (!prev) return null;
-                // Attach completed agent block to the assistant message
-                setConversations((prevConvs) =>
-                  prevConvs.map((c) => {
-                    if (c.id !== conversationId) return c;
-                    return {
-                      ...c,
-                      messages: c.messages.map((m) =>
-                        m.id === assistantId ? { ...m, agentActivity: prev } : m
-                      ),
-                    };
-                  })
-                );
-                return prev; // Keep visible until streaming starts
-              });
-
-              setIsAgentsRunning(false);
-
-              // Start streaming after a brief pause
-              const streamDelay = setTimeout(() => {
-                setActiveAgentBlock(null);
-                if (pendingStreamRef.current) {
-                  startStreaming(
-                    pendingStreamRef.current.assistantId,
-                    pendingStreamRef.current.responseText,
-                    pendingStreamRef.current.conversationId
-                  );
-                  pendingStreamRef.current = null;
+      const settle = setTimeout(() => {
+        // Preserve each running exec's id; apply the real terminal status.
+        const terminal: AgentExecution[] = running.map((r, i) => {
+          const d = dispatches[i];
+          return {
+            ...r,
+            status: (d.status === 'failed' ? 'failed' : 'completed') as AgentExecutionStatus,
+            completedAt: new Date(),
+            ...(d.status === 'failed' ? { error: d.summary } : {}),
+          };
+        });
+        const completedBlock: AgentActivityBlock = { ...block, agents: terminal };
+        setActiveAgentBlock(completedBlock);
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id !== conversationId
+              ? c
+              : {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, agentActivity: completedBlock, responseMeta }
+                      : m
+                  ),
                 }
-              }, 400);
-              agentTimeoutsRef.current.push(streamDelay);
-            }, 300);
-            agentTimeoutsRef.current.push(finishTimeout);
+          )
+        );
+        setIsAgentsRunning(false);
+
+        const toStream = setTimeout(() => {
+          setActiveAgentBlock(null);
+          if (pendingStreamRef.current) {
+            startStreaming(
+              pendingStreamRef.current.assistantId,
+              pendingStreamRef.current.responseText,
+              pendingStreamRef.current.conversationId
+            );
+            pendingStreamRef.current = null;
           }
-        }, staggerDelay + AGENT_DISPATCH_DURATION + scenario.durationMs);
-        agentTimeoutsRef.current.push(toComplete);
-      });
+        }, 400);
+        agentTimeoutsRef.current.push(toStream);
+      }, 600);
+      agentTimeoutsRef.current.push(settle);
     },
     [startStreaming]
   );
@@ -648,13 +638,27 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   // ========================================================================
-  // Send message (with agent execution before streaming)
+  // Send message — real AI chat backend (F2). One-shot POST; the typewriter
+  // (startStreaming) gives the streaming feel. SSE streaming is a follow-up (F2c).
   // ========================================================================
 
   const sendMessage = useCallback(
     (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || isThinking || isStreaming || isAgentsRunning || !activeConversationId) return;
+
+      const conversationId = activeConversationId;
+      const activeConv = conversations.find((c) => c.id === conversationId);
+      // History from prior turns (completed), oldest→newest, capped at 10. Sent
+      // as a fallback; the backend prefers its own server-side memory when set.
+      const history = (activeConv?.messages ?? [])
+        .filter(
+          (m) =>
+            (m.role === 'user' && m.content) ||
+            (m.role === 'assistant' && m.status === 'complete' && m.content)
+        )
+        .slice(-10)
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
       const userMessage: ChatMessage = {
         id: generateId(),
@@ -663,12 +667,6 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         timestamp: new Date(),
         status: 'sent',
       };
-
-      const responseText = getMockResponse(trimmed);
-      const agentScenario = getMockAgentScenario(trimmed);
-      const decisionScenario = getMockDecisionScenario(trimmed);
-      const responseMeta = getMockResponseMeta(trimmed);
-
       const assistantId = generateId();
       const assistantMessage: ChatMessage = {
         id: assistantId,
@@ -676,11 +674,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         content: '',
         timestamp: new Date(),
         status: 'sending',
-        responseMeta,
       };
 
       // Update conversation with new messages + auto-title
-      const conversationId = activeConversationId;
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== conversationId) return c;
@@ -696,25 +692,66 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
       setIsThinking(true);
       setStreamingContent('');
+      pendingDecisionRef.current = null;
+      pendingResponseMetaRef.current = null;
 
-      // Store pending decision for attachment after streaming completes
-      pendingDecisionRef.current = decisionScenario;
-      pendingResponseMetaRef.current = responseMeta;
-
-      if (agentScenario && agentScenario.length > 0) {
-        // Agents to dispatch — show agent execution before streaming
-        delayTimeoutRef.current = setTimeout(() => {
-          setIsThinking(false);
-          simulateAgentExecution(agentScenario, assistantId, responseText, conversationId);
-        }, 300); // Short delay before agents start
-      } else {
-        // No agents — go directly to streaming (existing flow)
-        delayTimeoutRef.current = setTimeout(() => {
-          startStreaming(assistantId, responseText, conversationId);
-        }, randomDelay());
+      if (!agencyId) {
+        finalizeError(
+          assistantId,
+          conversationId,
+          'No pude identificar tu inmobiliaria. Recargá la página e intentá de nuevo.'
+        );
+        return;
       }
+
+      void postChatTurn({ agencyId, message: trimmed, history })
+        .then((resp) => {
+          const actions = resp.suggestedActions.map(suggestedActionToResponseAction);
+          const summaries = resp.dispatches
+            .map((d) => d.summary)
+            .filter((s): s is string => Boolean(s));
+          const fullText = [resp.responseText, ...summaries]
+            .filter(Boolean)
+            .join('\n\n');
+          const responseMeta: ResponseMeta = {
+            type: 'informative',
+            title: 'Asistente Leasefy',
+            summary: '',
+            actions,
+            ...(resp.dispatches[0]
+              ? { primaryAgent: backendAgentToFrontType(resp.dispatches[0].agent) }
+              : {}),
+          };
+          pendingResponseMetaRef.current = responseMeta;
+
+          if (resp.dispatches.length > 0) {
+            driveAgentBlock(resp.dispatches, assistantId, fullText, conversationId, responseMeta);
+          } else {
+            attachResponseMeta(assistantId, conversationId, responseMeta);
+            setIsThinking(false);
+            startStreaming(assistantId, fullText, conversationId);
+          }
+        })
+        .catch(() => {
+          finalizeError(
+            assistantId,
+            conversationId,
+            'No pude conectarme con el asistente en este momento. Intentá de nuevo en un momento.'
+          );
+        });
     },
-    [isThinking, isStreaming, isAgentsRunning, activeConversationId, simulateAgentExecution, startStreaming]
+    [
+      isThinking,
+      isStreaming,
+      isAgentsRunning,
+      activeConversationId,
+      conversations,
+      agencyId,
+      startStreaming,
+      driveAgentBlock,
+      attachResponseMeta,
+      finalizeError,
+    ]
   );
 
   // ========================================================================

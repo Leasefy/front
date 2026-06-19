@@ -35,6 +35,8 @@ import {
   Envelope,
   PhoneCall,
   Siren,
+  GitMerge,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -198,10 +200,154 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           icon: CurrencyDollar,
           module: 'cotizador',
         } as NavItemWithModule,
+        {
+          // F9: autonomy posture (read-only AutonomiaPanel; t323 amber callout).
+          label: t('inmobiliaria.ai.cotizador.nav.configuracion'),
+          href: '/panel/inmobiliaria/ai/cotizador/configuracion',
+          icon: SlidersHorizontal,
+          module: 'cotizador',
+        } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.conciliacion'), href: '/panel/inmobiliaria/conciliacion', icon: Bank,           module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
-    { label: t('inmobiliaria.ai.nav.pagos'),     href: '/panel/inmobiliaria/ai/pagos',     icon: CurrencyDollar, module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    {
+      // F6: Conciliación is the first complete agent workspace — the parent
+      // now points at the Sala (/ai/conciliacion); the legacy /conciliacion
+      // movimientos page stays reachable from the Sala's domain slot.
+      label: t('inmobiliaria.nav.conciliacion'),
+      href: '/panel/inmobiliaria/ai/conciliacion',
+      icon: Bank,
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionCola'),
+          href: '/panel/inmobiliaria/ai/conciliacion/cola',
+          icon: ClipboardText,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10 (SPEC §4): the legacy movimientos/extractos page moved INTO the
+          // workspace; /conciliacion now redirects to the Sala.
+          label: t('inmobiliaria.ai.nav.conciliacionMovimientos'),
+          href: '/panel/inmobiliaria/ai/conciliacion/movimientos',
+          icon: ArrowsClockwise,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionConfiguracion'),
+          href: '/panel/inmobiliaria/ai/conciliacion/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — same icon as cobranza's child.
+          label: t('inmobiliaria.ai.nav.conciliacionAnalitica'),
+          href: '/panel/inmobiliaria/ai/conciliacion/analitica',
+          icon: ChartLineUp,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F7: Estudio del inquilino complete workspace. The F2 page shipped
+      // URL-only without module/role gates — that ungated posture is
+      // preserved here (backend scopes by agency membership; decisions are
+      // audit-first per T-323).
+      label: t('inmobiliaria.ai.nav.estudio'),
+      href: '/panel/inmobiliaria/ai/estudio',
+      icon: ShieldCheck,
+      module: null,
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.estudioCola'),
+          href: '/panel/inmobiliaria/ai/estudio/cola',
+          icon: ClipboardText,
+          module: null,
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.estudioConfiguracion'),
+          href: '/panel/inmobiliaria/ai/estudio/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — ungated like the rest of estudio.
+          label: t('inmobiliaria.ai.nav.estudioAnalitica'),
+          href: '/panel/inmobiliaria/ai/estudio/analitica',
+          icon: ChartLineUp,
+          module: null,
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F8: Matching complete workspace. The F3 page shipped URL-only without
+      // module/role gates — that ungated posture is preserved here (backend
+      // scopes by agency membership; outreach only with approval).
+      label: t('inmobiliaria.ai.nav.matching'),
+      href: '/panel/inmobiliaria/ai/matching',
+      icon: GitMerge,
+      module: null,
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.matchingCola'),
+          href: '/panel/inmobiliaria/ai/matching/cola',
+          icon: ClipboardText,
+          module: null,
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.matchingConfiguracion'),
+          href: '/panel/inmobiliaria/ai/matching/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — ungated like the rest of matching.
+          label: t('inmobiliaria.ai.nav.matchingAnalitica'),
+          href: '/panel/inmobiliaria/ai/matching/analitica',
+          icon: ChartLineUp,
+          module: null,
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
+      // F9: Pagos (AP) complete workspace — the parent now points at the Sala
+      // (/ai/pagos); the deep AP/dispersiones ops stay in Tesorería and are
+      // cross-linked from the Sala's domain slot. The ADMIN|CONTADOR role gate
+      // from F4 is PRESERVED on the parent and both children.
+      label: t('inmobiliaria.ai.nav.pagos'),
+      href: '/panel/inmobiliaria/ai/pagos',
+      icon: CurrencyDollar,
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.pagosCola'),
+          href: '/panel/inmobiliaria/ai/pagos/cola',
+          icon: ClipboardText,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.pagosConfiguracion'),
+          href: '/panel/inmobiliaria/ai/pagos/configuracion',
+          icon: SlidersHorizontal,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          // F10: per-agent analítica (superficie 6) — ADMIN|CONTADOR gate preserved.
+          label: t('inmobiliaria.ai.nav.pagosAnalitica'),
+          href: '/panel/inmobiliaria/ai/pagos/analitica',
+          icon: ChartLineUp,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
     { label: t('inmobiliaria.ai.nav.siniestros'), href: '/panel/inmobiliaria/ai/cobranza/siniestros', icon: Siren, module: 'cobranza' },
     { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', icon: ClipboardText, module: null },
     // ── PORTAFOLIO ──

@@ -103,7 +103,7 @@ function Modal({
       >
         <div
           className={cn(
-            'relative bg-white dark:bg-[#141416] w-full rounded-3xl shadow-2xl flex flex-col',
+            'relative bg-white dark:bg-[#141416] w-full rounded-xl flex flex-col',
             sizeClasses[size]
           )}
           style={{ maxHeight: '85vh' }}
@@ -258,7 +258,7 @@ function ConsignacionDetailContent() {
           </p>
           <Link
             href="/panel/inmobiliaria/portafolio"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.portafolio.detail.backToPortfolio')}
@@ -274,7 +274,7 @@ function ConsignacionDetailContent() {
       <nav className="flex items-center gap-2 text-sm">
         <Link
           href="/panel/inmobiliaria/portafolio"
-          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
+          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-[#1A40FF] transition-colors"
         >
           <CaretLeft className="w-4 h-4" />
           {t('inmobiliaria.portafolio.title')}

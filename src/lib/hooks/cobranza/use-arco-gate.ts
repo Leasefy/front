@@ -51,7 +51,7 @@ export function useArcoGate(): UseArcoGateResult {
 
   // Fetch once on mount — no polling interval (5-min TTL is enforced server-side)
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchOnce()
   }, [fetchOnce, agencyId])
 

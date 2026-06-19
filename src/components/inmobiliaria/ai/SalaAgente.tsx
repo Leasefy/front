@@ -22,21 +22,24 @@ import type { AgentOverviewResponse, KpiFormat } from '@/lib/api/agent-workspace
 import { useI18n } from '@/lib/i18n'
 import { estadoLabel, relativeTime } from './ColaHumana'
 import { actorLabel, actorMeta } from './TrazaCaso'
+import { MigaDePan } from './MigaDePan'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
-/** Pipeline segment colors per estado (ColaHumana has no per-estado color). */
+/** Pipeline segment colors per estado (ColaHumana has no per-estado color).
+ *  Brand-contract ramp: gris = idle, azules = activo, success/warning/danger
+ *  desaturados como señales reales. */
 const ESTADO_BAR_CLS: Record<WorkItemEstado, string> = {
-  detectado: 'bg-slate-400 dark:bg-slate-500',
-  sugerido: 'bg-sky-500',
-  en_revision: 'bg-amber-500',
-  aprobado: 'bg-emerald-500',
-  ejecutando: 'bg-indigo-500',
-  resuelto: 'bg-emerald-600',
-  rechazado: 'bg-rose-500',
-  fallo: 'bg-rose-700',
+  detectado: 'bg-neutral-400 dark:bg-neutral-500',
+  sugerido: 'bg-[#5570FF]',
+  en_revision: 'bg-[#B7791F]',
+  aprobado: 'bg-[#3EAE70]',
+  ejecutando: 'bg-[#1A40FF]',
+  resuelto: 'bg-[#2C7A53]',
+  rechazado: 'bg-[#C4503B]',
+  fallo: 'bg-[#A23A28]',
 }
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
@@ -76,6 +79,16 @@ export interface SalaAgenteProps {
   error?: string | null
   colaHref: string
   colaCount?: number
+  /**
+   * Label for the queue CTA. Defaults to the generic "Ir a la cola" — agents
+   * whose queue isn't an ops queue (e.g. Avalúos = "Mis solicitudes") pass
+   * their own domain vocabulary here.
+   */
+  colaLabel?: string
+  /** Title for the pipeline section (defaults to the generic "Pipeline por estado"). */
+  pipelineTitle?: string
+  /** Body copy for the not-available empty state (defaults to "el agente aún no reporta métricas"). */
+  emptyHint?: string
   /** Extra domain-specific slot rendered between header and metrics. */
   children?: ReactNode
 }
@@ -86,8 +99,14 @@ function OverviewBody({
   overview,
   isLoading,
   error,
-}: Pick<SalaAgenteProps, 'overview' | 'isLoading' | 'error'>) {
+  agente,
+  icon,
+  pipelineTitle,
+  emptyHint,
+}: Pick<SalaAgenteProps, 'overview' | 'isLoading' | 'error' | 'agente' | 'icon' | 'pipelineTitle' | 'emptyHint'>) {
   const { t } = useI18n()
+  // Empty-state ícono mudo: usa el ícono del agente si llega, o Robot.
+  const EmptyIcon = icon ?? Robot
   if (isLoading) {
     return (
       <div className="space-y-4" data-testid="sala-agente-loading">
@@ -105,7 +124,7 @@ function OverviewBody({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         data-testid="sala-agente-error"
       >
         {t(`${WORKSPACE_NS}.sala.error`, { error })}
@@ -114,17 +133,29 @@ function OverviewBody({
   }
 
   if (!overview) {
-    // 404 / notAvailable — graceful empty state, NOT an error banner.
+    // 404 / notAvailable — empty state limpio y MONOCROMO, NO banner de error.
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+        role="status"
+        aria-label={t(`${WORKSPACE_NS}.sala.emptyTitle`)}
+        className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="sala-agente-empty"
       >
-        <Robot className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.sala.emptyTitle`)}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {t(`${WORKSPACE_NS}.sala.emptyBody`)}
-        </p>
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+          <EmptyIcon
+            weight="duotone"
+            className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+            {t(`${WORKSPACE_NS}.sala.emptyTitle`)}
+          </p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+            {emptyHint ?? t(`${WORKSPACE_NS}.sala.emptyBody`)}
+          </p>
+        </div>
       </div>
     )
   }
@@ -153,7 +184,9 @@ function OverviewBody({
 
       {/* Pipeline por estado */}
       <section className="rounded-xl border border-border bg-card p-4 space-y-3" data-testid="sala-pipeline">
-        <h2 className="text-sm font-semibold text-foreground">{t(`${WORKSPACE_NS}.sala.pipelineTitle`)}</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          {pipelineTitle ?? t(`${WORKSPACE_NS}.sala.pipelineTitle`)}
+        </h2>
         {pipelineTotal === 0 ? (
           <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
         ) : (
@@ -170,7 +203,7 @@ function OverviewBody({
                     key={seg.estado}
                     className={`${ESTADO_BAR_CLS[seg.estado] ?? 'bg-neutral-400'} h-full`}
                     style={{ width: `${(seg.count / pipelineTotal) * 100}%` }}
-                    title={`${estadoLabel(t, seg.estado)}: ${seg.count}`}
+                    title={`${estadoLabel(t, seg.estado, agente)}: ${seg.count}`}
                   />
                 ))}
             </div>
@@ -182,7 +215,7 @@ function OverviewBody({
                     aria-hidden="true"
                   />
                   <dt className="text-[11px] text-muted-foreground">
-                    {estadoLabel(t, seg.estado)}
+                    {estadoLabel(t, seg.estado, agente)}
                   </dt>
                   <dd className="text-[11px] font-medium text-foreground tabular-nums">{seg.count}</dd>
                 </div>
@@ -237,6 +270,9 @@ export function SalaAgente({
   error,
   colaHref,
   colaCount,
+  colaLabel,
+  pipelineTitle,
+  emptyHint,
   children,
 }: SalaAgenteProps) {
   const { t } = useI18n()
@@ -248,20 +284,25 @@ export function SalaAgente({
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
-            <HeaderIcon className="w-3.5 h-3.5" weight="duotone" aria-hidden="true" />
-            {t(`${WORKSPACE_NS}.sala.eyebrow`, { titulo })}
-          </span>
+          {/* ← + miga de pan: volver al hub de agentes con un clic */}
+          <MigaDePan
+            backHref="/panel/inmobiliaria/ai"
+            icon={HeaderIcon}
+            crumbs={[
+              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+              { label: titulo },
+            ]}
+          />
           <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">{descripcion}</p>
         </div>
 
         <Link
           href={colaHref}
-          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wide px-3 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
           data-testid="sala-cola-cta"
         >
-          {t(`${WORKSPACE_NS}.sala.irACola`)}
+          {colaLabel ?? t(`${WORKSPACE_NS}.sala.irACola`)}
           {typeof colaCount === 'number' ? ` (${numberFormatter.format(colaCount)})` : ''}
           <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </Link>
@@ -270,7 +311,15 @@ export function SalaAgente({
       {/* Domain-specific slot */}
       {children}
 
-      <OverviewBody overview={overview} isLoading={isLoading} error={error} />
+      <OverviewBody
+        overview={overview}
+        isLoading={isLoading}
+        error={error}
+        agente={agente}
+        icon={HeaderIcon}
+        pipelineTitle={pipelineTitle}
+        emptyHint={emptyHint}
+      />
     </div>
   )
 }

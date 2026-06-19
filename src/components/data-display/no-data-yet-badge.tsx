@@ -28,7 +28,7 @@ export function NoDataYetBadge({ reason, phase, cta, ctaHref }: NoDataYetBadgePr
         Fase {phase}
       </span>
       {cta && (
-        <a href={ctaHref ?? '#'} className="text-xs text-indigo-500 underline hover:text-indigo-600">
+        <a href={ctaHref ?? '#'} className="text-xs text-[#1A40FF] underline hover:text-[#1A40FF]">
           {cta}
         </a>
       )}

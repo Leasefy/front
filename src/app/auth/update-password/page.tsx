@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { LeasefyLogo } from '@/components/brand';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { useAuth } from '@/lib/auth';
 import { getAccessToken } from '@/lib/api/client';
 
@@ -91,22 +93,20 @@ export default function UpdatePasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <ForceLightMode>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-[400px]">
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <Link href="/">
-              <svg viewBox="0 0 207 60" className="h-8 w-auto text-foreground" fill="none">
-                <path d="M5 51L29 27L47 45V15" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M65.52 47V15.32H68.05V44.536H83.45V47H65.52Z" fill="currentColor"/>
-              </svg>
+              <LeasefyLogo size={28} tone="brand" />
             </Link>
           </div>
 
           {success ? (
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
+              <div className="mx-auto w-16 h-16 bg-[#E8F3EC] rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="h-9 w-9 text-[#2C7A53]" />
               </div>
               <h1 className="text-xl font-semibold text-foreground mb-2">
                 Contraseña actualizada
@@ -217,5 +217,6 @@ export default function UpdatePasswordPage() {
           )}
         </div>
       </div>
+    </ForceLightMode>
   );
 }

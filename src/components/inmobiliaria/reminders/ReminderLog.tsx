@@ -33,34 +33,34 @@ const TYPE_META: Record<
   'pre-payment': {
     icon: Clock,
     label: 'Recordatorio de pago',
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    color: 'text-blue-600 dark:text-blue-400',
-    badgeBg: 'bg-blue-100 dark:bg-blue-900/30',
-    badgeText: 'text-blue-700 dark:text-blue-300',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    color: 'text-[#1A40FF] dark:text-[#5570FF]',
+    badgeBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    badgeText: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
   overdue: {
     icon: Warning,
     label: 'Aviso de mora',
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    color: 'text-amber-600 dark:text-amber-400',
-    badgeBg: 'bg-amber-100 dark:bg-amber-900/30',
-    badgeText: 'text-amber-700 dark:text-amber-300',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    color: 'text-[#B7791F] dark:text-[#D2992F]',
+    badgeBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    badgeText: 'text-[#B7791F] dark:text-[#D2992F]',
   },
   escalation: {
     icon: ShieldWarning,
     label: 'Escalacion',
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    color: 'text-red-600 dark:text-red-400',
-    badgeBg: 'bg-red-100 dark:bg-red-900/30',
-    badgeText: 'text-red-700 dark:text-red-300',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    color: 'text-[#C4503B] dark:text-[#E0664D]',
+    badgeBg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    badgeText: 'text-[#C4503B] dark:text-[#E0664D]',
   },
   'contract-expiry': {
     icon: FileText,
     label: 'Vencimiento contrato',
-    bg: 'bg-violet-100 dark:bg-violet-900/30',
-    color: 'text-violet-600 dark:text-violet-400',
-    badgeBg: 'bg-violet-100 dark:bg-violet-900/30',
-    badgeText: 'text-violet-700 dark:text-violet-300',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    color: 'text-neutral-600 dark:text-neutral-300',
+    badgeBg: 'bg-neutral-100 dark:bg-neutral-800',
+    badgeText: 'text-neutral-600 dark:text-neutral-300',
   },
 };
 
@@ -72,19 +72,19 @@ const STATUS_META: Record<
     label: 'Enviado',
     bg: 'bg-neutral-700 dark:bg-neutral-600',
     text: 'text-white',
-    dot: 'bg-emerald-400',
+    dot: 'bg-[#2C7A53]',
   },
   scheduled: {
     label: 'Programado',
     bg: 'bg-neutral-200 dark:bg-neutral-700',
     text: 'text-neutral-700 dark:text-neutral-200',
-    dot: 'bg-blue-500',
+    dot: 'bg-[#1A40FF]',
   },
   failed: {
     label: 'Fallido',
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-700 dark:text-red-300',
-    dot: 'bg-red-500',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    dot: 'bg-[#C4503B]',
   },
   cancelled: {
     label: 'Cancelado',
@@ -164,7 +164,7 @@ export function ReminderLog({ entries }: ReminderLogProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
             <ClockCounterClockwise className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
@@ -190,7 +190,7 @@ export function ReminderLog({ entries }: ReminderLogProps) {
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value as ReminderType | 'all')}
           className={cn(
-            'h-8 px-3 text-xs font-medium rounded-lg border border-border bg-background',
+            'h-8 px-3 text-xs font-medium rounded-md border border-border bg-background',
             'focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-neutral-600',
             'text-foreground'
           )}
@@ -209,7 +209,7 @@ export function ReminderLog({ entries }: ReminderLogProps) {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as ReminderStatus | 'all')}
           className={cn(
-            'h-8 px-3 text-xs font-medium rounded-lg border border-border bg-background',
+            'h-8 px-3 text-xs font-medium rounded-md border border-border bg-background',
             'focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-neutral-600',
             'text-foreground'
           )}
@@ -270,7 +270,7 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                     <div className="flex items-center gap-2.5">
                       <div
                         className={cn(
-                          'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+                          'w-8 h-8 rounded-md flex items-center justify-center shrink-0',
                           typeMeta.bg
                         )}
                       >
@@ -278,7 +278,7 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                       </div>
                       <span
                         className={cn(
-                          'inline-flex px-2 py-0.5 rounded-md text-[11px] font-medium',
+                          'inline-flex px-2 py-0.5 rounded-sm text-[11px] font-medium',
                           typeMeta.badgeBg,
                           typeMeta.badgeText
                         )}
@@ -298,8 +298,8 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                         className={cn(
                           'inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium mt-0.5',
                           entry.recipientType === 'tenant'
-                            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                            : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                            : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
                         )}
                       >
                         {entry.recipientType === 'tenant' ? 'Inquilino' : 'Propietario'}
@@ -378,7 +378,7 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                 <div className="flex items-center gap-2">
                   <div
                     className={cn(
-                      'w-7 h-7 rounded-lg flex items-center justify-center',
+                      'w-7 h-7 rounded-md flex items-center justify-center',
                       typeMeta.bg
                     )}
                   >
@@ -386,7 +386,7 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                   </div>
                   <span
                     className={cn(
-                      'inline-flex px-2 py-0.5 rounded-md text-[11px] font-medium',
+                      'inline-flex px-2 py-0.5 rounded-sm text-[11px] font-medium',
                       typeMeta.badgeBg,
                       typeMeta.badgeText
                     )}
@@ -416,8 +416,8 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                     className={cn(
                       'inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium',
                       entry.recipientType === 'tenant'
-                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                        : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
                     )}
                   >
                     {entry.recipientType === 'tenant' ? 'Inquilino' : 'Propietario'}

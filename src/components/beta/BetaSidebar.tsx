@@ -103,23 +103,23 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
                 title={t(tab.labelKey)}
                 className={cn(
                   'relative flex-1 flex items-center justify-center',
-                  'py-2 rounded-lg',
+                  'py-2 rounded-md',
                   // ≥44px touch target on coarse pointers (desktop visual unchanged)
                   '[@media(pointer:coarse)]:min-h-11',
                   'transition-all duration-150',
                   isActive
-                    ? 'bg-white dark:bg-neutral-700 shadow-sm text-foreground'
+                    ? 'bg-white dark:bg-neutral-700 text-foreground'
                     : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
                 )}
               >
                 <Icon className="w-[17px] h-[17px]" weight={isActive ? 'fill' : 'regular'} />
                 {hasBadge && (
-                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] font-semibold flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] font-semibold flex items-center justify-center leading-none">
                     {pendingDecisionsCount}
                   </span>
                 )}
                 {hasDot && (
-                  <span className="absolute top-0.5 right-1.5 w-[5px] h-[5px] rounded-full bg-amber-500" />
+                  <span className="absolute top-0.5 right-1.5 w-[5px] h-[5px] rounded-full bg-[#B7791F]" />
                 )}
               </button>
             );
@@ -140,7 +140,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
         <button
           onClick={() => handleTabChange('settings')}
           className={cn(
-            'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg',
+            'w-full flex items-center gap-2.5 px-3 py-2 rounded-md',
             '[@media(pointer:coarse)]:min-h-11',
             'text-[13px] transition-colors duration-150',
             activeTab === 'settings'

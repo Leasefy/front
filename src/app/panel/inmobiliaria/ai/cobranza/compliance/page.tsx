@@ -12,7 +12,7 @@
  * clarity and to defend against future server changes.
  *
  * Refs mvp:docs/DESIGN.md §1 (sobrio + warm), §4 (cards rounded-xl border
- * bg-card shadow-sm), §11 (loading state spinner), mvp:docs/COLOR_SYSTEM.md
+ * bg-card), §11 (loading state spinner), mvp:docs/COLOR_SYSTEM.md
  * (rose for warning/error, emerald for ok).
  */
 
@@ -105,7 +105,7 @@ function ComplianceOverviewContent() {
         <button
           type="button"
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
+          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
           aria-label="refresh"
         >
           {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
@@ -117,15 +117,15 @@ function ComplianceOverviewContent() {
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-start gap-3"
+          className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-start gap-3"
           role="alert"
         >
           <Warning
-            className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5"
             weight="fill"
             aria-hidden="true"
           />
-          <p className="text-sm text-rose-700 dark:text-rose-300">
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
           </p>
         </motion.div>
@@ -135,7 +135,7 @@ function ComplianceOverviewContent() {
       {error && !data && (
         <div
           role="alert"
-          className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2"
+          className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -145,7 +145,7 @@ function ComplianceOverviewContent() {
       {data && (
         <>
           {/* Section 1: Ley 2300 weekly counter */}
-          <section className="rounded-xl border border-border bg-card shadow-sm p-4">
+          <section className="rounded-xl border border-border bg-card p-4">
             <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
             </h2>
@@ -154,8 +154,8 @@ function ComplianceOverviewContent() {
                 className={[
                   'text-4xl font-mono tabular-nums',
                   data.ley_2300.weekly_outside_hours_count === 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400 font-bold',
+                    ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                    : 'text-[#C4503B] dark:text-[#E0664D] font-bold',
                 ].join(' ')}
               >
                 {data.ley_2300.weekly_outside_hours_count}
@@ -174,7 +174,7 @@ function ComplianceOverviewContent() {
               </h2>
               <Link
                 href="/panel/inmobiliaria/ai/cobranza/compliance/opt-out"
-                className="text-xs font-mono text-primary hover:underline"
+                className="text-xs text-primary hover:underline font-medium"
               >
                 {locale.startsWith('es') ? 'Ver todos' : 'View all'}
               </Link>
@@ -195,7 +195,7 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 3: Retention gauge */}
-          <section className="rounded-xl border border-border bg-card shadow-sm p-4">
+          <section className="rounded-xl border border-border bg-card p-4">
             <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
               {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
             </h2>
@@ -205,8 +205,8 @@ function ComplianceOverviewContent() {
                   className={[
                     'text-3xl font-mono tabular-nums',
                     data.retention.compliance_pct >= data.retention.target
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-amber-600 dark:text-amber-400',
+                      ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                      : 'text-[#B7791F] dark:text-[#D2992F]',
                   ].join(' ')}
                 >
                   {data.retention.compliance_pct}%
@@ -226,8 +226,8 @@ function ComplianceOverviewContent() {
                   className={[
                     'h-full transition-all',
                     data.retention.compliance_pct >= data.retention.target
-                      ? 'bg-emerald-500'
-                      : 'bg-amber-500',
+                      ? 'bg-[#2C7A53]'
+                      : 'bg-[#B7791F]',
                   ].join(' ')}
                   style={{
                     width: `${Math.min(100, Math.max(0, data.retention.compliance_pct))}%`,
@@ -238,7 +238,7 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 4: 30-day sparkline */}
-          <section className="rounded-xl border border-border bg-card shadow-sm p-4">
+          <section className="rounded-xl border border-border bg-card p-4">
             <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground mb-3">
               {t('inmobiliaria.ai.cobranza.compliance.overview.sparklineHeading')}
             </h2>
@@ -251,7 +251,7 @@ function ComplianceOverviewContent() {
               <Link
                 key={href}
                 href={href}
-                className="rounded-xl border border-border bg-card shadow-sm p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
+                className="rounded-xl border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
               >
                 <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="text-sm font-medium text-foreground">{title}</span>

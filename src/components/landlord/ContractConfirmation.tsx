@@ -61,8 +61,8 @@ export function ContractConfirmation({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
-              <FileText className="h-5 w-5 text-emerald-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E8F3EC]">
+              <FileText className="h-5 w-5 text-[#2C7A53]" />
             </div>
             <DialogTitle className="text-lg">
               Candidato aprobado
@@ -82,7 +82,7 @@ export function ContractConfirmation({
           </Button>
           <Button
             onClick={handleGenerateContract}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+            className="flex-1 bg-[#2C7A53] hover:bg-[#2C7A53]"
           >
             <FileText className="mr-1.5 h-4 w-4" />
             Si, generar contrato

@@ -98,7 +98,7 @@ export function DecisionButtons({
           disabled={isUpdating}
           className={cn(
             'flex-1',
-            currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
+            currentStatus === 'approved' && 'bg-[#2C7A53] hover:bg-[#2C7A53]'
           )}
           onClick={() => handleDecision('approved')}
         >
@@ -112,7 +112,7 @@ export function DecisionButtons({
           disabled={isUpdating}
           className={cn(
             'flex-1',
-            currentStatus === 'pre-approved' && 'bg-blue-50 border-blue-200 text-blue-700'
+            currentStatus === 'pre-approved' && 'bg-[#EEF1FF] border-[#1A40FF]/30 text-[#1A40FF]'
           )}
           onClick={() => handleDecision('pre-approved')}
         >
@@ -147,7 +147,7 @@ export function DecisionButtons({
         disabled={isUpdating}
                 className={cn(
           'w-full',
-          currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
+          currentStatus === 'approved' && 'bg-[#2C7A53] hover:bg-[#2C7A53]'
         )}
         onClick={() => handleDecision('approved')}
       >
@@ -163,7 +163,7 @@ export function DecisionButtons({
           disabled={isUpdating}
           className={cn(
             'w-full',
-            currentStatus === 'pre-approved' && 'bg-blue-50 border-blue-200 text-blue-700'
+            currentStatus === 'pre-approved' && 'bg-[#EEF1FF] border-[#1A40FF]/30 text-[#1A40FF]'
           )}
           onClick={() => handleDecision('pre-approved')}
         >
@@ -188,7 +188,7 @@ export function DecisionButtons({
           disabled={isUpdating}
           className={cn(
             'w-full text-muted-foreground',
-            currentStatus === 'more-info' && 'bg-amber-50 border-amber-200 text-amber-700'
+            currentStatus === 'more-info' && 'bg-[#F8F0E0] border-[#B7791F]/30 text-[#B7791F]'
           )}
           onClick={() => handleDecision('more-info')}
         >

@@ -62,14 +62,14 @@ export function PublishSuccess() {
         angle: 60,
         spread: 55,
         origin: { x: 0 },
-        colors: ['#5B5FEF', '#A6AAFF', '#ffffff'],
+        colors: ['#1A40FF', '#8A9CFF', '#ffffff'],
       });
       confetti({
         particleCount: 3,
         angle: 120,
         spread: 55,
         origin: { x: 1 },
-        colors: ['#5B5FEF', '#A6AAFF', '#ffffff'],
+        colors: ['#1A40FF', '#8A9CFF', '#ffffff'],
       });
     }, 50);
 
@@ -100,7 +100,7 @@ export function PublishSuccess() {
   ]);
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -108,11 +108,11 @@ export function PublishSuccess() {
         className="max-w-lg w-full"
       >
         {/* Success card */}
-        <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           {/* Header */}
           <div className="relative px-8 pt-14 pb-10 text-center overflow-hidden">
             {/* Gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-600 via-indigo-500 to-indigo-400" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#1A40FF] via-[#1A40FF] to-[#1A40FF]" />
             {/* Subtle mesh overlay */}
             <div className="absolute inset-0 opacity-30" style={{
               backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)',
@@ -143,7 +143,7 @@ export function PublishSuccess() {
                   transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 12 }}
                   className="relative w-24 h-24 rounded-full bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] flex items-center justify-center"
                 >
-                  <Check className="w-10 h-10 text-indigo-600" strokeWidth={2.5} />
+                  <Check className="w-10 h-10 text-[#1A40FF]" strokeWidth={2.5} />
                 </motion.div>
               </div>
 
@@ -209,8 +209,8 @@ export function PublishSuccess() {
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">{draft.bathrooms} baños</p>
               </div>
-              <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-xl text-center">
-                <Sparkle className="w-4 h-4 mx-auto text-indigo-600 dark:text-indigo-400 mb-1" />
+              <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-3 rounded-xl text-center">
+                <Sparkle className="w-4 h-4 mx-auto text-[#1A40FF] dark:text-[#5570FF] mb-1" />
                 <p className="text-xs font-semibold text-neutral-900 dark:text-white">
                   {draft.selectedPlan ? planLabels[draft.selectedPlan] ?? 'Plan' : 'Plan'}
                 </p>
@@ -228,7 +228,7 @@ export function PublishSuccess() {
               {isAuthenticated ? (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Ver mi propiedad en el panel
@@ -237,7 +237,7 @@ export function PublishSuccess() {
                 <button
                   type="button"
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
                   Ver mi propiedad en el panel

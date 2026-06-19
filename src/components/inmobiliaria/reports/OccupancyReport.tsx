@@ -84,12 +84,12 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
                       occupancyRate >= 90
-                        ? 'bg-emerald-500'
+                        ? 'bg-[#2C7A53]'
                         : occupancyRate >= 70
-                          ? 'bg-blue-500'
+                          ? 'bg-[#1A40FF]'
                           : occupancyRate >= 50
-                            ? 'bg-amber-500'
-                            : 'bg-red-500'
+                            ? 'bg-[#B7791F]'
+                            : 'bg-[#C4503B]'
                     )}
                     style={{ width: `${occupancyRate}%` }}
                   />
@@ -122,10 +122,10 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                     className={cn(
                       'w-full rounded-t transition-all duration-300 group-hover:opacity-80',
                       m.occupancyRate >= 90
-                        ? 'bg-emerald-400 dark:bg-emerald-500'
+                        ? 'bg-[#2C7A53] dark:bg-[#2C7A53]'
                         : m.occupancyRate >= 85
-                          ? 'bg-blue-400 dark:bg-blue-500'
-                          : 'bg-amber-400 dark:bg-amber-500'
+                          ? 'bg-[#1A40FF] dark:bg-[#1A40FF]'
+                          : 'bg-[#B7791F] dark:bg-[#B7791F]'
                     )}
                     style={{ height: `${height}%` }}
                   />
@@ -172,8 +172,8 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                       className={cn(
                         'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
                         prop.status === 'rented'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                          ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
+                          : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
                       )}
                     >
                       {prop.status === 'rented' ? 'Arrendado' : 'Vacante'}
@@ -204,20 +204,20 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
 
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
   emerald: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
   },
   amber: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
   },
   red: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-600 dark:text-red-400',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
   },
 } as const;
 
@@ -240,7 +240,7 @@ function KPICard({
       <div className="flex items-center gap-3">
         <div
           className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center',
+            'w-10 h-10 rounded-md flex items-center justify-center',
             colors.bg
           )}
         >

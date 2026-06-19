@@ -43,18 +43,18 @@ const SECTION_ICONS: Record<AdvancedKPI['category'], {
 }> = {
   financial: {
     icon: CurrencyDollar,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
+    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
   },
   operational: {
     icon: Buildings,
-    color: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    color: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
   },
   performance: {
     icon: ChartLineUp,
-    color: 'text-violet-600 dark:text-violet-400',
-    bgColor: 'bg-violet-100 dark:bg-violet-900/30',
+    color: 'text-neutral-600 dark:text-neutral-300',
+    bgColor: 'bg-neutral-100 dark:bg-neutral-800',
   },
 };
 
@@ -97,15 +97,15 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
   return (
     <motion.div
       whileHover={{ y: -1 }}
-      className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-md transition-all"
+      className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover: transition-all"
     >
       <div className="flex items-start justify-between mb-2">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">{kpi.label}</p>
         <div
           className={cn(
             'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium',
-            isPositiveTrend && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-            isNegativeTrend && 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+            isPositiveTrend && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+            isNegativeTrend && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
             !isPositiveTrend && !isNegativeTrend && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
           )}
         >
@@ -125,7 +125,7 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
             </span>
             <span className={cn(
               'font-medium',
-              progress >= 100 ? 'text-emerald-600' : 'text-neutral-500'
+              progress >= 100 ? 'text-[#2C7A53]' : 'text-neutral-500'
             )}>
               {progress.toFixed(0)}%
             </span>
@@ -134,7 +134,7 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
             <div
               className={cn(
                 'h-full rounded-full transition-all',
-                progress >= 100 ? 'bg-emerald-500' : 'bg-indigo-600'
+                progress >= 100 ? 'bg-[#2C7A53]' : 'bg-[#1A40FF]'
               )}
               style={{ width: `${Math.min(100, progress)}%` }}
             />
@@ -302,7 +302,7 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
   const { t } = useI18n();
   const data = chart.datasets[0].data;
   const total = data.reduce((sum, val) => sum + val, 0);
-  const colors = ['#10B981', '#FBBF24', '#F59E0B', '#EF4444', '#8B5CF6'];
+  const colors = ['#1A40FF', '#8A9CFF', '#6B6B6B', '#9B9B9B', '#C9CDD3'];
 
   let currentAngle = -90;
   const segments = data.map((value, idx) => {
@@ -375,11 +375,11 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover:shadow-neutral-500/5 transition-all"
+      className="p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover: hover:shadow-neutral-500/5 transition-all"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
             <ChartIcon className="w-4 h-4 text-neutral-600 dark:text-neutral-400" weight="duotone" />
           </div>
           <div>
@@ -425,7 +425,7 @@ export function AnalyticsDashboard({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -444,8 +444,8 @@ export function AnalyticsDashboard({
       {/* Section 4: Visualizations */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <ChartBar className="w-5 h-5 text-amber-600 dark:text-amber-400" weight="duotone" />
+          <div className="w-9 h-9 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+            <ChartBar className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" weight="duotone" />
           </div>
           <div>
             <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>

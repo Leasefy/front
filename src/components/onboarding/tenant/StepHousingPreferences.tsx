@@ -92,7 +92,7 @@ export function StepHousingPreferences() {
           transition={{ delay: 0.1 }}
         >
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
-            Presupuesto mensual <span className="text-red-500">*</span>
+            Presupuesto mensual <span className="text-[#C4503B]">*</span>
           </label>
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
@@ -111,10 +111,10 @@ export function StepHousingPreferences() {
                   'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
                   'text-neutral-900 dark:text-white placeholder:text-neutral-400',
                   'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
                   draft.budgetMin
-                    ? 'border-indigo-500 focus:border-indigo-500'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                    ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
+                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
                 )}
               />
             </div>
@@ -134,10 +134,10 @@ export function StepHousingPreferences() {
                   'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
                   'text-neutral-900 dark:text-white placeholder:text-neutral-400',
                   'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
                   draft.budgetMax
-                    ? 'border-indigo-500 focus:border-indigo-500'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                    ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
+                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
                 )}
               />
             </div>
@@ -164,7 +164,7 @@ export function StepHousingPreferences() {
                   className={cn(
                     'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                     isSelected
-                      ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                      ? 'bg-[#1A40FF] text-white'
                       : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                   )}
                 >
@@ -180,13 +180,13 @@ export function StepHousingPreferences() {
               {draft.preferredZones.filter(z => !CITIES.includes(z)).map((zone) => (
                 <span
                   key={zone}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-sm"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded-full text-sm"
                 >
                   {zone}
                   <button
                     type="button"
                     onClick={() => toggleZone(zone)}
-                    className="hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-full p-0.5"
+                    className="hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF] rounded-full p-0.5"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -211,7 +211,7 @@ export function StepHousingPreferences() {
                   'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
                   'text-neutral-900 dark:text-white placeholder:text-neutral-400',
                   'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
                 )}
               />
             </div>
@@ -221,7 +221,7 @@ export function StepHousingPreferences() {
               disabled={!customZone.trim()}
               className={cn(
                 'px-4 py-3 rounded-xl font-medium transition-all duration-200',
-                'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700',
+                'bg-[#1A40FF] text-white hover:opacity-90',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
@@ -253,10 +253,10 @@ export function StepHousingPreferences() {
                 'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
                 'text-neutral-900 dark:text-white placeholder:text-neutral-400',
                 'transition-all duration-200',
-                'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+                'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
                 draft.moveInDate
-                  ? 'border-indigo-500 focus:border-indigo-500'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                  ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
+                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
               )}
             />
           </div>
@@ -278,11 +278,11 @@ export function StepHousingPreferences() {
               className={cn(
                 'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
                 !draft.hasPets
-                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20 shadow-sm'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                   : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
               )}
             >
-              <span className={cn('text-sm font-semibold', !draft.hasPets ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-700 dark:text-neutral-300')}>
+              <span className={cn('text-sm font-semibold', !draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-700 dark:text-neutral-300')}>
                 No tengo mascotas
               </span>
             </button>
@@ -292,12 +292,12 @@ export function StepHousingPreferences() {
               className={cn(
                 'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
                 draft.hasPets
-                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20 shadow-sm'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                   : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
               )}
             >
-              <PawPrint className={cn('h-5 w-5', draft.hasPets ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500 dark:text-neutral-400')} />
-              <span className={cn('text-sm font-semibold', draft.hasPets ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-700 dark:text-neutral-300')}>
+              <PawPrint className={cn('h-5 w-5', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-500 dark:text-neutral-400')} />
+              <span className={cn('text-sm font-semibold', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-700 dark:text-neutral-300')}>
                 Sí, tengo mascotas
               </span>
             </button>
@@ -318,7 +318,7 @@ export function StepHousingPreferences() {
                   'w-full h-12 px-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
                   'text-neutral-900 dark:text-white placeholder:text-neutral-400',
                   'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
                 )}
               />
             </motion.div>
@@ -347,12 +347,12 @@ export function StepHousingPreferences() {
                   className={cn(
                     'flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                       : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
                   )}
                 >
-                  <Icon className={cn('h-5 w-5', isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500 dark:text-neutral-400')} />
-                  <span className={cn('text-xs font-medium text-center', isSelected ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-600 dark:text-neutral-400')}>
+                  <Icon className={cn('h-5 w-5', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-500 dark:text-neutral-400')} />
+                  <span className={cn('text-xs font-medium text-center', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-600 dark:text-neutral-400')}>
                     {amenity.label}
                   </span>
                 </button>
@@ -366,7 +366,7 @@ export function StepHousingPreferences() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 rounded-xl"
+          className="text-sm text-[#B7791F] dark:text-[#D2992F] bg-[#F8F0E0] dark:bg-[#B7791F]/15 px-4 py-3 rounded-xl"
         >
           Ingresa tu presupuesto mínimo y máximo para continuar
         </motion.p>

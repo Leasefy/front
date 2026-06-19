@@ -183,10 +183,10 @@ export function CandidateList({
                 <span
                   className={cn(
                     'flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
-                    level === 'A' && 'bg-emerald-100 text-emerald-700',
-                    level === 'B' && 'bg-blue-100 text-blue-700',
-                    level === 'C' && 'bg-amber-100 text-amber-700',
-                    level === 'D' && 'bg-red-100 text-red-700'
+                    level === 'A' && 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+                    level === 'B' && 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+                    level === 'C' && 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+                    level === 'D' && 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
                   )}
                 >
                   {level}

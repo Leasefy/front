@@ -35,13 +35,13 @@ export default function SeleccionarRolPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center p-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-10">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-3">
             {user?.name ? `Hola, ${user.name.split(' ')[0]}` : 'Bienvenido a Leasefy'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-neutral-500">
             Selecciona tu perfil para personalizar tu experiencia
           </p>
         </div>
@@ -54,27 +54,27 @@ export default function SeleccionarRolPage() {
             className={cn(
               'relative flex items-center gap-4 p-5 rounded-xl border-2 text-left transition-all duration-200',
               selected === 'tenant'
-                ? 'border-foreground bg-muted'
-                : 'border-border hover:border-foreground/30 bg-card'
+                ? 'border-neutral-900 bg-neutral-50'
+                : 'border-neutral-200 hover:border-neutral-300 bg-white'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors flex-shrink-0',
-              selected === 'tenant' ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'
+              selected === 'tenant' ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'
             )}>
               <House className="w-6 h-6" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-[15px] font-semibold text-foreground">Inquilino</p>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Busco un lugar para vivir</p>
+              <p className="text-[15px] font-semibold text-neutral-900">Inquilino</p>
+              <p className="text-[13px] text-neutral-500 mt-0.5">Busco un lugar para vivir</p>
             </div>
             {selected === 'tenant' && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-foreground flex items-center justify-center"
+                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-neutral-900 flex items-center justify-center"
               >
-                <svg className="w-3.5 h-3.5 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </motion.div>
@@ -88,27 +88,27 @@ export default function SeleccionarRolPage() {
             className={cn(
               'relative flex items-center gap-4 p-5 rounded-xl border-2 text-left transition-all duration-200',
               selected === 'landlord'
-                ? 'border-foreground bg-muted'
-                : 'border-border hover:border-foreground/30 bg-card'
+                ? 'border-neutral-900 bg-neutral-50'
+                : 'border-neutral-200 hover:border-neutral-300 bg-white'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors flex-shrink-0',
-              selected === 'landlord' ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'
+              selected === 'landlord' ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'
             )}>
               <Buildings className="w-6 h-6" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-[15px] font-semibold text-foreground">Propietario</p>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Quiero arrendar mi propiedad</p>
+              <p className="text-[15px] font-semibold text-neutral-900">Propietario</p>
+              <p className="text-[13px] text-neutral-500 mt-0.5">Quiero arrendar mi propiedad</p>
             </div>
             {selected === 'landlord' && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-foreground flex items-center justify-center"
+                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-neutral-900 flex items-center justify-center"
               >
-                <svg className="w-3.5 h-3.5 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </motion.div>
@@ -122,25 +122,25 @@ export default function SeleccionarRolPage() {
             className={cn(
               'relative flex items-center gap-4 p-5 rounded-xl border-2 text-left transition-all duration-200',
               selected === 'inmobiliaria'
-                ? 'border-indigo-600 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
-                : 'border-border hover:border-foreground/30 bg-card'
+                ? 'border-[#1A40FF]/30 bg-[#EEF1FF]'
+                : 'border-neutral-200 hover:border-neutral-300 bg-white'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors flex-shrink-0',
-              selected === 'inmobiliaria' ? 'bg-indigo-600 text-white' : 'bg-muted text-muted-foreground'
+              selected === 'inmobiliaria' ? 'bg-[#1A40FF] text-white' : 'bg-neutral-100 text-neutral-500'
             )}>
               <Storefront className="w-6 h-6" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-[15px] font-semibold text-foreground">Soy una inmobiliaria</p>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Gestiona propiedades de múltiples propietarios con tu equipo</p>
+              <p className="text-[15px] font-semibold text-neutral-900">Soy una inmobiliaria</p>
+              <p className="text-[13px] text-neutral-500 mt-0.5">Gestiona propiedades de múltiples propietarios con tu equipo</p>
             </div>
             {selected === 'inmobiliaria' && (
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center"
+                className="absolute top-4 right-4 w-6 h-6 rounded-full bg-[#1A40FF] flex items-center justify-center"
               >
                 <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -159,9 +159,9 @@ export default function SeleccionarRolPage() {
             'w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all',
             selected && !isLoading
               ? selected === 'inmobiliaria'
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'bg-foreground text-background hover:bg-foreground/90'
-              : 'bg-muted text-muted-foreground/60 cursor-not-allowed'
+                ? 'bg-[#1A40FF] text-white hover:opacity-90'
+                : 'bg-neutral-900 text-white hover:bg-neutral-800'
+              : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
           )}
         >
           {isLoading ? (

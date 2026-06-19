@@ -112,7 +112,7 @@ function Modal({
         {/* Modal */}
         <div
           className={cn(
-            'pointer-events-auto bg-white dark:bg-[#141416] w-full rounded-2xl shadow-2xl flex flex-col max-h-[85vh]',
+            'pointer-events-auto bg-white dark:bg-[#141416] w-full rounded-xl flex flex-col max-h-[85vh]',
             sizeClasses[size]
           )}
         >
@@ -144,10 +144,10 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
   const { t } = useI18n();
 
   const statusColors = {
-    available: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    rented: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    in_process: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    maintenance: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+    available: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    rented: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+    in_process: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    maintenance: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
   };
 
   const statusLabels = {
@@ -160,7 +160,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:shadow-lg transition-all cursor-pointer"
+      className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover: transition-all cursor-pointer"
     >
       <div className="flex items-start gap-4">
         {/* Thumbnail */}
@@ -231,10 +231,10 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
   const { t, locale } = useI18n();
 
   const statusColors = {
-    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    pending: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    processing: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+    completed: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    failed: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
   };
 
   const statusLabels = {
@@ -255,13 +255,13 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
         <div className={cn(
           'w-10 h-10 rounded-xl flex items-center justify-center',
           dispersion.status === 'completed'
-            ? 'bg-emerald-100 dark:bg-emerald-900/30'
-            : 'bg-amber-100 dark:bg-amber-900/30'
+            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+            : 'bg-[#F8F0E0] dark:bg-[#B7791F]/15'
         )}>
           {dispersion.status === 'completed' ? (
-            <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
           ) : (
-            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <Clock className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
           )}
         </div>
         <div>
@@ -336,7 +336,7 @@ function PropietarioDetailContent() {
           </p>
           <button
             onClick={() => router.push('/panel/inmobiliaria/propietarios')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t('inmobiliaria.propietarios.backToList')}
@@ -414,10 +414,10 @@ function PropietarioDetailContent() {
         <div className="flex items-start gap-4">
           {/* Avatar */}
           <div className={cn(
-            'w-16 h-16 rounded-2xl flex items-center justify-center shrink-0',
+            'w-16 h-16 rounded-xl flex items-center justify-center shrink-0',
             isCompany
-              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-              : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+              : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
           )}>
             {isCompany ? <Buildings className="w-8 h-8" /> : <User className="w-8 h-8" />}
           </div>
@@ -472,7 +472,7 @@ function PropietarioDetailContent() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
+                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10"
                 >
                   <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                     <FileText className="w-4 h-4" />
@@ -488,7 +488,7 @@ function PropietarioDetailContent() {
                       setShowActionsMenu(false);
                       setShowDeleteModal(true);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
                   >
                     <TrashSimple className="w-4 h-4" />
                     <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
@@ -524,7 +524,7 @@ function PropietarioDetailContent() {
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.email')}</p>
                     <a
                       href={`mailto:${propietario.email}`}
-                      className="text-neutral-900 dark:text-white hover:text-indigo-500 transition-colors"
+                      className="text-neutral-900 dark:text-white hover:text-[#1A40FF] transition-colors"
                     >
                       {propietario.email}
                     </a>
@@ -532,9 +532,9 @@ function PropietarioDetailContent() {
                 </div>
                 <button
                   onClick={() => handleCopy(propietario.email, 'email')}
-                  className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                  className="p-2 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                 >
-                  {copiedEmail ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  {copiedEmail ? <Check className="w-4 h-4 text-[#2C7A53]" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
 
@@ -548,7 +548,7 @@ function PropietarioDetailContent() {
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietarios.phone')}</p>
                     <a
                       href={`tel:${propietario.phone}`}
-                      className="text-neutral-900 dark:text-white hover:text-indigo-500 transition-colors"
+                      className="text-neutral-900 dark:text-white hover:text-[#1A40FF] transition-colors"
                     >
                       {propietario.phone}
                     </a>
@@ -556,9 +556,9 @@ function PropietarioDetailContent() {
                 </div>
                 <button
                   onClick={() => handleCopy(propietario.phone, 'phone')}
-                  className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                  className="p-2 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                 >
-                  {copiedPhone ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  {copiedPhone ? <Check className="w-4 h-4 text-[#2C7A53]" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
 
@@ -606,9 +606,9 @@ function PropietarioDetailContent() {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as typeof activeTab)}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
                   activeTab === tab.key
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                 )}
               >
@@ -617,7 +617,7 @@ function PropietarioDetailContent() {
                   <span className={cn(
                     'px-1.5 py-0.5 rounded-full text-xs',
                     activeTab === tab.key
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
                   )}>
                     {tab.count}
@@ -649,7 +649,7 @@ function PropietarioDetailContent() {
                     <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                       {t('inmobiliaria.propietarios.detail.noProperties')}
                     </p>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium transition-colors">
+                    <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium transition-colors">
                       <Plus className="w-4 h-4" />
                       {t('inmobiliaria.propietarios.detail.newConsignment')}
                     </button>
@@ -711,7 +711,7 @@ function PropietarioDetailContent() {
                       setNotesValue(propietario.notes || '');
                       setShowNotesModal(true);
                     }}
-                    className="mt-4 text-sm text-indigo-500 hover:text-indigo-600 font-medium"
+                    className="mt-4 text-sm text-[#1A40FF] hover:text-[#1A40FF] font-medium"
                   >
                     {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
                   </button>
@@ -749,8 +749,8 @@ function PropietarioDetailContent() {
             {t('inmobiliaria.propietarios.deleteConfirm', { name: propietario.name })}
           </p>
           {propietario.propertyCount > 0 && (
-            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+            <div className="p-3 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+              <div className="flex items-center gap-2 text-[#B7791F] dark:text-[#D2992F]">
                 <Warning className="w-4 h-4" />
                 <p className="text-sm">
                   {t('inmobiliaria.propietarios.deleteWarningProperties', { count: propietario.propertyCount })}
@@ -767,7 +767,7 @@ function PropietarioDetailContent() {
             </button>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white uppercase tracking-wide font-mono font-medium transition-colors"
+              className="px-4 py-2 rounded-xl bg-[#C4503B] hover:bg-[#C4503B] text-white font-medium transition-colors"
             >
               {t('inmobiliaria.common.delete')}
             </button>
@@ -792,7 +792,7 @@ function PropietarioDetailContent() {
               onChange={(e) => setNotesValue(e.target.value)}
               placeholder={t('inmobiliaria.propietarios.detail.notesPlaceholder')}
               rows={6}
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all resize-none"
             />
             <p className="mt-2 text-xs text-neutral-500">
               {t('inmobiliaria.propietarios.detail.notesPrivacy')}
@@ -808,7 +808,7 @@ function PropietarioDetailContent() {
             <button
               onClick={handleSaveNotes}
               disabled={isSavingNotes}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSavingNotes ? (
                 <>

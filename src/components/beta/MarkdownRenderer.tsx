@@ -38,7 +38,7 @@ const markdownComponents: Components = {
   a: ({ href, children }) => (
     <a
       href={href}
-      className="text-indigo-500 hover:underline"
+      className="text-[#1A40FF] hover:underline"
       target="_blank"
       rel="noopener noreferrer"
     >
@@ -52,7 +52,7 @@ const markdownComponents: Components = {
       return (
         <code
           className={cn(
-            'bg-muted/70 dark:bg-muted/50 p-3 rounded-lg text-[13px] font-mono',
+            'bg-muted/70 dark:bg-muted/50 p-3 rounded-md text-[13px] font-mono',
             'overflow-x-auto block',
             className
           )}
@@ -92,7 +92,7 @@ const markdownComponents: Components = {
     <td className="px-2 py-1.5 border-b border-border/50">{children}</td>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="border-l-2 border-indigo-500/30 pl-3 mb-2 last:mb-0 text-muted-foreground italic">
+    <blockquote className="border-l-2 border-[#1A40FF]/30 pl-3 mb-2 last:mb-0 text-muted-foreground italic">
       {children}
     </blockquote>
   ),
@@ -140,7 +140,7 @@ export function MarkdownRenderer({
         {content}
       </ReactMarkdown>
       {isStreaming && (
-        <span className="inline-block w-0.5 h-4 bg-indigo-600 ml-0.5 align-middle animate-pulse" />
+        <span className="inline-block w-0.5 h-4 bg-[#1A40FF] ml-0.5 align-middle animate-pulse" />
       )}
     </div>
   );

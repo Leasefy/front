@@ -448,8 +448,8 @@ function ReportesContent() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <ChartLine className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             {t('inmobiliaria.reportes.title')}
           </h1>
@@ -463,10 +463,10 @@ function ReportesContent() {
             onClick={handleGenerateAll}
             disabled={generatingReports.size > 0}
             className={cn(
-              'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors shadow-lg',
+              'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors',
               generatingReports.size > 0
                 ? 'bg-muted text-muted-foreground cursor-not-allowed shadow-none'
-                : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
+                : 'bg-[#1A40FF] text-white hover:opacity-90'
             )}
           >
             <Lightning className="w-5 h-5" weight="fill" />
@@ -483,8 +483,8 @@ function ReportesContent() {
       >
         <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <ChartLine className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
@@ -497,8 +497,8 @@ function ReportesContent() {
 
         <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <Star className="w-5 h-5 text-amber-600 dark:text-amber-400" weight="fill" />
+            <div className="w-10 h-10 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+              <Star className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" weight="fill" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
@@ -511,8 +511,8 @@ function ReportesContent() {
 
         <div className="p-4 rounded-xl border border-border bg-card col-span-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground truncate">
@@ -535,13 +535,13 @@ function ReportesContent() {
       >
         {/* Header: View Toggle & Count */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+          <div className="flex items-center gap-1 p-1 rounded-md bg-muted">
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'grid'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -551,9 +551,9 @@ function ReportesContent() {
             <button
               onClick={() => setViewMode('list')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'list'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -583,7 +583,7 @@ function ReportesContent() {
         {favoriteReports.length > 0 && !filters.favoritesOnly && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-amber-500" weight="fill" />
+              <Star className="w-5 h-5 text-[#B7791F]" weight="fill" />
               <h2 className="font-semibold text-foreground">{t('inmobiliaria.reportes.stats.favorites')}</h2>
               <span className="text-xs text-muted-foreground">
                 ({favoriteReports.length})
@@ -677,8 +677,8 @@ function ReportesContent() {
 
         {/* Empty State */}
         {filteredReports.length === 0 && (
-          <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+          <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+            <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
               <MagnifyingGlass className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
             </div>
             <h3 className="text-base font-semibold text-foreground mb-1.5">
@@ -692,7 +692,7 @@ function ReportesContent() {
                 onClick={() =>
                   setFilters((prev) => ({ ...prev, search: '' }))
                 }
-                className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="mt-4 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
               >
                 {t('inmobiliaria.reportes.clearSearch')}
               </button>
@@ -712,8 +712,8 @@ function ReportesContent() {
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border bg-muted/30 print:hidden">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLine className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-8 h-8 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <ChartLine className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
               <h2 className="font-semibold text-foreground">
@@ -741,7 +741,7 @@ function ReportesContent() {
 
         {/* Tab Bar */}
         <div className="p-4 border-b border-border print:hidden">
-          <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-muted">
+          <div className="inline-flex items-center gap-1 p-1 rounded-md bg-muted">
             {advancedTabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -749,9 +749,9 @@ function ReportesContent() {
                   key={tab.key}
                   onClick={() => setActiveAdvancedTab(tab.key)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                    'flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium transition-all',
                     activeAdvancedTab === tab.key
-                      ? 'bg-background text-foreground shadow-sm'
+                      ? 'bg-background text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >

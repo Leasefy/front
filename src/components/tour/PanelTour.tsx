@@ -31,8 +31,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { FeatureAnnouncementCard } from './FeatureAnnouncementCard'
 
 export interface TourStepConfig {
   /** i18n key for the step heading (e.g. 'inmobiliaria.ai.tour.step1.title') */
@@ -43,6 +43,12 @@ export interface TourStepConfig {
   hubTarget: string
   /** data-tour-target attribute value when the tour fires on a sub-page */
   subpageTarget: string
+  /**
+   * Brand hero image for the step card (Relume/Givingli-style announcement).
+   * One DISTINCT image per feature — pool of 16 at public/images/features/
+   * (leasefy-brand-01..16.jpg); pick an unused one for each new feature modal.
+   */
+  image: string
 }
 
 export interface PanelTourProps {
@@ -61,25 +67,28 @@ export const TOUR_STEPS: TourStepConfig[] = [
     descriptionKey: 'inmobiliaria.ai.tour.step1.description',
     hubTarget: 'cobranza-card',
     subpageTarget: 'sidebar-cobranza',
+    image: '/images/features/leasefy-brand-09.jpg',
   },
   {
     titleKey: 'inmobiliaria.ai.tour.step2.title',
     descriptionKey: 'inmobiliaria.ai.tour.step2.description',
     hubTarget: 'cotizador-card',
     subpageTarget: 'sidebar-cotizador',
+    image: '/images/features/leasefy-brand-02.jpg',
   },
   {
     titleKey: 'inmobiliaria.ai.tour.step3.title',
     descriptionKey: 'inmobiliaria.ai.tour.step3.description',
     hubTarget: 'sidebar-configuraciones',
     subpageTarget: 'sidebar-configuraciones',
+    image: '/images/features/leasefy-brand-15.jpg',
   },
 ]
 
 const TOTAL_STEPS = TOUR_STEPS.length
 
 // Tooltip dimensions — used for viewport-edge clamping.
-const TOOLTIP_WIDTH = 320
+const TOOLTIP_WIDTH = 384
 const TOOLTIP_OFFSET = 12
 
 interface TooltipPosition {
@@ -218,23 +227,27 @@ export function PanelTour({ isOpen, onDismiss, isHub }: PanelTourProps) {
       // Clicking the backdrop in fallback mode dismisses, mirroring centered-modal UX.
       onClick={dismissWithFocusRestore}
     >
-      <TourCard
+      <FeatureAnnouncementCard
         title={title}
         description={description}
+        image={step.image}
+        newBadge={t('common.new')}
         titleId={titleId}
         descId={descId}
         currentStep={currentStep}
         total={TOTAL_STEPS}
-        isLast={isLast}
         primaryLabel={primaryLabel}
         dismissLabel={t('inmobiliaria.ai.tour.dismiss')}
+        dismissLinkLabel={t('inmobiliaria.ai.tour.dismiss')}
         stepOf={t('inmobiliaria.ai.tour.stepOf', {
           current: currentStep + 1,
           total: TOTAL_STEPS,
         })}
         onNext={handleNext}
         onDismiss={dismissWithFocusRestore}
-        style={{ width: TOOLTIP_WIDTH }}
+        // Centered announcement: wider hero card (clamped to the viewport).
+        style={{ width: 560, maxWidth: 'calc(100vw - 2rem)' }}
+        centered
         // Stop the backdrop click from dismissing when interacting with the card.
         onCardClick={(e) => e.stopPropagation()}
       />
@@ -246,16 +259,18 @@ export function PanelTour({ isOpen, onDismiss, isHub }: PanelTourProps) {
       className="fixed z-[1000] motion-reduce:transition-none"
       style={{ top: position.top, left: position.left, width: TOOLTIP_WIDTH }}
     >
-      <TourCard
+      <FeatureAnnouncementCard
         title={title}
         description={description}
+        image={step.image}
+        newBadge={t('common.new')}
         titleId={titleId}
         descId={descId}
         currentStep={currentStep}
         total={TOTAL_STEPS}
-        isLast={isLast}
         primaryLabel={primaryLabel}
         dismissLabel={t('inmobiliaria.ai.tour.dismiss')}
+        dismissLinkLabel={t('inmobiliaria.ai.tour.dismiss')}
         stepOf={t('inmobiliaria.ai.tour.stepOf', {
           current: currentStep + 1,
           total: TOTAL_STEPS,
@@ -267,104 +282,6 @@ export function PanelTour({ isOpen, onDismiss, isHub }: PanelTourProps) {
   )
 
   return createPortal(overlay, document.body)
-}
-
-interface TourCardProps {
-  title: string
-  description: string
-  titleId: string
-  descId: string
-  currentStep: number
-  total: number
-  isLast: boolean
-  primaryLabel: string
-  dismissLabel: string
-  stepOf: string
-  onNext: () => void
-  onDismiss: () => void
-  style?: React.CSSProperties
-  onCardClick?: (e: React.MouseEvent) => void
-}
-
-function TourCard({
-  title,
-  description,
-  titleId,
-  descId,
-  currentStep,
-  total,
-  isLast,
-  primaryLabel,
-  dismissLabel,
-  stepOf,
-  onNext,
-  onDismiss,
-  style,
-  onCardClick,
-}: TourCardProps) {
-  return (
-    <div
-      role="dialog"
-      aria-modal="false"
-      aria-labelledby={titleId}
-      aria-describedby={descId}
-      className="rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-2xl p-5 motion-reduce:transition-none"
-      style={style}
-      onClick={onCardClick}
-    >
-      {/* Step indicator + close X */}
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-          {`${currentStep + 1} / ${total}`}
-        </span>
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label={dismissLabel}
-          className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
-        >
-          <X className="w-4 h-4" weight="bold" />
-        </button>
-      </div>
-
-      <h2
-        id={titleId}
-        className="text-base font-semibold text-neutral-900 dark:text-white mb-2"
-      >
-        {title}
-      </h2>
-      <p
-        id={descId}
-        className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed mb-4"
-      >
-        {description}
-      </p>
-
-      {/* Polite live region announces step changes for screen readers. */}
-      <span aria-live="polite" className="sr-only">
-        {stepOf}
-      </span>
-
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 underline underline-offset-2"
-        >
-          {dismissLabel}
-        </button>
-        <button
-          type="button"
-          // autoFocus on the primary CTA each step keeps keyboard nav obvious.
-          autoFocus
-          onClick={onNext}
-          className="px-4 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors motion-reduce:transition-none"
-        >
-          {primaryLabel}
-        </button>
-      </div>
-    </div>
-  )
 }
 
 // ── Spotlight cutout helpers ──────────────────────────────────────────────────

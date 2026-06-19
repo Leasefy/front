@@ -199,15 +199,15 @@ export function DocumentUpload({
       {/* Label */}
       <label htmlFor={inputId} className="block text-sm font-medium text-foreground/70">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-[#C4503B] ml-0.5">*</span>}
       </label>
 
       {/* Upload zone or file preview */}
       {state === 'success' && hasFile ? (
         // Compact file preview - Luxterra style
-        <div className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-sm">
+        <div className="flex items-center gap-3 p-3 bg-[#E8F3EC]/50 border border-[#2C7A53]/30 rounded-sm">
           <div className="flex-shrink-0">
-            <File className="h-5 w-5 text-emerald-600" />
+            <File className="h-5 w-5 text-[#2C7A53]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
@@ -220,12 +220,12 @@ export function DocumentUpload({
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {!isDeleting && <Check className="h-4 w-4 text-emerald-600" />}
+            {!isDeleting && <Check className="h-4 w-4 text-[#2C7A53]" />}
             <button
               type="button"
               onClick={handleRemove}
               disabled={isDeleting}
-              className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-wait"
+              className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] transition-colors disabled:opacity-50 disabled:cursor-wait"
             >
               {isDeleting ? (
                 <SpinnerGap className="h-4 w-4 animate-spin" />
@@ -256,7 +256,7 @@ export function DocumentUpload({
             'relative border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors',
             state === 'dragging' && 'border-border bg-black/[0.02]',
             state === 'uploading' && 'border-border bg-black/[0.02] cursor-wait',
-            state === 'error' && 'border-red-300 bg-red-50/50',
+            state === 'error' && 'border-[#C4503B]/30 bg-[#F8EAE7]/50',
             state === 'idle' && 'border-border hover:border-border hover:bg-black/[0.02]'
           )}
         >
@@ -277,8 +277,8 @@ export function DocumentUpload({
             </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
-              <WarningCircle className="h-8 w-8 text-red-500" />
-              <p className="text-sm text-red-600">{displayError}</p>
+              <WarningCircle className="h-8 w-8 text-[#C4503B]" />
+              <p className="text-sm text-[#C4503B]">{displayError}</p>
               <button
                 type="button"
                 onClick={(e) => {
@@ -331,7 +331,7 @@ export function DocumentUpload({
 
       {/* External error (from form validation) */}
       {displayError && state !== 'error' && (
-        <p className="text-xs text-red-500">{displayError}</p>
+        <p className="text-xs text-[#C4503B]">{displayError}</p>
       )}
     </div>
   );

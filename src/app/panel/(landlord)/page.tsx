@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, House, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, PencilLine, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Phone, Chat, X, Plus, Eye, FileText, ChartBarHorizontal, ChartBar, Wallet, Bell, CheckCircle, Star, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { BrandDot, BrandContour, StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { useLandlordProperties, useLandlordDashboard } from '@/lib/hooks/useLandlord';
@@ -34,30 +35,36 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
   const [expanded, setExpanded] = useState(false);
   const { t } = useI18n();
 
+  // Priority → semantic tone: high=critical, medium=warning, low=neutral (gray, not blue).
+  const PRIORITY_TONE: Record<string, SemanticTone> = { high: 'critical', medium: 'warning', low: 'neutral' };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-8 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 overflow-hidden"
+      className="mb-8 rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 overflow-hidden"
     >
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-center gap-3 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors"
+        className="w-full p-4 flex items-center gap-3 hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
       >
-        <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-          <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: SEMANTIC.warning.soft }}
+        >
+          <WarningCircle className="w-5 h-5" style={{ color: SEMANTIC.warning.fg }} />
         </div>
         <div className="flex-1 text-left">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+          <p className="text-sm font-medium text-neutral-900 dark:text-white">
             {t('landlord.dashboard.pendingActions', { count: actions.length })}
           </p>
-          <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             {actions[0]?.description}
           </p>
         </div>
         <CaretDown className={cn(
-          'w-5 h-5 text-amber-600 dark:text-amber-400 transition-transform',
+          'w-5 h-5 text-neutral-400 transition-transform',
           expanded && 'rotate-180'
         )} />
       </button>
@@ -66,48 +73,28 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
         <div className="px-4 pb-4 space-y-2">
           {actions.map((action) => {
             const Icon = ACTION_ICONS[action.type] || WarningCircle;
+            const tone = PRIORITY_TONE[action.priority] ?? 'neutral';
+            const c = SEMANTIC[tone];
             return (
               <Link
                 key={action.id}
                 href={action.href}
-                className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl transition-colors',
-                  action.priority === 'high'
-                    ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/40'
-                    : action.priority === 'medium'
-                      ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/40'
-                      : 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/40'
-                )}
+                className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 dark:border-neutral-800 hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
               >
-                <Icon className={cn(
-                  'w-4 h-4 flex-shrink-0',
-                  action.priority === 'high' ? 'text-red-600 dark:text-red-400'
-                    : action.priority === 'medium' ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-blue-600 dark:text-blue-400'
-                )} />
+                <span className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: c.soft }}>
+                  <Icon className="w-4 h-4" style={{ color: c.fg }} />
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    'text-sm font-medium',
-                    action.priority === 'high' ? 'text-red-800 dark:text-red-200'
-                      : action.priority === 'medium' ? 'text-amber-800 dark:text-amber-200'
-                        : 'text-blue-800 dark:text-blue-200'
-                  )}>{action.title}</p>
-                  <p className={cn(
-                    'text-xs opacity-70',
-                    action.priority === 'high' ? 'text-red-700 dark:text-red-300'
-                      : action.priority === 'medium' ? 'text-amber-700 dark:text-amber-300'
-                        : 'text-blue-700 dark:text-blue-300'
-                  )}>{action.description}</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white">{action.title}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{action.description}</p>
                 </div>
-                <span className={cn(
-                  'text-xs font-semibold px-2 py-0.5 rounded-full',
-                  action.priority === 'high' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
-                    : action.priority === 'medium' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                      : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
-                )}>
+                <span
+                  className="font-mono text-[10.5px] font-semibold px-2 py-0.5 rounded-full tabular-nums"
+                  style={{ backgroundColor: c.soft, color: c.fg }}
+                >
                   {action.count}
                 </span>
-                <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
+                <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 text-neutral-400" />
               </Link>
             );
           })}
@@ -234,7 +221,7 @@ export default function PanelPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Hero Header */}
@@ -244,10 +231,13 @@ export default function PanelPage() {
           className="mb-10"
         >
           <div>
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-              {greeting}
-            </p>
-            <h1 className="text-3xl sm:text-4xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            <span className="inline-flex items-center gap-2 mb-2">
+              <BrandDot />
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
+                {greeting}
+              </span>
+            </span>
+            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-neutral-900 dark:text-white tracking-tight">
               {t('dashboard.hello', { name: firstName })}
             </h1>
           </div>
@@ -255,44 +245,51 @@ export default function PanelPage() {
 
         {/* Stats Grid - Landing Style */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {/* Monthly Income - Featured Card */}
-          <div className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30 border border-emerald-200/50 dark:border-emerald-800/30 p-6">
+          {/* Monthly Income - Featured Card (ink brand hero) */}
+          <div
+            className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-xl p-6"
+            style={{ background: 'linear-gradient(150deg, #0B1220 58%, #122457 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
+          >
+            {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
+            <div className="absolute -inset-x-1 top-[34%] h-[44%] text-white/[0.14] pointer-events-none">
+              <BrandContour />
+            </div>
             <div className="flex items-start justify-between mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-                <CurrencyDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
+                <CurrencyDollar className="w-5 h-5 text-white/90" />
               </div>
               {!isLoading && (
-                <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full flex items-center gap-1">
-                  <TrendUp className="w-3 h-3" />
+                <span className="px-2.5 py-1 text-white/90 text-xs font-medium rounded-full flex items-center gap-1" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
+                  <TrendUp className="w-3 h-3" weight="bold" />
                   +12%
                 </span>
               )}
             </div>
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-1">{t('landlord.dashboard.monthlyIncome')}</p>
+            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-white/55 mb-1.5">{t('landlord.dashboard.monthlyIncome')}</p>
             {isLoading ? (
-              <Skeleton className="h-9 w-36 rounded-lg bg-emerald-200/50 dark:bg-emerald-800/30" />
+              <Skeleton className="h-9 w-36 rounded-md bg-white/10" />
             ) : (
-              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              <p className="font-heading text-[28px] font-semibold text-white tracking-tight tabular-nums leading-none">
                 {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
               </p>
             )}
             {isLoading ? (
-              <Skeleton className="h-4 w-24 mt-2 rounded bg-emerald-200/50 dark:bg-emerald-800/30" />
+              <Skeleton className="h-4 w-24 mt-2 rounded bg-white/10" />
             ) : (
-              <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2">
+              <p className="text-sm text-white/70 mt-2">
                 {t('landlord.dashboard.activeLeases', { count: dashboardData.financial.activeLeases })}
               </p>
             )}
           </div>
 
           {/* Properties */}
-          <div className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <Buildings className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.properties')}</p>
             {isLoading ? (
-              <Skeleton className="h-9 w-12 rounded-lg" />
+              <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
               <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
                 {properties.length}
@@ -308,13 +305,13 @@ export default function PanelPage() {
           </div>
 
           {/* Candidates */}
-          <div className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <Users className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.candidates')}</p>
             {isLoading ? (
-              <Skeleton className="h-9 w-12 rounded-lg" />
+              <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
               <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
                 {totalCandidates}
@@ -325,7 +322,7 @@ export default function PanelPage() {
             ) : (
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
                 {pendingReviews > 0 && (
-                  <span className="text-amber-600 dark:text-amber-400 font-medium">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
+                  <span className="font-medium text-[#B7791F]">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
                 )}
                 {pendingReviews === 0 && t('landlord.dashboard.allReviewed')}
               </p>
@@ -333,25 +330,25 @@ export default function PanelPage() {
           </div>
 
           {/* Collection Rate */}
-          <div className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <ChartBar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.collectionRate')}</p>
             {isLoading ? (
               <>
-                <Skeleton className="h-9 w-20 rounded-lg" />
+                <Skeleton className="h-9 w-20 rounded-md" />
                 <Skeleton className="h-4 w-16 mt-2 rounded" />
               </>
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                  <p className="font-heading text-3xl font-semibold text-neutral-900 dark:text-white tracking-tight tabular-nums">
                     {dashboardData.financial.collectionRate}%
                   </p>
-                  <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
+                  <StatusBadge tone="success" dot={false}>
                     {t('landlord.dashboard.excellent')}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
                   {t('landlord.dashboard.thisMonth')}
@@ -390,7 +387,7 @@ export default function PanelPage() {
               {propertiesLoading ? (
                 <div className="space-y-4">
                   {[0, 1, 2].map((i) => (
-                    <div key={i} className="rounded-xl bg-stone-100 dark:bg-[#1a1a1c] overflow-hidden">
+                    <div key={i} className="rounded-xl bg-neutral-100 dark:bg-[#1a1a1c] overflow-hidden">
                       <div className="flex flex-col sm:flex-row">
                         <Skeleton className="w-full sm:w-48 h-36 rounded-none" />
                         <div className="flex-1 p-5 space-y-3">
@@ -401,7 +398,7 @@ export default function PanelPage() {
                             </div>
                             <Skeleton className="h-6 w-24 rounded" />
                           </div>
-                          <div className="pt-4 border-t border-stone-200 dark:border-neutral-700 flex gap-3">
+                          <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700 flex gap-3">
                             <Skeleton className="h-8 w-16 rounded-xl" />
                             <Skeleton className="h-8 w-24 rounded-xl" />
                           </div>
@@ -427,7 +424,7 @@ export default function PanelPage() {
                         transition={{ delay: 0.1 + index * 0.05 }}
                       >
                         <Link href={`/panel/${property.id}`}>
-                          <div className="group relative overflow-hidden rounded-xl bg-stone-100 dark:bg-[#1a1a1c] hover:shadow-lg transition-all duration-300">
+                          <div className="group relative overflow-hidden rounded-xl bg-neutral-100 dark:bg-[#1a1a1c] hover: transition-all duration-300">
                             <div className="flex flex-col sm:flex-row">
                               {/* Image */}
                               <div className="relative w-full sm:w-48 h-36 sm:h-auto flex-shrink-0">
@@ -439,14 +436,16 @@ export default function PanelPage() {
                                 />
                                 {/* Status badge on image */}
                                 <div className="absolute top-3 left-3">
-                                  <span className={cn(
-                                    'px-2.5 py-1 text-xs font-medium rounded-full',
-                                    property.status === 'available'
-                                      ? 'bg-emerald-500 text-white'
-                                      : property.status === 'rented'
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-amber-500 text-white'
-                                  )}>
+                                  <span
+                                    className="px-2.5 py-1 text-white font-mono text-[10.5px] font-medium uppercase tracking-[0.06em] rounded-full"
+                                    style={{
+                                      backgroundColor: property.status === 'available'
+                                        ? SEMANTIC.success.fg
+                                        : property.status === 'rented'
+                                          ? SEMANTIC.info.fg
+                                          : SEMANTIC.neutral.fg,
+                                    }}
+                                  >
                                     {property.status === 'available'
                                       ? t('landlord.dashboard.statusAvailable')
                                       : property.status === 'rented'
@@ -460,7 +459,7 @@ export default function PanelPage() {
                               <div className="flex-1 p-5">
                                 <div className="flex items-start justify-between mb-2">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-primary transition-colors">
                                       {property.title}
                                     </h3>
                                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1.5">
@@ -477,7 +476,7 @@ export default function PanelPage() {
                                 </div>
 
                                 {/* Stats Row */}
-                                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-stone-200 dark:border-neutral-700">
+                                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
                                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#2a2a2c] rounded-xl">
                                     <Users className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                                     <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
@@ -487,13 +486,13 @@ export default function PanelPage() {
 
                                   {property.candidateCount > 0 && (
                                     <div className="flex items-center gap-2">
-                                      <div className="w-20 h-2 bg-stone-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                      <div className="w-20 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                                         <div
-                                          className={cn(
-                                            'h-full rounded-full transition-all',
-                                            goodCandidatePercent >= 50 ? 'bg-emerald-500' : 'bg-amber-500'
-                                          )}
-                                          style={{ width: `${goodCandidatePercent}%` }}
+                                          className="h-full rounded-full transition-all"
+                                          style={{
+                                            width: `${goodCandidatePercent}%`,
+                                            backgroundColor: goodCandidatePercent >= 50 ? SEMANTIC.success.fg : SEMANTIC.warning.fg,
+                                          }}
                                         />
                                       </div>
                                       <span className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -503,16 +502,16 @@ export default function PanelPage() {
                                   )}
 
                                   {property.pendingCount > 0 && (
-                                    <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                                    <StatusBadge tone="warning" dot={false}>
                                       {t('landlord.dashboard.pendingCount', { count: property.pendingCount })}
-                                    </span>
+                                    </StatusBadge>
                                   )}
 
                                   {property.pendingCount === 0 && property.candidateCount > 0 && (
-                                    <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full flex items-center gap-1">
-                                      <Check className="w-3 h-3" />
+                                    <StatusBadge tone="success" dot={false}>
+                                      <Check className="w-3 h-3" weight="bold" />
                                       {t('landlord.dashboard.reviewed')}
-                                    </span>
+                                    </StatusBadge>
                                   )}
                                 </div>
                               </div>
@@ -524,8 +523,8 @@ export default function PanelPage() {
                   })}
                 </div>
               ) : (
-                <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+                <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
                     <Buildings className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <h3 className="text-base font-semibold text-foreground mb-1.5">
@@ -536,7 +535,7 @@ export default function PanelPage() {
                   </p>
                   <Link
                     href="/publicar?from=panel"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-full hover:bg-indigo-700 transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-full hover:opacity-90 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     {t('landlord.dashboard.publishProperty')}
@@ -548,10 +547,10 @@ export default function PanelPage() {
               {properties.length > 3 && (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-2xl border border-stone-200 dark:border-neutral-700 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#1a1a1c] hover:text-neutral-900 dark:hover:text-white transition-colors"
+                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-[#1a1a1c] hover:text-neutral-900 dark:hover:text-white transition-colors"
                 >
                   {t('landlord.dashboard.viewAllProperties')}
-                  <span className="px-2 py-0.5 bg-stone-100 dark:bg-neutral-800 rounded-full text-xs">
+                  <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-xs">
                     {t('landlord.dashboard.moreCount', { count: properties.length - 3 })}
                   </span>
                 </Link>
@@ -568,7 +567,7 @@ export default function PanelPage() {
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('landlord.dashboard.recentActivity')}</h2>
               </div>
 
-              <div className="bg-stone-50 dark:bg-[#1a1a1c] rounded-xl overflow-hidden divide-y divide-stone-100 dark:divide-neutral-800">
+              <div className="bg-neutral-50 dark:bg-[#1a1a1c] rounded-xl overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-800">
                 {dashboardLoading ? (
                   [0, 1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4 p-4">
@@ -582,12 +581,12 @@ export default function PanelPage() {
                   ))
                 ) : dashboardData.recentActivity.length > 0 ? (
                   dashboardData.recentActivity.slice(0, 5).map((activity) => (
-                    <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm flex-shrink-0">
-                        {activity.type === 'application' && <FileText className="w-5 h-5 text-blue-500" />}
-                        {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
-                        {activity.type === 'message' && <Chat className="w-5 h-5 text-purple-500" />}
-                        {activity.type === 'document' && <FileText className="w-5 h-5 text-amber-500" />}
+                    <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-neutral-100 dark:hover:bg-[#222224] transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                        {activity.type === 'application' && <FileText className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
+                        {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
+                        {activity.type === 'message' && <Chat className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
+                        {activity.type === 'document' && <FileText className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
                         {!['application', 'status_change', 'message', 'document'].includes(activity.type) && (
                           <Bell className="w-5 h-5 text-neutral-500" />
                         )}
@@ -622,22 +621,24 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/50 dark:to-indigo-900/30 border border-indigo-200/50 dark:border-indigo-800/30 p-6"
+              className="rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 p-6"
             >
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm mb-3">
-                <Wallet className="w-4 h-4" />
-                {t('landlord.dashboard.financialSummary')}
+              <div className="flex items-center gap-2 mb-3">
+                <BrandDot />
+                <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+                  {t('landlord.dashboard.financialSummary')}
+                </span>
               </div>
               {dashboardLoading ? (
                 <>
-                  <Skeleton className="h-9 w-36 rounded-lg bg-indigo-200/30 dark:bg-indigo-800/20" />
-                  <Skeleton className="h-4 w-28 mt-1 rounded bg-indigo-200/30 dark:bg-indigo-800/20" />
-                  <div className="mt-6 pt-4 border-t border-indigo-200/50 dark:border-indigo-900/50 space-y-3">
+                  <Skeleton className="h-9 w-36 rounded-md" />
+                  <Skeleton className="h-4 w-28 mt-1 rounded" />
+                  <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-3">
                     <div className="flex justify-between">
-                      <Skeleton className="h-4 w-24 rounded bg-indigo-200/30 dark:bg-indigo-800/20" />
-                      <Skeleton className="h-4 w-10 rounded bg-indigo-200/30 dark:bg-indigo-800/20" />
+                      <Skeleton className="h-4 w-24 rounded" />
+                      <Skeleton className="h-4 w-10 rounded" />
                     </div>
-                    <Skeleton className="h-2 w-full rounded-full bg-indigo-200/30 dark:bg-indigo-800/20" />
+                    <Skeleton className="h-2 w-full rounded-full" />
                   </div>
                 </>
               ) : (
@@ -649,28 +650,28 @@ export default function PanelPage() {
                     {t('landlord.dashboard.incomeThisMonth')}
                   </p>
 
-                  <div className="mt-6 pt-4 border-t border-indigo-200/50 dark:border-indigo-900/50 space-y-3">
+                  <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.collectionRateLabel')}</span>
-                      <span className="text-neutral-900 dark:text-white font-medium">{dashboardData.financial.collectionRate}%</span>
+                      <span className="text-neutral-900 dark:text-white font-medium tabular-nums">{dashboardData.financial.collectionRate}%</span>
                     </div>
-                    <div className="h-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full overflow-hidden">
+                    <div className="h-2 bg-neutral-100 dark:bg-[#1f1f21] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-600 rounded-full transition-all"
-                        style={{ width: `${dashboardData.financial.collectionRate}%` }}
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${dashboardData.financial.collectionRate}%`, backgroundColor: '#1A40FF' }}
                       />
                     </div>
                     {dashboardData.financial.pendingPayments > 0 && (
                       <div className="flex items-center justify-between text-sm pt-2">
                         <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.pendingPayments')}</span>
-                        <span className="text-amber-600 dark:text-amber-400 font-medium">{dashboardData.financial.pendingPayments}</span>
+                        <span className="text-[#C4503B] font-medium tabular-nums">{dashboardData.financial.pendingPayments}</span>
                       </div>
                     )}
                   </div>
 
                   <Link
                     href="/panel/leases"
-                    className="inline-flex items-center gap-1.5 mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
+                    className="inline-flex items-center gap-1.5 mt-4 text-sm text-primary hover:opacity-80 font-medium transition-opacity"
                   >
                     {t('landlord.dashboard.viewDetails')}
                     <ArrowUpRight className="w-4 h-4" />
@@ -684,7 +685,7 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
             >
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t('landlord.dashboard.quickActions')}</h3>
               <div className="space-y-2">
@@ -695,20 +696,20 @@ export default function PanelPage() {
                   { href: '/panel/contratos', icon: FileText, label: t('landlord.dashboard.contracts'), desc: t('landlord.dashboard.manageLeases') },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#222224] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm group-hover:shadow transition-shadow">
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#222224] transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary transition-colors">
                           {action.label}
                         </p>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
                       </div>
                       {action.badge && (
-                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                        <span className="w-2 h-2 rounded-full bg-[#1A40FF]" />
                       )}
-                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-primary transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -737,12 +738,13 @@ export default function PanelPage() {
 // Upcoming Visits Card
 // ============================================================================
 
+// Semantic dots: confirmed=success, requested=info, completed=neutral, cancelled=critical, no_show=warning.
 const VISIT_STATUS_COLORS: Record<string, string> = {
-  confirmed: 'bg-emerald-500',
-  requested: 'bg-blue-500',
+  confirmed: 'bg-[#2C7A53]',
+  requested: 'bg-[#1A40FF]',
   completed: 'bg-neutral-400 dark:bg-neutral-600',
-  cancelled: 'bg-red-500',
-  no_show: 'bg-amber-500',
+  cancelled: 'bg-[#C4503B]',
+  no_show: 'bg-[#B7791F]',
 };
 
 function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
@@ -804,7 +806,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+        className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
       >
         <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
           <CalendarBlank className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -817,7 +819,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
               onClick={() => setSelected(visit)}
               className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-white dark:hover:bg-[#222224] transition-colors"
             >
-              <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-indigo-600')} />
+              <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-[#1A40FF]')} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{visit.candidateName}</p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -861,7 +863,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
             </Link>
             <Link
               href="/panel/visitas"
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors"
+              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-primary text-white rounded-xl hover:opacity-90 transition-colors"
             >
               {t('landlord.dashboard.manageVisit')}
             </Link>
@@ -882,10 +884,10 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
   const [selected, setSelected] = useState<DashboardUpcomingEvent | null>(null);
 
   const EVENT_DOT_COLOR: Record<string, string> = {
-    payment_due: 'bg-indigo-600',
-    lease_ending: 'bg-amber-500',
-    contract_renewal: 'bg-emerald-500',
-    inspection: 'bg-purple-500',
+    payment_due: 'bg-[#1A40FF]',
+    lease_ending: 'bg-[#B7791F]',
+    contract_renewal: 'bg-[#2C7A53]',
+    inspection: 'bg-neutral-500',
   };
 
   const isOverdue = selected ? selected.daysUntil < 0 : false;
@@ -905,16 +907,9 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
       id: 'event-urgency',
       title: t('landlord.dashboard.urgency'),
       content: (
-        <span className={cn(
-          'inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full',
-          isOverdue
-            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-            : selected.daysUntil <= 3
-              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-              : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
-        )}>
+        <StatusBadge tone={isOverdue ? 'critical' : selected.daysUntil <= 3 ? 'warning' : 'info'} dot={false}>
           {urgencyLabel}
-        </span>
+        </StatusBadge>
       ),
     },
     ...(selected.description ? [{
@@ -958,7 +953,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="rounded-xl bg-stone-50 dark:bg-[#1a1a1c] p-5"
+        className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
       >
         <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
           <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -966,7 +961,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         </h3>
         <div className="space-y-1">
           {events.slice(0, 5).map((event) => {
-            const dotColor = event.daysUntil < 0 ? 'bg-red-500' : (EVENT_DOT_COLOR[event.type] || 'bg-indigo-600');
+            const dotColor = event.daysUntil < 0 ? 'bg-[#C4503B]' : (EVENT_DOT_COLOR[event.type] || 'bg-[#1A40FF]');
             return (
               <button
                 key={event.id}
@@ -1003,7 +998,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         footerActions={selected?.href ? (
           <Link
             href={selected.href}
-            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-xl hover:bg-indigo-700 transition-colors"
+            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-primary text-white rounded-xl hover:opacity-90 transition-colors"
           >
             {actionLabel}
           </Link>

@@ -23,15 +23,15 @@ type SlaState = 'healthy' | 'degraded' | 'breached' | null
 // =============================================================================
 
 const SLA_COLORS: Record<string, string> = {
-  healthy: 'text-emerald-600 dark:text-emerald-400',
-  degraded: 'text-amber-600 dark:text-amber-400',
-  breached: 'text-rose-600 dark:text-rose-400',
+  healthy: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  degraded: 'text-[#B7791F] dark:text-[#D2992F]',
+  breached: 'text-[#C4503B] dark:text-[#E0664D]',
 }
 
 const SLA_BG: Record<string, string> = {
-  healthy: 'bg-emerald-50 dark:bg-emerald-950/20',
-  degraded: 'bg-amber-50 dark:bg-amber-950/20',
-  breached: 'bg-rose-50 dark:bg-rose-950/20',
+  healthy: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+  degraded: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+  breached: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
 }
 
 // =============================================================================
@@ -104,7 +104,7 @@ export function CarrierSlaStateCard({
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 space-y-5">
       {/* State pill */}
-      <div className={`flex flex-col items-center gap-2 rounded-lg p-4 ${bgClass}`}>
+      <div className={`flex flex-col items-center gap-2 rounded-md p-4 ${bgClass}`}>
         <Icon weight={iconWeight} className={`h-8 w-8 ${colorClass}`} />
         <p className={`text-lg font-semibold ${colorClass}`}>{stateLabel}</p>
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -145,8 +145,8 @@ export function CarrierSlaStateCard({
                     t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.tooltipLabel'),
                   ]}
                 />
-                <ReferenceLine y={0.05} stroke="#fca5a5" strokeDasharray="3 3" />
-                <Line type="monotone" dataKey="errorRate" stroke="#f43f5e" dot={false} strokeWidth={1.5} />
+                <ReferenceLine y={0.05} stroke="#E0A89E" strokeDasharray="3 3" />
+                <Line type="monotone" dataKey="errorRate" stroke="#C4503B" dot={false} strokeWidth={1.5} />
               </LineChart>
             </ResponsiveContainer>
           )}

@@ -111,7 +111,7 @@ export function AsignacionModal({
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader className="pb-4 border-b border-neutral-200 dark:border-neutral-700">
           <SheetTitle className="flex items-center gap-2 text-neutral-900 dark:text-white">
-            <User className="w-5 h-5 text-indigo-500" />
+            <User className="w-5 h-5 text-[#1A40FF]" />
             {t('inmobiliaria.agente.reassignProperty')}
           </SheetTitle>
         </SheetHeader>
@@ -125,10 +125,10 @@ export function AsignacionModal({
                 <img
                   src={consignacion.propertyThumbnail}
                   alt={consignacion.propertyTitle}
-                  className="w-20 h-20 rounded-lg object-cover shrink-0"
+                  className="w-20 h-20 rounded-md object-cover shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
+                <div className="w-20 h-20 rounded-md bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
                   <Buildings className="w-8 h-8 text-neutral-400" />
                 </div>
               )}
@@ -141,7 +141,7 @@ export function AsignacionModal({
                   <MapPin className="w-3.5 h-3.5" />
                   <span className="truncate">{consignacion.propertyAddress}</span>
                 </div>
-                <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 mt-2">
+                <p className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] mt-2">
                   {formatCurrency(consignacion.monthlyRent)}{t('inmobiliaria.agente.perMonth')}
                 </p>
               </div>
@@ -155,7 +155,7 @@ export function AsignacionModal({
             </label>
             {currentAgente ? (
               <div className="flex items-center gap-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1A40FF] to-[#6B6B6B] flex items-center justify-center text-white text-sm font-semibold shrink-0">
                   {currentAgente.avatar ? (
                     <img
                       src={currentAgente.avatar}
@@ -184,8 +184,8 @@ export function AsignacionModal({
 
           {/* Arrow Divider */}
           <div className="flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ArrowRight className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <ArrowRight className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
           </div>
 
@@ -212,33 +212,33 @@ export function AsignacionModal({
               onChange={(e) => setReason(e.target.value)}
               placeholder={t('inmobiliaria.agente.changeReasonPlaceholder')}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent resize-none text-sm"
             />
           </div>
 
           {/* Preview Summary */}
           {selectedAgente && currentAgente && (
-            <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
-              <h4 className="font-medium text-indigo-700 dark:text-indigo-400 text-sm mb-3 flex items-center gap-2">
+            <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
+              <h4 className="font-medium text-[#1A40FF] dark:text-[#5570FF] text-sm mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.agente.reassignmentSummary')}
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agente.summaryProperty')}:</span>
-                  <span className="font-medium text-indigo-900 dark:text-indigo-200 truncate ml-2 max-w-[200px]">
+                  <span className="text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agente.summaryProperty')}:</span>
+                  <span className="font-medium text-[#1A40FF] dark:text-[#5570FF] truncate ml-2 max-w-[200px]">
                     {consignacion.propertyTitle}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agente.summaryFrom')}:</span>
-                  <span className="font-medium text-indigo-900 dark:text-indigo-200">
+                  <span className="text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agente.summaryFrom')}:</span>
+                  <span className="font-medium text-[#1A40FF] dark:text-[#5570FF]">
                     {currentAgente.name}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.agente.summaryTo')}:</span>
-                  <span className="font-medium text-indigo-900 dark:text-indigo-200">
+                  <span className="text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agente.summaryTo')}:</span>
+                  <span className="font-medium text-[#1A40FF] dark:text-[#5570FF]">
                     {selectedAgente.name}
                   </span>
                 </div>
@@ -248,9 +248,9 @@ export function AsignacionModal({
 
           {/* Warning for same agent */}
           {selectedAgenteId === consignacion.agenteId && (
-            <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
-              <Warning className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-700 dark:text-amber-400">
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
+              <Warning className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" />
+              <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
                 {t('inmobiliaria.agente.sameAgentWarning')}
               </p>
             </div>
@@ -272,7 +272,7 @@ export function AsignacionModal({
             className={cn(
               'flex-1 px-4 py-2.5 rounded-xl font-medium transition-all',
               canConfirm
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
+                ? 'bg-[#1A40FF] hover:opacity-90 text-white'
                 : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
             )}
           >

@@ -42,8 +42,8 @@ export default function GuardadosPage() {
   // Loading state
   if (isOnboardingLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -51,7 +51,7 @@ export default function GuardadosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="saved" />
         </div>
@@ -60,7 +60,7 @@ export default function GuardadosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -83,7 +83,7 @@ export default function GuardadosPage() {
             </div>
             <Link
               href="/inquilino/explorar"
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
+              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
             >
               <MagnifyingGlass className="w-4 h-4" />
               {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
@@ -98,9 +98,9 @@ export default function GuardadosPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] p-8 sm:p-12 text-center"
+            className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] p-8 sm:p-12 text-center"
           >
-            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+            <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
               <Heart className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
             </div>
             <h2 className="text-base font-semibold text-foreground mb-1.5">
@@ -118,7 +118,7 @@ export default function GuardadosPage() {
             </Button>
 
             {/* Tips */}
-            <div className="mt-10 pt-8 border-t border-stone-200 dark:border-neutral-700">
+            <div className="mt-10 pt-8 border-t border-neutral-200 dark:border-neutral-700">
               <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
                 {locale === 'es' ? '¿Cómo guardar propiedades?' : 'How to save properties?'}
               </p>
@@ -132,14 +132,14 @@ export default function GuardadosPage() {
                 <CaretRight className="w-4 h-4 hidden sm:block" />
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
-                    <Heart className="w-4 h-4 text-red-500" />
+                    <Heart className="w-4 h-4 text-[#C4503B]" />
                   </div>
                   <span>{locale === 'es' ? 'Toca el corazón' : 'Tap the heart'}</span>
                 </div>
                 <CaretRight className="w-4 h-4 hidden sm:block" />
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
-                    <Check className="w-4 h-4 text-emerald-500" />
+                    <Check className="w-4 h-4 text-[#2C7A53]" />
                   </div>
                   <span>{locale === 'es' ? '¡Guardada!' : 'Saved!'}</span>
                 </div>
@@ -160,7 +160,7 @@ export default function GuardadosPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + index * 0.05 }}
-                  className="group relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300"
+                  className="group relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300"
                 >
                   {/* Image */}
                   <button
@@ -190,7 +190,7 @@ export default function GuardadosPage() {
                         e.stopPropagation();
                         removeFromWishlist(property.id);
                       }}
-                      className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all backdrop-blur-xl bg-white/20 border border-white/30 shadow-lg hover:bg-red-500 group/btn"
+                      className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all backdrop-blur-xl bg-white/20 border border-white/30 hover:bg-[#C4503B] group/btn"
                       title={t('saved.remove')}
                     >
                       <Heart className="w-4 h-4 text-white fill-white group-hover/btn:hidden" />
@@ -205,7 +205,7 @@ export default function GuardadosPage() {
                         onClick={() => handleViewProperty(property)}
                         className="text-left flex-1"
                       >
-                        <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+                        <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors line-clamp-1">
                           {property.title}
                         </h3>
                       </button>
@@ -221,13 +221,13 @@ export default function GuardadosPage() {
                     </p>
 
                     <div className="flex items-center gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-700">
-                      <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-xs text-neutral-600 dark:text-neutral-400 font-medium">
                         {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                       </span>
-                      <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-xs text-neutral-600 dark:text-neutral-400 font-medium">
                         {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
                       </span>
-                      <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                      <span className="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-xs text-neutral-600 dark:text-neutral-400 font-medium">
                         {property.area} m²
                       </span>
                     </div>
@@ -243,12 +243,12 @@ export default function GuardadosPage() {
               >
                 <Link
                   href="/inquilino/explorar"
-                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-[#1a1a1c]/50 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all group"
+                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-[#1a1a1c]/50 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-[#EEF1FF]/50 dark:hover:bg-[#1A40FF]/20 transition-all group"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3 shadow-sm group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 transition-colors">
-                    <Plus className="w-6 h-6 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3 group-hover:bg-[#EEF1FF] dark:group-hover:bg-[#1A40FF]/30 transition-colors">
+                    <Plus className="w-6 h-6 text-neutral-400 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors" />
                   </div>
-                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                     {locale === 'es' ? 'Agregar más' : 'Add more'}
                   </p>
                   <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
@@ -263,12 +263,12 @@ export default function GuardadosPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-8 rounded-3xl bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/40 dark:to-[#1a1a1c] border border-indigo-100 dark:border-indigo-900/50 p-6"
+              className="mt-8 rounded-xl bg-gradient-to-br from-[#1A40FF] to-white dark:from-[#1A40FF]/40 dark:to-[#1a1a1c] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6"
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center shadow-sm">
-                    <Heart className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#1a1a1c] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-center">
+                    <Heart className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
                     <p className="font-semibold text-neutral-900 dark:text-white">
@@ -281,7 +281,7 @@ export default function GuardadosPage() {
                 </div>
                 <Link
                   href="/inquilino/explorar"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
                 >
                   <MagnifyingGlass className="w-4 h-4" />
                   {locale === 'es' ? 'Ver más propiedades' : 'View more properties'}

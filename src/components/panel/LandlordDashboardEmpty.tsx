@@ -87,7 +87,7 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-3xl bg-white dark:bg-[#1a1a1c] rounded-3xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-3xl bg-white dark:bg-[#1a1a1c] rounded-xl overflow-hidden"
       >
         <button
           onClick={onClose}
@@ -209,7 +209,7 @@ export function LandlordDashboardEmpty() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Welcome Header */}
         <motion.header
@@ -234,12 +234,12 @@ export function LandlordDashboardEmpty() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] overflow-hidden"
             >
               {/* Header */}
               <button
                 onClick={toggleCollapsed}
-                className="w-full p-6 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors"
+                className="w-full p-6 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-[#222224] transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="text-2xl">🚀</div>
@@ -257,7 +257,7 @@ export function LandlordDashboardEmpty() {
                 <div className="flex items-center gap-4">
                   {/* Progress */}
                   <div className="hidden sm:flex items-center gap-3">
-                    <div className="w-32 h-2 bg-stone-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                    <div className="w-32 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progressPercentage}%` }}
@@ -285,11 +285,11 @@ export function LandlordDashboardEmpty() {
                     const content = (
                       <div
                         className={cn(
-                          'flex items-center gap-4 p-4 rounded-2xl transition-all',
+                          'flex items-center gap-4 p-4 rounded-xl transition-all',
                           step.completed
-                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                             : isNext
-                            ? 'bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 shadow-sm cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-600'
+                            ? 'bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-600'
                             : 'bg-white dark:bg-[#1f1f21] opacity-50'
                         )}
                         onClick={() => !step.href && handleStepClick(step)}
@@ -298,13 +298,13 @@ export function LandlordDashboardEmpty() {
                         <div className={cn(
                           'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
                           step.completed
-                            ? 'bg-emerald-100 dark:bg-emerald-900/50'
+                            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                             : isNext
                             ? 'bg-neutral-900 dark:bg-white'
-                            : 'bg-stone-100 dark:bg-neutral-800'
+                            : 'bg-neutral-100 dark:bg-neutral-800'
                         )}>
                           {step.completed ? (
-                            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                            <Check className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" strokeWidth={2.5} />
                           ) : (
                             <Icon className={cn(
                               'w-5 h-5',
@@ -318,7 +318,7 @@ export function LandlordDashboardEmpty() {
                           <p className={cn(
                             'font-medium',
                             step.completed
-                              ? 'text-emerald-700 dark:text-emerald-400'
+                              ? 'text-[#2C7A53] dark:text-[#3EAE70]'
                               : 'text-neutral-900 dark:text-white'
                           )}>
                             {locale === 'es' ? step.labelEs : step.labelEn}
@@ -370,9 +370,6 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'We protect your investment',
                   descEs: 'Seguro contra impago hasta 24 meses',
                   descEn: 'Non-payment insurance up to 24 months',
-                  gradient: 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20',
-                  iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
-                  iconColor: 'text-emerald-600 dark:text-emerald-400',
                 },
                 {
                   icon: Users,
@@ -380,9 +377,6 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'Verified tenants',
                   descEs: 'Evaluación crediticia completa',
                   descEn: 'Complete credit evaluation',
-                  gradient: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20',
-                  iconBg: 'bg-blue-100 dark:bg-blue-900/50',
-                  iconColor: 'text-blue-600 dark:text-blue-400',
                 },
                 {
                   icon: Lightning,
@@ -390,17 +384,14 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'Automatic collection',
                   descEs: 'Recibe el arriendo puntual cada mes',
                   descEn: 'Receive rent on time every month',
-                  gradient: 'from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20',
-                  iconBg: 'bg-amber-100 dark:bg-amber-900/50',
-                  iconColor: 'text-amber-600 dark:text-amber-400',
                 },
-              ].map((card, index) => (
+              ].map((card) => (
                 <div
                   key={card.titleEs}
-                  className={cn('rounded-2xl p-5 bg-gradient-to-br', card.gradient)}
+                  className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
                 >
-                  <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center mb-4', card.iconBg)}>
-                    <card.icon className={cn('w-5 h-5', card.iconColor)} />
+                  <div className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 flex items-center justify-center mb-4">
+                    <card.icon weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <h3 className="font-semibold text-neutral-900 dark:text-white mb-1">
                     {locale === 'es' ? card.titleEs : card.titleEn}
@@ -412,31 +403,35 @@ export function LandlordDashboardEmpty() {
               ))}
             </motion.div>
 
-            {/* Empty state for properties */}
+            {/* Empty state for properties — estilo limpio canónico */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-8 text-center"
+              className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
             >
-              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#222224] flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <Buildings className="w-8 h-8 text-neutral-400" />
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+                <Buildings weight="duotone" className="h-6 w-6 text-neutral-400 dark:text-neutral-500" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-md mx-auto">
-                {locale === 'es'
-                  ? 'Publica tu primera propiedad y comienza a recibir aplicaciones de inquilinos verificados.'
-                  : 'List your first property and start receiving applications from verified tenants.'}
-              </p>
-              <Link
-                href="/publicar?from=panel"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                {locale === 'es' ? 'Publicar propiedad' : 'List property'}
-              </Link>
+              <div className="space-y-1.5">
+                <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+                  {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
+                </p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+                  {locale === 'es'
+                    ? 'Publica tu primera propiedad y comienza a recibir aplicaciones de inquilinos verificados.'
+                    : 'List your first property and start receiving applications from verified tenants.'}
+                </p>
+              </div>
+              <div className="mt-1">
+                <Link
+                  href="/publicar?from=panel"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                >
+                  <Plus className="w-4 h-4" />
+                  {locale === 'es' ? 'Publicar propiedad' : 'List property'}
+                </Link>
+              </div>
             </motion.div>
           </div>
 
@@ -448,9 +443,9 @@ export function LandlordDashboardEmpty() {
             className="space-y-6"
           >
             {/* Quick Stats (placeholder) */}
-            <div className="rounded-3xl bg-stone-100 dark:bg-[#1a1a1c] border border-stone-200 dark:border-neutral-700 p-6">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center gap-3 mb-4">
-                <TrendUp className="w-5 h-5 text-amber-500" />
+                <TrendUp weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                 <span className="text-sm font-medium text-neutral-600 dark:text-white/80">
                   {locale === 'es' ? 'Tu potencial mensual' : 'Your monthly potential'}
                 </span>
@@ -462,7 +457,7 @@ export function LandlordDashboardEmpty() {
             </div>
 
             {/* Resources */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
                 {locale === 'es' ? 'Recursos útiles' : 'Helpful resources'}
               </h3>
@@ -475,9 +470,9 @@ export function LandlordDashboardEmpty() {
                   <Link
                     key={resource.labelEs}
                     href={resource.href}
-                    className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#222224] transition-colors group"
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#222224] transition-colors group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#222224] flex items-center justify-center group-hover:bg-stone-100 dark:group-hover:bg-[#2a2a2c] transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#222224] flex items-center justify-center group-hover:bg-neutral-100 dark:group-hover:bg-[#2a2a2c] transition-colors">
                       <resource.icon className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
                     </div>
                     <span className="flex-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -490,10 +485,10 @@ export function LandlordDashboardEmpty() {
             </div>
 
             {/* Need help */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800/60 flex items-center justify-center flex-shrink-0">
+                  <Clock weight="duotone" className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <div>
                   <h4 className="font-medium text-neutral-900 dark:text-white mb-1">
@@ -506,7 +501,7 @@ export function LandlordDashboardEmpty() {
                   </p>
                   <Link
                     href="/ayuda"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
                   >
                     {locale === 'es' ? 'Contactar soporte' : 'Contact support'}
                     <ArrowRight className="w-4 h-4" />

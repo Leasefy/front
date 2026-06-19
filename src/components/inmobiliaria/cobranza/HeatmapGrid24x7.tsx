@@ -59,7 +59,7 @@ const HOURS_LABELS: string[] = Array.from({ length: 24 }, (_, h) =>
 function cellBgColor(count: number, positiveRate: number, max: number): string {
   if (count === 0) return '#e5e7eb'; // neutral-200
   const intensity = Math.min(1, count / Math.max(1, max));
-  const hue = 217; // blue
+  const hue = 230; // brand electric-blue hue (#1A40FF ≈ hsl(230 100% 55%))
   const saturation = 30 + positiveRate * 55;
   const lightness = 90 - intensity * 55;
   return `hsl(${hue} ${saturation.toFixed(0)}% ${lightness.toFixed(0)}%)`;
@@ -177,7 +177,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
                     className={
                       'aspect-square rounded-[2px] ' +
                       (isSelected
-                        ? 'ring-2 ring-indigo-500 ring-offset-1 relative z-10'
+                        ? 'ring-2 ring-[#1A40FF] ring-offset-1 relative z-10'
                         : '')
                     }
                     style={{ backgroundColor: cellBgColor(cell.call_count, cell.positive_outcome_pct, effectiveMax) }}

@@ -58,24 +58,24 @@ const STATUS_COLORS: Record<
   { text: string; bg: string; border: string }
 > = {
   paid: {
-    text: 'text-green-700 dark:text-green-300',
-    bg: 'bg-green-50 dark:bg-green-950/30',
-    border: 'border-green-200 dark:border-green-900',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
   },
   approved: {
-    text: 'text-green-700 dark:text-green-300',
-    bg: 'bg-green-50 dark:bg-green-950/30',
-    border: 'border-green-200 dark:border-green-900',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
   },
   pending_approval: {
-    text: 'text-amber-700 dark:text-amber-300',
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-900',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
   },
   rejected: {
-    text: 'text-red-700 dark:text-red-300',
-    bg: 'bg-red-50 dark:bg-red-950/30',
-    border: 'border-red-200 dark:border-red-900',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
   },
   void: {
     text: 'text-neutral-600 dark:text-neutral-400',
@@ -199,13 +199,13 @@ function ApBillDetailContent({ billId }: { billId: string }) {
         <BackNav t={t} k={k} />
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 p-4"
+          className="flex items-start gap-3 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4"
         >
           <Warning
-            className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5"
             weight="fill"
           />
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
         </div>
       </div>
     );
@@ -230,7 +230,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
           </div>
           <Link
             href="/panel/inmobiliaria/tesoreria"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-mono uppercase tracking-wide text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
           >
             <CaretLeft className="w-4 h-4" />
             {t(k('backToList'))}
@@ -254,8 +254,8 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center flex-shrink-0">
-            <Receipt className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+            <Receipt className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div>
             <h1 className="text-h2 text-foreground font-semibold">
@@ -270,7 +270,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
         {/* Status pill */}
         <span
           className={cn(
-            'inline-flex items-center self-start px-3 py-1.5 rounded-lg border text-sm font-medium',
+            'inline-flex items-center self-start px-3 py-1.5 rounded-md border text-sm font-medium',
             colors.text,
             colors.bg,
             colors.border,
@@ -281,23 +281,23 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       </header>
 
       {/* M1 info banner */}
-      <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 flex items-start gap-2.5">
+      <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-3 flex items-start gap-2.5">
         <Info
-          className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+          className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] flex-shrink-0 mt-0.5"
           weight="fill"
         />
         <div>
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+          <p className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">
             {t(k('m1BannerTitle'))}
           </p>
-          <p className="text-xs text-blue-600 dark:text-blue-300/90 mt-0.5">
+          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]/90 mt-0.5">
             {t(k('m1BannerDesc'))}
           </p>
         </div>
       </div>
 
       {/* Detail card */}
-      <section className="rounded-2xl border border-border bg-card p-6">
+      <section className="rounded-xl border border-border bg-card p-6">
         <div className="divide-y divide-border">
           <DetailRow label={t(k('labelInvoiceNumber'))}>
             <span className="font-mono">{bill.invoiceNumber}</span>
@@ -316,7 +316,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
           <DetailRow label={t(k('labelStatus'))}>
             <span
               className={cn(
-                'inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-medium',
+                'inline-flex items-center px-2 py-0.5 rounded-sm border text-xs font-medium',
                 colors.text,
                 colors.bg,
                 colors.border,

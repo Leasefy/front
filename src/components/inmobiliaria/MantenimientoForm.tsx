@@ -74,25 +74,25 @@ const PRIORITY_OPTIONS: { value: MantenimientoPriority; labelKey: string; descKe
     value: 'low',
     labelKey: 'inmobiliaria.mantenimiento.priorityLow',
     descKey: 'inmobiliaria.mantenimiento.priorityLowDesc',
-    color: 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30',
+    color: 'border-[#6B6B6B] dark:border-[#6B6B6B] bg-[#6B6B6B] dark:bg-[#6B6B6B]/30',
   },
   {
     value: 'medium',
     labelKey: 'inmobiliaria.mantenimiento.priorityMedium',
     descKey: 'inmobiliaria.mantenimiento.priorityMediumDesc',
-    color: 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30',
+    color: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
   },
   {
     value: 'high',
     labelKey: 'inmobiliaria.mantenimiento.priorityHigh',
     descKey: 'inmobiliaria.mantenimiento.priorityHighDesc',
-    color: 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30',
+    color: 'border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15',
   },
   {
     value: 'emergency',
     labelKey: 'inmobiliaria.mantenimiento.priorityEmergency',
     descKey: 'inmobiliaria.mantenimiento.priorityEmergencyDesc',
-    color: 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30',
+    color: 'border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15',
   },
 ];
 
@@ -134,21 +134,21 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.property')} <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.property')} <span className="text-[#C4503B]">*</span>
       </label>
 
       {selectedConsignacion ? (
-        <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20">
+        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
               {selectedConsignacion.propertyThumbnail ? (
                 <img
                   src={selectedConsignacion.propertyThumbnail}
                   alt={selectedConsignacion.propertyTitle}
-                  className="w-16 h-12 rounded-lg object-cover"
+                  className="w-16 h-12 rounded-md object-cover"
                 />
               ) : (
-                <div className="w-16 h-12 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                <div className="w-16 h-12 rounded-md bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
                   <HouseLine className="w-6 h-6 text-neutral-400" />
                 </div>
               )}
@@ -173,7 +173,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 onSelect('');
                 setIsOpen(true);
               }}
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
             >
               {t('inmobiliaria.mantenimiento.change')}
             </button>
@@ -189,7 +189,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsOpen(true)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
             />
           </div>
 
@@ -199,7 +199,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl"
+                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]"
               >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (
@@ -217,10 +217,10 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                         <img
                           src={consignacion.propertyThumbnail}
                           alt={consignacion.propertyTitle}
-                          className="w-12 h-9 rounded-lg object-cover shrink-0"
+                          className="w-12 h-9 rounded-md object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-12 h-9 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-9 rounded-md bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
                           <HouseLine className="w-5 h-5 text-neutral-400" />
                         </div>
                       )}
@@ -264,7 +264,7 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.maintenanceType')} <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.maintenanceType')} <span className="text-[#C4503B]">*</span>
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {MANTENIMIENTO_TYPES.map((type) => {
@@ -279,7 +279,7 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
               className={cn(
                 'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
                 isSelected
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                   : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
               )}
             >
@@ -287,7 +287,7 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
                 className={cn(
                   'w-12 h-12 rounded-xl flex items-center justify-center text-2xl',
                   isSelected
-                    ? 'bg-indigo-100 dark:bg-indigo-900/40'
+                    ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                     : 'bg-neutral-100 dark:bg-neutral-800'
                 )}
               >
@@ -297,7 +297,7 @@ function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
                 className={cn(
                   'text-sm font-medium text-center',
                   isSelected
-                    ? 'text-indigo-600 dark:text-indigo-400'
+                    ? 'text-[#1A40FF] dark:text-[#5570FF]'
                     : 'text-neutral-700 dark:text-neutral-300'
                 )}
               >
@@ -325,7 +325,7 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.priorityLabel')} <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.priorityLabel')} <span className="text-[#C4503B]">*</span>
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {PRIORITY_OPTIONS.map((priority) => {
@@ -339,7 +339,7 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
               className={cn(
                 'p-4 rounded-xl border-2 text-left transition-all',
                 isSelected
-                  ? 'border-indigo-500 ring-2 ring-indigo-500/20'
+                  ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
                   : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600',
                 priority.color
               )}
@@ -348,16 +348,16 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
                 <span
                   className={cn(
                     'font-semibold',
-                    priority.value === 'emergency' && 'text-red-600 dark:text-red-400',
-                    priority.value === 'high' && 'text-amber-600 dark:text-amber-400',
-                    priority.value === 'medium' && 'text-blue-600 dark:text-blue-400',
-                    priority.value === 'low' && 'text-slate-600 dark:text-slate-400'
+                    priority.value === 'emergency' && 'text-[#C4503B] dark:text-[#E0664D]',
+                    priority.value === 'high' && 'text-[#B7791F] dark:text-[#D2992F]',
+                    priority.value === 'medium' && 'text-[#1A40FF] dark:text-[#5570FF]',
+                    priority.value === 'low' && 'text-[#6B6B6B] dark:text-[#6B6B6B]'
                   )}
                 >
                   {t(priority.labelKey)}
                 </span>
                 {priority.value === 'emergency' && (
-                  <Warning className="w-5 h-5 text-red-500" weight="fill" />
+                  <Warning className="w-5 h-5 text-[#C4503B]" weight="fill" />
                 )}
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">{t(priority.descKey)}</p>
@@ -409,7 +409,7 @@ function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
             <button
               type="button"
               onClick={() => onRemove(index)}
-              className="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white uppercase tracking-wide font-mono opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-1 right-1 p-1 rounded-full bg-[#C4503B] text-white opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X className="w-4 h-4" />
             </button>
@@ -418,7 +418,7 @@ function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
 
         {/* Add photo button */}
         {photos.length < 5 && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-all">
             <Camera className="w-6 h-6 text-neutral-400" />
             <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
             <input
@@ -448,13 +448,13 @@ function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-red-500">*</span>
+        {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-[#C4503B]">*</span>
       </label>
 
-      <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 mb-4">
+      <div className="p-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 mb-4">
         <div className="flex gap-3">
-          <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+          <Info className="w-5 h-5 text-[#1A40FF] shrink-0 mt-0.5" />
+          <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
             {t('inmobiliaria.mantenimiento.paymentInfo')}
           </p>
         </div>
@@ -472,7 +472,7 @@ function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
               className={cn(
                 'p-4 rounded-xl border-2 text-left transition-all',
                 isSelected
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                   : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
               )}
             >
@@ -480,14 +480,14 @@ function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
                 <Wallet
                   className={cn(
                     'w-4 h-4',
-                    isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-400'
+                    isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-400'
                   )}
                 />
                 <span
                   className={cn(
                     'font-medium',
                     isSelected
-                      ? 'text-indigo-600 dark:text-indigo-400'
+                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
                       : 'text-neutral-700 dark:text-neutral-300'
                   )}
                 >
@@ -609,7 +609,7 @@ export function MantenimientoForm({
       {/* Section 1: Property Selection */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <HouseLine className="w-5 h-5 text-indigo-500" />
+          <HouseLine className="w-5 h-5 text-[#1A40FF]" />
           {t('inmobiliaria.mantenimiento.property')}
         </h3>
         <PropertySelector
@@ -619,7 +619,7 @@ export function MantenimientoForm({
           t={t}
         />
         {touched.consignacionId && errors.consignacionId && (
-          <p className="text-sm text-red-500 flex items-center gap-1">
+          <p className="text-sm text-[#C4503B] flex items-center gap-1">
             <Warning className="w-4 h-4" />
             {errors.consignacionId}
           </p>
@@ -629,7 +629,7 @@ export function MantenimientoForm({
       {/* Section 2: Request Details */}
       <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <Wrench className="w-5 h-5 text-indigo-500" />
+          <Wrench className="w-5 h-5 text-[#1A40FF]" />
           {t('inmobiliaria.mantenimiento.requestDetail')}
         </h3>
 
@@ -640,7 +640,7 @@ export function MantenimientoForm({
           t={t}
         />
         {touched.type && errors.type && (
-          <p className="text-sm text-red-500 flex items-center gap-1">
+          <p className="text-sm text-[#C4503B] flex items-center gap-1">
             <Warning className="w-4 h-4" />
             {errors.type}
           </p>
@@ -653,7 +653,7 @@ export function MantenimientoForm({
           t={t}
         />
         {touched.priority && errors.priority && (
-          <p className="text-sm text-red-500 flex items-center gap-1">
+          <p className="text-sm text-[#C4503B] flex items-center gap-1">
             <Warning className="w-4 h-4" />
             {errors.priority}
           </p>
@@ -665,11 +665,11 @@ export function MantenimientoForm({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800"
+            className="p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40"
           >
             <div className="flex gap-3">
-              <Warning className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+              <Warning className="w-5 h-5 text-[#B7791F] shrink-0 mt-0.5" />
+              <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
                 {formData.priority === 'emergency'
                   ? t('inmobiliaria.mantenimiento.emergencyWarning')
                   : t('inmobiliaria.mantenimiento.highPriorityWarning')}
@@ -681,7 +681,7 @@ export function MantenimientoForm({
         {/* Title */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            {t('inmobiliaria.mantenimiento.requestTitle')} <span className="text-red-500">*</span>
+            {t('inmobiliaria.mantenimiento.requestTitle')} <span className="text-[#C4503B]">*</span>
           </label>
           <input
             type="text"
@@ -690,14 +690,14 @@ export function MantenimientoForm({
             onBlur={() => setTouched((prev) => ({ ...prev, title: true }))}
             placeholder={t('inmobiliaria.mantenimiento.titlePlaceholder')}
             className={cn(
-              'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+              'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
               touched.title && errors.title
-                ? 'border-red-500'
+                ? 'border-[#C4503B]/30'
                 : 'border-neutral-200 dark:border-neutral-700'
             )}
           />
           {touched.title && errors.title && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
+            <p className="text-sm text-[#C4503B] flex items-center gap-1">
               <Warning className="w-4 h-4" />
               {errors.title}
             </p>
@@ -707,7 +707,7 @@ export function MantenimientoForm({
         {/* Description */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            {t('inmobiliaria.mantenimiento.problemDescription')} <span className="text-red-500">*</span>
+            {t('inmobiliaria.mantenimiento.problemDescription')} <span className="text-[#C4503B]">*</span>
           </label>
           <textarea
             value={formData.description}
@@ -716,14 +716,14 @@ export function MantenimientoForm({
             rows={4}
             placeholder={t('inmobiliaria.mantenimiento.descriptionPlaceholder')}
             className={cn(
-              'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none',
+              'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all resize-none',
               touched.description && errors.description
-                ? 'border-red-500'
+                ? 'border-[#C4503B]/30'
                 : 'border-neutral-200 dark:border-neutral-700'
             )}
           />
           {touched.description && errors.description && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
+            <p className="text-sm text-[#C4503B] flex items-center gap-1">
               <Warning className="w-4 h-4" />
               {errors.description}
             </p>
@@ -747,7 +747,7 @@ export function MantenimientoForm({
       {/* Section 3: Responsibility */}
       <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-indigo-500" />
+          <Wallet className="w-5 h-5 text-[#1A40FF]" />
           {t('inmobiliaria.mantenimiento.responsibility')}
         </h3>
 
@@ -761,7 +761,7 @@ export function MantenimientoForm({
       {/* Section 4: Additional Info */}
       <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <Info className="w-5 h-5 text-indigo-500" />
+          <Info className="w-5 h-5 text-[#1A40FF]" />
           {t('inmobiliaria.mantenimiento.additionalInfo')}
         </h3>
 
@@ -774,7 +774,7 @@ export function MantenimientoForm({
             onChange={(e) => updateField('accessNotes', e.target.value)}
             rows={3}
             placeholder={t('inmobiliaria.mantenimiento.accessPlaceholder')}
-            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all resize-none"
           />
         </div>
       </div>
@@ -792,7 +792,7 @@ export function MantenimientoForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
         >
           {isSubmitting ? (
             <>

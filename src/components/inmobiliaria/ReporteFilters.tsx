@@ -190,7 +190,7 @@ export function ReporteFilters({
           placeholder={t('inmobiliaria.reporte.searchReports')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
         />
         {searchInput && (
           <button
@@ -218,9 +218,9 @@ export function ReporteFilters({
                 key={tab.value}
                 onClick={() => updateFilter('category', tab.value)}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                  'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all',
                   isActive
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-background text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -230,7 +230,7 @@ export function ReporteFilters({
                     className={cn(
                       'px-1.5 py-0.5 rounded-full text-xs min-w-[18px] text-center',
                       isActive
-                        ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'bg-muted-foreground/20'
                     )}
                   >
@@ -265,16 +265,16 @@ export function ReporteFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-1 w-52 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
+                className="absolute top-full left-0 mt-1 w-52 p-2 rounded-xl border border-border bg-card z-20"
               >
                 {PERIOD_OPTION_KEYS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handlePeriodSelect(option.value)}
                     className={cn(
-                      'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                       selectedPeriodOption === option.value
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
@@ -295,7 +295,7 @@ export function ReporteFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.zone
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-600'
+                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             )}
           >
@@ -311,7 +311,7 @@ export function ReporteFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute left-0 top-full mt-1 w-52 p-2 rounded-xl border border-border bg-card shadow-xl z-20 max-h-64 overflow-y-auto"
+                className="absolute left-0 top-full mt-1 w-52 p-2 rounded-xl border border-border bg-card z-20 max-h-64 overflow-y-auto"
               >
                 <button
                   onClick={() => {
@@ -319,9 +319,9 @@ export function ReporteFilters({
                     setOpenDropdown(null);
                   }}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     !filters.zone
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
@@ -335,9 +335,9 @@ export function ReporteFilters({
                       setOpenDropdown(null);
                     }}
                     className={cn(
-                      'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                       filters.zone === zone
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
@@ -355,7 +355,7 @@ export function ReporteFilters({
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
             filters.favoritesOnly
-              ? 'bg-amber-500 text-white border-amber-500'
+              ? 'bg-[#B7791F] text-white border-[#B7791F]/30'
               : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
           )}
         >
@@ -370,7 +370,7 @@ export function ReporteFilters({
         {activeFiltersCount > 0 && (
           <button
             onClick={clearAllFilters}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-sm font-medium hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/30 transition-colors"
           >
             <Funnel className="w-4 h-4" weight="fill" />
             {t('inmobiliaria.reporte.clear')}

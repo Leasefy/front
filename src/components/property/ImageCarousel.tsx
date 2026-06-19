@@ -149,7 +149,7 @@ export function ImageCarousel({
               e.stopPropagation();
               onImageClick?.(0);
             }}
-            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-foreground text-xs font-medium tracking-tight rounded-sm hover:bg-muted transition-colors shadow-sm"
+            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-foreground text-xs font-medium tracking-tight rounded-sm hover:bg-muted transition-colors"
           >
             Ver todas las imagenes ({totalImages})
           </button>
@@ -164,7 +164,7 @@ export function ImageCarousel({
                 goToPrevious();
               }}
               className={cn(
-                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-md transition-all',
+                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 transition-all',
                 'hover:bg-white hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary',
                 isHero ? 'left-4 p-3' : 'left-3 p-2'
               )}
@@ -178,7 +178,7 @@ export function ImageCarousel({
                 goToNext();
               }}
               className={cn(
-                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-md transition-all',
+                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 transition-all',
                 'hover:bg-white hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary',
                 isHero ? 'right-4 p-3' : 'right-3 p-2'
               )}

@@ -78,7 +78,7 @@ export function useSubscription(): UseSubscriptionResult {
   }, [baseUrl])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchOnce()
   }, [agencyId, fetchOnce])
 

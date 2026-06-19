@@ -27,18 +27,18 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 const STATUS_CONFIG = {
   available: {
     label: 'Disponible',
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
   },
   rented: {
     label: 'Arrendada',
-    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-    text: 'text-indigo-700 dark:text-indigo-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
   },
   pending: {
     label: 'Borrador',
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
   },
 } as const;
 
@@ -94,7 +94,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-card rounded-2xl border border-border shadow-2xl">
+      <div className="w-full max-w-md bg-card rounded-xl border border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
@@ -105,7 +105,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
           >
             <X className="w-4 h-4" />
           </button>
@@ -116,8 +116,8 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
           {currentAgent && (
             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                <div className="w-8 h-8 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                     {currentAgent.firstName.charAt(0)}{currentAgent.lastName.charAt(0)}
                   </span>
                 </div>
@@ -131,7 +131,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
               <button
                 onClick={handleRemoveAgent}
                 disabled={isSubmitting}
-                className="text-xs text-rose-600 hover:text-rose-700 font-medium px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors disabled:opacity-50"
+                className="text-xs text-[#C4503B] hover:text-[#C4503B] font-medium px-2 py-1 rounded-md hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors disabled:opacity-50"
               >
                 Quitar
               </button>
@@ -149,7 +149,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="agente@inmobiliaria.com"
-                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all"
+                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm transition-all"
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
@@ -158,7 +158,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
             </div>
 
             {error && (
-              <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
+              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
             )}
 
             <div className="flex items-center gap-3 pt-1">
@@ -172,7 +172,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
               <button
                 type="submit"
                 disabled={!email.trim() || isSubmitting}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <Spinner className="w-4 h-4 animate-spin" />
@@ -260,7 +260,7 @@ function PropiedadesContent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -268,7 +268,7 @@ function PropiedadesContent() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-700 dark:text-rose-400 text-sm">
+        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-[#C4503B] dark:text-[#E0664D] text-sm">
           {error}
         </div>
       </div>
@@ -301,12 +301,12 @@ function PropiedadesContent() {
             onClick={() => router.push('/panel/inmobiliaria/propiedades/captura')}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted transition-colors text-sm font-medium"
           >
-            <Sparkle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" weight="fill" />
+            <Sparkle className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
             Capturar con IA
           </button>
           <button
-            onClick={() => router.push('/publicar')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm font-medium"
+            onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white hover:opacity-90 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             Nueva propiedad
@@ -320,18 +320,18 @@ function PropiedadesContent() {
           <p className="text-2xl font-bold text-foreground">{stats.total}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Total</p>
         </div>
-        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
-          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{stats.available}</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">Disponibles</p>
+        <div className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
+          <p className="text-2xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">{stats.available}</p>
+          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70] mt-0.5">Disponibles</p>
         </div>
-        <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
-          <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{stats.rented}</p>
-          <p className="text-xs text-indigo-600 dark:text-indigo-500 mt-0.5">Arrendadas</p>
+        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
+          <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">{stats.rented}</p>
+          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mt-0.5">Arrendadas</p>
         </div>
         {!isAgent && (
-          <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
-            <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{stats.unassigned}</p>
-            <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">Sin agente</p>
+          <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
+            <p className="text-2xl font-bold text-[#B7791F] dark:text-[#D2992F]">{stats.unassigned}</p>
+            <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-0.5">Sin agente</p>
           </div>
         )}
       </div>
@@ -347,7 +347,7 @@ function PropiedadesContent() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nombre, dirección..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-border bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
             />
             {search && (
               <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -363,9 +363,9 @@ function PropiedadesContent() {
                 key={s}
                 onClick={() => setFilterStatus(s)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap',
                   filterStatus === s
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-background text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -378,7 +378,7 @@ function PropiedadesContent() {
         {/* Table */}
         {filtered.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-4">
               <Buildings className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="font-medium text-foreground">Sin propiedades</p>
@@ -424,7 +424,7 @@ function PropiedadesContent() {
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           {property.thumbnailUrl ? (
-                            <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+                            <div className="w-12 h-12 rounded-md overflow-hidden shrink-0">
                               <img
                                 src={property.thumbnailUrl}
                                 alt={property.title}
@@ -432,7 +432,7 @@ function PropiedadesContent() {
                               />
                             </div>
                           ) : (
-                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
                               <House className="w-5 h-5 text-muted-foreground" />
                             </div>
                           )}
@@ -465,8 +465,8 @@ function PropiedadesContent() {
                       <td className="p-4">
                         {agent ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                              <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                            <div className="w-7 h-7 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                              <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                                 {agent.firstName.charAt(0)}{agent.lastName.charAt(0)}
                               </span>
                             </div>
@@ -487,7 +487,7 @@ function PropiedadesContent() {
                           <IconTooltip label="Ver propiedad">
                             <button
                               onClick={() => router.push(`/propiedades/${property.id}`)}
-                              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                              className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                               aria-label="Ver propiedad"
                             >
                               <Eye className="w-4 h-4" />
@@ -498,7 +498,7 @@ function PropiedadesContent() {
                               <IconTooltip label="Ver candidatos">
                                 <button
                                   onClick={() => router.push(`/panel/inmobiliaria/propiedades/${property.id}/candidatos`)}
-                                  className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                  className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                                   aria-label="Ver candidatos"
                                 >
                                   <Users className="w-4 h-4" />
@@ -507,7 +507,7 @@ function PropiedadesContent() {
                               <IconTooltip label="Cambiar agente">
                                 <button
                                   onClick={() => setChangingAgent(property)}
-                                  className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                  className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                                   aria-label="Cambiar agente"
                                 >
                                   <ArrowsClockwise className="w-4 h-4" />

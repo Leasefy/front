@@ -114,15 +114,15 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
   if (!score && !level) return null;
 
   const colors: Record<string, string> = {
-    A: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
-    B: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    C: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    D: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    A: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+    B: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+    C: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    D: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
     E: 'bg-muted text-muted-foreground',
   };
 
   return (
-    <div className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium', colors[level || 'E'])}>
+    <div className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium', colors[level || 'E'])}>
       {level && <span className="font-bold">{level}</span>}
       {score && <span className="opacity-75">({score} pts)</span>}
     </div>
@@ -240,7 +240,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                   <span className="truncate">{item.propertyAddress}</span>
                 </div>
               </div>
-              <span className={cn('shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold', stageInfo?.color)}>
+              <span className={cn('shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold', stageInfo?.color)}>
                 {stageInfo?.labelEs}
               </span>
             </div>
@@ -259,24 +259,24 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 <img
                   src={item.propertyThumbnail}
                   alt={item.propertyTitle}
-                  className="w-20 h-20 rounded-lg object-cover shrink-0"
+                  className="w-20 h-20 rounded-md object-cover shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <div className="w-20 h-20 rounded-md bg-muted flex items-center justify-center shrink-0">
                   <Buildings className="w-8 h-8 text-muted-foreground" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-foreground truncate">{item.propertyTitle}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5 truncate">{item.propertyAddress}</p>
-                <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mt-2 tabular-nums">
+                <p className="text-lg font-semibold text-[#1A40FF] dark:text-[#5570FF] mt-2 tabular-nums">
                   {formatCurrency(item.monthlyRent)}<span className="text-sm font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
                 </p>
               </div>
             </div>
             <Link
               href={`/panel/inmobiliaria/portafolio/${item.consignacionId}`}
-              className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:bg-muted/50 transition-colors"
             >
               <span>{t('inmobiliaria.pipeline.viewConsignment')}</span>
               <CaretRight className="w-4 h-4" />
@@ -298,7 +298,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                     className="w-11 h-11 rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#1A40FF] to-[#6B6B6B] flex items-center justify-center text-white text-sm font-semibold shrink-0">
                     {item.candidateName.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
                   </div>
                 )}
@@ -309,7 +309,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => copyToClipboard(item.candidateEmail, 'Email')}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors group"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-md border border-border bg-muted/30 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors group"
                 >
                   <Envelope className="w-4 h-4 shrink-0" />
                   <span className="truncate flex-1 text-left">{item.candidateEmail.split('@')[0]}</span>
@@ -317,7 +317,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 </button>
                 <button
                   onClick={() => copyToClipboard(item.candidatePhone, 'Teléfono')}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-muted/30 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors group"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-md border border-border bg-muted/30 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors group"
                 >
                   <Phone className="w-4 h-4 shrink-0" />
                   <span className="truncate flex-1 text-left tabular-nums">{item.candidatePhone}</span>
@@ -328,7 +328,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               {/* WhatsApp Button */}
               <button
                 onClick={() => openWhatsApp(item.candidatePhone)}
-                className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-medium transition-colors"
+                className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md bg-[#2C7A53] hover:bg-[#2C7A53] text-white text-sm font-medium transition-colors"
               >
                 <WhatsappLogo className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.pipeline.sendWhatsApp')}
@@ -353,7 +353,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
             <div className="rounded-xl border border-border bg-card divide-y divide-border">
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.currentStage')}</span>
-                <span className={cn('px-2.5 py-1 rounded-md text-xs font-medium', stageInfo?.color)}>
+                <span className={cn('px-2.5 py-1 rounded-sm text-xs font-medium', stageInfo?.color)}>
                   {stageInfo?.labelEs}
                 </span>
               </div>
@@ -362,7 +362,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.daysInStage')}</span>
                 <span className={cn(
                   'flex items-center gap-1.5 text-sm font-semibold tabular-nums',
-                  isOverdue ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
+                  isOverdue ? 'text-[#B7791F] dark:text-[#D2992F]' : 'text-foreground'
                 )}>
                   {item.daysInStage} {t('inmobiliaria.pipeline.days')}
                   {isOverdue && <Warning className="w-4 h-4" weight="fill" />}
@@ -408,7 +408,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                         <div
                           className={cn(
                             'absolute -left-5 w-2.5 h-2.5 rounded-full mt-1.5 ring-2 ring-card',
-                            entry.isCurrent ? 'bg-indigo-600' : 'bg-muted-foreground/30'
+                            entry.isCurrent ? 'bg-[#1A40FF]' : 'bg-muted-foreground/30'
                           )}
                         />
 
@@ -445,7 +445,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               {t('inmobiliaria.pipeline.notes')}
             </h4>
             {item.notes && (
-              <div className="p-3 rounded-lg bg-muted text-sm text-foreground">
+              <div className="p-3 rounded-md bg-muted text-sm text-foreground">
                 {item.notes}
               </div>
             )}
@@ -454,18 +454,18 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('inmobiliaria.pipeline.addNotePlaceholder')}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent resize-none text-sm"
             />
           </div>
 
           {/* Lost Reason */}
           {item.stage === 'lost' && item.lostReason && (
-            <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20">
-              <h4 className="font-medium text-red-700 dark:text-red-400 text-sm mb-2 flex items-center gap-2">
+            <div className="p-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15">
+              <h4 className="font-medium text-[#C4503B] dark:text-[#E0664D] text-sm mb-2 flex items-center gap-2">
                 <XCircle className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.pipeline.lostReason')}
               </h4>
-              <p className="text-sm text-red-600 dark:text-red-400">{item.lostReason}</p>
+              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{item.lostReason}</p>
             </div>
           )}
         </div>
@@ -476,7 +476,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
             <button
               onClick={handleMarkAsLost}
               disabled={isMarking || isMoving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors disabled:opacity-50"
             >
               {isMarking ? (
                 <span className="flex items-center gap-2">
@@ -498,7 +498,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <button
                 onClick={handleMoveToNext}
                 disabled={isMoving || isMarking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
               >
                 {isMoving ? (
                   <span className="flex items-center gap-2">

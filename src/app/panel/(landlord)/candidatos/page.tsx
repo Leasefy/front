@@ -58,10 +58,10 @@ function ScoringGuide() {
   ];
 
   const RISK_LEVEL_DETAILS = [
-    { level: 'A', labelKey: 'landlord.candidates.riskExcellent', range: '85–100', color: 'bg-emerald-500', textColor: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', descKey: 'landlord.candidates.riskExcellentDesc' },
-    { level: 'B', labelKey: 'landlord.candidates.riskGood', range: '70–84', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/20', descKey: 'landlord.candidates.riskGoodDesc' },
-    { level: 'C', labelKey: 'landlord.candidates.riskFair', range: '50–69', color: 'bg-amber-500', textColor: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-900/20', descKey: 'landlord.candidates.riskFairDesc' },
-    { level: 'D', labelKey: 'landlord.candidates.riskPoor', range: '0–49', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/20', descKey: 'landlord.candidates.riskPoorDesc' },
+    { level: 'A', labelKey: 'landlord.candidates.riskExcellent', range: '85–100', color: 'bg-[#2C7A53]', textColor: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', descKey: 'landlord.candidates.riskExcellentDesc' },
+    { level: 'B', labelKey: 'landlord.candidates.riskGood', range: '70–84', color: 'bg-[#1A40FF]', textColor: 'text-[#1A40FF] dark:text-[#5570FF]', bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', descKey: 'landlord.candidates.riskGoodDesc' },
+    { level: 'C', labelKey: 'landlord.candidates.riskFair', range: '50–69', color: 'bg-[#B7791F]', textColor: 'text-[#B7791F] dark:text-[#D2992F]', bgColor: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', descKey: 'landlord.candidates.riskFairDesc' },
+    { level: 'D', labelKey: 'landlord.candidates.riskPoor', range: '0–49', color: 'bg-[#C4503B]', textColor: 'text-[#C4503B] dark:text-[#E0664D]', bgColor: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', descKey: 'landlord.candidates.riskPoorDesc' },
   ];
 
   return (
@@ -72,8 +72,8 @@ function ScoringGuide() {
         className={cn(
           'flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border',
           open
-            ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300'
-            : 'bg-white dark:bg-[#222224] border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10'
+            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border-[#1A40FF]/30 dark:border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF]'
+            : 'bg-white dark:bg-[#222224] border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-[#EEF1FF]/50 dark:hover:bg-[#1A40FF]/10'
         )}
       >
         <Question className="w-4 h-4" />
@@ -100,8 +100,8 @@ function ScoringGuide() {
                   const Icon = cat.icon;
                   return (
                     <div key={cat.labelKey} className="flex gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <div className="w-9 h-9 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
@@ -123,7 +123,7 @@ function ScoringGuide() {
                 {RISK_LEVEL_DETAILS.map((risk) => (
                   <div key={risk.level} className={cn('p-3 rounded-xl', risk.bgColor)}>
                     <div className="flex items-center gap-3 mb-1">
-                      <span className={cn('w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white', risk.color)}>
+                      <span className={cn('w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white', risk.color)}>
                         {risk.level}
                       </span>
                       <div>
@@ -136,8 +136,8 @@ function ScoringGuide() {
                 ))}
               </div>
 
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
-                <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+              <div className="mt-4 p-3 bg-[#F8F0E0] dark:bg-[#B7791F]/15 rounded-xl">
+                <p className="text-xs text-[#B7791F] dark:text-[#D2992F] leading-relaxed">
                   <strong>{t('landlord.candidates.scoringNoteLabel')}</strong> {t('landlord.candidates.scoringNote')}
                 </p>
               </div>
@@ -452,9 +452,9 @@ export default function CandidatosPage() {
             <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.obligations')}</span>
             <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatCurrencyOrDash(candidate.monthlyObligations)}</span>
           </div>
-          <div className="flex justify-between py-2 bg-emerald-50 dark:bg-emerald-900/20 px-3 -mx-3 rounded-lg">
-            <span className="text-sm text-emerald-700 dark:text-emerald-400">{t('landlord.candidates.availableForRent')}</span>
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrencyOrDash(candidate.availableForRent)}</span>
+          <div className="flex justify-between py-2 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-3 -mx-3 rounded-md">
+            <span className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">{t('landlord.candidates.availableForRent')}</span>
+            <span className="text-sm font-semibold text-[#2C7A53] dark:text-[#3EAE70]">{formatCurrencyOrDash(candidate.availableForRent)}</span>
           </div>
         </div>
       ),
@@ -492,10 +492,10 @@ export default function CandidatosPage() {
             <div
               key={flag.id}
               className={cn(
-                'flex items-start gap-2 p-3 text-sm rounded-lg',
-                flag.severity === 'high' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' :
-                flag.severity === 'medium' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' :
-                'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                'flex items-start gap-2 p-3 text-sm rounded-md',
+                flag.severity === 'high' ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]' :
+                flag.severity === 'medium' ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]' :
+                'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
               )}
             >
               <Warning className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -522,7 +522,7 @@ export default function CandidatosPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <header className="mb-6">
@@ -549,14 +549,14 @@ export default function CandidatosPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.new}</p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('landlord.candidates.newCandidates')}</p>
             {statusCounts.new > 0 && (
-              <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium rounded-full">
+              <span className="inline-flex items-center mt-2 px-2 py-0.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-full">
                 {t('landlord.candidates.toReview')}
               </span>
             )}
@@ -564,8 +564,8 @@ export default function CandidatosPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.approved}</p>
@@ -574,8 +574,8 @@ export default function CandidatosPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{statusCounts.rejected}</p>
@@ -623,7 +623,7 @@ export default function CandidatosPage() {
                 onChange={(e) => setMagnifyingGlassQuery(e.target.value)}
                 placeholder={t('landlord.candidates.searchPlaceholder')}
                 aria-label={t('landlord.candidates.searchLabel')}
-                className="w-full h-11 pl-10 pr-4 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-xl text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full h-11 pl-10 pr-4 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-xl text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
               />
             </div>
 
@@ -636,9 +636,9 @@ export default function CandidatosPage() {
                     key={level}
                     onClick={() => setRiskFunnel(level)}
                     className={cn(
-                      'px-3 py-1.5 text-sm font-medium rounded-lg transition-all',
+                      'px-3 py-1.5 text-sm font-medium rounded-md transition-all',
                       riskFunnel === level
-                        ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                        ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white'
                         : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                     )}
                   >
@@ -653,15 +653,15 @@ export default function CandidatosPage() {
         {/* Loading state */}
         {isLoading && (
           <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
         {/* Error state */}
         {error && !isLoading && (
-          <div className="rounded-xl border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/20 p-6 text-center">
-            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-            <button onClick={refetch} className="mt-3 text-sm font-medium text-red-600 hover:text-red-700 underline">
+          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-6 text-center">
+            <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
+            <button onClick={refetch} className="mt-3 text-sm font-medium text-[#C4503B] hover:text-[#C4503B] underline">
               Reintentar
             </button>
           </div>

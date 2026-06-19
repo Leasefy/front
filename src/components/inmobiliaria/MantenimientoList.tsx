@@ -61,19 +61,19 @@ type SortDirection = 'asc' | 'desc';
 // ============================================================================
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
-  low: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
-  medium: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
-  high: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
-  emergency: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
+  low: { bg: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]', text: 'text-[#6B6B6B] dark:text-[#6B6B6B]', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  medium: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
+  high: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
+  emergency: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
-  quoted: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
-  approved: { bg: 'bg-lime-100 dark:bg-lime-900/30', text: 'text-lime-600 dark:text-lime-400', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
-  in_progress: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
-  completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
-  cancelled: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
+  reported: { bg: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]', text: 'text-[#6B6B6B] dark:text-[#6B6B6B]', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
+  quoted: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
+  approved: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
+  in_progress: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
+  completed: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
+  cancelled: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
 };
 
 const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
@@ -129,12 +129,12 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
   }, [data]);
 
   const cards = [
-    { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-indigo-600' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-slate-400' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusQuoted', value: stats.quoted, color: 'bg-blue-500' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusApproved', value: stats.approved, color: 'bg-lime-500' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusInProgress', value: stats.in_progress, color: 'bg-amber-500' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusCompleted', value: stats.completed, color: 'bg-emerald-500' },
+    { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-[#1A40FF]' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-[#6B6B6B]' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusQuoted', value: stats.quoted, color: 'bg-[#1A40FF]' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusApproved', value: stats.approved, color: 'bg-[#2C7A53]' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusInProgress', value: stats.in_progress, color: 'bg-[#B7791F]' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusCompleted', value: stats.completed, color: 'bg-[#2C7A53]' },
   ];
 
   return (
@@ -202,7 +202,7 @@ function FilterBar({
           placeholder={t('inmobiliaria.mantenimiento.searchPropertyOrZone')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
         />
       </div>
 
@@ -213,7 +213,7 @@ function FilterBar({
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as MantenimientoType | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
           >
             <option value="all">{t('inmobiliaria.mantenimiento.allTypes')}</option>
             {MANTENIMIENTO_TYPES.map((type) => (
@@ -230,7 +230,7 @@ function FilterBar({
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as MantenimientoPriority | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
           >
             <option value="all">{t('inmobiliaria.mantenimiento.allPriorities')}</option>
             <option value="emergency">{t('inmobiliaria.mantenimiento.priorityEmergency')}</option>
@@ -246,7 +246,7 @@ function FilterBar({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as MantenimientoStatus | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
           >
             <option value="all">{t('inmobiliaria.mantenimiento.allStatuses')}</option>
             <option value="reported">{t('inmobiliaria.mantenimiento.statusReported')}</option>
@@ -268,7 +268,7 @@ function FilterBar({
               setSortField(field);
               setSortDirection(dir);
             }}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
           >
             <option value="priority-asc">{t('inmobiliaria.mantenimiento.sortPriorityHigh')}</option>
             <option value="priority-desc">{t('inmobiliaria.mantenimiento.sortPriorityLow')}</option>
@@ -329,14 +329,14 @@ function MantenimientoCard({
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              'w-10 h-10 rounded-lg flex items-center justify-center',
-              solicitud.priority === 'emergency' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-indigo-100 dark:bg-indigo-900/30'
+              'w-10 h-10 rounded-md flex items-center justify-center',
+              solicitud.priority === 'emergency' ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15' : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
             )}
           >
             <TypeIcon
               className={cn(
                 'w-5 h-5',
-                solicitud.priority === 'emergency' ? 'text-red-600 dark:text-red-400' : 'text-indigo-600 dark:text-indigo-400'
+                solicitud.priority === 'emergency' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-[#1A40FF] dark:text-[#5570FF]'
               )}
             />
           </div>
@@ -354,7 +354,7 @@ function MantenimientoCard({
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
+            className="p-2 rounded-md hover:bg-muted transition-colors"
           >
             <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
           </button>
@@ -366,14 +366,14 @@ function MantenimientoCard({
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card shadow-xl z-20"
+                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card z-20"
                 >
                   <button
                     onClick={() => {
                       onViewDetails?.();
                       setShowMenu(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                   >
                     <Eye className="w-4 h-4" />
                     <span className="text-sm">{t('inmobiliaria.mantenimiento.viewDetail')}</span>
@@ -385,7 +385,7 @@ function MantenimientoCard({
                         onAddQuote();
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
                     >
                       <CurrencyCircleDollar className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.addQuote')}</span>
@@ -398,7 +398,7 @@ function MantenimientoCard({
                         onApproveQuote(solicitud.quotes[0].id);
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-lime-600 dark:text-lime-400 hover:bg-lime-50 dark:hover:bg-lime-900/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20 transition-colors"
                     >
                       <Check className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.approveQuote')}</span>
@@ -411,7 +411,7 @@ function MantenimientoCard({
                         onComplete();
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20 transition-colors"
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.markCompleted')}</span>
@@ -424,7 +424,7 @@ function MantenimientoCard({
                         onCancel();
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
                     >
                       <X className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.cancelRequest')}</span>
@@ -439,7 +439,7 @@ function MantenimientoCard({
       </div>
 
       {/* Property Info */}
-      <div className="mb-4 p-3 rounded-lg bg-muted/50">
+      <div className="mb-4 p-3 rounded-md bg-muted/50">
         <div className="flex items-center gap-2 mb-1">
           <HouseLine className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium text-foreground line-clamp-1">
@@ -501,7 +501,7 @@ function MantenimientoCard({
 
         {/* Approved amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}
@@ -635,7 +635,7 @@ export function MantenimientoList({
                 setStatusFilter('all');
                 setSearchQuery('');
               }}
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
             >
               {t('inmobiliaria.mantenimiento.clearFilters')}
             </button>

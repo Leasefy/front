@@ -44,21 +44,21 @@ import type { ArcoRequestRow } from '@/lib/hooks/cobranza/use-arco-requests'
 // ─── DOT COLOR MAP ─────────────────────────────────────────────────────────────
 
 const DOT_COLOR: Record<string, string> = {
-  resolved: 'bg-emerald-500',
-  in_progress: 'bg-indigo-500',
-  pending_email_verification: 'bg-amber-500',
-  pending_admin_triage: 'bg-amber-500',
-  pending_counsel_review: 'bg-amber-500',
-  rejected: 'bg-rose-500',
+  resolved: 'bg-[#2C7A53]',
+  in_progress: 'bg-[#1A40FF]',
+  pending_email_verification: 'bg-[#B7791F]',
+  pending_admin_triage: 'bg-[#B7791F]',
+  pending_counsel_review: 'bg-[#B7791F]',
+  rejected: 'bg-[#C4503B]',
 }
 
 // ─── TYPE BADGE COLORS (same as inbox) ─────────────────────────────────────────
 
 const TYPE_COLORS: Record<ArcoRequestRow['type'], string> = {
-  acceso: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/30',
-  rectificacion: 'text-teal-700 bg-teal-50 dark:bg-teal-950/20',
-  cancelacion: 'text-amber-700 bg-amber-50 dark:bg-amber-950/20',
-  oposicion: 'text-rose-700 bg-rose-50 dark:bg-rose-950/20',
+  acceso: 'text-[#1A40FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  rectificacion: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800',
+  cancelacion: 'text-[#B7791F] bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+  oposicion: 'text-[#C4503B] bg-[#F8EAE7] dark:bg-[#C4503B]/15',
 }
 
 // ─── STATUS TIMELINE ────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
                 {/* Audit log chip — link to compliance audit filtered by this request */}
                 <Link
                   href={`/panel/inmobiliaria/ai/cobranza/compliance/audit?arco_request_id=${requestId}`}
-                  className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 mt-0.5"
+                  className="inline-flex items-center gap-1 text-xs text-[#1A40FF] hover:text-[#1A40FF] mt-0.5"
                 >
                   <ArrowSquareOut className="h-3 w-3" weight="regular" />
                   {t('inmobiliaria.ai.arco.detail.viewAudit')}
@@ -267,7 +267,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
 
       {/* Counsel gate inline Alert — D-36-05: NOT a redirect, NOT a toast */}
       {gateBlocked && (
-        <Alert className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
+        <Alert className="bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 text-[#B7791F] dark:text-[#D2992F]">
           <AlertTitle>{t('inmobiliaria.ai.arco.counselGate.title')}</AlertTitle>
           <AlertDescription>{t('inmobiliaria.ai.arco.counselGate.description')}</AlertDescription>
         </Alert>
@@ -314,7 +314,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => void handleReject()}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+              tone="danger"
             >
               {t('inmobiliaria.ai.arco.rejectDialog.confirm')}
             </AlertDialogAction>
@@ -462,7 +462,7 @@ export default function ArcoDetailPage({ params }: ArcoDetailPageProps) {
       <div className="flex items-center gap-3">
         <Link
           href="/panel/inmobiliaria/ai/cobranza/arco"
-          className="text-xs text-indigo-500 hover:text-indigo-600"
+          className="text-xs text-[#1A40FF] hover:text-[#1A40FF]"
         >
           ← {t('inmobiliaria.ai.arco.detail.backToInbox')}
         </Link>

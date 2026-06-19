@@ -76,23 +76,23 @@ export function CouponInput({
   if (appliedCoupon) {
     return (
       <div className={cn('', className)}>
-        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-sm p-3">
+        <div className="flex items-center justify-between bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-sm p-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="w-6 h-6 rounded-full bg-[#E8F3EC] flex items-center justify-center shrink-0">
+              <Check className="w-3.5 h-3.5 text-[#2C7A53]" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-emerald-800 truncate">
+              <p className="text-sm font-medium text-[#2C7A53] truncate">
                 {appliedCoupon.code}
               </p>
-              <p className="text-xs text-emerald-600 truncate">
+              <p className="text-xs text-[#2C7A53] truncate">
                 {appliedCoupon.description}
               </p>
             </div>
           </div>
           <button
             onClick={handleRemove}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded transition-colors shrink-0"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2C7A53] hover:text-[#2C7A53] hover:bg-[#E8F3EC] rounded transition-colors shrink-0"
             aria-label="Quitar cupón"
           >
             <X className="w-4 h-4" />
@@ -125,7 +125,7 @@ export function CouponInput({
             placeholder="Ingresa tu código"
             className={cn(
               'pl-10',
-              error && 'border-red-300 focus-visible:ring-red-500'
+              error && 'border-[#C4503B]/30 focus-visible:ring-[#C4503B]'
             )}
             disabled={isLoading}
             autoComplete="off"
@@ -148,7 +148,7 @@ export function CouponInput({
         </Button>
       </div>
       {error && (
-        <p className="text-sm text-red-600 mt-2" role="alert">
+        <p className="text-sm text-[#C4503B] mt-2" role="alert">
           {error}
         </p>
       )}

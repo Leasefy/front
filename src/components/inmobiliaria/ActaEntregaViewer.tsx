@@ -71,7 +71,7 @@ function Section({ title, icon, children, defaultOpen = true }: SectionProps) {
         className="w-full flex items-center justify-between p-4 bg-neutral-50 dark:bg-[#141416] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+          <div className="w-8 h-8 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center text-[#1A40FF] dark:text-[#5570FF]">
             {icon}
           </div>
           <span className="font-medium text-neutral-900 dark:text-white">{title}</span>
@@ -218,8 +218,8 @@ export function ActaEntregaViewer({
                 className={cn(
                   'px-3 py-1 rounded-full text-xs font-medium',
                   acta.type === 'entrega'
-                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
-                    : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                    ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
+                    : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
                 )}
               >
                 {getActaTypeLabel(acta.type)}
@@ -257,7 +257,7 @@ export function ActaEntregaViewer({
             </button>
             <button
               onClick={onDownloadPDF}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 transition-colors text-sm font-medium"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1A40FF] text-white hover:opacity-90 transition-colors text-sm font-medium"
             >
               <DownloadSimple className="w-4 h-4" />
               {t('inmobiliaria.acta.downloadPdf')}
@@ -381,7 +381,7 @@ export function ActaEntregaViewer({
                           </td>
                           <td className="py-3 px-4">
                             {item.hasDefects && item.defectDescription ? (
-                              <span className="text-amber-600 dark:text-amber-400 text-sm">
+                              <span className="text-[#B7791F] dark:text-[#D2992F] text-sm">
                                 {item.defectDescription}
                               </span>
                             ) : (
@@ -399,7 +399,7 @@ export function ActaEntregaViewer({
                   {roomItems.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 rounded-lg bg-neutral-50 dark:bg-[#141416]"
+                      className="p-3 rounded-md bg-neutral-50 dark:bg-[#141416]"
                     >
                       <div className="flex items-start justify-between">
                         <p className="font-medium text-neutral-900 dark:text-white text-sm">
@@ -415,7 +415,7 @@ export function ActaEntregaViewer({
                         </span>
                       </div>
                       {item.hasDefects && item.defectDescription && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-1">
                           {item.defectDescription}
                         </p>
                       )}
@@ -434,13 +434,13 @@ export function ActaEntregaViewer({
           {acta.meterReadings.map((meter) => {
             const icons = {
               agua: '💧',
-              luz: <Lightning className="w-4 h-4 text-amber-500" />,
+              luz: <Lightning className="w-4 h-4 text-[#B7791F]" />,
               gas: '🔥',
             };
             const colors = {
-              agua: 'bg-blue-100 dark:bg-blue-900/30',
-              luz: 'bg-amber-100 dark:bg-amber-900/30',
-              gas: 'bg-orange-100 dark:bg-orange-900/30',
+              agua: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+              luz: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+              gas: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
             };
             const labels = {
               agua: t('inmobiliaria.acta.water'),
@@ -454,7 +454,7 @@ export function ActaEntregaViewer({
                 className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-neutral-100 dark:border-neutral-800"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', colors[meter.type])}>
+                  <div className={cn('w-10 h-10 rounded-md flex items-center justify-center', colors[meter.type])}>
                     {typeof icons[meter.type] === 'string' ? (
                       <span>{icons[meter.type]}</span>
                     ) : (
@@ -489,8 +489,8 @@ export function ActaEntregaViewer({
               key={index}
               className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] border border-neutral-100 dark:border-neutral-800"
             >
-              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                <Key className="w-5 h-5 text-slate-500" />
+              <div className="w-10 h-10 rounded-md bg-[#6B6B6B] dark:bg-[#6B6B6B] flex items-center justify-center">
+                <Key className="w-5 h-5 text-[#6B6B6B]" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-neutral-900 dark:text-white text-sm truncate">
@@ -557,17 +557,17 @@ export function ActaEntregaViewer({
                 {acta.deductions.map((deduction, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30"
+                    className="flex items-center justify-between p-3 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40"
                   >
                     <div>
-                      <p className="font-medium text-red-700 dark:text-red-400 text-sm">
+                      <p className="font-medium text-[#C4503B] dark:text-[#E0664D] text-sm">
                         {deduction.concept}
                       </p>
                       {deduction.notes && (
-                        <p className="text-xs text-red-600 dark:text-red-500">{deduction.notes}</p>
+                        <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{deduction.notes}</p>
                       )}
                     </div>
-                    <span className="font-medium text-red-700 dark:text-red-400">
+                    <span className="font-medium text-[#C4503B] dark:text-[#E0664D]">
                       -${deduction.amount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
                     </span>
                   </div>
@@ -577,11 +577,11 @@ export function ActaEntregaViewer({
 
             {/* Net to Return */}
             {acta.depositToReturn !== undefined && (
-              <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
-                <span className="font-medium text-emerald-700 dark:text-emerald-400">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
+                <span className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
                   {t('inmobiliaria.acta.amountToReturn')}
                 </span>
-                <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400">
+                <span className="text-xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                   ${acta.depositToReturn.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
                 </span>
               </div>
@@ -613,35 +613,35 @@ export function ActaEntregaViewer({
                 className={cn(
                   'p-4 rounded-xl border-2 text-center transition-all',
                   status === 'signed'
-                    ? 'border-emerald-200 dark:border-emerald-800/30 bg-emerald-50 dark:bg-emerald-900/20'
+                    ? 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                     : status === 'pending'
-                    ? 'border-amber-200 dark:border-amber-800/30 bg-amber-50 dark:bg-amber-900/20'
+                    ? 'border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15'
                     : 'border-dashed border-neutral-200 dark:border-neutral-700'
                 )}
               >
                 {status === 'signed' ? (
                   <>
-                    <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" weight="fill" />
-                    <p className="font-medium text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle className="w-10 h-10 text-[#2C7A53] mx-auto mb-2" weight="fill" />
+                    <p className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
                       {partyLabels[party]}
                     </p>
-                    <p className="text-sm text-emerald-600 dark:text-emerald-500">{partyNames[party]}</p>
+                    <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">{partyNames[party]}</p>
                     {signature?.signedAt && (
-                      <p className="text-xs text-emerald-600/80 dark:text-emerald-500/80 mt-2">
+                      <p className="text-xs text-[#2C7A53]/80 dark:text-[#2C7A53]/80 mt-2">
                         {t('inmobiliaria.acta.signed')}: {formatDateTime(signature.signedAt)}
                       </p>
                     )}
                   </>
                 ) : status === 'pending' ? (
                   <>
-                    <Warning className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-                    <p className="font-medium text-amber-700 dark:text-amber-400">
+                    <Warning className="w-10 h-10 text-[#B7791F] mx-auto mb-2" />
+                    <p className="font-medium text-[#B7791F] dark:text-[#D2992F]">
                       {partyLabels[party]}
                     </p>
-                    <p className="text-sm text-amber-600 dark:text-amber-500">{partyNames[party]}</p>
+                    <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">{partyNames[party]}</p>
                     <button
                       onClick={() => onRequestSignature?.(party)}
-                      className="mt-3 px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                      className="mt-3 px-3 py-1.5 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-xs font-medium hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/50 transition-colors"
                     >
                       {t('inmobiliaria.acta.requestSignature')}
                     </button>
@@ -655,7 +655,7 @@ export function ActaEntregaViewer({
                     <p className="text-sm text-neutral-400 dark:text-neutral-500">{t('inmobiliaria.acta.pending')}</p>
                     <button
                       onClick={() => onRequestSignature?.(party)}
-                      className="mt-3 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-xs font-medium hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                      className="mt-3 px-3 py-1.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-xs font-medium hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                     >
                       {t('inmobiliaria.acta.requestSignature')}
                     </button>
@@ -667,10 +667,10 @@ export function ActaEntregaViewer({
         </div>
 
         {acta.status === 'completed' && acta.completedAt && (
-          <div className="mt-4 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 text-center">
-            <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" weight="fill" />
-            <p className="font-medium text-emerald-700 dark:text-emerald-400">{t('inmobiliaria.acta.actaCompleted')}</p>
-            <p className="text-sm text-emerald-600 dark:text-emerald-500">
+          <div className="mt-4 p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 text-center">
+            <CheckCircle className="w-8 h-8 text-[#2C7A53] mx-auto mb-2" weight="fill" />
+            <p className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">{t('inmobiliaria.acta.actaCompleted')}</p>
+            <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">
               {t('inmobiliaria.acta.signedByAll')} {formatDateTime(acta.completedAt)}
             </p>
           </div>

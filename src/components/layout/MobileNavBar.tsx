@@ -54,7 +54,7 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
                 className={cn(
                   'min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 rounded-xl',
                   active
-                    ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600'
+                    ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF]'
                     : 'text-muted-foreground'
                 )}
               >

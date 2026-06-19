@@ -110,10 +110,10 @@ export function StepIncome() {
   }, [availableForRent, recommendedRent]);
 
   const capacityStyles = {
-    insufficient: 'bg-red-50/50 border-red-200/50 text-red-900',
-    limited: 'bg-amber-50/50 border-amber-200/50 text-amber-900',
-    moderate: 'bg-blue-50/50 border-blue-200/50 text-blue-900',
-    good: 'bg-emerald-50/50 border-emerald-200/50 text-emerald-900',
+    insufficient: 'bg-[#F8EAE7]/50 border-[#C4503B]/30 text-[#C4503B]',
+    limited: 'bg-[#F8F0E0]/50 border-[#B7791F]/30 text-[#B7791F]',
+    moderate: 'bg-[#EEF1FF]/50 border-[#1A40FF]/30 text-[#1A40FF]',
+    good: 'bg-[#E8F3EC]/50 border-[#2C7A53]/30 text-[#2C7A53]',
   };
 
   return (
@@ -321,7 +321,7 @@ function CurrencyInput({
           'transition-colors',
           icon ? 'pl-16' : 'pl-9',
           'pr-4',
-          hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500'
+          hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
         )}
       />
     </div>

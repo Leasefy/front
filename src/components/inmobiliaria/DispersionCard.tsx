@@ -33,10 +33,10 @@ interface DispersionCardProps {
 
 // Status border colors for left accent
 const STATUS_BORDER_COLORS: Record<DispersionStatus, string> = {
-  pending: 'border-l-amber-500',
-  processing: 'border-l-blue-500',
-  completed: 'border-l-emerald-500',
-  failed: 'border-l-red-500',
+  pending: 'border-l-[#B7791F]',
+  processing: 'border-l-[#1A40FF]',
+  completed: 'border-l-[#2C7A53]',
+  failed: 'border-l-[#C4503B]',
 };
 
 /**
@@ -100,7 +100,7 @@ export function DispersionCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onViewDetail?.(dispersion)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:shadow-md',
+          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:',
           borderColor
         )}
       >
@@ -117,7 +117,7 @@ export function DispersionCard({
 
         {/* Net Amount */}
         <div className="text-right">
-          <p className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+          <p className="font-bold text-[#2C7A53] dark:text-[#3EAE70] text-sm">
             {formatCurrency(dispersion.netToPropietario)}
           </p>
         </div>
@@ -134,7 +134,7 @@ export function DispersionCard({
 
         {/* Processing spinner */}
         {dispersion.status === 'processing' && (
-          <SpinnerGap className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
+          <SpinnerGap className="w-4 h-4 text-[#1A40FF] animate-spin shrink-0" />
         )}
       </motion.div>
     );
@@ -145,7 +145,7 @@ export function DispersionCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:shadow-lg',
+        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:',
         borderColor,
         'border-neutral-200 dark:border-neutral-700',
         onViewDetail && 'cursor-pointer'
@@ -183,8 +183,8 @@ export function DispersionCard({
       {/* Bank Account Section */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-            <Bank className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+            <Bank className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-0.5">
@@ -208,7 +208,7 @@ export function DispersionCard({
           <span className="text-sm text-neutral-500 dark:text-neutral-400">
             Neto a dispersar
           </span>
-          <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+          <span className="text-xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
             {formatCurrency(dispersion.netToPropietario)}
           </span>
         </div>
@@ -219,7 +219,7 @@ export function DispersionCard({
             <span>Total recaudado</span>
             <span>{formatCurrency(dispersion.totalCollected)}</span>
           </div>
-          <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+          <div className="flex items-center justify-between text-[#B7791F] dark:text-[#D2992F]">
             <span>Comision agencia</span>
             <span>- {formatCurrency(dispersion.totalCommission)}</span>
           </div>
@@ -286,7 +286,7 @@ export function DispersionCard({
           dispersion.processedAt &&
           dispersion.transferReference && (
             <>
-              <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 <span>
                   Procesado el{' '}
@@ -308,7 +308,7 @@ export function DispersionCard({
 
         {/* Processing: Show processing message */}
         {dispersion.status === 'processing' && (
-          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+          <div className="flex items-center gap-2 text-sm text-[#1A40FF] dark:text-[#5570FF]">
             <SpinnerGap className="w-4 h-4 animate-spin" />
             <span>Procesando transferencia...</span>
           </div>
@@ -316,7 +316,7 @@ export function DispersionCard({
 
         {/* Pending: Show pending info */}
         {dispersion.status === 'pending' && (
-          <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+          <div className="flex items-center gap-2 text-sm text-[#B7791F] dark:text-[#D2992F]">
             <CalendarBlank className="w-4 h-4" />
             <span>Pendiente de procesamiento</span>
           </div>
@@ -324,7 +324,7 @@ export function DispersionCard({
 
         {/* Failed: Show error reason */}
         {dispersion.status === 'failed' && dispersion.failureReason && (
-          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+          <div className="flex items-center gap-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
             <Warning className="w-4 h-4" weight="fill" />
             <span>{dispersion.failureReason}</span>
           </div>
@@ -339,7 +339,7 @@ export function DispersionCard({
               e.stopPropagation();
               onProcess(dispersion);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
           >
             <PaperPlaneTilt className="w-4 h-4" />
             Procesar
@@ -351,26 +351,26 @@ export function DispersionCard({
               e.stopPropagation();
               onProcess(dispersion);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#B7791F] text-white text-sm font-medium hover:bg-[#B7791F] transition-colors"
           >
             <CurrencyCircleDollar className="w-4 h-4" />
             Reintentar
           </button>
         )}
         {dispersion.status === 'completed' && (
-          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
             <CheckCircle className="w-4 h-4" weight="fill" />
             <span>Dispersado</span>
           </div>
         )}
         {dispersion.status === 'processing' && (
-          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+          <div className="flex items-center gap-2 text-sm text-[#1A40FF] dark:text-[#5570FF]">
             <SpinnerGap className="w-4 h-4 animate-spin" />
             <span>En proceso</span>
           </div>
         )}
         {onViewDetail && (
-          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-indigo-500 transition-colors ml-auto">
+          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors ml-auto">
             Ver detalle
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>

@@ -2,19 +2,31 @@
 
 import * as React from 'react'
 import { useState, useCallback, useMemo, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { FolderOpen } from '@phosphor-icons/react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import {
+  ChatCircleText,
+  ClipboardText,
+  CreditCard,
+  FileArrowUp,
+  FolderOpen,
+  UsersThree,
+  Warning,
+} from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import { CobranzaKpiStrip } from '@/components/inmobiliaria/cobranza/CobranzaKpiStrip'
+import { CobranzaWowBanner } from '@/components/inmobiliaria/cobranza/CobranzaWowBanner'
 import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
 import { CobranzaFunnelChart } from '@/components/inmobiliaria/cobranza/CobranzaFunnelChart'
 import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed'
 import { CobranzaNextActionsPanel } from '@/components/inmobiliaria/cobranza/CobranzaNextActionsPanel'
 import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOverviewSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { CARTERA_STAGES, relativeTime } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
 
@@ -22,10 +34,19 @@ import type { CarteraStage } from '@/lib/cartera'
 // Pass empty string; Supabase Realtime will silently not connect until tenant is available.
 const TENANT_PLACEHOLDER = ''
 
+const PAGES_NS = 'inmobiliaria.ai.workspace.pages.cobranza'
+
+/** "¿Cómo funciona?" — el viaje de la cobranza en 4 pasos (patrón avalúos). */
+const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
+  { icon: ClipboardText, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
+  { icon: ChatCircleText, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
+  { icon: CreditCard, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
+  { icon: UsersThree, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
+]
+
 export default function CobranzaOverviewPage() {
   const { t, locale } = useI18n()
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   // Data hook
   const { data, isLoading, error } = useCarteraOverview()
@@ -57,14 +78,28 @@ export default function CobranzaOverviewPage() {
       .slice(0, 25)
   }, [realtimeTransitions, data?.lastTransitions])
 
-  // Stage click — update URL query param (Phase 31 builds the drill destination)
+  // ── Momento wow (visión #21) — datos del overview para el banner ──────────
+  // enMora = suma de counts de S1..SX (S0 = al día, queda fuera).
+  const enMora = useMemo(
+    () =>
+      (data?.stages ?? [])
+        .filter((s) => s.stage !== 'S0')
+        .reduce((acc, s) => acc + s.count, 0),
+    [data?.stages],
+  )
+  const prejuridicoCount = useMemo(
+    () => data?.stages.find((s) => s.stage === 'S3')?.count ?? 0,
+    [data?.stages],
+  )
+
+  // Stage click — drill into /deudores, which prefills its filters from ?stage=
+  // (DeudoresListClient reads the querystring). Pushing ?stage= onto THIS page
+  // was a no-op: nobody here reads the param.
   const handleStageClick = useCallback(
     (stage: CarteraStage) => {
-      const params = new URLSearchParams(searchParams.toString())
-      params.set('stage', stage)
-      router.push(`/panel/inmobiliaria/ai/cobranza?${params.toString()}`)
+      router.push(`/panel/inmobiliaria/ai/cobranza/deudores?stage=${stage}`)
     },
-    [router, searchParams]
+    [router]
   )
 
   // ── Roving-tabindex composite-widget pattern (Phase 38 plan 38-04c / D-38-13) ─
@@ -115,16 +150,33 @@ export default function CobranzaOverviewPage() {
 
   if (!data && !isLoading && !error) {
     return (
-      <main className="p-6 lg:p-8">
+      <main className="p-6 lg:p-8 space-y-4">
         <EmptyState
           icon={FolderOpen}
           title={t('inmobiliaria.ai.cobranza.overview.empty.title')}
           description={t('inmobiliaria.ai.cobranza.overview.empty.description')}
-          primaryCta={{
-            label: t('inmobiliaria.ai.cobranza.overview.empty.cta.label'),
-            href: '/panel/inmobiliaria/ai/cobranza/configuracion',
-          }}
         />
+        {/* Importar cartera — visible pero aún sin importador real (patrón avalúos):
+            el importador de /portafolio/importar solo carga propiedades, así que
+            la acción degrada a "próximamente" en vez de mentir con un link. */}
+        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+              <FileArrowUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <h2 className="text-base font-semibold text-foreground">
+                {t('inmobiliaria.ai.cobranza.overview.empty.cta.label')}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t(`${PAGES_NS}.importarNota`)}
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-muted text-muted-foreground text-xs font-mono uppercase tracking-wide">
+              {t(`${PAGES_NS}.importarProximamente`)}
+            </span>
+          </div>
+        </div>
       </main>
     )
   }
@@ -154,11 +206,21 @@ export default function CobranzaOverviewPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
+          {/* ← + miga de pan: volver al hub de agentes (patrón MigaDePan) */}
+          <MigaDePan
+            backHref="/panel/inmobiliaria/ai"
+            icon={ChatCircleText}
+            className="mb-2"
+            crumbs={[
+              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+              { label: t('inmobiliaria.ai.cobranza.overview.title') },
+            ]}
+          />
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t('inmobiliaria.ai.cobranza.overview.title')}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
-            {t('inmobiliaria.ai.cobranza.overview.subtitle')}
+            {t(`${PAGES_NS}.salaDesc`)}
           </p>
         </div>
         {data?.generatedAt && (
@@ -167,13 +229,82 @@ export default function CobranzaOverviewPage() {
             {relativeTime(data.generatedAt, locale)}
             {isConnected && (
               <span
-                className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"
+                className="inline-flex h-1.5 w-1.5 rounded-full bg-[#2C7A53] animate-ping"
                 aria-hidden="true"
               />
             )}
           </p>
         )}
       </header>
+
+      {/* Momento wow — banner narrativo + 4 cards de beneficio (visión #21).
+          Daily-report / cartas / siniestros se cargan dentro del banner; si
+          fallan, degrada a los datos del overview sin romper la página. */}
+      <CobranzaWowBanner
+        enMora={enMora}
+        gestionados={data?.kpis.llamadasHoy ?? 0}
+        escalacionesPendientes={data?.kpis.escalacionesPendientes ?? 0}
+        prejuridicoCount={prejuridicoCount}
+        pagadoHoyCopFallback={data?.kpis.pagadoHoyCop ?? 0}
+      />
+
+      {/* Acción principal + ¿Cómo funciona? — patrón avalúos (card + 4 pasos) */}
+      <section className="space-y-4" data-testid="cobranza-accion">
+        {/* Acción principal — revisar escalaciones pendientes */}
+        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+              <Warning className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <h2 className="text-base font-semibold text-foreground">
+                {t(`${PAGES_NS}.accionTitle`)}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t(`${PAGES_NS}.accionDesc`)}
+              </p>
+            </div>
+            <Link
+              href="/panel/inmobiliaria/ai/cobranza/escalaciones"
+              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.98] transition"
+              data-testid="cobranza-accion-cta"
+            >
+              {t('inmobiliaria.ai.nav.escalaciones')}
+              {(data?.kpis.escalacionesPendientes ?? 0) > 0 && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold">
+                  {data?.kpis.escalacionesPendientes}
+                </span>
+              )}
+            </Link>
+          </div>
+        </div>
+
+        {/* Cómo funciona — el viaje de la cobranza en 4 pasos */}
+        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="cobranza-como-funciona">
+          <h2 className="text-sm font-semibold text-foreground">
+            {t(`${PAGES_NS}.comoFunciona.title`)}
+          </h2>
+          <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {COMO_FUNCIONA_STEPS.map((step, i) => {
+              const StepIcon = step.icon
+              return (
+                <li key={step.titleKey} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                  </div>
+                  <p className="text-[13px] font-semibold text-foreground leading-tight">
+                    {t(step.titleKey)}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      </section>
 
       {/* KPI Strip */}
       <CobranzaKpiStrip
@@ -265,7 +396,7 @@ export default function CobranzaOverviewPage() {
 
         {/* Error state */}
         {error && !isLoading && (
-          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
           </div>
         )}

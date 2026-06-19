@@ -35,25 +35,25 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
       label: t('inmobiliaria.ai.cotizador.overview.kpis.quotesToday'),
       value: kpis ? String(kpis.quotesHoy) : '—',
       Icon: FileText,
-      iconColor: 'text-teal-500',
+      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
     {
       label: t('inmobiliaria.ai.cotizador.overview.kpis.approvalRate'),
       value: kpis ? `${(kpis.approvalRate * 100).toFixed(0)}%` : '—',
       Icon: CheckCircle,
-      iconColor: 'text-green-500',
+      iconColor: 'text-[#2C7A53]',
     },
     {
       label: t('inmobiliaria.ai.cotizador.overview.kpis.primaPromedio'),
       value: kpis ? `$${formatCOP(kpis.primaPromedioMonthlyCop)}` : '—',
       Icon: ShieldStar,
-      iconColor: 'text-teal-600',
+      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
     {
       label: t('inmobiliaria.ai.cotizador.overview.kpis.costPerQuote'),
       value: kpis ? `$${formatCOP(kpis.costPerQuoteCop)}` : '—',
       Icon: CurrencyDollar,
-      iconColor: 'text-indigo-500',
+      iconColor: 'text-[#1A40FF]',
     },
   ]
 

@@ -76,7 +76,7 @@ export function useAskWhyUsage(agencyId: string | null): {
 
   // 30-second auto-refresh while the consumer is mounted.
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     const id = setInterval(() => {
       setRefreshTick(t => t + 1)
     }, REFRESH_MS)

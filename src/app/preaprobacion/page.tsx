@@ -99,7 +99,7 @@ export default function PreaprobacionPage() {
     <div className="min-h-screen bg-muted">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-2xl items-center px-4 py-4">
-          <span className="text-lg font-semibold tracking-tight text-foreground">Leasefy</span>
+          <span className="text-lg font-medium tracking-tight text-foreground">Leasefy</span>
         </div>
       </header>
 
@@ -255,7 +255,7 @@ function ResultView({ result, onReset }: { result: PreApprovalResult; onReset: (
                   key={a.aseguradora}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-sm text-foreground"
                 >
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+                  <span className="h-2 w-2 rounded-full bg-[#2C7A53]" aria-hidden />
                   {aseguradoraDisplayName(a.aseguradora)}
                   {a.status === 'conditional' && (
                     <span className="text-xs text-muted-foreground">(con condiciones)</span>

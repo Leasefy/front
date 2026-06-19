@@ -155,8 +155,8 @@ export function CandidateCard({
     'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
     'flex flex-col',
     currentStatus === 'rejected' && 'opacity-60',
-    currentStatus === 'approved' && 'ring-2 ring-emerald-200',
-    currentStatus === 'pre-approved' && 'ring-2 ring-blue-200',
+    currentStatus === 'approved' && 'ring-2 ring-[#2C7A53]',
+    currentStatus === 'pre-approved' && 'ring-2 ring-[#1A40FF]',
     className
   );
 
@@ -243,7 +243,7 @@ export function CandidateCard({
             variant="default"
             className={cn(
               'flex-1',
-              currentStatus === 'approved' && 'bg-emerald-600 hover:bg-emerald-700'
+              currentStatus === 'approved' && 'bg-[#2C7A53] hover:bg-[#2C7A53]'
             )}
             onClick={() => handleDecision('approved')}
           >
@@ -256,7 +256,7 @@ export function CandidateCard({
             variant="outline"
             className={cn(
               'flex-1 transition-colors',
-              currentStatus === 'pre-approved' && 'bg-blue-50 text-blue-700 border-blue-300'
+              currentStatus === 'pre-approved' && 'bg-[#EEF1FF] text-[#1A40FF] border-[#1A40FF]/30'
             )}
             onClick={() => handleDecision('pre-approved')}
           >

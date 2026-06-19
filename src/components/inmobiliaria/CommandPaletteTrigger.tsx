@@ -43,7 +43,7 @@ export function CommandPaletteTrigger({ className }: CommandPaletteTriggerProps)
       <span className="text-[13px] text-neutral-400 group-hover:text-neutral-500 transition-colors whitespace-nowrap hidden sm:inline">
         {t('inmobiliaria.commandPalette.placeholder')}
       </span>
-      <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 bg-neutral-100 group-hover:bg-neutral-200 rounded-md border border-neutral-200 transition-colors flex-shrink-0">
+      <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 bg-neutral-100 group-hover:bg-neutral-200 rounded-sm border border-neutral-200 transition-colors flex-shrink-0">
         {shortcut}
       </kbd>
     </button>

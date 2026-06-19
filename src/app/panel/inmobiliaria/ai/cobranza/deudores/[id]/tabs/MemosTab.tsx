@@ -27,7 +27,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         {Array.from({ length: 3 }, (_, i) => (
           <div
             key={i}
-            className="h-20 bg-neutral-100 dark:bg-neutral-800 rounded-md animate-pulse"
+            className="h-20 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -36,14 +36,14 @@ export function MemosTab({ debtorId }: MemosTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 flex items-center justify-between">
+        <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
           {t('inmobiliaria.ai.cobranza.detail.memos.error')}: {error}
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+          className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
         >
           {t('inmobiliaria.ai.cobranza.detail.memos.errorRetry')}
         </button>
@@ -54,7 +54,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
   const memos = data?.memos ?? []
   if (memos.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
+      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t('inmobiliaria.ai.cobranza.detail.memos.empty')}
         </p>
@@ -67,7 +67,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
       {memos.map((m) => (
         <li
           key={m.id}
-          className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+          className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
         >
           <p className="text-sm text-neutral-900 dark:text-white whitespace-pre-wrap">
             {m.body ?? '—'}
@@ -85,7 +85,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
               </span>
             )}
             {m.open_ptp_amount_cop != null && m.open_ptp_date && (
-              <span className="px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300">
+              <span className="px-1.5 py-0.5 rounded bg-[#6B6B6B] dark:bg-[#6B6B6B]/30 text-[#6B6B6B] dark:text-[#6B6B6B]">
                 PTP {m.open_ptp_amount_cop} · {m.open_ptp_date}
               </span>
             )}

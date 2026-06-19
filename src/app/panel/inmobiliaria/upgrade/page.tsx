@@ -42,7 +42,7 @@ function AgencyUpgradeContent() {
   const canUpgrade = selectedPlan && selectedPlan !== currentPlanId;
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Back */}
         <div className="mb-6">
@@ -50,15 +50,15 @@ function AgencyUpgradeContent() {
         </div>
 
         {/* Header gradient */}
-        <div className="relative rounded-2xl overflow-hidden mb-8">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800" />
+        <div className="relative rounded-xl overflow-hidden mb-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1A40FF] via-[#1A40FF] to-[#6B6B6B]" />
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-neutral-100 dark:bg-neutral-800/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
           <div className="relative px-8 py-12 text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
-              <Sparkle className="w-4 h-4 text-amber-300" />
+              <Sparkle className="w-4 h-4 text-[#B7791F]" />
               <span className="text-sm font-medium text-white">Planes para inmobiliarias</span>
             </div>
 
@@ -70,7 +70,7 @@ function AgencyUpgradeContent() {
             </p>
 
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-              <Crown className="w-4 h-4 text-amber-300" />
+              <Crown className="w-4 h-4 text-[#B7791F]" />
               <span className="text-sm text-white/90">Plan actual</span>
               <span className="text-sm font-semibold text-white">{currentPlan.name}</span>
             </div>
@@ -86,7 +86,7 @@ function AgencyUpgradeContent() {
           ].map(({ icon: Icon, color, title, desc }) => (
             <div key={title} className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg bg-${color}-100 dark:bg-${color}-900/30 flex items-center justify-center`}>
+                <div className={`w-10 h-10 rounded-md bg-${color}-100 dark:bg-${color}-900/30 flex items-center justify-center`}>
                   <Icon className={`w-5 h-5 text-${color}-600 dark:text-${color}-400`} />
                 </div>
                 <div>
@@ -102,7 +102,7 @@ function AgencyUpgradeContent() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-80 rounded-2xl bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              <div key={i} className="h-80 rounded-xl bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
             ))}
           </div>
         ) : (
@@ -115,11 +115,11 @@ function AgencyUpgradeContent() {
 
         {/* Selected plan CTA */}
         {canUpgrade && newPlan && (
-          <div className="mt-8 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-6">
+          <div className="mt-8 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 rounded-xl p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div>
                   <p className="font-semibold text-neutral-900 dark:text-white">
@@ -140,8 +140,8 @@ function AgencyUpgradeContent() {
               <Button
                 onClick={handleCheckout}
                 className={cn(
-                  'flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm uppercase tracking-wide font-mono',
-                  'bg-indigo-600 hover:bg-indigo-700 text-white min-w-[200px] justify-center'
+                  'flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm',
+                  'bg-[#1A40FF] hover:opacity-90 text-white min-w-[200px] justify-center'
                 )}
               >
                 <CreditCard className="w-4 h-4" />
@@ -154,7 +154,7 @@ function AgencyUpgradeContent() {
 
         {/* Trust indicators */}
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-6 px-6 py-4 bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700">
+          <div className="inline-flex items-center gap-6 px-6 py-4 bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700">
             {[
               { icon: Lock, label: 'Pago seguro' },
               { icon: CheckCircle, label: 'Cancela cuando quieras' },
@@ -162,7 +162,7 @@ function AgencyUpgradeContent() {
             ].map(({ icon: Icon, label }, i) => (
               <div key={label} className="flex items-center gap-2">
                 {i > 0 && <div className="w-px h-4 bg-neutral-200 dark:bg-neutral-700 -ml-6 mr-0" />}
-                <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <Icon className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
                 <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
               </div>
             ))}

@@ -67,7 +67,7 @@ export function useAiHubResumen(): UseAiHubResumenResult {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchData()
     return () => {
       abortRef.current?.abort()

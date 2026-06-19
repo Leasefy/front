@@ -215,13 +215,13 @@ export function DocumentoManager({
             </p>
           </div>
         ) : (
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+          <div className="flex items-center gap-1 p-1 rounded-md bg-muted">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'list'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -231,9 +231,9 @@ export function DocumentoManager({
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'grid'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -245,7 +245,7 @@ export function DocumentoManager({
         <div className="flex items-center gap-2">
           {/* View Toggle - only in non-minimal mode */}
           {!minimal && (
-            <div className="flex border rounded-lg p-1">
+            <div className="flex border rounded-md p-1">
               <button
                 onClick={() => setViewMode('list')}
                 className={cn(
@@ -275,7 +275,7 @@ export function DocumentoManager({
           {onGenerateNew && (
             <DropdownList>
               <DropdownListTrigger asChild>
-                <Button className={cn("gap-2", minimal && "bg-indigo-600 hover:bg-indigo-700")} hideArrow>
+                <Button className={cn("gap-2", minimal && "bg-[#1A40FF] hover:opacity-90")} hideArrow>
                   <FilePlus className="w-4 h-4" />
                   {t('inmobiliaria.documento.generateDoc')}
                   <CaretDown className="w-4 h-4" />
@@ -391,19 +391,19 @@ export function DocumentoManager({
               <span className="font-medium">{stats.total}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="w-2 h-2 rounded-full bg-[#B7791F]" />
               <span className="text-muted-foreground">{t('inmobiliaria.documento.pendingSignature')}:</span>
-              <span className="font-medium text-amber-600">{stats.pendingSignature}</span>
+              <span className="font-medium text-[#B7791F]">{stats.pendingSignature}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-[#2C7A53]" />
               <span className="text-muted-foreground">{t('inmobiliaria.documento.signed')}:</span>
-              <span className="font-medium text-emerald-600">{stats.signed}</span>
+              <span className="font-medium text-[#2C7A53]">{stats.signed}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="w-2 h-2 rounded-full bg-[#C4503B]" />
               <span className="text-muted-foreground">{t('inmobiliaria.documento.expired')}:</span>
-              <span className="font-medium text-red-600">{stats.expired}</span>
+              <span className="font-medium text-[#C4503B]">{stats.expired}</span>
             </div>
           </div>
         )}
@@ -414,7 +414,7 @@ export function DocumentoManager({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800/50"
+          className="flex items-center gap-3 p-3 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-md border border-[#1A40FF]/30 dark:border-[#1A40FF]/40"
         >
           <span className="text-sm font-medium">
             {t('inmobiliaria.documento.selectedCount', { count: selectedDocIds.length })}
@@ -463,7 +463,7 @@ export function DocumentoManager({
             <div
               key={i}
               className={cn(
-                'bg-muted animate-pulse rounded-lg',
+                'bg-muted animate-pulse rounded-md',
                 viewMode === 'grid' ? 'h-40' : 'h-16'
               )}
             />
@@ -656,7 +656,7 @@ export function DocumentoManager({
                 >
                   <Card
                     className={cn(
-                      'p-4 cursor-pointer hover:shadow-md transition-shadow',
+                      'p-4 cursor-pointer hover: transition-shadow',
                       selectedDocIds.includes(doc.id) && 'ring-2 ring-primary'
                     )}
                     onClick={() => onView?.(doc)}
@@ -665,7 +665,7 @@ export function DocumentoManager({
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-start gap-3 min-w-0">
                         <div
-                          className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0"
+                          className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleDocSelection(doc.id);
@@ -674,7 +674,7 @@ export function DocumentoManager({
                           {selectedDocIds.includes(doc.id) ? (
                             <CheckCircle className="w-5 h-5 text-primary" weight="fill" />
                           ) : (
-                            <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="duotone" />
+                            <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
                           )}
                         </div>
                         <div className="min-w-0">

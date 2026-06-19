@@ -10,14 +10,14 @@
  * each card also opens the case detail at ./[id].
  */
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CaretLeft, CurrencyDollar } from '@phosphor-icons/react'
+import { CurrencyDollar } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function PagosCola() {
@@ -30,14 +30,15 @@ function PagosCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <Link
-            href="/panel/inmobiliaria/ai/pagos"
-            className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-          >
-            <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-            <CurrencyDollar className="w-3.5 h-3.5" aria-hidden="true" />
-            {t('inmobiliaria.ai.workspace.pages.pagos.eyebrow')}
-          </Link>
+          <MigaDePan
+            backHref="/panel/inmobiliaria/ai/pagos"
+            icon={CurrencyDollar}
+            crumbs={[
+              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+              { label: t('inmobiliaria.ai.workspace.agente.pagos'), href: '/panel/inmobiliaria/ai/pagos' },
+              { label: t('inmobiliaria.ai.workspace.pages.pagos.colaTitle') },
+            ]}
+          />
           <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.pagos.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.pagos.colaDesc')}
@@ -55,8 +56,10 @@ function PagosCola() {
         </div>
       </header>
 
-      {/* Cola humana (transversal component) — opens the case detail */}
+      {/* Cola humana (transversal component) — opens the case detail.
+          agente habilita el override de estados por agente (estadoLabel). */}
       <ColaHumana
+        agente="pagos"
         items={items}
         isLoading={isLoading}
         error={error}

@@ -50,7 +50,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
         {Array.from({ length: 5 }, (_, i) => (
           <div
             key={i}
-            className="h-14 bg-neutral-100 dark:bg-neutral-800 rounded-md animate-pulse"
+            className="h-14 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -59,14 +59,14 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 flex items-center justify-between">
+        <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
           {t('inmobiliaria.ai.cobranza.detail.timeline.error')}: {error}
         </p>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+          className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
         >
           {t('inmobiliaria.ai.cobranza.detail.timeline.errorRetry')}
         </button>
@@ -77,7 +77,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
   const events = data?.events ?? []
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
+      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t('inmobiliaria.ai.cobranza.detail.timeline.empty')}
         </p>
@@ -110,12 +110,12 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
         return (
           <li
             key={`${ev.event_type}-${ev.occurred_at}-${idx}`}
-            className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+            className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
           >
             <button
               type="button"
               onClick={handleClick}
-              className="w-full text-left px-3 py-2 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-md"
+              className="w-full text-left px-3 py-2 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6B6B6B] rounded-sm"
             >
               <span
                 aria-hidden="true"

@@ -69,7 +69,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
 
   return (
     <div
-      className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-3"
+      className="rounded-xl border border-border bg-card p-4 space-y-3"
       data-testid="accion-sugerida"
     >
       {/* Eyebrow */}
@@ -126,7 +126,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
                 busyActionId !== null
               }
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-[#C4503B] text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t(`${WORKSPACE_NS}.acciones.confirmar`)}
@@ -155,7 +155,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               disabled={disabled || busyActionId !== null}
               aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
-              className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
+              className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
             >
               {action.kind === 'primary' && <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />}
               {action.kind === 'danger' && <XCircle className="w-3.5 h-3.5" aria-hidden="true" />}

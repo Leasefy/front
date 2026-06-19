@@ -29,7 +29,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="bottom"
-        className="rounded-t-2xl max-h-[70vh] overflow-y-auto"
+        className="rounded-t-xl max-h-[70vh] overflow-y-auto"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       >
         <SheetHeader className="sr-only">
@@ -70,7 +70,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
                   className={cn(
                     'flex items-center gap-4 px-4 py-3 min-h-[52px] rounded-xl',
                     rowActive
-                      ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF]'
                       : 'text-foreground hover:bg-muted/50'
                   )}
                 >
@@ -80,7 +80,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
                   />
                   <span className="text-[14px] flex-1">{rowItem.label}</span>
                   {rowItem.badge != null && rowItem.badge > 0 && (
-                    <span className="ml-auto text-[11px] font-mono bg-indigo-600 text-white rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                    <span className="ml-auto text-[11px] font-mono bg-[#1A40FF] text-white rounded-full px-2 py-0.5 min-w-[20px] text-center">
                       {rowItem.badge}
                     </span>
                   )}

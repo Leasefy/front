@@ -116,7 +116,7 @@ export function useCostos(): {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoadingSummary(false); return }
     void fetchSummary()
     const id = setInterval(() => void fetchSummary(), KPI_POLL_INTERVAL_MS)
     return () => clearInterval(id)
@@ -157,7 +157,7 @@ export function useCostos(): {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoadingSeries(false); return }
     void fetchSeries()
     const id = setInterval(() => void fetchSeries(), CHART_POLL_INTERVAL_MS)
     return () => clearInterval(id)

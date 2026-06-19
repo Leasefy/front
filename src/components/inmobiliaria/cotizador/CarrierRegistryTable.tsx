@@ -5,7 +5,7 @@
  *
  * Two-column Global/Tenant table with:
  *  - Sticky first column on sm viewports
- *  - Override row accent: border-l-4 border-indigo-400 + "Personalizado" pill
+ *  - Override row accent: border-l-4 border-[#1A40FF]/30 + "Personalizado" pill
  *  - Conflict Alert (rose inline) when tenantEnabled=true AND globalEnabled=false
  *  - Kebab menu (shadcn Popover) with "Editar" + "Restablecer al global"
  *  - "Restablecer al global" opens shadcn AlertDialog — NEVER browser confirm()
@@ -62,9 +62,9 @@ export interface CarrierRegistryTableProps {
 // =============================================================================
 
 const BREACH_BADGE_CLASS: Record<string, string> = {
-  healthy: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-  degraded: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
-  breached: 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+  healthy: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+  degraded: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+  breached: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
   unknown: '',
 }
 
@@ -120,7 +120,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
   const trClass = [
     'hover:bg-neutral-50 dark:hover:bg-neutral-800/30',
-    row.hasOverride ? 'border-l-4 border-indigo-400' : '',
+    row.hasOverride ? 'border-l-4 border-[#1A40FF]/30' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -143,7 +143,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             {row.hasOverride && (
               <span
                 data-testid="override-pill"
-                className="inline-flex self-start text-xs bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-full px-2 py-0.5 mt-0.5"
+                className="inline-flex self-start text-xs bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded-full px-2 py-0.5 mt-0.5"
               >
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.overridePill')}
               </span>
@@ -169,7 +169,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
         <td className="px-4 py-3 text-sm">
           <Badge
             variant="outline"
-            className={globalEnabled ? 'text-emerald-700 border-emerald-300' : 'text-neutral-500'}
+            className={globalEnabled ? 'text-[#2C7A53] border-[#2C7A53]/30' : 'text-neutral-500'}
           >
             {globalEnabled ? 'On' : 'Off'}
           </Badge>
@@ -233,7 +233,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
                   {t('inmobiliaria.ai.cotizador.aseguradoras.table.actionEdit')}
                 </button>
                 <button
-                  className="flex items-center px-3 py-2 text-sm rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 text-rose-600 dark:text-rose-400 text-left w-full"
+                  className="flex items-center px-3 py-2 text-sm rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 text-[#C4503B] dark:text-[#E0664D] text-left w-full"
                   onClick={handleResetClick}
                 >
                   {t('inmobiliaria.ai.cotizador.aseguradoras.table.actionReset')}
@@ -267,7 +267,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             <div
               role="alert"
               data-testid="conflict-alert"
-              className="bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 text-xs rounded-lg px-3 py-2"
+              className="bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] text-xs rounded-md px-3 py-2"
             >
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.conflictWarning')}
             </div>
@@ -293,7 +293,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              tone="danger"
               onClick={handleResetConfirm}
             >
               {t('inmobiliaria.ai.cotizador.aseguradoras.resetDialog.confirm')}

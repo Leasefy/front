@@ -70,7 +70,7 @@ export function RejectContractModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#1a1a1c] rounded-2xl shadow-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
+            className="bg-white dark:bg-[#1a1a1c] rounded-xl w-full max-w-lg border border-neutral-200 dark:border-neutral-800"
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 p-5 border-b border-neutral-200 dark:border-neutral-800">
@@ -78,14 +78,14 @@ export function RejectContractModal({
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center',
                   lockToType === 'MODIFICATIONS'
-                    ? 'bg-amber-100 dark:bg-amber-900/30'
-                    : 'bg-rose-100 dark:bg-rose-900/30'
+                    ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15'
+                    : 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
                 )}>
                   <WarningCircle className={cn(
                     'w-5 h-5',
                     lockToType === 'MODIFICATIONS'
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-rose-600 dark:text-rose-400'
+                      ? 'text-[#B7791F] dark:text-[#D2992F]'
+                      : 'text-[#C4503B] dark:text-[#E0664D]'
                   )} />
                 </div>
                 <div>
@@ -144,7 +144,7 @@ export function RejectContractModal({
 
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-foreground">
-                  Motivo <span className="text-rose-600">*</span>
+                  Motivo <span className="text-[#C4503B]">*</span>
                 </label>
                 <textarea
                   value={reason}
@@ -159,15 +159,15 @@ export function RejectContractModal({
                   maxLength={REASON_MAX}
                   disabled={isSubmitting}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none',
+                    'w-full px-3 py-2 rounded-md border bg-background text-sm resize-none',
                     reasonError
-                      ? 'border-rose-300 dark:border-rose-700 focus:ring-rose-200'
-                      : 'border-border focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/40'
+                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]'
+                      : 'border-border focus:ring-2 focus:ring-[#1A40FF] dark:focus:ring-[#1A40FF]/40'
                   )}
                 />
                 <div className="flex items-center justify-between">
                   {reasonError ? (
-                    <p className="text-xs text-rose-600">{reasonError}</p>
+                    <p className="text-xs text-[#C4503B]">{reasonError}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       Mínimo {REASON_MIN} caracteres. El propietario va a verlo.
@@ -175,7 +175,7 @@ export function RejectContractModal({
                   )}
                   <p className={cn(
                     'text-xs tabular-nums',
-                    reasonTrimmed.length > REASON_MAX ? 'text-rose-600' : 'text-muted-foreground'
+                    reasonTrimmed.length > REASON_MAX ? 'text-[#C4503B]' : 'text-muted-foreground'
                   )}>
                     {reasonTrimmed.length}/{REASON_MAX}
                   </p>
@@ -200,8 +200,8 @@ export function RejectContractModal({
                 className={cn(
                   'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                   type === 'DEFINITIVE'
-                    ? 'bg-rose-600 hover:bg-rose-700'
-                    : 'bg-amber-600 hover:bg-amber-700'
+                    ? 'bg-[#C4503B] hover:bg-[#C4503B]'
+                    : 'bg-[#B7791F] hover:bg-[#B7791F]'
                 )}
               >
                 {isSubmitting && <SpinnerGap className="w-4 h-4 animate-spin" />}
@@ -234,13 +234,13 @@ function RejectOption({
 }) {
   const accentClasses = selected
     ? accent === 'amber'
-      ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30'
-      : 'border-rose-400 bg-rose-50 dark:bg-rose-950/30'
+      ? 'border-[#B7791F]/30 bg-[#F8F0E0] dark:bg-[#B7791F]/15'
+      : 'border-[#C4503B]/30 bg-[#F8EAE7] dark:bg-[#C4503B]/15'
     : 'border-border hover:border-neutral-300 dark:hover:border-neutral-600';
 
   const iconClasses = accent === 'amber'
-    ? 'text-amber-600 dark:text-amber-400'
-    : 'text-rose-600 dark:text-rose-400';
+    ? 'text-[#B7791F] dark:text-[#D2992F]'
+    : 'text-[#C4503B] dark:text-[#E0664D]';
 
   return (
     <button
@@ -254,13 +254,13 @@ function RejectOption({
       <div className={cn(
         'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
         selected
-          ? accent === 'amber' ? 'border-amber-600' : 'border-rose-600'
+          ? accent === 'amber' ? 'border-[#B7791F]/30' : 'border-[#C4503B]/30'
           : 'border-neutral-300 dark:border-neutral-600'
       )}>
         {selected && (
           <div className={cn(
             'w-2.5 h-2.5 rounded-full',
-            accent === 'amber' ? 'bg-amber-600' : 'bg-rose-600'
+            accent === 'amber' ? 'bg-[#B7791F]' : 'bg-[#C4503B]'
           )} />
         )}
       </div>

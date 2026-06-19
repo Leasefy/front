@@ -105,7 +105,7 @@ export function ManualCallModal({
         onClick={onClose}
         className="absolute inset-0 bg-black/50"
       />
-      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl shadow-xl p-6">
+      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl p-6">
         <h2
           id="manual-call-title"
           className="text-base font-semibold text-neutral-900 dark:text-white"
@@ -114,7 +114,7 @@ export function ManualCallModal({
         </h2>
 
         {!allowed ? (
-          <p className="mt-3 text-sm text-red-700 dark:text-red-400">
+          <p className="mt-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.accessDenied')}
           </p>
         ) : (
@@ -123,7 +123,7 @@ export function ManualCallModal({
               {t('inmobiliaria.ai.cobranza.detail.acciones.manualCall.modalDescription')}
             </p>
             {envMissing ? (
-              <p className="mt-3 text-sm text-amber-700 dark:text-amber-400">
+              <p className="mt-3 text-sm text-[#B7791F] dark:text-[#D2992F]">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
               </p>
             ) : (
@@ -140,7 +140,7 @@ export function ManualCallModal({
                     placeholder={t(
                       'inmobiliaria.ai.cobranza.detail.acciones.manualCall.reasonPlaceholder',
                     )}
-                    className="mt-1 w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
+                    className="mt-1 w-full px-3 py-2 text-sm rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
                   />
                 </label>
               </div>
@@ -149,7 +149,7 @@ export function ManualCallModal({
         )}
 
         {error && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>
+          <p className="mt-3 text-xs text-[#C4503B] dark:text-[#E0664D]">{error}</p>
         )}
 
         <div className="mt-6 flex items-center justify-end gap-2">
@@ -157,7 +157,7 @@ export function ManualCallModal({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="px-3 py-1.5 text-sm font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm font-medium rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
           </button>
@@ -165,7 +165,7 @@ export function ManualCallModal({
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting || envMissing || !allowed}
-            className="px-3 py-1.5 text-sm font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-[#B7791F] text-white hover:bg-[#B7791F] disabled:opacity-50"
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.manualCall.confirming')

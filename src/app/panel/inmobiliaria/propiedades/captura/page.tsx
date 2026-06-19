@@ -23,8 +23,8 @@ function CapturaContent() {
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Sparkle className="w-6 h-6 text-indigo-600 dark:text-indigo-400" weight="fill" />
+          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <Sparkle className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
           </div>
           <div>
             <h1 className="text-h2 text-foreground">{t(k('pageTitle'))}</h1>

@@ -64,7 +64,7 @@ export function AgencyTierCard({
   const buttonEl = (
     <Button
       variant={selected ? 'default' : (popular || isFlex) ? 'default' : 'outline'}
-      className={cn("w-full rounded-xl", isFlex && !selected && "bg-amber-500 hover:bg-amber-600 text-white")}
+      className={cn("w-full rounded-xl", isFlex && !selected && "bg-[#B7791F] hover:bg-[#B7791F] text-white")}
       onClick={onSelect}
     >
       {label}
@@ -79,19 +79,19 @@ export function AgencyTierCard({
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        'relative rounded-2xl bg-card p-6 flex flex-col transition-all duration-300',
+        'relative rounded-xl bg-card p-6 flex flex-col transition-all duration-300',
         selected
-          ? 'border-2 border-indigo-600 ring-2 ring-indigo-600/20 shadow-xl'
+          ? 'border-2 border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
           : isFlex
-            ? 'border-2 border-amber-400 shadow-lg shadow-amber-500/10'
+            ? 'border-2 border-[#B7791F]/30 shadow-[#B7791F]/10'
             : popular
-              ? 'border border-indigo-600/50'
-              : 'border border-border hover:border-indigo-600/30 hover:shadow-lg'
+              ? 'border border-[#1A40FF]/30'
+              : 'border border-border hover:border-[#1A40FF]/30 hover:'
       )}
     >
       {isFlex && !selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-amber-500/25">
+          <span className="bg-gradient-to-r from-[#B7791F] to-[#B7791F] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-[#B7791F]/25">
             Todo incluido
           </span>
         </div>
@@ -99,7 +99,7 @@ export function AgencyTierCard({
 
       {popular && !selected && !isFlex && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full">
+          <span className="bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full">
             Más popular
           </span>
         </div>
@@ -107,7 +107,7 @@ export function AgencyTierCard({
 
       {selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5">
+          <span className="bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5">
             <Check className="w-3 h-3" />
             Seleccionado
           </span>
@@ -133,12 +133,12 @@ export function AgencyTierCard({
       {/* Limits - only shown when properties/users are provided */}
       {showLimits && (
         <div className="flex gap-4 mb-5 pb-5 border-b border-border">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-md">
             <Buildings className="w-4 h-4 text-primary" />
             <span className="text-[13px] text-foreground font-semibold">{properties}</span>
             <span className="text-[11px] text-muted-foreground">propiedades</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-md">
             <Users className="w-4 h-4 text-primary" />
             <span className="text-[13px] text-foreground font-semibold">{users}</span>
             <span className="text-[11px] text-muted-foreground">usuarios</span>
@@ -150,7 +150,7 @@ export function AgencyTierCard({
       <ul className="space-y-3 flex-1 mb-4">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2.5">
-            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+            <CheckCircle className="w-4 h-4 text-[#2C7A53] shrink-0 mt-0.5" />
             <span className="text-[13px] text-muted-foreground">{feature}</span>
           </li>
         ))}
@@ -228,7 +228,7 @@ export function BenefitCard({
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="rounded-2xl border border-border bg-card p-6 hover:shadow-lg transition-shadow"
+      className="rounded-xl border border-border bg-card p-6 hover: transition-shadow"
     >
       <h4 className="text-[15px] font-semibold text-foreground">{title}</h4>
       <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">{description}</p>

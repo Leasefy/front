@@ -56,16 +56,16 @@ function EventItem({ event }: EventItemProps) {
   const content = (
     <div className={cn(
       'flex items-start gap-3 py-3 border-b border-border last:border-0 hover:bg-muted/50 transition-colors -mx-2 px-2 rounded-sm',
-      isOverdue && 'bg-red-50/50'
+      isOverdue && 'bg-[#F8EAE7]/50'
     )}>
       {/* Icon */}
       <div className={cn(
         'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
-        isOverdue ? 'bg-red-100' : 'bg-muted'
+        isOverdue ? 'bg-[#F8EAE7]' : 'bg-muted'
       )}>
         <Icon className={cn(
           'w-4 h-4',
-          isOverdue ? 'text-red-400' : 'text-muted-foreground'
+          isOverdue ? 'text-[#C4503B]' : 'text-muted-foreground'
         )} />
       </div>
 
@@ -73,7 +73,7 @@ function EventItem({ event }: EventItemProps) {
       <div className="flex-1 min-w-0">
         <p className={cn(
           'text-sm font-medium',
-          isOverdue ? 'text-red-700' : 'text-foreground'
+          isOverdue ? 'text-[#C4503B]' : 'text-foreground'
         )}>
           {event.title}
         </p>
@@ -86,7 +86,7 @@ function EventItem({ event }: EventItemProps) {
       <div className="text-right flex-shrink-0">
         <p className={cn(
           'text-xs font-medium',
-          isOverdue ? 'text-red-500' : 'text-muted-foreground'
+          isOverdue ? 'text-[#C4503B]' : 'text-muted-foreground'
         )}>
           {formatDaysUntil(event.daysUntil)}
         </p>

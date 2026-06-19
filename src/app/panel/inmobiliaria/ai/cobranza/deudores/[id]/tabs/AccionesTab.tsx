@@ -205,8 +205,8 @@ function CTACard({
 }: CTACardProps) {
   const accentClass =
     accent === 'amber'
-      ? 'hover:border-amber-400 dark:hover:border-amber-600'
-      : 'hover:border-violet-400 dark:hover:border-violet-600'
+      ? 'hover:border-[#B7791F] dark:hover:border-[#B7791F]'
+      : 'hover:border-[#6B6B6B] dark:hover:border-[#6B6B6B]'
   return (
     <button
       type="button"
@@ -215,7 +215,7 @@ function CTACard({
       title={disabled ? disabledTooltip : undefined}
       data-testid={testId}
       className={
-        'group text-left rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
+        'group text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
         accentClass
       }
     >
@@ -224,7 +224,7 @@ function CTACard({
           {label}
         </span>
         {badge && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#B7791F] dark:bg-[#B7791F]/30 text-[#B7791F] dark:text-[#B7791F]">
             {badge}
           </span>
         )}

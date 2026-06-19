@@ -285,7 +285,7 @@ export function WizardShell({
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
             {/* Step content */}
-            <div className="bg-card rounded-sm border border-border shadow-sm">
+            <div className="bg-card rounded-sm border border-border">
               {/* Desktop step header - hidden on mobile since sidebar shows it */}
               <div className="hidden lg:block px-6 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -321,13 +321,13 @@ export function WizardShell({
               {/* Validation Errors */}
               {attemptedAdvance && !currentStepValidation.isValid && (
                 <div className="px-4 lg:px-6 mb-4" aria-live="assertive" role="alert">
-                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-sm">
-                    <WarningCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 p-4 bg-[#F8EAE7] border border-[#C4503B]/30 rounded-sm">
+                    <WarningCircle className="h-5 w-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-red-800">
+                      <p className="text-sm font-medium text-[#C4503B]">
                         Completa los campos requeridos para continuar
                       </p>
-                      <ul className="mt-2 text-sm text-red-700 list-disc list-inside space-y-1">
+                      <ul className="mt-2 text-sm text-[#C4503B] list-disc list-inside space-y-1">
                         {currentStepMissingFields.map((field, idx) => (
                           <li key={idx}>
                             <button

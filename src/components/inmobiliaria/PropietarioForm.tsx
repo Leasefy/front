@@ -75,11 +75,11 @@ function InputWrapper({
     <div className="space-y-1.5">
       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-[#C4503B] ml-0.5">*</span>}
       </label>
       {children}
       {error ? (
-        <p className="text-xs text-red-500 flex items-center gap-1">
+        <p className="text-xs text-[#C4503B] flex items-center gap-1">
           <Warning className="w-3 h-3" />
           {error}
         </p>
@@ -221,9 +221,9 @@ export function PropietarioForm({
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
           {isCompany ? (
-            <Buildings className="w-5 h-5 text-purple-500" />
+            <Buildings className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
           ) : (
-            <User className="w-5 h-5 text-indigo-500" />
+            <User className="w-5 h-5 text-[#1A40FF]" />
           )}
           <h3 className="font-semibold">
             {isCompany ? t('inmobiliaria.propietario.form.companyInfo') : t('inmobiliaria.propietario.form.personalInfo')}
@@ -237,7 +237,7 @@ export function PropietarioForm({
               <select
                 value={formData.documentType}
                 onChange={(e) => updateField('documentType', e.target.value as DocumentType)}
-                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
               >
                 {DOCUMENT_TYPE_VALUES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -265,9 +265,9 @@ export function PropietarioForm({
                 onBlur={() => setTouched((prev) => ({ ...prev, documentNumber: true }))}
                 placeholder={DOCUMENT_TYPE_VALUES.find((dt) => dt.value === formData.documentType)?.hint}
                 className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                   touched.documentNumber && errors.documentNumber
-                    ? 'border-red-500'
+                    ? 'border-[#C4503B]/30'
                     : 'border-neutral-200 dark:border-neutral-700'
                 )}
               />
@@ -294,9 +294,9 @@ export function PropietarioForm({
               onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
               placeholder={isCompany ? 'Inversiones ABC S.A.S.' : 'Juan Pérez García'}
               className={cn(
-                'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                 touched.name && errors.name
-                  ? 'border-red-500'
+                  ? 'border-[#C4503B]/30'
                   : 'border-neutral-200 dark:border-neutral-700'
               )}
             />
@@ -319,9 +319,9 @@ export function PropietarioForm({
                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
                 placeholder="email@ejemplo.com"
                 className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                   touched.email && errors.email
-                    ? 'border-red-500'
+                    ? 'border-[#C4503B]/30'
                     : 'border-neutral-200 dark:border-neutral-700'
                 )}
               />
@@ -343,9 +343,9 @@ export function PropietarioForm({
                 onBlur={() => setTouched((prev) => ({ ...prev, phone: true }))}
                 placeholder="+57 310 234 5678"
                 className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                   touched.phone && errors.phone
-                    ? 'border-red-500'
+                    ? 'border-[#C4503B]/30'
                     : 'border-neutral-200 dark:border-neutral-700'
                 )}
               />
@@ -363,7 +363,7 @@ export function PropietarioForm({
                 value={formData.address}
                 onChange={(e) => updateField('address', e.target.value)}
                 placeholder="Cra 15 #93-45, Apto 802"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
               />
             </div>
           </InputWrapper>
@@ -375,7 +375,7 @@ export function PropietarioForm({
               value={formData.city}
               onChange={(e) => updateField('city', e.target.value)}
               placeholder="Bogotá"
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
             />
           </InputWrapper>
         </div>
@@ -384,14 +384,14 @@ export function PropietarioForm({
       {/* Bank Account */}
       <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
-          <Bank className="w-5 h-5 text-emerald-500" />
+          <Bank className="w-5 h-5 text-[#2C7A53]" />
           <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
         </div>
 
-        <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+        <div className="p-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
           <div className="flex gap-3">
-            <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <Info className="w-5 h-5 text-[#1A40FF] shrink-0 mt-0.5" />
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
               {t('inmobiliaria.propietario.form.bankDataInfo')}
             </p>
           </div>
@@ -411,9 +411,9 @@ export function PropietarioForm({
                 onChange={(e) => updateField('bankCode', e.target.value as BankCode)}
                 onBlur={() => setTouched((prev) => ({ ...prev, bankCode: true }))}
                 className={cn(
-                  'w-full pl-10 pr-8 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                  'w-full pl-10 pr-8 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                   touched.bankCode && errors.bankCode
-                    ? 'border-red-500'
+                    ? 'border-[#C4503B]/30'
                     : 'border-neutral-200 dark:border-neutral-700'
                 )}
               >
@@ -443,7 +443,7 @@ export function PropietarioForm({
                   className={cn(
                     'flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all',
                     formData.accountType === accType
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
                   )}
                 >
@@ -469,9 +469,9 @@ export function PropietarioForm({
             placeholder="1234567890"
             maxLength={20}
             className={cn(
-              'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-mono',
+              'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all font-mono',
               touched.accountNumber && errors.accountNumber
-                ? 'border-red-500'
+                ? 'border-[#C4503B]/30'
                 : 'border-neutral-200 dark:border-neutral-700'
             )}
           />
@@ -491,9 +491,9 @@ export function PropietarioForm({
             onBlur={() => setTouched((prev) => ({ ...prev, accountHolder: true }))}
             placeholder={formData.name || 'Nombre del titular'}
             className={cn(
-              'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+              'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
               touched.accountHolder && errors.accountHolder
-                ? 'border-red-500'
+                ? 'border-[#C4503B]/30'
                 : 'border-neutral-200 dark:border-neutral-700'
             )}
           />
@@ -508,7 +508,7 @@ export function PropietarioForm({
             onChange={(e) => updateField('notes', e.target.value)}
             placeholder="Agregar notas sobre este propietario..."
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all resize-none"
           />
         </InputWrapper>
       </div>
@@ -526,7 +526,7 @@ export function PropietarioForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
         >
           {isSubmitting ? (
             <>

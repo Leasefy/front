@@ -16,24 +16,24 @@ interface RiskDistributionMiniProps {
 
 const riskColors = {
   A: {
-    bg: 'bg-emerald-500',
-    text: 'text-emerald-700',
-    label: 'text-emerald-600',
+    bg: 'bg-[#2C7A53]',
+    text: 'text-[#2C7A53]',
+    label: 'text-[#2C7A53]',
   },
   B: {
-    bg: 'bg-blue-500',
-    text: 'text-blue-700',
-    label: 'text-blue-600',
+    bg: 'bg-[#1A40FF]',
+    text: 'text-[#1A40FF]',
+    label: 'text-[#1A40FF]',
   },
   C: {
-    bg: 'bg-amber-500',
-    text: 'text-amber-700',
-    label: 'text-amber-600',
+    bg: 'bg-[#B7791F]',
+    text: 'text-[#B7791F]',
+    label: 'text-[#B7791F]',
   },
   D: {
-    bg: 'bg-red-500',
-    text: 'text-red-700',
-    label: 'text-red-600',
+    bg: 'bg-[#C4503B]',
+    text: 'text-[#C4503B]',
+    label: 'text-[#C4503B]',
   },
 };
 

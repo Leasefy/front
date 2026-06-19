@@ -31,25 +31,25 @@ export function CobranzaKpiStrip({
       label: t('inmobiliaria.ai.cobranza.overview.kpis.deudoresActivos'),
       value: String(deudoresActivos),
       Icon: Users,
-      iconColor: 'text-violet-500',
+      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
     {
       label: t('inmobiliaria.ai.cobranza.overview.kpis.pagadoHoy'),
       value: formatCOP(pagadoHoyCop),
       Icon: CurrencyDollar,
-      iconColor: 'text-green-500',
+      iconColor: 'text-[#2C7A53]',
     },
     {
       label: t('inmobiliaria.ai.cobranza.overview.kpis.llamadasHoy'),
       value: String(llamadasHoy),
       Icon: Phone,
-      iconColor: 'text-indigo-500',
+      iconColor: 'text-[#1A40FF]',
     },
     {
       label: t('inmobiliaria.ai.cobranza.overview.kpis.escalacionesPendientes'),
       value: String(escalacionesPendientes),
       Icon: Warning,
-      iconColor: 'text-amber-500',
+      iconColor: 'text-[#B7791F]',
     },
   ]
 

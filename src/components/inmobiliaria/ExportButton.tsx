@@ -48,7 +48,7 @@ export interface ExportButtonProps {
 // Size configurations
 const SIZE_CONFIG = {
   sm: {
-    button: 'px-3 py-1.5 text-xs gap-1.5 rounded-lg',
+    button: 'px-3 py-1.5 text-xs gap-1.5 rounded-md',
     icon: 'w-3.5 h-3.5',
     dropdown: 'min-w-[160px]',
   },
@@ -69,16 +69,16 @@ const FORMAT_CONFIG = {
   pdf: {
     icon: FilePdf,
     label: 'Descargar PDF',
-    color: 'text-red-600 dark:text-red-400',
-    bgColor: 'bg-red-50 dark:bg-red-900/20',
-    buttonBg: 'bg-red-600 hover:bg-red-700',
+    color: 'text-[#C4503B] dark:text-[#E0664D]',
+    bgColor: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    buttonBg: 'bg-[#C4503B] hover:bg-[#C4503B]',
   },
   excel: {
     icon: FileXls,
     label: 'Descargar Excel',
-    color: 'text-green-600 dark:text-green-400',
-    bgColor: 'bg-green-50 dark:bg-green-900/20',
-    buttonBg: 'bg-green-600 hover:bg-green-700',
+    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    buttonBg: 'bg-[#2C7A53] hover:bg-[#2C7A53]',
   },
 };
 
@@ -124,10 +124,10 @@ export function ExportButton({
           'inline-flex items-center justify-center font-medium transition-all',
           sizeConfig.button,
           internalSuccess
-            ? 'bg-emerald-500 hover:bg-emerald-500 text-white'
+            ? 'bg-[#2C7A53] hover:bg-[#2C7A53] text-white'
             : disabled
               ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              : `${config.buttonBg} text-white shadow-lg shadow-${format === 'pdf' ? 'red' : 'green'}-500/25`,
+              : `${config.buttonBg} text-white shadow-${format === 'pdf' ? 'red' : 'green'}-500/25`,
           className
         )}
       >
@@ -179,7 +179,7 @@ export function ExportButton({
             sizeConfig.button,
             disabled
               ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono',
+              : 'bg-[#1A40FF] hover:opacity-90 text-white',
             className
           )}
         >
@@ -219,11 +219,11 @@ export function ExportButton({
         {/* PDF Option */}
         <DropdownListItem
           onClick={() => onExport('pdf')}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         >
           <div
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center',
+              'w-8 h-8 rounded-md flex items-center justify-center',
               FORMAT_CONFIG.pdf.bgColor
             )}
           >
@@ -245,11 +245,11 @@ export function ExportButton({
         {/* Excel Option */}
         <DropdownListItem
           onClick={() => onExport('excel')}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         >
           <div
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center',
+              'w-8 h-8 rounded-md flex items-center justify-center',
               FORMAT_CONFIG.excel.bgColor
             )}
           >
@@ -273,9 +273,9 @@ export function ExportButton({
         {/* Scheduled Export - Coming Soon */}
         <DropdownListItem
           disabled
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg opacity-50 cursor-not-allowed"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md opacity-50 cursor-not-allowed"
         >
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+          <div className="w-8 h-8 rounded-md flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
             <CalendarBlank className="w-4 h-4 text-neutral-400" />
           </div>
           <div>
@@ -324,7 +324,7 @@ export function ExportButtonCompact({
       onClick={() => onExport(format)}
       disabled={disabled || isLoading}
       className={cn(
-        'p-2 rounded-lg transition-colors',
+        'p-2 rounded-md transition-colors',
         disabled
           ? 'text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
           : `${config.color} hover:${config.bgColor}`,

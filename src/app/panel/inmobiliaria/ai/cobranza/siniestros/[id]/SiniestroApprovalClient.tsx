@@ -123,7 +123,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
   if (envMissing) {
     return (
       <div className="p-4 lg:p-8">
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-md border border-[#B7791F] bg-[#B7791F] px-4 py-3 text-sm text-[#B7791F] dark:border-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]">
           {t('inmobiliaria.ai.cobranza.siniestros.envMissing')}
         </div>
       </div>
@@ -169,7 +169,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           type="button"
           data-testid="siniestro-back"
           onClick={() => router.back()}
-          className="inline-flex items-center text-sm text-neutral-600 hover:text-violet-700 dark:text-neutral-400"
+          className="inline-flex items-center text-sm text-neutral-600 hover:text-[#6B6B6B] dark:text-neutral-400"
         >
           ← {t('inmobiliaria.ai.cobranza.siniestros.back')}
         </button>
@@ -196,7 +196,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
         />
         {pdfError && (
-          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+          <div className="rounded-md border border-[#C4503B]/20 bg-[#F8EAE7] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B]/40 dark:bg-[#C4503B]/15 dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.error')}
           </div>
         )}
@@ -213,7 +213,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
             return (
               <label
                 key={ins}
-                className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+                className="inline-flex items-center gap-2 rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
               >
                 <input
                   type="checkbox"
@@ -228,7 +228,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           })}
         </div>
         {selectedInsurers.length === 0 && (
-          <div className="text-sm text-amber-700 dark:text-amber-400">
+          <div className="text-sm text-[#B7791F] dark:text-[#B7791F]">
             {t('inmobiliaria.ai.cobranza.siniestros.insurers.atLeastOne')}
           </div>
         )}
@@ -246,7 +246,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
               ? t('inmobiliaria.ai.cobranza.siniestros.permissionTooltip')
               : undefined
           }
-          className="inline-flex items-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
+          className="inline-flex items-center rounded-sm bg-[#6B6B6B] px-4 py-2 text-sm font-medium text-white hover:bg-[#6B6B6B] disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
         >
           {isApproving
             ? t('inmobiliaria.ai.cobranza.siniestros.aprobar.submitting')
@@ -262,24 +262,24 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
               ? t('inmobiliaria.ai.cobranza.siniestros.permissionTooltip')
               : undefined
           }
-          className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-red-400 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+          className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-[#C4503B] hover:text-[#C4503B] disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
         >
           {t('inmobiliaria.ai.cobranza.siniestros.rechazar.label')}
         </button>
       </div>
 
       {approveError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-sm border border-[#C4503B] bg-[#C4503B] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B]">
           {approveError}
         </div>
       )}
       {rejectError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-sm border border-[#C4503B] bg-[#C4503B] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B]">
           {rejectError}
         </div>
       )}
       {rejectResult?.ok && (
-        <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-700 dark:bg-green-950/30 dark:text-green-200">
+        <div className="rounded-sm border border-[#2C7A53] bg-[#2C7A53] px-3 py-2 text-sm text-[#2C7A53] dark:border-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53]">
           {t('inmobiliaria.ai.cobranza.siniestros.rechazar.success')}
         </div>
       )}
@@ -288,14 +288,14 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
       {approveResult && (
         <section
           data-testid="siniestro-results"
-          className="space-y-2 rounded-lg border border-green-300 bg-green-50 p-4 dark:border-green-700 dark:bg-green-950/30"
+          className="space-y-2 rounded-md border border-[#2C7A53] bg-[#2C7A53] p-4 dark:border-[#2C7A53] dark:bg-[#2C7A53]/30"
         >
-          <h2 className="text-sm font-semibold text-green-900 dark:text-green-100">
+          <h2 className="text-sm font-semibold text-[#2C7A53] dark:text-[#2C7A53]">
             {approveResult.insurerResults.some((r) => !r.sent)
               ? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')
               : t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.title')}
           </h2>
-          <ul className="divide-y divide-green-200 dark:divide-green-800">
+          <ul className="divide-y divide-[#2C7A53] dark:divide-[#2C7A53]">
             {approvedInsurers.map((ins) => {
               const result = insurerResultMap.get(ins)
               const sent = result?.sent ?? false
@@ -311,8 +311,8 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
                   <span
                     className={
                       sent
-                        ? 'text-green-700 dark:text-green-300'
-                        : 'text-amber-700 dark:text-amber-300'
+                        ? 'text-[#2C7A53] dark:text-[#2C7A53]'
+                        : 'text-[#B7791F] dark:text-[#B7791F]'
                     }
                   >
                     {sent

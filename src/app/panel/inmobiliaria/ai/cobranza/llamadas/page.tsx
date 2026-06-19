@@ -30,32 +30,29 @@ import {
 function outcomeBadgeClasses(outcome: string | null): string {
   switch (outcome) {
     case 'completed':
-      return 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-800'
+      return 'bg-[#E8F3EC] text-[#2C7A53] ring-1 ring-[#2C7A53]/30 dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:ring-[#2C7A53]/40'
     case 'no_answer':
     case 'voicemail':
       return 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'
     case 'wrong_party':
     case 'failed':
-      return 'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:ring-rose-800'
+      return 'bg-[#F8EAE7] text-[#C4503B] ring-1 ring-[#C4503B]/30 dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:ring-[#C4503B]/40'
     case 'opt_out':
-      return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800'
+      return 'bg-[#F8F0E0] text-[#B7791F] ring-1 ring-[#B7791F]/30 dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:ring-[#B7791F]/40'
     case 'escalated':
-      return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-800'
+      return 'bg-[#EEF1FF] text-[#1A40FF] ring-1 ring-[#1A40FF]/30 dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:ring-[#1A40FF]/40'
     default:
       return 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'
   }
 }
 
 function channelBadgeClasses(channel: string): string {
+  // Channel is metadata, not a state signal — gray-first per brand contract §2.
   switch (channel) {
     case 'voice':
-      return 'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:ring-violet-800'
     case 'whatsapp':
-      return 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-800'
     case 'sms':
-      return 'bg-sky-50 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:ring-sky-800'
     case 'email':
-      return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800'
     default:
       return 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'
   }
@@ -65,8 +62,8 @@ function channelBadgeClasses(channel: string): string {
 
 function chipClasses(active: boolean): string {
   return active
-    ? 'bg-violet-600 text-white border-violet-600'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-violet-400'
+    ? 'bg-[#EEF1FF] text-[#1A40FF] border-[#1A40FF]/30 dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:border-[#1A40FF]/40'
+    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
 }
 
 // ── Label maps ────────────────────────────────────────────────────────────────
@@ -219,7 +216,7 @@ function LlamadasContent() {
         <button
           type="button"
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition shrink-0"
+          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition shrink-0"
           aria-label={isEs ? 'Actualizar' : 'Refresh'}
         >
           <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
@@ -242,7 +239,7 @@ function LlamadasContent() {
                 onClick={() => setOutcomeFilter((prev) => (prev === o ? undefined : o))}
                 aria-pressed={outcomeFilter === o}
                 className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
                   chipClasses(outcomeFilter === o)
                 }
               >
@@ -265,7 +262,7 @@ function LlamadasContent() {
                 onClick={() => setChannelFilter((prev) => (prev === c ? undefined : c))}
                 aria-pressed={channelFilter === c}
                 className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
                   chipClasses(channelFilter === c)
                 }
               >
@@ -288,7 +285,7 @@ function LlamadasContent() {
                 onClick={() => setDirectionFilter((prev) => (prev === d ? undefined : d))}
                 aria-pressed={directionFilter === d}
                 className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
+                  'px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ' +
                   chipClasses(directionFilter === d)
                 }
               >
@@ -306,7 +303,7 @@ function LlamadasContent() {
               setChannelFilter(undefined)
               setDirectionFilter(undefined)
             }}
-            className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline self-center"
+            className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline self-center"
           >
             {isEs ? 'Limpiar filtros' : 'Clear filters'}
           </button>
@@ -317,7 +314,7 @@ function LlamadasContent() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2 mb-4"
+          className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2 mb-4"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -329,25 +326,25 @@ function LlamadasContent() {
         <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
           <thead className="bg-neutral-50 dark:bg-neutral-950/50">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.debtor')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.channel')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.outcome')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.duration')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.initiatedAt')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.qaScore')}
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="px-3 py-2 text-left text-xs font-mono text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.flags')}
               </th>
             </tr>
@@ -373,7 +370,7 @@ function LlamadasContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigateToCall(call.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF]"
               >
                 {/* Debtor (masked) */}
                 <td className="px-3 py-2">
@@ -435,10 +432,10 @@ function LlamadasContent() {
                     <span
                       className={
                         call.qaScore >= 80
-                          ? 'text-green-600 dark:text-green-400'
+                          ? 'text-[#2C7A53] dark:text-[#3EAE70]'
                           : call.qaScore >= 60
-                            ? 'text-amber-600 dark:text-amber-400'
-                            : 'text-rose-600 dark:text-rose-400'
+                            ? 'text-[#B7791F] dark:text-[#D2992F]'
+                            : 'text-[#C4503B] dark:text-[#E0664D]'
                       }
                     >
                       {call.qaScore}
@@ -451,7 +448,7 @@ function LlamadasContent() {
                 {/* Compliance flags */}
                 <td className="px-3 py-2 text-xs tabular-nums font-mono whitespace-nowrap">
                   {call.complianceFlagsCount > 0 ? (
-                    <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400 font-medium">
+                    <span className="inline-flex items-center gap-0.5 text-[#B7791F] dark:text-[#D2992F] font-medium">
                       <Warning className="w-3 h-3" weight="fill" aria-hidden="true" />
                       {call.complianceFlagsCount}
                     </span>

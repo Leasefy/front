@@ -48,12 +48,12 @@ function StatCard({ stat, index }: { stat: typeof stats[number]; index: number }
       initial={{ opacity: 0, y: 20 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.45, delay: index * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="group relative bg-white p-6 flex flex-col justify-between overflow-hidden transition-shadow duration-300 hover:shadow-lg"
+      className="group relative bg-white p-6 flex flex-col justify-between overflow-hidden transition-shadow duration-300 hover:"
       style={{ border: "1px solid rgba(0,0,0,0.06)" }}
     >
       {/* Icon top-right — subtle */}
-      <div className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-foreground/[0.03] group-hover:bg-indigo-50 transition-colors duration-300">
-        <Icon className="w-3.5 h-3.5 text-foreground/20 group-hover:text-indigo-500 transition-colors duration-300" strokeWidth={1.5} />
+      <div className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-foreground/[0.03] group-hover:bg-[#EEF1FF] transition-colors duration-300">
+        <Icon className="w-3.5 h-3.5 text-foreground/20 group-hover:text-[#1A40FF] transition-colors duration-300" strokeWidth={1.5} />
       </div>
 
       <div>
@@ -97,7 +97,7 @@ export function WhyUsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6 }}
-            className="lg:col-span-7 relative overflow-hidden min-h-[520px] lg:min-h-0 group rounded-2xl"
+            className="lg:col-span-7 relative overflow-hidden min-h-[520px] lg:min-h-0 group rounded-xl"
           >
             <Image
               src="https://images.pexels.com/photos/7613843/pexels-photo-7613843.jpeg?auto=compress&cs=tinysrgb&w=1600"
@@ -118,8 +118,8 @@ export function WhyUsSection() {
               transition={{ delay: 0.4, duration: 0.5 }}
               className="absolute top-6 left-6 md:top-8 md:left-8"
             >
-              <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-success-50 flex items-center justify-center">
+              <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-white/50 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-success-50 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-success-500" />
                 </div>
                 <div>
@@ -137,9 +137,9 @@ export function WhyUsSection() {
               transition={{ delay: 0.6, duration: 0.5 }}
               className="absolute top-6 right-6 md:top-8 md:right-8"
             >
-              <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                  <Lightning className="w-4 h-4 text-indigo-600" />
+              <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-white/50 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-[#EEF1FF] flex items-center justify-center">
+                  <Lightning className="w-4 h-4 text-[#1A40FF]" />
                 </div>
                 <div>
                   <p className="text-[12px] font-medium text-foreground">Cobro Automatizado</p>
@@ -156,8 +156,8 @@ export function WhyUsSection() {
               transition={{ delay: 0.8, duration: 0.5 }}
               className="absolute top-[45%] right-6 md:right-8 hidden md:block"
             >
-              <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/50 px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-warning-50 flex items-center justify-center">
+              <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-white/50 px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-warning-50 flex items-center justify-center">
                   <CheckCircle className="w-4 h-4 text-warning-500" />
                 </div>
                 <div>

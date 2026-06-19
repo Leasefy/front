@@ -68,7 +68,7 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
 
   // Loading skeleton
   if (isLoading) {
-    return <div className="animate-pulse h-32 bg-neutral-100 dark:bg-neutral-800 rounded-lg" />;
+    return <div className="animate-pulse h-32 bg-neutral-100 dark:bg-neutral-800 rounded-md" />;
   }
 
   // Branch A — agency-gate: return null, page handles the display
@@ -97,7 +97,7 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
         <Line
           type="monotone"
           dataKey="cost_per_peso"
-          stroke="#4f46e5"
+          stroke="#1A40FF"
           dot={false}
           strokeWidth={2}
         />

@@ -91,7 +91,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
       </h3>
       <SampleDataWatermark show={showWatermark}>
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -121,7 +121,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
                   <td className="px-3 py-2 text-neutral-900 dark:text-white">
                     {row.scriptName}
                   </td>
-                  <td className="px-3 py-2 text-violet-700 dark:text-violet-300 font-semibold">
+                  <td className="px-3 py-2 text-neutral-600 dark:text-neutral-300 font-semibold">
                     {row.stage}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
@@ -134,8 +134,8 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
                     className={
                       'px-3 py-2 text-right tabular-nums font-medium ' +
                       (row.lift >= 1
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-amber-600 dark:text-amber-400')
+                        ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                        : 'text-[#B7791F] dark:text-[#D2992F]')
                     }
                   >
                     {row.lift >= 0 ? '+' : ''}

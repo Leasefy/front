@@ -238,7 +238,7 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
       {activeFilter === id && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setActiveFilter(null)} />
-          <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm shadow-xl z-[110] min-w-[140px]">
+          <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm z-[110] min-w-[140px]">
             {options.map((option) => (
               <button
                 key={option.value}
@@ -382,7 +382,7 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
                   {showSortList && (
                     <>
                       <div className="fixed inset-0 z-[100]" onClick={() => setShowSortList(false)} />
-                      <div className="absolute right-0 top-full mt-2 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm shadow-xl z-[110] min-w-[160px]">
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm z-[110] min-w-[160px]">
                         {SORT_OPTIONS.map((option) => (
                           <button
                             key={option.value}

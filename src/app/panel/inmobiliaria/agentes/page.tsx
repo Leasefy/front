@@ -172,7 +172,7 @@ function AgentesContent() {
         {canAccess('agentes', 'create') && (
           <button
             onClick={handleNuevoAgente}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
           >
             <Plus className="w-5 h-5" />
             {t('inmobiliaria.agentes.addAgent')}
@@ -200,16 +200,16 @@ function AgentesContent() {
         </div>
 
         {/* Active Agents */}
-        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
+        <div className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+              <p className="text-2xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                 {stats.active}
               </p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500">
+              <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">
                 {t('inmobiliaria.agentes.active')}
               </p>
             </div>
@@ -217,16 +217,16 @@ function AgentesContent() {
         </div>
 
         {/* Closings This Month */}
-        <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
+        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <ChartLineUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">
+              <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
                 {stats.closedThisMonth}
               </p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-500">
+              <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
                 {t('inmobiliaria.agentes.closingsMonth')}
               </p>
             </div>
@@ -234,16 +234,16 @@ function AgentesContent() {
         </div>
 
         {/* Commissions This Month */}
-        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+        <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <CurrencyDollar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+              <CurrencyDollar className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
             </div>
             <div>
-              <p className="text-lg font-bold text-amber-700 dark:text-amber-400 truncate">
+              <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F] truncate">
                 {formatCurrency(stats.commissionsThisMonth)}
               </p>
-              <p className="text-xs text-amber-600 dark:text-amber-500">
+              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
                 {t('inmobiliaria.agentes.commissionsMonth')}
               </p>
             </div>
@@ -255,7 +255,7 @@ function AgentesContent() {
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {/* Tab Navigation - Inside the card */}
         <div className="px-4 py-3 border-b border-border bg-muted/20">
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-fit">
+          <div className="flex items-center gap-1 p-1 rounded-md bg-muted w-fit">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -263,9 +263,9 @@ function AgentesContent() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                    'flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium transition-all',
                     activeTab === tab.id
-                      ? 'bg-background text-foreground shadow-sm'
+                      ? 'bg-background text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -288,13 +288,13 @@ function AgentesContent() {
             >
               {/* View Toggle Header */}
               <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+                <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
                   <button
                     onClick={() => setViewMode('table')}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                      'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                       viewMode === 'table'
-                        ? 'bg-background text-foreground shadow-sm'
+                        ? 'bg-background text-foreground'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
@@ -304,9 +304,9 @@ function AgentesContent() {
                   <button
                     onClick={() => setViewMode('grid')}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                      'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                       viewMode === 'grid'
-                        ? 'bg-background text-foreground shadow-sm'
+                        ? 'bg-background text-foreground'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
@@ -380,7 +380,7 @@ function AgentesContent() {
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className={cn(
-                      'p-2 rounded-md border border-border transition-all',
+                      'p-2 rounded-sm border border-border transition-all',
                       currentPage === 1
                         ? 'text-muted-foreground/40 cursor-not-allowed'
                         : 'text-muted-foreground hover:bg-muted'
@@ -395,7 +395,7 @@ function AgentesContent() {
                         key={page}
                         onClick={() => setCurrentPage(page)}
                         className={cn(
-                          'w-8 h-8 rounded-md text-sm font-medium transition-all',
+                          'w-8 h-8 rounded-sm text-sm font-medium transition-all',
                           page === currentPage
                             ? 'bg-foreground text-background'
                             : 'text-muted-foreground hover:bg-muted'
@@ -410,7 +410,7 @@ function AgentesContent() {
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className={cn(
-                      'p-2 rounded-md border border-border transition-all',
+                      'p-2 rounded-sm border border-border transition-all',
                       currentPage === totalPages
                         ? 'text-muted-foreground/40 cursor-not-allowed'
                         : 'text-muted-foreground hover:bg-muted'
@@ -463,8 +463,8 @@ function AgentesContent() {
 function EmptyState() {
   const { t } = useI18n();
   return (
-    <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+    <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+      <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
         <Users className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
       </div>
       <h3 className="text-base font-semibold text-foreground mb-1.5">

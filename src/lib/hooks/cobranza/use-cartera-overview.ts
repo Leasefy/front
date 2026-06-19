@@ -74,7 +74,7 @@ export function useCarteraOverview() {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     fetchData()
   }, [fetchData, agencyId])
 

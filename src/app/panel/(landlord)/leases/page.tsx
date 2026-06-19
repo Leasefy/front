@@ -61,9 +61,9 @@ interface ProgressBarProps {
 
 function ProgressBar({ value, variant }: ProgressBarProps) {
   const barColorClass = {
-    success: 'bg-emerald-500',
-    warning: 'bg-amber-500',
-    danger: 'bg-red-500',
+    success: 'bg-[#2C7A53]',
+    warning: 'bg-[#B7791F]',
+    danger: 'bg-[#C4503B]',
   }[variant];
 
   return (
@@ -131,15 +131,15 @@ export default function LandlordLeasesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 text-indigo-600 animate-spin" />
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <SpinnerGap className="w-8 h-8 text-[#1A40FF] animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <ErrorState description={error} onRetry={refetch} />
         </div>
@@ -148,7 +148,7 @@ export default function LandlordLeasesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Header */}
@@ -176,36 +176,36 @@ export default function LandlordLeasesPage() {
             value={formatCurrency(stats.totalMonthlyIncome)}
             sublabel={t('landlord.leases.monthlyIncomeSubLabel')}
             icon={CurrencyDollar}
-            iconBgClass="bg-emerald-100 dark:bg-emerald-900/30"
-            iconColorClass="text-emerald-600 dark:text-emerald-400"
+            iconBgClass="bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
+            iconColorClass="text-[#2C7A53] dark:text-[#3EAE70]"
           />
           <StatsCard
             label={t('landlord.leases.pendingPayments')}
             value={stats.pendingPayments}
             sublabel={t('landlord.leases.pendingPaymentsSubLabel')}
             icon={Clock}
-            iconBgClass="bg-amber-100 dark:bg-amber-900/30"
-            iconColorClass="text-amber-600 dark:text-amber-400"
+            iconBgClass="bg-[#F8F0E0] dark:bg-[#B7791F]/15"
+            iconColorClass="text-[#B7791F] dark:text-[#D2992F]"
           />
           <StatsCard
             label={t('landlord.leases.latePayments')}
             value={stats.latePayments}
             sublabel={stats.latePayments > 0 ? t('landlord.leases.latePaymentsSubLabel') : t('landlord.leases.latePaymentsAllGood')}
             icon={WarningCircle}
-            iconBgClass={stats.latePayments > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-neutral-100 dark:bg-neutral-800'}
-            iconColorClass={stats.latePayments > 0 ? 'text-red-600 dark:text-red-400' : 'text-neutral-600 dark:text-neutral-300'}
+            iconBgClass={stats.latePayments > 0 ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15' : 'bg-neutral-100 dark:bg-neutral-800'}
+            iconColorClass={stats.latePayments > 0 ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-neutral-600 dark:text-neutral-300'}
           />
         </div>
 
         {/* Financial Summary Card */}
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-6 mb-8">
+        <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 rounded-xl p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-                  <TrendUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                  <TrendUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
-                <span className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">{t('landlord.leases.financialSummary')}</span>
+                <span className="text-[#1A40FF] dark:text-[#5570FF] text-sm font-medium">{t('landlord.leases.financialSummary')}</span>
               </div>
               <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
                 {formatCurrency(stats.totalMonthlyIncome)}
@@ -229,18 +229,18 @@ export default function LandlordLeasesPage() {
 
         {/* Ending Soon Warning */}
         {stats.endingSoon > 0 && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
+          <div className="mb-6 p-4 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+                <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
                   {stats.endingSoon > 1
                     ? t('landlord.leases.endingSoonWarningPlural', { count: stats.endingSoon })
                     : t('landlord.leases.endingSoonWarning', { count: stats.endingSoon })}
                 </p>
-                <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
+                <p className="text-xs text-[#B7791F]/70 dark:text-[#B7791F]/70">
                   {t('landlord.leases.endingSoonDescription')}
                 </p>
               </div>
@@ -256,18 +256,18 @@ export default function LandlordLeasesPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+                  'px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2',
                   activeTab === tab.id
-                    ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                 )}
               >
                 {tab.label}
                 <span
                   className={cn(
-                    'px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums',
+                    'px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums',
                     activeTab === tab.id
-                      ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
                   )}
                 >
@@ -298,8 +298,8 @@ export default function LandlordLeasesPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+              <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+                <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
                   <House className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <h3 className="text-base font-semibold text-foreground mb-1.5">
@@ -310,7 +310,7 @@ export default function LandlordLeasesPage() {
                 </p>
                 <button
                   onClick={() => setActiveTab('all')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] hover:opacity-90 text-white rounded-xl text-sm font-medium transition-colors"
                 >
                   {t('landlord.leases.viewAllLeases')}
                 </button>

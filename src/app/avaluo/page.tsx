@@ -15,21 +15,21 @@ const HOW_IT_WORKS = [
   {
     step: "01",
     icon: FileText,
-    title: "SOLICITAR",
+    title: "Solicitar",
     tagline: "EN MINUTOS, NO SEMANAS",
     body: "Ingresá los datos del inmueble, subí unas fotos y aceptá las autorizaciones de datos. Sin papeleo físico.",
   },
   {
     step: "02",
     icon: CreditCard,
-    title: "PAGAR",
+    title: "Pagar",
     tagline: "PAGO SEGURO EN LÍNEA",
     body: "Una vez revisada tu solicitud, recibís el link de pago. Tarjeta, PSE o transferencia bancaria.",
   },
   {
     step: "03",
     icon: Seal,
-    title: "RECIBIR CERTIFICADO",
+    title: "Recibir certificado",
     tagline: "INFORME FIRMADO POR VALUADOR",
     body: "Descargá tu avalúo comercial certificado en PDF. Válido ante entidades financieras, notarías y juzgados.",
   },
@@ -41,15 +41,15 @@ export default function AvaluoPage() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="flex flex-col items-center justify-center px-4 pt-24 pb-16 text-center section-padding">
         {/* Overline label */}
-        <p className="text-overline text-indigo-600 mb-6 tracking-widest">
+        <p className="text-overline text-muted-foreground mb-6 tracking-widest">
           LEASEFY VALUACIONES
         </p>
 
-        {/* Headline — §10.2 highlighted word treatment */}
+        {/* Headline — highlighted word on ink (brand surface) */}
         <h1 className="text-display max-w-3xl mx-auto leading-tight">
           Avalúo comercial{" "}
-          <span className="inline-block px-4 py-1 rounded-2xl bg-indigo-500 text-white font-mono uppercase">
-            CERTIFICADO
+          <span className="inline-block px-4 py-1 rounded-xl bg-[#0B1220] text-white">
+            certificado
           </span>
         </h1>
 
@@ -60,10 +60,10 @@ export default function AvaluoPage() {
           certificados. Entrega en&nbsp;48&nbsp;h.
         </p>
 
-        {/* CTA — primary button uppercase (DESIGN.md §4 buttons hard rule) */}
+        {/* CTA — primary button, Satoshi sentence case (brand contract §4) */}
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
           <Button asChild size="lg">
-            <Link href="/avaluo/nuevo">SOLICITAR AVALÚO</Link>
+            <Link href="/avaluo/nuevo">Solicitar avalúo</Link>
           </Button>
         </div>
 
@@ -86,25 +86,29 @@ export default function AvaluoPage() {
           {HOW_IT_WORKS.map(({ step, icon: Icon, title, tagline, body }) => (
             <article
               key={step}
-              className="rounded-2xl border border-border bg-card p-8 space-y-6"
+              className="rounded-xl border border-border bg-card p-8 space-y-6"
             >
               {/* Number + icon row */}
               <div className="flex items-start justify-between">
-                <span className="text-7xl font-light text-indigo-100 font-mono leading-none">
+                <span className="text-7xl font-light text-neutral-200 font-mono leading-none">
                   {step}
                 </span>
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-6 h-6 text-indigo-600" aria-hidden="true" />
+                <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center flex-shrink-0">
+                  <Icon
+                    className="w-6 h-6 text-neutral-600"
+                    weight="duotone"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
 
               {/* Step title */}
-              <h3 className="text-2xl font-mono uppercase tracking-tight">
+              <h3 className="text-2xl font-medium tracking-tight">
                 {title}
               </h3>
 
-              {/* Indigo tagline */}
-              <p className="text-xs font-mono uppercase tracking-wider text-indigo-600">
+              {/* Mono tagline */}
+              <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 {tagline}
               </p>
 
@@ -117,7 +121,7 @@ export default function AvaluoPage() {
         {/* Secondary CTA at bottom */}
         <div className="mt-12 text-center">
           <Button asChild size="lg">
-            <Link href="/avaluo/nuevo">SOLICITAR AVALÚO</Link>
+            <Link href="/avaluo/nuevo">Solicitar avalúo</Link>
           </Button>
           <p className="mt-4 text-xs text-muted-foreground">
             También podés escribirnos a{" "}
@@ -134,12 +138,16 @@ export default function AvaluoPage() {
       {/* ── Buildings icon strip — visual anchor above footer ─────────────── */}
       <section className="bg-muted/50 border-t border-border py-10 px-4">
         <div className="max-w-3xl mx-auto flex flex-col items-center gap-4 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
-            <Buildings className="w-7 h-7 text-indigo-600" aria-hidden="true" />
+          <div className="w-14 h-14 rounded-xl bg-neutral-100 flex items-center justify-center">
+            <Buildings
+              className="w-7 h-7 text-neutral-600"
+              weight="duotone"
+              aria-hidden="true"
+            />
           </div>
           <p className="text-body-sm text-muted-foreground max-w-md">
             Avaluadores registrados en la{" "}
-            <span className="font-semibold text-foreground">
+            <span className="font-medium text-foreground">
               Lonja de Propiedad Raíz
             </span>
             . Informes aceptados por bancos, notarías y despachos judiciales en

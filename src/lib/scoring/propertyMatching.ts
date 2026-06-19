@@ -57,23 +57,23 @@ export function getAcceptanceProbabilityColors(probability: AcceptanceProbabilit
   border: string;
 } {
   const colors: Record<AcceptanceProbability, { bg: string; text: string; border: string }> = {
-    alta: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
-    media: { bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
-    baja: { bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
+    alta: { bg: 'bg-[#2C7A53]/10', text: 'text-[#2C7A53]', border: 'border-[#2C7A53]/20' },
+    media: { bg: 'bg-[#B7791F]/10', text: 'text-[#B7791F]', border: 'border-[#B7791F]/20' },
+    baja: { bg: 'bg-[#C4503B]/10', text: 'text-[#C4503B]', border: 'border-[#C4503B]/20' },
   };
   return colors[probability];
 }
 
 export function getMatchScoreColor(score: number): string {
-  if (score >= 80) return 'text-emerald-600';
-  if (score >= 65) return 'text-blue-600';
-  if (score >= 50) return 'text-amber-600';
-  return 'text-red-600';
+  if (score >= 80) return 'text-[#2C7A53]';
+  if (score >= 65) return "text-neutral-600 dark:text-neutral-300";
+  if (score >= 50) return 'text-[#B7791F]';
+  return 'text-[#C4503B]';
 }
 
 export function getMatchScoreBgColor(score: number): string {
-  if (score >= 80) return 'bg-emerald-500';
-  if (score >= 65) return 'bg-blue-500';
-  if (score >= 50) return 'bg-amber-500';
-  return 'bg-red-500';
+  if (score >= 80) return "bg-[#2C7A53]";
+  if (score >= 65) return "bg-neutral-400";
+  if (score >= 50) return "bg-[#B7791F]";
+  return "bg-[#C4503B]";
 }

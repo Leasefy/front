@@ -53,15 +53,15 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 // Category colors for icon backgrounds
 const CATEGORY_BG_COLORS: Record<string, string> = {
-  financiero: 'bg-emerald-100 dark:bg-emerald-900/30',
-  operativo: 'bg-blue-100 dark:bg-blue-900/30',
-  agentes: 'bg-violet-100 dark:bg-violet-900/30',
+  financiero: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+  operativo: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  agentes: 'bg-neutral-100 dark:bg-neutral-800',
 };
 
 const CATEGORY_ICON_COLORS: Record<string, string> = {
-  financiero: 'text-emerald-600 dark:text-emerald-400',
-  operativo: 'text-blue-600 dark:text-blue-400',
-  agentes: 'text-violet-600 dark:text-violet-400',
+  financiero: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  operativo: 'text-[#1A40FF] dark:text-[#5570FF]',
+  agentes: 'text-neutral-600 dark:text-neutral-300',
 };
 
 /**
@@ -82,9 +82,9 @@ function getGenerationStatus(lastGenerated: string | undefined, t: (key: string,
   );
 
   if (diffDays === 0) {
-    return { color: 'bg-emerald-500', label: t('inmobiliaria.reporte.generatedToday') };
+    return { color: 'bg-[#2C7A53]', label: t('inmobiliaria.reporte.generatedToday') };
   } else if (diffDays <= 7) {
-    return { color: 'bg-amber-500', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
+    return { color: 'bg-[#B7791F]', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   } else {
     return { color: 'bg-neutral-400', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   }
@@ -126,7 +126,7 @@ export function ReporteCard({
       <motion.div
         whileHover={{ y: -2 }}
         className={cn(
-          'w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:shadow-md transition-all cursor-pointer',
+          'w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover: transition-all cursor-pointer',
           isLocked && 'opacity-75'
         )}
         onClick={isLocked ? onUpgrade : onPreview}
@@ -135,7 +135,7 @@ export function ReporteCard({
           {/* Icon */}
           <div
             className={cn(
-              'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
+              'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
               isLocked ? 'bg-neutral-100 dark:bg-neutral-800' : bgColor
             )}
           >
@@ -156,13 +156,13 @@ export function ReporteCard({
                 {report.title}
               </h3>
               {isLocked && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-medium shrink-0">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-[10px] font-medium shrink-0">
                   Pro
                 </span>
               )}
               {!isLocked && report.isFavorite && (
                 <Star
-                  className="w-4 h-4 text-amber-500 shrink-0"
+                  className="w-4 h-4 text-[#B7791F] shrink-0"
                   weight="fill"
                 />
               )}
@@ -194,7 +194,7 @@ export function ReporteCard({
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all hover:shadow-lg"
+      className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all hover:"
     >
       {/* Header Section */}
       <div className="p-5 pb-4">
@@ -218,7 +218,7 @@ export function ReporteCard({
                   {report.title}
                 </h3>
                 {isLocked && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-medium shrink-0">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-[10px] font-medium shrink-0">
                     Pro
                   </span>
                 )}
@@ -236,14 +236,14 @@ export function ReporteCard({
                 e.stopPropagation();
                 onToggleFavorite();
               }}
-              className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+              className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
             >
               <Star
                 className={cn(
                   'w-5 h-5',
                   report.isFavorite
-                    ? 'text-amber-500'
-                    : 'text-neutral-400 hover:text-amber-500'
+                    ? 'text-[#B7791F]'
+                    : 'text-neutral-400 hover:text-[#B7791F]'
                 )}
                 weight={report.isFavorite ? 'fill' : 'regular'}
               />
@@ -301,7 +301,7 @@ export function ReporteCard({
               e.stopPropagation();
               onUpgrade?.();
             }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
           >
             <Lock className="w-4 h-4" />
             {t('inmobiliaria.reporte.upgradeToAccess') || 'Mejorar plan'}
@@ -320,7 +320,7 @@ export function ReporteCard({
                   'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
                   isGenerating
                     ? 'bg-neutral-100 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                    : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
+                    : 'bg-[#1A40FF] text-white hover:opacity-90'
                 )}
               >
                 {isGenerating ? (

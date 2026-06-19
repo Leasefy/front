@@ -268,7 +268,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
                     {/* Agent activity summary (collapsed) for older messages */}
                     {(liveActivity || storedActivity) && (
                       <div className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53] inline-block" />
                         {(liveActivity || storedActivity)!.agents.length} {t('beta.agents.results').toLowerCase()}
                         {' · '}
                         {formatDuration(
@@ -325,13 +325,13 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <ChatInput onSend={sendMessage} disabled={isBusy} />
         </>
       ) : (
-        <>
-          {/* Empty state with welcome + floating input */}
-          <div className="relative flex-1 overflow-y-auto">
-            <BetaWelcome onPromptClick={sendMessage} />
-          </div>
-          <ChatInput onSend={sendMessage} disabled={isBusy} />
-        </>
+        /* Empty state — Manus-style: greeting + hero input + pills, all centered */
+        <div className="relative flex-1 overflow-y-auto">
+          <BetaWelcome
+            onPromptClick={sendMessage}
+            inputSlot={<ChatInput variant="hero" onSend={sendMessage} disabled={isBusy} />}
+          />
+        </div>
       )}
     </div>
   );

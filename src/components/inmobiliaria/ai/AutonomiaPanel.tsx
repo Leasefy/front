@@ -49,7 +49,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
   if (error) {
     return (
       <div
-        className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         data-testid="autonomia-panel-error"
       >
         {t(`${NS}.error`, { error })}
@@ -71,6 +71,11 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
     )
   }
 
+  // Visible hint of the ACTIVE mode (the title= tooltips are invisible on
+  // touch). Unknown modo → key echo → render nothing (never the raw key).
+  const activeHintKey = `${NS}.modo.${data.modo}Hint`
+  const activeHint = t(activeHintKey)
+
   return (
     <div className="space-y-4" data-testid="autonomia-panel">
       {/* Mode pills (read-only) */}
@@ -86,7 +91,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
               title={isAvailable ? t(`${NS}.modo.${modo}Hint`) : t(`${NS}.noDisponible`)}
               className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ring-1 transition ${
                 isActive
-                  ? 'bg-primary/10 text-foreground ring-primary font-semibold'
+                  ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] ring-[#1A40FF]/30 dark:ring-[#1A40FF]/40 font-medium'
                   : 'bg-muted text-muted-foreground ring-border'
               } ${!isAvailable ? 'opacity-40' : ''}`}
             >
@@ -96,6 +101,13 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
           )
         })}
       </div>
+
+      {/* Active-mode hint, visible (tooltips don't exist on touch) */}
+      {activeHint !== activeHintKey && (
+        <p className="text-xs text-muted-foreground" data-testid="autonomia-modo-hint">
+          {activeHint}
+        </p>
+      )}
 
       {/* Read-only nota */}
       {data.nota && (
@@ -107,7 +119,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
       {/* T-323 callout */}
       {data.t323 && (
         <div
-          className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-400"
+          className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-3 text-sm text-[#B7791F] dark:text-[#D2992F]"
           data-testid="autonomia-t323"
         >
           {t(`${NS}.t323`)}
@@ -130,7 +142,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
                 <dt className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      regla.estado === 'activo' ? 'bg-emerald-500' : 'bg-neutral-400'
+                      regla.estado === 'activo' ? 'bg-[#2C7A53] dark:bg-[#3EAE70]' : 'bg-neutral-400'
                     }`}
                     aria-hidden="true"
                   />

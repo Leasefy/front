@@ -58,14 +58,14 @@ export default function CobranzaAnaliticaPage() {
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.analitica.errors.loading')}: {error}
           </p>
           <button
             type="button"
             onClick={() => void refetch()}
-            className="shrink-0 text-xs font-medium text-rose-600 dark:text-rose-400 underline hover:no-underline"
+            className="shrink-0 text-xs font-medium text-[#C4503B] dark:text-[#E0664D] underline hover:no-underline"
           >
             {t('inmobiliaria.ai.cobranza.analitica.errors.retry')}
           </button>

@@ -67,7 +67,7 @@ export function WizardStep3Review({
       </h2>
 
       {/* Review card */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
         {rows.map(row => (
           <div key={row.label} className="flex justify-between gap-4">
             <span className="text-sm text-muted-foreground">{row.label}</span>
@@ -80,7 +80,7 @@ export function WizardStep3Review({
       {arcoError && (
         <div
           role="alert"
-          className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-sm text-rose-700 dark:text-rose-300"
+          className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         >
           {t('inmobiliaria.ai.cotizador.nueva.errors.arcoBloqueado')}
         </div>
@@ -102,7 +102,7 @@ export function WizardStep3Review({
           <Button
             onClick={onSubmit}
             disabled={isLoading}
-            className="flex-1 uppercase tracking-wide"
+            className="flex-1"
             size="lg"
           >
             {isLoading ? (
@@ -118,7 +118,7 @@ export function WizardStep3Review({
           >
             <Button
               disabled
-              className="w-full uppercase tracking-wide"
+              className="w-full"
               size="lg"
             >
               {t('inmobiliaria.ai.cotizador.nueva.actions.enviar')}

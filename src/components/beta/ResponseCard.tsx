@@ -42,12 +42,12 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const AGENT_DOT_COLORS: Record<string, string> = {
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  amber: 'bg-amber-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-rose-500',
-  indigo: 'bg-indigo-600',
+  emerald: 'bg-[#2C7A53]',
+  blue: 'bg-[#1A40FF]',
+  amber: 'bg-[#B7791F]',
+  purple: 'bg-neutral-100 dark:bg-neutral-800',
+  pink: 'bg-[#C4503B]',
+  indigo: 'bg-[#1A40FF]',
 };
 
 // ============================================================================
@@ -78,7 +78,7 @@ function TypeBadge({ type }: { type: 'informative' | 'actionable' }) {
         'text-[11px] font-medium leading-none',
         'shrink-0',
         isActionable
-          ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-600/10 dark:text-indigo-400'
+          ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/10 dark:text-[#1A40FF]'
           : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
       )}
     >
@@ -97,7 +97,7 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   const baseClasses = cn(
     'inline-flex items-center gap-1.5',
-    'px-3 py-1.5 rounded-lg',
+    'px-3 py-1.5 rounded-md',
     'text-[13px] font-medium',
     'transition-all duration-150',
     'cursor-pointer',
@@ -106,10 +106,10 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   const variantClasses: Record<string, string> = {
     primary: cn(
-      'bg-indigo-600 text-white uppercase tracking-wide font-mono',
-      'hover:bg-indigo-700',
-      'shadow-sm hover:shadow-md',
-      'dark:bg-indigo-600 dark:hover:bg-indigo-700'
+      'bg-[#1A40FF] text-white uppercase tracking-wide font-mono',
+      'hover:opacity-90',
+      ' hover:',
+      'dark:bg-[#1A40FF] dark:hover:opacity-90'
     ),
     secondary: cn(
       'bg-white text-foreground',
@@ -188,7 +188,7 @@ export function ResponseCard({
   return (
     <div
       className={cn(
-        'w-full rounded-2xl overflow-hidden',
+        'w-full rounded-xl overflow-hidden',
         'bg-white dark:bg-neutral-900',
         'border border-neutral-200 dark:border-neutral-800',
         'animate-fade-in-up',

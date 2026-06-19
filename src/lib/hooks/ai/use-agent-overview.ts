@@ -51,23 +51,42 @@ export function useAgentOverview(agente: AgenteId): UseAgentOverviewResult {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
+    // Upstream proxies can hang when the agent's service is unreachable —
+    // never leave the Sala in eternal skeletons.
+    let timedOut = false
+    const timeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, 12_000)
     try {
       setIsLoading(true)
       const res = await fetchAgentOverview(agencyId, agente, controller.signal)
-      if (controller.signal.aborted) return
+      if (controller.signal.aborted && !timedOut) return
       setData(res.data)
       setNotAvailable(res.notAvailable)
       setError(null)
     } catch (err) {
-      if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'Failed to fetch agent overview')
+      if (controller.signal.aborted && !timedOut) return
+      setError(
+        timedOut
+          ? 'timeout'
+          : err instanceof Error
+            ? err.message
+            : 'Failed to fetch agent overview',
+      )
     } finally {
-      if (!controller.signal.aborted) setIsLoading(false)
+      clearTimeout(timeout)
+      if (!controller.signal.aborted || timedOut) setIsLoading(false)
     }
   }, [agencyId, agente])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) {
+      // Auth/agency context not resolved (or absent): stop the skeletons —
+      // the effect re-runs and fetches as soon as the agency arrives.
+      setIsLoading(false)
+      return
+    }
     void fetchData()
     return () => {
       abortRef.current?.abort()

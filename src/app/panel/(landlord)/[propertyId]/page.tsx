@@ -411,7 +411,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             <div className="bg-muted p-4 rounded-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100" />
+                  <div className="w-8 h-8 rounded-full bg-[#E8F3EC]" />
                   <div>
                     <p className="text-sm font-medium text-plan-primary">Excelente</p>
                     <p className="text-xs text-plan-secondary">Perfil muy confiable</p>
@@ -422,7 +422,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   <p className="text-xs text-plan-secondary">de 100</p>
                 </div>
               </div>
-              <div className="h-2 bg-emerald-200 rounded-full" />
+              <div className="h-2 bg-[#E8F3EC] rounded-full" />
             </div>
             <div className="space-y-3">
               <div className="h-2 bg-neutral-200 rounded-full w-3/4" />
@@ -494,7 +494,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               <ul className="space-y-1.5">
                 {selectedCandidate.riskScore.drivers.slice(0, 4).map((driver, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="w-4 h-4 text-[#2C7A53] flex-shrink-0 mt-0.5" />
                     {driver}
                   </li>
                 ))}
@@ -512,9 +512,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               <ul className="space-y-2">
                 {selectedCandidate.riskScore.flags.map((flag) => (
                   <li key={flag.id} className={`flex items-start gap-2 text-sm p-2 rounded ${
-                    flag.severity === 'high' ? 'bg-red-50 text-red-700' :
-                    flag.severity === 'medium' ? 'bg-amber-50 text-amber-700' :
-                    'bg-blue-50 text-blue-700'
+                    flag.severity === 'high' ? 'bg-[#F8EAE7] text-[#C4503B]' :
+                    flag.severity === 'medium' ? 'bg-[#F8F0E0] text-[#B7791F]' :
+                    'bg-[#EEF1FF] text-[#1A40FF]'
                   }`}>
                     <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div>
@@ -556,21 +556,21 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         <div className="space-y-2">
           <button
             onClick={() => handleDecision(selectedCandidate.id, 'pre-approved')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-blue-bg text-blue-700 rounded-sm text-sm font-medium hover:bg-blue-200 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-blue-bg text-[#1A40FF] rounded-sm text-sm font-medium hover:bg-[#EEF1FF] transition-colors"
           >
             <Clock className="w-4 h-4" />
             Pre-aprobar
           </button>
           <button
             onClick={() => handleDecision(selectedCandidate.id, 'approved')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-green-bg text-green-800 rounded-sm text-sm font-medium hover:bg-green-200 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-green-bg text-[#2C7A53] rounded-sm text-sm font-medium hover:bg-[#E8F3EC] transition-colors"
           >
             <CheckCircle className="w-4 h-4" />
             Aprobar
           </button>
           <button
             onClick={() => handleDecision(selectedCandidate.id, 'rejected')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-red-bg text-red-800 rounded-sm text-sm font-medium hover:bg-red-200 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-red-bg text-[#C4503B] rounded-sm text-sm font-medium hover:bg-[#F8EAE7] transition-colors"
           >
             <XCircle className="w-4 h-4" />
             Rechazar
@@ -635,9 +635,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               <span className="text-plan-secondary">Obligaciones mensuales</span>
               <span className="text-plan-primary">${selectedCandidate.monthlyObligations?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
             </div>
-            <div className="flex justify-between bg-emerald-50 p-2 rounded">
-              <span className="text-emerald-700">Disponible para arriendo</span>
-              <span className="text-emerald-700 font-semibold">${selectedCandidate.availableForRent?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
+            <div className="flex justify-between bg-[#E8F3EC] p-2 rounded">
+              <span className="text-[#2C7A53]">Disponible para arriendo</span>
+              <span className="text-[#2C7A53] font-semibold">${selectedCandidate.availableForRent?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
             </div>
           </div>
         </div>
@@ -682,7 +682,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       <div className="space-y-3">
         {isLoadingDocs ? (
           <div className="flex items-center justify-center py-8">
-            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <>
@@ -704,19 +704,19 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     mimeType: realDoc?.mimeType,
                     createdAt: realDoc?.createdAt,
                   })}
-                  className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${uploaded ? (verified ? 'bg-emerald-50 hover:bg-emerald-100/60' : 'bg-blue-50 hover:bg-blue-100/60') : 'bg-muted hover:bg-muted/80'}`}
+                  className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${uploaded ? (verified ? 'bg-[#E8F3EC] hover:bg-[#E8F3EC]/60' : 'bg-[#EEF1FF] hover:bg-[#EEF1FF]/60') : 'bg-muted hover:bg-muted/80'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className={`w-5 h-5 ${verified ? 'text-emerald-600' : uploaded ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                    <FileText className={`w-5 h-5 ${verified ? 'text-[#2C7A53]' : uploaded ? 'text-[#1A40FF]' : 'text-muted-foreground'}`} />
                     <div>
                       <p className="text-sm font-medium text-plan-primary">{labels.name}</p>
                       <p className="text-xs text-plan-secondary">{realDoc ? realDoc.fileName : labels.subtitle}</p>
                     </div>
                   </div>
                   {verified ? (
-                    <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
+                    <span className="text-xs font-medium text-[#2C7A53] bg-[#E8F3EC] px-2 py-1 rounded">Verificado</span>
                   ) : uploaded ? (
-                    <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">Subido</span>
+                    <span className="text-xs font-medium text-[#1A40FF] bg-[#EEF1FF] px-2 py-1 rounded">Subido</span>
                   ) : (
                     <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">Pendiente</span>
                   )}
@@ -741,19 +741,19 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                       mimeType: doc.mimeType,
                       createdAt: doc.createdAt,
                     })}
-                    className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${doc.verified ? 'bg-emerald-50 hover:bg-emerald-100/60' : 'bg-blue-50 hover:bg-blue-100/60'}`}
+                    className={`w-full flex items-center justify-between p-3 rounded text-left transition-colors hover:ring-1 hover:ring-border ${doc.verified ? 'bg-[#E8F3EC] hover:bg-[#E8F3EC]/60' : 'bg-[#EEF1FF] hover:bg-[#EEF1FF]/60'}`}
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className={`w-5 h-5 ${doc.verified ? 'text-emerald-600' : 'text-blue-600'}`} />
+                      <FileText className={`w-5 h-5 ${doc.verified ? 'text-[#2C7A53]' : 'text-[#1A40FF]'}`} />
                       <div>
                         <p className="text-sm font-medium text-plan-primary">{labels.name}</p>
                         <p className="text-xs text-plan-secondary">{doc.fileName}</p>
                       </div>
                     </div>
                     {doc.verified ? (
-                      <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">Verificado</span>
+                      <span className="text-xs font-medium text-[#2C7A53] bg-[#E8F3EC] px-2 py-1 rounded">Verificado</span>
                     ) : (
-                      <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">Subido</span>
+                      <span className="text-xs font-medium text-[#1A40FF] bg-[#EEF1FF] px-2 py-1 rounded">Subido</span>
                     )}
                   </button>
                 );
@@ -764,7 +764,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   {candidateDocuments.length}
                 </span> de {EXPECTED_DOC_TYPES.length} documentos subidos
                 {candidateDocuments.filter(d => d.verified).length > 0 && (
-                  <> · <span className="text-emerald-600">{candidateDocuments.filter(d => d.verified).length} verificados</span></>
+                  <> · <span className="text-[#2C7A53]">{candidateDocuments.filter(d => d.verified).length} verificados</span></>
                 )}
               </p>
             </div>
@@ -777,8 +777,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -786,10 +786,10 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   // Property not found
   if (!property) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-4">
               <WarningCircle className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
             </div>
             <h1 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
@@ -806,7 +806,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Back Link */}
@@ -815,7 +815,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         </div>
 
         {/* Property Header - Premium Glass Style */}
-        <header className="relative rounded-2xl overflow-hidden mb-8">
+        <header className="relative rounded-xl overflow-hidden mb-8">
           {/* Background Image with Overlay */}
           <div className="absolute inset-0">
             <Image
@@ -831,7 +831,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           <div className="relative px-6 py-8 lg:px-8 lg:py-10">
             <div className="flex flex-col lg:flex-row lg:items-center gap-6">
               {/* Property Image Thumbnail */}
-              <div className="relative w-32 h-32 lg:w-36 lg:h-36 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-white/20 shadow-2xl">
+              <div className="relative w-32 h-32 lg:w-36 lg:h-36 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-white/20">
                 <Image
                   src={property.thumbnailUrl}
                   alt={property.title}
@@ -864,11 +864,11 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   <p className="text-xs text-white/60">Candidatos</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-amber-400">{counts.pending}</p>
+                  <p className="text-2xl font-bold text-[#B7791F]">{counts.pending}</p>
                   <p className="text-xs text-white/60">Pendientes</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10 text-center min-w-[80px]">
-                  <p className="text-2xl font-bold text-emerald-400">{counts.approved}</p>
+                  <p className="text-2xl font-bold text-[#2C7A53]">{counts.approved}</p>
                   <p className="text-xs text-white/60">Aprobados</p>
                 </div>
               </div>
@@ -880,13 +880,13 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         {activeContract ? (
           <div className="space-y-6">
             {/* Active lease banner */}
-            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-5 py-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-[#2C7A53] dark:text-[#3EAE70]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Propiedad arrendada</p>
-                <p className="text-xs text-emerald-700/70 dark:text-emerald-300/70 mt-0.5">
+                <p className="text-sm font-semibold text-[#2C7A53] dark:text-[#3EAE70]">Propiedad arrendada</p>
+                <p className="text-xs text-[#2C7A53]/70 dark:text-[#2C7A53]/70 mt-0.5">
                   Contrato activo desde {new Date(activeContract.startDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
@@ -957,13 +957,13 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">Firmado</p>
                       <div className="mt-0.5 space-y-1">
                         {activeContract.landlordSignature && (
-                          <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70] flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
                             Arrendador — {new Date(activeContract.landlordSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
                           </p>
                         )}
                         {activeContract.tenantSignature && (
-                          <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70] flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
                             Arrendatario — {new Date(activeContract.tenantSignature.signedAt).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
                           </p>
@@ -982,8 +982,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     href={`/panel/${propertyId}/contract/${activeContract.tenantId}`}
                     className="flex items-center gap-3 w-full rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-9 h-9 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">Ver contrato</p>
@@ -994,8 +994,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     href={`/panel/mensajes?to=${activeContract.tenantId}`}
                     className="flex items-center gap-3 w-full rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <Chat className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-9 h-9 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                      <Chat className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">Enviar mensaje</p>
@@ -1008,7 +1008,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5">
                   <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Arrendatario</p>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                    <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center text-sm font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                       {activeContract.tenantName.charAt(0)}
                     </div>
                     <div>
@@ -1037,8 +1037,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               </div>
               <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.pending}</p>
@@ -1048,8 +1048,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               </div>
               <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <Eye className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.preApproved}</p>
@@ -1059,8 +1059,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               </div>
               <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-neutral-900 dark:text-white">{counts.approved}</p>
@@ -1078,9 +1078,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`
-                      px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2
+                      px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2
                       ${activeTab === tab.id
-                        ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white shadow-sm'
+                        ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                       }
                     `}
@@ -1089,9 +1089,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     {tab.count !== undefined && (
                       <span
                         className={`
-                          px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums
+                          px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums
                           ${activeTab === tab.id
-                            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+                            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                             : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
                           }
                         `}
@@ -1210,14 +1210,14 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       {previewDoc && selectedCandidate && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPreviewDoc(null)} />
-          <div className="relative bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="relative bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
               <div>
                 <h3 className="text-base font-semibold text-neutral-900 dark:text-white">{previewDoc.name}</h3>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{selectedCandidate.fullName} · {previewDoc.subtitle}</p>
               </div>
-              <button type="button" onClick={() => setPreviewDoc(null)} className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors">
+              <button type="button" onClick={() => setPreviewDoc(null)} className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors">
                 <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
               </button>
             </div>
@@ -1228,11 +1228,11 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <div className="space-y-5">
                   {/* Status */}
                   {previewDoc.verified && (
-                    <div className="flex items-center gap-2.5 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
-                      <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <div className="flex items-center gap-2.5 p-3 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
+                      <Shield className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70] flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Documento verificado</p>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400">Verificación automática completada</p>
+                        <p className="text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70]">Documento verificado</p>
+                        <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">Verificación automática completada</p>
                       </div>
                     </div>
                   )}
@@ -1241,9 +1241,9 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 p-8 flex flex-col items-center justify-center min-h-[280px]">
                     {previewDoc.mimeType?.startsWith('image/') ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={previewDoc.url} alt={previewDoc.name} className="max-w-full max-h-[400px] rounded-lg object-contain" />
+                      <img src={previewDoc.url} alt={previewDoc.name} className="max-w-full max-h-[400px] rounded-md object-contain" />
                     ) : previewDoc.mimeType === 'application/pdf' ? (
-                      <iframe src={previewDoc.url} className="w-full min-h-[400px] rounded-lg" title={previewDoc.name} />
+                      <iframe src={previewDoc.url} className="w-full min-h-[400px] rounded-md" title={previewDoc.name} />
                     ) : (
                       <>
                         <FileText className="w-12 h-12 text-neutral-400 dark:text-neutral-500 mb-3" />
@@ -1267,7 +1267,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
                     <FileText className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
                   </div>
                   <p className="text-base font-medium text-neutral-900 dark:text-white mb-1">Documento pendiente</p>
@@ -1289,7 +1289,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   onClick={() => {
                     toast.success('Documento descargado', { description: `${previewDoc.name} guardado exitosamente.` });
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-xl text-sm font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1A40FF] hover:opacity-90 text-white rounded-xl text-sm font-medium transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Descargar

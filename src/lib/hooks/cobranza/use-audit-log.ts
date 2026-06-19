@@ -127,7 +127,7 @@ export function useAuditLog(filters: AuditLogFilters): UseAuditLogResult {
 
   // Reset + initial fetch whenever the filter key OR agencyId changes
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     setIsLoading(true)
     setItems([])
     setNextCursor(null)

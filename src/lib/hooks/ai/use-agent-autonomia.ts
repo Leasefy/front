@@ -67,7 +67,7 @@ export function useAgentAutonomia(agente: AgenteId): UseAgentAutonomiaResult {
   }, [agencyId, agente])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchData()
     return () => {
       abortRef.current?.abort()

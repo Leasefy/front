@@ -171,7 +171,7 @@ export function PipelineFilters({
           placeholder={t('inmobiliaria.pipeline.searchPlaceholder')}
           value={filters.search || ''}
           onChange={(e) => updateFilter('search', e.target.value || undefined)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all text-sm"
         />
         {filters.search && (
           <button
@@ -192,7 +192,7 @@ export function PipelineFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.agenteId
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
+                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -205,7 +205,7 @@ export function PipelineFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-64 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+                className="absolute top-full left-0 mt-2 w-64 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
               >
                 <button
                   onClick={() => {
@@ -213,9 +213,9 @@ export function PipelineFilters({
                     setOpenDropdown(null);
                   }}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     !filters.agenteId
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -231,9 +231,9 @@ export function PipelineFilters({
                         setOpenDropdown(null);
                       }}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
                         filters.agenteId === agente.id
-                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                           : 'text-foreground hover:bg-muted'
                       )}
                     >
@@ -244,7 +244,7 @@ export function PipelineFilters({
                           className="w-6 h-6 rounded-full"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                        <div className="w-6 h-6 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                           {getInitials(agente.name)}
                         </div>
                       )}
@@ -266,7 +266,7 @@ export function PipelineFilters({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filters.consignacionId
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono border-indigo-500'
+                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted'
             )}
           >
@@ -279,7 +279,7 @@ export function PipelineFilters({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-72 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
+                className="absolute top-full left-0 mt-2 w-72 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
               >
                 <button
                   onClick={() => {
@@ -287,9 +287,9 @@ export function PipelineFilters({
                     setOpenDropdown(null);
                   }}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     !filters.consignacionId
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'text-foreground hover:bg-muted'
                   )}
                 >
@@ -303,9 +303,9 @@ export function PipelineFilters({
                       setOpenDropdown(null);
                     }}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
                       filters.consignacionId === consignacion.id
-                        ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                         : 'text-foreground hover:bg-muted'
                     )}
                   >
@@ -313,10 +313,10 @@ export function PipelineFilters({
                       <img
                         src={consignacion.propertyThumbnail}
                         alt={consignacion.propertyTitle}
-                        className="w-8 h-8 rounded-lg object-cover shrink-0"
+                        className="w-8 h-8 rounded-md object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
                         <Buildings className="w-4 h-4 text-muted-foreground" />
                       </div>
                     )}
@@ -345,9 +345,9 @@ export function PipelineFilters({
               key={preset.value}
               onClick={() => applyDatePreset(preset.value)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
+                'px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap',
                 activeDatePreset === preset.value
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -362,14 +362,14 @@ export function PipelineFilters({
             type="date"
             value={filters.dateFrom || ''}
             onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
-            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
           <input
             type="date"
             value={filters.dateTo || ''}
             onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
-            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            className="px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
           />
         </div>
 
@@ -379,7 +379,7 @@ export function PipelineFilters({
             <div className="hidden sm:block w-px h-6 bg-border" />
             <button
               onClick={clearAllFilters}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
             >
               <X className="w-4 h-4" />
               {t('inmobiliaria.pipeline.clear')}

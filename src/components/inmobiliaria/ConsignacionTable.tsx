@@ -46,23 +46,23 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
 // Availability status colors (labels resolved via i18n in component)
 const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; labelKey: string }> = {
   available: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
     labelKey: 'inmobiliaria.consignaciones.availability.available',
   },
   rented: {
-    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-    text: 'text-indigo-700 dark:text-indigo-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
     labelKey: 'inmobiliaria.consignaciones.availability.rented',
   },
   in_process: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
     labelKey: 'inmobiliaria.consignaciones.availability.inProcess',
   },
   maintenance: {
-    bg: 'bg-rose-100 dark:bg-rose-900/30',
-    text: 'text-rose-700 dark:text-rose-400',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
     labelKey: 'inmobiliaria.consignaciones.availability.maintenance',
   },
 };
@@ -141,7 +141,7 @@ export function ConsignacionTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('propertyTitle')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.consignaciones.table.property')}
                 {sortField === 'propertyTitle' && <SortIcon className="w-3.5 h-3.5" />}
@@ -150,7 +150,7 @@ export function ConsignacionTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('propertyZone')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.consignaciones.table.zone')}
                 {sortField === 'propertyZone' && <SortIcon className="w-3.5 h-3.5" />}
@@ -159,7 +159,7 @@ export function ConsignacionTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('monthlyRent')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.consignaciones.table.rent')}
                 {sortField === 'monthlyRent' && <SortIcon className="w-3.5 h-3.5" />}
@@ -168,7 +168,7 @@ export function ConsignacionTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('commissionPercent')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.consignaciones.table.commission')}
                 {sortField === 'commissionPercent' && <SortIcon className="w-3.5 h-3.5" />}
@@ -187,7 +187,7 @@ export function ConsignacionTable({
             <th className="text-left p-4">
               <button
                 onClick={() => handleSort('availability')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 {t('inmobiliaria.consignaciones.table.status')}
                 {sortField === 'availability' && <SortIcon className="w-3.5 h-3.5" />}
@@ -216,7 +216,7 @@ export function ConsignacionTable({
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     {consignacion.propertyThumbnail ? (
-                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+                      <div className="w-12 h-12 rounded-md overflow-hidden shrink-0">
                         <img
                           src={consignacion.propertyThumbnail}
                           alt={consignacion.propertyTitle}
@@ -224,7 +224,7 @@ export function ConsignacionTable({
                         />
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
                         <PropertyIcon className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
@@ -280,8 +280,8 @@ export function ConsignacionTable({
                 <td className="p-4 hidden lg:table-cell">
                   {propietarioName ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
                       </div>
                       <span className="text-foreground truncate max-w-[120px]">
                         {propietarioName}
@@ -303,8 +303,8 @@ export function ConsignacionTable({
                           className="w-7 h-7 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                        <div className="w-7 h-7 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                             {agenteInfo.name.charAt(0)}
                           </span>
                         </div>
@@ -333,7 +333,7 @@ export function ConsignacionTable({
                         e.stopPropagation();
                         setOpenMenuId(openMenuId === consignacion.id ? null : consignacion.id);
                       }}
-                      className="p-2 rounded-lg hover:bg-muted transition-colors"
+                      className="p-2 rounded-md hover:bg-muted transition-colors"
                     >
                       <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
                     </button>
@@ -344,7 +344,7 @@ export function ConsignacionTable({
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-40 p-2 rounded-xl border border-border bg-card shadow-xl z-10"
+                          className="absolute right-0 top-full mt-1 w-40 p-2 rounded-xl border border-border bg-card z-10"
                         >
                           <button
                             onClick={(e) => {
@@ -352,7 +352,7 @@ export function ConsignacionTable({
                               onView(consignacion);
                               setOpenMenuId(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             <span className="text-sm">{t('inmobiliaria.consignaciones.table.viewDetail')}</span>
@@ -363,7 +363,7 @@ export function ConsignacionTable({
                               onEdit(consignacion);
                               setOpenMenuId(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <PencilSimple className="w-4 h-4" />
                             <span className="text-sm">{t('inmobiliaria.consignaciones.table.edit')}</span>

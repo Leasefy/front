@@ -96,7 +96,7 @@ export default function ContratosPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c] flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center">
         <SpinnerGap className="h-8 w-8 animate-spin text-neutral-400 dark:text-neutral-500" />
       </div>
     );
@@ -104,7 +104,7 @@ export default function ContratosPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <ErrorState
             title="Error cargando contratos"
@@ -117,7 +117,7 @@ export default function ContratosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Header */}
@@ -145,41 +145,41 @@ export default function ContratosPage() {
             value={needsAction.length}
             sublabel={t('landlord.contracts.requireYourSignature')}
             icon={Pen}
-            iconBgClass={needsAction.length > 0 ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-neutral-100 dark:bg-neutral-800'}
-            iconColorClass={needsAction.length > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-600 dark:text-neutral-300'}
+            iconBgClass={needsAction.length > 0 ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15' : 'bg-neutral-100 dark:bg-neutral-800'}
+            iconColorClass={needsAction.length > 0 ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-600 dark:text-neutral-300'}
           />
           <StatsCard
             label={t('landlord.contracts.waiting')}
             value={awaitingTenant.length}
             sublabel={t('landlord.contracts.tenantSignature')}
             icon={Clock}
-            iconBgClass="bg-amber-100 dark:bg-amber-900/30"
-            iconColorClass="text-amber-600 dark:text-amber-400"
+            iconBgClass="bg-[#F8F0E0] dark:bg-[#B7791F]/15"
+            iconColorClass="text-[#B7791F] dark:text-[#D2992F]"
           />
           <StatsCard
             label={t('landlord.contracts.active')}
             value={activeContracts.length}
             sublabel={t('landlord.contracts.currentContracts')}
             icon={CheckCircle}
-            iconBgClass="bg-emerald-100 dark:bg-emerald-900/30"
-            iconColorClass="text-emerald-600 dark:text-emerald-400"
+            iconBgClass="bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
+            iconColorClass="text-[#2C7A53] dark:text-[#3EAE70]"
           />
         </div>
 
         {/* Urgent Action Banner */}
         {needsAction.length > 0 && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl">
+          <div className="mb-6 p-4 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+                <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
                   {needsAction.length > 1
                     ? t('landlord.contracts.urgentBannerPlural', { count: needsAction.length })
                     : t('landlord.contracts.urgentBannerSingular', { count: needsAction.length })}
                 </p>
-                <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
+                <p className="text-xs text-[#B7791F]/70 dark:text-[#B7791F]/70">
                   {t('landlord.contracts.urgentBannerHint')}
                 </p>
               </div>
@@ -195,18 +195,18 @@ export default function ContratosPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+                  'px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2',
                   activeTab === tab.id
-                    ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                 )}
               >
                 {tab.label}
                 <span
                   className={cn(
-                    'px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums',
+                    'px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums',
                     activeTab === tab.id
-                      ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                       : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
                   )}
                 >

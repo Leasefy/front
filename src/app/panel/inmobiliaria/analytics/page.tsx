@@ -82,34 +82,35 @@ function HeroKPICard({
   accentColor,
   onClick,
 }: HeroKPIProps) {
+  // Tiles/borders = neutral (blue is actionable-only); progress bars keep brand tones (data).
   const colorConfig = {
     indigo: {
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      icon: 'text-indigo-600 dark:text-indigo-400',
-      border: 'border-indigo-100 dark:border-indigo-800/50',
-      progress: 'bg-indigo-600',
-      progressBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-[#1A40FF]',
+      progressBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
     },
     emerald: {
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      icon: 'text-emerald-600 dark:text-emerald-400',
-      border: 'border-emerald-100 dark:border-emerald-800/50',
-      progress: 'bg-emerald-500',
-      progressBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-[#2C7A53]',
+      progressBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
     },
     amber: {
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      icon: 'text-amber-600 dark:text-amber-400',
-      border: 'border-amber-100 dark:border-amber-800/50',
-      progress: 'bg-amber-500',
-      progressBg: 'bg-amber-100 dark:bg-amber-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-[#B7791F]',
+      progressBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
     },
     violet: {
-      bg: 'bg-violet-50 dark:bg-violet-900/20',
-      icon: 'text-violet-600 dark:text-violet-400',
-      border: 'border-violet-100 dark:border-violet-800/50',
-      progress: 'bg-violet-500',
-      progressBg: 'bg-violet-100 dark:bg-violet-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-[#1A40FF]',
+      progressBg: 'bg-neutral-100 dark:bg-neutral-800',
     },
   };
 
@@ -143,7 +144,7 @@ function HeroKPICard({
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        'w-full p-5 rounded-xl border bg-card text-left transition-all hover:shadow-lg',
+        'w-full p-5 rounded-xl border bg-card text-left transition-all',
         colors.border
       )}
     >
@@ -157,7 +158,7 @@ function HeroKPICard({
             <path
               d={sparklinePath}
               fill="none"
-              stroke={trendIsPositive ? '#10B981' : trendIsNegative ? '#EF4444' : '#6B7280'}
+              stroke={trendIsPositive ? '#2C7A53' : trendIsNegative ? '#C4503B' : '#1A40FF'}
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -176,8 +177,8 @@ function HeroKPICard({
           <div
             className={cn(
               'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-              trendIsPositive && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-              trendIsNegative && 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+              trendIsPositive && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+              trendIsNegative && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
               !trendIsPositive && !trendIsNegative && 'bg-muted text-muted-foreground'
             )}
           >
@@ -226,22 +227,23 @@ interface InsightProps {
 function InsightCard({ type, title, description, action }: InsightProps) {
   const config = {
     success: {
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      border: 'border-emerald-200 dark:border-emerald-800/50',
+      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
       icon: CheckCircle,
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
     },
     warning: {
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      border: 'border-amber-200 dark:border-amber-800/50',
+      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
       icon: WarningCircle,
-      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
     },
+    // Informational (non-actionable) = neutral; blue stays reserved for actions.
     info: {
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      border: 'border-indigo-200 dark:border-indigo-800/50',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      border: 'border-neutral-200 dark:border-neutral-700',
       icon: Lightning,
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
   };
 
@@ -257,7 +259,7 @@ function InsightCard({ type, title, description, action }: InsightProps) {
           {action && (
             <button
               onClick={action.onClick}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
             >
               {action.label}
               <CaretRight className="w-3 h-3" />
@@ -451,8 +453,8 @@ function AnalyticsContent() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             {t('inmobiliaria.analytics.title')}
           </h1>
@@ -466,7 +468,7 @@ function AnalyticsContent() {
           {/* Date Range */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium font-mono uppercase tracking-wide hover:bg-muted transition-colors">
+              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
                 <CalendarBlank className="w-4 h-4 text-muted-foreground" />
                 <span className="hidden sm:inline">
                   {DATE_RANGES.find((r) => r.id === dateRange)?.label}
@@ -490,7 +492,7 @@ function AnalyticsContent() {
           {/* Export */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 text-sm font-medium transition-colors">
+              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#1A40FF] text-white hover:bg-[#1636D8] text-sm font-medium transition-colors">
                 <Export className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('inmobiliaria.common.export')}</span>
               </button>
@@ -570,9 +572,9 @@ function AnalyticsContent() {
                 key={view.id}
                 onClick={() => setActiveView(view.id)}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-background text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -596,7 +598,7 @@ function AnalyticsContent() {
               {activeView === 'dashboard' && (
                 <>
                   {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-                  {analyticsError && <p className="text-sm text-rose-600">{analyticsError}</p>}
+                  {analyticsError && <p className="text-sm text-[#C4503B]">{analyticsError}</p>}
                   {analyticsData && <AnalyticsDashboard data={analyticsData} />}
                 </>
               )}

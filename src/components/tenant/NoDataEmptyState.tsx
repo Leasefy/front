@@ -1,9 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { House, FileText, CreditCard, Folder, Chat, Heart, ArrowUpRight } from '@phosphor-icons/react';
-import { Button } from '@/components/ui/button';
+import { House, FileText, CreditCard, Folder, Chat, Heart } from '@phosphor-icons/react';
+import { EmptyState } from '@/components/data-display/EmptyState';
 import { useI18n } from '@/lib/i18n';
 
 type EmptyStateContext = 'rental' | 'applications' | 'payments' | 'documents' | 'messages' | 'saved';
@@ -97,49 +95,37 @@ const EMPTY_STATE_CONFIG: Record<EmptyStateContext, {
 };
 
 /**
- * Empty state for when tenant has completed onboarding but has no data
- * Used on sub-pages (arriendo, aplicaciones, pagos, etc.)
+ * Empty state for when tenant has completed onboarding but has no data.
+ * Used on sub-pages (arriendo, aplicaciones, pagos, etc.).
+ *
+ * Estilo limpio canónico (2026-06-16): delega en la primitiva universal
+ * <EmptyState /> — chip neutro + ícono mudo en gris + título + descripción +
+ * CTA pill outlined. Sin caja con borde/fondo, sin azul de marca, sin
+ * ilustraciones ni animación de entrada decorativa.
  */
 export function NoDataEmptyState({ context }: NoDataEmptyStateProps) {
   const { locale } = useI18n();
   const config = EMPTY_STATE_CONFIG[context];
-  const Icon = config.icon;
+
+  const primaryCta = {
+    label: locale === 'es' ? config.ctaEs : config.ctaEn,
+    href: config.ctaHref,
+  };
+
+  const secondaryCta = config.secondaryHref
+    ? {
+        label: locale === 'es' ? (config.secondaryEs as string) : (config.secondaryEn as string),
+        href: config.secondaryHref,
+      }
+    : undefined;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center"
-    >
-      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
-        <Icon className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
-      </div>
-
-      <h3 className="text-base font-semibold text-foreground mb-1.5">
-        {locale === 'es' ? config.titleEs : config.titleEn}
-      </h3>
-
-      <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
-        {locale === 'es' ? config.descriptionEs : config.descriptionEn}
-      </p>
-
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Button asChild>
-          <Link href={config.ctaHref}>
-            {locale === 'es' ? config.ctaEs : config.ctaEn}
-          </Link>
-        </Button>
-
-        {config.secondaryHref && (
-          <Link
-            href={config.secondaryHref}
-            className="inline-flex items-center gap-1 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
-          >
-            {locale === 'es' ? config.secondaryEs : config.secondaryEn}
-            <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        )}
-      </div>
-    </motion.div>
+    <EmptyState
+      icon={config.icon}
+      title={locale === 'es' ? config.titleEs : config.titleEn}
+      description={locale === 'es' ? config.descriptionEs : config.descriptionEn}
+      primaryCta={primaryCta}
+      secondaryCta={secondaryCta}
+    />
   );
 }

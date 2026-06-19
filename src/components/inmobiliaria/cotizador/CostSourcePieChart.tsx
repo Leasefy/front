@@ -6,8 +6,8 @@
  * Recharts PieChart with cost-SUM-driven muting per D-35-06 + RESEARCH.md finding 4.
  *
  * Wedge muting is driven by actual cost SUM (not the populated flag):
- *   - anthropic: indigo-500 (#6366f1), always full opacity
- *   - carrier_api: indigo-400 (#818cf8), fillOpacity 0.4 when SUM === 0 else 1
+ *   - anthropic: electric-blue (#1A40FF), always full opacity
+ *   - carrier_api: blue-tint (#8A9CFF), fillOpacity 0.4 when SUM === 0 else 1
  *   - sekure_commission: same as carrier_api
  *   - datacredito: neutral-300 (#d4d4d4), always muted (fillOpacity 0.4)
  *
@@ -87,7 +87,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('anthropic'),
       value: totalSum === 0 ? 1 : anthropicTotal, // prevent empty pie
-      fill: '#6366f1',   // indigo-500
+      fill: '#1A40FF',   // electric-blue
       fillOpacity: 1,    // always active
       sourceKey: 'anthropic',
       isMuted: false,
@@ -96,7 +96,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('carrier_api'),
       value: totalSum === 0 ? 0 : carrierApiTotal,
-      fill: '#818cf8',   // indigo-400
+      fill: '#8A9CFF',   // blue-tint
       fillOpacity: carrierApiTotal === 0 ? 0.4 : 1,  // muted when SUM=0
       sourceKey: 'carrier_api',
       isMuted: carrierApiTotal === 0,
@@ -105,7 +105,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('sekure_commission'),
       value: totalSum === 0 ? 0 : sekureCommissionTotal,
-      fill: '#818cf8',   // indigo-400
+      fill: '#8A9CFF',   // blue-tint
       fillOpacity: sekureCommissionTotal === 0 ? 0.4 : 1,
       sourceKey: 'sekure_commission',
       isMuted: sekureCommissionTotal === 0,

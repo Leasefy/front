@@ -4,7 +4,7 @@
  * MonthlyCostTrendChart.tsx — Phase 35 plan 35-10
  *
  * Recharts LineChart 240px showing monthly cost trends:
- *   - Historical rows: indigo-600 (#4f46e5) solid line
+ *   - Historical rows: electric-blue (#1A40FF) solid line
  *   - Forecast rows: neutral-400 (#a3a3a3) dotted line (strokeDasharray="4 4")
  *   - ReferenceLine at the current month boundary
  *
@@ -61,7 +61,7 @@ export function MonthlyCostTrendChart({ rows, isLoading = false }: MonthlyCostTr
     )
   }
 
-  // Historical rows — solid indigo-600 line
+  // Historical rows — solid electric-blue (#1A40FF) line
   const historicalRows = rows.filter(r => !r.isForecast)
   // Forecast rows — dotted neutral-400 line
   const forecastRows = rows.filter(r => r.isForecast === true)
@@ -111,11 +111,11 @@ export function MonthlyCostTrendChart({ rows, isLoading = false }: MonthlyCostTr
           }}
         />
 
-        {/* Historical line — solid indigo-600, rendered over all rows */}
+        {/* Historical line — solid electric-blue (#1A40FF), rendered over all rows */}
         <Line
           data={historicalRows}
           dataKey="total"
-          stroke="#4f46e5"
+          stroke="#1A40FF"
           strokeWidth={2}
           dot={false}
           connectNulls

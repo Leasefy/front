@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 /**
  * CotizadorOverviewSkeleton — Phase 38 plan 38-04b (D-38-02 hybrid skeletons).
  *
- * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/cotizador`. Mirrors
+ * Bespoke 1:1 layout placeholder for `/panel/inmobiliaria/ai/asegurabilidad`. Mirrors
  * the real overview page composition: header → 4-KPI strip → recent quotes feed
  * (table-like list) → carriers status strip (3-card grid).
  *
@@ -27,7 +27,7 @@ export function CotizadorOverviewSkeleton() {
           <Skeleton className="h-7 w-48" />
           <Skeleton className="h-4 w-72" />
         </div>
-        <Skeleton className="h-9 w-36 rounded-lg" />
+        <Skeleton className="h-9 w-36 rounded-md" />
       </header>
 
       {/* KPI strip — 2 cols sm / 4 cols lg, matches CotizadorKpiStrip */}

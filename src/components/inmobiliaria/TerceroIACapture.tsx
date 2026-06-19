@@ -130,13 +130,13 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
     return (
       <div className="space-y-4">
         {extracted ? (
-          <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 flex items-start gap-2.5">
-            <PencilSimple className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" weight="fill" />
+          <div className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-3 flex items-start gap-2.5">
+            <PencilSimple className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] flex-shrink-0 mt-0.5" weight="fill" />
             <div>
-              <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+              <p className="text-xs font-semibold text-[#B7791F] dark:text-[#D2992F]">
                 {t(k('reviewBannerTitle'))}
               </p>
-              <p className="text-xs text-amber-600 dark:text-amber-300/90 mt-0.5">
+              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]/90 mt-0.5">
                 {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
               </p>
             </div>
@@ -168,8 +168,8 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
   if (step === 'error') {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
-          <WarningCircle className="w-7 h-7 text-rose-600 dark:text-rose-400" />
+        <div className="w-14 h-14 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+          <WarningCircle className="w-7 h-7 text-[#C4503B] dark:text-[#E0664D]" />
         </div>
         <div className="space-y-1">
           <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
@@ -178,14 +178,14 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
         <div className="flex items-center gap-2 mt-1">
           <button
             onClick={resetToUpload}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-mono uppercase tracking-wide text-xs transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs transition-colors font-medium"
           >
             <ArrowClockwise className="w-4 h-4" />
             {t(k('retry'))}
           </button>
           <button
             onClick={fillManually}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-xs transition-transform active:scale-[0.97]"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs transition-transform active:scale-[0.97] font-medium"
           >
             <PencilSimple className="w-4 h-4" weight="bold" />
             {t(k('fillManual'))}
@@ -199,8 +199,8 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-          <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+        <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
+          <Sparkle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
         </div>
         <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
       </div>
@@ -215,9 +215,9 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
             aria-selected={docKind === dk.value}
             onClick={() => setDocKind(dk.value)}
             className={cn(
-              'h-9 px-4 rounded-lg text-sm font-medium transition-colors',
+              'h-9 px-4 rounded-md text-sm font-medium transition-colors',
               docKind === dk.value
-                ? 'bg-card text-foreground shadow-sm'
+                ? 'bg-card text-foreground'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -237,7 +237,7 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="w-full rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 hover:border-foreground/20 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center"
+        className="w-full rounded-xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 hover:border-foreground/20 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center"
       >
         {previewUrl ? (
           <div
@@ -246,8 +246,8 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
             aria-label={file?.name}
           />
         ) : (
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center mb-1">
-            <IdentificationCard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center mb-1">
+            <IdentificationCard className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
         )}
         <p className="text-body-sm font-medium text-foreground">
@@ -262,14 +262,14 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       <div className="flex items-center justify-end gap-2 pt-1">
         <button
           onClick={onClose}
-          className="h-11 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-mono uppercase tracking-wide text-sm transition-colors"
+          className="h-11 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-sm transition-colors font-medium"
         >
           {t(k('cancel'))}
         </button>
         <button
           onClick={handleExtract}
           disabled={!file}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm transition-transform active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           <Sparkle className="w-4 h-4" weight="fill" />
           {t(k('extract'))}

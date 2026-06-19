@@ -223,7 +223,7 @@ export function MfaSetupSection() {
     return (
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
@@ -242,13 +242,13 @@ export function MfaSetupSection() {
       <>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shadow-sm">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <div>
               <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticacion de dos factores</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-xs font-medium rounded-full">
                   <Check className="w-3 h-3" />
                   Activada
                 </span>
@@ -257,7 +257,7 @@ export function MfaSetupSection() {
           </div>
           <button
             onClick={() => setShowDisableModal(true)}
-            className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-[#C4503B] dark:text-[#E0664D] border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-md hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
           >
             Desactivar
           </button>
@@ -269,11 +269,11 @@ export function MfaSetupSection() {
           title="Desactivar 2FA"
         >
           <div className="space-y-4">
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+            <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-xl flex gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center flex-shrink-0">
+                <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
               </div>
-              <p className="text-sm text-red-800 dark:text-red-200">
+              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
                 Al desactivar 2FA tu cuenta sera menos segura. Solo necesitaras tu contrasena para iniciar sesion.
               </p>
             </div>
@@ -287,7 +287,7 @@ export function MfaSetupSection() {
               <button
                 onClick={handleUnenroll}
                 disabled={isLoading}
-                className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 py-3 bg-[#C4503B] text-white text-sm font-medium rounded-xl hover:bg-[#C4503B] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
               >
                 {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
                 {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
@@ -304,8 +304,8 @@ export function MfaSetupSection() {
     return (
       <div className="px-6 py-4 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-            <Shield className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+            <Shield className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-900 dark:text-white">Configurar 2FA</p>
@@ -315,7 +315,7 @@ export function MfaSetupSection() {
 
         {/* QR Code */}
         <div className="flex justify-center py-2">
-          <div className="p-4 bg-white rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-700">
+          <div className="p-4 bg-white rounded-xl border border-neutral-100 dark:border-neutral-700">
             <img
               src={enrollData.qrCode}
               alt="Codigo QR para autenticacion"
@@ -325,7 +325,7 @@ export function MfaSetupSection() {
         </div>
 
         {/* Secret key for manual entry */}
-        <div className="p-3 bg-stone-50 dark:bg-[#1f1f21] rounded-xl">
+        <div className="p-3 bg-neutral-50 dark:bg-[#1f1f21] rounded-xl">
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">O ingresa este codigo manualmente:</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs font-mono text-neutral-900 dark:text-white break-all select-all">
@@ -333,7 +333,7 @@ export function MfaSetupSection() {
             </code>
             <button
               onClick={handleCopySecret}
-              className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
+              className="p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
               title="Copiar codigo"
             >
               <Copy className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -358,7 +358,7 @@ export function MfaSetupSection() {
               }
             }}
             autoFocus
-            className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm text-center tracking-[0.5em] font-mono bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+            className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm text-center tracking-[0.5em] font-mono bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
             placeholder="000000"
           />
         </div>
@@ -377,7 +377,7 @@ export function MfaSetupSection() {
               handleVerifyCode();
             }}
             disabled={isLoading || code.length !== 6}
-            className="flex-1 py-3 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            className="flex-1 py-3 bg-[#2C7A53] text-white text-sm font-medium rounded-xl hover:bg-[#2C7A53] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
             {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             {isLoading ? 'Verificando...' : 'Verificar'}
@@ -391,7 +391,7 @@ export function MfaSetupSection() {
   return (
     <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
           <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
         </div>
         <div>
@@ -402,7 +402,7 @@ export function MfaSetupSection() {
       <button
         onClick={handleStartEnroll}
         disabled={isLoading}
-        className="px-4 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+        className="px-4 py-2 bg-[#2C7A53] text-white text-xs font-medium rounded-md hover:bg-[#2C7A53] disabled:opacity-50 flex items-center gap-1.5 transition-colors"
       >
         {isLoading ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
         {isLoading ? 'Cargando...' : 'Activar'}

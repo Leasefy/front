@@ -188,11 +188,11 @@ function EditarContratoContent() {
   if (error || !contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-rose-700">No se pudo cargar el contrato</p>
-            <p className="text-sm text-rose-600 mt-1">{error ?? 'Contrato no encontrado'}</p>
+            <p className="font-semibold text-[#C4503B]">No se pudo cargar el contrato</p>
+            <p className="text-sm text-[#C4503B] mt-1">{error ?? 'Contrato no encontrado'}</p>
           </div>
         </div>
       </div>
@@ -208,11 +208,11 @@ function EditarContratoContent() {
         >
           <CaretLeft className="w-4 h-4" /> Volver
         </button>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-[#B7791F]/30 bg-[#F8F0E0] p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-[#B7791F] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-amber-800">Este contrato no se puede editar</p>
-            <p className="text-sm text-amber-700 mt-1">
+            <p className="font-semibold text-[#B7791F]">Este contrato no se puede editar</p>
+            <p className="text-sm text-[#B7791F] mt-1">
               Solo se permite editar contratos en borrador, pendientes de firma del propietario,
               o cuando el inquilino solicitó modificaciones.
             </p>
@@ -246,9 +246,9 @@ function EditarContratoContent() {
 
       {/* Warning about signature invalidation */}
       {contract.landlordSignature && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-4 flex items-start gap-2">
-          <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800 dark:text-amber-200">
+        <div className="rounded-xl border border-[#B7791F]/30 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-4 flex items-start gap-2">
+          <Info className="w-5 h-5 text-[#B7791F] flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
             Al guardar cambios, tu firma previa se invalida. Tendrás que volver a firmar el contrato.
           </p>
         </div>
@@ -257,7 +257,7 @@ function EditarContratoContent() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* PDF replacement — only for UPLOADED_PDF contracts */}
         {isUploadedPdf && (
-          <section className="rounded-2xl border border-border bg-card p-5 space-y-3">
+          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="font-semibold text-sm text-foreground">PDF del contrato</h2>
@@ -273,7 +273,7 @@ function EditarContratoContent() {
                     setReplacePdf(e.target.checked);
                     if (!e.target.checked) updateForm('pdfFile', null);
                   }}
-                  className="accent-indigo-600"
+                  className="accent-[#1A40FF]"
                 />
                 <span className="text-xs font-medium text-foreground">Reemplazar PDF</span>
               </label>
@@ -281,8 +281,8 @@ function EditarContratoContent() {
 
             {replacePdf && (
               form.pdfFile ? (
-                <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20">
-                  <FileText className="w-5 h-5 text-rose-500 flex-shrink-0" />
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-[#2C7A53]/30 bg-[#E8F3EC]/60 dark:bg-[#2C7A53]/20">
+                  <FileText className="w-5 h-5 text-[#C4503B] flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
                     <p className="text-xs text-muted-foreground">{(form.pdfFile.size / 1024).toFixed(0)} KB</p>
@@ -290,7 +290,7 @@ function EditarContratoContent() {
                   <button
                     type="button"
                     onClick={() => updateForm('pdfFile', null)}
-                    className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-colors"
                     title="Quitar"
                   >
                     <X className="w-4 h-4" />
@@ -305,8 +305,8 @@ function EditarContratoContent() {
                   className={cn(
                     'flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
                     isDragging
-                      ? 'border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
-                      : 'border-border hover:border-indigo-300 hover:bg-muted/50'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/40 dark:bg-[#1A40FF]/20'
+                      : 'border-border hover:border-[#1A40FF]/30 hover:bg-muted/50'
                   )}
                 >
                   <UploadSimple className="w-6 h-6 text-muted-foreground" />
@@ -326,13 +326,13 @@ function EditarContratoContent() {
             )}
 
             {validation.pdfFile && (
-              <p className="text-xs text-rose-600">{validation.pdfFile}</p>
+              <p className="text-xs text-[#C4503B]">{validation.pdfFile}</p>
             )}
           </section>
         )}
 
         {/* Terms */}
-        <section className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
           <h2 className="font-semibold text-sm text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
@@ -340,7 +340,7 @@ function EditarContratoContent() {
                 type="date"
                 value={form.startDate}
                 onChange={(e) => updateForm('startDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               />
             </Field>
             <Field label="Fecha de fin" error={validation.endDate}>
@@ -348,7 +348,7 @@ function EditarContratoContent() {
                 type="date"
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               />
             </Field>
             <Field
@@ -363,7 +363,7 @@ function EditarContratoContent() {
                 step={1000}
                 value={form.monthlyRent}
                 onChange={(e) => updateForm('monthlyRent', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
               />
             </Field>
             <Field
@@ -378,7 +378,7 @@ function EditarContratoContent() {
                 step={1000}
                 value={form.deposit}
                 onChange={(e) => updateForm('deposit', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
               />
             </Field>
             <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
@@ -389,14 +389,14 @@ function EditarContratoContent() {
                 max={28}
                 value={form.paymentDay}
                 onChange={(e) => updateForm('paymentDay', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
               />
             </Field>
             <Field label="Seguro" hint="Opcional">
               <select
                 value={form.insuranceTier}
                 onChange={(e) => updateForm('insuranceTier', e.target.value as InsuranceTier)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               >
                 <option value="NONE">Sin seguro</option>
                 <option value="BASIC">Básico</option>
@@ -407,9 +407,9 @@ function EditarContratoContent() {
         </section>
 
         {submitError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 flex items-start gap-2">
-            <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-rose-700">{submitError}</p>
+          <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-4 flex items-start gap-2">
+            <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-[#C4503B]">{submitError}</p>
           </div>
         )}
 
@@ -424,7 +424,7 @@ function EditarContratoContent() {
           <button
             type="submit"
             disabled={!isValid || actions.isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {actions.isSubmitting ? <Spinner className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             Guardar y firmar
@@ -453,7 +453,7 @@ function Field({
       <label className="block text-xs font-medium text-foreground">{label}</label>
       {children}
       {error ? (
-        <p className="text-xs text-rose-600">{error}</p>
+        <p className="text-xs text-[#C4503B]">{error}</p>
       ) : hint ? (
         <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}

@@ -75,7 +75,7 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
         onClick={onClose}
         className="absolute inset-0 bg-black/50"
       />
-      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl shadow-xl p-6">
+      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl p-6">
         <h2
           id="pii-reveal-title"
           className="text-base font-semibold text-neutral-900 dark:text-white"
@@ -86,12 +86,12 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
           {`Vas a desenmascarar la ${fieldLabel} de ${debtorName || '—'}. ` +
             t('inmobiliaria.ai.cobranza.detail.pii.modalBody')}
         </p>
-        <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">
+        <p className="mt-3 text-xs text-[#B7791F] dark:text-[#D2992F]">
           {t('inmobiliaria.ai.cobranza.detail.pii.auditNote')}
         </p>
 
         {(localError ?? error) && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">
+          <p className="mt-3 text-xs text-[#C4503B] dark:text-[#E0664D]">
             {localError ?? error}
           </p>
         )}
@@ -101,7 +101,7 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
             type="button"
             onClick={onClose}
             disabled={isMinting}
-            className="px-3 py-1.5 text-sm font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm font-medium rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
           </button>
@@ -109,7 +109,7 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
             type="button"
             onClick={() => void handleConfirm()}
             disabled={isMinting}
-            className="px-3 py-1.5 text-sm font-medium rounded-md bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-neutral-500 text-white hover:bg-[#6B6B6B] disabled:opacity-50"
           >
             {isMinting
               ? t('inmobiliaria.ai.cobranza.detail.pii.modalMinting')

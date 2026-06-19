@@ -44,19 +44,19 @@ function getBucketColor(bucket: VencimientoItem['bucket']): {
 } {
   const colors: Record<VencimientoItem['bucket'], { bg: string; text: string; border: string }> = {
     '0-30': {
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-700 dark:text-red-400',
-      border: 'border-red-200 dark:border-red-800',
+      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+      text: 'text-[#C4503B] dark:text-[#E0664D]',
+      border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
     },
     '31-60': {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-400',
-      border: 'border-amber-200 dark:border-amber-800',
+      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
     },
     '61-90': {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-700 dark:text-blue-400',
-      border: 'border-blue-200 dark:border-blue-800',
+      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+      text: 'text-[#1A40FF] dark:text-[#5570FF]',
+      border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
     },
     '90+': {
       bg: 'bg-neutral-100 dark:bg-neutral-800',
@@ -83,18 +83,18 @@ function getRenewalStatusDisplay(status: RenewalStatus, t: (key: string) => stri
     },
     negotiating: {
       label: t('inmobiliaria.finance.expirations.statusNegotiating'),
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-700 dark:text-blue-400',
+      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+      text: 'text-[#1A40FF] dark:text-[#5570FF]',
     },
     renewed: {
       label: t('inmobiliaria.finance.expirations.statusRenewed'),
-      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-      text: 'text-emerald-700 dark:text-emerald-400',
+      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
     },
     terminating: {
       label: t('inmobiliaria.finance.expirations.statusTerminating'),
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-700 dark:text-red-400',
+      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+      text: 'text-[#C4503B] dark:text-[#E0664D]',
     },
   };
   return displays[status];
@@ -235,7 +235,7 @@ export function VencimientosTable({
     <th className={cn('text-left p-4', className)}>
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -250,37 +250,37 @@ export function VencimientosTable({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Proximos 30 dias */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
+        <div className="p-4 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/12 text-white">
           <div className="flex items-center gap-2 mb-1">
-            <Warning className="w-5 h-5 text-red-200" weight="fill" />
-            <span className="text-sm font-medium text-red-100">{t('inmobiliaria.finance.expirations.critical30d')}</span>
+            <Warning className="w-5 h-5 text-[#C4503B]" weight="fill" />
+            <span className="text-sm font-medium text-[#C4503B]">{t('inmobiliaria.finance.expirations.critical30d')}</span>
           </div>
           <p className="text-2xl font-bold">{data.summary.bucket0to30}</p>
-          <p className="text-xs text-red-200 mt-1">{t('inmobiliaria.finance.expirations.contractsExpiring')}</p>
+          <p className="text-xs text-[#C4503B] mt-1">{t('inmobiliaria.finance.expirations.contractsExpiring')}</p>
         </div>
 
         {/* 31-60 dias */}
-        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+        <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
           <div className="flex items-center gap-2 mb-1">
-            <CalendarBlank className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+            <CalendarBlank className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
+            <span className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
               {t('inmobiliaria.finance.expirations.warning3160d')}
             </span>
           </div>
-          <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">
+          <p className="text-2xl font-bold text-[#B7791F] dark:text-[#D2992F]">
             {data.summary.bucket31to60}
           </p>
         </div>
 
         {/* 61-90 dias */}
-        <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
           <div className="flex items-center gap-2 mb-1">
-            <CalendarBlank className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+            <CalendarBlank className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+            <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
               {t('inmobiliaria.finance.expirations.info6190d')}
             </span>
           </div>
-          <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">
+          <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
             {data.summary.bucket61to90}
           </p>
         </div>
@@ -306,9 +306,9 @@ export function VencimientosTable({
           <button
             onClick={() => setBucketFilter('all')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
               bucketFilter === 'all'
-                ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                 : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
             )}
           >
@@ -321,42 +321,42 @@ export function VencimientosTable({
           <button
             onClick={() => setBucketFilter('0-30')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
               bucketFilter === '0-30'
-                ? 'bg-white dark:bg-[#1a1a1c] text-red-700 dark:text-red-400 shadow-sm'
+                ? 'bg-white dark:bg-[#1a1a1c] text-[#C4503B] dark:text-[#E0664D]'
                 : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
             )}
           >
             0-30d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]">
               {bucketCounts['0-30']}
             </span>
           </button>
           <button
             onClick={() => setBucketFilter('31-60')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
               bucketFilter === '31-60'
-                ? 'bg-white dark:bg-[#1a1a1c] text-amber-700 dark:text-amber-400 shadow-sm'
+                ? 'bg-white dark:bg-[#1a1a1c] text-[#B7791F] dark:text-[#D2992F]'
                 : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
             )}
           >
             31-60d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
               {bucketCounts['31-60']}
             </span>
           </button>
           <button
             onClick={() => setBucketFilter('61-90')}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
               bucketFilter === '61-90'
-                ? 'bg-white dark:bg-[#1a1a1c] text-blue-700 dark:text-blue-400 shadow-sm'
+                ? 'bg-white dark:bg-[#1a1a1c] text-[#1A40FF] dark:text-[#5570FF]'
                 : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
             )}
           >
             61-90d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]">
               {bucketCounts['61-90']}
             </span>
           </button>
@@ -377,7 +377,7 @@ export function VencimientosTable({
               {onBulkRenewal && (
                 <button
                   onClick={() => onBulkRenewal(Array.from(selectedItems))}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
                   {t('inmobiliaria.finance.expirations.startRenewal')}
@@ -386,7 +386,7 @@ export function VencimientosTable({
               {onBulkReminder && (
                 <button
                   onClick={() => onBulkReminder(Array.from(selectedItems))}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                 >
                   <EnvelopeSimple className="w-4 h-4" />
                   {t('inmobiliaria.finance.expirations.sendReminders')}
@@ -439,7 +439,7 @@ export function VencimientosTable({
                   transition={{ delay: index * 0.02 }}
                   className={cn(
                     'border-b border-neutral-50 dark:border-neutral-800 transition-colors',
-                    isSelected && 'bg-indigo-50 dark:bg-indigo-900/20',
+                    isSelected && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
                     !isSelected && 'hover:bg-neutral-50 dark:hover:bg-[#141416]'
                   )}
                 >
@@ -458,18 +458,18 @@ export function VencimientosTable({
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
-                          'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
+                          'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
                           isUrgent
-                            ? 'bg-red-100 dark:bg-red-900/30'
-                            : 'bg-indigo-100 dark:bg-indigo-900/30'
+                            ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
+                            : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                         )}
                       >
                         <HouseLine
                           className={cn(
                             'w-5 h-5',
                             isUrgent
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-indigo-600 dark:text-indigo-400'
+                              ? 'text-[#C4503B] dark:text-[#E0664D]'
+                              : 'text-[#1A40FF] dark:text-[#5570FF]'
                           )}
                         />
                       </div>
@@ -487,8 +487,8 @@ export function VencimientosTable({
                   {/* Tenant */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[120px]">
@@ -547,7 +547,7 @@ export function VencimientosTable({
                           e.stopPropagation();
                           setOpenMenuId(openMenuId === item.consignacionId ? null : item.consignacionId);
                         }}
-                        className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                        className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                       >
                         <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
                       </button>
@@ -558,7 +558,7 @@ export function VencimientosTable({
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
+                            className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10"
                           >
                             {onContactTenant && (
                               <button
@@ -567,7 +567,7 @@ export function VencimientosTable({
                                   onContactTenant(item.propertyId);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <Phone className="w-4 h-4" />
                                 <span className="text-sm">{t('inmobiliaria.finance.expirations.contactTenant')}</span>
@@ -580,7 +580,7 @@ export function VencimientosTable({
                                   onStartRenewal(item.propertyId);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
                               >
                                 <ArrowsClockwise className="w-4 h-4" />
                                 <span className="text-sm">{t('inmobiliaria.finance.expirations.startRenewal')}</span>
@@ -593,7 +593,7 @@ export function VencimientosTable({
                                   onViewContract(item);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <Eye className="w-4 h-4" />
                                 <span className="text-sm">{t('inmobiliaria.finance.expirations.viewContract')}</span>
@@ -613,8 +613,8 @@ export function VencimientosTable({
         {/* Empty State */}
         {filteredAndSortedItems.length === 0 && (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CheckSquare className="w-8 h-8 text-emerald-600 dark:text-emerald-400" weight="fill" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <CheckSquare className="w-8 h-8 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
               {t('inmobiliaria.finance.expirations.noExpirations')}

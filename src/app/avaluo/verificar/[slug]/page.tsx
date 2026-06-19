@@ -29,8 +29,8 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
-      <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-none mt-0.5">
-        <Icon className="w-4 h-4 text-indigo-600" />
+      <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-none mt-0.5">
+        <Icon className="w-4 h-4 text-neutral-600" weight="duotone" />
       </div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">
@@ -61,11 +61,11 @@ export default function VerificarCertificadoPage({ params }: Props) {
         </div>
 
         {/* Certificate card */}
-        <section className="rounded-2xl border border-border bg-card p-6 space-y-5">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-5">
           {/* Verification badge */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-none">
-              <SealCheck className="w-5 h-5 text-emerald-600" weight="fill" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] flex items-center justify-center flex-none">
+              <SealCheck className="w-5 h-5 text-[#2C7A53]" weight="fill" />
             </div>
             <div>
               <Badge variant="success">Certificado verificado</Badge>

@@ -55,9 +55,9 @@ export function StreamCompleteBanner({
     return (
       <div
         role="status"
-        className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 p-5 flex items-center justify-between gap-4 flex-wrap"
+        className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-5 flex items-center justify-between gap-4 flex-wrap"
       >
-        <p className="text-body-sm font-medium text-violet-700 dark:text-violet-400">
+        <p className="text-body-sm font-medium text-neutral-600 dark:text-neutral-300">
           {t('inmobiliaria.ai.cotizador.detail.banner.stubModeWarning')}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
@@ -81,13 +81,13 @@ export function StreamCompleteBanner({
     <div
       role="status"
       aria-live="polite"
-      className="rounded-2xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 p-5 flex items-center justify-between gap-4 flex-wrap"
+      className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-5 flex items-center justify-between gap-4 flex-wrap"
     >
       {/* Left: completion summary */}
       <div className="flex items-center gap-3">
-        <CheckCircle weight="fill" className="w-6 h-6 text-green-500 shrink-0" />
+        <CheckCircle weight="fill" className="w-6 h-6 text-[#2C7A53] shrink-0" />
         <div>
-          <p className="font-medium text-green-700 dark:text-green-400 text-sm">
+          <p className="font-medium text-[#2C7A53] dark:text-[#3EAE70] text-sm">
             {t('inmobiliaria.ai.cotizador.detail.banner.allReadyTemplate')
               .replace('{count}', String(carrierCount))
               .replace('{total}', String(carrierCount))

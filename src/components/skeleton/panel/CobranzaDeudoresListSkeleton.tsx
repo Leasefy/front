@@ -32,7 +32,7 @@ export function CobranzaDeudoresListSkeleton() {
         <Skeleton className="h-8 w-20 rounded-full" />
         <Skeleton className="h-8 w-24 rounded-full" />
         <div className="flex-1" />
-        <Skeleton className="h-10 w-56 rounded-lg" />
+        <Skeleton className="h-10 w-56 rounded-md" />
       </div>
 
       {/* Table header — 3-col flex */}

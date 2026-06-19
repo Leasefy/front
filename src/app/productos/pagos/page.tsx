@@ -111,7 +111,7 @@ export default function PagosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6 rounded-xl">
                       Activar cobro automático
                     </Button>
                   </Link>
@@ -158,14 +158,14 @@ export default function PagosPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     {/* Balance section */}
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5, duration: 0.4 }}
-                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-white/10"
+                      className="bg-white/10 backdrop-blur-sm rounded-md p-4 mb-4 border border-white/10"
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-white/50 text-[11px]">Balance disponible</span>
@@ -173,7 +173,7 @@ export default function PagosPage() {
                       </div>
                       <p className="text-[28px] font-bold text-white tracking-tight">$34.200.000</p>
                       <div className="flex items-center gap-2 mt-3">
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-xl text-[11px] font-medium text-neutral-900">
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-xl text-[11px] font-medium text-foreground">
                           <PaperPlaneTilt className="w-3 h-3" />
                           Retirar
                         </button>
@@ -198,7 +198,7 @@ export default function PagosPage() {
                           initial={{ opacity: 0, x: -15 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.6 + i * 0.1 }}
-                          className="flex items-center gap-3 bg-white/[0.06] rounded-lg p-2.5 border border-white/[0.06]"
+                          className="flex items-center gap-3 bg-white/[0.06] rounded-md p-2.5 border border-white/[0.06]"
                         >
                           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                             <span className="text-[10px] font-medium text-white/60">{tx.initials}</span>
@@ -207,7 +207,7 @@ export default function PagosPage() {
                             <p className="text-[12px] font-medium text-white/80 truncate">{tx.name}</p>
                             <p className="text-[10px] text-white/40">{tx.time}</p>
                           </div>
-                          <span className="text-[13px] font-medium text-emerald-400">{tx.amount}</span>
+                          <span className="text-[13px] font-medium text-[#2C7A53]">{tx.amount}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -232,11 +232,11 @@ export default function PagosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">3 pagos hoy</p>
@@ -251,7 +251,7 @@ export default function PagosPage() {
         </section>
 
         {/* Problems Bento Section */}
-        <section className="bg-background py-24 lg:py-32 overflow-hidden">
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -379,14 +379,14 @@ export default function PagosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                        <BellRinging className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
+                      <div className="w-10 h-10 rounded-full bg-[#F8F0E0] flex items-center justify-center">
+                        <BellRinging className="w-5 h-5 text-[#B7791F]" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Recordatorio #47</p>
@@ -394,8 +394,8 @@ export default function PagosPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-2">
-                        <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                      <div className="bg-[#F8F0E0] rounded-md p-2">
+                        <p className="text-[10px] text-[#B7791F]">
                           {'"'}Hola Nicolás, recuerda que el arriendo de este mes está pendiente...{'"'}
                         </p>
                       </div>
@@ -405,7 +405,7 @@ export default function PagosPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#B7791F] rounded-full flex items-center justify-center text-white font-bold text-sm">
                     47
                   </div>
                 </div>
@@ -427,14 +427,14 @@ export default function PagosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-sand-50 dark:bg-card rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-card rounded-xl shadow-lg p-4 w-[220px] border border-border">
+                  <div className="bg-white rounded-xl p-4 w-[220px] border border-neutral-100">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Control de pagos</span>
-                      <WarningCircle className="w-4 h-4 text-red-500" />
+                      <WarningCircle className="w-4 h-4 text-[#C4503B]" />
                     </div>
                     <div className="space-y-2">
                       {[
@@ -445,12 +445,12 @@ export default function PagosPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-[11px]">
                           <span className="text-muted-foreground">{item.month}</span>
-                          <span className="text-red-500/70 text-[10px] truncate max-w-[100px]">{item.status}</span>
+                          <span className="text-[#C4503B]/70 text-[10px] truncate max-w-[100px]">{item.status}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-border my-3" />
-                    <div className="flex items-center gap-2 text-[10px] text-red-500">
+                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="flex items-center gap-2 text-[10px] text-[#C4503B]">
                       <Receipt className="w-3 h-3" />
                       <span>Sin recibos formales</span>
                     </div>
@@ -523,11 +523,11 @@ export default function PagosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center mb-6">
-                    <BellRinging className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
+                    <BellRinging className="w-6 h-6 text-[#2C7A53]" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Recordatorios Inteligentes
@@ -538,7 +538,7 @@ export default function PagosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['3 días antes', '1 día antes', 'Día de pago'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -551,7 +551,7 @@ export default function PagosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -566,7 +566,7 @@ export default function PagosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['PDF descargable', 'Envío automático', 'Historial completo'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -615,7 +615,7 @@ export default function PagosPage() {
         </section>
 
         {/* Payment Methods Section */}
-        <section className="bg-background py-24 lg:py-32 overflow-hidden">
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -645,14 +645,14 @@ export default function PagosPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
-                    className="relative bg-sand-50 dark:bg-card rounded-xl p-6 min-h-[200px] flex flex-col"
+                    className="relative bg-sand-50 rounded-xl p-6 min-h-[200px] flex flex-col"
                   >
                     {method.popular && (
                       <span className="absolute -top-2.5 left-4 px-3 py-1 text-[10px] font-mono font-normal uppercase tracking-wider bg-foreground text-white rounded-full">
                         Más usado
                       </span>
                     )}
-                    <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center mb-4 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center mb-4">
                       <Icon className="w-6 h-6 text-foreground/70" />
                     </div>
                     <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">{method.name}</h3>
@@ -728,16 +728,16 @@ export default function PagosPage() {
                     <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Recibido</p>
                     <p className="text-[28px] font-bold text-white tracking-tight">$12.5M</p>
                     <div className="flex items-center gap-1 mt-1">
-                      <TrendUp className="w-3 h-3 text-emerald-400" />
-                      <span className="text-[11px] text-emerald-400">+12%</span>
+                      <TrendUp className="w-3 h-3 text-[#2C7A53]" />
+                      <span className="text-[11px] text-[#2C7A53]">+12%</span>
                     </div>
                   </div>
                   <div className="bg-white/[0.08] rounded-xl p-4 border border-white/[0.06]">
                     <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Pendiente</p>
                     <p className="text-[28px] font-bold text-white tracking-tight">$2.5M</p>
                     <div className="flex items-center gap-1 mt-1">
-                      <Clock className="w-3 h-3 text-amber-400" />
-                      <span className="text-[11px] text-amber-400">1 pago</span>
+                      <Clock className="w-3 h-3 text-[#B7791F]" />
+                      <span className="text-[11px] text-[#B7791F]">1 pago</span>
                     </div>
                   </div>
                   <div className="bg-white/[0.08] rounded-xl p-4 border border-white/[0.06]">
@@ -756,7 +756,7 @@ export default function PagosPage() {
                     <p className="text-[12px] text-white/60 font-medium">Ingresos últimos 6 meses</p>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <div className="w-2 h-2 rounded-full bg-[#2C7A53]" />
                         <span className="text-[10px] text-white/40">Recibido</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -785,7 +785,7 @@ export default function PagosPage() {
                             transition={{ delay: 0.3 + i * 0.05, duration: 0.5 }}
                           />
                           <motion.div
-                            className="flex-1 bg-emerald-400 rounded-t"
+                            className="flex-1 bg-[#2C7A53] rounded-t"
                             initial={{ height: 0 }}
                             whileInView={{ height: `${bar.received}%` }}
                             viewport={{ once: true }}
@@ -807,7 +807,7 @@ export default function PagosPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 }}
-                  className="bg-card rounded-xl p-5 border border-border flex-1"
+                  className="bg-white rounded-xl p-5 border border-neutral-200 flex-1"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-[14px] font-medium text-foreground">Últimos pagos</h4>
@@ -827,14 +827,14 @@ export default function PagosPage() {
                         transition={{ delay: 0.3 + i * 0.1 }}
                         className="flex items-center gap-3"
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${tx.status === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${tx.status === 'success' ? 'bg-[#E8F3EC] text-[#2C7A53]' : 'bg-[#F8F0E0] text-[#B7791F]'}`}>
                           {tx.name.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] font-medium text-foreground truncate">{tx.name}</p>
                           <p className="text-[10px] text-muted-foreground">{tx.property} · {tx.time}</p>
                         </div>
-                        <span className={`text-[12px] font-semibold ${tx.status === 'success' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        <span className={`text-[12px] font-semibold ${tx.status === 'success' ? 'text-[#2C7A53]' : 'text-[#B7791F]'}`}>
                           {tx.amount}
                         </span>
                       </motion.div>
@@ -848,14 +848,14 @@ export default function PagosPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.3 }}
-                  className="bg-sand-50 dark:bg-card rounded-xl p-5"
+                  className="bg-sand-50 rounded-xl p-5"
                 >
                   <h4 className="text-[14px] font-medium text-foreground mb-4">Acciones rápidas</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { icon: FileText, label: 'Reporte PDF', color: 'bg-primary/10 text-primary' },
-                      { icon: PaperPlaneTilt, label: 'Recordatorio', color: 'bg-emerald-50 text-emerald-600' },
-                      { icon: ChartBar, label: 'Estadísticas', color: 'bg-amber-50 text-amber-600' },
+                      { icon: PaperPlaneTilt, label: 'Recordatorio', color: 'bg-[#E8F3EC] text-[#2C7A53]' },
+                      { icon: ChartBar, label: 'Estadísticas', color: 'bg-[#F8F0E0] text-[#B7791F]' },
                       { icon: Receipt, label: 'Recibos', color: 'bg-sand-200 text-sand-700' },
                     ].map((action, i) => (
                       <motion.button
@@ -864,9 +864,9 @@ export default function PagosPage() {
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.4 + i * 0.05 }}
-                        className="flex items-center gap-2 p-3 bg-card rounded-lg border border-border hover:border-foreground/20 transition-colors text-left"
+                        className="flex items-center gap-2 p-3 bg-white rounded-md border border-neutral-100 hover:border-neutral-200 transition-colors text-left"
                       >
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${action.color}`}>
+                        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${action.color}`}>
                           <action.icon className="w-3.5 h-3.5" />
                         </div>
                         <span className="text-[11px] font-medium text-foreground">{action.label}</span>
@@ -880,7 +880,7 @@ export default function PagosPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="bg-background overflow-hidden">
+        <section className="bg-white overflow-hidden">
           <div className="container-platform py-[80px] pb-[100px]">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
               <motion.div
@@ -931,7 +931,7 @@ export default function PagosPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.4, delay: offset * 0.1 }}
-                        className="bg-card rounded-xl p-8 flex flex-col"
+                        className="bg-white rounded-xl p-8 flex flex-col"
                       >
                         <div className="mb-6">
                           <svg className="w-10 h-10 text-muted-foreground" viewBox="0 0 24 24" fill="currentColor">

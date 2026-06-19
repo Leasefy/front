@@ -29,11 +29,11 @@ interface CobroCardProps {
 
 // Status border colors for left accent
 const STATUS_BORDER_COLORS: Record<CobroStatus, string> = {
-  pending: 'border-l-amber-500',
-  paid: 'border-l-emerald-500',
-  partial: 'border-l-blue-500',
-  late: 'border-l-orange-500',
-  defaulted: 'border-l-red-500',
+  pending: 'border-l-[#B7791F]',
+  paid: 'border-l-[#2C7A53]',
+  partial: 'border-l-[#1A40FF]',
+  late: 'border-l-[#B7791F]',
+  defaulted: 'border-l-[#C4503B]',
 };
 
 /**
@@ -77,7 +77,7 @@ export function CobroCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onClick?.(cobro)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:shadow-md',
+          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:',
           borderColor
         )}
       >
@@ -97,7 +97,7 @@ export function CobroCard({
             {formatCurrency(cobro.totalAmount)}
           </p>
           {cobro.status === 'partial' && (
-            <p className="text-xs text-blue-600 dark:text-blue-400">
+            <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
               {formatCurrency(cobro.paidAmount)} {t('inmobiliaria.cobros.card.paid')}
             </p>
           )}
@@ -110,7 +110,7 @@ export function CobroCard({
 
         {/* Days late indicator */}
         {cobro.daysLate > 0 && (
-          <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400 shrink-0">
+          <div className="flex items-center gap-1 text-[#B7791F] dark:text-[#D2992F] shrink-0">
             <Warning className="w-4 h-4" weight="fill" />
             <span className="text-xs font-medium">{cobro.daysLate}d</span>
           </div>
@@ -124,7 +124,7 @@ export function CobroCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:shadow-lg',
+        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:',
         borderColor,
         'border-neutral-200 dark:border-neutral-700',
         onClick && 'cursor-pointer'
@@ -154,8 +154,8 @@ export function CobroCard({
       {/* Tenant Section */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-            <User className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+            <User className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-medium text-neutral-900 dark:text-white truncate">
@@ -165,7 +165,7 @@ export function CobroCard({
               <a
                 href={`tel:${cobro.tenantPhone}`}
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
               >
                 <Phone className="w-3.5 h-3.5" />
                 {cobro.tenantPhone}
@@ -175,7 +175,7 @@ export function CobroCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                className="p-1.5 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/50 transition-colors"
               >
                 <WhatsappLogo className="w-4 h-4" weight="fill" />
               </a>
@@ -201,14 +201,14 @@ export function CobroCard({
             <span>{formatCurrency(cobro.totalAmount)}</span>
           </div>
           {cobro.lateFee > 0 && (
-            <div className="flex items-center justify-between text-orange-600 dark:text-orange-400">
+            <div className="flex items-center justify-between text-[#B7791F] dark:text-[#D2992F]">
               <span>{t('inmobiliaria.cobros.card.lateFee')}</span>
               <span>+ {formatCurrency(cobro.lateFee)}</span>
             </div>
           )}
           {cobro.status === 'partial' && (
             <>
-              <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center justify-between text-[#2C7A53] dark:text-[#3EAE70]">
                 <span>{t('inmobiliaria.cobros.card.paidLabel')}</span>
                 <span>- {formatCurrency(cobro.paidAmount)}</span>
               </div>
@@ -238,7 +238,7 @@ export function CobroCard({
 
         {/* Late indicator */}
         {cobro.daysLate > 0 && (
-          <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400">
+          <div className="flex items-center gap-2 text-sm text-[#B7791F] dark:text-[#D2992F]">
             <Warning className="w-4 h-4" weight="fill" />
             <span className="font-medium">{t('inmobiliaria.cobros.card.daysLate', { count: cobro.daysLate })}</span>
           </div>
@@ -246,7 +246,7 @@ export function CobroCard({
 
         {/* Paid date */}
         {cobro.status === 'paid' && cobro.paidDate && (
-          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
             <CheckCircle className="w-4 h-4" weight="fill" />
             <span>{t('inmobiliaria.cobros.card.paidOn', { date: new Date(cobro.paidDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
               day: 'numeric',
@@ -272,20 +272,20 @@ export function CobroCard({
               e.stopPropagation();
               onRegisterPayment(cobro);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
           >
             <CurrencyCircleDollar className="w-4 h-4" />
             {t('inmobiliaria.cobros.card.registerPayment')}
           </button>
         )}
         {cobro.status === 'paid' && (
-          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
             <CheckCircle className="w-4 h-4" weight="fill" />
             <span>{t('inmobiliaria.cobros.card.paymentComplete')}</span>
           </div>
         )}
         {onClick && (
-          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-indigo-500 transition-colors ml-auto">
+          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors ml-auto">
             {t('inmobiliaria.cobros.card.viewDetail')}
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>

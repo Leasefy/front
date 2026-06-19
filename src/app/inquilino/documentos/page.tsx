@@ -137,8 +137,8 @@ export default function DocumentosPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -146,7 +146,7 @@ export default function DocumentosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="documents" />
         </div>
@@ -155,7 +155,7 @@ export default function DocumentosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -179,11 +179,11 @@ export default function DocumentosPage() {
           className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8"
         >
           {/* Total */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <FolderOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <FolderOpen className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Total</p>
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">Total</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {documents.length}
             </p>
@@ -191,9 +191,9 @@ export default function DocumentosPage() {
           </div>
 
           {/* Verified */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">
               {locale === 'es' ? 'Verificados' : 'Verified'}
@@ -207,9 +207,9 @@ export default function DocumentosPage() {
           </div>
 
           {/* Pending */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <Clock className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('common.pending')}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
@@ -237,13 +237,13 @@ export default function DocumentosPage() {
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               aria-label={locale === 'es' ? 'Buscar documento' : 'Search document'}
-              className="w-full pl-12 pr-4 py-3 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
+              className="w-full pl-12 pr-4 py-3 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
             />
           </div>
 
           {/* Type Filter Pills */}
           {filterCategories.length > 1 && (
-            <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit overflow-x-auto">
+            <div className="flex items-center gap-1 p-1 bg-neutral-100 dark:bg-[#1a1a1c] rounded-full w-fit overflow-x-auto">
               {filterCategories.map((cat) => {
                 const IconComponent = cat.icon;
                 return (
@@ -253,7 +253,7 @@ export default function DocumentosPage() {
                     className={cn(
                       'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap',
                       selectedType === cat.value
-                        ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                        ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
                         : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                     )}
                   >
@@ -306,20 +306,20 @@ export default function DocumentosPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ delay: index * 0.05 }}
-                        className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden"
                       >
                         {/* Document Header */}
                         <div className="p-5">
                           <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
                               <Icon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
                             </div>
                             <span
                               className={cn(
                                 'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
                                 doc.verified
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-amber-100 text-amber-700'
+                                  ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
+                                  : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
                               )}
                             >
                               {doc.verified ? (
@@ -330,7 +330,7 @@ export default function DocumentosPage() {
                             </span>
                           </div>
 
-                          <h3 className="font-semibold text-neutral-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          <h3 className="font-semibold text-neutral-900 dark:text-white mb-2 line-clamp-2 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                             {getDocLabel(doc.type)}
                           </h3>
 
@@ -355,7 +355,7 @@ export default function DocumentosPage() {
                         <div className="flex items-center border-t border-neutral-100 dark:border-neutral-700">
                           <button
                             onClick={() => setViewingDocument(doc)}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             {t('documents.view')}
@@ -366,7 +366,7 @@ export default function DocumentosPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             download
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
                           >
                             <Download className="w-4 h-4" />
                             {t('documents.download')}
@@ -388,7 +388,7 @@ export default function DocumentosPage() {
                       'p-2 rounded-full transition-all',
                       currentPage === 1
                         ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                     )}
                   >
                     <CaretLeft className="w-5 h-5" />
@@ -401,7 +401,7 @@ export default function DocumentosPage() {
                         'w-10 h-10 rounded-full text-sm font-medium transition-all',
                         currentPage === page
                           ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                       )}
                     >
                       {page}
@@ -414,7 +414,7 @@ export default function DocumentosPage() {
                       'p-2 rounded-full transition-all',
                       currentPage === totalPages
                         ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                     )}
                   >
                     <CaretRight className="w-5 h-5" />
@@ -423,8 +423,8 @@ export default function DocumentosPage() {
               )}
             </>
           ) : (
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-neutral-400" />
               </div>
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">
@@ -462,12 +462,12 @@ export default function DocumentosPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="relative bg-white dark:bg-[#1a1a1c] w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-xl flex flex-col overflow-hidden"
+              className="relative bg-white dark:bg-[#1a1a1c] w-full max-w-4xl max-h-[90vh] rounded-xl flex flex-col overflow-hidden"
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
                     {(() => { const DocIcon = getDocIcon(viewingDocument.type); return <DocIcon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />; })()}
                   </div>
                   <div>
@@ -492,7 +492,7 @@ export default function DocumentosPage() {
                   </a>
                   <button
                     onClick={() => setViewingDocument(null)}
-                    className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                    className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -500,19 +500,19 @@ export default function DocumentosPage() {
               </div>
 
               {/* Document Preview Area */}
-              <div className="flex-1 bg-stone-50 dark:bg-[#0f0f10] p-6 overflow-auto">
-                <div className="bg-white dark:bg-[#1a1a1c] h-full rounded-2xl shadow-sm flex items-center justify-center min-h-[400px]">
+              <div className="flex-1 bg-neutral-50 dark:bg-[#0f0f10] p-6 overflow-auto">
+                <div className="bg-white dark:bg-[#1a1a1c] h-full rounded-xl flex items-center justify-center min-h-[400px]">
                   {viewingDocument.mimeType?.startsWith('image/') ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={viewingDocument.url}
                       alt={getDocLabel(viewingDocument.type)}
-                      className="max-w-full max-h-[60vh] rounded-lg object-contain"
+                      className="max-w-full max-h-[60vh] rounded-md object-contain"
                     />
                   ) : viewingDocument.mimeType === 'application/pdf' ? (
                     <iframe
                       src={viewingDocument.url}
-                      className="w-full h-full min-h-[500px] rounded-lg"
+                      className="w-full h-full min-h-[500px] rounded-md"
                       title={getDocLabel(viewingDocument.type)}
                     />
                   ) : (
@@ -529,7 +529,7 @@ export default function DocumentosPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         download
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium transition-colors"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 text-white rounded-full text-sm font-medium transition-colors"
                       >
                         <Download className="w-4 h-4" />
                         {locale === 'es' ? 'Descargar archivo' : 'Download file'}

@@ -110,7 +110,8 @@ export function targetToHref(target: BackendActionTarget): string {
     case 'cobranza':
       return `${base}/cobranza`;
     case 'cotizador':
-      return `${base}/cotizador`;
+      // Wire target stays 'cotizador'; user-facing route is /asegurabilidad.
+      return `${base}/asegurabilidad`;
     case 'pagos':
       return `${base}/pagos`;
     case 'cartera':

@@ -150,7 +150,7 @@ export function CarrierOverridePopover({
           className="h-8 text-sm"
         />
         {priorityError && (
-          <p className="text-xs text-rose-600 dark:text-rose-400">{priorityError}</p>
+          <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{priorityError}</p>
         )}
       </div>
 
@@ -195,7 +195,7 @@ export function CarrierOverridePopover({
         <Button
           variant="default"
           size="sm"
-          className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+          className="flex-1 bg-[#1A40FF] hover:opacity-90 text-white"
           onClick={() => void handleSave()}
           disabled={!canConfigure || isSaving}
         >

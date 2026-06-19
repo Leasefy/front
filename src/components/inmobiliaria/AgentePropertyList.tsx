@@ -42,26 +42,26 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
 const AVAILABILITY_CONFIG: Record<PropertyAvailability, { label: string; bg: string; text: string; icon: React.ElementType }> = {
   available: {
     label: 'Disponible',
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
     icon: CheckCircle,
   },
   rented: {
     label: 'Arrendado',
-    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-    text: 'text-indigo-700 dark:text-indigo-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
     icon: House,
   },
   in_process: {
     label: 'En proceso',
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
     icon: Timer,
   },
   maintenance: {
     label: 'Mantenimiento',
-    bg: 'bg-rose-100 dark:bg-rose-900/30',
-    text: 'text-rose-700 dark:text-rose-400',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
     icon: Wrench,
   },
 };
@@ -94,8 +94,8 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
         className="w-full flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Buildings className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-8 h-8 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <Buildings className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-neutral-900 dark:text-white">
@@ -153,7 +153,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-neutral-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          <h4 className="font-medium text-neutral-900 dark:text-white truncate group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                             {consignacion.propertyTitle}
                           </h4>
                           <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">

@@ -93,19 +93,19 @@ export function QuoteHeader({
 
         {/* Right: live cost pill + connection status */}
         <div className="flex flex-col items-end gap-0.5">
-          <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-full px-3 py-1">
+          <div className="flex items-center gap-2 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 rounded-full px-3 py-1">
             <ChartLineUp
               weight="regular"
-              className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0"
+              className="w-3.5 h-3.5 text-[#1A40FF] dark:text-[#5570FF] shrink-0"
             />
-            <span className="font-mono text-numeric text-sm text-indigo-700 dark:text-indigo-300">
+            <span className="font-mono text-numeric text-sm text-[#1A40FF] dark:text-[#5570FF]">
               ${totalCostUsd.toFixed(3)}
             </span>
             <span
               className={[
                 'w-2 h-2 rounded-full shrink-0',
                 isConnected
-                  ? 'bg-green-400 animate-pulse'
+                  ? 'bg-[#2C7A53] animate-pulse'
                   : 'bg-muted-foreground/40',
               ].join(' ')}
               aria-hidden="true"

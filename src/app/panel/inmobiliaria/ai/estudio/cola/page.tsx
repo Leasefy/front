@@ -11,13 +11,13 @@
  * recorded audit-first on the backend.
  */
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CaretLeft, ShieldCheck } from '@phosphor-icons/react'
+import { ShieldCheck } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function EstudioCola() {
@@ -30,17 +30,23 @@ function EstudioCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <Link
-            href="/panel/inmobiliaria/ai/estudio"
-            className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-          >
-            <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-            <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-            {t('inmobiliaria.ai.workspace.pages.estudio.eyebrow')}
-          </Link>
-          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
+          <MigaDePan
+            backHref="/panel/inmobiliaria/ai/estudio"
+            icon={ShieldCheck}
+            crumbs={[
+              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+              { label: t('inmobiliaria.ai.workspace.agente.estudio'), href: '/panel/inmobiliaria/ai/estudio' },
+              { label: t('inmobiliaria.ai.workspace.pages.estudio.colaTitle') },
+            ]}
+          />
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.estudio.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.estudio.colaDesc')}
+          </p>
+          {/* Leyenda de niveles — los items muestran "Nivel A/B/C/D" sin explicación */}
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Niveles:</span>{' '}
+            A = mejor perfil · B = buen perfil · C = perfil ajustado · D = mayor riesgo
           </p>
         </div>
 
@@ -57,6 +63,7 @@ function EstudioCola() {
 
       {/* Cola humana (transversal component) — opens the case detail */}
       <ColaHumana
+        agente="estudio"
         items={items}
         isLoading={isLoading}
         error={error}

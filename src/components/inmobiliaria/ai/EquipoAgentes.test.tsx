@@ -168,9 +168,9 @@ describe('EquipoAgentes — happy path', () => {
     // cotizador's cola
     expect(
       container.querySelector('[data-testid="equipo-cola-cotizador"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/ai/cotizador/cola')
+    ).toBe('/panel/inmobiliaria/ai/asegurabilidad/cola')
     expect(
       container.querySelector('[data-testid="equipo-sala-cotizador"]')!.getAttribute('href'),
-    ).toBe('/panel/inmobiliaria/ai/cotizador')
+    ).toBe('/panel/inmobiliaria/ai/asegurabilidad')
   })
 })

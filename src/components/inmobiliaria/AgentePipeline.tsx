@@ -61,14 +61,14 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
         className="w-full flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <Funnel className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+            <Funnel className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-neutral-900 dark:text-white">
               {t('inmobiliaria.agente.activePipeline')}
             </h3>
-            <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-xs font-medium text-purple-700 dark:text-purple-400">
+            <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300">
               {activeItems.length}
             </span>
           </div>
@@ -104,7 +104,7 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                       className="w-full flex items-start gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-[#141416] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left group"
                     >
                       {/* Property Thumbnail */}
-                      <div className="w-12 h-12 rounded-lg bg-neutral-200 dark:bg-neutral-700 overflow-hidden shrink-0">
+                      <div className="w-12 h-12 rounded-md bg-neutral-200 dark:bg-neutral-700 overflow-hidden shrink-0">
                         {item.propertyThumbnail ? (
                           <img
                             src={item.propertyThumbnail}
@@ -123,7 +123,7 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                         {/* Candidate Name */}
                         <div className="flex items-center gap-1.5 mb-1">
                           <User className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                          <span className="font-medium text-neutral-900 dark:text-white truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                          <span className="font-medium text-neutral-900 dark:text-white truncate group-hover:text-neutral-600 dark:text-neutral-300 dark:group-hover:text-neutral-600 dark:text-neutral-300 transition-colors">
                             {item.candidateName}
                           </span>
                         </div>

@@ -5,7 +5,7 @@
  *
  * Recharts horizontal BarChart at 220px height.
  * layout="vertical" draws horizontal bars: Y axis has categories, X axis has values.
- * Fill: indigo-500 (#6366f1). 4 canon-range buckets: [0-1M], [1M-3M], [3M-5M], [5M+].
+ * Fill: electric-blue (#1A40FF). 4 canon-range buckets: [0-1M], [1M-3M], [3M-5M], [5M+].
  * Must declare 'use client' — ResponsiveContainer needs DOM access (T-35-12).
  */
 
@@ -69,7 +69,7 @@ export function CarrierApprovalByCanonChart({ data, isLoading = false }: Carrier
         />
         <Bar
           dataKey="approvalRate"
-          fill="#6366f1"
+          fill="#1A40FF"
           radius={[0, 4, 4, 0]}
         />
       </BarChart>

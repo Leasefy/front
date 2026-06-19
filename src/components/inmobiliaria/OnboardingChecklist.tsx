@@ -24,7 +24,7 @@ export function OnboardingChecklist() {
   if (!isAdmin || isComplete) return null;
 
   return (
-    <div className="rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/20 p-6">
+    <div className="rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20 p-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
@@ -35,7 +35,7 @@ export function OnboardingChecklist() {
             Completa estos pasos para aprovechar al máximo Leasefy
           </p>
         </div>
-        <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 shrink-0">
+        <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] shrink-0">
           {completionPercent}% completado
         </span>
       </div>
@@ -43,7 +43,7 @@ export function OnboardingChecklist() {
       {/* Progress Bar */}
       <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden mb-5">
         <div
-          className="h-full rounded-full bg-indigo-500 transition-all duration-500"
+          className="h-full rounded-full bg-[#1A40FF] transition-all duration-500"
           style={{ width: `${completionPercent}%` }}
         />
       </div>
@@ -56,7 +56,7 @@ export function OnboardingChecklist() {
             {step.completed ? (
               <CheckCircle
                 weight="fill"
-                className="h-5 w-5 text-emerald-500 shrink-0"
+                className="h-5 w-5 text-[#2C7A53] shrink-0"
                 aria-hidden="true"
               />
             ) : (
@@ -83,7 +83,7 @@ export function OnboardingChecklist() {
             {step.action && !step.completed && (
               <Link
                 href={step.action.href}
-                className="shrink-0 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline"
+                className="shrink-0 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] hover:underline"
               >
                 {step.action.label}
               </Link>

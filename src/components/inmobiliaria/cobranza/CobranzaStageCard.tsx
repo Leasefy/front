@@ -50,7 +50,9 @@ export const CobranzaStageCard = React.forwardRef<
 ) {
   const { t, locale } = useI18n()
   const colors = stageColorClasses(stage)
-  const displayName = locale === 'es' ? STAGE_LABELS_ES[stage] : STAGE_LABELS_EN[stage]
+  const fullLabel = locale === 'es' ? STAGE_LABELS_ES[stage] : STAGE_LABELS_EN[stage]
+  // "Nombre · rango" → name leads the card; the range joins the muted code line.
+  const [displayName, dayRange] = fullLabel.split(' · ')
 
   const ariaLabel = t('inmobiliaria.ai.cobranza.overview.stages.ariaLabel', {
     stage,
@@ -81,14 +83,15 @@ export const CobranzaStageCard = React.forwardRef<
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-current',
         ].join(' ')}
       >
-        {/* Stage code */}
-        <span className={`font-mono text-sm tracking-widest uppercase ${colors.text}`}>
-          {stage}
-        </span>
-
-        {/* Display name */}
-        <p className={`text-xs mt-0.5 leading-tight ${colors.text} opacity-80`}>
+        {/* Display name — primary (human-first hierarchy) */}
+        <p className={`text-sm font-semibold leading-tight ${colors.text}`}>
           {displayName}
+        </p>
+
+        {/* Stage code + day range — secondary, muted */}
+        <p className={`font-mono text-[10px] tracking-widest uppercase mt-0.5 ${colors.text} opacity-60`}>
+          {stage}
+          {dayRange ? ` · ${dayRange}` : ''}
         </p>
 
         {/* Count */}
@@ -109,13 +112,13 @@ export const CobranzaStageCard = React.forwardRef<
         <div className="flex items-center gap-1 mt-1.5">
           {weeklyDelta > 0 ? (
             <>
-              <ArrowUp size={12} className="text-red-500" />
-              <span className="text-xs text-red-500">+{weeklyDelta}</span>
+              <ArrowUp size={12} className="text-[#C4503B]" />
+              <span className="text-xs text-[#C4503B]">+{weeklyDelta}</span>
             </>
           ) : weeklyDelta < 0 ? (
             <>
-              <ArrowDown size={12} className="text-green-500" />
-              <span className="text-xs text-green-500">{weeklyDelta}</span>
+              <ArrowDown size={12} className="text-[#2C7A53]" />
+              <span className="text-xs text-[#2C7A53]">{weeklyDelta}</span>
             </>
           ) : (
             <>

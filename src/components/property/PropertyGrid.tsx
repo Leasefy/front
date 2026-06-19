@@ -134,7 +134,7 @@ export function PropertyGrid({
             size="lg"
             onClick={handleLoadMore}
             disabled={isLoadingMore}
-            className="text-sm font-mono uppercase font-normal tracking-tight"
+            className="text-sm"
           >
             {isLoadingMore ? (
               <>

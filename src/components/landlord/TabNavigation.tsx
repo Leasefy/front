@@ -2,7 +2,6 @@
 
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 
 export interface Tab {
   id: string;
@@ -19,8 +18,10 @@ interface TabNavigationProps {
 }
 
 /**
- * Tab Compass - Premium horizontal tabs with animated indicator
- * Used in property detail page
+ * Navegación horizontal de página — DS Tabs variant "underline".
+ * Conserva su indicador animado propio (scale-x) en lugar del estático del
+ * DS, pero con la piel del contrato: hairline, Satoshi (activo medium ink),
+ * hover de fondo, counts mono.
  */
 export function TabNavigation({
   tabs,
@@ -30,47 +31,43 @@ export function TabNavigation({
 }: TabNavigationProps) {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className={className}>
-      <TabsList className="w-full justify-start border-b border-border/80 rounded-none bg-transparent h-auto p-0 gap-1">
+      <TabsList variant="underline" className="w-full justify-start gap-1">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.id}
             value={tab.id}
             disabled={tab.disabled}
             className={cn(
-              'relative py-4 px-4 rounded-none transition-all duration-300',
-              'data-[state=active]:shadow-none data-[state=active]:bg-transparent',
-              'data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground',
-              'data-[state=active]:text-foreground',
-              'data-[disabled]:opacity-40 data-[disabled]:cursor-not-allowed',
-              'group'
+              'group relative h-auto px-4 py-3.5',
+              'rounded-t-md hover:bg-surface-hover',
+              // El indicador animado propio reemplaza al estático del DS.
+              'data-[state=active]:border-transparent'
             )}
           >
-            <span className="flex items-center gap-2.5 font-medium">
+            <span className="flex items-center gap-2.5">
               {tab.label}
               {tab.count !== undefined && (
-                <Badge
-                  variant="secondary"
+                <span
                   className={cn(
-                    'text-xs font-semibold px-2.5 py-0.5 rounded-full transition-all duration-300',
+                    'rounded-full px-2 py-0.5 font-mono text-[11px] tabular-nums transition-colors',
                     activeTab === tab.id
-                      ? 'bg-primary text-white uppercase tracking-wide font-mono'
-                      : 'bg-muted text-muted-foreground group-hover:bg-muted'
+                      ? 'bg-accent-soft text-primary'
+                      : 'bg-surface-muted text-fg-muted'
                   )}
                 >
                   {tab.count}
-                </Badge>
+                </span>
               )}
             </span>
 
-            {/* Animated bottom indicator */}
+            {/* Indicador animado (piel DS: 2px primary, sin pill) */}
             <span
               className={cn(
-                'absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full',
-                'bg-primary',
+                'absolute inset-x-0 bottom-0 h-0.5 bg-primary',
                 'transition-all duration-300 ease-out',
                 activeTab === tab.id
-                  ? 'opacity-100 scale-x-100'
-                  : 'opacity-0 scale-x-0'
+                  ? 'scale-x-100 opacity-100'
+                  : 'scale-x-0 opacity-0'
               )}
             />
           </TabsTrigger>

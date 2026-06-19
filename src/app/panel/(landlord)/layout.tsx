@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/toast';
 import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
@@ -177,18 +177,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Toast notifications - Premium style */}
-      <Toaster
-        position="top-right"
-        style={{ zIndex: 9999 }}
-        toastOptions={{
-          style: {
-            borderRadius: '16px',
-            background: 'white',
-            border: '1px solid rgba(0, 0, 0, 0.05)',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
-          },
-        }}
-      />
+      <Toaster position="top-right" />
     </div>
   );
 }

@@ -18,13 +18,13 @@ import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 
 const STATUS_CONFIG: Record<ContractStatus, { color: string; icon: typeof CheckCircle }> = {
   draft: { color: 'bg-neutral-100 text-neutral-600', icon: Clock },
-  pending_landlord: { color: 'bg-amber-100 text-amber-700', icon: Clock },
-  pending_tenant: { color: 'bg-indigo-100 text-indigo-700', icon: PenNib },
-  rejected_pending_modifications: { color: 'bg-amber-100 text-amber-700', icon: Clock },
-  signed: { color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-  active: { color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
+  pending_landlord: { color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]', icon: Clock },
+  pending_tenant: { color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]', icon: PenNib },
+  rejected_pending_modifications: { color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]', icon: Clock },
+  signed: { color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]', icon: CheckCircle },
+  active: { color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]', icon: CheckCircle },
   expired: { color: 'bg-neutral-100 text-neutral-500', icon: XCircle },
-  cancelled: { color: 'bg-red-100 text-red-600', icon: XCircle },
+  cancelled: { color: 'bg-[#F8EAE7] text-[#C4503B]', icon: XCircle },
 };
 
 // ============================================================================
@@ -43,17 +43,17 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + index * 0.05 }}
       className={cn(
-        'rounded-3xl border bg-white dark:bg-[#1a1a1c] p-6 transition-all',
+        'rounded-xl border bg-white dark:bg-[#1a1a1c] p-6 transition-all',
         isPendingTenant
-          ? 'border-indigo-200 dark:border-indigo-800/60 ring-2 ring-indigo-500/10'
+          ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 ring-2 ring-[#1A40FF]/10'
           : 'border-neutral-200 dark:border-neutral-800'
       )}
     >
       {/* Action needed banner */}
       {isPendingTenant && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/50">
-          <PenNib className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
+          <PenNib className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
+          <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
             {locale === 'es' ? 'Requiere tu firma' : 'Requires your signature'}
           </span>
         </div>
@@ -62,7 +62,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
             <MapPin className="w-5 h-5 text-neutral-500" />
           </div>
           <div className="min-w-0">
@@ -115,7 +115,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       {isPendingTenant ? (
         <Link
           href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-semibold transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-semibold transition-colors"
         >
           <PenNib className="w-4 h-4" />
           {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
@@ -123,7 +123,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       ) : (
         <Link
           href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
         >
           {locale === 'es' ? 'Ver contrato' : 'View contract'}
         </Link>
@@ -143,7 +143,7 @@ export default function ContratosPage() {
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
         <SpinnerGap className="w-8 h-8 animate-spin text-neutral-400" />
       </div>
     );
@@ -152,11 +152,11 @@ export default function ContratosPage() {
   // Error
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
-              <WarningCircle className="w-8 h-8 text-red-500" />
+            <div className="w-16 h-16 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center mx-auto mb-4">
+              <WarningCircle className="w-8 h-8 text-[#C4503B]" />
             </div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
               {locale === 'es' ? 'Error cargando contratos' : 'Error loading contracts'}
@@ -176,7 +176,7 @@ export default function ContratosPage() {
   });
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header

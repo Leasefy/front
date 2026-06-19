@@ -43,7 +43,7 @@ function Field({
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-foreground">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-error-500 ml-0.5">*</span>}
       </label>
       {children}
     </div>
@@ -124,7 +124,7 @@ export function StepInmueble() {
 
       {/* Optional fields */}
       <div className="pt-2 border-t border-border">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
+        <p className="font-mono text-xs text-muted-foreground uppercase tracking-[0.08em] mb-4">
           Datos opcionales
         </p>
 

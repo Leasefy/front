@@ -76,7 +76,7 @@ export function SuggestedConditions({
     >
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Lightbulb className="h-4 w-4 text-amber-500" />
+        <Lightbulb className="h-4 w-4 text-[#B7791F]" />
         <h4 className="text-sm font-medium text-foreground">Recomendaciones</h4>
       </div>
 

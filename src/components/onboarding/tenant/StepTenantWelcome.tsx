@@ -26,7 +26,7 @@ export function StepTenantWelcome() {
         transition={{ delay: 0.1 }}
       >
         <label htmlFor="displayName" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-          ¿Cómo te llamas? <span className="text-red-500">*</span>
+          ¿Cómo te llamas? <span className="text-[#C4503B]">*</span>
         </label>
         <div className="relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2">
@@ -42,10 +42,10 @@ export function StepTenantWelcome() {
               'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
               'text-neutral-900 dark:text-white placeholder:text-neutral-400',
               'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
               draft.displayName
-                ? 'border-indigo-500 focus:border-indigo-500'
-                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
+                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
             )}
           />
         </div>
@@ -74,10 +74,10 @@ export function StepTenantWelcome() {
               'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
               'text-neutral-900 dark:text-white placeholder:text-neutral-400',
               'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
               draft.rut
-                ? 'border-indigo-500 focus:border-indigo-500'
-                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
+                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
             )}
           />
         </div>
@@ -106,10 +106,10 @@ export function StepTenantWelcome() {
               'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
               'text-neutral-900 dark:text-white placeholder:text-neutral-400',
               'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
               draft.phone
-                ? 'border-indigo-500 focus:border-indigo-500'
-                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
+                ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
+                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
             )}
           />
         </div>
@@ -123,7 +123,7 @@ export function StepTenantWelcome() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 rounded-xl"
+          className="text-sm text-[#B7791F] dark:text-[#D2992F] bg-[#F8F0E0] dark:bg-[#B7791F]/15 px-4 py-3 rounded-xl"
         >
           Ingresa tu nombre para continuar
         </motion.p>

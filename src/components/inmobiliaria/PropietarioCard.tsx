@@ -37,15 +37,15 @@ export function PropietarioCard({
         className={cn(
           'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
           selected
-            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-500'
+            ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 dark:border-[#1A40FF]/30'
             : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
         )}
       >
         <div className={cn(
           'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
           isCompany
-            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-            : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+            ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+            : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
         )}>
           {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
         </div>
@@ -58,7 +58,7 @@ export function PropietarioCard({
           </p>
         </div>
         {selected && (
-          <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+          <div className="w-5 h-5 rounded-full bg-[#1A40FF] flex items-center justify-center shrink-0">
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -82,8 +82,8 @@ export function PropietarioCard({
       className={cn(
         'w-full p-5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-left transition-all duration-200 group',
         selected
-          ? 'border-indigo-500 ring-2 ring-indigo-500/20'
-          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg'
+          ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
+          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:'
       )}
     >
       {/* Header */}
@@ -92,8 +92,8 @@ export function PropietarioCard({
           <div className={cn(
             'w-12 h-12 rounded-xl flex items-center justify-center',
             isCompany
-              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-              : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+              : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
           )}>
             {isCompany ? <Buildings className="w-6 h-6" /> : <User className="w-6 h-6" />}
           </div>
@@ -107,7 +107,7 @@ export function PropietarioCard({
           </div>
         </div>
         {hasPendingBalance && (
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
             <Warning className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">{t('inmobiliaria.propietarios.card.pendingBadge')}</span>
           </div>
@@ -137,7 +137,7 @@ export function PropietarioCard({
             {formatCurrency(propietario.totalMonthlyRent)}
           </p>
           {hasPendingBalance && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+            <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
               {formatCurrency(propietario.pendingBalance)} {t('inmobiliaria.propietarios.card.pendingAbbr')}
             </p>
           )}
@@ -149,20 +149,20 @@ export function PropietarioCard({
         <div className="flex items-center gap-3">
           <button
             onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${propietario.email}`; }}
-            className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+            className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
             title={t('inmobiliaria.propietarios.card.sendEmail')}
           >
             <Envelope className="w-4 h-4" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${propietario.phone}`; }}
-            className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+            className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
             title={t('inmobiliaria.propietarios.card.call')}
           >
             <Phone className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-indigo-500 transition-colors">
+        <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors">
           {t('inmobiliaria.propietarios.card.viewDetail')}
           <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
         </div>

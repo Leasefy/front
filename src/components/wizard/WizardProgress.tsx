@@ -146,7 +146,7 @@ export function WizardProgress({
                 className={cn(
                   'w-8 h-8 rounded-sm flex items-center justify-center text-xs font-medium transition-all',
                   isCompleted
-                    ? 'bg-primary text-white uppercase tracking-wide font-mono'
+                    ? 'bg-primary text-white'
                     : isCurrent
                     ? 'bg-primary/10 text-primary border border-primary'
                     : 'bg-muted text-muted-foreground',

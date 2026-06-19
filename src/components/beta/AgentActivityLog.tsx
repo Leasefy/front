@@ -38,28 +38,28 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const STATUS_DOT: Record<string, string> = {
-  completed: 'bg-emerald-500',
-  failed: 'bg-red-500',
-  running: 'bg-blue-500 animate-pulse',
+  completed: 'bg-[#2C7A53]',
+  failed: 'bg-[#C4503B]',
+  running: 'bg-[#1A40FF] animate-pulse',
   dispatching: 'bg-neutral-400 animate-pulse',
 };
 
 const AGENT_COLOR_BG: Record<string, string> = {
-  emerald: 'bg-emerald-50 dark:bg-emerald-500/10',
-  blue: 'bg-blue-50 dark:bg-blue-500/10',
-  amber: 'bg-amber-50 dark:bg-amber-500/10',
-  purple: 'bg-purple-50 dark:bg-purple-500/10',
-  pink: 'bg-pink-50 dark:bg-pink-500/10',
-  indigo: 'bg-indigo-50 dark:bg-indigo-600/10',
+  emerald: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+  blue: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  amber: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+  purple: 'bg-neutral-100 dark:bg-neutral-800',
+  pink: 'bg-neutral-100 dark:bg-neutral-800',
+  indigo: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
 };
 
 const AGENT_COLOR_TEXT: Record<string, string> = {
-  emerald: 'text-emerald-600 dark:text-emerald-400',
-  blue: 'text-blue-600 dark:text-blue-400',
-  amber: 'text-amber-600 dark:text-amber-400',
-  purple: 'text-purple-600 dark:text-purple-400',
-  pink: 'text-pink-600 dark:text-pink-400',
-  indigo: 'text-indigo-600 dark:text-indigo-400',
+  emerald: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  blue: 'text-[#1A40FF] dark:text-[#5570FF]',
+  amber: 'text-[#B7791F] dark:text-[#D2992F]',
+  purple: 'text-neutral-600 dark:text-neutral-300',
+  pink: 'text-neutral-600 dark:text-neutral-300',
+  indigo: 'text-[#1A40FF] dark:text-[#5570FF]',
 };
 
 // ============================================================================
@@ -100,7 +100,7 @@ function AgentExecutionRow({ agent }: { agent: AgentExecution }) {
         ) : agent.status === 'completed' ? (
           <CheckCircle className="w-3.5 h-3.5 shrink-0" weight="fill" />
         ) : agent.status === 'failed' ? (
-          <XCircle className="w-3.5 h-3.5 shrink-0 text-red-500" weight="fill" />
+          <XCircle className="w-3.5 h-3.5 shrink-0 text-[#C4503B]" weight="fill" />
         ) : AgentIcon ? (
           <AgentIcon className="w-3.5 h-3.5 shrink-0" weight="duotone" />
         ) : null}
@@ -139,11 +139,11 @@ function ActivityItem({ entry, onNavigate }: ActivityItemProps) {
         'w-full text-left p-3 rounded-xl',
         'border transition-colors',
         isActive
-          ? 'border-blue-200/60 dark:border-blue-500/20 hover:bg-blue-50/50 dark:hover:bg-blue-500/5'
+          ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/30 hover:bg-[#EEF1FF]/50 dark:hover:bg-[#1A40FF]/5'
           : hasFailed
-          ? 'border-red-200/60 dark:border-red-500/20 hover:bg-red-50/50 dark:hover:bg-red-500/5'
+          ? 'border-[#C4503B]/30 dark:border-[#C4503B]/30 hover:bg-[#F8EAE7]/50 dark:hover:bg-[#C4503B]/5'
           : allCompleted
-          ? 'border-emerald-200/60 dark:border-emerald-500/20 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/5'
+          ? 'border-[#2C7A53]/30 dark:border-[#2C7A53]/30 hover:bg-[#E8F3EC]/50 dark:hover:bg-[#2C7A53]/5'
           : 'border-neutral-200 dark:border-border hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
       )}
     >
@@ -203,7 +203,7 @@ export function AgentActivityLog() {
       {/* Active executions */}
       {active.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-2 px-1">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#1A40FF] dark:text-[#5570FF] mb-2 px-1">
             {t('beta.agents.active')} ({active.length})
           </h3>
           <div className="space-y-2">

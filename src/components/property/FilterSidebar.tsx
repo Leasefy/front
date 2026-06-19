@@ -267,7 +267,7 @@ export function FunnelSidebar({
               className={cn(
                 'h-10 min-w-[3rem] px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.bedrooms === num
-                  ? 'bg-foreground text-white shadow-sm'
+                  ? 'bg-foreground text-white'
                   : 'bg-card text-foreground border border-border hover:bg-muted hover:border-border'
               )}
             >
@@ -294,7 +294,7 @@ export function FunnelSidebar({
               className={cn(
                 'h-10 px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
                 filters.propertyType === value
-                  ? 'bg-foreground text-white shadow-sm'
+                  ? 'bg-foreground text-white'
                   : 'bg-card text-foreground border border-border hover:bg-muted hover:border-border'
               )}
             >
@@ -391,7 +391,7 @@ export function FunnelSidebar({
 
       {/* Desktop sidebar */}
       <aside className="hidden w-72 shrink-0 lg:block">
-        <div className="sticky top-24 bg-card p-6 rounded-sm shadow-sm border border-border">
+        <div className="sticky top-24 bg-card p-6 rounded-sm border border-border">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-medium text-foreground tracking-tight">Filtros</h2>
             {activeFunnelCount > 0 && (

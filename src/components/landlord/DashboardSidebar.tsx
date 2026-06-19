@@ -81,7 +81,7 @@ function NavItem({ item, isActive, onClick }: NavItemProps) {
           className={cn(
             'text-xs px-2.5 py-1 rounded-full font-medium transition-all duration-300',
             isActive
-              ? 'bg-foreground text-white shadow-sm'
+              ? 'bg-foreground text-white'
               : 'bg-muted text-muted-foreground group-hover:bg-foreground/10 group-hover:text-foreground'
           )}
         >
@@ -123,7 +123,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Logo - Premium styling */}
       <div className="p-6">
         <Link href="/panel" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-foreground to-foreground/80 rounded-sm flex items-center justify-center shadow-lg shadow-foreground/20 transition-transform duration-300 group-hover:scale-105">
+          <div className="w-10 h-10 bg-gradient-to-br from-foreground to-foreground/80 rounded-sm flex items-center justify-center shadow-foreground/20 transition-transform duration-300 group-hover:scale-105">
             <Buildings className="w-5 h-5 text-white" />
           </div>
           <div className="flex flex-col">
@@ -160,7 +160,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
       {/* Upgrade CTA for base-tier users - Premium design */}
       {subscription?.planId === 'starter' && (
         <div className="px-4 py-4">
-          <div className="relative overflow-hidden rounded-sm bg-gradient-to-br from-foreground to-foreground/80 p-4 shadow-lg shadow-foreground/25">
+          <div className="relative overflow-hidden rounded-sm bg-gradient-to-br from-foreground to-foreground/80 p-4 shadow-foreground/25">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12" />
             <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full blur-xl -ml-8 -mb-8" />
@@ -179,7 +179,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="w-full bg-white text-foreground hover:bg-white/90 font-semibold shadow-md"
+                  className="w-full bg-white text-foreground hover:bg-white/90 font-semibold"
                 >
                   Mejorar plan
                   <CaretRight className="w-4 h-4 ml-1" />
@@ -207,7 +207,7 @@ function SidebarContent({ onItemClick }: SidebarContentProps) {
         </div>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-red-600 hover:bg-red-50/80 rounded-sm transition-all duration-200"
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7]/80 rounded-sm transition-all duration-200"
           onClick={handleLogout}
         >
           <SignOut className="w-4 h-4" />
@@ -248,7 +248,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-40 bg-white dark:bg-card shadow-sm border border-border"
+        className="lg:hidden fixed top-4 left-4 z-40 bg-white dark:bg-card border border-border"
         onClick={() => setMobileOpen(true)}
       >
         <List className="w-5 h-5" />

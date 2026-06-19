@@ -233,7 +233,7 @@ export function PlanTable<T extends object>({
                     className={cn(
                       'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                       allSelected
-                        ? 'bg-primary border-primary text-white uppercase tracking-wide font-mono'
+                        ? 'bg-primary border-primary text-white'
                         : someSelected
                           ? 'bg-primary/10 border-primary'
                           : 'border-border hover:border-plan-muted'
@@ -293,7 +293,7 @@ export function PlanTable<T extends object>({
                     key={key}
                     className={cn(
                       'transition-colors duration-100',
-                      isSelected && 'bg-yellow-50',
+                      isSelected && 'bg-[#F8F0E0]',
                       onRowClick && 'cursor-pointer hover:bg-muted',
                       !isSelected && !onRowClick && 'hover:bg-muted'
                     )}
@@ -306,7 +306,7 @@ export function PlanTable<T extends object>({
                           className={cn(
                             'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                             isSelected
-                              ? 'bg-primary border-primary text-white uppercase tracking-wide font-mono'
+                              ? 'bg-primary border-primary text-white'
                               : 'border-border hover:border-plan-muted'
                           )}
                         >
@@ -355,7 +355,7 @@ export function PlanTable<T extends object>({
                   className={cn(
                     'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                     currentPage === page
-                      ? 'bg-primary text-white uppercase tracking-wide font-mono'
+                      ? 'bg-primary text-white'
                       : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                   )}
                 >

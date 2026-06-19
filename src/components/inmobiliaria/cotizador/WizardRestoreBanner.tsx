@@ -14,14 +14,14 @@ export function WizardRestoreBanner({ onContinue, onStartFresh }: WizardRestoreB
   const { t } = useI18n()
 
   return (
-    <div className="mb-6 rounded-2xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+    <div className="mb-6 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-4">
       <div className="flex items-start gap-3">
         <ClockClockwise
           size={18}
           weight="regular"
-          className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
+          className="mt-0.5 shrink-0 text-[#B7791F] dark:text-[#D2992F]"
         />
-        <p className="text-sm text-amber-800 dark:text-amber-200">
+        <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
           {t('inmobiliaria.ai.cotizador.nueva.restoreBanner.message')}
         </p>
       </div>

@@ -56,24 +56,24 @@ const ICON_MAP: Record<string, Icon> = {
 
 const AGENT_BG: Record<string, string> = {
   emerald:
-    'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
-  blue: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400',
+    'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+  blue: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
   amber:
-    'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
+    'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
   purple:
-    'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400',
-  pink: 'bg-pink-100 dark:bg-pink-500/15 text-pink-700 dark:text-pink-400',
+    'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+  pink: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
   indigo:
-    'bg-indigo-100 dark:bg-indigo-600/15 text-indigo-700 dark:text-indigo-400',
+    'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
 };
 
 const STATUS_DOT: Record<string, string> = {
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  amber: 'bg-amber-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-  indigo: 'bg-indigo-600',
+  emerald: 'bg-[#2C7A53]',
+  blue: 'bg-[#1A40FF]',
+  amber: 'bg-[#B7791F]',
+  purple: 'bg-neutral-100 dark:bg-neutral-800',
+  pink: 'bg-neutral-100 dark:bg-neutral-800',
+  indigo: 'bg-[#1A40FF]',
 };
 
 // ============================================================================
@@ -123,12 +123,12 @@ function StepItem({
         <div className="relative z-10 flex-shrink-0">
           {step.status === 'completed' ? (
             <CheckCircle
-              className="w-5 h-5 text-emerald-500"
+              className="w-5 h-5 text-[#2C7A53]"
               weight="fill"
             />
           ) : step.status === 'active' ? (
             <CircleNotch
-              className="w-5 h-5 text-indigo-500 animate-spin"
+              className="w-5 h-5 text-[#1A40FF] animate-spin"
               weight="bold"
             />
           ) : (
@@ -145,7 +145,7 @@ function StepItem({
             className={cn(
               'w-px flex-1 min-h-[20px]',
               step.status === 'completed'
-                ? 'bg-emerald-300 dark:bg-emerald-500/40'
+                ? 'bg-[#2C7A53] dark:bg-[#2C7A53]/40'
                 : 'bg-neutral-200 dark:bg-neutral-700'
             )}
           />
@@ -206,11 +206,11 @@ function ActionButton({ action }: { action: ResponseAction }) {
     'px-4 py-2 rounded-xl',
     'text-[13px] font-medium',
     'transition-all duration-150',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-1',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF]/50 focus-visible:ring-offset-1',
     action.variant === 'primary' && [
-      'bg-indigo-600 text-white uppercase tracking-wide font-mono',
-      'hover:bg-indigo-700 active:bg-indigo-700',
-      'shadow-sm',
+      'bg-[#1A40FF] text-white uppercase tracking-wide font-mono',
+      'hover:opacity-90 active:bg-[#1A40FF]',
+      '',
     ],
     action.variant === 'secondary' && [
       'bg-neutral-100 dark:bg-neutral-800',
@@ -300,12 +300,12 @@ function MiniChatInput({
         disabled={disabled || isEmpty}
         className={cn(
           'flex-shrink-0',
-          'w-7 h-7 rounded-lg',
+          'w-7 h-7 rounded-md',
           'flex items-center justify-center',
           'transition-all duration-150',
           disabled || isEmpty
             ? 'text-muted-foreground/40 cursor-not-allowed'
-            : 'text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-700/10 active:scale-95'
+            : 'text-[#1A40FF] hover:bg-[#EEF1FF] dark:hover:opacity-90/10 active:scale-95'
         )}
         aria-label={t('beta.workspace.sendMessage')}
       >
@@ -431,7 +431,7 @@ export function WorkspaceView({
               'transition-colors duration-150',
               'border-b-2',
               mobileTab === tab.key
-                ? 'text-indigo-600 dark:text-indigo-400 border-indigo-500'
+                ? 'text-[#1A40FF] dark:text-[#5570FF] border-[#1A40FF]/30'
                 : 'text-muted-foreground border-transparent hover:text-foreground'
             )}
           >
@@ -445,7 +445,7 @@ export function WorkspaceView({
             type="button"
             onClick={onClose}
             className={cn(
-              'flex-shrink-0 w-8 h-8 rounded-lg ml-1',
+              'flex-shrink-0 w-8 h-8 rounded-md ml-1',
               'flex items-center justify-center',
               'text-muted-foreground hover:text-foreground',
               'hover:bg-neutral-100 dark:hover:bg-neutral-800',
@@ -487,7 +487,7 @@ export function WorkspaceView({
           >
             <div className="flex items-center gap-2">
               <ListChecks
-                className="w-4 h-4 text-indigo-500"
+                className="w-4 h-4 text-[#1A40FF]"
                 weight="duotone"
               />
               <span className="text-[13px] font-semibold text-foreground">
@@ -501,8 +501,8 @@ export function WorkspaceView({
                   'min-w-[36px] px-2 py-0.5',
                   'rounded-full text-[11px] font-semibold',
                   completedCount === totalSteps
-                    ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                    : 'bg-indigo-100 dark:bg-indigo-600/15 text-indigo-700 dark:text-indigo-400'
+                    ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+                    : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                 )}
               >
                 {completedCount}/{totalSteps}
@@ -561,8 +561,8 @@ export function WorkspaceView({
                     'px-2 py-0.5 rounded-full',
                     'text-[10px] font-semibold uppercase tracking-wider',
                     meta.type === 'actionable'
-                      ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
-                      : 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400'
+                      ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
+                      : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                   )}
                 >
                   {meta.type === 'actionable'
@@ -604,7 +604,7 @@ export function WorkspaceView({
                 onClick={onClose}
                 className={cn(
                   'hidden md:flex',
-                  'flex-shrink-0 w-8 h-8 rounded-lg',
+                  'flex-shrink-0 w-8 h-8 rounded-md',
                   'items-center justify-center',
                   'text-muted-foreground hover:text-foreground',
                   'hover:bg-neutral-100 dark:hover:bg-neutral-800',
@@ -668,7 +668,7 @@ export function WorkspaceView({
             )}
           >
             <Sparkle
-              className="w-4 h-4 text-indigo-500"
+              className="w-4 h-4 text-[#1A40FF]"
               weight="fill"
             />
             <span className="text-[13px] font-semibold text-foreground">
@@ -694,7 +694,7 @@ export function WorkspaceView({
                     'max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? [
-                          'bg-indigo-600 text-white uppercase tracking-wide font-mono',
+                          'bg-[#1A40FF] text-white uppercase tracking-wide font-mono',
                           'rounded-br-sm',
                         ]
                       : [

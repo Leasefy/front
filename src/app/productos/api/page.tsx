@@ -26,7 +26,7 @@ export default function APIPage() {
                 transition={{ duration: 0.5 }}
                 className="mb-8"
               >
-                <div className="w-20 h-20 rounded-2xl bg-foreground mx-auto flex items-center justify-center">
+                <div className="w-20 h-20 rounded-xl bg-foreground mx-auto flex items-center justify-center">
                   <Terminal className="w-10 h-10 text-white" />
                 </div>
               </motion.div>

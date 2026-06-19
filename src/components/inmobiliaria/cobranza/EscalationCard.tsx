@@ -10,7 +10,7 @@
  *   - Admin (assign-perm): "Asignar" always
  *   - Anyone with resolve-perm who is the assignee OR has assign-perm: "Resolver"
  *
- * Styling: follows mvp:docs/DESIGN.md §4 (cards `rounded-xl` + `shadow-sm`,
+ * Styling: follows mvp:docs/DESIGN.md §4 (cards `rounded-xl` + ``,
  * indigo accent for primary, rose for severe). Urgency colors follow
  * mvp:docs/COLOR_SYSTEM.md (rose = error, amber = warning, emerald = ok).
  */
@@ -36,24 +36,24 @@ interface EscalationCardProps {
 const URGENCY_TOKEN: Record<UrgencyLevel, { bg: string; text: string; ring: string }> = {
   // mvp:docs/COLOR_SYSTEM.md — semantic scales (rose=error, amber=warn, emerald=ok)
   live: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900 animate-pulse',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    ring: 'ring-[#C4503B] dark:ring-[#C4503B] animate-pulse',
   },
   high: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    ring: 'ring-[#C4503B] dark:ring-[#C4503B]',
   },
   medium: {
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    ring: 'ring-amber-200 dark:ring-amber-900',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    ring: 'ring-[#B7791F] dark:ring-[#B7791F]',
   },
   low: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    ring: 'ring-emerald-200 dark:ring-emerald-900',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    ring: 'ring-[#2C7A53] dark:ring-[#2C7A53]',
   },
 }
 
@@ -104,7 +104,7 @@ export function EscalationCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow p-3 space-y-2"
+      className="rounded-xl border border-border bg-card hover: transition-shadow p-3 space-y-2"
       data-testid={`escalation-card-${escalation.id}`}
     >
       {/* Header: urgency + relative time */}
@@ -124,7 +124,7 @@ export function EscalationCard({
       <button
         type="button"
         onClick={() => onOpen(escalation.id)}
-        className="w-full text-left space-y-1 focus:outline-none focus:ring-2 focus:ring-primary rounded-md"
+        className="w-full text-left space-y-1 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm"
         aria-label={`Open escalation ${escalation.id}`}
       >
         <p className="text-sm font-semibold text-foreground tabular-nums">
@@ -148,7 +148,7 @@ export function EscalationCard({
             <button
               type="button"
               onClick={() => onClaim(escalation.id)}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition font-medium"
             >
               <Hand className="w-3.5 h-3.5" aria-hidden="true" />
               {t('inmobiliaria.ai.cobranza.escalaciones.actions.claim')}
@@ -158,7 +158,7 @@ export function EscalationCard({
             <button
               type="button"
               onClick={() => onAssign(escalation.id)}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
             >
               <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
               {t('inmobiliaria.ai.cobranza.escalaciones.actions.assign')}
@@ -168,7 +168,7 @@ export function EscalationCard({
             <button
               type="button"
               onClick={() => onResolve(escalation.id)}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-emerald-600 dark:bg-emerald-700 text-white hover:opacity-90 active:scale-[0.97] transition"
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm bg-[#2C7A53] dark:bg-[#3EAE70] text-white hover:opacity-90 active:scale-[0.97] transition font-medium"
             >
               <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}

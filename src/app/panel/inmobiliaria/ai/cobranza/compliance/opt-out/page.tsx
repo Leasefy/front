@@ -14,8 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
-import { CaretLeft, Check, BellSlash } from '@phosphor-icons/react'
+import { Check, BellSlash } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -23,6 +22,7 @@ import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 
@@ -144,26 +144,28 @@ function OptOutContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <Link
-          href="/panel/inmobiliaria/ai/cobranza/compliance"
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-        >
-          <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-        </Link>
+        <MigaDePan
+          backHref="/panel/inmobiliaria/ai/cobranza/compliance"
+          crumbs={[
+            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+            { label: t('inmobiliaria.ai.workspace.agente.cobranza'), href: '/panel/inmobiliaria/ai/cobranza' },
+            { label: t('inmobiliaria.ai.cobranza.compliance.pageTitle'), href: '/panel/inmobiliaria/ai/cobranza/compliance' },
+            { label: t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle') },
+          ]}
+        />
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
         </h1>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
           Error: {error}
         </div>
       )}
 
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto overscroll-contain">
           <table className="w-full text-sm">
             <thead className="bg-muted/30 border-b border-border">
@@ -198,12 +200,12 @@ function OptOutContent() {
                     <td className="px-3 py-2 text-foreground">{row.source}</td>
                     <td className="px-3 py-2 font-mono tabular-nums text-xs">
                       {isAcked ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 text-[#2C7A53] dark:text-[#3EAE70]">
                           <Check className="w-3.5 h-3.5" aria-hidden="true" />
                           {new Date(row.acknowledged_at as string).toLocaleDateString(locale)}
                         </span>
                       ) : (
-                        <span className="text-amber-700 dark:text-amber-400">
+                        <span className="text-[#B7791F] dark:text-[#D2992F]">
                           {locale.startsWith('es') ? 'Pendiente' : 'Pending'}
                         </span>
                       )}
@@ -214,7 +216,7 @@ function OptOutContent() {
                           type="button"
                           onClick={() => void acknowledge(row.event_id)}
                           disabled={isAcking}
-                          className="text-xs font-mono uppercase tracking-wide px-3 py-1 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
+                          className="text-xs px-3 py-1 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
                         >
                           {isAcking
                             ? locale.startsWith('es') ? '...' : '...'
@@ -236,7 +238,7 @@ function OptOutContent() {
                 type="button"
                 onClick={() => void loadMore()}
                 disabled={isLoadingMore}
-                className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
+                className="text-xs px-4 py-2 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
               >
                 {isLoadingMore
                   ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'

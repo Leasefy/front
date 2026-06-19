@@ -57,7 +57,7 @@ export default function PropiedadesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -69,7 +69,7 @@ export default function PropiedadesPage() {
           </div>
           <Link
             href="/publicar?from=panel"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('landlord.properties.newProperty')}
@@ -90,8 +90,8 @@ export default function PropiedadesPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <House className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
+                <House className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{availableCount}</p>
@@ -100,8 +100,8 @@ export default function PropiedadesPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                <Users className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{rentedCount}</p>
@@ -110,8 +110,8 @@ export default function PropiedadesPage() {
 
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <TrendUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                <TrendUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900 dark:text-white">{i18nFormatCurrency(totalMonthlyIncome)}</p>
@@ -131,7 +131,7 @@ export default function PropiedadesPage() {
                 onChange={(e) => setMagnifyingGlassQuery(e.target.value)}
                 placeholder={t('landlord.properties.searchPlaceholder')}
                 aria-label={t('landlord.properties.searchLabel')}
-                className="w-full h-11 pl-10 pr-4 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-xl text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full h-11 pl-10 pr-4 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-xl text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20"
               />
             </div>
 
@@ -147,9 +147,9 @@ export default function PropiedadesPage() {
                   key={filter.id}
                   onClick={() => setFunnelStatus(filter.id as FunnelStatus)}
                   className={cn(
-                    'px-3 py-2 text-sm font-medium rounded-lg transition-all',
+                    'px-3 py-2 text-sm font-medium rounded-md transition-all',
                     filterStatus === filter.id
-                      ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                      ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white'
                       : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                   )}
                 >
@@ -163,9 +163,9 @@ export default function PropiedadesPage() {
               <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
-                  'p-2.5 rounded-lg transition-all',
+                  'p-2.5 rounded-md transition-all',
                   viewMode === 'grid'
-                    ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                 )}
                 aria-label={t('landlord.properties.gridView')}
@@ -175,9 +175,9 @@ export default function PropiedadesPage() {
               <button
                 onClick={() => setViewMode('list')}
                 className={cn(
-                  'p-2.5 rounded-lg transition-all',
+                  'p-2.5 rounded-md transition-all',
                   viewMode === 'list'
-                    ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                 )}
                 aria-label={t('landlord.properties.listView')}
@@ -198,7 +198,7 @@ export default function PropiedadesPage() {
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden group hover:shadow-xl hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-all duration-300 block"
+                    className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-all duration-300 block"
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
@@ -215,24 +215,24 @@ export default function PropiedadesPage() {
                         <DropdownList>
                           <DropdownListTrigger asChild>
                             <button
-                              className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-neutral-800/90 hover:bg-white dark:hover:bg-neutral-700 rounded-lg text-neutral-600 dark:text-neutral-300 transition-colors"
+                              className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-neutral-800/90 hover:bg-white dark:hover:bg-neutral-700 rounded-md text-neutral-600 dark:text-neutral-300 transition-colors"
                               aria-label={t('landlord.properties.moreOptions')}
                             >
                               <DotsThreeVertical className="w-4 h-4" />
                             </button>
                           </DropdownListTrigger>
                           <DropdownListContent align="end" className="w-40 rounded-xl">
-                            <DropdownListItem asChild className="rounded-lg">
+                            <DropdownListItem asChild className="rounded-md">
                               <Link href={`/panel/${property.id}`}>
                                 <Eye className="w-4 h-4 mr-2" />
                                 {t('landlord.properties.viewDetail')}
                               </Link>
                             </DropdownListItem>
-                            <DropdownListItem className="rounded-lg">
+                            <DropdownListItem className="rounded-md">
                               <PencilSimple className="w-4 h-4 mr-2" />
                               {t('landlord.properties.edit')}
                             </DropdownListItem>
-                            <DropdownListItem asChild className="rounded-lg">
+                            <DropdownListItem asChild className="rounded-md">
                               <Link href={`/panel/${property.id}`}>
                                 <Users className="w-4 h-4 mr-2" />
                                 {t('landlord.properties.viewCandidates')}
@@ -278,7 +278,7 @@ export default function PropiedadesPage() {
                           <p className="text-xs text-neutral-400">/{t('landlord.properties.perMonth')}</p>
                         </div>
                         {candidateCount > 0 && (
-                          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-full text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-full text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
                             <Users className="w-3.5 h-3.5" />
                             {candidateCount !== 1 ? t('landlord.properties.candidatesCountPlural', { count: candidateCount }) : t('landlord.properties.candidatesCount', { count: candidateCount })}
                           </span>
@@ -351,7 +351,7 @@ export default function PropiedadesPage() {
 
                     {/* Candidates */}
                     {candidateCount > 0 && (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-full text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-full text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
                         <Users className="w-3.5 h-3.5" />
                         {candidateCount}
                       </span>
@@ -361,18 +361,18 @@ export default function PropiedadesPage() {
                     <div onClick={(e) => e.preventDefault()}>
                       <DropdownList>
                         <DropdownListTrigger asChild>
-                          <button className="p-2.5 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+                          <button className="p-2.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                             <DotsThreeVertical className="w-4 h-4" />
                           </button>
                         </DropdownListTrigger>
                         <DropdownListContent align="end" className="w-40 rounded-xl">
-                          <DropdownListItem asChild className="rounded-lg">
+                          <DropdownListItem asChild className="rounded-md">
                             <Link href={`/panel/${property.id}`}>
                               <Eye className="w-4 h-4 mr-2" />
                               {t('landlord.properties.viewDetail')}
                             </Link>
                           </DropdownListItem>
-                          <DropdownListItem className="rounded-lg">
+                          <DropdownListItem className="rounded-md">
                             <PencilSimple className="w-4 h-4 mr-2" />
                             {t('landlord.properties.edit')}
                           </DropdownListItem>
@@ -387,7 +387,7 @@ export default function PropiedadesPage() {
         ) : (
           /* Empty State */
           <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-700 mx-auto mb-5 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-neutral-700 mx-auto mb-5 flex items-center justify-center">
               <Buildings className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
@@ -398,7 +398,7 @@ export default function PropiedadesPage() {
             </p>
             <Link
               href="/publicar?from=panel"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors"
             >
               <Plus className="w-4 h-4" />
               {t('landlord.properties.publishProperty')}

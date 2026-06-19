@@ -278,11 +278,11 @@ export function ConfigPerfilAgencia({
     <div className="space-y-1.5">
       <label className="block text-sm font-medium text-foreground">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-[#C4503B] ml-0.5">*</span>}
       </label>
       {children}
       {error ? (
-        <p className="text-xs text-red-500 flex items-center gap-1">
+        <p className="text-xs text-[#C4503B] flex items-center gap-1">
           <Warning className="w-3 h-3" />
           {error}
         </p>
@@ -295,7 +295,7 @@ export function ConfigPerfilAgencia({
   const SectionHeader = ({
     icon: Icon,
     title,
-    color = 'text-indigo-500',
+    color = 'text-[#1A40FF]',
   }: {
     icon: React.ElementType;
     title: string;
@@ -310,10 +310,10 @@ export function ConfigPerfilAgencia({
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-muted rounded-lg w-1/3" />
+        <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="space-y-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-12 bg-muted rounded-lg" />
+            <div key={i} className="h-12 bg-muted rounded-md" />
           ))}
         </div>
       </div>
@@ -337,7 +337,7 @@ export function ConfigPerfilAgencia({
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium transition-colors"
+            className="px-4 py-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium transition-colors"
           >
             {t('inmobiliaria.common.edit')}
           </button>
@@ -363,9 +363,9 @@ export function ConfigPerfilAgencia({
                   setTouched((prev) => ({ ...prev, name: true }));
                 }}
                 className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                   touched.name && errors.name
-                    ? 'border-red-500'
+                    ? 'border-[#C4503B]/30'
                     : 'border-border'
                 )}
               />
@@ -379,7 +379,7 @@ export function ConfigPerfilAgencia({
         <SectionHeader
           icon={Phone}
           title={t('inmobiliaria.config.profile.contactInfo')}
-          color="text-emerald-500"
+          color="text-[#2C7A53]"
         />
 
         {isEditing ? (
@@ -397,9 +397,9 @@ export function ConfigPerfilAgencia({
                   onChange={(e) => updateContact('phone', e.target.value)}
                   placeholder="+57 601 345 6789"
                   className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                     touched['contact.phone'] && errors['contact.phone']
-                      ? 'border-red-500'
+                      ? 'border-[#C4503B]/30'
                       : 'border-border'
                   )}
                 />
@@ -414,7 +414,7 @@ export function ConfigPerfilAgencia({
                   value={formData.contact.alternatePhone || ''}
                   onChange={(e) => updateContact('alternatePhone', e.target.value)}
                   placeholder="+57 601 000 0000"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                 />
               </div>
             </InputWrapper>
@@ -432,9 +432,9 @@ export function ConfigPerfilAgencia({
                   onChange={(e) => updateContact('email', e.target.value)}
                   placeholder="contacto@agencia.co"
                   className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                     touched['contact.email'] && errors['contact.email']
-                      ? 'border-red-500'
+                      ? 'border-[#C4503B]/30'
                       : 'border-border'
                   )}
                 />
@@ -449,7 +449,7 @@ export function ConfigPerfilAgencia({
                   value={formData.contact.supportEmail || ''}
                   onChange={(e) => updateContact('supportEmail', e.target.value)}
                   placeholder="soporte@agencia.co"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                 />
               </div>
             </InputWrapper>
@@ -462,7 +462,7 @@ export function ConfigPerfilAgencia({
                   value={formData.contact.whatsapp || ''}
                   onChange={(e) => updateContact('whatsapp', e.target.value)}
                   placeholder="+57 310 555 1234"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                 />
               </div>
             </InputWrapper>
@@ -475,7 +475,7 @@ export function ConfigPerfilAgencia({
                   value={formData.contact.website || ''}
                   onChange={(e) => updateContact('website', e.target.value)}
                   placeholder="https://agencia.co"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                 />
               </div>
             </InputWrapper>
@@ -494,9 +494,9 @@ export function ConfigPerfilAgencia({
                     placeholder="Cra 11 #82-76, Oficina 501"
                     rows={2}
                     className={cn(
-                      'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none',
+                      'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all resize-none',
                       touched['contact.address'] && errors['contact.address']
-                        ? 'border-red-500'
+                        ? 'border-[#C4503B]/30'
                         : 'border-border'
                     )}
                   />
@@ -515,9 +515,9 @@ export function ConfigPerfilAgencia({
                 onChange={(e) => updateContact('city', e.target.value)}
                 placeholder="Bogota"
                 className={cn(
-                  'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                  'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                   touched['contact.city'] && errors['contact.city']
-                    ? 'border-red-500'
+                    ? 'border-[#C4503B]/30'
                     : 'border-border'
                 )}
               />
@@ -533,9 +533,9 @@ export function ConfigPerfilAgencia({
                   value={formData.contact.department}
                   onChange={(e) => updateContact('department', e.target.value)}
                   className={cn(
-                    'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                    'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                     touched['contact.department'] && errors['contact.department']
-                      ? 'border-red-500'
+                      ? 'border-[#C4503B]/30'
                       : 'border-border'
                   )}
                 >
@@ -556,7 +556,7 @@ export function ConfigPerfilAgencia({
                 value={formData.contact.postalCode || ''}
                 onChange={(e) => updateContact('postalCode', e.target.value)}
                 placeholder="110221"
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
               />
             </InputWrapper>
           </div>
@@ -593,7 +593,7 @@ export function ConfigPerfilAgencia({
         <SectionHeader
           icon={Certificate}
           title={t('inmobiliaria.config.profile.legalInfo')}
-          color="text-purple-500"
+          color="text-neutral-600 dark:text-neutral-300"
         />
 
         {isEditing ? (
@@ -612,9 +612,9 @@ export function ConfigPerfilAgencia({
                   onChange={(e) => updateLegal('nit', e.target.value)}
                   placeholder="901.234.567-8"
                   className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                     touched['legal.nit'] && errors['legal.nit']
-                      ? 'border-red-500'
+                      ? 'border-[#C4503B]/30'
                       : 'border-border'
                   )}
                 />
@@ -632,9 +632,9 @@ export function ConfigPerfilAgencia({
                 onChange={(e) => updateLegal('razonSocial', e.target.value)}
                 placeholder="Nombre S.A.S."
                 className={cn(
-                  'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                  'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                   touched['legal.razonSocial'] && errors['legal.razonSocial']
-                    ? 'border-red-500'
+                    ? 'border-[#C4503B]/30'
                     : 'border-border'
                 )}
               />
@@ -653,9 +653,9 @@ export function ConfigPerfilAgencia({
                   onChange={(e) => updateLegal('representanteLegal', e.target.value)}
                   placeholder="Juan Perez Garcia"
                   className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                     touched['legal.representanteLegal'] && errors['legal.representanteLegal']
-                      ? 'border-red-500'
+                      ? 'border-[#C4503B]/30'
                       : 'border-border'
                   )}
                 />
@@ -675,9 +675,9 @@ export function ConfigPerfilAgencia({
                   onChange={(e) => updateLegal('representanteCedula', e.target.value)}
                   placeholder="80.123.456"
                   className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
+                    'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all',
                     touched['legal.representanteCedula'] && errors['legal.representanteCedula']
-                      ? 'border-red-500'
+                      ? 'border-[#C4503B]/30'
                       : 'border-border'
                   )}
                 />
@@ -690,7 +690,7 @@ export function ConfigPerfilAgencia({
                 value={formData.legal.matriculaInmobiliaria || ''}
                 onChange={(e) => updateLegal('matriculaInmobiliaria', e.target.value)}
                 placeholder="INM-2024-001234"
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
               />
             </InputWrapper>
 
@@ -700,7 +700,7 @@ export function ConfigPerfilAgencia({
                 value={formData.legal.registroCamara || ''}
                 onChange={(e) => updateLegal('registroCamara', e.target.value)}
                 placeholder="S0012345"
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
               />
             </InputWrapper>
           </div>
@@ -739,15 +739,15 @@ export function ConfigPerfilAgencia({
         <SectionHeader
           icon={Percent}
           title={t('inmobiliaria.config.profile.defaultSettings')}
-          color="text-amber-500"
+          color="text-[#B7791F]"
         />
 
         {isEditing ? (
           <>
-            <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+            <div className="p-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
               <div className="flex gap-3">
-                <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+                <Info className="w-5 h-5 text-[#1A40FF] shrink-0 mt-0.5" />
+                <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
                   {t('inmobiliaria.config.profile.defaultSettingsHint')}
                 </p>
               </div>
@@ -770,7 +770,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('defaultCommissionPercent', parseFloat(e.target.value) || 0)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                   />
                 </div>
               </InputWrapper>
@@ -791,7 +791,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('defaultAdminFeePercent', parseFloat(e.target.value) || 0)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                   />
                 </div>
               </InputWrapper>
@@ -811,7 +811,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('defaultLateFeePercent', parseFloat(e.target.value) || 0)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                   />
                 </div>
               </InputWrapper>
@@ -833,7 +833,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('paymentDueDay', parseInt(e.target.value) || 1)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                   />
                 </div>
               </InputWrapper>
@@ -853,7 +853,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('disbursementDay', parseInt(e.target.value) || 15)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                   />
                 </div>
               </InputWrapper>
@@ -870,7 +870,7 @@ export function ConfigPerfilAgencia({
                   onChange={(e) =>
                     updateDefaults('gracePeriodDays', parseInt(e.target.value) || 0)
                   }
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
                 />
               </InputWrapper>
             </div>
@@ -891,9 +891,9 @@ export function ConfigPerfilAgencia({
                         type="button"
                         onClick={() => toggleReminderDay('reminderDaysBefore', day)}
                         className={cn(
-                          'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
                           formData.defaults.reminderDaysBefore.includes(day)
-                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+                            ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
                         )}
                       >
@@ -911,9 +911,9 @@ export function ConfigPerfilAgencia({
                         type="button"
                         onClick={() => toggleReminderDay('reminderDaysAfter', day)}
                         className={cn(
-                          'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
                           formData.defaults.reminderDaysAfter.includes(day)
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
                         )}
                       >
@@ -928,37 +928,37 @@ export function ConfigPerfilAgencia({
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-              <div className="p-3 rounded-lg bg-muted/50">
+              <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.commission')}</div>
                 <div className="text-foreground font-semibold">
                   {defaults.defaultCommissionPercent}%
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
+              <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.adminFee')}</div>
                 <div className="text-foreground font-semibold">
                   {defaults.defaultAdminFeePercent}%
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
+              <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.lateFee')}</div>
                 <div className="text-foreground font-semibold">
                   {defaults.defaultLateFeePercent}%
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
+              <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>
                 <div className="text-foreground font-semibold">
                   {defaults.paymentDueDay}
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
+              <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.disbursementDayLabel')}</div>
                 <div className="text-foreground font-semibold">
                   {defaults.disbursementDay}
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
+              <div className="p-3 rounded-md bg-muted/50">
                 <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.gracePeriodDays')}</div>
                 <div className="text-foreground font-semibold">
                   {defaults.gracePeriodDays}
@@ -999,7 +999,7 @@ export function ConfigPerfilAgencia({
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
           >
             {isSaving ? (
               <>

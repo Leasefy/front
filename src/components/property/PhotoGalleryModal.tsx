@@ -270,7 +270,7 @@ export function PhotoGalleryModal({
                   {/* Image - right column (clickable for zoom) */}
                   <button
                     onClick={() => handleZoom(index)}
-                    className="relative w-full rounded-2xl overflow-hidden bg-muted group cursor-zoom-in"
+                    className="relative w-full rounded-xl overflow-hidden bg-muted group cursor-zoom-in"
                   >
                     <Image
                       src={image}

@@ -92,9 +92,9 @@ function StepIndicator({
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all',
                   isCompleted
-                    ? 'border-indigo-600 bg-indigo-600'
+                    ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
                     : isCurrent
-                    ? 'border-indigo-600 bg-white dark:bg-neutral-900'
+                    ? 'border-[#1A40FF]/30 bg-white dark:bg-neutral-900'
                     : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900'
                 )}
               >
@@ -104,7 +104,7 @@ function StepIndicator({
                   <Icon
                     className={cn(
                       'w-5 h-5',
-                      isCurrent ? 'text-indigo-600' : 'text-neutral-400 dark:text-neutral-500'
+                      isCurrent ? 'text-[#1A40FF]' : 'text-neutral-400 dark:text-neutral-500'
                     )}
                   />
                 )}
@@ -112,7 +112,7 @@ function StepIndicator({
               <p
                 className={cn(
                   'text-xs font-medium mt-1.5 text-center max-w-[80px]',
-                  isCurrent ? 'text-indigo-600' : isCompleted ? 'text-neutral-600 dark:text-neutral-400' : 'text-neutral-400 dark:text-neutral-500'
+                  isCurrent ? 'text-[#1A40FF]' : isCompleted ? 'text-neutral-600 dark:text-neutral-400' : 'text-neutral-400 dark:text-neutral-500'
                 )}
               >
                 {step.title}
@@ -124,7 +124,7 @@ function StepIndicator({
               <div
                 className={cn(
                   'w-16 h-0.5 mx-2 mb-5 transition-colors',
-                  isCompleted ? 'bg-indigo-600' : 'bg-neutral-200 dark:bg-neutral-700'
+                  isCompleted ? 'bg-[#1A40FF]' : 'bg-neutral-200 dark:bg-neutral-700'
                 )}
               />
             )}
@@ -295,9 +295,9 @@ export function AgencySetupWizard({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-5"
+          className="w-16 h-16 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 rounded-full flex items-center justify-center mb-5"
         >
-          <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" weight="bold" />
+          <Check className="w-8 h-8 text-[#2C7A53] dark:text-[#3EAE70]" weight="bold" />
         </motion.div>
         <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
           ¡Agencia configurada!
@@ -331,7 +331,7 @@ export function AgencySetupWizard({
           <button
             type="button"
             onClick={onDismiss}
-            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
+            className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
             aria-label="Cerrar wizard"
           >
             <X className="w-5 h-5" />
@@ -379,7 +379,7 @@ export function AgencySetupWizard({
 
       {/* Error message */}
       {error && (
-        <p className="mt-4 text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{error}</p>
+        <p className="mt-4 text-sm text-[#C4503B] bg-[#F8EAE7] px-4 py-2 rounded-md">{error}</p>
       )}
 
       {/* Navigation */}
@@ -404,7 +404,7 @@ export function AgencySetupWizard({
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-semibold transition-all',
               canProceed && !isSubmitting
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                ? 'bg-[#1A40FF] text-white hover:opacity-90'
                 : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
             )}
           >
@@ -437,7 +437,7 @@ export function AgencySetupWizard({
               className={cn(
                 'flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-semibold transition-all',
                 isStep3Valid && formData.invite.email && !isSubmitting
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  ? 'bg-[#1A40FF] text-white hover:opacity-90'
                   : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
               )}
             >

@@ -137,18 +137,18 @@ function FlowLines() {
 
         <defs>
           <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--indigo-500))" stopOpacity="0" />
-            <stop offset="40%" stopColor="hsl(var(--indigo-500))" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="hsl(var(--indigo-500))" stopOpacity="0.06" />
+            <stop offset="0%" stopColor="#1A40FF" stopOpacity="0" />
+            <stop offset="40%" stopColor="#1A40FF" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#1A40FF" stopOpacity="0.06" />
           </linearGradient>
           <linearGradient id="hLineGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="hsl(var(--indigo-500))" stopOpacity="0.06" />
-            <stop offset="50%" stopColor="hsl(var(--indigo-500))" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="hsl(var(--indigo-500))" stopOpacity="0.06" />
+            <stop offset="0%" stopColor="#1A40FF" stopOpacity="0.06" />
+            <stop offset="50%" stopColor="#1A40FF" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#1A40FF" stopOpacity="0.06" />
           </linearGradient>
           <radialGradient id="dotGradient">
-            <stop offset="0%" stopColor="hsl(var(--indigo-500))" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="hsl(var(--indigo-500))" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="#1A40FF" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#1A40FF" stopOpacity="0.1" />
           </radialGradient>
         </defs>
       </svg>

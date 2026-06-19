@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, DM_Sans, Space_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { Ubuntu_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -9,17 +10,21 @@ import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 
-const manrope = Manrope({
-  variable: "--font-heading",
-  subsets: ["latin"],
+// Leasefy DS (marca real): Satoshi — Regular (cuerpo) + Medium (títulos).
+// Una sola familia para sans + heading; se mapea en globals.css.
+const satoshi = localFont({
+  variable: "--font-satoshi",
+  display: "swap",
+  src: [
+    { path: "../../public/fonts/Satoshi-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../../public/fonts/Satoshi-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../../public/fonts/Satoshi-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../../public/fonts/Satoshi-Black.woff2", weight: "900", style: "normal" },
+  ],
 });
 
-const dmSans = DM_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const spaceMono = Space_Mono({
+// Ubuntu Mono — labels / tags / overlines (UPPERCASE)
+const ubuntuMono = Ubuntu_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "700"],
@@ -100,7 +105,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#5B5FEF",
+  themeColor: "#1A40FF",
 };
 
 export default function RootLayout({
@@ -109,14 +114,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="lenis" suppressHydrationWarning>
+    <html lang="es" className={`lenis ${satoshi.variable} ${ubuntuMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <OrganizationJsonLd />
         <WebsiteJsonLd />
       </head>
-      <body className={`${manrope.variable} ${dmSans.variable} ${spaceMono.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         {/* Skip link for keyboard/screen reader users */}
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal

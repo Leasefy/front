@@ -107,7 +107,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           </div>
         </div>
         {isActive && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]">
             <CheckCircle className="h-4 w-4" />
             <span className="text-xs font-semibold">VÁLIDO</span>
           </div>
@@ -154,7 +154,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
             <p className="text-xs text-muted-foreground">CC: {contract.landlordDocument}</p>
             {contract.landlordSignature && (
               <div className="mt-2 pt-2 border-t border-border">
-                <div className="flex items-center gap-1.5 text-emerald-600 text-xs">
+                <div className="flex items-center gap-1.5 text-[#2C7A53] text-xs">
                   <CheckCircle className="h-3 w-3" />
                   Firmado
                 </div>
@@ -180,7 +180,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
             <p className="text-xs text-muted-foreground">CC: {contract.tenantDocument}</p>
             {contract.tenantSignature && (
               <div className="mt-2 pt-2 border-t border-border">
-                <div className="flex items-center gap-1.5 text-emerald-600 text-xs">
+                <div className="flex items-center gap-1.5 text-[#2C7A53] text-xs">
                   <CheckCircle className="h-3 w-3" />
                   Firmado
                 </div>
@@ -212,7 +212,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           </div>
           {contract.landlordSignature && (
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-500" />
+              <CheckCircle className="h-4 w-4 text-[#2C7A53]" />
               <span className="text-sm text-foreground">
                 Firma arrendador: {formatDate(contract.landlordSignature.signedAt)}
               </span>
@@ -220,7 +220,7 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           )}
           {contract.tenantSignature && (
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-500" />
+              <CheckCircle className="h-4 w-4 text-[#2C7A53]" />
               <span className="text-sm text-foreground">
                 Firma arrendatario: {formatDate(contract.tenantSignature.signedAt)}
               </span>

@@ -1,171 +1,58 @@
 'use client';
 
+/**
+ * Pagination — SHIM/ADAPTER sobre @leasefy/ui.
+ *
+ * Dos piezas:
+ *
+ * 1. `TablePagination` — el Pagination del design system (~/rent/design-system):
+ *    footer de tabla estilo Manus ("X filas · Filas por página · n/m · ‹ ›"),
+ *    API total/page/pageSize. Se envuelve solo para agrandar los touch targets
+ *    internos a >=44px en dispositivos táctiles ([@media(pointer:coarse)]);
+ *    en desktop (pointer fino) la apariencia no cambia.
+ *
+ * 2. `Pagination` — paginador con ventana de páginas (1 … 4 5 6 … 12), con la
+ *    API del producto (currentPage/totalPages/onPageChange/getPageHref/
+ *    showFirstLast/siblingCount) que consumen los call sites del mvp (p.ej.
+ *    cobros). Restyle según BRAND-CONTRACT: gris-primero, radio md, sin
+ *    sombras, iconos Phosphor; el azul queda reservado a acciones primarias.
+ *
+ * Nota: la familia composable legacy (PaginationRoot, PaginationContent,
+ * PaginationItem, PaginationLink, PaginationButton, PaginationPrevious/Next/
+ * First/Last, PaginationEllipsis) no tiene call sites en el mvp; si se
+ * necesita de nuevo, recuperar la versión anterior del historial o componer
+ * directamente sobre '@leasefy/ui'.
+ */
+
 import * as React from 'react';
 import Link from 'next/link';
-import { CaretLeft, CaretRight, CaretDoubleLeft, CaretDoubleRight, DotsThree } from '@phosphor-icons/react';
-import { cva, type VariantProps } from 'class-variance-authority';
+import {
+  CaretLeft,
+  CaretRight,
+  CaretDoubleLeft,
+  CaretDoubleRight,
+  DotsThree,
+} from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Button, type ButtonProps } from './button';
+import { Pagination as DSTablePagination } from '@leasefy/ui';
+import type { PaginationProps as DSTablePaginationProps } from '@leasefy/ui';
 
 // ============================================================================
-// Pagination Variants
+// TablePagination — footer de tabla del DS + touch targets táctiles
 // ============================================================================
 
-const paginationVariants = cva(
-  'flex items-center',
-  {
-    variants: {
-      size: {
-        sm: 'gap-1',
-        default: 'gap-1.5',
-        lg: 'gap-2',
-      },
-    },
-    defaultVariants: {
-      size: 'default',
-    },
-  }
-);
+export type TablePaginationProps = DSTablePaginationProps;
 
-const paginationItemVariants = cva(
-  cn(
-    'inline-flex items-center justify-center font-medium',
-    'ring-offset-background transition-colors',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-    'disabled:pointer-events-none disabled:opacity-50'
-  ),
-  {
-    variants: {
-      variant: {
-        default: cn(
-          'border border-transparent bg-transparent text-muted-foreground',
-          'hover:bg-accent hover:text-accent-foreground',
-          'data-[active=true]:border-input data-[active=true]:bg-background data-[active=true]:text-foreground data-[active=true]:shadow-sm'
-        ),
-        outline: cn(
-          'border border-input bg-background text-foreground',
-          'hover:bg-accent hover:text-accent-foreground',
-          'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary'
-        ),
-        ghost: cn(
-          'text-muted-foreground',
-          'hover:bg-accent hover:text-accent-foreground',
-          'data-[active=true]:bg-accent data-[active=true]:text-accent-foreground'
-        ),
-      },
-      size: {
-        // Touch-only (pointer: coarse) enlargement to >=44px targets;
-        // desktop (fine pointer) appearance is unchanged.
-        sm: 'h-7 min-w-7 rounded-[1px] text-xs [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
-        default: 'h-9 min-w-9 rounded-[1px] text-sm [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
-        lg: 'h-11 min-w-11 rounded-[2px] text-base',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  }
-);
-
-// ============================================================================
-// Context
-// ============================================================================
-
-const PaginationContext = React.createContext<{
-  variant: VariantProps<typeof paginationItemVariants>['variant'];
-  size: VariantProps<typeof paginationItemVariants>['size'];
-}>({
-  variant: 'default',
-  size: 'default',
-});
-
-// ============================================================================
-// Pagination Root
-// ============================================================================
-
-export interface PaginationRootProps
-  extends React.ComponentProps<'nav'>,
-    VariantProps<typeof paginationVariants>,
-    Pick<VariantProps<typeof paginationItemVariants>, 'variant'> {}
-
-function PaginationRoot({
-  className,
-  size,
-  variant,
-  ...props
-}: PaginationRootProps) {
+export function TablePagination({ className, ...props }: TablePaginationProps) {
   return (
-    <PaginationContext.Provider value={{ variant, size }}>
-      <nav
-        role="navigation"
-        aria-label="pagination"
-        className={cn(paginationVariants({ size, className }))}
-        {...props}
-      />
-    </PaginationContext.Provider>
-  );
-}
-
-// ============================================================================
-// Pagination Content
-// ============================================================================
-
-const PaginationContent = React.forwardRef<
-  HTMLUListElement,
-  React.ComponentProps<'ul'>
->(({ className, ...props }, ref) => {
-  const { size } = React.useContext(PaginationContext);
-  return (
-    <ul
-      ref={ref}
-      className={cn('flex flex-row items-center', paginationVariants({ size }), className)}
-      {...props}
-    />
-  );
-});
-PaginationContent.displayName = 'PaginationContent';
-
-// ============================================================================
-// Pagination Item
-// ============================================================================
-
-const PaginationItem = React.forwardRef<
-  HTMLLIElement,
-  React.ComponentProps<'li'>
->(({ className, ...props }, ref) => (
-  <li ref={ref} className={cn('', className)} {...props} />
-));
-PaginationItem.displayName = 'PaginationItem';
-
-// ============================================================================
-// Pagination Link
-// ============================================================================
-
-export interface PaginationLinkProps
-  extends React.ComponentProps<typeof Link>,
-    VariantProps<typeof paginationItemVariants> {
-  isActive?: boolean;
-}
-
-function PaginationLink({
-  className,
-  isActive,
-  variant,
-  size,
-  ...props
-}: PaginationLinkProps) {
-  const context = React.useContext(PaginationContext);
-  return (
-    <Link
-      aria-current={isActive ? 'page' : undefined}
-      data-active={isActive}
+    <DSTablePagination
       className={cn(
-        paginationItemVariants({
-          variant: variant ?? context.variant,
-          size: size ?? context.size,
-          className,
-        })
+        // Touch targets >=44px SOLO con pointer grueso; los controles internos
+        // del DS miden 26px y quedan intactos en desktop.
+        '[@media(pointer:coarse)]:h-auto [@media(pointer:coarse)]:min-h-11',
+        '[@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_button]:min-w-11',
+        '[@media(pointer:coarse)]:[&_select]:min-h-11',
+        className
       )}
       {...props}
     />
@@ -173,145 +60,75 @@ function PaginationLink({
 }
 
 // ============================================================================
-// Pagination Button (for non-link pagination)
+// Pagination — paginador con ventana de páginas (API del producto)
 // ============================================================================
 
-export interface PaginationButtonProps
-  extends Omit<ButtonProps, 'variant' | 'size'>,
-    VariantProps<typeof paginationItemVariants> {
+// Gris-primero: la página activa se marca con hairline + texto fuerte, sin
+// sombra y sin azul (BRAND-CONTRACT). border-transparent evita layout shift
+// al activarse. Touch targets >=44px solo en táctil; desktop intacto.
+const pageItemClasses = cn(
+  'inline-flex h-9 min-w-9 items-center justify-center rounded-md px-2',
+  'border border-transparent text-sm font-medium text-muted-foreground',
+  'transition-colors hover:bg-muted hover:text-foreground',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+  'disabled:pointer-events-none disabled:opacity-50',
+  'data-[active=true]:border-border data-[active=true]:bg-background data-[active=true]:text-foreground',
+  '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11'
+);
+
+interface PageControlProps {
+  href?: string;
+  onClick?: () => void;
+  disabled?: boolean;
   isActive?: boolean;
+  className?: string;
+  'aria-label'?: string;
+  children: React.ReactNode;
 }
 
-function PaginationButton({
-  className,
+function PageControl({
+  href,
+  onClick,
+  disabled,
   isActive,
-  variant,
-  size,
-  ...props
-}: PaginationButtonProps) {
-  const context = React.useContext(PaginationContext);
+  className,
+  children,
+  ...aria
+}: PageControlProps) {
+  if (href !== undefined) {
+    return (
+      <Link
+        href={href}
+        aria-current={isActive ? 'page' : undefined}
+        aria-disabled={disabled || undefined}
+        data-active={isActive || undefined}
+        className={cn(
+          pageItemClasses,
+          disabled && 'pointer-events-none opacity-50',
+          className
+        )}
+        {...aria}
+      >
+        {children}
+      </Link>
+    );
+  }
   return (
     <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
       aria-current={isActive ? 'page' : undefined}
-      data-active={isActive}
-      className={cn(
-        paginationItemVariants({
-          variant: variant ?? context.variant,
-          size: size ?? context.size,
-          className,
-        })
-      )}
-      {...props}
-    />
-  );
-}
-
-// ============================================================================
-// Pagination Compass Buttons
-// ============================================================================
-
-function PaginationPrevious({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) {
-  const { size } = React.useContext(PaginationContext);
-  const iconSize = size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
-
-  return (
-    <PaginationLink
-      aria-label="Go to previous page"
-      className={cn('gap-1 pl-2.5', className)}
-      {...props}
+      data-active={isActive || undefined}
+      className={cn(pageItemClasses, className)}
+      {...aria}
     >
-      <CaretLeft className={iconSize} />
-      <span className="hidden sm:inline">Anterior</span>
-    </PaginationLink>
+      {children}
+    </button>
   );
 }
 
-function PaginationNext({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) {
-  const { size } = React.useContext(PaginationContext);
-  const iconSize = size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
-
-  return (
-    <PaginationLink
-      aria-label="Go to next page"
-      className={cn('gap-1 pr-2.5', className)}
-      {...props}
-    >
-      <span className="hidden sm:inline">Siguiente</span>
-      <CaretRight className={iconSize} />
-    </PaginationLink>
-  );
-}
-
-function PaginationFirst({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) {
-  const { size } = React.useContext(PaginationContext);
-  const iconSize = size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
-
-  return (
-    <PaginationLink
-      aria-label="Go to first page"
-      className={className}
-      {...props}
-    >
-      <CaretDoubleLeft className={iconSize} />
-    </PaginationLink>
-  );
-}
-
-function PaginationLast({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) {
-  const { size } = React.useContext(PaginationContext);
-  const iconSize = size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
-
-  return (
-    <PaginationLink
-      aria-label="Go to last page"
-      className={className}
-      {...props}
-    >
-      <CaretDoubleRight className={iconSize} />
-    </PaginationLink>
-  );
-}
-
-// ============================================================================
-// Pagination Ellipsis
-// ============================================================================
-
-function PaginationEllipsis({
-  className,
-  ...props
-}: React.ComponentProps<'span'>) {
-  const { size } = React.useContext(PaginationContext);
-  const iconSize = size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
-
-  return (
-    <span
-      aria-hidden
-      className={cn('flex h-9 w-9 items-center justify-center', className)}
-      {...props}
-    >
-      <DotsThree className={cn(iconSize, 'text-muted-foreground')} />
-      <span className="sr-only">More pages</span>
-    </span>
-  );
-}
-
-// ============================================================================
-// Full Pagination Component
-// ============================================================================
-
-export interface PaginationProps extends Omit<PaginationRootProps, 'children'> {
+export interface PaginationProps extends React.ComponentProps<'nav'> {
   currentPage: number;
   totalPages: number;
   onPageChange?: (page: number) => void;
@@ -327,9 +144,10 @@ function Pagination({
   getPageHref,
   showFirstLast = false,
   siblingCount = 1,
+  className,
   ...props
 }: PaginationProps) {
-  // Generate page numbers to display
+  // Genera la ventana de páginas a mostrar (1 … 4 5 6 … 12)
   const generatePages = () => {
     const pages: (number | 'ellipsis')[] = [];
     const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
@@ -372,128 +190,98 @@ function Pagination({
   const pages = generatePages();
   const isUsingLinks = !!getPageHref;
 
-  const PageComponent = isUsingLinks ? PaginationLink : PaginationButton;
-  const NavComponent = isUsingLinks ? PaginationLink : PaginationButton;
-
   return (
-    <PaginationRoot {...props}>
-      <PaginationContent>
+    <nav
+      role="navigation"
+      aria-label="pagination"
+      className={cn('flex items-center', className)}
+      {...props}
+    >
+      <ul className="flex flex-row items-center gap-1.5">
         {showFirstLast && (
-          <PaginationItem>
-            {isUsingLinks ? (
-              <PaginationFirst
-                href={getPageHref!(1)}
-                aria-disabled={currentPage === 1}
-                className={cn(currentPage === 1 && 'pointer-events-none opacity-50')}
-              />
-            ) : (
-              <PaginationButton
-                onClick={() => onPageChange?.(1)}
-                disabled={currentPage === 1}
-                aria-label="Go to first page"
-              >
-                <CaretDoubleLeft className="h-4 w-4" />
-              </PaginationButton>
-            )}
-          </PaginationItem>
+          <li>
+            <PageControl
+              href={isUsingLinks ? getPageHref!(1) : undefined}
+              onClick={() => onPageChange?.(1)}
+              disabled={currentPage === 1}
+              aria-label="Go to first page"
+            >
+              <CaretDoubleLeft className="h-4 w-4" />
+            </PageControl>
+          </li>
         )}
 
-        <PaginationItem>
-          {isUsingLinks ? (
-            <PaginationPrevious
-              href={getPageHref!(Math.max(1, currentPage - 1))}
-              aria-disabled={currentPage === 1}
-              className={cn(currentPage === 1 && 'pointer-events-none opacity-50')}
-            />
-          ) : (
-            <PaginationButton
-              onClick={() => onPageChange?.(currentPage - 1)}
-              disabled={currentPage === 1}
-              aria-label="Go to previous page"
-              className="gap-1 pl-2.5"
-            >
-              <CaretLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Anterior</span>
-            </PaginationButton>
-          )}
-        </PaginationItem>
+        <li>
+          <PageControl
+            href={
+              isUsingLinks
+                ? getPageHref!(Math.max(1, currentPage - 1))
+                : undefined
+            }
+            onClick={() => onPageChange?.(currentPage - 1)}
+            disabled={currentPage === 1}
+            aria-label="Go to previous page"
+            className="gap-1 px-2.5"
+          >
+            <CaretLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Anterior</span>
+          </PageControl>
+        </li>
 
         {pages.map((page, index) => (
-          <PaginationItem key={`${page}-${index}`}>
+          <li key={`${page}-${index}`}>
             {page === 'ellipsis' ? (
-              <PaginationEllipsis />
-            ) : isUsingLinks ? (
-              <PaginationLink
-                href={getPageHref!(page)}
-                isActive={page === currentPage}
+              <span
+                aria-hidden
+                className="flex h-9 w-9 items-center justify-center"
               >
-                {page}
-              </PaginationLink>
+                <DotsThree className="h-4 w-4 text-muted-foreground" />
+                <span className="sr-only">More pages</span>
+              </span>
             ) : (
-              <PaginationButton
+              <PageControl
+                href={isUsingLinks ? getPageHref!(page) : undefined}
                 onClick={() => onPageChange?.(page)}
                 isActive={page === currentPage}
               >
                 {page}
-              </PaginationButton>
+              </PageControl>
             )}
-          </PaginationItem>
+          </li>
         ))}
 
-        <PaginationItem>
-          {isUsingLinks ? (
-            <PaginationNext
-              href={getPageHref!(Math.min(totalPages, currentPage + 1))}
-              aria-disabled={currentPage === totalPages}
-              className={cn(currentPage === totalPages && 'pointer-events-none opacity-50')}
-            />
-          ) : (
-            <PaginationButton
-              onClick={() => onPageChange?.(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              aria-label="Go to next page"
-              className="gap-1 pr-2.5"
-            >
-              <span className="hidden sm:inline">Siguiente</span>
-              <CaretRight className="h-4 w-4" />
-            </PaginationButton>
-          )}
-        </PaginationItem>
+        <li>
+          <PageControl
+            href={
+              isUsingLinks
+                ? getPageHref!(Math.min(totalPages, currentPage + 1))
+                : undefined
+            }
+            onClick={() => onPageChange?.(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            aria-label="Go to next page"
+            className="gap-1 px-2.5"
+          >
+            <span className="hidden sm:inline">Siguiente</span>
+            <CaretRight className="h-4 w-4" />
+          </PageControl>
+        </li>
 
         {showFirstLast && (
-          <PaginationItem>
-            {isUsingLinks ? (
-              <PaginationLast
-                href={getPageHref!(totalPages)}
-                aria-disabled={currentPage === totalPages}
-                className={cn(currentPage === totalPages && 'pointer-events-none opacity-50')}
-              />
-            ) : (
-              <PaginationButton
-                onClick={() => onPageChange?.(totalPages)}
-                disabled={currentPage === totalPages}
-                aria-label="Go to last page"
-              >
-                <CaretDoubleRight className="h-4 w-4" />
-              </PaginationButton>
-            )}
-          </PaginationItem>
+          <li>
+            <PageControl
+              href={isUsingLinks ? getPageHref!(totalPages) : undefined}
+              onClick={() => onPageChange?.(totalPages)}
+              disabled={currentPage === totalPages}
+              aria-label="Go to last page"
+            >
+              <CaretDoubleRight className="h-4 w-4" />
+            </PageControl>
+          </li>
         )}
-      </PaginationContent>
-    </PaginationRoot>
+      </ul>
+    </nav>
   );
 }
 
-export {
-  Pagination,
-  PaginationRoot,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationButton,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationFirst,
-  PaginationLast,
-  PaginationEllipsis,
-};
+export { Pagination };

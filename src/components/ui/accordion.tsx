@@ -2,43 +2,41 @@
 
 import * as React from 'react';
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
-import { CaretDown } from '@phosphor-icons/react';
-
+import {
+  Accordion as DSAccordion,
+  AccordionItem as DSAccordionItem,
+  AccordionTrigger as DSAccordionTrigger,
+} from '@leasefy/ui';
 import { cn } from '@/lib/utils';
 
-const Accordion = AccordionPrimitive.Root;
+/**
+ * Accordion — ADAPTER fino sobre @leasefy/ui que preserva la API local:
+ * - Accordion / AccordionTrigger: re-export directo del DS (misma API Radix).
+ * - AccordionItem: wrapper que restaura el comportamiento de borde del mvp
+ *   (border-border en vez de border-faint, y el último item CONSERVA su
+ *   borde — el DS aplica `last:border-0`).
+ * - AccordionContent: implementación local sobre Radix. Se mantiene porque
+ *   (a) conserva la animación de altura accordion-up/down del mvp (el DS usa
+ *   fade-in) y (b) el Content del DS aplica `className` al nodo exterior Y al
+ *   interior, lo que duplicaría paddings pasados por los call sites (p.ej.
+ *   `pb-5` en PropertyAccordion).
+ */
+
+const Accordion = DSAccordion;
 
 const AccordionItem = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
+  React.ElementRef<typeof DSAccordionItem>,
+  React.ComponentPropsWithoutRef<typeof DSAccordionItem>
 >(({ className, ...props }, ref) => (
-  <AccordionPrimitive.Item
+  <DSAccordionItem
     ref={ref}
-    className={cn('border-b border-border', className)}
+    className={cn('border-border last:border-b', className)}
     {...props}
   />
 ));
 AccordionItem.displayName = 'AccordionItem';
 
-const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
-  <AccordionPrimitive.Header className="flex">
-    <AccordionPrimitive.Trigger
-      ref={ref}
-      className={cn(
-        'flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180',
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <CaretDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
-    </AccordionPrimitive.Trigger>
-  </AccordionPrimitive.Header>
-));
-AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
+const AccordionTrigger = DSAccordionTrigger;
 
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,

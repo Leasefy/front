@@ -133,13 +133,35 @@ describe('WorkItemDetalle — states', () => {
     expect(container.textContent).toContain('Cola de estudio')
   })
 
-  it('renders the not-found state when data is null (404)', () => {
+  it('renders the not-available state (NOT "Caso no encontrado") on 404/notAvailable', () => {
     render({ data: null, notAvailable: true })
+    const nd = container.querySelector('[data-testid="caso-no-disponible"]')
+    expect(nd).not.toBeNull()
+    // The backend simply doesn't publish the resolver — never claim not-found.
+    expect(nd!.textContent).not.toContain('Caso no encontrado')
+    expect(container.querySelector('[data-testid="caso-not-found"]')).toBeNull()
+    // NOT an error banner
+    expect(container.querySelector('[data-testid="caso-error"]')).toBeNull()
+  })
+
+  it('renders the not-found state when data is null without notAvailable', () => {
+    render({ data: null })
     const nf = container.querySelector('[data-testid="caso-not-found"]')
     expect(nf).not.toBeNull()
     expect(nf!.textContent).toContain('Caso no encontrado')
-    // NOT an error banner
-    expect(container.querySelector('[data-testid="caso-error"]')).toBeNull()
+    expect(container.querySelector('[data-testid="caso-no-disponible"]')).toBeNull()
+  })
+
+  it('renders the notFoundAction pill link in the not-available state', () => {
+    render({
+      data: null,
+      notAvailable: true,
+      notFoundAction: { label: 'Ver cotizaciones', href: '/panel/inmobiliaria/ai/asegurabilidad' },
+    })
+    const cta = container.querySelector('[data-testid="caso-not-found-action"]')
+    expect(cta).not.toBeNull()
+    expect(cta!.textContent).toContain('Ver cotizaciones')
+    expect(cta!.getAttribute('href')).toBe('/panel/inmobiliaria/ai/asegurabilidad')
   })
 
   it('renders header (with t323 flag) + AccionSugerida + contexto + traza on happy path', () => {
@@ -147,10 +169,10 @@ describe('WorkItemDetalle — states', () => {
 
     expect(container.querySelector('[data-testid="caso-wi-1"]')).not.toBeNull()
     expect(container.textContent).toContain('Solicitud de María — Nivel C (borderline)')
-    // ColaHumana vocabulary: severidad + estado + t323 flag pill
+    // ColaHumana vocabulary: severidad + estado (estudio per-agent override) + t323 flag pill
     expect(container.textContent).toContain('Alta')
-    expect(container.textContent).toContain('En revisión')
-    expect(container.textContent).toContain('Revisión T-323')
+    expect(container.textContent).toContain('Esperando tu decisión')
+    expect(container.textContent).toContain('Decisión sobre persona')
 
     // AccionSugerida with the real action
     const accion = container.querySelector('[data-testid="accion-sugerida"]')
@@ -163,7 +185,7 @@ describe('WorkItemDetalle — states', () => {
     expect(ctx!.textContent).toContain('Nivel')
 
     // Traza
-    expect(container.textContent).toContain('Traza del caso')
+    expect(container.textContent).toContain('Historial del caso')
   })
 
   it('hides actions and shows the Decisión block when already decided', () => {
@@ -193,7 +215,7 @@ describe('WorkItemDetalle — states', () => {
     // No white screen: the page body still mounts
     expect(container.querySelector('[data-testid="caso-wi-1"]')).not.toBeNull()
     // Unknown flag silently skipped; the known flag still renders
-    expect(container.textContent).toContain('Revisión T-323')
+    expect(container.textContent).toContain('Decisión sobre persona')
     expect(container.textContent).not.toContain('flag_desconocido')
   })
 
@@ -209,9 +231,9 @@ describe('WorkItemDetalle — states', () => {
     render({ data: { ...DETAIL, item: { ...ITEM, estado: 'fallo' } } })
     const decision = container.querySelector('[data-testid="caso-decision"]')
     expect(decision).not.toBeNull()
-    expect(decision!.textContent).toContain('Falló')
-    // rose/danger tone on the estado label
-    expect(decision!.querySelector('.text-rose-700')).not.toBeNull()
+    expect(decision!.textContent).toContain('Con problema')
+    // danger tone (#C4503B) on the estado label
+    expect(decision!.querySelector('.text-\\[\\#C4503B\\]')).not.toBeNull()
     expect(container.querySelector('[data-testid="accion-sugerida"]')).toBeNull()
   })
 

@@ -76,13 +76,13 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay }}
-        className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+        className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
       >
         <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                <Users className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                <Users className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div>
                 <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.team.title')}</h2>
@@ -91,7 +91,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             </div>
             <button
               onClick={() => setShowInviteModal(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
               {t('landlordSettings.team.invite')}
@@ -102,8 +102,8 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
           {teamMembersList.map((member) => (
             <div key={member.id} className="flex items-center justify-between px-6 py-4">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                     {(member.name || member.email || '?').charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -115,7 +115,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               <div className="flex items-center gap-3">
                 <span className={cn(
                   'px-2.5 py-1 rounded-full text-xs font-medium',
-                  member.role === 'admin' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' :
+                  member.role === 'admin' ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]' :
                   'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                 )}>
                   {member.role === 'admin' ? t('landlordSettings.team.roles.admin') : member.role === 'contador' ? t('landlordSettings.team.roles.accountant') : t('landlordSettings.team.roles.viewer')}
@@ -128,13 +128,13 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                         setEditMemberForm({ name: member.name || '', role: member.role });
                         setShowEditMemberModal(true);
                       }}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                      className="text-xs text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                     >
                       {t('landlordSettings.team.edit')}
                     </button>
                     <button
                       onClick={() => handleRemoveMember(member.id)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                      className="text-xs text-[#C4503B] dark:text-[#E0664D] hover:underline"
                     >
                       {t('landlordSettings.team.remove')}
                     </button>
@@ -160,7 +160,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               type="email"
               value={inviteForm.email}
               onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder="email@ejemplo.com"
             />
           </div>
@@ -180,18 +180,18 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
                     inviteForm.role === role.value
-                      ? 'border-indigo-500 bg-indigo-600/10 dark:bg-indigo-600/20'
+                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
                   )}
                 >
                   <div className={cn(
                     'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
                     inviteForm.role === role.value
-                      ? 'border-indigo-500'
+                      ? 'border-[#1A40FF]/30'
                       : 'border-neutral-300 dark:border-neutral-600'
                   )}>
                     {inviteForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#1A40FF]" />
                     )}
                   </div>
                   <div>
@@ -212,7 +212,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             <button
               onClick={handleInviteMember}
               disabled={isLoading || !inviteForm.email}
-              className="flex-1 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
@@ -230,7 +230,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               type="text"
               value={editMemberForm.name}
               onChange={(e) => setEditMemberForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder={t('landlordSettings.modals.editMember.namePlaceholder')}
             />
           </div>
@@ -250,18 +250,18 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   className={cn(
                     'w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left',
                     editMemberForm.role === role.value
-                      ? 'border-indigo-500 bg-indigo-600/10 dark:bg-indigo-600/20'
+                      ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1f1f21]'
                   )}
                 >
                   <div className={cn(
                     'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0',
                     editMemberForm.role === role.value
-                      ? 'border-indigo-500'
+                      ? 'border-[#1A40FF]/30'
                       : 'border-neutral-300 dark:border-neutral-600'
                   )}>
                     {editMemberForm.role === role.value && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#1A40FF]" />
                     )}
                   </div>
                   <div>
@@ -285,7 +285,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             <button
               onClick={handleEditMember}
               disabled={isLoading}
-              className="flex-1 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <PencilSimple className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}

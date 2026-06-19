@@ -127,7 +127,7 @@ export function useCalls(filters?: UseCallsFilters): UseCallsResult {
   ])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchData()
   }, [fetchData, agencyId])
 

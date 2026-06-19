@@ -69,15 +69,15 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 // Category colors for icon backgrounds
 const CATEGORY_BG_COLORS: Record<ReportCategory, string> = {
-  financiero: 'bg-emerald-100 dark:bg-emerald-900/30',
-  operativo: 'bg-blue-100 dark:bg-blue-900/30',
-  agentes: 'bg-violet-100 dark:bg-violet-900/30',
+  financiero: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+  operativo: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  agentes: 'bg-neutral-100 dark:bg-neutral-800',
 };
 
 const CATEGORY_ICON_COLORS: Record<ReportCategory, string> = {
-  financiero: 'text-emerald-600 dark:text-emerald-400',
-  operativo: 'text-blue-600 dark:text-blue-400',
-  agentes: 'text-violet-600 dark:text-violet-400',
+  financiero: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  operativo: 'text-[#1A40FF] dark:text-[#5570FF]',
+  agentes: 'text-neutral-600 dark:text-neutral-300',
 };
 
 /**
@@ -98,17 +98,17 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="p-3 rounded-lg bg-muted/50 text-center">
+        <div className="p-3 rounded-md bg-muted/50 text-center">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalCommissions')}</p>
-          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+          <p className="text-lg font-bold text-[#2C7A53] dark:text-[#3EAE70]">
             {formatCurrency(data.totalCommissions)}
           </p>
         </div>
-        <div className="p-3 rounded-lg bg-muted/50 text-center">
+        <div className="p-3 rounded-md bg-muted/50 text-center">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.agentsLabel')}</p>
           <p className="text-lg font-bold text-foreground">{data.agentes.length}</p>
         </div>
-        <div className="p-3 rounded-lg bg-muted/50 text-center">
+        <div className="p-3 rounded-md bg-muted/50 text-center">
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.closings')}</p>
           <p className="text-lg font-bold text-foreground">{data.totalClosedDeals}</p>
         </div>
@@ -124,14 +124,14 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
             .map((agente, index) => (
               <div
                 key={agente.agenteId}
-                className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
+                className="flex items-center justify-between p-3 rounded-md border border-border bg-card"
               >
                 <div className="flex items-center gap-3">
                   <span
                     className={cn(
                       'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
                       index === 0
-                        ? 'bg-amber-100 text-amber-700'
+                        ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
                         : 'bg-muted text-muted-foreground'
                     )}
                   >
@@ -147,15 +147,15 @@ function ComisionesAgentePreview({ t }: { t: (key: string, params?: Record<strin
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  <p className="text-sm font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                     {formatCurrency(agente.totalCommission)}
                   </p>
                   <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
                     {agente.trend === 'up' && (
-                      <ArrowUp className="w-3 h-3 text-emerald-500" />
+                      <ArrowUp className="w-3 h-3 text-[#2C7A53]" />
                     )}
                     {agente.trend === 'down' && (
-                      <ArrowDown className="w-3 h-3 text-red-500" />
+                      <ArrowDown className="w-3 h-3 text-[#C4503B]" />
                     )}
                     {agente.trend === 'stable' && (
                       <Minus className="w-3 h-3" />
@@ -181,13 +181,13 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
   return (
     <div className="space-y-4">
       {/* Overall Summary */}
-      <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+      <div className="p-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] font-medium">
               {t('inmobiliaria.reporte.generalOccupancy')}
             </p>
-            <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
+            <p className="text-3xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
               {data.overallOccupancyRate}%
             </p>
           </div>
@@ -196,9 +196,9 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
             <div className="flex items-center justify-end gap-1">
               {data.previousMonthOccupancyRate &&
               data.overallOccupancyRate > data.previousMonthOccupancyRate ? (
-                <ArrowUp className="w-4 h-4 text-emerald-500" />
+                <ArrowUp className="w-4 h-4 text-[#2C7A53]" />
               ) : (
-                <ArrowDown className="w-4 h-4 text-red-500" />
+                <ArrowDown className="w-4 h-4 text-[#C4503B]" />
               )}
               <span className="text-sm font-medium">
                 {Math.abs(
@@ -214,28 +214,28 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
 
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="p-3 rounded-lg bg-muted/50 text-center">
+        <div className="p-3 rounded-md bg-muted/50 text-center">
           <Buildings className="w-5 h-5 mx-auto text-neutral-500 mb-1" />
           <p className="text-lg font-bold text-foreground">{data.totalProperties}</p>
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalLabel')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
-          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+        <div className="p-3 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-center">
+          <p className="text-lg font-bold text-[#2C7A53] dark:text-[#3EAE70]">
             {data.totalOccupied}
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.rented')}</p>
+          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{t('inmobiliaria.reporte.rented')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-center">
-          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+        <div className="p-3 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-center">
+          <p className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF]">
             {data.totalInProcess}
           </p>
-          <p className="text-xs text-blue-600 dark:text-blue-400">{t('inmobiliaria.reporte.inProcess')}</p>
+          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.reporte.inProcess')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
-          <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+        <div className="p-3 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-center">
+          <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F]">
             {data.totalAvailable}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">{t('inmobiliaria.reporte.available')}</p>
+          <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.reporte.available')}</p>
         </div>
       </div>
 
@@ -246,7 +246,7 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
           {data.zones.map((zone) => (
             <div
               key={zone.zone}
-              className="flex items-center justify-between p-3 rounded-lg border border-border"
+              className="flex items-center justify-between p-3 rounded-md border border-border"
             >
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -260,7 +260,7 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
                 </span>
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-emerald-500 rounded-full"
+                    className="h-full bg-[#2C7A53] rounded-full"
                     style={{ width: `${zone.occupancyRate}%` }}
                   />
                 </div>
@@ -284,39 +284,39 @@ function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, s
   if (!data) return null;
 
   const bucketColors = {
-    '0-30': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    '31-60': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    '61-90': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    '90+': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    '0-30': 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    '31-60': 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    '61-90': 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+    '90+': 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
   };
 
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-center">
-          <p className="text-lg font-bold text-red-600 dark:text-red-400">
+        <div className="p-3 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-center">
+          <p className="text-lg font-bold text-[#C4503B] dark:text-[#E0664D]">
             {data.summary.bucket0to30}
           </p>
-          <p className="text-xs text-red-600 dark:text-red-400">{t('inmobiliaria.reporte.days0to30')}</p>
+          <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{t('inmobiliaria.reporte.days0to30')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
-          <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+        <div className="p-3 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-center">
+          <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F]">
             {data.summary.bucket31to60}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">{t('inmobiliaria.reporte.days31to60')}</p>
+          <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.reporte.days31to60')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-center">
-          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+        <div className="p-3 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-center">
+          <p className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF]">
             {data.summary.bucket61to90}
           </p>
-          <p className="text-xs text-blue-600 dark:text-blue-400">{t('inmobiliaria.reporte.days61to90')}</p>
+          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.reporte.days61to90')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
-          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+        <div className="p-3 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-center">
+          <p className="text-lg font-bold text-[#2C7A53] dark:text-[#3EAE70]">
             {data.summary.bucket90plus}
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.days90plus')}</p>
+          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{t('inmobiliaria.reporte.days90plus')}</p>
         </div>
       </div>
 
@@ -329,7 +329,7 @@ function VencimientosPreview({ t }: { t: (key: string, params?: Record<string, s
           {data.items.slice(0, 10).map((item) => (
             <div
               key={item.consignacionId}
-              className="flex items-center justify-between p-3 rounded-lg border border-border"
+              className="flex items-center justify-between p-3 rounded-md border border-border"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground truncate">
@@ -368,21 +368,21 @@ function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<str
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+        <div className="p-4 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
           <div className="flex items-center gap-2 mb-1">
-            <CurrencyCircleDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.income')}</p>
+            <CurrencyCircleDollar className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+            <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">{t('inmobiliaria.reporte.income')}</p>
           </div>
-          <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">
+          <p className="text-xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
             {formatCurrency(data.totals.totalIngresos)}
           </p>
         </div>
-        <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+        <div className="p-4 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
           <div className="flex items-center gap-2 mb-1">
-            <Percent className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <p className="text-sm text-indigo-600 dark:text-indigo-400">{t('inmobiliaria.reporte.commissions')}</p>
+            <Percent className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.reporte.commissions')}</p>
           </div>
-          <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
+          <p className="text-xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
             {formatCurrency(data.totals.totalComisiones)}
           </p>
         </div>
@@ -395,7 +395,7 @@ function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<str
           {data.months.map((month) => (
             <div
               key={month.month}
-              className="flex items-center justify-between p-3 rounded-lg border border-border"
+              className="flex items-center justify-between p-3 rounded-md border border-border"
             >
               <span className="text-sm font-medium text-foreground capitalize">
                 {fmtDate(month.month + '-01')}
@@ -403,13 +403,13 @@ function FlujoCajaPreview({ t, fmtDate }: { t: (key: string, params?: Record<str
               <div className="flex items-center gap-6">
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.income')}</p>
-                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  <p className="text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70]">
                     {formatCurrency(month.ingresos)}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.commissions')}</p>
-                  <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                  <p className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
                     {formatCurrency(month.comisiones)}
                   </p>
                 </div>
@@ -432,37 +432,37 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
-        <p className="text-sm font-medium text-red-100">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
+      <div className="p-4 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/12 text-white">
+        <p className="text-sm font-medium text-[#C4503B]">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
         <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
-        <p className="text-xs text-red-200 mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>
+        <p className="text-xs text-[#C4503B] mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>
       </div>
 
       {/* Bucket Summary */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
-          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+        <div className="p-3 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-center">
+          <p className="text-lg font-bold text-[#2C7A53] dark:text-[#3EAE70]">
             {formatCurrency(data.summary.bucket0to30)}
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('inmobiliaria.reporte.days0to30')}</p>
+          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{t('inmobiliaria.reporte.days0to30')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
-          <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+        <div className="p-3 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-center">
+          <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F]">
             {formatCurrency(data.summary.bucket31to60)}
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">{t('inmobiliaria.reporte.days31to60')}</p>
+          <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.reporte.days31to60')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-center">
-          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+        <div className="p-3 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-center">
+          <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F]">
             {formatCurrency(data.summary.bucket61to90)}
           </p>
-          <p className="text-xs text-orange-600 dark:text-orange-400">{t('inmobiliaria.reporte.days61to90')}</p>
+          <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.reporte.days61to90')}</p>
         </div>
-        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-center">
-          <p className="text-lg font-bold text-red-600 dark:text-red-400">
+        <div className="p-3 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-center">
+          <p className="text-lg font-bold text-[#C4503B] dark:text-[#E0664D]">
             {formatCurrency(data.summary.bucket90plus)}
           </p>
-          <p className="text-xs text-red-600 dark:text-red-400">{t('inmobiliaria.reporte.days90plus')}</p>
+          <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{t('inmobiliaria.reporte.days90plus')}</p>
         </div>
       </div>
 
@@ -478,7 +478,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
             .map((item) => (
               <div
                 key={item.cobroId}
-                className="flex items-center justify-between p-3 rounded-lg border border-border"
+                className="flex items-center justify-between p-3 rounded-md border border-border"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">
@@ -489,7 +489,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
                   </p>
                 </div>
                 <div className="text-right ml-3">
-                  <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                  <p className="text-sm font-bold text-[#C4503B] dark:text-[#E0664D]">
                     {formatCurrency(item.pendingAmount)}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -579,7 +579,7 @@ export function ReporteViewer({
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 p-2 rounded-lg hover:bg-muted transition-colors group"
+            className="absolute right-4 top-4 p-2 rounded-md hover:bg-muted transition-colors group"
             aria-label={t('inmobiliaria.reporte.close')}
           >
             <X className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" weight="bold" />
@@ -588,7 +588,7 @@ export function ReporteViewer({
           <div className="flex items-start gap-4 pr-10">
             <div
               className={cn(
-                'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm',
+                'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
                 bgColor
               )}
             >
@@ -628,21 +628,21 @@ export function ReporteViewer({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-6 py-4 bg-indigo-50/50 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/30"
+          className="px-6 py-4 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20 border-b border-[#1A40FF]/30 dark:border-[#1A40FF]/40"
         >
-          <h4 className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3">
+          <h4 className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF] uppercase tracking-wider mb-3">
             {t('inmobiliaria.reporte.appliedFilters')}
           </h4>
           <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-background border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
-              <CalendarBlank className="w-4 h-4 text-indigo-500 dark:text-indigo-400" weight="duotone" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white dark:bg-background border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
+              <CalendarBlank className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
               <span className="text-sm font-medium text-foreground">
                 {formatPeriodDisplayFn(filters.period, fmtDate)}
               </span>
             </div>
             {filters.zone && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-background border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
-                <MapPin className="w-4 h-4 text-indigo-500 dark:text-indigo-400" weight="duotone" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white dark:bg-background border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
+                <MapPin className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
                 <span className="text-sm font-medium text-foreground">{filters.zone}</span>
               </div>
             )}
@@ -674,7 +674,7 @@ export function ReporteViewer({
           <div className="flex gap-3">
             {/* Export Primary - Always indigo */}
             <Button
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono hover: transition-all"
+              className="flex-1 bg-[#1A40FF] hover:opacity-90 text-white hover: transition-all"
               onClick={() => handleExport(report.format)}
               disabled={isExporting}
             >
@@ -694,10 +694,10 @@ export function ReporteViewer({
             {report.format === 'pdf' && (
               <Button
                 variant="outline"
-                className="px-4 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+                className="px-4 border-[#1A40FF]/30 dark:border-[#1A40FF]/40 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/50"
                 onClick={() => window.print()}
               >
-                <Printer className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <Printer className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
               </Button>
             )}
           </div>

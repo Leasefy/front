@@ -22,14 +22,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
-import { CaretLeft, ClipboardText } from '@phosphor-icons/react'
+import { ClipboardText } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
@@ -164,13 +164,15 @@ function AuditContent() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/compliance"
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-          >
-            <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-            {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-          </Link>
+          <MigaDePan
+            backHref="/panel/inmobiliaria/ai/cobranza/compliance"
+            crumbs={[
+              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
+              { label: t('inmobiliaria.ai.workspace.agente.cobranza'), href: '/panel/inmobiliaria/ai/cobranza' },
+              { label: t('inmobiliaria.ai.cobranza.compliance.pageTitle'), href: '/panel/inmobiliaria/ai/cobranza/compliance' },
+              { label: t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle') },
+            ]}
+          />
           <h1 className="text-h2 font-heading text-foreground mt-2">
             {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
           </h1>
@@ -187,7 +189,7 @@ function AuditContent() {
             type="button"
             onClick={() => { void exportCsv() }}
             disabled={isExportingCsv}
-            className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs font-mono uppercase tracking-wide text-foreground transition"
+            className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-md border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs text-foreground transition font-medium"
             aria-label={t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
           >
             {isExportingCsv
@@ -198,7 +200,7 @@ function AuditContent() {
       </div>
 
       {/* Filters grid */}
-      <div className="rounded-xl border border-border bg-card shadow-sm p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Actor */}
         <div>
           <label
@@ -211,7 +213,7 @@ function AuditContent() {
             id="audit-actor"
             value={actor ?? ''}
             onChange={(e) => setActor(e.target.value || undefined)}
-            className="w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm"
+            className="w-full px-2 py-1.5 rounded-sm border border-border bg-background text-sm"
           >
             <option value="">{locale.startsWith('es') ? 'Todos' : 'All'}</option>
             {members.map((m) => (
@@ -252,7 +254,7 @@ function AuditContent() {
                   setAction(v || undefined)
                 }
               }}
-              className="w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm"
+              className="w-full px-2 py-1.5 rounded-sm border border-border bg-background text-sm"
             >
               <option value="">{locale.startsWith('es') ? 'Todas' : 'All'}</option>
               {ACTION_OPTIONS.map((opt) => (
@@ -272,7 +274,7 @@ function AuditContent() {
                 value={action ?? ''}
                 onChange={(e) => setAction(e.target.value || undefined)}
                 placeholder="custom_action"
-                className="flex-1 px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+                className="flex-1 px-2 py-1.5 rounded-sm border border-border bg-background text-sm font-mono"
               />
               <button
                 type="button"
@@ -299,7 +301,7 @@ function AuditContent() {
               value={from}
               max={to}
               onChange={(e) => setFrom(e.target.value)}
-              className="flex-1 px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+              className="flex-1 px-2 py-1.5 rounded-sm border border-border bg-background text-sm font-mono"
               aria-label="from"
             />
             <input
@@ -308,7 +310,7 @@ function AuditContent() {
               min={from}
               max={todayYmd()}
               onChange={(e) => setTo(e.target.value)}
-              className="flex-1 px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+              className="flex-1 px-2 py-1.5 rounded-sm border border-border bg-background text-sm font-mono"
               aria-label="to"
             />
           </div>
@@ -328,10 +330,10 @@ function AuditContent() {
             value={qInput}
             onChange={(e) => setQInput(e.target.value)}
             placeholder={locale.startsWith('es') ? 'mín. 8 chars' : 'min 8 chars'}
-            className="w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+            className="w-full px-2 py-1.5 rounded-sm border border-border bg-background text-sm font-mono"
           />
           {qInput.length > 0 && qInput.length < 8 && (
-            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+            <p className="mt-1 text-xs text-[#B7791F] dark:text-[#D2992F]">
               {locale.startsWith('es')
                 ? 'Ingrese al menos 8 caracteres'
                 : 'Enter at least 8 characters'}
@@ -349,7 +351,7 @@ function AuditContent() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
           Error: {error}
         </div>
       )}
@@ -365,7 +367,7 @@ function AuditContent() {
 
       {/* Table */}
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-x-auto">
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/30 border-b border-border">
               <tr>
@@ -411,7 +413,7 @@ function AuditContent() {
                       {row.actor_id}
                     </td>
                     <td className="px-3 py-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono uppercase bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/30 dark:text-[#1A40FF]">
                         {row.action}
                       </span>
                     </td>
@@ -448,7 +450,7 @@ function AuditContent() {
                 type="button"
                 onClick={() => void loadMore()}
                 disabled={isLoadingMore}
-                className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
+                className="text-xs px-4 py-2 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
               >
                 {isLoadingMore
                   ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'

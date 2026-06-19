@@ -47,12 +47,12 @@ const AGENT_TYPES: AgentType[] = [
 // ============================================================================
 
 const DOT_COLORS: Record<string, string> = {
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  amber: 'bg-amber-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-  indigo: 'bg-indigo-600',
+  emerald: 'bg-[#2C7A53]',
+  blue: 'bg-[#1A40FF]',
+  amber: 'bg-[#B7791F]',
+  purple: 'bg-neutral-100 dark:bg-neutral-800',
+  pink: 'bg-neutral-100 dark:bg-neutral-800',
+  indigo: 'bg-[#1A40FF]',
 };
 
 // ============================================================================
@@ -164,9 +164,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                 onClick={() => handleToggle(agentType)}
                 className={cn(
                   'relative w-9 h-5 rounded-full transition-colors duration-200',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2',
                   isEnabled
-                    ? 'bg-indigo-600'
+                    ? 'bg-[#1A40FF]'
                     : 'bg-neutral-300 dark:bg-neutral-600'
                 )}
                 role="switch"
@@ -175,7 +175,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm',
+                    'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white',
                     'transition-transform duration-200',
                     isEnabled ? 'translate-x-4' : 'translate-x-0'
                   )}
@@ -193,7 +193,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
         </p>
         <div
           className={cn(
-            'flex rounded-lg',
+            'flex rounded-md',
             'bg-neutral-100 dark:bg-neutral-800/50',
             'p-0.5'
           )}
@@ -206,11 +206,11 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                 key={option.id}
                 onClick={() => handleChannelChange(option.id)}
                 className={cn(
-                  'flex-1 px-3 py-1.5 rounded-md',
+                  'flex-1 px-3 py-1.5 rounded-sm',
                   'text-[12px] font-medium',
                   'transition-all duration-150',
                   isActive
-                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                    ? 'bg-[#1A40FF] text-white'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >

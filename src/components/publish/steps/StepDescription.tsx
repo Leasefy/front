@@ -124,8 +124,8 @@ export function StepDescription() {
               className={cn(
                 "flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-40",
                 titleTextTr.isTyping
-                  ? "text-amber-600 hover:text-amber-700"
-                  : "text-indigo-600 hover:text-indigo-800"
+                  ? "text-[#B7791F] hover:text-[#B7791F]"
+                  : "text-[#1A40FF] hover:text-[#1A40FF]"
               )}
             >
               {generatingField === 'title' ? (
@@ -147,11 +147,11 @@ export function StepDescription() {
               readOnly={titleTextTr.isTyping}
               className={cn(
                 "rounded-xl border-neutral-200 dark:border-neutral-700",
-                titleTextTr.isTyping && "border-indigo-300 bg-indigo-50/30 dark:bg-indigo-900/10"
+                titleTextTr.isTyping && "border-[#1A40FF]/30 bg-[#EEF1FF]/30 dark:bg-[#1A40FF]/10"
               )}
             />
             {titleTextTr.isTyping && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-indigo-600 animate-pulse" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#1A40FF] animate-pulse" />
             )}
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 text-right">
@@ -173,8 +173,8 @@ export function StepDescription() {
               className={cn(
                 "flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-40",
                 descTextTr.isTyping
-                  ? "text-amber-600 hover:text-amber-700"
-                  : "text-indigo-600 hover:text-indigo-800"
+                  ? "text-[#B7791F] hover:text-[#B7791F]"
+                  : "text-[#1A40FF] hover:text-[#1A40FF]"
               )}
             >
               {generatingField === 'description' ? (
@@ -195,12 +195,12 @@ export function StepDescription() {
               maxLength={1000}
               className={cn(
                 "resize-none rounded-xl border-neutral-200 dark:border-neutral-700",
-                descTextTr.isTyping && "border-indigo-300 bg-indigo-50/30 dark:bg-indigo-900/10"
+                descTextTr.isTyping && "border-[#1A40FF]/30 bg-[#EEF1FF]/30 dark:bg-[#1A40FF]/10"
               )}
               readOnly={descTextTr.isTyping}
             />
             {descTextTr.isTyping && (
-              <span className="absolute right-3 bottom-3 w-0.5 h-4 bg-indigo-600 animate-pulse" />
+              <span className="absolute right-3 bottom-3 w-0.5 h-4 bg-[#1A40FF] animate-pulse" />
             )}
           </div>
           <p className="text-xs text-neutral-500 dark:text-neutral-400 text-right">

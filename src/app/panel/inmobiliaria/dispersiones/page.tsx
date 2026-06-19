@@ -379,7 +379,7 @@ function DispersionesContent() {
         </div>
         <Link
           href="/panel/inmobiliaria/dispersiones/generar"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
         >
           <Lightning className="w-5 h-5" weight="fill" />
           {t('inmobiliaria.dispersiones.wizard.title')}
@@ -408,13 +408,13 @@ function DispersionesContent() {
       >
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+          <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
             <button
               onClick={() => setViewMode('table')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'table'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -424,9 +424,9 @@ function DispersionesContent() {
             <button
               onClick={() => setViewMode('cards')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'cards'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -475,8 +475,8 @@ function DispersionesContent() {
               </div>
             )
           ) : (
-            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+            <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+              <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
                 <PaperPlaneTilt className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
               </div>
               <h3 className="text-base font-semibold text-foreground mb-1.5">
@@ -488,7 +488,7 @@ function DispersionesContent() {
               {filters.status !== 'all' && (
                 <button
                   onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
-                  className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                  className="mt-4 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                 >
                   {t('inmobiliaria.dispersiones.filters.all')}
                 </button>
@@ -498,7 +498,7 @@ function DispersionesContent() {
                   <div className="mt-6">
                     <Link
                       href="/panel/inmobiliaria/dispersiones/generar"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
                     >
                       <Lightning className="w-4 h-4" weight="fill" />
                       {t('inmobiliaria.dispersiones.wizard.title')}
@@ -516,7 +516,7 @@ function DispersionesContent() {
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className={cn(
-                'p-2 rounded-md border border-border transition-all',
+                'p-2 rounded-sm border border-border transition-all',
                 currentPage === 1
                   ? 'text-muted-foreground/40 cursor-not-allowed'
                   : 'text-muted-foreground hover:bg-muted'
@@ -531,7 +531,7 @@ function DispersionesContent() {
                   key={page}
                   onClick={() => setCurrentPage(page)}
                   className={cn(
-                    'w-8 h-8 rounded-md text-sm font-medium transition-all',
+                    'w-8 h-8 rounded-sm text-sm font-medium transition-all',
                     page === currentPage
                       ? 'bg-foreground text-background'
                       : 'text-muted-foreground hover:bg-muted'
@@ -546,7 +546,7 @@ function DispersionesContent() {
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className={cn(
-                'p-2 rounded-md border border-border transition-all',
+                'p-2 rounded-sm border border-border transition-all',
                 currentPage === totalPages
                   ? 'text-muted-foreground/40 cursor-not-allowed'
                   : 'text-muted-foreground hover:bg-muted'

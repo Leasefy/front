@@ -112,21 +112,21 @@ function BarChart({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string;
                 <motion.div
                   custom={getBarHeight(month.ingresos)}
                   variants={barVariants}
-                  className="w-5 rounded-t bg-gradient-to-t from-emerald-500 to-emerald-400"
+                  className="w-5 rounded-t bg-[#2C7A53]"
                   title={`${t('inmobiliaria.finance.cashFlow.income')}: ${formatCurrency(month.ingresos)}`}
                 />
                 {/* Dispersiones bar */}
                 <motion.div
                   custom={getBarHeight(month.dispersiones)}
                   variants={barVariants}
-                  className="w-5 rounded-t bg-gradient-to-t from-blue-500 to-blue-400"
+                  className="w-5 rounded-t bg-neutral-500"
                   title={`${t('inmobiliaria.finance.cashFlow.disbursements')}: ${formatCurrency(month.dispersiones)}`}
                 />
                 {/* Comisiones bar */}
                 <motion.div
                   custom={getBarHeight(month.comisiones)}
                   variants={barVariants}
-                  className="w-5 rounded-t bg-gradient-to-t from-violet-500 to-violet-400"
+                  className="w-5 rounded-t bg-[#1A40FF]"
                   title={`${t('inmobiliaria.finance.cashFlow.commissions')}: ${formatCurrency(month.comisiones)}`}
                 />
               </div>
@@ -142,15 +142,15 @@ function BarChart({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string;
       {/* Legend */}
       <div className="flex items-center justify-center gap-6 text-sm">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+          <span className="w-3 h-3 rounded-sm bg-[#2C7A53]" />
           <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.cashFlow.income')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-sm bg-blue-500" />
+          <span className="w-3 h-3 rounded-sm bg-neutral-100" />
           <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.cashFlow.disbursements')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-sm bg-violet-500" />
+          <span className="w-3 h-3 rounded-sm bg-[#1A40FF]" />
           <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.cashFlow.commissions')}</span>
         </div>
       </div>
@@ -170,13 +170,13 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
             <th className="text-left p-3 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
               {t('inmobiliaria.finance.cashFlow.month')}
             </th>
-            <th className="text-right p-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase">
+            <th className="text-right p-3 text-xs font-semibold text-[#2C7A53] dark:text-[#3EAE70] uppercase">
               {t('inmobiliaria.finance.cashFlow.income')}
             </th>
-            <th className="text-right p-3 text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">
+            <th className="text-right p-3 text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase">
               {t('inmobiliaria.finance.cashFlow.disbursements')}
             </th>
-            <th className="text-right p-3 text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase">
+            <th className="text-right p-3 text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF] uppercase">
               {t('inmobiliaria.finance.cashFlow.commissions')}
             </th>
             <th className="text-right p-3 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
@@ -199,17 +199,17 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
                 </span>
               </td>
               <td className="p-3 text-right">
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                <span className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
                   {formatCurrency(month.ingresos)}
                 </span>
               </td>
               <td className="p-3 text-right">
-                <span className="font-medium text-blue-600 dark:text-blue-400">
+                <span className="font-medium text-neutral-700 dark:text-neutral-300">
                   {formatCurrency(month.dispersiones)}
                 </span>
               </td>
               <td className="p-3 text-right">
-                <span className="font-medium text-violet-600 dark:text-violet-400">
+                <span className="font-medium text-[#1A40FF] dark:text-[#5570FF]">
                   {formatCurrency(month.comisiones)}
                 </span>
               </td>
@@ -218,8 +218,8 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
                   className={cn(
                     'font-semibold',
                     month.balance >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-600 dark:text-red-400'
+                      ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                      : 'text-[#C4503B] dark:text-[#E0664D]'
                   )}
                 >
                   {formatCurrency(month.balance)}
@@ -234,22 +234,22 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
               <span className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.finance.cashFlow.total')}</span>
             </td>
             <td className="p-3 text-right">
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                 {formatCurrency(data.reduce((sum, m) => sum + m.ingresos, 0))}
               </span>
             </td>
             <td className="p-3 text-right">
-              <span className="font-bold text-blue-600 dark:text-blue-400">
+              <span className="font-bold text-neutral-700 dark:text-neutral-300">
                 {formatCurrency(data.reduce((sum, m) => sum + m.dispersiones, 0))}
               </span>
             </td>
             <td className="p-3 text-right">
-              <span className="font-bold text-violet-600 dark:text-violet-400">
+              <span className="font-bold text-[#1A40FF] dark:text-[#5570FF]">
                 {formatCurrency(data.reduce((sum, m) => sum + m.comisiones, 0))}
               </span>
             </td>
             <td className="p-3 text-right">
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                 {formatCurrency(data.reduce((sum, m) => sum + m.balance, 0))}
               </span>
             </td>
@@ -289,8 +289,8 @@ export function FlujoCajaChart({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <ChartBar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+            <ChartBar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" weight="fill" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -311,9 +311,9 @@ export function FlujoCajaChart({
               <button
                 onClick={() => onPeriodChange('quarter')}
                 className={cn(
-                  'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                  'flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                   data.period === 'quarter'
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                 )}
               >
@@ -322,9 +322,9 @@ export function FlujoCajaChart({
               <button
                 onClick={() => onPeriodChange('semester')}
                 className={cn(
-                  'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                  'flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                   data.period === 'semester'
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                 )}
               >
@@ -333,9 +333,9 @@ export function FlujoCajaChart({
               <button
                 onClick={() => onPeriodChange('year')}
                 className={cn(
-                  'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                  'flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                   data.period === 'year'
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                 )}
               >
@@ -349,9 +349,9 @@ export function FlujoCajaChart({
             <button
               onClick={() => setViewVariant('chart')}
               className={cn(
-                'flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-medium transition-all',
+                'flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all',
                 viewVariant === 'chart'
-                  ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
               )}
             >
@@ -360,9 +360,9 @@ export function FlujoCajaChart({
             <button
               onClick={() => setViewVariant('table')}
               className={cn(
-                'flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-medium transition-all',
+                'flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all',
                 viewVariant === 'table'
-                  ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
               )}
             >
@@ -375,36 +375,36 @@ export function FlujoCajaChart({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Ingresos */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+        <div className="p-4 rounded-xl bg-[#2C7A53] text-white">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowsInSimple className="w-5 h-5 text-emerald-200" />
-            <span className="text-sm font-medium text-emerald-100">{t('inmobiliaria.finance.cashFlow.totalIncome')}</span>
+            <ArrowsInSimple className="w-5 h-5 text-[#2C7A53]" />
+            <span className="text-sm font-medium text-[#2C7A53]">{t('inmobiliaria.finance.cashFlow.totalIncome')}</span>
           </div>
           <p className="text-xl font-bold truncate">{formatCurrency(data.totals.totalIngresos)}</p>
         </div>
 
         {/* Total Dispersiones */}
-        <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+        <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowsOutSimple className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+            <ArrowsOutSimple className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               {t('inmobiliaria.finance.cashFlow.disbursements')}
             </span>
           </div>
-          <p className="text-xl font-bold text-blue-800 dark:text-blue-300 truncate">
+          <p className="text-xl font-bold text-neutral-700 dark:text-neutral-300 truncate">
             {formatCurrency(data.totals.totalDispersiones)}
           </p>
         </div>
 
         {/* Total Comisiones */}
-        <div className="p-4 rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20">
+        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
           <div className="flex items-center gap-2 mb-2">
-            <CurrencyDollar className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            <span className="text-sm font-medium text-violet-700 dark:text-violet-400">
+            <CurrencyDollar className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+            <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
               {t('inmobiliaria.finance.cashFlow.commissions')}
             </span>
           </div>
-          <p className="text-xl font-bold text-violet-800 dark:text-violet-300 truncate">
+          <p className="text-xl font-bold text-[#1A40FF] dark:text-[#5570FF] truncate">
             {formatCurrency(data.totals.totalComisiones)}
           </p>
         </div>
@@ -414,22 +414,22 @@ export function FlujoCajaChart({
           className={cn(
             'p-4 rounded-xl border',
             data.totals.netBalance >= 0
-              ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20'
-              : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+              ? 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+              : 'border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15'
           )}
         >
           <div className="flex items-center gap-2 mb-2">
             {data.totals.netBalance >= 0 ? (
-              <TrendUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <TrendUp className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             ) : (
-              <TrendDown className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <TrendDown className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
             )}
             <span
               className={cn(
                 'text-sm font-medium',
                 data.totals.netBalance >= 0
-                  ? 'text-emerald-700 dark:text-emerald-400'
-                  : 'text-red-700 dark:text-red-400'
+                  ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                  : 'text-[#C4503B] dark:text-[#E0664D]'
               )}
             >
               {t('inmobiliaria.finance.cashFlow.netBalance')}
@@ -439,8 +439,8 @@ export function FlujoCajaChart({
             className={cn(
               'text-xl font-bold truncate',
               data.totals.netBalance >= 0
-                ? 'text-emerald-800 dark:text-emerald-300'
-                : 'text-red-800 dark:text-red-300'
+                ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                : 'text-[#C4503B] dark:text-[#E0664D]'
             )}
           >
             {formatCurrency(data.totals.netBalance)}
@@ -449,8 +449,8 @@ export function FlujoCajaChart({
             <div
               className={cn(
                 'flex items-center gap-1 mt-2 text-xs font-medium',
-                trend.type === 'up' && 'text-emerald-600 dark:text-emerald-400',
-                trend.type === 'down' && 'text-red-600 dark:text-red-400'
+                trend.type === 'up' && 'text-[#2C7A53] dark:text-[#3EAE70]',
+                trend.type === 'down' && 'text-[#C4503B] dark:text-[#E0664D]'
               )}
             >
               {trend.type === 'up' ? (

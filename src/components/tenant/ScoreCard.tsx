@@ -14,10 +14,10 @@ interface ScoreCardProps {
 }
 
 const LEVEL_ICON_COLORS: Record<RiskLevel, string> = {
-  A: 'text-emerald-600 dark:text-emerald-400',
-  B: 'text-blue-600 dark:text-blue-400',
-  C: 'text-amber-600 dark:text-amber-400',
-  D: 'text-red-600 dark:text-red-400',
+  A: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  B: 'text-[#1A40FF] dark:text-[#5570FF]',
+  C: 'text-[#B7791F] dark:text-[#D2992F]',
+  D: 'text-[#C4503B] dark:text-[#E0664D]',
 };
 
 export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
@@ -27,9 +27,9 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
     return (
       <button
         onClick={onClick}
-        className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5 text-left w-full hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors group"
+        className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5 text-left w-full hover:bg-neutral-100 dark:hover:bg-[#222224] transition-colors group"
       >
-        <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
           <Shield className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
         </div>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
@@ -53,9 +53,9 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
   return (
     <button
       onClick={onClick}
-      className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5 text-left w-full hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors group"
+      className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5 text-left w-full hover:bg-neutral-100 dark:hover:bg-[#222224] transition-colors group"
     >
-      <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-3">
+      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
         <Shield className={cn('w-5 h-5', LEVEL_ICON_COLORS[level])} />
       </div>
       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
@@ -67,7 +67,7 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
           {info.label}
         </Badge>
       </div>
-      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
         {locale === 'es' ? 'Ver detalle' : 'View detail'}
       </p>
     </button>

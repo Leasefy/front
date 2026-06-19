@@ -233,10 +233,10 @@ export function ApplicationDetail({
                   <div
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
-                      status === 'approved' && 'bg-emerald-500',
-                      status === 'rejected' && 'bg-red-500',
+                      status === 'approved' && 'bg-[#2C7A53]',
+                      status === 'rejected' && 'bg-[#C4503B]',
                       status === 'withdrawn' && 'bg-muted-foreground',
-                      ['submitted', 'under_review', 'pre_approved'].includes(status) && 'bg-blue-500'
+                      ['submitted', 'under_review', 'pre_approved'].includes(status) && 'bg-[#1A40FF]'
                     )}
                     style={{ width: `${progress}%` }}
                   />

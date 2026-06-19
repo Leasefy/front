@@ -151,11 +151,11 @@ function ContratoDetalleContent() {
   if (error || !contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-rose-700">No se pudo cargar el contrato</p>
-            <p className="text-sm text-rose-600 mt-1">{error ?? 'Contrato no encontrado'}</p>
+            <p className="font-semibold text-[#C4503B]">No se pudo cargar el contrato</p>
+            <p className="text-sm text-[#C4503B] mt-1">{error ?? 'Contrato no encontrado'}</p>
           </div>
         </div>
       </div>
@@ -241,9 +241,9 @@ function ContratoDetalleContent() {
       )}
 
       {actionError && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 flex items-start gap-2">
-          <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-rose-700">{actionError}</p>
+        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-4 flex items-start gap-2">
+          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-[#C4503B]">{actionError}</p>
         </div>
       )}
 
@@ -277,7 +277,7 @@ function ContratoDetalleContent() {
 
         {/* Right — preview */}
         <div className="lg:col-span-2">
-          <section className="rounded-2xl border border-border bg-card overflow-hidden">
+          <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
               <FileText className="w-4 h-4 text-muted-foreground" />
               <h3 className="font-semibold text-sm text-foreground">Documento</h3>
@@ -288,18 +288,18 @@ function ContratoDetalleContent() {
               {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
                 <div className="space-y-3">
                   {contract.tenantSignature && !contract.landlordSignature && (
-                    <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/20 px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-800 dark:text-amber-200">
+                    <div className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 px-4 py-2.5 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F] flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
                         Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
                         Firmá abajo para completar el contrato.
                       </p>
                     </div>
                   )}
                   {contract.tenantSignature && contract.landlordSignature && (
-                    <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/20 px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-emerald-800 dark:text-emerald-200">
+                    <div className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-4 py-2.5 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70] flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">
                         PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
                       </p>
                     </div>
@@ -311,7 +311,7 @@ function ContratoDetalleContent() {
                   ) : (
                     <iframe
                       src={signedPdfUrl!}
-                      className="w-full h-[720px] rounded-lg border border-border bg-white"
+                      className="w-full h-[720px] rounded-md border border-border bg-white"
                       title="Contrato"
                     />
                   )}
@@ -328,7 +328,7 @@ function ContratoDetalleContent() {
                 <div className="space-y-3">
                   <iframe
                     src={preview.pdfUrl}
-                    className="w-full h-[720px] rounded-lg border border-border bg-white"
+                    className="w-full h-[720px] rounded-md border border-border bg-white"
                     title="Contrato"
                   />
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -386,7 +386,7 @@ function ActionPanel({
     <button
       type="button"
       onClick={onCancelRequest}
-      className="text-xs font-medium text-rose-600 hover:text-rose-700 hover:underline inline-flex items-center gap-1"
+      className="text-xs font-medium text-[#C4503B] hover:text-[#C4503B] hover:underline inline-flex items-center gap-1"
     >
       <XCircle className="w-3.5 h-3.5" />
       Cancelar contrato
@@ -523,30 +523,30 @@ function ActionBar({
 }) {
   const toneClasses: Record<typeof tone, { bg: string; border: string; button: string }> = {
     indigo: {
-      bg: 'bg-indigo-50/60 dark:bg-indigo-950/20',
-      border: 'border-indigo-200 dark:border-indigo-800',
-      button: 'bg-indigo-600 hover:bg-indigo-700',
+      bg: 'bg-[#EEF1FF]/60 dark:bg-[#1A40FF]/20',
+      border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
+      button: 'bg-[#1A40FF] hover:opacity-90',
     },
     amber: {
-      bg: 'bg-amber-50/60 dark:bg-amber-950/20',
-      border: 'border-amber-200 dark:border-amber-800',
-      button: 'bg-amber-600 hover:bg-amber-700',
+      bg: 'bg-[#F8F0E0]/60 dark:bg-[#B7791F]/20',
+      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
+      button: 'bg-[#B7791F] hover:bg-[#B7791F]',
     },
     blue: {
-      bg: 'bg-blue-50/60 dark:bg-blue-950/20',
-      border: 'border-blue-200 dark:border-blue-800',
-      button: 'bg-blue-600 hover:bg-blue-700',
+      bg: 'bg-[#EEF1FF]/60 dark:bg-[#1A40FF]/20',
+      border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
+      button: 'bg-[#1A40FF] hover:bg-[#1A40FF]',
     },
     emerald: {
-      bg: 'bg-emerald-50/60 dark:bg-emerald-950/20',
-      border: 'border-emerald-200 dark:border-emerald-800',
-      button: 'bg-emerald-600 hover:bg-emerald-700',
+      bg: 'bg-[#E8F3EC]/60 dark:bg-[#2C7A53]/20',
+      border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+      button: 'bg-[#2C7A53] hover:bg-[#2C7A53]',
     },
   };
   const c = toneClasses[tone];
 
   return (
-    <section className={cn('rounded-2xl border p-5 space-y-3', c.bg, c.border)}>
+    <section className={cn('rounded-xl border p-5 space-y-3', c.bg, c.border)}>
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="font-semibold text-sm text-foreground">{title}</p>
@@ -596,7 +596,7 @@ function InfoCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 space-y-3">
+    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-muted-foreground" />
         <h3 className="font-semibold text-sm text-foreground">{title}</h3>

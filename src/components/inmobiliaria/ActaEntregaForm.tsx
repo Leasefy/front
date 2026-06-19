@@ -174,10 +174,9 @@ export function ActaEntregaForm({
     };
 
     onSaveDraft?.(draftActa);
-    toast.success({
-      title: t('inmobiliaria.acta.draftSaved'),
-      description: t('inmobiliaria.acta.draftSavedDesc'),
-    });
+    toast.success(t('inmobiliaria.acta.draftSaved'), {
+        description: t('inmobiliaria.acta.draftSavedDesc'),
+      });
   }, [formData, selectedConsignacion, onSaveDraft]);
 
   // Submit handler
@@ -214,14 +213,12 @@ export function ActaEntregaForm({
       // on failure, so we await it to keep isSubmitting active and to catch errors.
       await onSave?.(acta);
 
-      toast.success({
-        title: t('inmobiliaria.acta.actaCreated'),
+      toast.success(t('inmobiliaria.acta.actaCreated'), {
         description: t('inmobiliaria.acta.actaCreatedDesc'),
       });
     } catch (error) {
       console.error('Error creating acta:', error);
-      toast.error({
-        title: t('inmobiliaria.acta.actaError'),
+      toast.error(t('inmobiliaria.acta.actaError'), {
         description: t('inmobiliaria.acta.actaErrorDesc'),
       });
     } finally {
@@ -289,9 +286,9 @@ export function ActaEntregaForm({
                     className={cn(
                       'w-12 h-12 rounded-full flex items-center justify-center transition-all',
                       status === 'completed'
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-[#2C7A53] text-white'
                         : status === 'current'
-                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono ring-4 ring-indigo-500/20'
+                        ? 'bg-[#1A40FF] text-white'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
                     )}
                   >
@@ -305,7 +302,7 @@ export function ActaEntregaForm({
                     className={cn(
                       'text-xs font-medium',
                       status === 'current'
-                        ? 'text-indigo-600 dark:text-indigo-400'
+                        ? 'text-[#1A40FF] dark:text-[#5570FF]'
                         : status === 'completed'
                         ? 'text-neutral-900 dark:text-white'
                         : 'text-neutral-400'
@@ -321,7 +318,7 @@ export function ActaEntregaForm({
                     className={cn(
                       'flex-1 h-0.5 mx-2',
                       step.id < currentStep
-                        ? 'bg-emerald-500'
+                        ? 'bg-[#2C7A53]'
                         : 'bg-neutral-200 dark:bg-neutral-700'
                     )}
                   />
@@ -343,7 +340,7 @@ export function ActaEntregaForm({
           </div>
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-indigo-600"
+              className="h-full bg-[#1A40FF]"
               initial={false}
               animate={{ width: `${(currentStep / 6) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -411,7 +408,7 @@ export function ActaEntregaForm({
                   type="button"
                   onClick={goToNextStep}
                   disabled={!isStepValid}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('inmobiliaria.acta.next')}
                   <CaretRight className="w-4 h-4" />
@@ -421,7 +418,7 @@ export function ActaEntregaForm({
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting || isLoading}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#2C7A53] text-white font-medium hover:bg-[#2C7A53] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>

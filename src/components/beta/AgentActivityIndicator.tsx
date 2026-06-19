@@ -64,7 +64,7 @@ function AgentRow({
             className={cn(
               'w-4 h-4 shrink-0',
               agent.status === 'completed' ? 'text-neutral-400 dark:text-neutral-500' :
-              agent.status === 'failed' ? 'text-red-400' :
+              agent.status === 'failed' ? 'text-[#C4503B]' :
               'text-neutral-600 dark:text-neutral-400'
             )}
             weight="duotone"
@@ -76,7 +76,7 @@ function AgentRow({
           className={cn(
             'text-[13px] leading-tight flex-1',
             agent.status === 'completed' && 'text-muted-foreground',
-            agent.status === 'failed' && 'text-red-500/70 line-through',
+            agent.status === 'failed' && 'text-[#C4503B]/70 line-through',
             agent.status === 'running' && 'text-foreground font-medium',
             agent.status === 'dispatching' && 'text-muted-foreground/60',
           )}
@@ -93,10 +93,10 @@ function AgentRow({
             <CircleNotch className="w-4 h-4 text-neutral-500 animate-spin" weight="bold" />
           )}
           {agent.status === 'completed' && (
-            <CheckCircle className="w-4 h-4 text-emerald-500" weight="fill" />
+            <CheckCircle className="w-4 h-4 text-[#2C7A53]" weight="fill" />
           )}
           {agent.status === 'failed' && (
-            <XCircle className="w-4 h-4 text-red-500" weight="fill" />
+            <XCircle className="w-4 h-4 text-[#C4503B]" weight="fill" />
           )}
         </div>
 
@@ -159,7 +159,7 @@ export function AgentActivityIndicator({ activity, className }: AgentActivityInd
               className={cn(
                 'w-4 h-4',
                 allCompleted
-                  ? hasFailure ? 'text-red-400' : 'text-emerald-500'
+                  ? hasFailure ? 'text-[#C4503B]' : 'text-[#2C7A53]'
                   : 'text-neutral-500 animate-pulse',
               )}
               weight="fill"
@@ -184,7 +184,7 @@ export function AgentActivityIndicator({ activity, className }: AgentActivityInd
             className={cn(
               'h-full rounded-full transition-all duration-500 ease-out',
               allCompleted
-                ? hasFailure ? 'bg-red-400' : 'bg-emerald-400'
+                ? hasFailure ? 'bg-[#C4503B]' : 'bg-[#2C7A53]'
                 : 'bg-neutral-400 dark:bg-neutral-500',
             )}
             style={{ width: `${progressPct}%` }}

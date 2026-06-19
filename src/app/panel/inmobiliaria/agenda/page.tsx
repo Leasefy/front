@@ -11,12 +11,12 @@ import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 
 /** Resumen por tipo de evento — color por tipo (estático). */
 const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
-  { key: 'visitas', dot: 'bg-indigo-500', field: 'visitas' },
-  { key: 'firmas', dot: 'bg-amber-500', field: 'firmasPendientes' },
-  { key: 'vencimientos', dot: 'bg-rose-500', field: 'vencimientos' },
-  { key: 'seguimientos', dot: 'bg-blue-500', field: 'seguimientos' },
-  { key: 'inspecciones', dot: 'bg-teal-500', field: 'inspecciones' },
-  { key: 'tareas', dot: 'bg-violet-500', field: 'tareas' },
+  { key: 'visitas', dot: 'bg-[#1A40FF]', field: 'visitas' },
+  { key: 'firmas', dot: 'bg-[#B7791F]', field: 'firmasPendientes' },
+  { key: 'vencimientos', dot: 'bg-[#C4503B]', field: 'vencimientos' },
+  { key: 'seguimientos', dot: 'bg-[#1A40FF]', field: 'seguimientos' },
+  { key: 'inspecciones', dot: 'bg-neutral-100 dark:bg-neutral-800', field: 'inspecciones' },
+  { key: 'tareas', dot: 'bg-neutral-100 dark:bg-neutral-800', field: 'tareas' },
 ];
 
 const COLUMNS = [
@@ -40,7 +40,7 @@ function AgendaContent() {
         </div>
         <button
           onClick={() => toast.info(t(k('newSoon')))}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] flex-shrink-0"
+          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm transition-transform active:scale-[0.97] flex-shrink-0 font-medium"
         >
           <Plus className="w-4 h-4" weight="bold" />
           {t(k('new'))}
@@ -48,11 +48,11 @@ function AgendaContent() {
       </header>
 
       {/* Honest M1 banner */}
-      <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" weight="fill" />
+      <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-3 flex items-start gap-2.5">
+        <Info className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] flex-shrink-0 mt-0.5" weight="fill" />
         <div>
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">{t(k('m1BannerTitle'))}</p>
-          <p className="text-xs text-blue-600 dark:text-blue-300/90 mt-0.5">{t(k('m1BannerDesc'))}</p>
+          <p className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">{t(k('m1BannerTitle'))}</p>
+          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]/90 mt-0.5">{t(k('m1BannerDesc'))}</p>
         </div>
       </div>
 
@@ -73,10 +73,10 @@ function AgendaContent() {
       </section>
 
       {/* Eventos y tareas */}
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 p-5 border-b border-border">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-            <CalendarBlank className="w-[18px] h-[18px] text-indigo-600 dark:text-indigo-400" />
+          <div className="w-9 h-9 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
+            <CalendarBlank className="w-[18px] h-[18px] text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div>
             <h2 className="text-h4 text-foreground">{t(k('listTitle'))}</h2>

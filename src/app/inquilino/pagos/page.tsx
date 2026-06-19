@@ -130,27 +130,27 @@ export default function PagosPage() {
       case 'APPROVED':
         return {
           label: locale === 'es' ? 'Aprobado' : 'Approved',
-          color: 'bg-emerald-100 text-emerald-700',
+          color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
           icon: Check,
-          iconBg: 'bg-emerald-100',
-          iconColor: 'text-emerald-600',
+          iconBg: 'bg-[#E8F3EC]',
+          iconColor: 'text-[#2C7A53]',
         };
       case 'PENDING_VALIDATION':
         return {
           label: locale === 'es' ? 'En verificación' : 'In verification',
-          color: 'bg-amber-100 text-amber-700',
+          color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
           icon: Clock,
-          iconBg: 'bg-amber-100',
-          iconColor: 'text-amber-600',
+          iconBg: 'bg-[#F8F0E0]',
+          iconColor: 'text-[#B7791F]',
         };
       case 'REJECTED':
       case 'DISPUTED':
         return {
           label: locale === 'es' ? 'Rechazado' : 'Rejected',
-          color: 'bg-rose-100 text-rose-700',
+          color: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
           icon: XCircle,
-          iconBg: 'bg-rose-100',
-          iconColor: 'text-rose-600',
+          iconBg: 'bg-[#F8EAE7]',
+          iconColor: 'text-[#C4503B]',
         };
       case 'CANCELLED':
         return {
@@ -166,8 +166,8 @@ export default function PagosPage() {
   // Loading state
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -175,7 +175,7 @@ export default function PagosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="payments" />
         </div>
@@ -186,7 +186,7 @@ export default function PagosPage() {
   // No active lease — show clean empty state (no fake stats, no mock Visa)
   if (!primaryLease) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <motion.header
             initial={{ opacity: 0, y: 20 }}
@@ -221,7 +221,7 @@ export default function PagosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -246,11 +246,11 @@ export default function PagosPage() {
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
           {/* Next Payment */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <CreditCard className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">{t('dashboard.nextPayment')}</p>
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">{t('dashboard.nextPayment')}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {formatCurrencyI18n(nextAmount)}
             </p>
@@ -260,9 +260,9 @@ export default function PagosPage() {
           </div>
 
           {/* Total Paid */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CurrencyDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <CurrencyDollar className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('payments.summary.totalPaid')}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
@@ -272,8 +272,8 @@ export default function PagosPage() {
           </div>
 
           {/* Pending */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <Calendar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('common.pending')}</p>
@@ -317,7 +317,7 @@ export default function PagosPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-md transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden"
                       >
                         <div className="flex items-center gap-4 p-4">
                           <div className={cn(
@@ -358,7 +358,7 @@ export default function PagosPage() {
                               {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
                                 <button
                                   onClick={handlePayNow}
-                                  className="flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
+                                  className="flex items-center gap-1 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium transition-colors"
                                 >
                                   {locale === 'es' ? 'Reintentar' : 'Retry'}
                                   <ArrowUpRight className="w-4 h-4" />
@@ -367,7 +367,7 @@ export default function PagosPage() {
                             </div>
 
                             {request.rejectionReason && (
-                              <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 italic">
+                              <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-2 italic">
                                 {request.rejectionReason}
                               </p>
                             )}
@@ -388,7 +388,7 @@ export default function PagosPage() {
                         'p-2 rounded-full transition-all',
                         currentPage === 1
                           ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                       )}
                     >
                       <CaretLeft className="w-5 h-5" />
@@ -403,7 +403,7 @@ export default function PagosPage() {
                             'w-10 h-10 rounded-full text-sm font-medium transition-all',
                             currentPage === page
                               ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                              : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                              : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                           )}
                         >
                           {page}
@@ -418,7 +418,7 @@ export default function PagosPage() {
                         'p-2 rounded-full transition-all',
                         currentPage === totalPages
                           ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                       )}
                     >
                       <CaretRight className="w-5 h-5" />
@@ -464,7 +464,7 @@ export default function PagosPage() {
             )}
 
             {/* Quick Links */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t('dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
@@ -472,17 +472,17 @@ export default function PagosPage() {
                   { href: '/inquilino/arriendo', icon: Buildings, label: t('nav.myRental'), desc: locale === 'es' ? 'Ver contrato actual' : 'View current contract' },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#2a2a2c] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm group-hover:shadow transition-shadow">
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#2a2a2c] transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                           {action.label}
                         </p>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
                       </div>
-                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -539,12 +539,12 @@ function PeriodStatusCard({
   // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
   if (status === 'PENDING_VALIDATION') {
     return (
-      <div className="rounded-3xl bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-950/40 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 p-6">
+      <div className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/12 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
+            <Clock className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
           </div>
-          <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+          <span className="text-sm text-[#B7791F] dark:text-[#D2992F] font-medium">
             {locale === 'es' ? 'Pago en verificación' : 'Payment in verification'}
           </span>
         </div>
@@ -564,12 +564,12 @@ function PeriodStatusCard({
   // APPROVED — pago confirmado por el landlord
   if (status === 'APPROVED') {
     return (
-      <div className="rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-950/40 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 p-6">
+      <div className="rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/12 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
+            <Check className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
           </div>
-          <span className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+          <span className="text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
             {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
           </span>
         </div>
@@ -588,12 +588,12 @@ function PeriodStatusCard({
 
   // NONE | REJECTED — mostrar CTA "Pagar arriendo"
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
+    <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-          <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
+          <CreditCard className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
         </div>
-        <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+        <span className="text-sm text-[#1A40FF] dark:text-[#5570FF] font-medium">
           {status === 'REJECTED'
             ? (locale === 'es' ? 'Pago rechazado' : 'Payment rejected')
             : t('dashboard.nextPayment')}
@@ -601,8 +601,8 @@ function PeriodStatusCard({
       </div>
 
       {status === 'REJECTED' && rejectionReason && (
-        <div className="mb-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-3">
-          <p className="text-xs text-rose-700 dark:text-rose-400">{rejectionReason}</p>
+        <div className="mb-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-3">
+          <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{rejectionReason}</p>
         </div>
       )}
 
@@ -620,15 +620,15 @@ function PeriodStatusCard({
           </span>
           <span className="text-neutral-900 dark:text-white font-medium">{progress}%</span>
         </div>
-        <div className="h-2 bg-indigo-200 dark:bg-indigo-900/50 rounded-full overflow-hidden">
+        <div className="h-2 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-full overflow-hidden">
           <div
-            className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full transition-all duration-500"
+            className="h-full bg-[#1A40FF] dark:bg-[#5570FF] rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-indigo-200 dark:border-indigo-800">
+      <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
         <span className="text-neutral-500 dark:text-neutral-400">
           {locale === 'es' ? 'Día de pago' : 'Payment day'}
         </span>
@@ -640,7 +640,7 @@ function PeriodStatusCard({
       {daysUntil !== null && (
         <div className="flex items-center justify-between text-sm mb-6">
           <span className={cn(
-            daysUntil <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-500 dark:text-neutral-400'
+            daysUntil <= 3 ? 'text-[#B7791F] dark:text-[#D2992F] font-medium' : 'text-neutral-500 dark:text-neutral-400'
           )}>
             {daysUntil === 0 ? t('dashboard.dueToday') : t('dashboard.dueIn', { days: daysUntil })}
           </span>
@@ -649,7 +649,7 @@ function PeriodStatusCard({
 
       <button
         onClick={onPay}
-        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
+        className="w-full py-3 bg-[#1A40FF] hover:opacity-90 text-white font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
       >
         {status === 'REJECTED'
           ? (locale === 'es' ? 'Reintentar pago' : 'Retry payment')

@@ -175,8 +175,8 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
                 {/* Ver link */}
                 <td className="px-4 py-3 text-center">
                   <Link
-                    href={`/panel/inmobiliaria/ai/cotizador/${quote.id}`}
-                    className="text-neutral-400 hover:text-indigo-500 transition-colors inline-flex items-center justify-center"
+                    href={`/panel/inmobiliaria/ai/asegurabilidad/${quote.id}`}
+                    className="text-neutral-400 hover:text-[#1A40FF] transition-colors inline-flex items-center justify-center"
                     aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.viewAriaLabel')}
                   >
                     <ArrowSquareOut className="h-4 w-4" />

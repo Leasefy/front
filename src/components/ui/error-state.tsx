@@ -1,11 +1,23 @@
-import { Warning, ArrowsClockwise } from '@phosphor-icons/react';
+import { ArrowsClockwise } from '@phosphor-icons/react';
+import { ErrorState as DSErrorState } from '@leasefy/ui';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
+/**
+ * ErrorState — ADAPTER fino sobre el ErrorState de @leasefy/ui que preserva
+ * la API local (title/description/onRetry, todos opcionales con defaults en
+ * español):
+ * - description → prop `message` del DS.
+ * - Se conserva el canvas del mvp (Card con tinte danger) — el DS renderiza
+ *   el estado "flotante" sin contenedor.
+ * - El CTA de retry se pasa como `action` para conservar el botón outline
+ *   con icono y el label "Intentar de nuevo" del mvp.
+ * El interior (icono duotone sobre BrandMotif + tipografía) es del DS.
+ */
+
 // ============================================================================
-// TextTs
+// Types (API local intacta)
 // ============================================================================
 
 export interface ErrorStateProps {
@@ -23,15 +35,6 @@ export interface ErrorStateProps {
 // Component
 // ============================================================================
 
-/**
- * ErrorState - Reusable error state component with recovery action
- *
- * Features:
- * - Warning icon with destructive styling
- * - Customizable title and description
- * - Optional retry button
- * - Professional, non-alarming design
- */
 export function ErrorState({
   title = 'Algo salió mal',
   description = 'No pudimos cargar esta página. Por favor intenta de nuevo.',
@@ -39,29 +42,21 @@ export function ErrorState({
   className,
 }: ErrorStateProps) {
   return (
-    <Card className={cn('border border-red-100 bg-red-50/30', className)}>
-      <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
-        {/* Icon Container - Soft error styling */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 bg-red-500/10 rounded-sm blur-xl" />
-          <div className="relative rounded-sm bg-gradient-to-br from-red-100 to-red-50 p-5 border border-red-200/50">
-            <Warning className="h-8 w-8 text-red-500" />
-          </div>
-        </div>
-
-        {/* Title */}
-        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-
-        {/* Description */}
-        <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">{description}</p>
-
-        {/* Retry Button */}
-        {onRetry && (
-          <Button onClick={onRetry} variant="outline" className="gap-2">
-            <ArrowsClockwise className="h-4 w-4" />
-            Intentar de nuevo
-          </Button>
-        )}
+    <Card className={cn('border border-[#C4503B]/30 bg-[#F8EAE7]/30', className)}>
+      <CardContent className="p-0">
+        <DSErrorState
+          title={title}
+          message={description}
+          className="py-16 px-6"
+          action={
+            onRetry ? (
+              <Button onClick={onRetry} variant="outline" className="gap-2">
+                <ArrowsClockwise className="h-4 w-4" />
+                Intentar de nuevo
+              </Button>
+            ) : undefined
+          }
+        />
       </CardContent>
     </Card>
   );

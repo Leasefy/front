@@ -68,7 +68,7 @@ function StatCard({ label, value, dot }: { label: string; value: number | string
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
         <span className="text-caption text-muted-foreground truncate">{label}</span>
       </div>
-      <p className="mt-1.5 text-2xl font-mono tabular-nums text-foreground">{value}</p>
+      <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">{value}</p>
     </div>
   );
 }
@@ -127,7 +127,7 @@ function ContratosContent() {
         </div>
         <button
           onClick={() => router.push('/panel/inmobiliaria/contratos/nuevo')}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] flex-shrink-0"
+          className="inline-flex items-center gap-2 h-11 px-4 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:bg-[#1636D8] transition-all active:scale-[0.97] flex-shrink-0"
         >
           <Plus className="w-4 h-4" weight="bold" />
           {tx('Nuevo contrato', 'New contract')}
@@ -136,29 +136,29 @@ function ContratosContent() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-slate-400" />
-        <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-emerald-500" />
+        <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-neutral-400" />
+        <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-[#2C7A53]" />
         <StatCard
           label={tx('Pendientes de firma', 'Pending signature')}
           value={isLoading ? '—' : stats.pendingLandlord + stats.pendingTenant}
-          dot="bg-amber-500"
+          dot="bg-[#B7791F]"
         />
-        <StatCard label={tx('Borradores', 'Drafts')} value={isLoading ? '—' : stats.draft} dot="bg-violet-500" />
+        <StatCard label={tx('Borradores', 'Drafts')} value={isLoading ? '—' : stats.draft} dot="bg-neutral-400" />
       </div>
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-start gap-2.5">
-          <Warning className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" weight="fill" />
+        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-start gap-2.5">
+          <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5" weight="fill" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-rose-700 dark:text-rose-300">
+            <p className="text-xs font-medium text-[#C4503B] dark:text-[#E0664D]">
               {tx('Error cargando contratos', 'Error loading contracts')}
             </p>
-            <p className="text-xs text-rose-600 dark:text-rose-300/90 mt-0.5">{error}</p>
+            <p className="text-xs text-[#C4503B] dark:text-[#E0664D]/90 mt-0.5">{error}</p>
           </div>
           <button
             onClick={() => void refetch()}
-            className="h-7 px-2.5 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/70 transition-colors flex-shrink-0"
+            className="h-7 px-2.5 rounded-md bg-white dark:bg-neutral-900 border border-[#C4503B]/30 text-[#C4503B] dark:text-[#E0664D] text-xs font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors flex-shrink-0"
           >
             {tx('Reintentar', 'Retry')}
           </button>
@@ -166,11 +166,11 @@ function ContratosContent() {
       )}
 
       {/* Table */}
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-              <FileText className="w-[18px] h-[18px] text-primary" />
+            <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             <div>
               <h2 className="text-h4 text-foreground">{tx('Contratos', 'Contracts')}</h2>

@@ -86,18 +86,18 @@ export function KPICard({
     },
     warning: {
       bg: 'bg-card',
-      icon: 'bg-amber-50 text-amber-600',
-      value: 'text-amber-600',
+      icon: 'bg-[#F8F0E0] text-[#B7791F]',
+      value: 'text-[#B7791F]',
     },
     success: {
       bg: 'bg-card',
-      icon: 'bg-emerald-50 text-emerald-600',
-      value: 'text-emerald-600',
+      icon: 'bg-[#E8F3EC] text-[#2C7A53]',
+      value: 'text-[#2C7A53]',
     },
     info: {
       bg: 'bg-card',
-      icon: 'bg-blue-50 text-blue-600',
-      value: 'text-blue-600',
+      icon: 'bg-[#EEF1FF] text-[#1A40FF]',
+      value: 'text-[#1A40FF]',
     },
   };
 
@@ -106,9 +106,9 @@ export function KPICard({
   const content = (
     <div
       className={cn(
-        'relative p-5 rounded-sm border border-border shadow-sm',
+        'relative p-5 rounded-sm border border-border',
         'transition-all duration-200 ease-out',
-        href && 'hover:shadow-md hover:border-border cursor-pointer',
+        href && 'hover: hover:border-border cursor-pointer',
         styles.bg,
         className
       )}
@@ -141,7 +141,7 @@ export function KPICard({
         <div
           className={cn(
             'absolute top-5 right-5 flex items-center gap-1 text-xs font-medium',
-            trend.isPositive ? 'text-emerald-600' : 'text-red-500'
+            trend.isPositive ? 'text-[#2C7A53]' : 'text-[#C4503B]'
           )}
         >
           {trend.isPositive ? (

@@ -134,14 +134,14 @@ export function PricingDetailSheet({
 
             {/* Limits */}
             <div className="flex gap-3">
-              <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
                 <Buildings className="w-4 h-4 text-primary" />
                 <span className="text-[13px] font-semibold text-foreground">
                   {plan.limits.properties === 'ilimitadas' ? '∞' : plan.limits.properties}
                 </span>
                 <span className="text-[11px] text-muted-foreground">propiedades</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
                 <Users className="w-4 h-4 text-primary" />
                 <span className="text-[13px] font-semibold text-foreground">
                   {plan.limits.users === 'ilimitados' ? '∞' : plan.limits.users}
@@ -178,7 +178,7 @@ export function PricingDetailSheet({
                   <ul className="space-y-3">
                     {group.items.map((item) => (
                       <li key={item.name} className="flex items-start gap-2.5">
-                        <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" weight="fill" />
+                        <CheckCircle className="w-4 h-4 text-[#2C7A53] shrink-0 mt-0.5" weight="fill" />
                         <div>
                           <span className="text-[13px] font-medium text-foreground">{item.name}</span>
                           <p className="text-[12px] text-muted-foreground leading-relaxed mt-0.5">
@@ -200,7 +200,7 @@ export function PricingDetailSheet({
                 </h4>
                 <div className="space-y-3">
                   {plan.addons.map((addon) => (
-                    <div key={addon.label} className="flex items-start justify-between gap-4 p-3 rounded-lg bg-muted/30">
+                    <div key={addon.label} className="flex items-start justify-between gap-4 p-3 rounded-md bg-muted/30">
                       <div className="flex-1">
                         <span className="text-[13px] font-medium text-foreground">{addon.label}</span>
                         <p className="text-[12px] text-muted-foreground mt-0.5">{addon.description}</p>

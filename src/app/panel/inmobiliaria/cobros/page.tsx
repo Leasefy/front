@@ -358,7 +358,7 @@ function CobrosContent() {
               setPaymentCobro(null);
               setIsPaymentModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors"
           >
             <Plus className="w-5 h-5" />
             {t('inmobiliaria.cobros.registerPayment')}
@@ -388,13 +388,13 @@ function CobrosContent() {
       >
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
+          <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
             <button
               onClick={() => setViewMode('table')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'table'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -404,9 +404,9 @@ function CobrosContent() {
             <button
               onClick={() => setViewMode('cards')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
                 viewMode === 'cards'
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -432,13 +432,13 @@ function CobrosContent() {
         <div>
           {cobrosLoading ? (
             <div className="p-12 text-center">
-              <div className="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+              <div className="inline-block w-8 h-8 border-4 border-[#1A40FF]/30 border-t-[#1A40FF] rounded-full animate-spin mb-4" />
               <p className="text-muted-foreground">Cargando cobros...</p>
             </div>
           ) : cobrosError ? (
-            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-5">
-                <CurrencyCircleDollar className="w-6 h-6 text-red-500" />
+            <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+              <div className="w-14 h-14 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center mx-auto mb-5">
+                <CurrencyCircleDollar className="w-6 h-6 text-[#C4503B]" />
               </div>
               <h3 className="text-base font-semibold text-foreground mb-1.5">
                 Error al cargar cobros
@@ -448,7 +448,7 @@ function CobrosContent() {
               </p>
               <button
                 onClick={() => refetchCobros()}
-                className="px-4 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 rounded-md bg-[#1A40FF] text-white hover:opacity-90 transition-colors font-medium"
               >
                 Reintentar
               </button>
@@ -474,8 +474,8 @@ function CobrosContent() {
               </div>
             )
           ) : (
-            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
+            <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
+              <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
                 <CurrencyCircleDollar className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
               </div>
               <h3 className="text-base font-semibold text-foreground mb-1.5">
@@ -487,7 +487,7 @@ function CobrosContent() {
               {filters.status !== 'all' && (
                 <button
                   onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
-                  className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                  className="mt-4 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                 >
                   {t('inmobiliaria.cobros.filters.all')}
                 </button>

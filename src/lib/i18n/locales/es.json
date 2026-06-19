@@ -890,7 +890,8 @@
       "secFinanzas": "Finanzas",
       "secAnalisis": "Análisis",
       "equipo": "Equipo",
-      "cmdPaletteTrigger": "Buscar todo…"
+      "cmdPaletteTrigger": "Buscar todo…",
+      "inicio": "Inicio"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -4199,24 +4200,49 @@
     "ai": {
       "nav": {
         "cobranza": "Cobranza",
-        "cotizador": "Cotizador",
-        "arco": "ARCO",
+        "cotizador": "Asegurabilidad",
+        "arco": "Habeas Data",
         "plantillas": "Plantillas",
         "configuracion": "Configuración",
         "analitica": "Analítica",
         "deudores": "Deudores",
         "pagos": "Pagos",
         "escalaciones": "Escalaciones",
-        "compliance": "Compliance",
+        "compliance": "Cumplimiento",
         "cartas": "Cartas",
         "llamadas": "Llamadas",
         "siniestros": "Siniestros",
-        "pagosHome": "Pagos IA"
+        "pagosHome": "Pagos IA",
+        "conciliacionCola": "Por revisar",
+        "conciliacionConfiguracion": "Configuración",
+        "conciliacionAnalitica": "Analítica",
+        "conciliacionMovimientos": "Movimientos",
+        "estudio": "Estudio del inquilino",
+        "estudioCola": "Estudios por revisar",
+        "estudioConfiguracion": "Configuración",
+        "estudioAnalitica": "Analítica",
+        "matching": "Matching",
+        "matchingCola": "Candidatos sugeridos",
+        "matchingConfiguracion": "Configuración",
+        "matchingAnalitica": "Analítica",
+        "pagosCola": "Por aprobar",
+        "pagosConfiguracion": "Configuración",
+        "pagosAnalitica": "Analítica",
+        "avaluos": "Avalúos",
+        "avaluosCola": "Mis solicitudes",
+        "avaluosConfiguracion": "Configuración",
+        "cotizadorCola": "Por revisar",
+        "cobranzaReporte": "Reporte diario",
+        "cobranzaResumen": "Resumen",
+        "cobranzaCasos": "Casos",
+        "cobranzaPendientes": "Pendientes",
+        "cobranzaPlaybooks": "Playbooks",
+        "cobranzaReportes": "Reportes"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
         "cobranza": "Cobranza",
-        "cotizador": "Cotizador"
+        "cotizador": "Asegurabilidad"
       },
       "cotizador": {
         "placeholder": {
@@ -4226,7 +4252,7 @@
           "backLink": "Volver a Agentes AI"
         },
         "overview": {
-          "title": "Cotizador",
+          "title": "Asegurabilidad",
           "subtitle": "Estado de las cotizaciones y aseguradoras activas",
           "lastUpdated": "Actualizado hace",
           "newQuoteCta": "Nueva cotización",
@@ -4261,7 +4287,7 @@
           "errorLoading": "Error al cargar datos del cotizador",
           "empty": {
             "title": "Aún no hay cotizaciones",
-            "description": "Generá la primera para empezar a ver métricas y verdictos.",
+            "description": "Genera la primera para empezar a ver métricas y veredictos.",
             "cta": {
               "label": "Nueva cotización"
             }
@@ -4401,6 +4427,75 @@
           "reQuoteButton": "Re-cotizar con cambios",
           "liveRegion": {
             "carrierVerdict": "{{carrier}}: {{result}}"
+          },
+          "veredicto": {
+            "regionLabel": "Conclusión y recomendación",
+            "estimadoBadge": "Estimado · Prevalidación Leasefy",
+            "confirmadoBadge": "Confirmado por la aseguradora",
+            "asegurableLabel": "Asegurable",
+            "asegurableConCondicionesLabel": "Asegurable con condiciones",
+            "noAsegurableLabel": "No asegurable hoy",
+            "headline": "El candidato es {{status}} · {{count}} opciones encontradas",
+            "headlineNo": "Hoy no encontramos una aseguradora que lo cubra",
+            "cohort": "En casos similares ({{label}}), confianza {{confidence}}%.",
+            "recomendadaEyebrow": "Recomendada",
+            "recomendamos": "Recomendamos avanzar con {{carrier}}",
+            "primaPorMes": "al mes",
+            "porQue": "Por qué",
+            "porQueMejorPrecio": "Es la opción que mejor equilibra precio y condiciones entre las aseguradoras que aceptan."
+          },
+          "matriz": {
+            "titulo": "Compara las opciones",
+            "subtitle": "{{n}} aseguradoras consultadas",
+            "colAseguradora": "Aseguradora",
+            "colResultado": "Resultado",
+            "colCondicion": "Condición",
+            "colCosto": "Costo estimado",
+            "colTiempo": "Tiempo de respuesta",
+            "colRecomendacion": "Recomendación",
+            "verMatriz": "Ver tabla comparativa",
+            "verTarjetas": "Ver en tarjetas",
+            "viewToggleLabel": "Cambiar entre vista de tabla y tarjetas",
+            "recomendada": "Recomendada",
+            "condicionesCount": "{{n}} condiciones por resolver",
+            "prevalidacionNote": "Los costos y resultados son una prevalidación estimada de Leasefy. Aún no están confirmados por la aseguradora; úsalos como guía antes de radicar.",
+            "estimadoDisclaimer": "Costo estimado por la prevalidación de Leasefy — sujeto a confirmación de la aseguradora."
+          },
+          "fuente": {
+            "estimado": "Estimado · Prevalidación Leasefy",
+            "estimadoTooltip": "Resultado estimado por la prevalidación de Leasefy. Aún no está confirmado por la aseguradora; sirve como guía antes de radicar.",
+            "confirmado": "Confirmado por la aseguradora",
+            "confirmadoTooltip": "Resultado confirmado directamente por la aseguradora a través de su portal.",
+            "manual": "Revisión manual"
+          },
+          "recovery": {
+            "titulo": "Todavía tenemos caminos",
+            "eyebrow": "Caminos a seguir",
+            "intro": "Ninguna aseguradora aprobó esta vez, pero puedes intentar otra ruta:",
+            "introPaths": "Ninguna aseguradora aprobó esta vez. Estos ajustes podrían cambiar el resultado:",
+            "asesorHint": "No tenemos un ajuste automático que sugerir para este caso. Habla con un asesor de Leasefy para revisar opciones manualmente.",
+            "footerNote": "Re-cotizar abre el formulario con los datos actuales para que ajustes lo necesario.",
+            "recotizar": "Re-cotizar con cambios",
+            "sugerirAsesor": "Hablar con un asesor"
+          },
+          "condiciones": {
+            "titulo": "Condiciones por resolver",
+            "subtitle": "{{n}} condiciones entre las aseguradoras que aceptan con requisitos.",
+            "unspecified": "Condición pendiente de detalle por parte de la aseguradora.",
+            "resolver": "Resolver condiciones"
+          },
+          "carrierCard": {
+            "porQueTitle": "Por qué",
+            "porQueApproved": "Aprobada con la prima estimada de arriba, sin condiciones adicionales por resolver.",
+            "porQueConditional": "Acepta el caso, pero con {{n}} condiciones que debes resolver antes de radicar.",
+            "porQueRejected": "No aprobó este caso con los datos actuales.",
+            "porQueRejectedWithReason": "No aprobó este caso por el motivo indicado arriba.",
+            "porQueError": "No pudimos obtener una respuesta de esta aseguradora; intenta de nuevo más tarde.",
+            "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
+            "porQuePending": "Todavía estamos consultando a esta aseguradora.",
+            "condicionesVisibleHint": "Condiciones listadas arriba",
+            "avanzarAction": "Avanzar",
+            "proximamente": "Próximamente"
           }
         },
         "pdf": {
@@ -4414,7 +4509,8 @@
         "nav": {
           "aseguradoras": "Aseguradoras",
           "insights": "Insights",
-          "costos": "Costos"
+          "costos": "Costos",
+          "configuracion": "Configuración"
         },
         "aseguradoras": {
           "pageTitle": "Aseguradoras",
@@ -4545,14 +4641,14 @@
           },
           "empty": {
             "title": "Aún no hay aseguradoras activas",
-            "description": "Contactá soporte para activar Sura, Mapfre o Bolívar.",
+            "description": "Contacta a soporte para activar Sura, Mapfre o Bolívar.",
             "cta": {
               "label": "Contactar soporte"
             }
           }
         },
         "insights": {
-          "pageTitle": "Insights de cotizador",
+          "pageTitle": "Insights de Asegurabilidad",
           "pageSubtitle": "Análisis agregado de rendimiento y costos",
           "approvalRateMonthlyTitle": "Tasa de aprobación por aseguradora",
           "primaDistributionTitle": "Distribución de prima por rango de canon",
@@ -4585,7 +4681,7 @@
           },
           "loadError": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
           "retry": "Reintentar",
-          "title": "Insights de cotizador",
+          "title": "Insights de Asegurabilidad",
           "subtitle": "Análisis agregado de rendimiento y costos",
           "errorLoading": "No se pudieron cargar los datos de insights. Intenta de nuevo.",
           "sections": {
@@ -4671,17 +4767,101 @@
         },
         "quote": {
           "exportPdf": "Descargar PDF"
+        },
+        "detalle": {
+          "conclusion": {
+            "asegurableTitulo": "Tu candidato es asegurable",
+            "parcialTitulo": "Tu candidato es asegurable con condiciones",
+            "noAsegurableTitulo": "Por ahora no encontramos opción asegurable",
+            "opcionesEncontradas": "Encontramos {{count}} opciones para ti"
+          },
+          "recomendacion": {
+            "titulo": "Nuestra recomendación",
+            "porque": "Por qué te la sugerimos"
+          },
+          "matriz": {
+            "titulo": "Compara las opciones",
+            "subtitle": "{{n}} aseguradoras consultadas",
+            "colAseguradora": "Aseguradora",
+            "colResultado": "Resultado",
+            "colCondicion": "Condición",
+            "colCosto": "Costo estimado",
+            "colTiempo": "Tiempo de respuesta",
+            "colRecomendacion": "Recomendación",
+            "verMatriz": "Ver tabla comparativa",
+            "verTarjetas": "Ver en tarjetas",
+            "viewToggleLabel": "Cambiar entre vista de tabla y tarjetas",
+            "recomendada": "Recomendada",
+            "condicionesCount": "{{n}} condiciones por resolver",
+            "prevalidacionNote": "Los costos y resultados son una prevalidación estimada de Leasefy. Aún no están confirmados por la aseguradora; úsalos como guía antes de radicar.",
+            "estimadoDisclaimer": "Costo estimado por la prevalidación de Leasefy — sujeto a confirmación de la aseguradora."
+          },
+          "estados": {
+            "noConsultada": "No consultada",
+            "consultando": "Consultando…",
+            "pendiente": "Pendiente",
+            "asegurable": "Asegurable",
+            "condicionado": "Asegurable con condiciones",
+            "noAsegurable": "No asegurable",
+            "revisionManual": "Revisión manual",
+            "portalNoDisponible": "Portal no disponible",
+            "vencido": "Sin respuesta a tiempo",
+            "listoAvanzar": "Listo para avanzar"
+          },
+          "recovery": {
+            "titulo": "Todavía tenemos caminos",
+            "eyebrow": "Caminos a seguir",
+            "intro": "Ninguna aseguradora aprobó esta vez, pero puedes intentar otra ruta:",
+            "introPaths": "Ninguna aseguradora aprobó esta vez. Estos ajustes podrían cambiar el resultado:",
+            "asesorHint": "No tenemos un ajuste automático que sugerir para este caso. Habla con un asesor de Leasefy para revisar opciones manualmente.",
+            "footerNote": "Re-cotizar abre el formulario con los datos actuales para que ajustes lo necesario.",
+            "recotizar": "Re-cotizar con cambios",
+            "sugerirAsesor": "Hablar con un asesor"
+          },
+          "condiciones": {
+            "titulo": "Condiciones por resolver",
+            "subtitle": "{{n}} condiciones entre las aseguradoras que aceptan con requisitos.",
+            "unspecified": "Condición pendiente de detalle por parte de la aseguradora.",
+            "resolver": "Resolver condiciones"
+          },
+          "fuente": {
+            "estimado": "Estimado · Prevalidación Leasefy",
+            "estimadoTooltip": "Resultado estimado por la prevalidación de Leasefy. Aún no está confirmado por la aseguradora; sirve como guía antes de radicar.",
+            "confirmado": "Confirmado por la aseguradora",
+            "confirmadoTooltip": "Resultado confirmado directamente por la aseguradora a través de su portal.",
+            "manual": "Revisión manual"
+          },
+          "cohorte": {
+            "enCasosSimilares": "En casos similares, esta fue la mejor opción el {{percent}} de las veces"
+          },
+          "carrierCard": {
+            "porQueTitle": "Por qué",
+            "porQueApproved": "Aprobada con la prima estimada de arriba, sin condiciones adicionales por resolver.",
+            "porQueConditional": "Acepta el caso, pero con {{n}} condiciones que debes resolver antes de radicar.",
+            "porQueRejected": "No aprobó este caso con los datos actuales.",
+            "porQueRejectedWithReason": "No aprobó este caso por el motivo indicado arriba.",
+            "porQueError": "No pudimos obtener una respuesta de esta aseguradora; intenta de nuevo más tarde.",
+            "porQueStub": "Resultado de demostración — esta aseguradora aún no está conectada en modo real.",
+            "porQuePending": "Todavía estamos consultando a esta aseguradora.",
+            "condicionesVisibleHint": "Condiciones listadas arriba",
+            "avanzarAction": "Avanzar",
+            "proximamente": "Próximamente"
+          }
+        },
+        "configuracion": {
+          "title": "Configuración y autonomía",
+          "subtitle": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Por ahora solo lectura: hoy nada se aplica sin tu visto bueno."
         }
       },
       "access": {
         "noAccessCobranza": "No tienes acceso a Cobranza",
-        "noAccessCotizador": "No tienes acceso a Cotizador",
+        "noAccessCotizador": "No tienes acceso a Asegurabilidad",
         "contactAdmin": "Contacta al administrador de tu inmobiliaria para solicitar acceso."
       },
       "cobranza": {
         "overview": {
           "title": "Cobranza",
-          "subtitle": "Estado actual de tu cartera de deudores",
+          "subtitle": "El agente cobra por ti; tú decides solo los casos críticos.",
           "lastUpdated": "Actualizado hace",
           "kpis": {
             "deudoresActivos": "Deudores activos",
@@ -4695,7 +4875,7 @@
             "ariaLabel": "Etapa {{stage}}, {{count}} deudores, click para ver detalle"
           },
           "funnel": {
-            "title": "Distribución del funnel",
+            "title": "Tu cartera por etapa",
             "ariaDescription": "Gráfico de barras mostrando distribución de deudores por etapa",
             "tableCaption": "Tabla alternativa de distribución por etapa",
             "empty": "Sin datos",
@@ -4705,7 +4885,7 @@
             }
           },
           "transitions": {
-            "title": "Últimas transiciones",
+            "title": "Movimientos recientes",
             "empty": "Sin transiciones recientes",
             "emptyHelper": "Las transiciones aparecerán aquí cuando el agente mueva deudores entre etapas",
             "agentActor": "Agente AI",
@@ -4715,7 +4895,7 @@
           "nextActions": {
             "title": "Acciones de hoy",
             "empty": "Sin acciones programadas hoy",
-            "configCta": "Configurar cadence",
+            "configCta": "Ajustar cadencia de contacto",
             "configCtaTooltip": "Disponible en una próxima actualización",
             "channelVoice": "Llamada",
             "channelWhatsapp": "WhatsApp",
@@ -4723,8 +4903,8 @@
           },
           "errorLoading": "Error cargando datos",
           "empty": {
-            "title": "Aún no tenés cartera de cobranza",
-            "description": "Importá tu primera cartera para empezar.",
+            "title": "Aún no tienes cartera de cobranza",
+            "description": "Importa tu primera cartera para empezar.",
             "cta": {
               "label": "Importar cartera"
             }
@@ -4774,7 +4954,7 @@
           "emptyFiltered": "Sin deudores con estos filtros",
           "empty": {
             "title": "Aún no hay deudores",
-            "description": "Importá una cartera CSV o agregá manualmente.",
+            "description": "Importa una cartera CSV o agrega deudores manualmente.",
             "cta": {
               "label": "Importar cartera"
             }
@@ -4936,7 +5116,7 @@
             "pause": "Pausar",
             "speed": "Velocidad",
             "speedLabel": "Velocidad {{speed}}x",
-            "seekHelp": "Usá ArrowLeft o ArrowRight para avanzar ±5 segundos, o presioná un dígito 0-9 para saltar a ese porcentaje del audio.",
+            "seekHelp": "Usa ArrowLeft o ArrowRight para avanzar ±5 segundos, o presiona un dígito 0-9 para saltar a ese porcentaje del audio.",
             "audioError": "No se pudo cargar la grabación."
           },
           "transcript": {
@@ -5303,7 +5483,7 @@
           },
           "subPages": {
             "ley2300Title": "Ley 2300 — intentos fuera de horario",
-            "optOutTitle": "Registro de opt-out",
+            "optOutTitle": "No contactar (opt-out)",
             "auditTitle": "Auditoría"
           },
           "filters": {
@@ -5374,7 +5554,7 @@
             "rolledBackToast": "Umbrales reversados a la versión {{version}}",
             "empty": {
               "title": "Usando thresholds por defecto",
-              "description": "Ajustá los umbrales según las políticas de tu inmobiliaria.",
+              "description": "Ajusta los umbrales según las políticas de tu inmobiliaria.",
               "cta": {
                 "label": "Editar thresholds"
               }
@@ -5396,7 +5576,7 @@
           "suscripcion": {
             "empty": {
               "title": "Aún no hay suscriptores al reporte",
-              "description": "Agregá emails para recibir el reporte diario automáticamente.",
+              "description": "Agrega emails para recibir el reporte diario automáticamente.",
               "cta": {
                 "label": "Agregar suscriptor"
               }
@@ -5409,7 +5589,7 @@
           "sampleDataWatermark": "Datos de muestra",
           "agencyGate": {
             "title": "Sin datos suficientes",
-            "reason": "Necesitás al menos 5 llamadas en los últimos 30 días para ver analítica.",
+            "reason": "Necesitas al menos 5 llamadas en los últimos 30 días para ver analítica.",
             "ctaLabel": "Ir al agente de cobranza"
           },
           "widgets": {
@@ -5422,7 +5602,7 @@
               "empty": "Sin suficientes transiciones de etapa en los últimos 30 días."
             },
             "topScripts": {
-              "title": "Scripts con mayor conversión",
+              "title": "Guiones de llamada con mayor conversión",
               "empty": "Sin datos de scripts disponibles.",
               "pendingPhase38": "El seguimiento de scripts estará disponible en una próxima actualización.",
               "column": {
@@ -5430,7 +5610,7 @@
                 "stage": "Etapa",
                 "nCalls": "Llamadas",
                 "conversionRate": "Tasa conv.",
-                "lift": "Lift vs base",
+                "lift": "Mejora vs promedio",
                 "sparkline": "Tendencia 30d"
               }
             },
@@ -5444,7 +5624,7 @@
               }
             },
             "cadence": {
-              "title": "Efectividad de cadencia",
+              "title": "Efectividad del ritmo de contacto",
               "channelMix": {
                 "title": "Canal × resultado",
                 "outcome": {
@@ -5482,7 +5662,7 @@
             "retry": "Reintentar"
           },
           "empty": {
-            "title": "Hacé tu primera llamada para empezar a ver analítica",
+            "title": "Haz tu primera llamada para empezar a ver analítica",
             "description": "Los widgets se activan con 5 o más llamadas.",
             "cta": {
               "label": "Ir a deudores"
@@ -5492,7 +5672,7 @@
         "plantillas": {
           "empty": {
             "title": "Estás usando las plantillas por defecto",
-            "description": "Personalizá scripts y mensajes para tu inmobiliaria.",
+            "description": "Personaliza scripts y mensajes para tu inmobiliaria.",
             "cta": {
               "label": "Crear plantilla"
             }
@@ -5528,6 +5708,63 @@
               "flags": "Alertas"
             }
           }
+        },
+        "resumen": {
+          "wow": {
+            "titulo": "Tu cobranza hoy",
+            "frase": "Tienes {{enMora}} casos en mora. El agente ya gestionó {{gestionados}} hoy, recaudó {{recuperadoCop}}, hay {{promesas}} promesas de pago activas y {{porAprobar}} decisiones esperan tu aprobación."
+          },
+          "bloques": {
+            "recuperadoHoy": "Recaudado hoy",
+            "promesasHoy": "Promesas de hoy",
+            "porAprobar": "Esperan tu aprobación",
+            "riesgoJuridico": "Candidatos a prejurídico",
+            "verPendientes": "Ver pendientes"
+          }
+        },
+        "pendientes": {
+          "pageTitle": "Qué necesita tu atención",
+          "desc": "Las decisiones del día, priorizadas: el agente trabaja solo lo demás.",
+          "vacio": "Todo al día",
+          "vacioHint": "El agente está gestionando la cartera. Cuando algo requiera tu decisión, aparecerá aquí.",
+          "grupoEscalaciones": "Escalaciones",
+          "grupoCartas": "Cartas prejurídicas por aprobar",
+          "grupoSiniestros": "Siniestros por aprobar",
+          "grupoPlanes": "Acuerdos de pago por aprobar",
+          "grupoPromesas": "Promesas de pago de hoy",
+          "prioridadAlta": "Alta",
+          "prioridadMedia": "Media",
+          "prioridadBaja": "Baja",
+          "motivo": "Motivo",
+          "accionSugerida": "Acción sugerida",
+          "resolver": "Resolver",
+          "aprobar": "Aprobar",
+          "revisar": "Revisar",
+          "seguimiento": "Dar seguimiento"
+        },
+        "estados": {
+          "alDia": "Al día",
+          "porVencer": "Por vencer",
+          "enRecordatorio": "En recordatorio",
+          "esperandoRespuesta": "Esperando respuesta",
+          "promesaActiva": "Promesa de pago activa",
+          "promesaIncumplida": "Promesa incumplida",
+          "pagoEnVerificacion": "Pago en verificación",
+          "acuerdoParcial": "Acuerdo parcial",
+          "escalado": "Escalado a humano",
+          "prejuridicoSugerido": "Prejurídico sugerido",
+          "pausado": "Pausado"
+        },
+        "detalle": {
+          "contexto": "Contexto",
+          "conversacion": "Conversación e historial",
+          "recomendacion": "Recomendación del agente",
+          "proximaAccionTitulo": "Próxima acción programada",
+          "porQue": "Por qué",
+          "saldoPendiente": "Saldo pendiente",
+          "pagosRecibidos": "Pagos recibidos",
+          "llamadasRealizadas": "Llamadas realizadas",
+          "accionesRapidas": "Acciones rápidas"
         }
       },
       "arco": {
@@ -5795,15 +6032,15 @@
       "tour": {
         "step1": {
           "title": "Agente de Cobranza",
-          "description": "Automatizá el cobro de mora con llamadas, WhatsApp y seguimiento inteligente. Sin intervención humana para cartera estándar."
+          "description": "Automatiza el cobro de mora con llamadas, WhatsApp y seguimiento inteligente. Sin intervención humana para cartera estándar."
         },
         "step2": {
-          "title": "Agente Cotizador",
-          "description": "Evaluá a tus postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo."
+          "title": "Agente de Asegurabilidad",
+          "description": "Evalúa a tus postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo."
         },
         "step3": {
           "title": "Configuraciones y Políticas",
-          "description": "Personalizá cadencias, plantillas, políticas de escalación y compliance desde un solo panel."
+          "description": "Personaliza cadencias, plantillas, políticas de escalación y cumplimiento desde un solo panel."
         },
         "dismiss": "No mostrar de nuevo",
         "next": "Siguiente",
@@ -5903,6 +6140,481 @@
             "description": "No hay liquidaciones de propietarios por procesar en este momento."
           }
         }
+      },
+      "intro": {
+        "cobranza": {
+          "title": "Agente de Cobranza",
+          "description": "Automatiza la recuperación de cartera: llamadas, WhatsApp y cartas con cumplimiento de Ley 2300 integrado. El agente trabaja la mora estándar solo y te escala únicamente los casos críticos."
+        },
+        "cotizador": {
+          "title": "Agente de Asegurabilidad",
+          "description": "Evalúa postulantes en segundos: scoring, codeudores y veredictos de aseguradoras en un solo flujo. Cada decisión queda auditada y puedes pedir el porqué de cada veredicto."
+        },
+        "avaluos": {
+          "title": "Agente de Avalúos",
+          "description": "Solicita avalúos certificados y sigue cada solicitud desde Mis solicitudes sin salir del panel. El avaluador aliado gestiona la visita y la firma; tú ves todo el rastro."
+        },
+        "conciliacion": {
+          "title": "Agente de Conciliación",
+          "description": "Cruza los extractos bancarios con tus cobros automáticamente. El agente sugiere los cruces y deja en la cola solo los casos dudosos para tu aprobación."
+        },
+        "estudio": {
+          "title": "Agente de Estudio",
+          "description": "Estudio del inquilino completo: identidad, ingresos y antecedentes verificados en minutos, con una decisión auditable y trazable para cada postulante."
+        },
+        "matching": {
+          "title": "Agente de Matching",
+          "description": "Conecta propiedades vacantes con candidatos pre-aprobados. El agente propone los mejores cruces y el contacto sale únicamente con tu aprobación."
+        },
+        "pagos": {
+          "title": "Agente de Pagos",
+          "description": "Gestiona cuentas por pagar y dispersiones con cadenas de aprobación. Nada se paga sin autorización: cada desembolso queda trazado de punta a punta."
+        }
+      },
+      "workspace": {
+        "severidad": {
+          "critica": "Crítica",
+          "alta": "Alta",
+          "media": "Media",
+          "baja": "Baja"
+        },
+        "estado": {
+          "detectado": "Detectado",
+          "sugerido": "Sugerido",
+          "en_revision": "En revisión",
+          "aprobado": "Aprobado",
+          "ejecutando": "Ejecutando",
+          "resuelto": "Resuelto",
+          "rechazado": "Rechazado",
+          "fallo": "Falló"
+        },
+        "flag": {
+          "necesita_humano": "Necesita humano",
+          "t323": "Decisión sobre persona",
+          "en_espera": "En espera"
+        },
+        "actor": {
+          "user": "Humano",
+          "agent": "Agente",
+          "system": "Sistema"
+        },
+        "agente": {
+          "cobranza": "Cobranza",
+          "cotizador": "Asegurabilidad",
+          "conciliacion": "Conciliación",
+          "pagos": "Pagos a proveedores",
+          "estudio": "Estudio del inquilino",
+          "matching": "Matching",
+          "avaluos": "Avalúos"
+        },
+        "rol": {
+          "cobrador": "Cobrador",
+          "analista_riesgo": "Analista de riesgo",
+          "contador": "Contador",
+          "comercial": "Comercial"
+        },
+        "tiempo": {
+          "s": "hace {{n}}s",
+          "m": "hace {{n}}m",
+          "h": "hace {{n}}h",
+          "d": "hace {{n}}d"
+        },
+        "acciones": {
+          "toastOk": "{{label}} · listo",
+          "toastFail": "No se pudo: {{error}}",
+          "motivoPara": "Motivo para {{accion}}",
+          "motivoPlaceholder": "Escribe el motivo…",
+          "confirmar": "Confirmar",
+          "cancelar": "Cancelar",
+          "confianza": "{{pct}}% conf.",
+          "abrir": "Abrir {{titulo}}"
+        },
+        "cola": {
+          "error": "No se pudo cargar la cola: {{error}}",
+          "vacia": "Cola vacía",
+          "vaciaHint": "No hay casos pendientes de revisión."
+        },
+        "sala": {
+          "eyebrow": "Agente · {{titulo}}",
+          "irACola": "Por revisar",
+          "error": "No se pudo cargar la sala: {{error}}",
+          "emptyTitle": "Aún no hay actividad",
+          "emptyBody": "La actividad del agente aparecerá aquí en cuanto empiece a trabajar.",
+          "pipelineTitle": "Casos por etapa",
+          "pipelineEmpty": "Sin casos en el pipeline.",
+          "pipelineAria": "Pipeline: {{total}} casos",
+          "feedTitle": "Actividad reciente",
+          "feedEmpty": "Sin actividad reciente."
+        },
+        "traza": {
+          "error": "No se pudo cargar la traza: {{error}}",
+          "emptyTitle": "Sin actividad registrada",
+          "emptyBody": "Las acciones del agente y del equipo aparecerán aquí.",
+          "detalles": "Detalles",
+          "accion": {
+            "detectado": "Detectado por el agente",
+            "sugerido": "Sugerencia del agente",
+            "en_revision": "Enviado a revisión humana",
+            "aprobado": "Aprobado",
+            "rechazado": "Rechazado",
+            "ejecutando": "Ejecución iniciada",
+            "resuelto": "Resuelto",
+            "fallo": "Falló",
+            "creado": "Creado",
+            "match_sugerido": "Cruce sugerido",
+            "match_confirmado": "Cruce confirmado",
+            "match_rechazado": "Cruce rechazado"
+          }
+        },
+        "accionSugerida": {
+          "eyebrow": "El agente propone"
+        },
+        "autonomia": {
+          "error": "No se pudo cargar la configuración de autonomía: {{error}}",
+          "emptyTitle": "La configuración de autonomía aún no está disponible",
+          "emptyBody": "Este panel se activa cuando el agente esté activo y publique sus límites.",
+          "grupoAria": "Modo de autonomía",
+          "noDisponible": "No disponible para este agente",
+          "t323": "Decisión sobre personas — revisión humana garantizada (T-323/2024)",
+          "vallaTitle": "Límites del agente",
+          "vallaEmpty": "Aún no hay límites publicados para este agente.",
+          "modo": {
+            "sombra": "Sombra",
+            "sombraHint": "Solo observa y sugiere en silencio",
+            "copiloto": "Copiloto",
+            "copilotoHint": "Sugiere; nada se aplica sin un humano",
+            "autonomo": "Autónomo",
+            "autonomoHint": "Ejecuta dentro de los límites aprobados"
+          }
+        },
+        "analitica": {
+          "error": "No se pudo cargar la analítica: {{error}}",
+          "emptyTitle": "El agente aún no reporta analítica",
+          "emptyBody": "Este panel se activa cuando el agente publique sus métricas históricas.",
+          "serieEmpty": "Sin actividad en 30 días.",
+          "serieAria": "{{label}}: {{dias}} días, máximo {{max}}",
+          "sinSeries": "Sin series para mostrar."
+        },
+        "detalle": {
+          "error": "No se pudo cargar el caso: {{error}}",
+          "notFoundTitle": "Caso no encontrado",
+          "notFoundBody": "Puede que ya se haya resuelto o que el enlace no sea válido.",
+          "volverACola": "Volver a la cola",
+          "decision": "Decisión",
+          "decididoPor": "Por {{nombre}}",
+          "decisionRegistrada": "Decisión registrada",
+          "trazaTitle": "Historial del caso",
+          "migaCaso": "Caso"
+        },
+        "equipo": {
+          "error": "No se pudo cargar el equipo de agentes: {{error}}",
+          "emptyTitle": "El equipo aún no reporta sus colas",
+          "emptyBody": "Este panel se activa cuando los agentes empiecen a reportar su actividad.",
+          "enColaAhora": "En cola ahora: {{n}}",
+          "actualizado": "Actualizado {{tiempo}}",
+          "enColaCount": "· {{n}} en cola",
+          "sinDatos": "sin datos",
+          "sinDatosTitle": "El agente aún no reporta su conteo",
+          "sala": "Sala",
+          "cola": "Cola"
+        },
+        "pages": {
+          "comun": {
+            "colaTitle": "Por revisar",
+            "configTitle": "Configuración y autonomía",
+            "configDesc": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Por ahora solo lectura: hoy nada se aplica sin tu visto bueno.",
+            "analiticaTitle": "Analítica",
+            "enCola": "Pendientes",
+            "pendientes": "Pendientes",
+            "detalleNoDisponibleTitle": "El detalle aún no está disponible aquí",
+            "detalleNoDisponibleBody": "Puedes gestionar este caso desde la cola o abrirlo en su módulo de origen.",
+            "datosTecnicos": "Datos técnicos"
+          },
+          "conciliacion": {
+            "eyebrow": "Agente · Conciliación",
+            "salaTitulo": "Conciliación bancaria",
+            "salaDesc": "El agente cruza los movimientos del extracto contra recaudos, dispersiones y comisiones, y deja los casos dudosos en tu cola. Modo Copiloto: nada se aplica sin tu aprobación.",
+            "verMovimientos": "Ver movimientos y subir extractos",
+            "colaDesc": "Cruces bancarios que el agente sugiere y necesitan tu revisión. Aprobar concilia el movimiento; rechazar lo devuelve a sin identificar. Modo Copiloto: nada se aplica sin ti.",
+            "colaEmptyHint": "Nada por revisar. Sube un extracto del banco y el agente cruza los movimientos con tus cobros.",
+            "casoColaLabel": "Cola de conciliación",
+            "analiticaDesc": "Desempeño del agente de conciliación en los últimos 30 días: casos cruzados, tasa de aciertos y monto conciliado por día.",
+            "colaTitle": "Por revisar",
+            "colaLabel": "Por revisar",
+            "accionTitle": "Subir extracto del banco",
+            "accionDesc": "El agente cruza cada movimiento con tus cobros y te deja solo los dudosos para revisar.",
+            "comoFunciona": {
+              "title": "¿Cómo funciona?",
+              "step1": {
+                "title": "Subes el extracto del banco",
+                "desc": "Un archivo CSV directo desde tu banco."
+              },
+              "step2": {
+                "title": "El agente cruza cada movimiento con tus cobros",
+                "desc": "Identifica recaudos, dispersiones y comisiones automáticamente."
+              },
+              "step3": {
+                "title": "Tú apruebas los casos dudosos",
+                "desc": "Solo te llegan los movimientos que necesitan tu ojo."
+              }
+            },
+            "estado": {
+              "detectado": "Movimiento nuevo",
+              "sugerido": "Cruce sugerido",
+              "en_revision": "En tu revisión",
+              "aprobado": "Aprobado",
+              "ejecutando": "Aplicando",
+              "resuelto": "Conciliado",
+              "rechazado": "Rechazado",
+              "fallo": "Con problema"
+            }
+          },
+          "estudio": {
+            "eyebrow": "Agente · Estudio del inquilino",
+            "salaTitulo": "Estudio del inquilino",
+            "salaDesc": "El agente estudia a cada candidato — identidad y capacidad de pago — y te trae solo los casos dudosos para que decidas tú.",
+            "colaDesc": "Revisa el resultado del estudio (nivel y puntaje) y su evidencia, y decide tú.",
+            "colaEmptyHint": "No hay estudios pendientes — buena señal. Los estudios llegan cuando un candidato se postula; los casos dudosos aparecerán aquí para tu decisión.",
+            "casoColaLabel": "Cola de estudio",
+            "crossPregunta": "¿Qué propiedad le calza?",
+            "crossDestino": "Workspace de Matching",
+            "analiticaDesc": "Desempeño del estudio del inquilino en los últimos 30 días: evaluaciones procesadas, decisiones tomadas y tasa de escalamiento a revisión humana por día.",
+            "colaTitle": "Estudios por revisar",
+            "colaLabel": "Estudios por revisar",
+            "comoFunciona": {
+              "title": "¿Cómo funciona?",
+              "step1": {
+                "title": "El candidato se postula",
+                "desc": "Cada postulación entra automáticamente al estudio."
+              },
+              "step2": {
+                "title": "El agente verifica identidad y capacidad de pago",
+                "desc": "Cruza documentos, ingresos y antecedentes en minutos."
+              },
+              "step3": {
+                "title": "Los casos dudosos llegan aquí para tu decisión",
+                "desc": "Revisas la evidencia y apruebas o rechazas tú."
+              },
+              "step4": {
+                "title": "Cada decisión queda registrada y auditada",
+                "desc": "Con derecho a revisión humana garantizado."
+              }
+            },
+            "estado": {
+              "detectado": "Nuevo",
+              "sugerido": "Con recomendación",
+              "en_revision": "Esperando tu decisión",
+              "aprobado": "Aprobado",
+              "ejecutando": "Verificando",
+              "resuelto": "Completado",
+              "rechazado": "Rechazado",
+              "fallo": "Con problema"
+            }
+          },
+          "matching": {
+            "eyebrow": "Agente · Matching",
+            "salaTitulo": "Matching",
+            "salaDesc": "Te encuentra inquilinos ya validados para tus propiedades vacantes. Revisas la mejor coincidencia y apruebas el contacto — nada se envía sin ti.",
+            "colaDesc": "Candidatos que el agente emparejó con propiedades compatibles. Revisa la mejor coincidencia y sus factores de calce, luego acciónala (para contactar) o descártala. Modo Copiloto: nada se hace sin ti.",
+            "colaEmptyHint": "Aún no hay coincidencias. El agente cruza los candidatos aprobados en Estudio del inquilino con tus propiedades vacantes — los resultados aparecerán aquí.",
+            "casoColaLabel": "Cola de matching",
+            "crossPregunta": "¿Es confiable este candidato?",
+            "crossDestino": "Estudio del inquilino",
+            "analiticaDesc": "Cuántas coincidencias propuso el agente, qué tan bien calzaron y cuántos candidatos terminaron contactados, día a día.",
+            "colaTitle": "Candidatos sugeridos",
+            "colaLabel": "Candidatos sugeridos",
+            "comoFunciona": {
+              "title": "¿Cómo funciona?",
+              "step1": {
+                "title": "Un candidato pasa el Estudio",
+                "desc": "Solo entran candidatos ya validados."
+              },
+              "step2": {
+                "title": "El agente lo cruza con tus propiedades vacantes",
+                "desc": "Calcula qué tan bien calza con cada una."
+              },
+              "step3": {
+                "title": "Revisas la mejor coincidencia y por qué calza",
+                "desc": "Con los factores de calce a la vista."
+              },
+              "step4": {
+                "title": "Apruebas y el agente hace el contacto",
+                "desc": "Nada se envía sin tu visto bueno."
+              }
+            },
+            "estado": {
+              "detectado": "Coincidencia nueva",
+              "sugerido": "Coincidencia propuesta",
+              "en_revision": "En tu revisión",
+              "aprobado": "Contacto aprobado",
+              "ejecutando": "Contactando",
+              "resuelto": "Conectado",
+              "rechazado": "Descartada",
+              "fallo": "Con problema"
+            }
+          },
+          "pagos": {
+            "eyebrow": "Agente · Pagos a proveedores",
+            "salaTitulo": "Pagos a proveedores",
+            "salaDesc": "El agente organiza las facturas de tus proveedores, calcula qué se vence y prepara cada pago. Tú apruebas — nada se paga sin autorización.",
+            "opsTitle": "Gestión completa",
+            "opsTesoreria": "Tesorería · Cuentas por pagar",
+            "opsTesoreriaDetalle": "Facturas, aging y matriz de aprobación",
+            "opsDispersiones": "Dispersiones",
+            "opsDispersionesDetalle": "Órdenes de pago y comprobantes",
+            "colaTitle": "Cola de aprobación",
+            "colaDesc": "Facturas de proveedor pendientes de aprobar. Revisa el monto, el proveedor y el vencimiento, luego aprueba o rechaza. La matriz por monto/centro de costo y la separación de funciones se validan en el servidor. Modo Copiloto: ninguna dispersión sale sin ti.",
+            "porAprobar": "Por aprobar",
+            "colaEmptyHint": "Todo al día: no tienes facturas por aprobar. Las facturas nuevas se registran en Tesorería y aparecen aquí cuando necesitan tu firma.",
+            "casoColaLabel": "Cola de pagos",
+            "crossPregunta": "¿Ver la factura en Tesorería?",
+            "crossDestino": "Tesorería · Cuentas por pagar",
+            "analiticaDesc": "Desempeño del agente de pagos en los últimos 30 días: facturas procesadas, aprobaciones y monto dispersado por día.",
+            "colaLabel": "Aprobar facturas",
+            "comoFunciona": {
+              "title": "¿Cómo funciona?",
+              "step1": {
+                "title": "El agente recibe y organiza las facturas",
+                "desc": "Cada factura de proveedor queda registrada y clasificada."
+              },
+              "step2": {
+                "title": "Calcula vencimientos y prepara el pago",
+                "desc": "Sabes qué se vence y cuándo, sin perseguir fechas."
+              },
+              "step3": {
+                "title": "Tú apruebas — montos altos piden doble firma",
+                "desc": "Nada se paga sin tu autorización."
+              },
+              "step4": {
+                "title": "El pago sale y queda el comprobante",
+                "desc": "Todo el rastro queda guardado y auditable."
+              }
+            },
+            "estado": {
+              "detectado": "Registrada",
+              "sugerido": "Por aprobar",
+              "en_revision": "En revisión",
+              "aprobado": "Aprobada",
+              "ejecutando": "Pago en proceso",
+              "resuelto": "Pagada",
+              "rechazado": "Rechazada",
+              "fallo": "Con problema"
+            }
+          },
+          "cotizador": {
+            "eyebrow": "Agente · Asegurabilidad",
+            "colaTitle": "Cotizaciones por revisar",
+            "colaDescPre": "Cotizaciones cuyo veredicto de asegurabilidad quedó",
+            "colaDescStrong": "con condiciones",
+            "colaDescPost": "(sin una aprobación limpia). Abre cada una para elegir aseguradora, ajustar las condiciones o re-cotizar. Casos de los últimos 30 días.",
+            "porRevisar": "Por revisar",
+            "colaEmptyHint": "Todo al día: ninguna cotización quedó con condiciones.",
+            "colaLabel": "Por revisar",
+            "salaSubtitle": "Averigua en minutos si tu candidato es asegurable: el agente consulta varias aseguradoras a la vez y te trae el veredicto de cada una.",
+            "comoFunciona": {
+              "title": "¿Cómo funciona?",
+              "step1": {
+                "title": "Creas la cotización del candidato",
+                "desc": "Ingresas los datos del candidato y de la propiedad en un solo formulario."
+              },
+              "step2": {
+                "title": "El agente consulta varias aseguradoras a la vez",
+                "desc": "En paralelo, sin que tengas que llamar a ninguna."
+              },
+              "step3": {
+                "title": "Te trae el veredicto de cada una con su porqué",
+                "desc": "Comparas aprobaciones, condiciones y primas en una sola vista."
+              },
+              "step4": {
+                "title": "Los casos con condiciones llegan a Por revisar",
+                "desc": "Tú decides: eliges aseguradora, ajustas condiciones o re-cotizas."
+              }
+            },
+            "estado": {
+              "detectado": "Nueva",
+              "sugerido": "Con veredicto",
+              "en_revision": "Por revisar",
+              "aprobado": "Aprobada",
+              "ejecutando": "Cotizando",
+              "resuelto": "Completada",
+              "rechazado": "Rechazada",
+              "fallo": "Con problema"
+            }
+          },
+          "avaluos": {
+            "eyebrow": "Agente · Avalúos",
+            "salaTitulo": "Avalúos",
+            "salaDesc": "Pide avalúos certificados de tus inmuebles sin salir del panel: solicitas y pagas en línea, un avaluador certificado visita el inmueble y recibes el informe con certificado firmado. Aquí sigues cada solicitud de principio a fin.",
+            "colaTitle": "Mis solicitudes de avalúo",
+            "colaDesc": "Cada avalúo que pediste, de principio a fin: solicitud → visita del avaluador → informe → certificado firmado. Siempre ves el estado al día; la visita y la firma las gestiona el avaluador aliado de Leasefy.",
+            "colaKpiLabel": "Activas",
+            "colaEmptyTitle": "Aún no tienes solicitudes",
+            "colaEmptyHint": "Pide tu primer avalúo: el agente tramita la solicitud y aquí sigues cada paso hasta el certificado firmado.",
+            "casoColaLabel": "Mis solicitudes",
+            "misSolicitudes": "Mis solicitudes",
+            "solicitarTitle": "Solicitar un avalúo",
+            "solicitarDetalle": "Abre el asistente, carga los datos del inmueble y paga en línea — la visita queda agendada en minutos.",
+            "solicitarCta": "Solicitar avalúo",
+            "solicitarUnavailable": "El asistente de solicitudes aún no está habilitado en este entorno. Escríbele a tu contacto Leasefy para activarlo.",
+            "solicitarProximamente": "Próximamente",
+            "comoFunciona": {
+              "title": "¿Cómo funciona?",
+              "step1": {
+                "title": "Solicita el avalúo",
+                "desc": "Carga los datos del inmueble en el asistente y paga en línea."
+              },
+              "step2": {
+                "title": "Visita del avaluador",
+                "desc": "Un avaluador certificado agenda y visita el inmueble."
+              },
+              "step3": {
+                "title": "Informe con datos de mercado",
+                "desc": "El motor del agente cruza datos del mercado y el avaluador prepara el informe."
+              },
+              "step4": {
+                "title": "Certificado firmado",
+                "desc": "Descargas el certificado firmado desde Mis solicitudes."
+              }
+            },
+            "firmaNota": "La visita y la firma del certificado las gestiona el avaluador aliado de Leasefy.",
+            "estado": {
+              "detectado": "Solicitado",
+              "sugerido": "En preparación",
+              "en_revision": "En revisión del avaluador",
+              "aprobado": "Aprobado",
+              "ejecutando": "Visita e informe en curso",
+              "resuelto": "Certificado entregado",
+              "rechazado": "Rechazado",
+              "fallo": "Con problema"
+            }
+          },
+          "cobranza": {
+            "salaDesc": "El agente trabaja la mora estándar por ti — llamadas, WhatsApp y cartas cumpliendo la ley — y te escala solo los casos críticos.",
+            "accionTitle": "Revisar escalaciones pendientes",
+            "accionDesc": "Los casos que el agente no puede resolver solo llegan aquí para tu decisión.",
+            "comoFunciona": {
+              "title": "¿Cómo funciona?",
+              "step1": {
+                "title": "Importas tu cartera",
+                "desc": "Subes tus deudores y el agente arranca solo."
+              },
+              "step2": {
+                "title": "El agente contacta a cada deudor cumpliendo la Ley 2300",
+                "desc": "Llamadas, WhatsApp y cartas en horarios permitidos."
+              },
+              "step3": {
+                "title": "Registra pagos y promesas automáticamente",
+                "desc": "Tu cartera se actualiza sin que muevas un dedo."
+              },
+              "step4": {
+                "title": "Te escala solo los casos críticos",
+                "desc": "Tú decides únicamente donde tu criterio hace falta."
+              }
+            },
+            "importarProximamente": "Próximamente",
+            "importarNota": "¿Primera cartera? Escríbele a tu contacto Leasefy para cargarla."
+          }
+        }
       }
     },
     "hoy": {
@@ -5934,7 +6646,7 @@
       "new": "Nueva factura",
       "newSoon": "La emisión de facturas se habilita con el motor DIAN (M2).",
       "m2BannerTitle": "Estructura lista — el motor DIAN llega en M2",
-      "m2BannerDesc": "Esta sección ya tiene la estructura del ERP. La emisión, el CUFE y la validación DIAN se conectan con el proveedor autorizado en la fase de backend (M2).",
+      "m2BannerDesc": "Esta sección ya tiene la estructura del ERP. La emisión, el CUFE y la validación DIAN se conectan con el proveedor autorizado en una fase posterior (M2).",
       "tab_ventas": "Ventas",
       "tab_compras": "Compras",
       "tab_electronica": "Electrónica (DIAN)",
@@ -6004,7 +6716,7 @@
       "caso_diferencias": "Diferencia valor",
       "caso_fueraFecha": "Fuera de fecha",
       "movimientosTitle": "Movimientos",
-      "movimientosDesc": "Cada movimiento se cruza contra contratos/terceros; confirma o rechaza las coincidencias sugeridas.",
+      "movimientosDesc": "Cada movimiento se cruza contra contratos/terceros; confirma o rechaza las coincidencias sugeridas. Los casos dudosos también te esperan en Por revisar.",
       "colFecha": "Fecha",
       "colReferencia": "Referencia",
       "colTercero": "Tercero",
@@ -6015,8 +6727,8 @@
       "colAccion": "Acción",
       "emptyTitle": "Sin movimientos aún",
       "emptyDesc": "Carga una fuente bancaria para ver y conciliar movimientos. El motor de conciliación llega en M2.",
-      "uploadDisabledTooltip": "La ingesta de archivos bancarios se habilita en M2 (endpoint pendiente en backend).",
-      "uploadDisabledHint": "Disponible en M2 — el endpoint de ingesta está pendiente en backend.",
+      "uploadDisabledTooltip": "La ingesta de archivos bancarios se habilita en M2.",
+      "uploadDisabledHint": "Disponible en M2.",
       "totalMovimientos": "movimientos en cola",
       "errorTitle": "Error cargando la cola de conciliación",
       "retry": "Reintentar",
@@ -6050,7 +6762,7 @@
       "subtitle": "El neto a pagar a cada propietario, con su desglose completo y comprobante. El procesamiento del pago vive en Dispersiones.",
       "processCta": "Procesar en Dispersiones",
       "m2BannerTitle": "Estructura lista — el ledger autoritativo llega en M1",
-      "m2BannerDesc": "Esta vista muestra la fórmula completa del neto. El cómputo autoritativo, los descuentos y el posteo contable se conectan en la fase de backend (M1).",
+      "m2BannerDesc": "Esta vista muestra la fórmula completa del neto. El cómputo autoritativo, los descuentos y el posteo contable se conectan en una fase posterior (M1).",
       "formulaLabel": "Fórmula del neto",
       "ejemplo": "Ejemplo",
       "fCanon": "Canon recibido",
@@ -6094,7 +6806,7 @@
         "statusRejected": "Rechazada",
         "statusVoid": "Anulada",
         "m1BannerTitle": "Detalle de la factura AP",
-        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en la fase de backend (M1).",
+        "m1BannerDesc": "Los pagos y flujos de aprobación avanzados se conectan en una fase posterior (M1).",
         "loadingError": "Error al cargar la factura",
         "fetching": "Cargando factura…"
       }
@@ -6106,7 +6818,7 @@
       "new": "Nueva solicitud",
       "newSoon": "El registro y la asignación se habilitan con el motor de triage (IA) — M1.",
       "m1BannerTitle": "Estructura lista — el triage con IA llega en M1",
-      "m1BannerDesc": "Esta sección ya tiene el ciclo completo. La clasificación automática, la asignación, el SLA y las notificaciones se conectan con el agente (Mastra) en la fase de backend (M1).",
+      "m1BannerDesc": "Esta sección ya tiene el ciclo completo. La clasificación automática, la asignación, el SLA y las notificaciones se conectan con el agente en una fase posterior (M1).",
       "resumenLabel": "Por estado",
       "estado_recibidas": "Recibidas",
       "estado_asignadas": "Asignadas",
@@ -6136,7 +6848,7 @@
       "new": "Nueva tarea",
       "newSoon": "La creación de tareas y la agregación de eventos se habilitan con el motor (M1).",
       "m1BannerTitle": "Estructura lista — la agenda se llena con el motor en M1",
-      "m1BannerDesc": "Esta vista agrega eventos del sistema y tus tareas. La agregación autoritativa (visitas, firmas, vencimientos, inspecciones) y los recordatorios se conectan en la fase de backend (M1).",
+      "m1BannerDesc": "Esta vista agrega eventos del sistema y tus tareas. La agregación autoritativa (visitas, firmas, vencimientos, inspecciones) y los recordatorios se conectan en una fase posterior (M1).",
       "resumenLabel": "Próximos",
       "tipo_visitas": "Visitas",
       "tipo_firmas": "Firmas pendientes",
@@ -6272,7 +6984,7 @@
       "quickActions": {
         "title": "Acciones rápidas",
         "cobranza": "Ir a Cobranza",
-        "cotizador": "Ir a Cotizador",
+        "cotizador": "Ir a Asegurabilidad",
         "reportes": "Ver reportes",
         "portafolio": "Ver portafolio",
         "hoy": "Ver Hoy"
@@ -6487,7 +7199,7 @@
       "upTo": "hasta {{limit}}",
       "payNow": "Pagar ahora",
       "planNotFound": "No se encontró el plan seleccionado. Volvé a la lista de planes.",
-      "planLoadError": "Error al cargar el plan. Intentá de nuevo.",
+      "planLoadError": "Error al cargar el plan. Intenta de nuevo.",
       "processing": "Procesando...",
       "securePayment": "Pago seguro procesado por Stripe",
       "cancelAnytime": "Puedes cancelar en cualquier momento. Sin compromisos.",
@@ -7248,7 +7960,8 @@
         "candidatos_desc": "Muestra los candidatos pre-filtrados",
         "reportes": "Reportes",
         "reportes_desc": "Genera un reporte financiero del mes"
-      }
+      },
+      "heroTitle": "¿Qué hago por ti hoy?"
     },
     "response": {
       "actionable": "Accionable",

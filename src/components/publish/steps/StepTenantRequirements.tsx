@@ -57,14 +57,14 @@ function RequirementSection({
             </p>
           )}
         </div>
-        <div className="flex items-center shrink-0 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-0.5">
+        <div className="flex items-center shrink-0 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-0.5">
           <button
             type="button"
             onClick={() => { if (isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              'flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-medium transition-all duration-200',
               !isNonNegotiable
-                ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
                 : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
             )}
           >
@@ -75,9 +75,9 @@ function RequirementSection({
             type="button"
             onClick={() => { if (!isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              'flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-medium transition-all duration-200',
               isNonNegotiable
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
+                ? 'bg-[#1A40FF] text-white'
                 : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
             )}
           >
@@ -151,9 +151,9 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => toggleEmployment(option.value)}
                   className={cn(
-                    'flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'flex items-center gap-2.5 px-3 py-2.5 rounded-md border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
                   )}
                 >
@@ -161,7 +161,7 @@ export function StepTenantRequirements() {
                     className={cn(
                       'w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'bg-indigo-600 border-indigo-600'
+                        ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                         : 'border-neutral-300 dark:border-neutral-500'
                     )}
                   >
@@ -198,7 +198,7 @@ export function StepTenantRequirements() {
               updateRequirements({ minIncomeRatio: parseInt(value) as IncomeRatio })
             }
           >
-            <SelectTrigger className="w-full rounded-lg">
+            <SelectTrigger className="w-full rounded-md">
               <SelectValue placeholder="Seleccionar ingreso mínimo" />
             </SelectTrigger>
             <SelectContent>
@@ -228,9 +228,9 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => updateRequirements({ petsPolicy: option.value as PetsPolicy })}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-md border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
                   )}
                 >
@@ -238,11 +238,11 @@ export function StepTenantRequirements() {
                     className={cn(
                       'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'border-indigo-600'
+                        ? 'border-[#1A40FF]/30'
                         : 'border-neutral-300 dark:border-neutral-500'
                     )}
                   >
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#1A40FF]" />}
                   </div>
                   <div>
                     <span
@@ -282,9 +282,9 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => updateRequirements({ smokingPolicy: option.value as SmokingPolicy })}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-md border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
                   )}
                 >
@@ -292,11 +292,11 @@ export function StepTenantRequirements() {
                     className={cn(
                       'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'border-indigo-600'
+                        ? 'border-[#1A40FF]/30'
                         : 'border-neutral-300 dark:border-neutral-500'
                     )}
                   >
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-[#1A40FF]" />}
                   </div>
                   <div>
                     <span
@@ -339,7 +339,7 @@ export function StepTenantRequirements() {
                   updateRequirements({ maxOccupants: parseInt(e.target.value) || 0 })
                 }
                 placeholder="Sin límite"
-                className="w-full rounded-lg"
+                className="w-full rounded-md"
               />
               <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                 {requirements.maxOccupants === 0 ? 'Sin límite' : 'personas'}
@@ -358,7 +358,7 @@ export function StepTenantRequirements() {
                 updateRequirements({ childrenPolicy: value as ChildrenPolicy })
               }
             >
-              <SelectTrigger className="w-full rounded-lg">
+              <SelectTrigger className="w-full rounded-md">
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
@@ -386,7 +386,7 @@ export function StepTenantRequirements() {
               updateRequirements({ minLeaseDuration: parseInt(value) as LeaseDuration })
             }
           >
-            <SelectTrigger className="w-full rounded-lg">
+            <SelectTrigger className="w-full rounded-md">
               <SelectValue placeholder="Seleccionar duración" />
             </SelectTrigger>
             <SelectContent>
@@ -419,9 +419,9 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => toggleVerification(option.key)}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-md border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
                   )}
                 >
@@ -429,7 +429,7 @@ export function StepTenantRequirements() {
                     className={cn(
                       'w-4 h-4 mt-0.5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'bg-indigo-600 border-indigo-600'
+                        ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                         : 'border-neutral-300 dark:border-neutral-500'
                     )}
                   >
@@ -473,7 +473,7 @@ export function StepTenantRequirements() {
         if (nonNegotiableCount > 0) {
           return (
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-md text-xs font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded-sm text-xs font-medium">
                 <Lock className="w-3 h-3" />
                 {nonNegotiableCount}
               </span>{' '}

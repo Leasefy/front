@@ -214,7 +214,7 @@ export default function PerfilPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -240,19 +240,19 @@ export default function PerfilPage() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/50 dark:to-indigo-900/30 p-6">
+          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               {/* Progress Info */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 flex items-center justify-center shadow-sm">
-                    <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
                       {t('profile.completion.title')}
                     </h2>
-                    <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                    <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
                       {locale === 'es'
                         ? `${completedSteps} de ${totalSteps} pasos completados`
                         : `${completedSteps} of ${totalSteps} steps completed`}
@@ -264,7 +264,7 @@ export default function PerfilPage() {
                     initial={{ width: 0 }}
                     animate={{ width: `${completionPercentage}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-indigo-600 rounded-full"
+                    className="h-full bg-[#1A40FF] rounded-full"
                   />
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
@@ -293,7 +293,7 @@ export default function PerfilPage() {
                       cy="50"
                       r="40"
                       fill="none"
-                      stroke="#4f46e5"
+                      stroke="#1A40FF"
                       strokeWidth="8"
                       strokeLinecap="round"
                       initial={{ strokeDasharray: '0 251.2' }}
@@ -321,38 +321,38 @@ export default function PerfilPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + index * 0.05 }}
                     className={cn(
-                      'rounded-2xl p-4 transition-all',
+                      'rounded-xl p-4 transition-all',
                       step.completed
                         ? 'bg-white/80 dark:bg-white/10'
-                        : 'bg-white dark:bg-neutral-800/80 border-2 border-dashed border-indigo-200 dark:border-amber-500/50'
+                        : 'bg-white dark:bg-neutral-800/80 border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
                         step.completed
-                          ? 'bg-emerald-100 dark:bg-emerald-900/50'
-                          : 'bg-indigo-100 dark:bg-indigo-900/50'
+                          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                          : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       )}>
                         {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
                         ) : (
-                          <Icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <Icon className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           'text-sm font-medium truncate',
-                          step.completed ? 'text-neutral-900 dark:text-white' : 'text-indigo-900 dark:text-white'
+                          step.completed ? 'text-neutral-900 dark:text-white' : 'text-[#1A40FF] dark:text-white'
                         )}>
                           {step.label}
                         </p>
                         {step.completed ? (
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400">{locale === 'es' ? 'Completado' : 'Completed'}</span>
+                          <span className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{locale === 'es' ? 'Completado' : 'Completed'}</span>
                         ) : step.action ? (
                           <button
                             onClick={() => handleVerifyStep(step.id)}
-                            className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                            className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
                           >
                             {step.action} →
                           </button>
@@ -377,8 +377,8 @@ export default function PerfilPage() {
             className="lg:col-span-1 space-y-6"
           >
             {/* Avatar Card */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-              <div className="relative bg-gradient-to-br from-indigo-500 to-indigo-600 h-28">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+              <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
                 {/* Edit button for avatar section */}
                 {editingSection !== 'avatar' && (
                   <button
@@ -406,7 +406,7 @@ export default function PerfilPage() {
                   {/* Avatar circle with image preview */}
                   <div
                     className={cn(
-                      "w-28 h-28 rounded-full border-4 border-white dark:border-[#1a1a1c] shadow-lg overflow-hidden",
+                      "w-28 h-28 rounded-full border-4 border-white dark:border-[#1a1a1c] overflow-hidden",
                       editingSection === 'avatar' && "cursor-pointer"
                     )}
                     onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
@@ -420,7 +420,7 @@ export default function PerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
+                      <div className="w-full h-full bg-white dark:bg-[#1A40FF] flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
                         {formData.name.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -428,7 +428,7 @@ export default function PerfilPage() {
                   {editingSection === 'avatar' && (
                     <button
                       onClick={handleAvatarClick}
-                      className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-lg"
+                      className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
                     >
                       <Camera className="w-4 h-4" />
                     </button>
@@ -445,14 +445,14 @@ export default function PerfilPage() {
                     className={cn(
                       "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
                       isDragging
-                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-                        : "border-neutral-200 dark:border-white/20 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-neutral-50 dark:hover:bg-white/5"
+                        ? "border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+                        : "border-neutral-200 dark:border-white/20 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-neutral-50 dark:hover:bg-white/5"
                     )}
                   >
                     {avatarPreview ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                             <Image
                               src={avatarPreview}
                               alt="Preview"
@@ -475,7 +475,7 @@ export default function PerfilPage() {
                             e.stopPropagation();
                             handleRemoveAvatar();
                           }}
-                          className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                          className="p-2 text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 rounded-md transition-colors"
                         >
                           <TrashSimple className="w-4 h-4" />
                         </button>
@@ -503,7 +503,7 @@ export default function PerfilPage() {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-3 py-2 text-lg font-semibold rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    className="w-full px-3 py-2 text-lg font-semibold rounded-md border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                   />
                 ) : (
                   <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{formData.name}</h2>
@@ -517,14 +517,14 @@ export default function PerfilPage() {
                   <div className="flex items-center gap-2 mt-4">
                     <button
                       onClick={handleCancelEdit}
-                      className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                      className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
                     >
                       {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleSave('avatar')}
                       disabled={isSaving}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
                     >
                       {isSaving ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <FloppyDisk className="w-4 h-4" />}
                       {t('common.save')}
@@ -535,8 +535,8 @@ export default function PerfilPage() {
                 {/* Quick Stats */}
                 <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-white/10 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                      <Buildings className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -546,8 +546,8 @@ export default function PerfilPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -563,7 +563,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Verification Status Card */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                 {t('profile.verification.title')}
@@ -575,17 +575,17 @@ export default function PerfilPage() {
                   { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
                   { key: 'employment', label: locale === 'es' ? 'Empleo' : 'Employment', verified: false },
                 ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-100 dark:border-neutral-600">
+                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-600">
                     <span className="text-sm font-medium text-neutral-700 dark:text-white">{item.label}</span>
                     {item.verified ? (
-                      <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full">
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2.5 py-1 rounded-full">
                         <CheckCircle className="w-3.5 h-3.5" />
                         {t('profile.verification.verified')}
                       </span>
                     ) : (
                       <button
                         onClick={() => handleVerifyStep('employment-verify')}
-                        className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full transition-colors"
+                        className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-2.5 py-1 rounded-full transition-colors"
                       >
                         {t('profile.verification.verify')}
                       </button>
@@ -604,13 +604,13 @@ export default function PerfilPage() {
             className="lg:col-span-2 space-y-6"
           >
             {/* Personal Information */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-neutral-900 dark:text-white">{t('profile.personalInfo')}</h3>
                 {editingSection !== 'personal' ? (
                   <button
                     onClick={() => setEditingSection('personal')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
@@ -619,14 +619,14 @@ export default function PerfilPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-md transition-colors"
                     >
                       {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleSave('personal')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
                     >
                       {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
@@ -644,10 +644,10 @@ export default function PerfilPage() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.name}</span>
                     </div>
@@ -658,7 +658,7 @@ export default function PerfilPage() {
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     {t('profile.idNumber')}
                   </label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                     <Shield className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                     <span className="text-sm text-neutral-900 dark:text-white">{formData.rut}</span>
                   </div>
@@ -673,10 +673,10 @@ export default function PerfilPage() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Envelope className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.email}</span>
                     </div>
@@ -692,10 +692,10 @@ export default function PerfilPage() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.phone}</span>
                     </div>
@@ -711,10 +711,10 @@ export default function PerfilPage() {
                       type="date"
                       value={formData.birthDate}
                       onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">
                         {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
@@ -736,10 +736,10 @@ export default function PerfilPage() {
                       type="text"
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <MapPin className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.address}</span>
                     </div>
@@ -749,13 +749,13 @@ export default function PerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-neutral-900 dark:text-white">{t('profile.emergencyContact')}</h3>
                 {editingSection !== 'emergency' ? (
                   <button
                     onClick={() => setEditingSection('emergency')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
@@ -764,14 +764,14 @@ export default function PerfilPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-md transition-colors"
                     >
                       {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleSave('emergency')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
                     >
                       {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
@@ -788,11 +788,11 @@ export default function PerfilPage() {
                     type="text"
                     value={formData.emergencyContact}
                     onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                     placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'}
                   />
                 ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                     <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                     <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
                   </div>
@@ -801,8 +801,8 @@ export default function PerfilPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-3xl border border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20 p-6">
-              <h3 className="font-semibold text-red-800 dark:text-red-400 mb-2 flex items-center gap-2">
+            <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 p-6">
+              <h3 className="font-semibold text-[#C4503B] dark:text-[#E0664D] mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
@@ -813,7 +813,7 @@ export default function PerfilPage() {
               </p>
               <button
                 onClick={handleOpenDeleteModal}
-                className="px-4 py-2.5 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 rounded-full text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                className="px-4 py-2.5 border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] rounded-full text-sm font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-colors"
               >
                 {t('settings.account.deleteAccount')}
               </button>
@@ -829,7 +829,7 @@ export default function PerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1a1a1c] rounded-3xl max-w-md w-full p-6"
+            className="bg-white dark:bg-[#1a1a1c] rounded-xl max-w-md w-full p-6"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -851,7 +851,7 @@ export default function PerfilPage() {
                 <input
                   type="text"
                   placeholder={locale === 'es' ? 'Nombre de tu empresa' : 'Your company name'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                 />
               </div>
               <div>
@@ -861,7 +861,7 @@ export default function PerfilPage() {
                 <input
                   type="text"
                   placeholder={locale === 'es' ? 'Tu cargo actual' : 'Your current position'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                 />
               </div>
               <div>
@@ -871,14 +871,14 @@ export default function PerfilPage() {
                 <input
                   type="text"
                   placeholder={locale === 'es' ? 'Ej: $1.500.000' : 'E.g.: $1,500,000'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {locale === 'es' ? 'Comprobante de ingresos' : 'Proof of income'}
                 </label>
-                <div className="border-2 border-dashed border-neutral-200 dark:border-white/20 rounded-xl p-6 text-center hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-colors cursor-pointer">
+                <div className="border-2 border-dashed border-neutral-200 dark:border-white/20 rounded-xl p-6 text-center hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 transition-colors cursor-pointer">
                   <FileText className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {locale === 'es' ? 'Arrastra o haz clic para subir' : 'Drag or click to upload'}
@@ -918,20 +918,20 @@ export default function PerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1a1a1c] rounded-3xl max-w-md w-full overflow-hidden"
+            className="bg-white dark:bg-[#1a1a1c] rounded-xl max-w-md w-full overflow-hidden"
           >
             {/* Step 1: Warning */}
             {deleteStep === 1 && (
               <>
                 {/* Header with icon */}
-                <div className="bg-red-50 dark:bg-red-950/30 px-6 py-8 text-center border-b border-red-100 dark:border-red-900/30">
-                  <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
-                    <Warning className="w-8 h-8 text-red-600 dark:text-red-400" />
+                <div className="bg-[#F8EAE7] dark:bg-[#C4503B]/15 px-6 py-8 text-center border-b border-[#C4503B]/30 dark:border-[#C4503B]/40">
+                  <div className="w-16 h-16 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center mx-auto mb-4">
+                    <Warning className="w-8 h-8 text-[#C4503B] dark:text-[#E0664D]" />
                   </div>
-                  <h3 className="text-xl font-semibold text-red-800 dark:text-red-300">
+                  <h3 className="text-xl font-semibold text-[#C4503B] dark:text-[#E0664D]">
                     {locale === 'es' ? '¿Eliminar tu cuenta?' : 'Delete your account?'}
                   </h3>
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">
                     {locale === 'es' ? 'Esta acción es permanente e irreversible' : 'This action is permanent and irreversible'}
                   </p>
                 </div>
@@ -957,7 +957,7 @@ export default function PerfilPage() {
                         'Conversations and messages',
                       ]).map((item, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-                          <TrashSimple className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                          <TrashSimple className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D] mt-0.5 flex-shrink-0" />
                           {item}
                         </li>
                       ))}
@@ -965,14 +965,14 @@ export default function PerfilPage() {
                   </div>
 
                   {/* Active lease warning */}
-                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 mb-6">
+                  <div className="p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 mb-6">
                     <div className="flex items-start gap-3">
-                      <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                      <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                        <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
                           {locale === 'es' ? 'Tienes un arriendo activo' : 'You have an active rental'}
                         </p>
-                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                        <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-0.5">
                           {locale === 'es'
                             ? 'Eliminar tu cuenta no cancela tu contrato de arriendo vigente. Deberás contactar a tu arrendador.'
                             : 'Deleting your account does not cancel your current lease agreement. You will need to contact your landlord.'}
@@ -991,7 +991,7 @@ export default function PerfilPage() {
                     </button>
                     <button
                       onClick={() => setDeleteStep(2)}
-                      className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+                      className="flex-1 px-4 py-2.5 bg-[#C4503B] text-white rounded-full text-sm font-medium hover:bg-[#C4503B] transition-colors"
                     >
                       {locale === 'es' ? 'Continuar' : 'Continue'}
                     </button>
@@ -1020,13 +1020,13 @@ export default function PerfilPage() {
                     {locale === 'es' ? (
                       <>
                         Para confirmar la eliminación de tu cuenta, escribe{' '}
-                        <span className="font-mono font-semibold text-red-600 dark:text-red-400">ELIMINAR</span>{' '}
+                        <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">ELIMINAR</span>{' '}
                         en el campo de abajo:
                       </>
                     ) : (
                       <>
                         To confirm account deletion, type{' '}
-                        <span className="font-mono font-semibold text-red-600 dark:text-red-400">DELETE</span>{' '}
+                        <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">DELETE</span>{' '}
                         in the field below:
                       </>
                     )}
@@ -1037,7 +1037,7 @@ export default function PerfilPage() {
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
                     placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-mono text-center tracking-widest"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30 transition-all font-mono text-center tracking-widest"
                   />
 
                   <div className="flex gap-3 mt-6">
@@ -1053,7 +1053,7 @@ export default function PerfilPage() {
                       className={cn(
                         'flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
                         (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE')
-                          ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700'
+                          ? 'bg-[#C4503B] text-white hover:bg-[#C4503B]'
                           : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                       )}
                     >

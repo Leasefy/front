@@ -126,13 +126,13 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
 
   const labelClass = 'text-xs font-mono uppercase tracking-wide text-muted-foreground'
   const inputClass =
-    'w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30'
-  const errorClass = 'text-xs text-rose-600 dark:text-rose-400 font-mono mt-1'
+    'w-full rounded-sm border border-border bg-background px-3 py-2 text-sm font-mono tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30'
+  const errorClass = 'text-xs text-[#C4503B] dark:text-[#E0664D] font-mono mt-1'
 
   return (
     <form
       onSubmit={(e) => void onFormSubmit(e)}
-      className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-4"
+      className="rounded-xl border border-border bg-card p-4 space-y-4"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -250,13 +250,13 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
       </div>
 
       {errors.form && (
-        <div className="rounded-md border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-2 text-xs text-rose-700 dark:text-rose-400 font-mono">
+        <div className="rounded-sm border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-2 text-xs text-[#C4503B] dark:text-[#E0664D] font-mono">
           {errors.form}
         </div>
       )}
 
       {successVersion !== null && (
-        <div className="rounded-md border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-2 text-xs text-emerald-700 dark:text-emerald-400 font-mono">
+        <div className="rounded-sm border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-2 text-xs text-[#2C7A53] dark:text-[#3EAE70] font-mono">
           {locale.startsWith('es')
             ? `Versión ${successVersion} creada`
             : `Version ${successVersion} created`}
@@ -267,7 +267,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         <button
           type="submit"
           disabled={isSaving}
-          className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition"
+          className="text-xs px-4 py-2 rounded-sm border border-border bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition font-medium"
         >
           {isSaving
             ? locale.startsWith('es') ? 'Guardando...' : 'Saving...'

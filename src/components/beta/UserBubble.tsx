@@ -20,7 +20,7 @@ export function UserBubble({ message, className }: UserBubbleProps) {
           'max-w-[75%]',
           'px-4 py-2.5',
           'bg-neutral-100 dark:bg-neutral-800',
-          'rounded-2xl',
+          'rounded-xl',
           'text-[14px] leading-relaxed text-foreground',
           'whitespace-pre-wrap break-words'
         )}

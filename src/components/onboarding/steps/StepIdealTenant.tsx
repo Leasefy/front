@@ -19,29 +19,29 @@ const RISK_LEVELS: { value: RiskLevel; label: string; color: string; bgColor: st
   {
     value: 'A',
     label: 'Solo A',
-    color: 'text-emerald-700',
-    bgColor: 'bg-emerald-100',
+    color: 'text-[#2C7A53]',
+    bgColor: 'bg-[#E8F3EC]',
     description: 'Perfil crediticio excelente',
   },
   {
     value: 'B',
     label: 'A y B',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
+    color: 'text-[#1A40FF]',
+    bgColor: 'bg-[#EEF1FF]',
     description: 'Bajo riesgo, recomendado',
   },
   {
     value: 'C',
     label: 'A, B y C',
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-100',
+    color: 'text-[#B7791F]',
+    bgColor: 'bg-[#F8F0E0]',
     description: 'Riesgo moderado',
   },
   {
     value: 'D',
     label: 'Todos',
-    color: 'text-red-700',
-    bgColor: 'bg-red-100',
+    color: 'text-[#C4503B]',
+    bgColor: 'bg-[#F8EAE7]',
     description: 'Sin restricción',
   },
 ]
@@ -59,8 +59,8 @@ export function StepIdealTenant() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pb-2"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-violet-100 mb-4">
-          <Users className="w-8 h-8 text-violet-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-neutral-100 dark:bg-neutral-800 mb-4">
+          <Users className="w-8 h-8 text-neutral-600 dark:text-neutral-300" />
         </div>
         <h3 className="text-2xl font-bold text-neutral-900">Tu inquilino ideal</h3>
         <p className="text-neutral-500 mt-2 max-w-md mx-auto">
@@ -96,19 +96,19 @@ export function StepIdealTenant() {
                 className={cn(
                   'relative p-4 rounded-xl border transition-all duration-200 text-center',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-500/10'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] shadow-[#1A40FF]/10'
                     : 'border-neutral-200 bg-white hover:border-neutral-300'
                 )}
               >
                 {ratio.recommended && (
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-[#1A40FF] bg-[#EEF1FF] px-2 py-0.5 rounded-full">
                     Recomendado
                   </span>
                 )}
                 <p
                   className={cn(
                     'text-xl font-bold',
-                    isSelected ? 'text-indigo-600' : 'text-neutral-700'
+                    isSelected ? 'text-[#1A40FF]' : 'text-neutral-700'
                   )}
                 >
                   {ratio.label}
@@ -124,11 +124,11 @@ export function StepIdealTenant() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-3 p-3 rounded-lg bg-neutral-50 border border-neutral-100"
+            className="mt-3 p-3 rounded-md bg-neutral-50 border border-neutral-100"
           >
             <p className="text-xs text-neutral-600">
               Si tu arriendo es <span className="font-semibold">$2.000.000</span>, el inquilino debe ganar mínimo{' '}
-              <span className="font-semibold text-indigo-600">
+              <span className="font-semibold text-[#1A40FF]">
                 ${new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US').format(2000000 * draft.minIncomeRatio)}
               </span>{' '}
               mensuales.
@@ -155,7 +155,7 @@ export function StepIdealTenant() {
             className={cn(
               'p-4 rounded-xl border transition-all duration-200 text-center',
               draft.acceptPets === true
-                ? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-500/10'
+                ? 'border-[#2C7A53]/30 bg-[#E8F3EC] shadow-[#2C7A53]/10'
                 : 'border-neutral-200 bg-white hover:border-neutral-300'
             )}
           >
@@ -163,7 +163,7 @@ export function StepIdealTenant() {
             <p
               className={cn(
                 'font-semibold text-sm',
-                draft.acceptPets === true ? 'text-emerald-700' : 'text-neutral-700'
+                draft.acceptPets === true ? 'text-[#2C7A53]' : 'text-neutral-700'
               )}
             >
               Sí acepto
@@ -177,7 +177,7 @@ export function StepIdealTenant() {
             className={cn(
               'p-4 rounded-xl border transition-all duration-200 text-center',
               draft.acceptPets === false
-                ? 'border-neutral-500 bg-neutral-50 shadow-md'
+                ? 'border-neutral-500 bg-neutral-50'
                 : 'border-neutral-200 bg-white hover:border-neutral-300'
             )}
           >
@@ -211,7 +211,7 @@ export function StepIdealTenant() {
           <button
             type="button"
             onClick={() => setShowRiskInfo(!showRiskInfo)}
-            className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            className="text-xs text-[#1A40FF] hover:text-[#1A40FF] flex items-center gap-1"
           >
             <Info className="w-3.5 h-3.5" />
             {showRiskInfo ? 'Ocultar' : '¿Cómo funciona?'}
@@ -225,26 +225,26 @@ export function StepIdealTenant() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mb-4 p-4 rounded-xl bg-indigo-50 border border-indigo-100"
+            className="mb-4 p-4 rounded-xl bg-[#EEF1FF] border border-[#1A40FF]/30"
           >
-            <p className="text-sm text-indigo-700 mb-2 font-medium">
+            <p className="text-sm text-[#1A40FF] mb-2 font-medium">
               Niveles de riesgo PLan:
             </p>
-            <ul className="text-xs text-indigo-600 space-y-1.5">
+            <ul className="text-xs text-[#1A40FF] space-y-1.5">
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold">A</span>
+                <span className="w-5 h-5 rounded bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] flex items-center justify-center text-[10px] font-bold">A</span>
                 Excelente historial crediticio, sin moras
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">B</span>
+                <span className="w-5 h-5 rounded bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] flex items-center justify-center text-[10px] font-bold">B</span>
                 Buen historial, moras menores resueltas
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] font-bold">C</span>
+                <span className="w-5 h-5 rounded bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F] flex items-center justify-center text-[10px] font-bold">C</span>
                 Historial con algunas moras activas
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded bg-red-100 text-red-700 flex items-center justify-center text-[10px] font-bold">D</span>
+                <span className="w-5 h-5 rounded bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D] flex items-center justify-center text-[10px] font-bold">D</span>
                 Historial con moras significativas
               </li>
             </ul>
@@ -263,13 +263,13 @@ export function StepIdealTenant() {
                 className={cn(
                   'relative p-3 rounded-xl border transition-all duration-200 text-center',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-500/10'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] shadow-[#1A40FF]/10'
                     : 'border-neutral-200 bg-white hover:border-neutral-300'
                 )}
               >
                 <div
                   className={cn(
-                    'w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center font-bold text-sm',
+                    'w-8 h-8 rounded-md mx-auto mb-2 flex items-center justify-center font-bold text-sm',
                     level.bgColor,
                     level.color
                   )}
@@ -279,7 +279,7 @@ export function StepIdealTenant() {
                 <p
                   className={cn(
                     'font-semibold text-xs',
-                    isSelected ? 'text-indigo-700' : 'text-neutral-700'
+                    isSelected ? 'text-[#1A40FF]' : 'text-neutral-700'
                   )}
                 >
                   {level.label}

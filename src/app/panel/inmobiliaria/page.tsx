@@ -13,12 +13,15 @@ import { ChatContainer } from '@/components/beta/ChatContainer';
  * reachable from the chat's AppSwitcher (and the sidebar "dashboard" item).
  *
  * Renders the same `BetaLayout` (which mounts BetaChatProvider) + ChatContainer
- * as the `/beta` route, so it behaves identically — `/beta` is kept as an alias.
+ * as the `/beta` route — but in `embedded` mode: the chat fills the panel's
+ * content area while the MAIN backoffice sidebar + header stay visible
+ * (requisito: la sidebar principal sigue existiendo sí o sí; el full-screen
+ * "universo aparte" queda solo para el alias `/beta`).
  */
 export default function InmobiliariaInicioPage() {
   return (
     <BetaErrorBoundary>
-      <BetaLayout basePath="/panel/inmobiliaria">
+      <BetaLayout basePath="/panel/inmobiliaria" variant="embedded">
         <ChatContainer />
       </BetaLayout>
     </BetaErrorBoundary>

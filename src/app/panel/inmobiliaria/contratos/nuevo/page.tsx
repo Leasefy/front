@@ -259,11 +259,11 @@ function NuevoContratoContent() {
   if (loadError || !application) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-rose-700">No se pudo cargar la aplicación</p>
-            <p className="text-sm text-rose-600 mt-1">{loadError}</p>
+            <p className="font-semibold text-[#C4503B]">No se pudo cargar la aplicación</p>
+            <p className="text-sm text-[#C4503B] mt-1">{loadError}</p>
           </div>
         </div>
       </div>
@@ -291,7 +291,7 @@ function NuevoContratoContent() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1) Contract origin */}
-        <section className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
           <h2 className="font-semibold text-sm text-foreground">Tipo de contrato</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ModeOption
@@ -322,11 +322,11 @@ function NuevoContratoContent() {
 
         {/* 2) PDF upload */}
         {form.mode === 'upload' && (
-          <section className="rounded-2xl border border-border bg-card p-5 space-y-3">
+          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h2 className="font-semibold text-sm text-foreground">PDF del contrato</h2>
             {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20">
-                <FileText className="w-5 h-5 text-rose-500 flex-shrink-0" />
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-[#2C7A53]/30 bg-[#E8F3EC]/60 dark:bg-[#2C7A53]/20">
+                <FileText className="w-5 h-5 text-[#C4503B] flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -336,7 +336,7 @@ function NuevoContratoContent() {
                 <button
                   type="button"
                   onClick={() => updateForm('pdfFile', null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-colors"
                   title="Quitar"
                 >
                   <X className="w-4 h-4" />
@@ -351,8 +351,8 @@ function NuevoContratoContent() {
                 className={cn(
                   'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
                   isDragging
-                    ? 'border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
-                    : 'border-border hover:border-indigo-300 hover:bg-muted/50'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/40 dark:bg-[#1A40FF]/20'
+                    : 'border-border hover:border-[#1A40FF]/30 hover:bg-muted/50'
                 )}
               >
                 <UploadSimple className="w-8 h-8 text-muted-foreground" />
@@ -370,10 +370,10 @@ function NuevoContratoContent() {
               </label>
             )}
             {validation.pdfFile && (
-              <p className="text-xs text-rose-600">{validation.pdfFile}</p>
+              <p className="text-xs text-[#C4503B]">{validation.pdfFile}</p>
             )}
 
-            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-lg p-3">
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <p>
                 El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
@@ -384,7 +384,7 @@ function NuevoContratoContent() {
         )}
 
         {/* 3) Dates + amounts */}
-        <section className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
           <h2 className="font-semibold text-sm text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
@@ -392,7 +392,7 @@ function NuevoContratoContent() {
                 type="date"
                 value={form.startDate}
                 onChange={(e) => updateForm('startDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               />
             </Field>
             <Field label="Fecha de fin" error={validation.endDate}>
@@ -400,7 +400,7 @@ function NuevoContratoContent() {
                 type="date"
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               />
             </Field>
             <Field
@@ -415,7 +415,7 @@ function NuevoContratoContent() {
                 step={1000}
                 value={form.monthlyRent}
                 onChange={(e) => updateForm('monthlyRent', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
               />
             </Field>
             <Field
@@ -430,7 +430,7 @@ function NuevoContratoContent() {
                 step={1000}
                 value={form.deposit}
                 onChange={(e) => updateForm('deposit', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
               />
             </Field>
             <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
@@ -441,14 +441,14 @@ function NuevoContratoContent() {
                 max={28}
                 value={form.paymentDay}
                 onChange={(e) => updateForm('paymentDay', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
               />
             </Field>
             <Field label="Seguro" hint="Opcional">
               <select
                 value={form.insuranceTier}
                 onChange={(e) => updateForm('insuranceTier', e.target.value as InsuranceTier)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               >
                 <option value="NONE">Sin seguro</option>
                 <option value="BASIC">Básico</option>
@@ -460,9 +460,9 @@ function NuevoContratoContent() {
 
         {/* Errors + submit */}
         {submitError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 flex items-start gap-2">
-            <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-rose-700">{submitError}</p>
+          <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-4 flex items-start gap-2">
+            <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-[#C4503B]">{submitError}</p>
           </div>
         )}
 
@@ -477,7 +477,7 @@ function NuevoContratoContent() {
           <button
             type="submit"
             disabled={!isValid || actions.isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {actions.isSubmitting ? (
               <Spinner className="w-4 h-4 animate-spin" />
@@ -518,13 +518,13 @@ function ModeOption({
       disabled={disabled}
       className={cn(
         'relative text-left p-4 rounded-xl border transition-colors',
-        active && 'border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20',
-        !active && !disabled && 'border-border hover:border-indigo-200 hover:bg-muted/50',
+        active && 'border-[#1A40FF]/30 bg-[#EEF1FF]/40 dark:bg-[#1A40FF]/20',
+        !active && !disabled && 'border-border hover:border-[#1A40FF]/30 hover:bg-muted/50',
         disabled && 'border-border opacity-50 cursor-not-allowed'
       )}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <Icon className={cn('w-4 h-4', active ? 'text-indigo-600' : 'text-muted-foreground')} />
+        <Icon className={cn('w-4 h-4', active ? 'text-[#1A40FF]' : 'text-muted-foreground')} />
         <p className="text-sm font-semibold text-foreground">{title}</p>
       </div>
       <p className="text-xs text-muted-foreground">{desc}</p>
@@ -553,7 +553,7 @@ function Field({
       <label className="block text-xs font-medium text-foreground">{label}</label>
       {children}
       {error ? (
-        <p className="text-xs text-rose-600">{error}</p>
+        <p className="text-xs text-[#C4503B]">{error}</p>
       ) : hint ? (
         <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}

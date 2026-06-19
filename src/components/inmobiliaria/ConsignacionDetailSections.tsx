@@ -63,7 +63,7 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
       )}
     >
       <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-        <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-400">
+        <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-400">
           {icon}
         </div>
         <h3 className="font-semibold text-neutral-900 dark:text-white">{title}</h3>
@@ -168,8 +168,8 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
               className={cn(
                 'w-12 h-12 rounded-xl flex items-center justify-center',
                 isCompany
-                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                  : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                  ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+                  : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
               )}
             >
               {isCompany ? <Buildings className="w-6 h-6" /> : <User className="w-6 h-6" />}
@@ -183,7 +183,7 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
           </div>
           <Link
             href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-            className="text-sm text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1"
+            className="text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] flex items-center gap-1"
           >
             {t('inmobiliaria.consignaciones.detail.viewProfile')}
             <ArrowRight className="w-4 h-4" />
@@ -263,8 +263,8 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
               className="w-12 h-12 rounded-xl object-cover"
             />
           ) : (
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <span className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
+            <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+              <span className="text-lg font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                 {agente.name.charAt(0)}
               </span>
             </div>
@@ -279,9 +279,9 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
             className={cn(
               'px-2 py-1 rounded-full text-xs font-medium',
               agente.status === 'active'
-                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
                 : agente.status === 'on_leave'
-                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
                 : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
             )}
           >
@@ -307,7 +307,7 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
           </div>
           <div className="mt-2 h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex">
             <div
-              className="bg-indigo-600 dark:bg-indigo-400"
+              className="bg-[#1A40FF] dark:bg-[#5570FF]"
               style={{ width: `${agente.commissionSplit}%` }}
             />
             <div
@@ -364,8 +364,8 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
         <div className="space-y-4">
           {/* Tenant Info */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <UserCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <UserCircle className="w-6 h-6 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <div className="flex-1">
               <h4 className="font-semibold text-neutral-900 dark:text-white">{consignacion.currentTenantName}</h4>
@@ -438,8 +438,8 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
           disabled
           title={t('inmobiliaria.consignaciones.header.comingSoon')}
         >
-          <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div className="flex-1">
             <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
@@ -453,8 +453,8 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
           onClick={onViewInventory}
           className="w-full flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-[#141416] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left"
         >
-          <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
           </div>
           <div className="flex-1">
             <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.handoverReport')}</p>
@@ -476,13 +476,13 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
             </div>
             <div className="grid grid-cols-4 gap-2">
               {consignacion.photosUrls!.slice(0, 4).map((url, i) => (
-                <div key={i} className="aspect-square rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                <div key={i} className="aspect-square rounded-md overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                   <img src={url} alt={t('inmobiliaria.consignaciones.detail.photoAlt', { number: i + 1 })} className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
             {consignacion.photosUrls!.length > 4 && (
-              <button className="w-full mt-2 text-sm text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400">
+              <button className="w-full mt-2 text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF]">
                 {t('inmobiliaria.consignaciones.detail.viewMorePhotos', { count: consignacion.photosUrls!.length - 4 })}
               </button>
             )}

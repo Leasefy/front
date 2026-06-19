@@ -14,11 +14,13 @@
  * namespace (extracted from the original inline literals — es output is
  * byte-identical).
  *
- * Styling vocabulary harvested from EscalationCard (mvp:docs/COLOR_SYSTEM.md):
- * rose = error/critical, amber = warning, emerald = ok; theme tokens for chrome.
+ * Styling vocabulary harvested from EscalationCard (mvp:docs/COLOR_SYSTEM.md),
+ * mapped to the brand contract tones: danger #C4503B = error/critical,
+ * warning #B7791F = attention, success #2C7A53 = ok; theme tokens for chrome.
  */
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   Clock,
@@ -62,32 +64,44 @@ export function workspaceVocab(t: TranslateFn, group: string, key: string): stri
 export const severidadLabel = (t: TranslateFn, sev: string): string =>
   workspaceVocab(t, 'severidad', sev)
 
-export const estadoLabel = (t: TranslateFn, estado: string): string =>
-  workspaceVocab(t, 'estado', estado)
+/**
+ * Estado chip label. When `agente` is provided, the per-agent override
+ * `inmobiliaria.ai.workspace.pages.{agente}.estado.{estado}` wins (e.g.
+ * cotizador renders its own domain vocabulary); on a t() miss (key echo)
+ * it degrades to the generic workspace estado vocabulary.
+ */
+export const estadoLabel = (t: TranslateFn, estado: string, agente?: string): string => {
+  if (agente) {
+    const override = `${WORKSPACE_NS}.pages.${agente}.estado.${estado}`
+    const label = t(override)
+    if (label !== override) return label
+  }
+  return workspaceVocab(t, 'estado', estado)
+}
 
 export const flagLabel = (t: TranslateFn, flag: string): string =>
   workspaceVocab(t, 'flag', flag)
 
 export const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring: string }> = {
   critica: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900 animate-pulse',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    ring: 'ring-[#C4503B]/30 dark:ring-[#C4503B]/40 animate-pulse',
   },
   alta: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    ring: 'ring-[#C4503B]/30 dark:ring-[#C4503B]/40',
   },
   media: {
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    ring: 'ring-amber-200 dark:ring-amber-900',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    ring: 'ring-[#B7791F]/30 dark:ring-[#B7791F]/40',
   },
   baja: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    ring: 'ring-emerald-200 dark:ring-emerald-900',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    ring: 'ring-[#2C7A53]/30 dark:ring-[#2C7A53]/40',
   },
 }
 
@@ -97,11 +111,11 @@ const SEVERIDAD_RANK: Record<Severidad, number> = { critica: 3, alta: 2, media: 
 export const FLAG_META: Record<WorkItemFlag, { icon: typeof WarningCircle; cls: string }> = {
   necesita_humano: {
     icon: WarningCircle,
-    cls: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 ring-amber-200 dark:ring-amber-900',
+    cls: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] ring-[#B7791F]/30 dark:ring-[#B7791F]/40',
   },
   t323: {
     icon: ShieldWarning,
-    cls: 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 ring-rose-200 dark:ring-rose-900',
+    cls: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] ring-[#C4503B]/30 dark:ring-[#C4503B]/40',
   },
   en_espera: {
     icon: Hourglass,
@@ -123,7 +137,8 @@ export function relativeTime(iso: string, t: TranslateFn): string {
 
 export const ACTION_KIND_CLS: Record<WorkItemAction['kind'], string> = {
   primary: 'bg-primary text-primary-foreground hover:opacity-90',
-  danger: 'bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90',
+  // Destructive confirm keeps the danger fill + white text (brand exception).
+  danger: 'bg-[#C4503B] text-white hover:opacity-90',
   neutral: 'border border-border text-foreground hover:bg-muted',
 }
 
@@ -133,6 +148,11 @@ export interface ColaHumanaProps {
   items: WorkItem[]
   isLoading?: boolean
   error?: string | null
+  /**
+   * Agent id used to resolve per-agent estado overrides
+   * (`inmobiliaria.ai.workspace.pages.{agente}.estado.*`) in all estado chips.
+   */
+  agente?: string
   /** Posts the action's body to its endpoint; returns ok/error for toasting. */
   onAction: (
     item: WorkItem,
@@ -141,18 +161,24 @@ export interface ColaHumanaProps {
   ) => Promise<{ ok: boolean; error?: string }>
   /** Optional: open the work-item detail. */
   onOpen?: (item: WorkItem) => void
+  /** Title for the empty state (defaults to the generic "Cola vacía"). */
+  emptyTitle?: string
   /** Copy for the empty state. */
   emptyHint?: string
+  /** Optional CTA below the empty-state hint (small primary pill link). */
+  emptyAction?: { label: string; href: string }
 }
 
 // ── Item card ───────────────────────────────────────────────────────────────
 
 function WorkItemCard({
   item,
+  agente,
   onAction,
   onOpen,
 }: {
   item: WorkItem
+  agente?: string
   onAction: ColaHumanaProps['onAction']
   onOpen?: (item: WorkItem) => void
 }) {
@@ -189,7 +215,7 @@ function WorkItemCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow p-3 space-y-2"
+      className="rounded-xl border border-border bg-card p-3 space-y-2"
       data-testid={`work-item-${item.id}`}
     >
       {/* Header: severidad + estado + flags + relative time */}
@@ -201,7 +227,7 @@ function WorkItemCard({
             {severidadLabel(t, item.severidad)}
           </span>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
-            {estadoLabel(t, item.estado)}
+            {estadoLabel(t, item.estado, agente)}
           </span>
           {item.flags.map((flag) => {
             // Unknown flags are silently skipped (finite-map fallback).
@@ -287,7 +313,7 @@ function WorkItemCard({
               type="button"
               disabled={reasonText.trim().length === 0 || busyActionId !== null}
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-[#C4503B] text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t(`${WORKSPACE_NS}.acciones.confirmar`)}
@@ -316,7 +342,7 @@ function WorkItemCard({
               disabled={busyActionId !== null}
               aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
-              className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
+              className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
             >
               {action.kind === 'primary' && <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />}
               {action.kind === 'danger' && <XCircle className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -331,7 +357,17 @@ function WorkItemCard({
 
 // ── List ────────────────────────────────────────────────────────────────────
 
-export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHint }: ColaHumanaProps) {
+export function ColaHumana({
+  items,
+  isLoading,
+  error,
+  agente,
+  onAction,
+  onOpen,
+  emptyTitle,
+  emptyHint,
+  emptyAction,
+}: ColaHumanaProps) {
   const { t } = useI18n()
   const sorted = useMemo(
     () =>
@@ -356,7 +392,7 @@ export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHin
   if (error) {
     return (
       <div
-        className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
+        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
         data-testid="cola-humana-error"
       >
         {t(`${WORKSPACE_NS}.cola.error`, { error })}
@@ -365,16 +401,42 @@ export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHin
   }
 
   if (sorted.length === 0) {
+    // Empty state limpio y MONOCROMO: chip neutro + ícono mudo + título +
+    // hint, y a lo sumo un CTA pill outlined (estilo ElevenLabs).
+    const emptyTitleText = emptyTitle ?? t(`${WORKSPACE_NS}.cola.vacia`)
     return (
       <div
-        className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center"
+        role="status"
+        aria-label={emptyTitleText}
+        className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="cola-humana-empty"
       >
-        <CheckCircle className="w-8 h-8 mx-auto text-emerald-500 mb-2" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.cola.vacia`)}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
-        </p>
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+          <CheckCircle
+            weight="duotone"
+            className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+            {emptyTitleText}
+          </p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+            {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
+          </p>
+        </div>
+        {emptyAction && (
+          <div className="mt-1">
+            <Link
+              href={emptyAction.href}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+              data-testid="cola-humana-empty-action"
+            >
+              {emptyAction.label}
+            </Link>
+          </div>
+        )}
       </div>
     )
   }
@@ -382,7 +444,7 @@ export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHin
   return (
     <div className="space-y-2" data-testid="cola-humana">
       {sorted.map((item) => (
-        <WorkItemCard key={item.id} item={item} onAction={onAction} onOpen={onOpen} />
+        <WorkItemCard key={item.id} item={item} agente={agente} onAction={onAction} onOpen={onOpen} />
       ))}
     </div>
   )

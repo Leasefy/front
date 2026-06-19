@@ -60,14 +60,14 @@ function getHistoryConfig(rating: 'positive' | 'mixed' | 'limited') {
     positive: {
       icon: '\u2713', // Checkmark
       label: 'Buen historial',
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
+      color: 'text-[#2C7A53]',
+      bgColor: 'bg-[#E8F3EC]',
     },
     mixed: {
       icon: '~',
       label: 'Hist. mixto',
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50',
+      color: 'text-[#B7791F]',
+      bgColor: 'bg-[#F8F0E0]',
     },
     limited: {
       icon: '?',

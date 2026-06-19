@@ -30,24 +30,24 @@ interface ScoreDetailSheetProps {
 
 const LEVEL_COLORS: Record<RiskLevel, { bg: string; text: string; bar: string }> = {
   A: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    bar: 'bg-emerald-500',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bar: 'bg-[#2C7A53]',
   },
   B: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-700 dark:text-blue-400',
-    bar: 'bg-blue-500',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bar: 'bg-[#1A40FF]',
   },
   C: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    bar: 'bg-amber-500',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bar: 'bg-[#B7791F]',
   },
   D: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-700 dark:text-red-400',
-    bar: 'bg-red-500',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bar: 'bg-[#C4503B]',
   },
 };
 
@@ -96,7 +96,7 @@ export function ScoreDetailSheet({
             </SheetTitle>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             >
               <span className="sr-only">Cerrar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -162,13 +162,13 @@ function LockedContent({ locale }: { locale: string }) {
       {/* Blurred decorative score */}
       <div className="relative flex flex-col items-center py-8">
         <div className="blur-md select-none pointer-events-none">
-          <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3">
-            <span className="text-5xl font-bold text-emerald-600">A</span>
+          <div className="w-24 h-24 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mb-3">
+            <span className="text-5xl font-bold text-[#2C7A53]">A</span>
           </div>
           <p className="text-center text-lg font-semibold text-neutral-900 dark:text-white">92 / 100</p>
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-lg">
+          <div className="w-14 h-14 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
             <Lock className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
           </div>
         </div>
@@ -209,7 +209,7 @@ function LockedContent({ locale }: { locale: string }) {
           },
         ].map((benefit, i) => (
           <div key={i} className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-[#2C7A53] flex-shrink-0 mt-0.5" />
             <p className="text-sm text-foreground">
               {locale === 'es' ? benefit.es : benefit.en}
             </p>
@@ -254,7 +254,7 @@ function UnlockedContent({
       </div>
 
       {/* AI Explanation */}
-      <div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 p-4">
+      <div className="rounded-xl bg-neutral-50 dark:bg-neutral-900 p-4">
         <p className="text-sm text-muted-foreground leading-relaxed">{score.aiExplanation}</p>
       </div>
 
@@ -293,7 +293,7 @@ function UnlockedContent({
           <div className="space-y-2">
             {score.drivers.map((driver, i) => (
               <div key={i} className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-[#2C7A53] flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-muted-foreground">{driver}</p>
               </div>
             ))}
@@ -310,7 +310,7 @@ function UnlockedContent({
           <div className="space-y-2">
             {score.flags.map((flag) => (
               <div key={flag.id} className="flex items-start gap-2.5">
-                <WarningCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <WarningCircle className="w-4 h-4 text-[#B7791F] flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-muted-foreground">{flag.message}</p>
               </div>
             ))}
@@ -332,7 +332,7 @@ function UnlockedContent({
               {verificationCode}
             </span>
             {copiedCode ? (
-              <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <Check className="w-4 h-4 text-[#2C7A53] flex-shrink-0" />
             ) : (
               <Copy className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             )}

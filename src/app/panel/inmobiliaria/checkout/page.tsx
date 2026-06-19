@@ -105,8 +105,8 @@ function AgencyCheckoutInner() {
           <div className="lg:col-span-3 space-y-6">
             <div className="bg-card rounded-xl border border-border p-5">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                  <Buildings className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                  <Buildings className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-foreground">Plan {plan.name}</h2>
@@ -114,7 +114,7 @@ function AgencyCheckoutInner() {
                   <ul className="mt-3 space-y-1.5">
                     {plan.features.slice(0, 6).map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-[#2C7A53] shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -126,13 +126,13 @@ function AgencyCheckoutInner() {
             <div className="bg-card rounded-xl border border-border p-5">
               <p className="text-sm font-medium text-foreground mb-3">Límites del plan</p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <div className="p-3 rounded-md bg-muted/50 text-center">
                   <p className="text-2xl font-bold text-foreground">
                     {plan.limits.properties === null ? '∞' : plan.limits.properties}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">Propiedades</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <div className="p-3 rounded-md bg-muted/50 text-center">
                   <p className="text-2xl font-bold text-foreground">
                     {plan.limits.users === null ? '∞' : plan.limits.users}
                   </p>
@@ -178,8 +178,8 @@ function AgencyCheckoutInner() {
 
               <Button
                 className={cn(
-                  'w-full font-semibold uppercase tracking-wide font-mono',
-                  'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  'w-full font-semibold',
+                  'bg-[#1A40FF] hover:opacity-90 text-white'
                 )}
                 size="lg"
                 onClick={handleProceed}

@@ -103,7 +103,7 @@ export function AgencyPricingModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="bg-white dark:bg-neutral-900 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -134,22 +134,22 @@ export function AgencyPricingModal({
                   className={cn(
                     'relative rounded-xl p-5 flex flex-col transition-all duration-200 cursor-pointer',
                     selectedPlan === plan.id
-                      ? 'ring-2 ring-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20'
+                      ? 'ring-2 ring-[#1A40FF] bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
                       : plan.isFlex
                         ? 'bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                         : 'bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800',
                     'border',
-                    plan.isFlex ? 'border-amber-300 dark:border-amber-700' : 'border-neutral-200 dark:border-neutral-700'
+                    plan.isFlex ? 'border-[#B7791F]/30 dark:border-[#B7791F]/40' : 'border-neutral-200 dark:border-neutral-700'
                   )}
                   onClick={() => setSelectedPlan(plan.id)}
                 >
                   {plan.popular && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white uppercase tracking-wide font-mono text-[10px] font-semibold px-3 py-1 rounded-full">
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] font-semibold px-3 py-1 rounded-full">
                       Mas popular
                     </span>
                   )}
                   {plan.isFlex && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full">
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#B7791F] to-[#B7791F] text-white text-[10px] font-semibold px-3 py-1 rounded-full">
                       Todo incluido
                     </span>
                   )}
@@ -164,9 +164,9 @@ export function AgencyPricingModal({
                     )}
                   </div>
 
-                  <div className="px-2.5 py-1.5 bg-white dark:bg-neutral-800 rounded-lg mb-3 text-center" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div className="px-2.5 py-1.5 bg-white dark:bg-neutral-800 rounded-md mb-3 text-center" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
                     <span className="text-[11px] text-neutral-500 dark:text-neutral-400">Eval AI: </span>
-                    <span className={cn("text-[11px] font-semibold", plan.isFlex ? 'text-emerald-600' : 'text-neutral-900 dark:text-white')}>
+                    <span className={cn("text-[11px] font-semibold", plan.isFlex ? 'text-[#2C7A53]' : 'text-neutral-900 dark:text-white')}>
                       {plan.evalPrice}
                     </span>
                   </div>
@@ -174,7 +174,7 @@ export function AgencyPricingModal({
                   <ul className="space-y-2 flex-1 mb-4">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                        <CheckCircle className="w-3.5 h-3.5 text-[#2C7A53] shrink-0 mt-0.5" />
                         <span className="text-[11px] text-neutral-600 dark:text-neutral-300">{feature}</span>
                       </li>
                     ))}
@@ -185,7 +185,7 @@ export function AgencyPricingModal({
                       <Button
                         size="sm"
                         variant={plan.popular || plan.isFlex ? 'default' : 'outline'}
-                        className="w-full rounded-lg text-[12px]"
+                        className="w-full rounded-md text-[12px]"
                       >
                         {plan.cta}
                       </Button>
@@ -195,7 +195,7 @@ export function AgencyPricingModal({
                       <Button
                         size="sm"
                         variant={plan.popular || plan.isFlex ? 'default' : 'outline'}
-                        className="w-full rounded-lg text-[12px]"
+                        className="w-full rounded-md text-[12px]"
                       >
                         {plan.cta}
                       </Button>

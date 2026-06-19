@@ -29,9 +29,9 @@ export function ManagementTierCard({
     return (
       <div
         className={cn(
-          'relative flex flex-col rounded-2xl p-6 transition-all overflow-hidden',
+          'relative flex flex-col rounded-xl p-6 transition-all overflow-hidden',
           'bg-gradient-to-br from-sand-50 via-sand-50 to-sand-100/80',
-          'border border-sand-200/80 shadow-lg shadow-sand-200/30',
+          'border border-sand-200/80 shadow-sand-200/30',
           className
         )}
       >
@@ -40,7 +40,7 @@ export function ManagementTierCard({
 
         {/* Badge with icon */}
         <div className="absolute top-4 right-4 z-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1.5 text-[11px] font-medium text-white shadow-md">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1.5 text-[11px] font-medium text-white">
             <Sparkle className="w-3 h-3" />
             {tier.badge}
           </span>
@@ -77,8 +77,8 @@ export function ManagementTierCard({
         <ul className="mb-6 flex-1 space-y-2.5">
           {tier.features.map((feature, index) => (
             <li key={index} className="flex items-start gap-2.5">
-              <div className="mt-0.5 w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                <Check className="h-2.5 w-2.5 text-emerald-600" strokeWidth={3} />
+              <div className="mt-0.5 w-4 h-4 rounded-full bg-[#E8F3EC] flex items-center justify-center flex-shrink-0">
+                <Check className="h-2.5 w-2.5 text-[#2C7A53]" strokeWidth={3} />
               </div>
               <span className="text-[13px] text-sand-800 leading-snug">{feature}</span>
             </li>
@@ -89,7 +89,7 @@ export function ManagementTierCard({
         <div className="mb-4 flex items-center gap-2 text-[12px] text-sand-600">
           <div className="flex -space-x-1">
             {[...Array(3)].map((_, i) => (
-              <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <Star key={i} className="w-3.5 h-3.5 text-[#B7791F] fill-[#B7791F]" />
             ))}
           </div>
           <span>+2,400 propietarios confían en nosotros</span>
@@ -99,7 +99,7 @@ export function ManagementTierCard({
         <Button
           onClick={() => onSelect?.(tier.id)}
           variant="outline"
-          className="w-full h-12 bg-foreground text-white border-foreground hover:bg-foreground/90 hover:border-foreground/90 shadow-md"
+          className="w-full h-12 bg-foreground text-white border-foreground hover:bg-foreground/90 hover:border-foreground/90"
         >
           Comenzar ahora
         </Button>
@@ -111,7 +111,7 @@ export function ManagementTierCard({
   return (
     <div
       className={cn(
-        'relative flex flex-col rounded-xl border bg-white border-neutral-200 p-6 transition-all hover:shadow-lg hover:border-neutral-300',
+        'relative flex flex-col rounded-xl border bg-white border-neutral-200 p-6 transition-all hover: hover:border-neutral-300',
         className
       )}
     >
@@ -146,8 +146,8 @@ export function ManagementTierCard({
       <ul className="mb-6 flex-1 space-y-2.5">
         {tier.features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2.5">
-            <div className="mt-0.5 w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-              <Check className="h-2.5 w-2.5 text-emerald-600" strokeWidth={3} />
+            <div className="mt-0.5 w-4 h-4 rounded-full bg-[#E8F3EC] flex items-center justify-center flex-shrink-0">
+              <Check className="h-2.5 w-2.5 text-[#2C7A53]" strokeWidth={3} />
             </div>
             <span className="text-[13px] text-muted-foreground leading-snug">{feature}</span>
           </li>

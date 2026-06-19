@@ -84,7 +84,7 @@ export function ForYouCarousel({
             onClick={() => scroll('left')}
             className={cn(
               'absolute left-0 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-sm bg-white/95 shadow-md',
+              'w-10 h-10 rounded-sm bg-white/95',
               'flex items-center justify-center',
               'text-foreground hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',
@@ -102,7 +102,7 @@ export function ForYouCarousel({
             onClick={() => scroll('right')}
             className={cn(
               'absolute right-0 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-sm bg-white/95 shadow-md',
+              'w-10 h-10 rounded-sm bg-white/95',
               'flex items-center justify-center',
               'text-foreground hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',

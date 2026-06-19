@@ -39,7 +39,7 @@ function Modal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-xl overflow-hidden"
           >
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
@@ -164,7 +164,7 @@ export default function ConfiguracionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0b] transition-colors">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] dark:bg-[#0a0a0b] transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -186,12 +186,12 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+            className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
           >
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div>
                   <h2 className="font-semibold text-neutral-900 dark:text-white">{t('settings.notifications.title')}</h2>
@@ -245,12 +245,12 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                   </div>
                   <div>
                     <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Seguridad' : 'Security'}</h2>
@@ -281,12 +281,12 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Globe className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
                   </div>
                   <div>
                     <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Preferencias' : 'Preferences'}</h2>
@@ -304,7 +304,7 @@ export default function ConfiguracionPage() {
                 />
                 <div className="flex items-center justify-between px-6 py-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                       <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                     </div>
                     <div>
@@ -317,7 +317,7 @@ export default function ConfiguracionPage() {
                       value={locale}
                       onChange={(e) => handleLanguageChange(e.target.value as Locale)}
                       aria-label={locale === 'es' ? 'Idioma de la interfaz' : 'Interface language'}
-                      className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all cursor-pointer"
+                      className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all cursor-pointer"
                     >
                       <option value="es">{t('settings.appearance.spanish')}</option>
                       <option value="en">{t('settings.appearance.english')}</option>
@@ -336,12 +336,12 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Eye className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
                     <h2 className="font-semibold text-neutral-900 dark:text-white">{t('settings.privacy.title')}</h2>
@@ -384,16 +384,16 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-3xl border-2 border-red-100 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20 overflow-hidden h-fit"
+              className="rounded-xl border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 overflow-hidden h-fit"
             >
-              <div className="px-6 py-5 border-b border-red-100 dark:border-red-900/50">
+              <div className="px-6 py-5 border-b border-[#C4503B]/30 dark:border-[#C4503B]/40">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
-                    <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+                    <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-red-900 dark:text-red-300">{locale === 'es' ? 'Zona de Peligro' : 'Danger Zone'}</h2>
-                    <p className="text-xs text-red-600 dark:text-red-400">{locale === 'es' ? 'Acciones irreversibles' : 'Irreversible actions'}</p>
+                    <h2 className="font-semibold text-[#C4503B] dark:text-[#E0664D]">{locale === 'es' ? 'Zona de Peligro' : 'Danger Zone'}</h2>
+                    <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{locale === 'es' ? 'Acciones irreversibles' : 'Irreversible actions'}</p>
                   </div>
                 </div>
               </div>
@@ -405,7 +405,7 @@ export default function ConfiguracionPage() {
                 </p>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="px-5 py-2.5 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 hover:border-red-300 dark:hover:border-red-700 transition-all"
+                  className="px-5 py-2.5 border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] rounded-xl text-sm font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 hover:border-[#C4503B]/30 dark:hover:border-[#C4503B]/30 transition-all"
                 >
                   {t('settings.account.deleteAccount')}
                 </button>
@@ -424,7 +424,7 @@ export default function ConfiguracionPage() {
               type="password"
               value={passwordForm.current}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder="••••••••"
             />
           </div>
@@ -434,7 +434,7 @@ export default function ConfiguracionPage() {
               type="password"
               value={passwordForm.new}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder="Mínimo 8 caracteres"
             />
           </div>
@@ -444,7 +444,7 @@ export default function ConfiguracionPage() {
               type="password"
               value={passwordForm.confirm}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder="Repetir contraseña"
             />
           </div>
@@ -471,7 +471,7 @@ export default function ConfiguracionPage() {
       <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title="Sesiones activas">
         <div className="space-y-3">
           {sessions.map((session) => (
-            <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-[#1f1f21]">
+            <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
                   <Monitor className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -482,11 +482,11 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
               {session.current ? (
-                <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">Actual</span>
+                <span className="px-3 py-1.5 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-xs font-medium rounded-full">Actual</span>
               ) : (
                 <button
                   onClick={() => handleCloseSession(session.id)}
-                  className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline"
+                  className="text-xs text-[#C4503B] dark:text-[#E0664D] font-medium hover:underline"
                 >
                   Cerrar
                 </button>
@@ -499,7 +499,7 @@ export default function ConfiguracionPage() {
                 setSessions(prev => prev.filter(s => s.current));
                 toast.success('Todas las otras sesiones han sido cerradas');
               }}
-              className="w-full py-3 border-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="w-full py-3 border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] text-sm font-medium rounded-xl hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
             >
               Cerrar todas las otras sesiones
             </button>
@@ -513,7 +513,7 @@ export default function ConfiguracionPage() {
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
             Prepararemos un archivo con toda tu información personal, incluyendo:
           </p>
-          <div className="p-4 bg-stone-50 dark:bg-[#1f1f21] rounded-2xl space-y-2">
+          <div className="p-4 bg-neutral-50 dark:bg-[#1f1f21] rounded-xl space-y-2">
             {[
               'Información de perfil',
               'Historial de pagos',
@@ -521,8 +521,8 @@ export default function ConfiguracionPage() {
               'Historial de aplicaciones'
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
-                <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-5 h-5 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                  <Check className="w-3 h-3 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
                 {item}
               </div>
@@ -553,26 +553,26 @@ export default function ConfiguracionPage() {
       {/* Delete Account Modal */}
       <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar cuenta">
         <div className="space-y-4">
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
-              <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-xl flex gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center flex-shrink-0">
+              <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-red-800 dark:text-red-300">Esta acción no se puede deshacer</p>
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+              <p className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">Esta acción no se puede deshacer</p>
+              <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">
                 Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados permanentemente.
               </p>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              Escribe <span className="font-bold text-red-600 dark:text-red-400">ELIMINAR</span> para confirmar
+              Escribe <span className="font-bold text-[#C4503B] dark:text-[#E0664D]">ELIMINAR</span> para confirmar
             </label>
             <input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-300 dark:focus:border-red-500 transition-all"
+              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30 dark:focus:border-[#C4503B]/30 transition-all"
               placeholder="ELIMINAR"
             />
           </div>
@@ -589,7 +589,7 @@ export default function ConfiguracionPage() {
             <button
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
-              className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 py-3 bg-[#C4503B] text-white text-sm font-medium rounded-xl hover:bg-[#C4503B] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
               {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}
@@ -620,7 +620,7 @@ function SettingToggle({
   return (
     <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
           <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
         </div>
         <div>
@@ -633,15 +633,15 @@ function SettingToggle({
         role="switch"
         aria-checked={enabled}
         className={cn(
-          'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
+          'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
           enabled
-            ? accent === 'emerald' ? 'bg-emerald-500' : 'bg-indigo-600'
+            ? accent === 'emerald' ? 'bg-[#2C7A53]' : 'bg-[#1A40FF]'
             : 'bg-neutral-200 dark:bg-[#2a2a2c]'
         )}
       >
         <span
           className={cn(
-            'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out',
+            'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white ring-0 transition duration-200 ease-in-out',
             enabled ? 'translate-x-5' : 'translate-x-0'
           )}
         />
@@ -672,7 +672,7 @@ function SettingLink({
       className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors group"
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
           <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
         </div>
         <div className="text-left">
@@ -682,7 +682,7 @@ function SettingLink({
       </div>
       <div className="flex items-center gap-2">
         {badge && (
-          <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-full">
+          <span className="px-2 py-1 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-full">
             {badge}
           </span>
         )}

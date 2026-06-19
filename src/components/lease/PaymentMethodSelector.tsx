@@ -46,7 +46,7 @@ export function PaymentMethodSelector({
                 'relative flex items-start gap-3 p-4 rounded-sm border text-left transition-all',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 isSelected && method.enabled
-                  ? 'border-primary bg-primary/5 shadow-sm'
+                  ? 'border-primary bg-primary/5'
                   : method.enabled
                   ? 'border-border hover:border-border hover:bg-muted'
                   : 'border-border bg-muted opacity-60 cursor-not-allowed'
@@ -74,7 +74,7 @@ export function PaymentMethodSelector({
                     {method.name}
                   </p>
                   {method.fee && method.fee > 0 && (
-                    <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
+                    <span className="text-xs px-1.5 py-0.5 bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F] rounded">
                       +{method.fee}%
                     </span>
                   )}
@@ -113,7 +113,7 @@ export function PaymentMethodSelector({
       </div>
 
       {/* Info note */}
-      <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-sm text-xs text-blue-700">
+      <div className="flex items-start gap-2 p-3 bg-[#EEF1FF] rounded-sm text-xs text-[#1A40FF]">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
           Tu pago será procesado de forma segura. Recibirás confirmación por

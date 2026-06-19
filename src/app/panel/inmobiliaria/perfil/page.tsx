@@ -247,7 +247,7 @@ export default function InmobiliariaPerfilPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -273,19 +273,19 @@ export default function InmobiliariaPerfilPage() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/50 dark:to-indigo-900/30 p-6">
+          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               {/* Progress Info */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 flex items-center justify-center shadow-sm">
-                    <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
                       {locale === 'es' ? 'Completar perfil' : 'Complete profile'}
                     </h2>
-                    <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                    <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
                       {locale === 'es'
                         ? `${completedSteps} de ${totalSteps} pasos completados`
                         : `${completedSteps} of ${totalSteps} steps completed`}
@@ -297,7 +297,7 @@ export default function InmobiliariaPerfilPage() {
                     initial={{ width: 0 }}
                     animate={{ width: `${completionPercentage}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-indigo-600 rounded-full"
+                    className="h-full bg-[#1A40FF] rounded-full"
                   />
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
@@ -326,7 +326,7 @@ export default function InmobiliariaPerfilPage() {
                       cy="50"
                       r="40"
                       fill="none"
-                      stroke="#4f46e5"
+                      stroke="#1A40FF"
                       strokeWidth="8"
                       strokeLinecap="round"
                       initial={{ strokeDasharray: '0 251.2' }}
@@ -354,34 +354,34 @@ export default function InmobiliariaPerfilPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + index * 0.05 }}
                     className={cn(
-                      'rounded-2xl p-4 transition-all',
+                      'rounded-xl p-4 transition-all',
                       step.completed
                         ? 'bg-white/80 dark:bg-white/10'
-                        : 'bg-white dark:bg-neutral-800/80 border-2 border-dashed border-indigo-200 dark:border-amber-500/50'
+                        : 'bg-white dark:bg-neutral-800/80 border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
                         step.completed
-                          ? 'bg-emerald-100 dark:bg-emerald-900/50'
-                          : 'bg-indigo-100 dark:bg-indigo-900/50'
+                          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                          : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                       )}>
                         {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
                         ) : (
-                          <Icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <Icon className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           'text-sm font-medium truncate',
-                          step.completed ? 'text-neutral-900 dark:text-white' : 'text-indigo-900 dark:text-white'
+                          step.completed ? 'text-neutral-900 dark:text-white' : 'text-[#1A40FF] dark:text-white'
                         )}>
                           {step.label}
                         </p>
                         {step.completed ? (
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400">{locale === 'es' ? 'Completado' : 'Completed'}</span>
+                          <span className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{locale === 'es' ? 'Completado' : 'Completed'}</span>
                         ) : (
                           <span className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Pendiente' : 'Pending'}</span>
                         )}
@@ -403,8 +403,8 @@ export default function InmobiliariaPerfilPage() {
             className="lg:col-span-1 space-y-6"
           >
             {/* Avatar Card */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-              <div className="relative bg-gradient-to-br from-indigo-500 to-indigo-600 h-28">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+              <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
                 {editingSection !== 'avatar' && (
                   <button
                     onClick={() => {
@@ -430,7 +430,7 @@ export default function InmobiliariaPerfilPage() {
                 <div className="relative -mt-14 mb-4">
                   <div
                     className={cn(
-                      "w-28 h-28 rounded-full border-4 border-white dark:border-[#1a1a1c] shadow-lg overflow-hidden",
+                      "w-28 h-28 rounded-full border-4 border-white dark:border-[#1a1a1c] overflow-hidden",
                       editingSection === 'avatar' && "cursor-pointer"
                     )}
                     onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
@@ -444,7 +444,7 @@ export default function InmobiliariaPerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
+                      <div className="w-full h-full bg-white dark:bg-[#1A40FF] flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
                         {(formData.firstName || user?.email || '?').charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -452,7 +452,7 @@ export default function InmobiliariaPerfilPage() {
                   {editingSection === 'avatar' && (
                     <button
                       onClick={handleAvatarClick}
-                      className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-lg"
+                      className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
                     >
                       <Camera className="w-4 h-4" />
                     </button>
@@ -469,14 +469,14 @@ export default function InmobiliariaPerfilPage() {
                     className={cn(
                       "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
                       isDragging
-                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-                        : "border-neutral-200 dark:border-white/20 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-neutral-50 dark:hover:bg-white/5"
+                        ? "border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+                        : "border-neutral-200 dark:border-white/20 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-neutral-50 dark:hover:bg-white/5"
                     )}
                   >
                     {avatarPreview ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                             <Image
                               src={avatarPreview}
                               alt="Preview"
@@ -499,7 +499,7 @@ export default function InmobiliariaPerfilPage() {
                             e.stopPropagation();
                             handleRemoveAvatar();
                           }}
-                          className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                          className="p-2 text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 rounded-md transition-colors"
                         >
                           <TrashSimple className="w-4 h-4" />
                         </button>
@@ -534,14 +534,14 @@ export default function InmobiliariaPerfilPage() {
                   <div className="flex items-center gap-2 mt-4">
                     <button
                       onClick={handleCancelEdit}
-                      className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                      className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
                     >
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button
                       onClick={() => handleSave('avatar')}
                       disabled={isSaving}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
                     >
                       {isSaving ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <FloppyDisk className="w-4 h-4" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
@@ -552,8 +552,8 @@ export default function InmobiliariaPerfilPage() {
                 {/* Quick Stats */}
                 <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-white/10 space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                      <Buildings className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -566,8 +566,8 @@ export default function InmobiliariaPerfilPage() {
                   </div>
                   {agency?.name && (
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                        <Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                      <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                        <Briefcase className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-neutral-900 dark:text-white">{agency.name}</p>
@@ -582,7 +582,7 @@ export default function InmobiliariaPerfilPage() {
             </div>
 
             {/* Verification Status Card */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
               <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
                 {locale === 'es' ? 'Estado de verificacion' : 'Verification status'}
@@ -594,15 +594,15 @@ export default function InmobiliariaPerfilPage() {
                   { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
                   { key: 'agency', label: locale === 'es' ? 'Agencia' : 'Agency', verified: true },
                 ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-100 dark:border-neutral-600">
+                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-600">
                     <span className="text-sm font-medium text-neutral-700 dark:text-white">{item.label}</span>
                     {item.verified ? (
-                      <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full">
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2.5 py-1 rounded-full">
                         <CheckCircle className="w-3.5 h-3.5" />
                         {locale === 'es' ? 'Verificado' : 'Verified'}
                       </span>
                     ) : (
-                      <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full">
+                      <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-2.5 py-1 rounded-full">
                         {locale === 'es' ? 'Verificar' : 'Verify'}
                       </span>
                     )}
@@ -620,7 +620,7 @@ export default function InmobiliariaPerfilPage() {
             className="lg:col-span-2 space-y-6"
           >
             {/* Personal Information */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-neutral-900 dark:text-white">
                   {locale === 'es' ? 'Informacion personal' : 'Personal information'}
@@ -628,7 +628,7 @@ export default function InmobiliariaPerfilPage() {
                 {editingSection !== 'personal' ? (
                   <button
                     onClick={() => setEditingSection('personal')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
@@ -637,14 +637,14 @@ export default function InmobiliariaPerfilPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-md transition-colors"
                     >
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button
                       onClick={() => handleSave('personal')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
                     >
                       {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
@@ -660,9 +660,9 @@ export default function InmobiliariaPerfilPage() {
                   </label>
                   {editingSection === 'personal' ? (
                     <input type="text" value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.firstName || '—'}</span>
                     </div>
@@ -676,9 +676,9 @@ export default function InmobiliariaPerfilPage() {
                   </label>
                   {editingSection === 'personal' ? (
                     <input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.lastName || '—'}</span>
                     </div>
@@ -688,7 +688,7 @@ export default function InmobiliariaPerfilPage() {
                 {/* Email — read-only */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Email</label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                     <Envelope className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                     <span className="text-sm text-neutral-900 dark:text-white">{formData.email || '—'}</span>
                   </div>
@@ -701,9 +701,9 @@ export default function InmobiliariaPerfilPage() {
                   </label>
                   {editingSection === 'personal' ? (
                     <input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.phone || '—'}</span>
                     </div>
@@ -715,7 +715,7 @@ export default function InmobiliariaPerfilPage() {
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     {locale === 'es' ? 'Rol en la agencia' : 'Agency role'}
                   </label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                  <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                     <Briefcase className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                     <span className="text-sm text-neutral-900 dark:text-white">
                       {memberRole ? (AGENCY_ROLE_LABELS[memberRole] ?? memberRole) : '—'}
@@ -730,9 +730,9 @@ export default function InmobiliariaPerfilPage() {
                   </label>
                   {editingSection === 'personal' ? (
                     <input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <MapPin className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.address || '—'}</span>
                     </div>
@@ -742,7 +742,7 @@ export default function InmobiliariaPerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-neutral-900 dark:text-white">
                   {locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}
@@ -750,7 +750,7 @@ export default function InmobiliariaPerfilPage() {
                 {editingSection !== 'emergency' ? (
                   <button
                     onClick={() => setEditingSection('emergency')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
@@ -759,14 +759,14 @@ export default function InmobiliariaPerfilPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-md transition-colors"
                     >
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </button>
                     <button
                       onClick={() => handleSave('emergency')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
                     >
                       {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
@@ -783,9 +783,9 @@ export default function InmobiliariaPerfilPage() {
                     <input type="text" value={formData.emergencyContactName}
                       onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
                       placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContactName || '—'}</span>
                     </div>
@@ -799,9 +799,9 @@ export default function InmobiliariaPerfilPage() {
                     <input type="tel" value={formData.emergencyContactPhone}
                       onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
                       placeholder="3001234567"
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
                       <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContactPhone || '—'}</span>
                     </div>
@@ -811,8 +811,8 @@ export default function InmobiliariaPerfilPage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-3xl border border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20 p-6">
-              <h3 className="font-semibold text-red-800 dark:text-red-400 mb-2 flex items-center gap-2">
+            <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7]/30 dark:bg-[#C4503B]/20 p-6">
+              <h3 className="font-semibold text-[#C4503B] dark:text-[#E0664D] mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
@@ -823,7 +823,7 @@ export default function InmobiliariaPerfilPage() {
               </p>
               <button
                 onClick={handleOpenDeleteModal}
-                className="px-4 py-2.5 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 rounded-full text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                className="px-4 py-2.5 border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] rounded-full text-sm font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-colors"
               >
                 {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
               </button>
@@ -839,19 +839,19 @@ export default function InmobiliariaPerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1a1a1c] rounded-3xl max-w-md w-full overflow-hidden"
+            className="bg-white dark:bg-[#1a1a1c] rounded-xl max-w-md w-full overflow-hidden"
           >
             {/* Step 1: Warning */}
             {deleteStep === 1 && (
               <>
-                <div className="bg-red-50 dark:bg-red-950/30 px-6 py-8 text-center border-b border-red-100 dark:border-red-900/30">
-                  <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
-                    <Warning className="w-8 h-8 text-red-600 dark:text-red-400" />
+                <div className="bg-[#F8EAE7] dark:bg-[#C4503B]/15 px-6 py-8 text-center border-b border-[#C4503B]/30 dark:border-[#C4503B]/40">
+                  <div className="w-16 h-16 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center mx-auto mb-4">
+                    <Warning className="w-8 h-8 text-[#C4503B] dark:text-[#E0664D]" />
                   </div>
-                  <h3 className="text-xl font-semibold text-red-800 dark:text-red-300">
+                  <h3 className="text-xl font-semibold text-[#C4503B] dark:text-[#E0664D]">
                     {locale === 'es' ? 'Eliminar tu cuenta?' : 'Delete your account?'}
                   </h3>
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">
                     {locale === 'es' ? 'Esta accion es permanente e irreversible' : 'This action is permanent and irreversible'}
                   </p>
                 </div>
@@ -876,7 +876,7 @@ export default function InmobiliariaPerfilPage() {
                         'Conversations and messages',
                       ]).map((item, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-                          <TrashSimple className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                          <TrashSimple className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D] mt-0.5 flex-shrink-0" />
                           {item}
                         </li>
                       ))}
@@ -892,7 +892,7 @@ export default function InmobiliariaPerfilPage() {
                     </button>
                     <button
                       onClick={() => setDeleteStep(2)}
-                      className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+                      className="flex-1 px-4 py-2.5 bg-[#C4503B] text-white rounded-full text-sm font-medium hover:bg-[#C4503B] transition-colors"
                     >
                       {locale === 'es' ? 'Continuar' : 'Continue'}
                     </button>
@@ -921,13 +921,13 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? (
                       <>
                         Para confirmar la eliminacion de tu cuenta, escribe{' '}
-                        <span className="font-mono font-semibold text-red-600 dark:text-red-400">ELIMINAR</span>{' '}
+                        <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">ELIMINAR</span>{' '}
                         en el campo de abajo:
                       </>
                     ) : (
                       <>
                         To confirm account deletion, type{' '}
-                        <span className="font-mono font-semibold text-red-600 dark:text-red-400">DELETE</span>{' '}
+                        <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">DELETE</span>{' '}
                         in the field below:
                       </>
                     )}
@@ -938,7 +938,7 @@ export default function InmobiliariaPerfilPage() {
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
                     placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-mono text-center tracking-widest"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30 transition-all font-mono text-center tracking-widest"
                   />
 
                   <div className="flex gap-3 mt-6">
@@ -954,7 +954,7 @@ export default function InmobiliariaPerfilPage() {
                       className={cn(
                         'flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
                         (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE')
-                          ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700'
+                          ? 'bg-[#C4503B] text-white hover:bg-[#C4503B]'
                           : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                       )}
                     >

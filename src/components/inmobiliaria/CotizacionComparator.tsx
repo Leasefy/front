@@ -127,32 +127,32 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
       className={cn(
         'flex-shrink-0 w-72 rounded-xl border transition-all',
         isSelected
-          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20 shadow-lg shadow-emerald-500/10'
-          : 'border-border bg-card hover:border-indigo-300 dark:hover:border-indigo-700'
+          ? 'border-[#2C7A53]/30 bg-[#E8F3EC]/50 dark:bg-[#2C7A53]/20 shadow-[#2C7A53]/10'
+          : 'border-border bg-card hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30'
       )}
     >
       {/* Badges Row */}
       <div className="flex flex-wrap gap-1.5 p-3 pb-0">
         {isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-100 to-amber-200 text-amber-700 dark:from-amber-900/40 dark:to-amber-800/40 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#F8F0E0] dark:bg-[#B7791F]/12 text-[#B7791F] dark:from-[#B7791F]/40 dark:to-[#B7791F]/40 dark:text-[#B7791F]">
             <Crown className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.bestValue')}
           </span>
         )}
         {isLowestPrice && !isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:bg-[#2C7A53]/40 dark:text-[#2C7A53]">
             <TrendDown className="w-3 h-3" weight="bold" />
             {t('inmobiliaria.finance.quotes.cheapest')}
           </span>
         )}
         {isFastest && !isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/40 dark:text-[#1A40FF]">
             <Lightning className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.fastest')}
           </span>
         )}
         {isSelected && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:bg-[#2C7A53]/40 dark:text-[#2C7A53]">
             <CheckCircle className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.selected')}
           </span>
@@ -165,7 +165,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
           <h4 className="font-semibold text-foreground">{quote.providerName}</h4>
           <a
             href={`tel:${quote.providerPhone}`}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
           >
             <Phone className="w-3.5 h-3.5" />
             {quote.providerPhone}
@@ -184,8 +184,8 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
               className={cn(
                 'inline-flex items-center gap-1 text-xs font-medium',
                 priceDeviation < 0
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-rose-600 dark:text-rose-400'
+                  ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                  : 'text-[#C4503B] dark:text-[#E0664D]'
               )}
             >
               {priceDeviation < 0 ? (
@@ -223,10 +223,10 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
               className={cn(
                 'h-full rounded-full transition-all',
                 isLowestPrice
-                  ? 'bg-emerald-500'
+                  ? 'bg-[#2C7A53]'
                   : priceDeviation > 10
-                  ? 'bg-rose-400'
-                  : 'bg-indigo-400'
+                  ? 'bg-[#C4503B]'
+                  : 'bg-[#1A40FF]'
               )}
               style={{
                 width: `${Math.min(100, Math.max(20, (analysis.avgPrice / quote.amount) * 50 + 50))}%`,
@@ -243,10 +243,10 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
           onClick={onSelect}
           disabled={isSelected}
           className={cn(
-            'w-full py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
+            'w-full py-2.5 px-4 rounded-md font-medium transition-all flex items-center justify-center gap-2',
             isSelected
-              ? 'bg-emerald-500 text-white cursor-default'
-              : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
+              ? 'bg-[#2C7A53] text-white cursor-default'
+              : 'bg-[#1A40FF] text-white hover:opacity-90'
           )}
         >
           {isSelected ? (
@@ -300,7 +300,7 @@ export function CotizacionComparator({
         {onRequestNewQuote && (
           <button
             onClick={onRequestNewQuote}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
           >
             <Plus className="w-4 h-4" weight="bold" />
             {t('inmobiliaria.finance.quotes.requestQuote')}
@@ -321,7 +321,7 @@ export function CotizacionComparator({
               <h4 className="font-semibold text-foreground">{quote.providerName}</h4>
               <a
                 href={`tel:${quote.providerPhone}`}
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-indigo-600 transition-colors"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-[#1A40FF] transition-colors"
               >
                 <Phone className="w-4 h-4" />
                 {quote.providerPhone}
@@ -348,10 +348,10 @@ export function CotizacionComparator({
               onClick={() => onSelectQuote(quote.id)}
               disabled={selectedQuoteId === quote.id}
               className={cn(
-                'flex-1 py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
+                'flex-1 py-2.5 px-4 rounded-md font-medium transition-all flex items-center justify-center gap-2',
                 selectedQuoteId === quote.id
-                  ? 'bg-emerald-500 text-white cursor-default'
-                  : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
+                  ? 'bg-[#2C7A53] text-white cursor-default'
+                  : 'bg-[#1A40FF] text-white hover:opacity-90'
               )}
             >
               {selectedQuoteId === quote.id ? (
@@ -369,7 +369,7 @@ export function CotizacionComparator({
             {onRequestNewQuote && (
               <button
                 onClick={onRequestNewQuote}
-                className="py-2.5 px-4 rounded-lg font-medium border border-border hover:bg-muted transition-colors text-foreground"
+                className="py-2.5 px-4 rounded-md font-medium border border-border hover:bg-muted transition-colors text-foreground"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -400,7 +400,7 @@ export function CotizacionComparator({
         {onRequestNewQuote && (
           <button
             onClick={onRequestNewQuote}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-muted transition-colors text-sm font-medium text-foreground"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors text-sm font-medium text-foreground"
           >
             <Plus className="w-4 h-4" />
             {t('inmobiliaria.finance.quotes.newQuote')}
@@ -410,30 +410,30 @@ export function CotizacionComparator({
 
       {/* Comparison Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+        <div className="p-3 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
+          <div className="flex items-center gap-2 text-[#2C7A53] dark:text-[#3EAE70]">
             <TrendDown className="w-4 h-4" weight="bold" />
             <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.cheapest')}</span>
           </div>
-          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 mt-1">
+          <p className="text-lg font-bold text-[#2C7A53] dark:text-[#3EAE70] mt-1">
             {formatCurrency(Math.min(...solicitud.quotes.map((q) => q.amount)))}
           </p>
         </div>
-        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+        <div className="p-3 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
+          <div className="flex items-center gap-2 text-[#1A40FF] dark:text-[#5570FF]">
             <Lightning className="w-4 h-4" weight="fill" />
             <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.fastest')}</span>
           </div>
-          <p className="text-lg font-bold text-blue-700 dark:text-blue-300 mt-1">
+          <p className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF] mt-1">
             {Math.min(...solicitud.quotes.map((q) => q.estimatedDays))} {t('inmobiliaria.finance.quotes.days')}
           </p>
         </div>
-        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+        <div className="p-3 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+          <div className="flex items-center gap-2 text-[#B7791F] dark:text-[#D2992F]">
             <Crown className="w-4 h-4" weight="fill" />
             <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.bestValue')}</span>
           </div>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-300 mt-1">
+          <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F] mt-1">
             {solicitud.quotes.find((q) => q.id === analysis.bestValueId)?.providerName?.split(' ')[0] || '-'}
           </p>
         </div>
@@ -467,18 +467,18 @@ export function CotizacionComparator({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+          className="p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40"
         >
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" weight="fill" />
+              <div className="w-10 h-10 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
               </div>
               <div>
-                <p className="font-medium text-emerald-700 dark:text-emerald-300">
+                <p className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
                   {t('inmobiliaria.finance.quotes.quoteSelected')}
                 </p>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">
                   {solicitud.quotes.find((q) => q.id === selectedQuoteId)?.providerName} -{' '}
                   {formatCurrency(
                     solicitud.quotes.find((q) => q.id === selectedQuoteId)?.amount || 0
@@ -486,7 +486,7 @@ export function CotizacionComparator({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
               <span>{t('inmobiliaria.finance.quotes.continueToApproval')}</span>
               <ArrowRight className="w-4 h-4" />
             </div>

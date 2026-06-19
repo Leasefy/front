@@ -89,7 +89,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
                 {verificationCode}
               </span>
               {copiedCode ? (
-                <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                <Check className="w-4 h-4 text-[#2C7A53] flex-shrink-0" />
               ) : (
                 <Copy className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               )}
@@ -110,7 +110,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
                 {shareUrl}
               </span>
               {copiedLink ? (
-                <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                <Check className="w-4 h-4 text-[#2C7A53] flex-shrink-0" />
               ) : (
                 <Copy className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               )}

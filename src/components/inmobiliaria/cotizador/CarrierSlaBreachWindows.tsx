@@ -109,7 +109,7 @@ export function CarrierSlaBreachWindows({
                     {w.endedAt ? (
                       <span className="text-neutral-600 dark:text-neutral-300">{formatDate(w.endedAt)}</span>
                     ) : (
-                      <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">
+                      <span className="text-[#B7791F] dark:text-[#D2992F] text-xs font-medium">
                         {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.ongoing')}
                       </span>
                     )}

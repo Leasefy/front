@@ -393,8 +393,8 @@ function ConfiguracionContent() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Gear className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+            <Gear className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           {t('inmobiliaria.config.title')}
         </h1>
@@ -415,11 +415,11 @@ function ConfiguracionContent() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-sm'
+                  ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
-              <Icon className={cn('w-4 h-4', isActive && 'text-indigo-600 dark:text-indigo-400')} />
+              <Icon className={cn('w-4 h-4', isActive && 'text-[#1A40FF] dark:text-[#5570FF]')} />
               <span className="hidden sm:inline">{tab.label}</span>
               <span className="sm:hidden">{tab.label}</span>
             </button>
@@ -439,7 +439,7 @@ function ConfiguracionContent() {
         {activeTab === 'perfil' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30" />
             </div>
           ) : config ? (
             <ConfigPerfilAgencia config={config} onSave={handleSaveConfig} />
@@ -452,7 +452,7 @@ function ConfiguracionContent() {
         {activeTab === 'branding' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30" />
             </div>
           ) : config?.branding ? (
             <ConfigBranding branding={config.branding} onSave={handleSaveBranding} />
@@ -465,7 +465,7 @@ function ConfiguracionContent() {
         {activeTab === 'usuarios' && (
           usersLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30" />
             </div>
           ) : (
             <ConfigUsuarios
@@ -488,7 +488,7 @@ function ConfiguracionContent() {
         {activeTab === 'integraciones' && (
           integrationsLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30" />
             </div>
           ) : (
             <ConfigIntegraciones
@@ -503,7 +503,7 @@ function ConfiguracionContent() {
         {activeTab === 'facturacion' && (
           billingLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A40FF]/30" />
             </div>
           ) : billing ? (
             <ConfigFacturacion
@@ -514,9 +514,9 @@ function ConfiguracionContent() {
           ) : (
             // Empty state — agency has no active billing/subscription yet.
             // Show a clear CTA to view available plans instead of a dead-end message.
-            <div className="rounded-2xl border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-[#141416] p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <Lightning className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+            <div className="rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-[#141416] p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                <Lightning className="w-8 h-8 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
                 Todavía no tenés un plan activo
@@ -526,7 +526,7 @@ function ConfiguracionContent() {
               </p>
               <button
                 onClick={() => setIsPricingModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium transition-colors"
               >
                 <Lightning className="w-4 h-4" />
                 Ver planes disponibles
@@ -543,11 +543,11 @@ function ConfiguracionContent() {
 
         {/* Notificaciones Tab */}
         {activeTab === 'notificaciones' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden">
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div>
                   <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.notifications.title')}</h2>
@@ -565,7 +565,7 @@ function ConfiguracionContent() {
               ]).map((item) => (
                 <div key={item.key} className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                       <item.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                     </div>
                     <div>
@@ -586,7 +586,7 @@ function ConfiguracionContent() {
                     }}
                     className={cn(
                       'relative w-11 h-6 rounded-full transition-colors',
-                      notifSettings[notifKeyMap[item.key]] ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
+                      notifSettings[notifKeyMap[item.key]] ? 'bg-[#1A40FF]' : 'bg-neutral-300 dark:bg-neutral-600'
                     )}
                   >
                     <span className={cn(
@@ -602,11 +602,11 @@ function ConfiguracionContent() {
 
         {/* Preferencias Tab */}
         {activeTab === 'preferencias' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden">
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Globe className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
                 </div>
                 <div>
                   <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.title')}</h2>
@@ -618,7 +618,7 @@ function ConfiguracionContent() {
               {/* Dark mode toggle */}
               <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                     <Moon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   </div>
                   <div>
@@ -633,7 +633,7 @@ function ConfiguracionContent() {
                   }}
                   className={cn(
                     'relative w-11 h-6 rounded-full transition-colors',
-                    mounted && resolvedTheme === 'dark' ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
+                    mounted && resolvedTheme === 'dark' ? 'bg-[#1A40FF]' : 'bg-neutral-300 dark:bg-neutral-600'
                   )}
                 >
                   <span className={cn(
@@ -645,7 +645,7 @@ function ConfiguracionContent() {
               {/* Language selector */}
               <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                     <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   </div>
                   <div>
@@ -660,7 +660,7 @@ function ConfiguracionContent() {
                       setLocale(e.target.value as Locale);
                       toast.success(e.target.value === 'en' ? t('inmobiliaria.config.preferences.langChangedEn') : t('inmobiliaria.config.preferences.langChangedEs'));
                     }}
-                    className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all cursor-pointer"
+                    className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all cursor-pointer"
                   >
                     <option value="es">Español</option>
                     <option value="en">English</option>
@@ -671,7 +671,7 @@ function ConfiguracionContent() {
               {/* AI panel tour toggle — Phase 38 plan 38-06 */}
               <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                     <Compass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   </div>
                   <div>
@@ -705,7 +705,7 @@ function ConfiguracionContent() {
                   }}
                   className={cn(
                     'relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                    tourDismissed === false ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
+                    tourDismissed === false ? 'bg-[#1A40FF]' : 'bg-neutral-300 dark:bg-neutral-600'
                   )}
                 >
                   <span
@@ -719,7 +719,7 @@ function ConfiguracionContent() {
               {/* Relaunch tour button — session-only, does not persist */}
               <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                     <Compass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   </div>
                   <div>
@@ -744,11 +744,11 @@ function ConfiguracionContent() {
 
         {/* Seguridad Tab */}
         {activeTab === 'seguridad' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden">
             <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
                 <div>
                   <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.title')}</h2>
@@ -764,7 +764,7 @@ function ConfiguracionContent() {
                 className="flex items-center justify-between w-full px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors text-left"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                     <Lock className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   </div>
                   <div>
@@ -780,7 +780,7 @@ function ConfiguracionContent() {
                 className="flex items-center justify-between w-full px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors text-left"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
                     <Monitor className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                   </div>
                   <div>

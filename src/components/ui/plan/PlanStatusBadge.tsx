@@ -32,28 +32,28 @@ const statusConfig: Record<Exclude<PlanStatusType, 'custom'>, {
 }> = {
   new: {
     label: 'Nuevo',
-    bg: 'bg-indigo-100',
-    text: 'text-indigo-800',
+    bg: 'bg-[#EEF1FF]',
+    text: 'text-[#1A40FF]',
   },
   in_progress: {
     label: 'En progreso',
-    bg: 'bg-amber-100',
-    text: 'text-amber-800',
+    bg: 'bg-[#F8F0E0]',
+    text: 'text-[#B7791F]',
   },
   accepted: {
     label: 'Aceptado',
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
+    bg: 'bg-[#E8F3EC]',
+    text: 'text-[#2C7A53]',
   },
   rejected: {
     label: 'Rechazado',
-    bg: 'bg-red-100',
-    text: 'text-red-800',
+    bg: 'bg-[#F8EAE7]',
+    text: 'text-[#C4503B]',
   },
   important: {
     label: 'Importante',
-    bg: 'bg-rose-100',
-    text: 'text-rose-800',
+    bg: 'bg-[#F8EAE7]',
+    text: 'text-[#C4503B]',
   },
   pending: {
     label: 'Pendiente',
@@ -62,13 +62,13 @@ const statusConfig: Record<Exclude<PlanStatusType, 'custom'>, {
   },
   completed: {
     label: 'Completado',
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
+    bg: 'bg-[#E8F3EC]',
+    text: 'text-[#2C7A53]',
   },
   loan_granted: {
     label: 'Prestamo otorgado',
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
+    bg: 'bg-[#EEF1FF]',
+    text: 'text-[#1A40FF]',
   },
 };
 
@@ -167,22 +167,22 @@ const riskConfig: Record<RiskLevel, {
   A: {
     label: 'Bajo Riesgo',
     bg: 'bg-plan-status-green-bg',
-    text: 'text-green-800',
+    text: 'text-[#2C7A53]',
   },
   B: {
     label: 'Riesgo Moderado',
     bg: 'bg-plan-status-blue-bg',
-    text: 'text-blue-800',
+    text: 'text-[#1A40FF]',
   },
   C: {
     label: 'Riesgo Medio',
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-800',
+    bg: 'bg-[#F8F0E0]',
+    text: 'text-[#B7791F]',
   },
   D: {
     label: 'Alto Riesgo',
     bg: 'bg-plan-status-red-bg',
-    text: 'text-red-800',
+    text: 'text-[#C4503B]',
   },
 };
 

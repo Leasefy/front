@@ -34,42 +34,42 @@ function displayStatusForApproved(contract: Contract | undefined, locale: string
     case 'draft':
       return {
         label: locale === 'es' ? 'Contrato en preparación' : 'Contract being prepared',
-        color: 'bg-amber-100 text-amber-700',
+        color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
         icon: Clock,
         progress: 100,
       };
     case 'pending_tenant':
       return {
         label: locale === 'es' ? 'Firmar contrato' : 'Sign contract',
-        color: 'bg-indigo-100 text-indigo-700',
+        color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
         icon: Warning,
         progress: 100,
       };
     case 'pending_landlord':
       return {
         label: locale === 'es' ? 'Esperando firma del propietario' : 'Waiting for landlord signature',
-        color: 'bg-amber-100 text-amber-700',
+        color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
         icon: Clock,
         progress: 100,
       };
     case 'rejected_pending_modifications':
       return {
         label: locale === 'es' ? 'Esperando cambios' : 'Waiting for changes',
-        color: 'bg-amber-100 text-amber-700',
+        color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
         icon: Clock,
         progress: 100,
       };
     case 'signed':
       return {
         label: locale === 'es' ? 'Firmado — pendiente activar' : 'Signed — pending activation',
-        color: 'bg-blue-100 text-blue-700',
+        color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
         icon: CheckCircle,
         progress: 100,
       };
     case 'active':
       return {
         label: locale === 'es' ? 'Contrato activo' : 'Contract active',
-        color: 'bg-emerald-100 text-emerald-700',
+        color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
         icon: CheckCircle,
         progress: 100,
       };
@@ -83,7 +83,7 @@ function displayStatusForApproved(contract: Contract | undefined, locale: string
     case 'cancelled':
       return {
         label: locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled',
-        color: 'bg-rose-100 text-rose-700',
+        color: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
         icon: XCircle,
         progress: 100,
       };
@@ -154,37 +154,37 @@ export default function AplicacionesPage() {
   const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle; progress: number }> = {
     submitted: {
       label: t('applications.steps.submitted'),
-      color: 'bg-blue-100 text-blue-700',
+      color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
       icon: Clock,
       progress: 25
     },
     under_review: {
       label: t('applications.steps.review'),
-      color: 'bg-amber-100 text-amber-700',
+      color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
       icon: Clock,
       progress: 50
     },
     needs_info: {
       label: locale === 'es' ? 'Info. requerida' : 'Info required',
-      color: 'bg-orange-100 text-orange-700',
+      color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
       icon: Warning,
       progress: 30
     },
     pre_approved: {
       label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved',
-      color: 'bg-emerald-100 text-emerald-700',
+      color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
       icon: CheckCircle,
       progress: 75
     },
     approved: {
       label: t('applications.steps.approved'),
-      color: 'bg-emerald-100 text-emerald-700',
+      color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
       icon: CheckCircle,
       progress: 100
     },
     rejected: {
       label: t('applications.rejected'),
-      color: 'bg-red-100 text-red-700',
+      color: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
       icon: XCircle,
       progress: 100
     },
@@ -196,7 +196,7 @@ export default function AplicacionesPage() {
     },
     contract_failed: {
       label: locale === 'es' ? 'Contrato fallido' : 'Contract failed',
-      color: 'bg-rose-100 text-rose-700',
+      color: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
       icon: XCircle,
       progress: 100,
     },
@@ -218,8 +218,8 @@ export default function AplicacionesPage() {
   // Loading state
   if (isOnboardingLoading || isAppsLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -227,7 +227,7 @@ export default function AplicacionesPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="applications" />
         </div>
@@ -238,7 +238,7 @@ export default function AplicacionesPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -252,7 +252,7 @@ export default function AplicacionesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -276,8 +276,8 @@ export default function AplicacionesPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <FileText className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
@@ -287,20 +287,20 @@ export default function AplicacionesPage() {
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
           </div>
 
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <Clock className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
+            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
               {activeApplications.length}
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('applications.active')}</p>
           </div>
 
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
             <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
@@ -318,13 +318,13 @@ export default function AplicacionesPage() {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
         >
           {/* Tabs */}
-          <div className="flex items-center gap-2 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit">
+          <div className="flex items-center gap-2 p-1 bg-neutral-100 dark:bg-[#1a1a1c] rounded-full w-fit">
             <button
               onClick={() => handleTabChange('active')}
               className={cn(
                 'px-5 py-2 text-sm font-medium rounded-full transition-all',
                 activeTab === 'active'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
               )}
             >
@@ -332,7 +332,7 @@ export default function AplicacionesPage() {
               {activeApplications.length > 0 && (
                 <span className={cn(
                   'ml-2 px-2 py-0.5 text-xs rounded-full',
-                  activeTab === 'active' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
+                  activeTab === 'active' ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
                 )}>
                   {activeApplications.length}
                 </span>
@@ -343,7 +343,7 @@ export default function AplicacionesPage() {
               className={cn(
                 'px-5 py-2 text-sm font-medium rounded-full transition-all',
                 activeTab === 'completed'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
               )}
             >
@@ -351,7 +351,7 @@ export default function AplicacionesPage() {
               {completedApplications.length > 0 && (
                 <span className={cn(
                   'ml-2 px-2 py-0.5 text-xs rounded-full',
-                  activeTab === 'completed' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
+                  activeTab === 'completed' ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
                 )}>
                   {completedApplications.length}
                 </span>
@@ -360,13 +360,13 @@ export default function AplicacionesPage() {
           </div>
 
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit">
+          <div className="flex items-center gap-1 p-1 bg-neutral-100 dark:bg-[#1a1a1c] rounded-full w-fit">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
                 'p-2 rounded-full transition-all',
                 viewMode === 'list'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
               )}
               title={locale === 'es' ? 'Vista de lista' : 'List view'}
@@ -378,7 +378,7 @@ export default function AplicacionesPage() {
               className={cn(
                 'p-2 rounded-full transition-all',
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
               )}
               title={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
@@ -415,7 +415,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                          <div className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden">
                             <div className="flex flex-col lg:flex-row">
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -443,7 +443,7 @@ export default function AplicacionesPage() {
                               <div className="flex-1 p-6">
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                                       {application.property?.title || 'Propiedad'}
                                     </h3>
                                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
@@ -494,21 +494,21 @@ export default function AplicacionesPage() {
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
-                                          ? "bg-red-400"
+                                          ? "bg-[#C4503B]"
                                           : application.status === 'approved' || application.status === 'pre_approved'
-                                          ? "bg-emerald-500"
+                                          ? "bg-[#2C7A53]"
                                           : application.status === 'needs_info'
-                                          ? "bg-orange-400"
-                                          : "bg-indigo-600"
+                                          ? "bg-[#B7791F]"
+                                          : "bg-[#1A40FF]"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between mt-4 p-4 bg-neutral-50 dark:bg-[#2a2a2c] rounded-2xl">
+                                <div className="flex items-center justify-between mt-4 p-4 bg-neutral-50 dark:bg-[#2a2a2c] rounded-xl">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
+                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1a1a1c] flex items-center justify-center">
                                       <FileText className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                                     </div>
                                     <div>
@@ -516,7 +516,7 @@ export default function AplicacionesPage() {
                                       <p className={cn(
                                         'text-sm font-semibold',
                                         application.status === 'needs_info'
-                                          ? 'text-orange-600 dark:text-orange-400'
+                                          ? 'text-[#B7791F] dark:text-[#D2992F]'
                                           : 'text-neutral-900 dark:text-white'
                                       )}>
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
@@ -530,7 +530,7 @@ export default function AplicacionesPage() {
                                       </p>
                                     </div>
                                   </div>
-                                  <span className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                                  <span className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                                     {locale === 'es' ? 'Ver detalle' : 'View details'}
                                     <ArrowUpRight className="w-4 h-4" />
                                   </span>
@@ -564,7 +564,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col">
+                          <div className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden h-full flex flex-col">
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
@@ -589,7 +589,7 @@ export default function AplicacionesPage() {
                             {/* Content */}
                             <div className="p-4 flex-1 flex flex-col">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1 mb-1">
+                                <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors line-clamp-1 mb-1">
                                   {application.property?.title || 'Propiedad'}
                                 </h3>
                                 <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mb-3">
@@ -618,12 +618,12 @@ export default function AplicacionesPage() {
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
-                                          ? "bg-red-400"
+                                          ? "bg-[#C4503B]"
                                           : application.status === 'approved' || application.status === 'pre_approved'
-                                          ? "bg-emerald-500"
+                                          ? "bg-[#2C7A53]"
                                           : application.status === 'needs_info'
-                                          ? "bg-orange-400"
-                                          : "bg-indigo-600"
+                                          ? "bg-[#B7791F]"
+                                          : "bg-[#1A40FF]"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
@@ -636,7 +636,7 @@ export default function AplicacionesPage() {
                                 <span className="text-xs text-neutral-500 dark:text-neutral-400">
                                   {formatShortDate(application.updatedAt)}
                                 </span>
-                                <span className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                                <span className="flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
                                   <ArrowUpRight className="w-3 h-3" />
                                 </span>
@@ -660,7 +660,7 @@ export default function AplicacionesPage() {
                       'p-2 rounded-full transition-all',
                       currentPage === 1
                         ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                     )}
                   >
                     <CaretLeft className="w-5 h-5" />
@@ -675,7 +675,7 @@ export default function AplicacionesPage() {
                           'w-10 h-10 rounded-full text-sm font-medium transition-all',
                           currentPage === page
                             ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                         )}
                       >
                         {page}
@@ -690,7 +690,7 @@ export default function AplicacionesPage() {
                       'p-2 rounded-full transition-all',
                       currentPage === totalPages
                         ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
                     )}
                   >
                     <CaretRight className="w-5 h-5" />

@@ -72,22 +72,22 @@ function StepStatusDot({ status }: { status: ExecutionStepStatus }) {
   switch (status) {
     case 'completed':
       return (
-        <div className="relative flex items-center justify-center h-6 w-6 rounded-full bg-emerald-500">
+        <div className="relative flex items-center justify-center h-6 w-6 rounded-full bg-[#2C7A53]">
           <CheckCircle weight="fill" className="h-4 w-4 text-white" />
         </div>
       );
     case 'running':
       return (
         <div className="relative flex items-center justify-center h-6 w-6">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-40" />
-          <span className="relative flex items-center justify-center h-6 w-6 rounded-full bg-blue-500">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1A40FF] opacity-40" />
+          <span className="relative flex items-center justify-center h-6 w-6 rounded-full bg-[#1A40FF]">
             <CircleNotch weight="bold" className="h-3.5 w-3.5 text-white animate-spin" />
           </span>
         </div>
       );
     case 'failed':
       return (
-        <div className="flex items-center justify-center h-6 w-6 rounded-full bg-red-500">
+        <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#C4503B]">
           <Warning weight="fill" className="h-4 w-4 text-white" />
         </div>
       );
@@ -112,12 +112,12 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
       {/* Browser chrome */}
       <div className="flex items-center gap-2 px-4 py-2.5 bg-neutral-100 dark:bg-[#1a1a1c] border-b border-neutral-200 dark:border-neutral-700 rounded-t-xl">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-red-400" />
-          <div className="h-3 w-3 rounded-full bg-amber-400" />
-          <div className="h-3 w-3 rounded-full bg-emerald-400" />
+          <div className="h-3 w-3 rounded-full bg-[#C4503B]" />
+          <div className="h-3 w-3 rounded-full bg-[#B7791F]" />
+          <div className="h-3 w-3 rounded-full bg-[#2C7A53]" />
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2 px-4 py-1 rounded-lg bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-neutral-700 max-w-md w-full">
+          <div className="flex items-center gap-2 px-4 py-1 rounded-md bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-neutral-700 max-w-md w-full">
             {step?.stepType === 'browser' ? (
               <Globe className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
             ) : (
@@ -142,7 +142,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
         {!step ? (
           /* No step selected — show overview */
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.05] flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-xl bg-white/[0.05] flex items-center justify-center mb-4">
               <Monitor weight="duotone" className="h-8 w-8 text-neutral-500" />
             </div>
             <p className="text-sm text-neutral-400 mb-1">
@@ -162,9 +162,9 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
               {step.stepType === 'browser' && (
                 <div className="space-y-4">
                   {/* Simulated DataCrédito page */}
-                  <div className="bg-white rounded-lg p-4 max-w-lg mx-auto">
+                  <div className="bg-white rounded-md p-4 max-w-lg mx-auto">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded bg-blue-600 flex items-center justify-center text-white text-xs font-bold">DC</div>
+                      <div className="h-8 w-8 rounded bg-[#1A40FF] flex items-center justify-center text-white text-xs font-bold">DC</div>
                       <span className="text-sm font-semibold text-neutral-900">DataCrédito</span>
                       <span className="text-xs text-neutral-400">Consulta de historial crediticio</span>
                     </div>
@@ -175,19 +175,19 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-neutral-500">Estado consulta:</span>
-                        <span className={cn('font-medium', isRunning ? 'text-blue-600' : 'text-emerald-600')}>
+                        <span className={cn('font-medium', isRunning ? 'text-[#1A40FF]' : 'text-[#2C7A53]')}>
                           {isRunning ? 'Procesando...' : 'Completada'}
                         </span>
                       </div>
                       {step.output && (
-                        <div className="mt-3 p-2 bg-emerald-50 rounded border border-emerald-200">
-                          <p className="text-xs text-emerald-800 font-mono whitespace-pre-wrap">{step.output}</p>
+                        <div className="mt-3 p-2 bg-[#E8F3EC] rounded border border-[#2C7A53]/30">
+                          <p className="text-xs text-[#2C7A53] font-mono whitespace-pre-wrap">{step.output}</p>
                         </div>
                       )}
                     </div>
                   </div>
                   {isRunning && (
-                    <div className="flex items-center justify-center gap-2 text-blue-400 animate-pulse">
+                    <div className="flex items-center justify-center gap-2 text-[#1A40FF] animate-pulse">
                       <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
                       <span className="text-sm">{locale === 'es' ? 'Consultando...' : 'Querying...'}</span>
                     </div>
@@ -197,14 +197,14 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'analysis' && (
                 <div className="space-y-3 max-w-lg mx-auto">
-                  <div className="bg-white/[0.05] rounded-lg border border-white/[0.08] p-4">
+                  <div className="bg-white/[0.05] rounded-md border border-white/[0.08] p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Brain weight="duotone" className="h-5 w-5 text-neutral-400" />
                       <span className="text-sm font-medium text-white/90">
                         {locale === 'es' ? 'Motor de Análisis' : 'Analysis Engine'}
                       </span>
                       {isRunning && (
-                        <span className="ml-auto flex items-center gap-1 text-xs text-blue-400 animate-pulse">
+                        <span className="ml-auto flex items-center gap-1 text-xs text-[#1A40FF] animate-pulse">
                           <CircleNotch weight="bold" className="h-3 w-3 animate-spin" />
                           {locale === 'es' ? 'Procesando' : 'Processing'}
                         </span>
@@ -217,9 +217,9 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                       </div>
                     )}
                     {step.output && (
-                      <div className="p-3 rounded bg-emerald-900/20 border border-emerald-700/30">
-                        <p className="text-xs text-emerald-400 mb-1 uppercase tracking-wider">{locale === 'es' ? 'Output' : 'Output'}</p>
-                        <p className="text-sm text-emerald-200 font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
+                      <div className="p-3 rounded bg-[#2C7A53]/20 border border-[#2C7A53]/30">
+                        <p className="text-xs text-[#2C7A53] mb-1 uppercase tracking-wider">{locale === 'es' ? 'Output' : 'Output'}</p>
+                        <p className="text-sm text-[#2C7A53] font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
                       </div>
                     )}
                   </div>
@@ -228,7 +228,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'document' && (
                 <div className="max-w-lg mx-auto">
-                  <div className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="bg-white rounded-md p-6">
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b">
                       <FileText weight="duotone" className="h-5 w-5 text-neutral-500" />
                       <span className="text-sm font-semibold text-neutral-900">{locale === 'es' ? 'Generando Documento' : 'Generating Document'}</span>
@@ -248,7 +248,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'search' && (
                 <div className="space-y-3 max-w-lg mx-auto">
-                  <div className="bg-white/[0.05] rounded-lg border border-white/[0.08] p-4">
+                  <div className="bg-white/[0.05] rounded-md border border-white/[0.08] p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <MagnifyingGlass weight="duotone" className="h-5 w-5 text-neutral-400" />
                       <span className="text-sm font-medium text-white/90">{locale === 'es' ? 'Búsqueda de Candidatos' : 'Candidate Search'}</span>
@@ -274,7 +274,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'notification' && (
                 <div className="max-w-sm mx-auto mt-8">
-                  <div className="bg-white rounded-2xl shadow-xl p-5 border">
+                  <div className="bg-white rounded-xl p-5 border">
                     <div className="flex items-start gap-3">
                       <div className="h-10 w-10 rounded-xl bg-neutral-100 flex items-center justify-center flex-shrink-0">
                         <Bell weight="fill" className="h-5 w-5 text-neutral-600" />
@@ -290,17 +290,17 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'decision' && (
                 <div className="max-w-lg mx-auto">
-                  <div className="bg-white/[0.05] rounded-lg border border-white/[0.08] p-4">
+                  <div className="bg-white/[0.05] rounded-md border border-white/[0.08] p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <LightbulbFilament weight="duotone" className="h-5 w-5 text-amber-400" />
+                      <LightbulbFilament weight="duotone" className="h-5 w-5 text-[#B7791F]" />
                       <span className="text-sm font-medium text-white/90">{locale === 'es' ? 'Tomando Decisión' : 'Making Decision'}</span>
                     </div>
                     {step.reasoning && (
                       <p className="text-sm text-neutral-300 leading-relaxed italic mb-3">&ldquo;{step.reasoning}&rdquo;</p>
                     )}
                     {step.output && (
-                      <div className="p-3 rounded bg-amber-900/20 border border-amber-700/30">
-                        <p className="text-sm text-amber-200 font-mono">{step.output}</p>
+                      <div className="p-3 rounded bg-[#B7791F]/20 border border-[#B7791F]/30">
+                        <p className="text-sm text-[#B7791F] font-mono">{step.output}</p>
                       </div>
                     )}
                   </div>
@@ -355,8 +355,8 @@ function TimelineStep({
       {!isLast && (
         <div className={cn(
           'absolute left-[11px] top-8 bottom-0 w-0.5',
-          isDone ? 'bg-emerald-300 dark:bg-emerald-700' :
-          isActive ? 'bg-blue-300 dark:bg-blue-700' :
+          isDone ? 'bg-[#2C7A53] dark:bg-[#2C7A53]' :
+          isActive ? 'bg-[#1A40FF] dark:bg-[#1A40FF]' :
           'bg-neutral-200 dark:bg-neutral-700',
         )} />
       )}
@@ -365,7 +365,7 @@ function TimelineStep({
         onClick={onSelect}
         disabled={isPending}
         className={cn(
-          'relative z-10 w-full flex items-start gap-3 rounded-lg px-2 py-2 -mx-2 text-left transition-colors',
+          'relative z-10 w-full flex items-start gap-3 rounded-md px-2 py-2 -mx-2 text-left transition-colors',
           isSelected && !isPending && 'bg-neutral-100 dark:bg-white/[0.04]',
           !isSelected && !isPending && 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]',
           isPending && 'opacity-40 cursor-default',
@@ -380,14 +380,14 @@ function TimelineStep({
             <span className={cn(
               'text-sm font-medium truncate',
               isDone && 'text-neutral-900 dark:text-white',
-              isActive && 'text-blue-700 dark:text-blue-300',
+              isActive && 'text-[#1A40FF] dark:text-[#5570FF]',
               isPending && 'text-neutral-400 dark:text-neutral-500',
             )}>
               {step.label}
             </span>
           </div>
           {isActive && step.reasoning && (
-            <p className="mt-1 text-xs text-blue-600/80 dark:text-blue-400/80 line-clamp-2 italic">
+            <p className="mt-1 text-xs text-[#1A40FF]/80 dark:text-[#1A40FF]/80 line-clamp-2 italic">
               {step.reasoning}
             </p>
           )}
@@ -472,7 +472,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
 
         <div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700" />
 
-        <div className={cn('rounded-lg p-1.5', agent?.colorBg)}>
+        <div className={cn('rounded-md p-1.5', agent?.colorBg)}>
           <AgentIcon weight="duotone" className={cn('h-4 w-4', agent?.color)} />
         </div>
         <div className="flex-1 min-w-0">
@@ -484,12 +484,12 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
         {/* Status + Progress */}
         <div className="flex items-center gap-3">
           {isRunning ? (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
               <CircleNotch weight="bold" className="h-3.5 w-3.5 animate-spin" />
               {locale === 'es' ? 'En ejecución' : 'Running'}
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70]">
               <CheckCircle weight="fill" className="h-3.5 w-3.5" />
               {locale === 'es' ? 'Completado' : 'Completed'}
             </span>
@@ -497,7 +497,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
           <span className="text-xs text-neutral-400 tabular-nums">{completedSteps}/{totalSteps}</span>
           <div className="w-24 h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
             <div
-              className={cn('h-full rounded-full transition-all duration-500', isRunning ? 'bg-blue-500' : 'bg-emerald-500')}
+              className={cn('h-full rounded-full transition-all duration-500', isRunning ? 'bg-[#1A40FF]' : 'bg-[#2C7A53]')}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -560,7 +560,7 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
 
         {/* Right panel — Computer View */}
         <div className="flex-1 bg-neutral-50 dark:bg-[#0c0c0e] p-4 overflow-hidden">
-          <div className="h-full rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm">
+          <div className="h-full rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
             <ComputerView step={selectedStep} trace={trace} locale={locale} />
           </div>
         </div>

@@ -228,11 +228,11 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
                       className={cn(
                         'p-2.5 rounded-xl border text-center transition-all text-xs',
                         agentRole === opt.value
-                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                          ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                           : 'border-border hover:bg-muted'
                       )}
                     >
-                      <p className={cn('font-medium', agentRole === opt.value ? 'text-indigo-600 dark:text-indigo-400' : 'text-foreground')}>{opt.label}</p>
+                      <p className={cn('font-medium', agentRole === opt.value ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-foreground')}>{opt.label}</p>
                       <p className="text-muted-foreground mt-0.5">{opt.desc}</p>
                     </button>
                   ))}
@@ -279,7 +279,7 @@ function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalPro
                     max={100}
                     value={commissionSplit}
                     onChange={(e) => setCommissionSplit(Number(e.target.value))}
-                    className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-indigo-500"
+                    className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-[#1A40FF]"
                   />
                   <span className="text-sm font-medium text-foreground w-10 text-right">{commissionSplit}%</span>
                 </div>
@@ -432,19 +432,19 @@ function DeleteModal({ open, onOpenChange, user, onConfirm, isLoading }: DeleteM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-red-600 dark:text-red-400">{t('inmobiliaria.config.users.deleteUser')}</DialogTitle>
+          <DialogTitle className="text-[#C4503B] dark:text-[#E0664D]">{t('inmobiliaria.config.users.deleteUser')}</DialogTitle>
           <DialogDescription>
             {t('inmobiliaria.config.users.deleteModal.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
-          <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <p className="text-sm text-red-700 dark:text-red-300">
+          <div className="p-4 rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40">
+            <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
               {t('inmobiliaria.config.users.deleteModal.confirmMessage', { name: user?.name ?? '' })}
             </p>
             {user?.email && (
-              <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+              <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">
                 {user.email}
               </p>
             )}
@@ -729,7 +729,7 @@ export function ConfigUsuarios({
                           <span>{formatRelativeTime(user.lastLoginAt)}</span>
                         </div>
                       ) : user.status === 'invited' && user.invitedAt ? (
-                        <div className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
+                        <div className="flex items-center gap-1.5 text-sm text-[#B7791F] dark:text-[#D2992F]">
                           <EnvelopeSimple className="w-4 h-4 shrink-0" />
                           <span>{t('inmobiliaria.config.users.invitedOn')} {formatRelativeTime(user.invitedAt)}</span>
                         </div>
@@ -743,7 +743,7 @@ export function ConfigUsuarios({
                       <div className="relative">
                         <button
                           onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
-                          className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                         >
                           <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
                         </button>
@@ -754,7 +754,7 @@ export function ConfigUsuarios({
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.95 }}
-                              className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl z-10"
+                              className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10"
                             >
                               {/* Edit Role */}
                               <button
@@ -763,7 +763,7 @@ export function ConfigUsuarios({
                                   setEditRoleModalOpen(true);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 <PencilSimple className="w-4 h-4" />
                                 <span className="text-sm">{t('inmobiliaria.config.users.editRole')}</span>
@@ -776,7 +776,7 @@ export function ConfigUsuarios({
                                     onResendInvite?.(user.id);
                                     setOpenMenuId(null);
                                   }}
-                                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                                 >
                                   <ArrowClockwise className="w-4 h-4" />
                                   <span className="text-sm">{t('inmobiliaria.config.users.resendInvite')}</span>
@@ -789,7 +789,7 @@ export function ConfigUsuarios({
                                   onToggleStatus?.(user.id);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                               >
                                 {user.status === 'active' ? (
                                   <>
@@ -814,7 +814,7 @@ export function ConfigUsuarios({
                                   setDeleteModalOpen(true);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
                               >
                                 <Trash className="w-4 h-4" />
                                 <span className="text-sm">{t('inmobiliaria.common.delete')}</span>

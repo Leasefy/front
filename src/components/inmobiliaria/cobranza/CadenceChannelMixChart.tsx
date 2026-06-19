@@ -48,11 +48,11 @@ interface CadenceChannelMixChartProps {
 // ─── Color Map ────────────────────────────────────────────────────────────────
 
 const OUTCOME_COLORS: Record<string, string> = {
-  paid:            '#10b981', // emerald-500
-  broken_promise:  '#fbbf24', // amber-400
-  escalated:       '#f43f5e', // rose-500
-  no_answer:       '#a3a3a3', // neutral-400
-  completed:       '#818cf8', // indigo-400
+  paid:            '#2C7A53', // semantic green (genuine positive)
+  broken_promise:  '#9B9B9B', // neutral-light
+  escalated:       '#C4503B', // semantic red (negative)
+  no_answer:       '#C9CDD3', // neutral-pale
+  completed:       '#1A40FF', // electric-blue (primary)
 };
 
 const OUTCOME_ORDER = ['paid', 'broken_promise', 'escalated', 'no_answer', 'completed'] as const;

@@ -66,10 +66,10 @@ export default function VerificarPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-3xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm">
+        <div className="rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 overflow-hidden">
           {status === 'loading' && (
             <div className="p-10 flex flex-col items-center gap-4">
-              <div className="w-10 h-10 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-muted-foreground">Verificando código...</p>
             </div>
           )}
@@ -77,13 +77,13 @@ export default function VerificarPage() {
           {status === 'verified' && evaluation?.score && (
             <>
               {/* Success Banner */}
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 px-6 py-4 flex items-center gap-3 border-b border-emerald-100 dark:border-emerald-900/30">
-                <CheckCircle className="w-6 h-6 text-emerald-500" weight="fill" />
+              <div className="bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-6 py-4 flex items-center gap-3 border-b border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
+                <CheckCircle className="w-6 h-6 text-[#2C7A53]" weight="fill" />
                 <div>
-                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                  <p className="text-sm font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
                     Evaluación verificada
                   </p>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                  <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">
                     Este documento es auténtico y fue generado por Leasefy.
                   </p>
                 </div>
@@ -102,18 +102,18 @@ export default function VerificarPage() {
                 {/* Score */}
                 <div className="flex items-center gap-4">
                   <div className={cn(
-                    'w-16 h-16 rounded-2xl flex items-center justify-center',
-                    evaluation.score.level === 'A' && 'bg-emerald-100 dark:bg-emerald-900/30',
-                    evaluation.score.level === 'B' && 'bg-blue-100 dark:bg-blue-900/30',
-                    evaluation.score.level === 'C' && 'bg-amber-100 dark:bg-amber-900/30',
-                    evaluation.score.level === 'D' && 'bg-red-100 dark:bg-red-900/30',
+                    'w-16 h-16 rounded-xl flex items-center justify-center',
+                    evaluation.score.level === 'A' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+                    evaluation.score.level === 'B' && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+                    evaluation.score.level === 'C' && 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+                    evaluation.score.level === 'D' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
                   )}>
                     <span className={cn(
                       'text-3xl font-bold',
-                      evaluation.score.level === 'A' && 'text-emerald-600 dark:text-emerald-400',
-                      evaluation.score.level === 'B' && 'text-blue-600 dark:text-blue-400',
-                      evaluation.score.level === 'C' && 'text-amber-600 dark:text-amber-400',
-                      evaluation.score.level === 'D' && 'text-red-600 dark:text-red-400',
+                      evaluation.score.level === 'A' && 'text-[#2C7A53] dark:text-[#3EAE70]',
+                      evaluation.score.level === 'B' && 'text-[#1A40FF] dark:text-[#5570FF]',
+                      evaluation.score.level === 'C' && 'text-[#B7791F] dark:text-[#D2992F]',
+                      evaluation.score.level === 'D' && 'text-[#C4503B] dark:text-[#E0664D]',
                     )}>
                       {evaluation.score.level}
                     </span>
@@ -165,8 +165,8 @@ export default function VerificarPage() {
 
           {status === 'not_found' && (
             <div className="p-10 flex flex-col items-center gap-4 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                <XCircle className="w-7 h-7 text-red-500" />
+              <div className="w-14 h-14 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
+                <XCircle className="w-7 h-7 text-[#C4503B]" />
               </div>
               <div>
                 <p className="text-base font-semibold text-foreground mb-1">

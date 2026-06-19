@@ -29,26 +29,26 @@ interface ActaEntregaViewProps {
 // Condition styling
 const CONDITION_STYLES: Record<InventoryItem['condition'], { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
   excellent: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
     labelKey: 'inmobiliaria.acta.condExcellent',
     icon: CheckCircle,
   },
   good: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-700 dark:text-blue-400',
+    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    text: 'text-[#1A40FF] dark:text-[#5570FF]',
     labelKey: 'inmobiliaria.acta.condGood',
     icon: CheckCircle,
   },
   fair: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    text: 'text-[#B7791F] dark:text-[#D2992F]',
     labelKey: 'inmobiliaria.acta.condFair',
     icon: Warning,
   },
   poor: {
-    bg: 'bg-rose-100 dark:bg-rose-900/30',
-    text: 'text-rose-700 dark:text-rose-400',
+    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+    text: 'text-[#C4503B] dark:text-[#E0664D]',
     labelKey: 'inmobiliaria.acta.condPoor',
     icon: Warning,
   },
@@ -94,15 +94,15 @@ export function ActaEntregaView({
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <Package className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-8 h-8 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
+              <Package className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
             <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.acta.title')}</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={onPrint}
-              className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
+              className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >
@@ -110,7 +110,7 @@ export function ActaEntregaView({
             </button>
             <button
               onClick={onDownload}
-              className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
+              className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >
@@ -154,7 +154,7 @@ export function ActaEntregaView({
                 placeholder={t('inmobiliaria.acta.searchItem')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm"
               />
             </div>
 
@@ -230,7 +230,7 @@ export function ActaEntregaView({
                             {item.photoUrl ? (
                               <button
                                 onClick={() => setSelectedImage(item.photoUrl!)}
-                                className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 hover:ring-2 hover:ring-indigo-500 transition-all"
+                                className="w-8 h-8 rounded-md overflow-hidden bg-neutral-100 dark:bg-neutral-800 hover:ring-2 hover:ring-[#1A40FF] transition-all"
                               >
                                 <img
                                   src={item.photoUrl}
@@ -289,7 +289,7 @@ export function ActaEntregaView({
                     {item.photoUrl && (
                       <button
                         onClick={() => setSelectedImage(item.photoUrl!)}
-                        className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800"
+                        className="w-16 h-16 rounded-md overflow-hidden bg-neutral-100 dark:bg-neutral-800"
                       >
                         <img
                           src={item.photoUrl}
@@ -310,7 +310,7 @@ export function ActaEntregaView({
               </span>
               <button
                 onClick={onAddItem}
-                className="inline-flex items-center gap-1.5 text-sm text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium opacity-50 cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium opacity-50 cursor-not-allowed"
                 disabled
                 title={t('inmobiliaria.acta.comingSoon')}
               >
@@ -333,7 +333,7 @@ export function ActaEntregaView({
             </p>
             <button
               onClick={onAddItem}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors text-sm opacity-50 cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors text-sm opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >

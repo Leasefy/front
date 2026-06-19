@@ -178,10 +178,10 @@ export function ExtractoPropietario({
       )}
     >
       {/* Header - Inmobiliaria Info */}
-      <div className="p-6 border-b border-border bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 print:bg-transparent">
+      <div className="p-6 border-b border-border bg-gradient-to-r from-[#1A40FF] to-[#1A40FF] dark:from-[#1A40FF]/30 dark:to-[#1A40FF]/30 print:bg-transparent">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-indigo-600 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-[#1A40FF] flex items-center justify-center">
               <Buildings className="w-7 h-7 text-white" weight="fill" />
             </div>
             <div>
@@ -197,7 +197,7 @@ export function ExtractoPropietario({
             </div>
           </div>
           <div className="text-right">
-            <Badge variant="outline" className="text-indigo-600 border-indigo-300 dark:border-indigo-800">
+            <Badge variant="outline" className="text-[#1A40FF] border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
               <FileText className="w-3.5 h-3.5 mr-1.5" />
               {t('inmobiliaria.propietario.extracto.statement')}
             </Badge>
@@ -229,7 +229,7 @@ export function ExtractoPropietario({
           {/* Personal Info */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <User className="w-4 h-4 text-indigo-600" />
+              <User className="w-4 h-4 text-[#1A40FF]" />
               {t('inmobiliaria.propietario.extracto.ownerInfo')}
             </div>
             <div className="pl-6 space-y-2">
@@ -250,7 +250,7 @@ export function ExtractoPropietario({
           {propietario && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Bank className="w-4 h-4 text-indigo-600" />
+                <Bank className="w-4 h-4 text-[#1A40FF]" />
                 {t('inmobiliaria.propietario.extracto.bankAccount')}
               </div>
               <div className="pl-6 space-y-2">
@@ -272,10 +272,10 @@ export function ExtractoPropietario({
       {/* Properties Table */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-4">
-          <Receipt className="w-4 h-4 text-indigo-600" />
+          <Receipt className="w-4 h-4 text-[#1A40FF]" />
           {t('inmobiliaria.propietario.extracto.propertyDetail')}
         </div>
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="overflow-x-auto rounded-md border border-border">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent bg-muted/50">
@@ -337,10 +337,10 @@ export function ExtractoPropietario({
                         {prop.commissionPercent}%
                       </span>
                     </TableCell>
-                    <TableCell className="text-right text-sm text-indigo-600 dark:text-indigo-400">
+                    <TableCell className="text-right text-sm text-[#1A40FF] dark:text-[#5570FF]">
                       {formatCurrency(prop.commissionAmount)}
                     </TableCell>
-                    <TableCell className="text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    <TableCell className="text-right text-sm font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
                       {formatCurrency(prop.netAmount)}
                     </TableCell>
                   </motion.tr>
@@ -357,10 +357,10 @@ export function ExtractoPropietario({
                 </TableCell>
                 <TableCell />
                 <TableCell />
-                <TableCell className="text-right text-indigo-600 dark:text-indigo-400">
+                <TableCell className="text-right text-[#1A40FF] dark:text-[#5570FF]">
                   {formatCurrency(extracto.summary.totalCommissions)}
                 </TableCell>
-                <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
+                <TableCell className="text-right text-[#2C7A53] dark:text-[#3EAE70]">
                   {formatCurrency(extracto.summary.netToPropietario)}
                 </TableCell>
               </TableRow>
@@ -373,16 +373,16 @@ export function ExtractoPropietario({
       <div className="p-6 border-b border-border">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Net Amount Highlight */}
-          <div className="p-6 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-            <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 mb-2">
+          <div className="p-6 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
+            <div className="flex items-center gap-2 text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70] mb-2">
               <CurrencyCircleDollar className="w-5 h-5" weight="fill" />
               {t('inmobiliaria.propietario.extracto.netToReceive')}
             </div>
-            <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">
+            <p className="text-3xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
               {formatCurrency(extracto.summary.netToPropietario)}
             </p>
             {extracto.summary.paymentReference && (
-              <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-2">
+              <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70] mt-2">
                 {t('inmobiliaria.propietario.extracto.reference')}: {extracto.summary.paymentReference}
               </p>
             )}
@@ -399,14 +399,14 @@ export function ExtractoPropietario({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.propietario.extracto.agencyCommissions')}</span>
-                <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
                   -{formatCurrency(extracto.summary.totalCommissions)}
                 </span>
               </div>
               <div className="border-t border-border pt-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-foreground">{t('inmobiliaria.propietario.extracto.totalNet')}</span>
-                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-sm font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                     {formatCurrency(extracto.summary.netToPropietario)}
                   </span>
                 </div>
@@ -469,7 +469,7 @@ export function ExtractoPropietario({
           <Button
             onClick={handleDownloadPDF}
             disabled={isDownloading}
-            className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
+            className="gap-2 bg-[#1A40FF] hover:opacity-90 text-white"
           >
             {isDownloading ? (
               <>

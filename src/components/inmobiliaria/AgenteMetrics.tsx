@@ -31,15 +31,15 @@ interface MetricCardProps {
 function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps) {
   // Determine card background based on performance
   const cardBg = performance === 'above'
-    ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+    ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border-[#2C7A53]/30 dark:border-[#2C7A53]/40'
     : performance === 'below'
-    ? 'bg-rose-50 dark:bg-rose-900/10 border-rose-200 dark:border-rose-800'
+    ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 border-[#C4503B]/30 dark:border-[#C4503B]/40'
     : 'bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700';
 
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border transition-all hover:shadow-sm hover:-translate-y-0.5',
+        'p-4 rounded-xl border transition-all hover: hover:-translate-y-0.5',
         cardBg
       )}
     >
@@ -104,54 +104,54 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
         <MetricCard
           label={t('inmobiliaria.agente.assignedProperties')}
           value={metrics.assignedProperties}
-          icon={<Buildings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
-          iconBg="bg-indigo-100 dark:bg-indigo-900/30"
+          icon={<Buildings className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />}
+          iconBg="bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
         />
         <MetricCard
           label={t('inmobiliaria.agente.activeLeases')}
           value={metrics.activeLeases}
-          icon={<Handshake className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
-          iconBg="bg-purple-100 dark:bg-purple-900/30"
+          icon={<Handshake className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />}
+          iconBg="bg-neutral-100 dark:bg-neutral-800"
         />
         <MetricCard
           label={t('inmobiliaria.agente.closingsThisMonth')}
           value={metrics.closedThisMonth}
-          icon={<CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-          iconBg="bg-emerald-100 dark:bg-emerald-900/30"
+          icon={<CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />}
+          iconBg="bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
           performance={closedThisMonthPerformance}
         />
         <MetricCard
           label={t('inmobiliaria.agente.closingsThisYear')}
           value={metrics.closedThisYear}
-          icon={<Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />}
-          iconBg="bg-teal-100 dark:bg-teal-900/30"
+          icon={<Calendar className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />}
+          iconBg="bg-neutral-100 dark:bg-neutral-800"
         />
 
         {/* Row 2: Financial and Efficiency */}
         <MetricCard
           label={t('inmobiliaria.agente.commissionsMonth')}
           value={formatCurrency(metrics.commissionsThisMonth)}
-          icon={<CurrencyDollar className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
-          iconBg="bg-amber-100 dark:bg-amber-900/30"
+          icon={<CurrencyDollar className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />}
+          iconBg="bg-[#F8F0E0] dark:bg-[#B7791F]/15"
         />
         <MetricCard
           label={t('inmobiliaria.agente.totalCommissions')}
           value={formatCurrency(metrics.totalCommissions)}
-          icon={<Wallet className="w-5 h-5 text-orange-600 dark:text-orange-400" />}
-          iconBg="bg-orange-100 dark:bg-orange-900/30"
+          icon={<Wallet className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />}
+          iconBg="bg-[#F8F0E0] dark:bg-[#B7791F]/15"
         />
         <MetricCard
           label={t('inmobiliaria.agente.avgDaysToClose')}
           value={metrics.avgDaysToClose > 0 ? `${metrics.avgDaysToClose} ${t('inmobiliaria.agente.daysUnit')}` : 'N/A'}
-          icon={<Clock className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
-          iconBg="bg-cyan-100 dark:bg-cyan-900/30"
+          icon={<Clock className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />}
+          iconBg="bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
           performance={daysToClosePerformance}
         />
         <MetricCard
           label={t('inmobiliaria.agente.conversionRate')}
           value={`${Math.round(metrics.conversionRate * 100)}%`}
-          icon={<ChartLineUp className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
-          iconBg="bg-rose-100 dark:bg-rose-900/30"
+          icon={<ChartLineUp className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />}
+          iconBg="bg-[#F8EAE7] dark:bg-[#C4503B]/15"
           performance={conversionPerformance}
         />
       </div>
@@ -159,7 +159,7 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
       {/* Performance Legend */}
       <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-neutral-500 dark:text-neutral-400">
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#2C7A53]" />
           <span>{t('inmobiliaria.agente.aboveAverage')}</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -167,7 +167,7 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
           <span>{t('inmobiliaria.agente.average')}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#C4503B]" />
           <span>{t('inmobiliaria.agente.belowAverage')}</span>
         </div>
       </div>

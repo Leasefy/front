@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/toast';
 import {
   SquaresFour,
   Buildings,
@@ -30,7 +30,6 @@ import {
   Wallet,
   FilePlus,
   CreditCard,
-  Warning,
   ClipboardText,
   Envelope,
   PhoneCall,
@@ -38,6 +37,7 @@ import {
   GitMerge,
   ArrowsClockwise,
   Scales,
+  ListChecks,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -103,6 +103,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ── PRINCIPAL ──
     { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
+    // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
+    // exact match so it doesn't stay highlighted on every subroute.
+    { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: Sparkle,       exact: true, module: null },
     { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
     { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
     // ── AGENTES IA ──
@@ -113,36 +116,32 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: ChatCircleText,
       module: 'cobranza',
       dataTourTarget: 'sidebar-cobranza',
+      // Visión #13 (2026-06-12): IA humana en 3 capas — entender (Resumen),
+      // operar (Casos/Pendientes/Pagos/Llamadas/Cartas/Siniestros), aprender
+      // (Reporte/Analítica/Playbooks) y gobernar (Cumplimiento/Habeas Data/
+      // Configuración). "Escalaciones" ya no es entrada propia: la cola vive
+      // agrupada dentro de Pendientes (la página /escalaciones sigue ruteable).
       children: [
         {
-          label: t('inmobiliaria.ai.nav.arco'),
-          href: '/panel/inmobiliaria/ai/cobranza/arco',
-          icon: ShieldCheck,
+          // Exact: solo se ilumina en la portada del agente, no en subrutas.
+          label: t('inmobiliaria.ai.nav.cobranzaResumen'),
+          href: '/panel/inmobiliaria/ai/cobranza',
+          icon: SquaresFour,
+          exact: true,
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.plantillas'),
-          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
-          icon: FileText,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.configuracion'),
-          href: '/panel/inmobiliaria/ai/cobranza/configuracion',
-          icon: SlidersHorizontal,
-          module: 'cobranza',
-          dataTourTarget: 'sidebar-configuraciones',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.analitica'),
-          href: '/panel/inmobiliaria/ai/cobranza/analitica',
-          icon: ChartLineUp,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.deudores'),
+          label: t('inmobiliaria.ai.nav.cobranzaCasos'),
           href: '/panel/inmobiliaria/ai/cobranza/deudores',
           icon: Users,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          // Bandeja unificada: escalaciones + cartas por aprobar + siniestros
+          // + planes + promesas a vencer.
+          label: t('inmobiliaria.ai.nav.cobranzaPendientes'),
+          href: '/panel/inmobiliaria/ai/cobranza/pendientes',
+          icon: ListChecks,
           module: 'cobranza',
         } as NavItemWithModule,
         {
@@ -152,15 +151,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.escalaciones'),
-          href: '/panel/inmobiliaria/ai/cobranza/escalaciones',
-          icon: Warning,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.compliance'),
-          href: '/panel/inmobiliaria/ai/cobranza/compliance',
-          icon: ClipboardText,
+          label: t('inmobiliaria.ai.nav.llamadas'),
+          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
+          icon: PhoneCall,
           module: 'cobranza',
         } as NavItemWithModule,
         {
@@ -170,10 +163,48 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
-          label: t('inmobiliaria.ai.nav.llamadas'),
-          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
-          icon: PhoneCall,
+          label: t('inmobiliaria.ai.nav.siniestros'),
+          href: '/panel/inmobiliaria/ai/cobranza/siniestros',
+          icon: Siren,
           module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaReporte'),
+          href: '/panel/inmobiliaria/ai/cobranza/reporte',
+          icon: ChartLine,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.analitica'),
+          href: '/panel/inmobiliaria/ai/cobranza/analitica',
+          icon: ChartLineUp,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          // Playbooks = la antigua "Plantillas" con nombre de la visión.
+          label: t('inmobiliaria.ai.nav.cobranzaPlaybooks'),
+          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
+          icon: FileText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.compliance'),
+          href: '/panel/inmobiliaria/ai/cobranza/compliance',
+          icon: ClipboardText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.arco'),
+          href: '/panel/inmobiliaria/ai/cobranza/arco',
+          icon: ShieldCheck,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.configuracion'),
+          href: '/panel/inmobiliaria/ai/cobranza/configuracion',
+          icon: SlidersHorizontal,
+          module: 'cobranza',
+          dataTourTarget: 'sidebar-configuraciones',
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
@@ -184,6 +215,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       module: 'cotizador',
       dataTourTarget: 'sidebar-cotizador',
       children: [
+        {
+          label: t('inmobiliaria.ai.nav.cotizadorCola'),
+          href: '/panel/inmobiliaria/ai/cotizador/cola',
+          icon: ClipboardText,
+          module: 'cotizador',
+        } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),
           href: '/panel/inmobiliaria/ai/cotizador/aseguradoras',
@@ -377,7 +414,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    { label: t('inmobiliaria.ai.nav.siniestros'), href: '/panel/inmobiliaria/ai/cobranza/siniestros', icon: Siren, module: 'cobranza' },
     { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', icon: ClipboardText, module: null },
     // ── PORTAFOLIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
@@ -483,18 +519,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
       {/* Toast notifications - Premium style */}
-      <Toaster
-        position="top-right"
-        style={{ zIndex: 9999 }}
-        toastOptions={{
-          style: {
-            borderRadius: '16px',
-            background: 'white',
-            border: '1px solid rgba(0, 0, 0, 0.05)',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
-          },
-        }}
-      />
+      <Toaster position="top-right" />
     </div>
   );
 }

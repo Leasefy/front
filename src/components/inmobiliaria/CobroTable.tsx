@@ -152,7 +152,7 @@ export function CobroTable({
     <th className={cn('text-left p-4', className)}>
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -193,8 +193,8 @@ export function CobroTable({
                 {/* Property */}
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                      <HouseLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                      <HouseLine className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[180px]">
@@ -210,8 +210,8 @@ export function CobroTable({
                 {/* Tenant */}
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[140px]">
@@ -231,10 +231,10 @@ export function CobroTable({
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+                          className="p-1 rounded hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/30 transition-colors"
                           title="WhatsApp"
                         >
-                          <WhatsappLogo className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" weight="fill" />
+                          <WhatsappLogo className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
                         </a>
                       </div>
                     </div>
@@ -260,9 +260,9 @@ export function CobroTable({
                   <span className={cn(
                     'font-medium',
                     cobro.paidAmount >= cobro.totalAmount
-                      ? 'text-emerald-600 dark:text-emerald-400'
+                      ? 'text-[#2C7A53] dark:text-[#3EAE70]'
                       : cobro.paidAmount > 0
-                      ? 'text-blue-600 dark:text-blue-400'
+                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
                       : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.paidAmount)}
@@ -274,9 +274,9 @@ export function CobroTable({
                   <span className={cn(
                     'font-medium',
                     cobro.pendingAmount > 0 && cobro.daysLate > 0
-                      ? 'text-red-600 dark:text-red-400'
+                      ? 'text-[#C4503B] dark:text-[#E0664D]'
                       : cobro.pendingAmount > 0
-                      ? 'text-amber-600 dark:text-amber-400'
+                      ? 'text-[#B7791F] dark:text-[#D2992F]'
                       : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.pendingAmount)}
@@ -293,12 +293,12 @@ export function CobroTable({
                 {/* Days Late */}
                 <td className="p-4">
                   {cobro.daysLate > 0 ? (
-                    <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
+                    <div className="flex items-center gap-1.5 text-[#B7791F] dark:text-[#D2992F]">
                       <Warning className="w-4 h-4" weight="fill" />
                       <span className="text-sm font-medium">{cobro.daysLate}d</span>
                     </div>
                   ) : cobro.status === 'paid' ? (
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                    <div className="flex items-center gap-1.5 text-[#2C7A53] dark:text-[#3EAE70]">
                       <CheckCircle className="w-4 h-4" weight="fill" />
                     </div>
                   ) : (
@@ -314,7 +314,7 @@ export function CobroTable({
                         e.stopPropagation();
                         setOpenMenuId(openMenuId === cobro.id ? null : cobro.id);
                       }}
-                      className="p-2 rounded-lg hover:bg-muted transition-colors"
+                      className="p-2 rounded-md hover:bg-muted transition-colors"
                     >
                       <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
                     </button>
@@ -325,7 +325,7 @@ export function CobroTable({
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-44 p-2 rounded-xl border border-border bg-card shadow-xl z-10"
+                          className="absolute right-0 top-full mt-1 w-44 p-2 rounded-xl border border-border bg-card z-10"
                         >
                           <button
                             onClick={(e) => {
@@ -333,7 +333,7 @@ export function CobroTable({
                               onCobroClick?.(cobro);
                               setOpenMenuId(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                             <span className="text-sm">{t('inmobiliaria.cobros.table.viewDetail')}</span>
@@ -345,7 +345,7 @@ export function CobroTable({
                                 onRegisterPayment(cobro);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
                             >
                               <CurrencyCircleDollar className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.cobros.table.registerPayment')}</span>
@@ -376,12 +376,12 @@ export function CobroTable({
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="font-bold text-[#2C7A53] dark:text-[#3EAE70]">
                   {formatCurrency(summary.totalCollected)}
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-amber-600 dark:text-amber-400">
+                <span className="font-bold text-[#B7791F] dark:text-[#D2992F]">
                   {formatCurrency(summary.totalPending)}
                 </span>
               </td>

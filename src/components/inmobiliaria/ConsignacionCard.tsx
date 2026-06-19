@@ -62,23 +62,23 @@ export function ConsignacionCard({
   // Availability status colors
   const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; label: string }> = useMemo(() => ({
     available: {
-      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-      text: 'text-emerald-700 dark:text-emerald-400',
+      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
       label: t('inmobiliaria.portafolio.card.availability.available'),
     },
     rented: {
-      bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-      text: 'text-indigo-700 dark:text-indigo-400',
+      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+      text: 'text-[#1A40FF] dark:text-[#5570FF]',
       label: t('inmobiliaria.portafolio.card.availability.rented'),
     },
     in_process: {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-400',
+      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      text: 'text-[#B7791F] dark:text-[#D2992F]',
       label: t('inmobiliaria.portafolio.card.availability.inProcess'),
     },
     maintenance: {
-      bg: 'bg-rose-100 dark:bg-rose-900/30',
-      text: 'text-rose-700 dark:text-rose-400',
+      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+      text: 'text-[#C4503B] dark:text-[#E0664D]',
       label: t('inmobiliaria.portafolio.card.availability.maintenance'),
     },
   }), [t]);
@@ -86,13 +86,13 @@ export function ConsignacionCard({
   // Consignacion status colors (secondary indicator)
   const STATUS_COLORS: Record<ConsignacionStatus, { bg: string; text: string; label: string }> = useMemo(() => ({
     active: {
-      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-      text: 'text-emerald-700 dark:text-emerald-400',
+      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
       label: t('inmobiliaria.portafolio.card.status.active'),
     },
     pending: {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-400',
+      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      text: 'text-[#B7791F] dark:text-[#D2992F]',
       label: t('inmobiliaria.portafolio.card.status.pending'),
     },
     expired: {
@@ -101,8 +101,8 @@ export function ConsignacionCard({
       label: t('inmobiliaria.portafolio.card.status.expired'),
     },
     terminated: {
-      bg: 'bg-rose-100 dark:bg-rose-900/30',
-      text: 'text-rose-700 dark:text-rose-400',
+      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+      text: 'text-[#C4503B] dark:text-[#E0664D]',
       label: t('inmobiliaria.portafolio.card.status.terminated'),
     },
   }), [t]);
@@ -121,13 +121,13 @@ export function ConsignacionCard({
         className={cn(
           'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
           selected
-            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-500'
+            ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 dark:border-[#1A40FF]/30'
             : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
         )}
       >
         {/* Thumbnail or Icon */}
         {consignacion.propertyThumbnail ? (
-          <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+          <div className="w-12 h-12 rounded-md overflow-hidden shrink-0">
             <img
               src={consignacion.propertyThumbnail}
               alt={consignacion.propertyTitle}
@@ -135,7 +135,7 @@ export function ConsignacionCard({
             />
           </div>
         ) : (
-          <div className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
             <PropertyIcon className="w-6 h-6 text-neutral-400" />
           </div>
         )}
@@ -157,7 +157,7 @@ export function ConsignacionCard({
 
         {/* Selection indicator */}
         {selected && (
-          <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+          <div className="w-5 h-5 rounded-full bg-[#1A40FF] flex items-center justify-center shrink-0">
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -181,8 +181,8 @@ export function ConsignacionCard({
       className={cn(
         'w-full rounded-xl border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group',
         selected
-          ? 'border-indigo-500 ring-2 ring-indigo-500/20'
-          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg',
+          ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
+          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:',
         onClick && 'cursor-pointer'
       )}
       onClick={onClick}
@@ -256,8 +256,8 @@ export function ConsignacionCard({
           {/* Propietario */}
           {propietarioName && (
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.portafolio.card.owner')}</p>
@@ -278,8 +278,8 @@ export function ConsignacionCard({
                   className="w-7 h-7 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                <div className="w-7 h-7 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                     {agenteName.charAt(0)}
                   </span>
                 </div>
@@ -296,13 +296,13 @@ export function ConsignacionCard({
 
         {/* Tenant info (if rented) */}
         {consignacion.availability === 'rented' && consignacion.currentTenantName && (
-          <div className="mb-4 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
-            <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-0.5">{t('inmobiliaria.portafolio.card.currentTenant')}</p>
-            <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+          <div className="mb-4 p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
+            <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mb-0.5">{t('inmobiliaria.portafolio.card.currentTenant')}</p>
+            <p className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
               {consignacion.currentTenantName}
             </p>
             {consignacion.leaseEndDate && (
-              <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1">
+              <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mt-1">
                 {t('inmobiliaria.portafolio.card.leaseUntil', {
                   date: new Date(consignacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                     day: 'numeric',
@@ -321,7 +321,7 @@ export function ConsignacionCard({
             {onView && (
               <button
                 onClick={(e) => { e.stopPropagation(); onView(); }}
-                className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 title={t('inmobiliaria.portafolio.card.viewDetailTitle')}
               >
                 <Eye className="w-4 h-4" />
@@ -330,7 +330,7 @@ export function ConsignacionCard({
             {onEdit && (
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 title={t('inmobiliaria.portafolio.card.editTitle')}
               >
                 <PencilSimple className="w-4 h-4" />
@@ -338,7 +338,7 @@ export function ConsignacionCard({
             )}
           </div>
           {onClick && (
-            <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-indigo-500 transition-colors">
+            <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors">
               {t('inmobiliaria.portafolio.card.viewDetail')}
               <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>

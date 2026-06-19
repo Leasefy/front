@@ -51,11 +51,11 @@ export async function fetchFunnelApplications(
 export const VERDICT_CONFIG: Record<Verdict, { label: string; className: string }> = {
   approved: {
     label: 'Pre-aprobada',
-    className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    className: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
   },
   review: {
     label: 'En revisión',
-    className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
   },
 }
 

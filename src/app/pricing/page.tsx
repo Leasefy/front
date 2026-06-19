@@ -169,12 +169,13 @@ function FlexCalculator() {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="mb-12 rounded-2xl overflow-hidden border border-border"
+      className="mb-12 rounded-xl overflow-hidden"
+      style={{ border: '1px solid rgba(0,0,0,0.08)' }}
     >
       <div className="relative bg-foreground text-background px-6 py-5">
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400" />
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#B7791F] via-[#B7791F] to-[#C4503B]" />
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-md bg-white/10 flex items-center justify-center">
             <Calculator className="w-4 h-4 text-white" />
           </div>
           <div>
@@ -184,7 +185,7 @@ function FlexCalculator() {
         </div>
       </div>
 
-      <div className="bg-card p-6">
+      <div className="bg-white p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div>
@@ -198,7 +199,8 @@ function FlexCalculator() {
                   max="1000"
                   value={units}
                   onChange={(e) => setUnits(Math.max(10, Math.min(1000, parseInt(e.target.value) || 10)))}
-                  className="w-16 h-8 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                  className="w-16 h-8 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/10"
+                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
                 />
               </div>
               <div className="relative h-10 flex items-center">
@@ -220,7 +222,7 @@ function FlexCalculator() {
                   className="absolute inset-x-0 w-full h-10 opacity-0 cursor-pointer"
                 />
                 <motion.div
-                  className="absolute w-4 h-4 bg-foreground rounded-full shadow-lg cursor-pointer"
+                  className="absolute w-4 h-4 bg-foreground rounded-full cursor-pointer"
                   style={{ left: `calc(${sliderPercentage}% - 8px)` }}
                   initial={false}
                   animate={{ left: `calc(${sliderPercentage}% - 8px)` }}
@@ -250,19 +252,20 @@ function FlexCalculator() {
                     const numValue = parseInt(rawValue, 10);
                     if (!isNaN(numValue) && numValue >= 0) setAvgRent(numValue);
                   }}
-                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium text-foreground rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
+                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
+                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
                 />
               </div>
             </div>
           </div>
           <div className="flex flex-col justify-center">
-            <div className="bg-muted/30 rounded-xl p-5 border border-border/50">
+            <div className="bg-muted/30 rounded-xl p-5" style={{ border: '1px solid rgba(0,0,0,0.04)' }}>
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Costo mensual estimado</p>
               <p className="text-[36px] font-heading font-bold text-foreground tracking-tight leading-none tabular-nums">
                 ${monthlyFee.toLocaleString('es-CO')}
               </p>
               <p className="text-[12px] text-muted-foreground mt-1">COP/mes</p>
-              <div className="mt-4 pt-4 space-y-2 border-t border-border/50">
+              <div className="mt-4 pt-4 space-y-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-muted-foreground">{units} unidades x ${avgRent.toLocaleString('es-CO')} canon</span>
                   <span className="text-foreground font-medium">= ${(units * avgRent).toLocaleString('es-CO')}</span>
@@ -442,23 +445,23 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer border-2 bg-card hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer border-2 bg-white hover: hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'owner-managed'
-                  ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-border hover:border-indigo-300"
+                  ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
+                  : "border-neutral-200 hover:border-[#1A40FF]/30"
               )}
             >
               {userTextT === 'owner-managed' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-[#1A40FF] text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-indigo-600" />
+                <div className="w-9 h-9 rounded-md bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-[#1A40FF]" />
                 </div>
                 <div className="mt-auto">
                   <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
@@ -482,22 +485,22 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.1 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-card border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover: hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'owner-diy'
-                  ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-border hover:border-indigo-300"
+                  ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
+                  : "border-neutral-200 hover:border-[#1A40FF]/30"
               )}
             >
               {userTextT === 'owner-diy' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-[#1A40FF] text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
+                <div className="w-9 h-9 rounded-md bg-neutral-50 border border-neutral-200 flex items-center justify-center">
                   <House className="w-4 h-4 text-foreground" />
                 </div>
                 <div className="mt-auto">
@@ -522,23 +525,23 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.2 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-card border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover: hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'evaluation'
-                  ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-border hover:border-indigo-300"
+                  ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
+                  : "border-neutral-200 hover:border-[#1A40FF]/30"
               )}
             >
               {userTextT === 'evaluation' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-[#1A40FF] text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
-                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                <div className="w-9 h-9 rounded-md bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                  <UserCheck className="w-4 h-4 text-[#2C7A53]" />
                 </div>
                 <div className="mt-auto">
                   <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-1">
@@ -563,22 +566,22 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.3 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-card border-2 hover:shadow-md hover:ring-1 hover:ring-indigo-200",
+                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover: hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'agency'
-                  ? "border-indigo-600 shadow-lg ring-2 ring-indigo-600/10"
-                  : "border-border hover:border-indigo-300"
+                  ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
+                  : "border-neutral-200 hover:border-[#1A40FF]/30"
               )}
             >
               {userTextT === 'agency' && (
                 <div className="absolute top-3 right-3 z-10">
-                  <div className="w-7 h-7 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-[#1A40FF] text-white uppercase tracking-wide font-mono rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 </div>
               )}
 
               <div className="relative z-10 flex flex-col h-full p-5 min-h-[220px]">
-                <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center">
+                <div className="w-9 h-9 rounded-md bg-neutral-50 border border-neutral-200 flex items-center justify-center">
                   <Briefcase className="w-4 h-4 text-sand-700" />
                 </div>
                 <div className="mt-auto">
@@ -609,7 +612,7 @@ export default function PricingPage() {
                   key={i}
                   src={`https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=100`}
                   alt=""
-                  className="w-8 h-8 rounded-full object-cover border-2 border-background"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-white"
                 />
               ))}
             </div>
@@ -646,7 +649,7 @@ export default function PricingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mb-10 p-5 rounded-xl bg-muted border border-border"
+              className="mb-10 p-5 rounded-xl bg-neutral-50 border border-neutral-200"
             >
               <div className="flex flex-col lg:flex-row lg:items-center gap-5">
                 {/* Input section */}
@@ -675,7 +678,7 @@ export default function PricingPage() {
                         }}
                         placeholder="2.000.000"
                         aria-label="Valor del arriendo mensual"
-                        className="w-full h-10 pl-7 pr-3 bg-card text-[15px] font-medium text-foreground rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                        className="w-full h-10 pl-7 pr-3 bg-white text-[15px] font-medium text-foreground rounded-md border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
                       />
                     </div>
                     <span className="text-[12px] text-muted-foreground">/mes</span>
@@ -684,14 +687,14 @@ export default function PricingPage() {
 
                 {/* Results preview - compact */}
                 <div className="flex gap-3">
-                  <div className="px-4 py-3 rounded-lg bg-card border border-border text-center min-w-[100px]">
+                  <div className="px-4 py-3 rounded-md bg-white border border-neutral-200 text-center min-w-[100px]">
                     <p className="text-[11px] text-muted-foreground mb-0.5">5%</p>
                     <p className="text-[18px] font-heading font-bold text-foreground">
                       ${(exampleRent * 0.05).toLocaleString('es-CL')}
                     </p>
                   </div>
-                  <div className="px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 text-center min-w-[100px]">
-                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mb-0.5">6%</p>
+                  <div className="px-4 py-3 rounded-md bg-[#E8F3EC] border border-[#2C7A53]/30 text-center min-w-[100px]">
+                    <p className="text-[11px] text-[#2C7A53] mb-0.5">6%</p>
                     <p className="text-[18px] font-heading font-bold text-foreground">
                       ${(exampleRent * 0.06).toLocaleString('es-CL')}
                     </p>
@@ -700,11 +703,11 @@ export default function PricingPage() {
               </div>
 
               {/* Savings indicator - compact */}
-              <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center gap-4 text-[12px]">
+              <div className="mt-4 pt-3 border-t border-neutral-200 flex flex-wrap items-center gap-4 text-[12px]">
                 <span className="text-muted-foreground">
-                  Ahorro: <span className="text-emerald-600 dark:text-emerald-400 font-medium">${(exampleRent * 0.05).toLocaleString('es-CL')}</span>/mes
+                  Ahorro: <span className="text-[#2C7A53] font-medium">${(exampleRent * 0.05).toLocaleString('es-CL')}</span>/mes
                 </span>
-                <span className="text-muted-foreground/30">•</span>
+                <span className="text-neutral-300">•</span>
                 <span className="text-muted-foreground">Sin compromisos</span>
               </div>
             </motion.div>
@@ -843,7 +846,7 @@ export default function PricingPage() {
               className="mb-12"
             >
               <div className="flex items-center gap-2 mb-3">
-                <Circle className="w-4 h-4 text-amber-500" />
+                <Circle className="w-4 h-4 text-[#B7791F]" />
                 <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
                   Para inmobiliarias
                 </span>
@@ -852,7 +855,7 @@ export default function PricingPage() {
                 Planes para <span className="font-medium">inmobiliarias</span>
               </h2>
               <p className="text-[16px] text-muted-foreground mt-4 max-w-lg leading-relaxed">
-                Precios que <span className="text-amber-600 font-medium">escalan con tu negocio</span>. Empieza gratis, crece sin límites.
+                Precios que <span className="text-[#B7791F] font-medium">escalan con tu negocio</span>. Empieza gratis, crece sin límites.
               </p>
             </motion.div>
 
@@ -991,7 +994,7 @@ export default function PricingPage() {
             className="mb-12"
           >
             <div className="flex items-center gap-2 mb-3">
-              <Circle className="w-4 h-4 text-emerald-500" />
+              <Circle className="w-4 h-4 text-[#2C7A53]" />
               <span className="text-[13px] font-mono font-normal text-muted-foreground uppercase tracking-wide">
                 Evaluación de inquilinos
               </span>
@@ -1000,7 +1003,7 @@ export default function PricingPage() {
               Reportes de verificación <span className="font-medium">completos</span>
             </h2>
             <p className="text-[16px] text-muted-foreground mt-4 max-w-2xl leading-relaxed">
-              Para propietarios, inmobiliarias, agentes o cualquiera que necesite verificar la confiabilidad de un inquilino. También útil si eres inquilino y quieres <span className="text-emerald-600 font-medium">pre-verificarte</span>.
+              Para propietarios, inmobiliarias, agentes o cualquiera que necesite verificar la confiabilidad de un inquilino. También útil si eres inquilino y quieres <span className="text-[#2C7A53] font-medium">pre-verificarte</span>.
             </p>
           </motion.div>
 
@@ -1057,17 +1060,17 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="p-6 bg-gradient-to-br from-amber-500/10 via-card to-card rounded-2xl border border-amber-500/20 mb-16"
+            className="p-6 bg-gradient-to-br from-[#B7791F]/10 via-card to-card rounded-xl border border-[#B7791F]/30 mb-16"
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                  <Buildings className="w-6 h-6 text-amber-600" />
+                <div className="w-12 h-12 rounded-xl bg-[#B7791F]/10 flex items-center justify-center">
+                  <Buildings className="w-6 h-6 text-[#B7791F]" />
                 </div>
                 <div>
                   <h3 className="text-[15px] font-semibold text-foreground">¿Eres inmobiliaria o agente?</h3>
                   <p className="text-[13px] text-muted-foreground">
-                    Con el plan Pro pagas solo <span className="font-semibold text-amber-600">$21.000/evaluación</span> (50% off). Con Flex son <span className="font-semibold text-amber-600">ilimitadas y gratis</span>.
+                    Con el plan Pro pagas solo <span className="font-semibold text-[#B7791F]">$21.000/evaluación</span> (50% off). Con Flex son <span className="font-semibold text-[#B7791F]">ilimitadas y gratis</span>.
                   </p>
                 </div>
               </div>
@@ -1084,7 +1087,7 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="p-8 md:p-10 bg-card rounded-2xl border border-border"
+            className="p-8 md:p-10 bg-card rounded-xl border border-border"
           >
             <div className="flex items-center justify-center gap-2 mb-8">
               <span className="w-2 h-2 rounded-full bg-primary" />
@@ -1107,7 +1110,7 @@ export default function PricingPage() {
                   transition={{ delay: i * 0.1 }}
                   className="text-center"
                 >
-                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
+                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center mx-auto mb-4 shadow-primary/25">
                     <span className="text-[15px] font-bold">{step.num}</span>
                   </div>
                   <h4 className="font-semibold text-foreground text-[14px] mb-1">{step.title}</h4>
@@ -1159,14 +1162,14 @@ export default function PricingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="md:col-span-3 lg:col-span-5 rounded-xl p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 dark:from-sand-950/30 dark:to-sand-900/20 border border-sand-200 dark:border-sand-800 hover:shadow-lg transition-all relative overflow-hidden"
+              className="md:col-span-3 lg:col-span-5 rounded-xl p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 hover: transition-all relative overflow-hidden"
             >
               {/* Decorative corner */}
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sand-200/50 to-transparent rounded-bl-full" />
 
               <div className="flex flex-col h-full relative z-10">
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
-                  <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 rounded-md bg-[#E8F3EC] flex items-center justify-center mb-4">
+                  <Shield className="w-5 h-5 text-[#2C7A53]" />
                 </div>
                 <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
                   Seguridad garantizada
@@ -1175,11 +1178,11 @@ export default function PricingPage() {
                   Verificación de identidad y antecedentes de todos los candidatos para tu tranquilidad.
                 </p>
                 {/* Visual */}
-                <div className="mt-auto p-3 rounded-lg bg-card border border-sand-200 dark:border-sand-800">
+                <div className="mt-auto p-3 rounded-md bg-white border border-sand-200">
                   <div className="flex items-center gap-3">
                     <div className="flex -space-x-1.5">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border-2 border-card">
+                        <div key={i} className="w-7 h-7 rounded-full bg-[#E8F3EC] flex items-center justify-center text-[10px] font-bold text-[#2C7A53] border-2 border-white">
                           ✓
                         </div>
                       ))}
@@ -1199,10 +1202,10 @@ export default function PricingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="md:col-span-3 lg:col-span-4 rounded-xl p-6 bg-card border border-border hover:shadow-lg transition-all"
+              className="md:col-span-3 lg:col-span-4 rounded-xl p-6 bg-white border border-neutral-200 hover: transition-all"
             >
-              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-4">
-                <Lightning className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div className="w-10 h-10 rounded-md bg-[#F8F0E0] flex items-center justify-center mb-4">
+                <Lightning className="w-5 h-5 text-[#B7791F]" />
               </div>
               <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
                 Proceso rápido
@@ -1223,7 +1226,7 @@ export default function PricingPage() {
                   >
                     <div className={cn(
                       'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
-                      i === 2 ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
+                      i === 2 ? 'bg-[#2C7A53] text-white' : 'bg-neutral-100 text-muted-foreground'
                     )}>
                       {i + 1}
                     </div>
@@ -1240,9 +1243,9 @@ export default function PricingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="md:col-span-6 lg:col-span-3 rounded-xl p-6 bg-muted border border-border hover:shadow-lg transition-all"
+              className="md:col-span-6 lg:col-span-3 rounded-xl p-6 bg-neutral-50 border border-neutral-200 hover: transition-all"
             >
-              <div className="w-10 h-10 rounded-lg bg-muted-foreground/20 flex items-center justify-center mb-4">
+              <div className="w-10 h-10 rounded-md bg-neutral-200 flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5 text-foreground" />
               </div>
               <h3 className="text-[18px] font-mono uppercase font-normal text-foreground mb-2">
@@ -1252,7 +1255,7 @@ export default function PricingPage() {
                 Equipo local listo para ayudarte en cada paso.
               </p>
               <div className="mt-4 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-[#2C7A53] animate-pulse" />
                 <span className="text-[12px] text-muted-foreground">Online ahora</span>
               </div>
             </motion.div>

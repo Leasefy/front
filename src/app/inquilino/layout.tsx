@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/toast';
 import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
@@ -131,18 +131,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
-      <Toaster
-        position="top-right"
-        style={{ zIndex: 9999 }}
-        toastOptions={{
-          style: {
-            borderRadius: '16px',
-            background: 'white',
-            border: '1px solid rgba(0, 0, 0, 0.05)',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
-          },
-        }}
-      />
+      <Toaster position="top-right" />
     </div>
   );
 }

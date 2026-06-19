@@ -17,7 +17,7 @@
  *
  * Refs:
  *   mvp:docs/DESIGN.md §1 (sobrio + warm, no raw Tailwind colors that bypass
- *     the scales), §4 (cards rounded-xl border bg-card shadow-sm), §11
+ *     the scales), §4 (cards rounded-xl border bg-card), §11
  *     (loading spinner), §16 (numeric tabular-nums + font-mono)
  *   mvp:docs/COLOR_SYSTEM.md (rose=error, amber=warn, emerald=ok)
  *   34-CONTEXT.md D-34-04 (1h cache TTL), D-34-06 (per-user opt-in)
@@ -150,14 +150,14 @@ function ReporteViewerContent() {
         <div className="flex items-center gap-2">
           <Link
             href="/panel/inmobiliaria/ai/cobranza/reporte/suscripcion"
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted transition font-medium"
           >
             <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
             {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
           </Link>
           <Link
             href="/panel/inmobiliaria/ai/cobranza/reporte/thresholds"
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted transition font-medium"
           >
             <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
             {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
@@ -165,7 +165,7 @@ function ReporteViewerContent() {
           <button
             type="button"
             onClick={() => void refetch()}
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
             aria-label="refresh"
           >
             {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
@@ -175,7 +175,7 @@ function ReporteViewerContent() {
 
       {/* Error */}
       {error && !data && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
           Error: {error}
         </div>
       )}
@@ -212,8 +212,8 @@ function ReporteViewerContent() {
                   className={[
                     'rounded-xl border p-3 flex items-start gap-3',
                     alert.severity === 'critical'
-                      ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30'
-                      : 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30',
+                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15'
+                      : 'border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15',
                   ].join(' ')}
                   role="alert"
                 >
@@ -221,8 +221,8 @@ function ReporteViewerContent() {
                     className={[
                       'w-4 h-4 flex-shrink-0 mt-0.5',
                       alert.severity === 'critical'
-                        ? 'text-rose-600 dark:text-rose-400'
-                        : 'text-amber-600 dark:text-amber-400',
+                        ? 'text-[#C4503B] dark:text-[#E0664D]'
+                        : 'text-[#B7791F] dark:text-[#D2992F]',
                     ].join(' ')}
                     weight="fill"
                     aria-hidden="true"
@@ -231,8 +231,8 @@ function ReporteViewerContent() {
                     className={[
                       'text-xs font-mono tabular-nums',
                       alert.severity === 'critical'
-                        ? 'text-rose-700 dark:text-rose-300'
-                        : 'text-amber-700 dark:text-amber-300',
+                        ? 'text-[#C4503B] dark:text-[#E0664D]'
+                        : 'text-[#B7791F] dark:text-[#D2992F]',
                     ].join(' ')}
                   >
                     {alert.kpi}: {String(alert.actual)} (
@@ -245,7 +245,7 @@ function ReporteViewerContent() {
           )}
 
           {/* 3. Top-N debtors */}
-          <section className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20">
               <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')} · Top {topN}
@@ -304,7 +304,7 @@ function ReporteViewerContent() {
           </section>
 
           {/* 4. 30-day history + CSV export */}
-          <section className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
               <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
                 {t('inmobiliaria.ai.cobranza.reporte.history.heading')}
@@ -313,7 +313,7 @@ function ReporteViewerContent() {
                 type="button"
                 onClick={() => void onExportCsv()}
                 disabled={!agencyId}
-                className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1 rounded-md border border-border text-foreground hover:bg-muted disabled:opacity-50 transition"
+                className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-sm border border-border text-foreground hover:bg-muted disabled:opacity-50 transition font-medium"
               >
                 <Download className="w-3.5 h-3.5" aria-hidden="true" />
                 {t('inmobiliaria.ai.cobranza.reporte.history.exportCsv')}
@@ -376,7 +376,7 @@ function ReporteViewerContent() {
                       type="button"
                       onClick={() => void historyLoadMore()}
                       disabled={historyLoadingMore}
-                      className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
+                      className="text-xs px-4 py-2 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
                     >
                       {historyLoadingMore
                         ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
@@ -405,9 +405,9 @@ function KpiTile({
   return (
     <div
       className={[
-        'rounded-xl border bg-card shadow-sm p-4',
+        'rounded-xl border bg-card p-4',
         alert
-          ? 'border-rose-300 dark:border-rose-800'
+          ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
           : 'border-border',
       ].join(' ')}
     >
@@ -418,8 +418,8 @@ function KpiTile({
         className={[
           'mt-2 text-3xl font-mono tabular-nums',
           alert
-            ? 'text-rose-600 dark:text-rose-400 font-bold'
-            : 'text-emerald-600 dark:text-emerald-400',
+            ? 'text-[#C4503B] dark:text-[#E0664D] font-bold'
+            : 'text-[#2C7A53] dark:text-[#3EAE70]',
         ].join(' ')}
       >
         {value}

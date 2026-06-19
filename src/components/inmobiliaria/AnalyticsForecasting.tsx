@@ -168,7 +168,7 @@ function ForecastChart({
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-indigo-600 rounded" />
+            <span className="w-3 h-0.5 bg-[#1A40FF] rounded" />
             <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.historic')}</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -263,8 +263,8 @@ function ForecastChart({
         {/* Gradients */}
         <defs>
           <linearGradient id="historical-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#6366F1" stopOpacity={0.3} />
-            <stop offset="100%" stopColor="#6366F1" stopOpacity={0} />
+            <stop offset="0%" stopColor="#1A40FF" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#1A40FF" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="confidence-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#9CA3AF" stopOpacity={0.2} />
@@ -296,7 +296,7 @@ function ForecastChart({
         <motion.path
           d={historicalPath}
           fill="none"
-          stroke="#6366F1"
+          stroke="#1A40FF"
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -327,10 +327,10 @@ function ForecastChart({
 
           const color =
             scenario.id === 'optimistic'
-              ? '#10B981'
+              ? '#2C7A53'
               : scenario.id === 'pessimistic'
-              ? '#EF4444'
-              : '#3B82F6';
+              ? '#C4503B'
+              : '#8A9CFF';
 
           return (
             <motion.path
@@ -456,9 +456,9 @@ function ScenarioCard({
           <div
             className={cn(
               'w-3 h-3 rounded-full',
-              scenario.id === 'optimistic' && 'bg-emerald-500',
-              scenario.id === 'conservative' && 'bg-blue-500',
-              scenario.id === 'pessimistic' && 'bg-red-500'
+              scenario.id === 'optimistic' && 'bg-[#2C7A53]',
+              scenario.id === 'conservative' && 'bg-[#1A40FF]',
+              scenario.id === 'pessimistic' && 'bg-[#C4503B]'
             )}
           />
           <h4 className="font-medium text-neutral-900 dark:text-white text-sm">
@@ -468,9 +468,9 @@ function ScenarioCard({
         <span
           className={cn(
             'px-2 py-0.5 rounded-full text-xs font-medium',
-            scenario.id === 'optimistic' && 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
-            scenario.id === 'conservative' && 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
-            scenario.id === 'pessimistic' && 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'
+            scenario.id === 'optimistic' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+            scenario.id === 'conservative' && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+            scenario.id === 'pessimistic' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
           )}
         >
           {(scenario.probability * 100).toFixed(0)}%
@@ -568,10 +568,10 @@ function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit:
                         className={cn(
                           'h-full rounded-full',
                           point.confidence >= 0.8
-                            ? 'bg-emerald-500'
+                            ? 'bg-[#2C7A53]'
                             : point.confidence >= 0.6
-                            ? 'bg-amber-500'
-                            : 'bg-red-500'
+                            ? 'bg-[#B7791F]'
+                            : 'bg-[#C4503B]'
                         )}
                       />
                     </div>
@@ -618,17 +618,17 @@ function FactorsPanel({
           >
             <div
               className={cn(
-                'w-6 h-6 rounded-lg flex items-center justify-center shrink-0',
-                factor.impact === 'positive' && 'bg-emerald-100 dark:bg-emerald-900/30',
-                factor.impact === 'negative' && 'bg-red-100 dark:bg-red-900/30',
+                'w-6 h-6 rounded-md flex items-center justify-center shrink-0',
+                factor.impact === 'positive' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+                factor.impact === 'negative' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
                 factor.impact === 'neutral' && 'bg-neutral-100 dark:bg-neutral-800'
               )}
             >
               {factor.impact === 'positive' && (
-                <TrendUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" weight="bold" />
+                <TrendUp className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]" weight="bold" />
               )}
               {factor.impact === 'negative' && (
-                <TrendDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" weight="bold" />
+                <TrendDown className="w-3.5 h-3.5 text-[#C4503B] dark:text-[#E0664D]" weight="bold" />
               )}
               {factor.impact === 'neutral' && (
                 <Minus className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400" weight="bold" />
@@ -649,8 +649,8 @@ function FactorsPanel({
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className={cn(
                     'h-full rounded-full',
-                    factor.impact === 'positive' && 'bg-emerald-500',
-                    factor.impact === 'negative' && 'bg-red-500',
+                    factor.impact === 'positive' && 'bg-[#2C7A53]',
+                    factor.impact === 'negative' && 'bg-[#C4503B]',
                     factor.impact === 'neutral' && 'bg-neutral-500'
                   )}
                 />
@@ -720,8 +720,8 @@ export function AnalyticsForecasting({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <ChartLineUp className="w-5 h-5 text-purple-600 dark:text-purple-400" weight="bold" />
+          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+            <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="bold" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.forecastComp.projections')}</h2>
@@ -750,7 +750,7 @@ export function AnalyticsForecasting({
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-56 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-lg z-10 overflow-hidden"
+                  className="absolute right-0 mt-2 w-56 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10 overflow-hidden"
                 >
                   {data.map((item) => (
                     <button
@@ -759,7 +759,7 @@ export function AnalyticsForecasting({
                       className={cn(
                         'w-full px-4 py-2.5 text-left text-sm transition-colors',
                         activeMetric === item.metricId
-                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium'
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 font-medium'
                           : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                       )}
                     >
@@ -778,9 +778,9 @@ export function AnalyticsForecasting({
                 key={months}
                 onClick={() => handleHorizonChange(months)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                   activeHorizon === months
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                 )}
               >

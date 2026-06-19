@@ -26,7 +26,7 @@ export function CobranzaReporteSkeleton() {
           <Skeleton className="h-4 w-56" />
         </div>
         <div className="flex items-center gap-2">
-          <Skeleton className="h-10 w-48 rounded-lg" />
+          <Skeleton className="h-10 w-48 rounded-md" />
         </div>
       </div>
 
@@ -35,7 +35,7 @@ export function CobranzaReporteSkeleton() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card shadow-sm p-4 h-24 space-y-2"
+            className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card p-4 h-24 space-y-2"
           >
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-8 w-20" />
@@ -44,10 +44,10 @@ export function CobranzaReporteSkeleton() {
       </div>
 
       {/* Alert banner stub */}
-      <Skeleton className="h-10 w-full rounded-lg" />
+      <Skeleton className="h-10 w-full rounded-md" />
 
       {/* Top debtors section */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card shadow-sm overflow-hidden">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-muted/20">
           <Skeleton className="h-4 w-32" />
         </div>
@@ -59,10 +59,10 @@ export function CobranzaReporteSkeleton() {
       </section>
 
       {/* History table section + CSV export */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card shadow-sm overflow-hidden">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-muted/20 flex items-center justify-between gap-3">
           <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-9 w-40 rounded-lg" />
+          <Skeleton className="h-9 w-40 rounded-md" />
         </div>
         <div className="px-4 py-3 space-y-2">
           {[0, 1, 2, 3, 4].map((i) => (

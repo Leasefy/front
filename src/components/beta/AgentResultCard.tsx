@@ -37,21 +37,21 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_LEFT_COLORS: Record<string, string> = {
-  emerald: 'border-l-emerald-400 dark:border-l-emerald-500',
-  blue: 'border-l-blue-400 dark:border-l-blue-500',
-  amber: 'border-l-amber-400 dark:border-l-amber-500',
-  purple: 'border-l-purple-400 dark:border-l-purple-500',
-  pink: 'border-l-pink-400 dark:border-l-pink-500',
-  indigo: 'border-l-indigo-400 dark:border-l-indigo-500',
+  emerald: 'border-l-[#2C7A53] dark:border-l-[#2C7A53]',
+  blue: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
+  amber: 'border-l-[#B7791F] dark:border-l-[#B7791F]',
+  purple: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
+  pink: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
+  indigo: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
 };
 
 const ICON_COLORS: Record<string, string> = {
-  emerald: 'text-emerald-500 dark:text-emerald-400',
-  blue: 'text-blue-500 dark:text-blue-400',
-  amber: 'text-amber-500 dark:text-amber-400',
-  purple: 'text-purple-500 dark:text-purple-400',
-  pink: 'text-pink-500 dark:text-pink-400',
-  indigo: 'text-indigo-500 dark:text-indigo-400',
+  emerald: 'text-[#2C7A53] dark:text-[#3EAE70]',
+  blue: 'text-[#1A40FF] dark:text-[#5570FF]',
+  amber: 'text-[#B7791F] dark:text-[#D2992F]',
+  purple: 'text-neutral-600 dark:text-neutral-300',
+  pink: 'text-neutral-600 dark:text-neutral-300',
+  indigo: 'text-[#1A40FF] dark:text-[#5570FF]',
 };
 
 // ============================================================================
@@ -120,10 +120,10 @@ export function AgentResultCard({
   const meta = AGENT_METADATA[agentType];
   const AgentIcon = ICON_MAP[meta.icon];
   const borderColor = isFailed
-    ? 'border-l-red-400 dark:border-l-red-500'
+    ? 'border-l-[#C4503B] dark:border-l-[#C4503B]'
     : BORDER_LEFT_COLORS[meta.color] ?? BORDER_LEFT_COLORS.blue;
   const iconColor = isFailed
-    ? 'text-red-500 dark:text-red-400'
+    ? 'text-[#C4503B] dark:text-[#E0664D]'
     : ICON_COLORS[meta.color] ?? ICON_COLORS.blue;
 
   const resultText = isFailed
@@ -136,7 +136,7 @@ export function AgentResultCard({
         'border border-neutral-200/60 dark:border-border/50',
         'border-l-[3px]',
         borderColor,
-        'rounded-lg overflow-hidden',
+        'rounded-md overflow-hidden',
         'bg-white/60 dark:bg-card/60',
         'transition-all duration-200',
         className
@@ -167,9 +167,9 @@ export function AgentResultCard({
 
         {/* Status indicator */}
         {isFailed ? (
-          <WarningCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" weight="fill" />
+          <WarningCircle className="w-3.5 h-3.5 text-[#C4503B] flex-shrink-0" weight="fill" />
         ) : (
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" weight="fill" />
+          <CheckCircle className="w-3.5 h-3.5 text-[#2C7A53] flex-shrink-0" weight="fill" />
         )}
 
         {/* Duration */}
@@ -201,7 +201,7 @@ export function AgentResultCard({
               className={cn(
                 'text-xs leading-relaxed',
                 isFailed
-                  ? 'text-red-600 dark:text-red-400'
+                  ? 'text-[#C4503B] dark:text-[#E0664D]'
                   : 'text-muted-foreground'
               )}
             >
@@ -218,12 +218,12 @@ export function AgentResultCard({
                 }}
                 className={cn(
                   'mt-2 inline-flex items-center gap-1.5',
-                  'px-2.5 py-1 rounded-md',
+                  'px-2.5 py-1 rounded-sm',
                   'text-xs font-medium',
-                  'bg-red-50 dark:bg-red-500/10',
-                  'text-red-600 dark:text-red-400',
-                  'border border-red-200 dark:border-red-500/30',
-                  'hover:bg-red-100 dark:hover:bg-red-500/20',
+                  'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+                  'text-[#C4503B] dark:text-[#E0664D]',
+                  'border border-[#C4503B]/30 dark:border-[#C4503B]/40',
+                  'hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20',
                   'transition-colors duration-150'
                 )}
               >

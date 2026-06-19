@@ -198,7 +198,7 @@ export function StickyCTA({
 
   return (
     <div className={cn('lg:sticky lg:top-28', className)}>
-      <div className="bg-white dark:bg-card border border-border rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden">
+      <div className="bg-white dark:bg-card border border-border rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden">
         {/* Urgency Banner */}
         {stats && stats.demandLevel !== 'media' && (
           <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-primary text-primary-foreground">
@@ -277,9 +277,9 @@ export function StickyCTA({
             <button
               onClick={() => setActiveTab('apply')}
               className={cn(
-                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-lg',
+                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-md',
                 activeTab === 'apply'
-                  ? 'bg-white dark:bg-card text-foreground shadow-sm'
+                  ? 'bg-white dark:bg-card text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -288,9 +288,9 @@ export function StickyCTA({
             <button
               onClick={() => setActiveTab('visit')}
               className={cn(
-                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-lg',
+                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-md',
                 activeTab === 'visit'
-                  ? 'bg-white dark:bg-card text-foreground shadow-sm'
+                  ? 'bg-white dark:bg-card text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -326,7 +326,7 @@ export function StickyCTA({
           ) : visitConfirmed ? (
             /* ── Visit confirmed ── */
             <div className="text-center py-4">
-              <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--success-500))] rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--success-500))] rounded-xl flex items-center justify-center">
                 <Check className="w-8 h-8 text-white" strokeWidth={3} />
               </div>
               <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
@@ -360,7 +360,7 @@ export function StickyCTA({
                   className={cn(
                     'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                     visitTextT === 'presencial'
-                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
+                      ? 'border-primary bg-primary text-white'
                       : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
@@ -372,7 +372,7 @@ export function StickyCTA({
                   className={cn(
                     'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                     visitTextT === 'virtual'
-                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
+                      ? 'border-primary bg-primary text-white'
                       : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   )}
                 >
@@ -440,11 +440,11 @@ export function StickyCTA({
                             onClick={() => { if (available) { setSelectedTime(time); setScheduleError(null); } }}
                             disabled={!available}
                             className={cn(
-                              'py-2.5 text-[12px] font-semibold border rounded-lg transition-all duration-200',
+                              'py-2.5 text-[12px] font-semibold border rounded-md transition-all duration-200',
                               !available
                                 ? 'border-border/50 text-muted-foreground/40 bg-neutral-50 cursor-not-allowed line-through'
                                 : selectedTime === time
-                                  ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
+                                  ? 'border-primary bg-primary text-white'
                                   : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
                             )}
                           >
@@ -469,7 +469,7 @@ export function StickyCTA({
                 className={cn(
                   'w-full py-4 text-[14px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
                   selectedDay && selectedTime && !isSubmitting && !slotsLoading
-                    ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90 shadow-sm'
+                    ? 'bg-primary text-white hover:bg-primary/90'
                     : 'bg-neutral-100 text-muted-foreground cursor-not-allowed'
                 )}
               >
@@ -555,7 +555,7 @@ export function MobileStickyCTA({
           </div>
           <div className="flex gap-2">
             <Link href={`/aplicar/${propertyId}`}>
-              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold uppercase tracking-wide font-mono rounded-xl hover:bg-primary/90 transition-all duration-200 shadow-sm">
+              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold rounded-xl hover:bg-primary/90 transition-all duration-200">
                 Postularme
               </button>
             </Link>

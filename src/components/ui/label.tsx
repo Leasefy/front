@@ -1,26 +1,31 @@
 "use client"
 
 import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { cva, type VariantProps } from "class-variance-authority"
+import { Label as DSLabel } from "@leasefy/ui"
 
 import { cn } from "@/lib/utils"
 
-const labelVariants = cva(
-  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-)
-
+/**
+ * ADAPTER fino sobre el Label de @leasefy/ui (API superset: añade `required`).
+ * Fidelidad mvp para cero cambio visible en ~50 call sites:
+ * - text-sm leading-none (el DS usa text-caption 12px — encogería todo form)
+ * - inline + text-inherit + select-auto (el mvp heredaba display/color y
+ *   permitía selección; el DS fija inline-flex/text-fg/select-none)
+ * - peer-disabled:opacity-70 (DS usa 50)
+ */
 const Label = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
-    VariantProps<typeof labelVariants>
+  React.ElementRef<typeof DSLabel>,
+  React.ComponentPropsWithoutRef<typeof DSLabel>
 >(({ className, ...props }, ref) => (
-  <LabelPrimitive.Root
+  <DSLabel
     ref={ref}
-    className={cn(labelVariants(), className)}
+    className={cn(
+      "inline text-inherit select-auto text-sm leading-none peer-disabled:opacity-70",
+      className
+    )}
     {...props}
   />
 ))
-Label.displayName = LabelPrimitive.Root.displayName
+Label.displayName = "Label"
 
 export { Label }

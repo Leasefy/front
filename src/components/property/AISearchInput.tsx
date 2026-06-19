@@ -14,8 +14,8 @@ function SparkleGradient({ className }: { className?: string }) {
     >
       <defs>
         <linearGradient id="sparkles-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#8B5CF6" />
-          <stop offset="100%" stopColor="#3B82F6" />
+          <stop offset="0%" stopColor="#8A9CFF" />
+          <stop offset="100%" stopColor="#1A40FF" />
         </linearGradient>
       </defs>
       {/* Large star - centered */}
@@ -102,7 +102,7 @@ export function AISearchInput({
       <div
         className={cn(
           'relative bg-white dark:bg-card border transition-all duration-300 overflow-visible',
-          'rounded-2xl',
+          'rounded-xl',
           isFocused
             ? 'border-primary/30 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-2 ring-primary/10'
             : 'border-border shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] hover:border-border'
@@ -112,7 +112,7 @@ export function AISearchInput({
         <div className="relative px-5 pt-5 pb-3">
           <div className="flex items-start gap-4">
             {/* AI Sparkle Icon */}
-            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-indigo-500/10 rounded-xl">
+            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-[#1A40FF]/10 rounded-xl">
               {isMagnifyingGlassing ? (
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -171,7 +171,7 @@ export function AISearchInput({
               className={cn(
                 'flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200',
                 value.trim() && !isMagnifyingGlassing
-                  ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90 shadow-sm'
+                  ? 'bg-primary text-white hover:bg-primary/90'
                   : 'bg-neutral-100 text-muted-foreground/50 cursor-not-allowed'
               )}
             >
@@ -206,7 +206,7 @@ export function AISearchInput({
                     {/* Progress bar */}
                     <div className="h-1 bg-neutral-100 rounded-full overflow-hidden mt-2">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full"
+                        className="h-full bg-gradient-to-r from-primary to-[#1A40FF] rounded-full"
                         initial={{ width: '0%' }}
                         animate={{ width: '100%' }}
                         transition={{ duration: 1.8, ease: 'easeInOut' }}
@@ -261,7 +261,7 @@ export function AISearchInput({
                         className="group flex gap-3 p-3 bg-neutral-50 hover:bg-neutral-100 rounded-xl border border-border/50 hover:border-border transition-all"
                       >
                         {/* Property Image */}
-                        <div className="w-16 h-16 rounded-lg bg-neutral-200 flex-shrink-0 overflow-hidden">
+                        <div className="w-16 h-16 rounded-md bg-neutral-200 flex-shrink-0 overflow-hidden">
                           {property.images?.[0] ? (
                             <img
                               src={property.images[0]}

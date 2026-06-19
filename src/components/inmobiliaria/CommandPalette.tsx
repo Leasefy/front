@@ -147,7 +147,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     id: 'qa-cotizador',
     labelKey: 'inmobiliaria.commandPalette.quickActions.cotizador',
     icon: FileText,
-    href: '/panel/inmobiliaria/ai/cotizador',
+    href: '/panel/inmobiliaria/ai/asegurabilidad',
     permission: { module: 'cotizador', action: 'view' },
   },
   {
@@ -177,10 +177,10 @@ const QUICK_ACTIONS: QuickAction[] = [
 // ──────────────────────────────────────────────────────────────────────────────
 
 const BADGE_COLORS = {
-  green: 'bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-300 border-green-200 dark:border-green-500/25',
-  amber: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/25',
-  red: 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/25',
-  violet: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-500/25',
+  green: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+  amber: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+  red: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
+  violet: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
   neutral: 'bg-muted text-muted-foreground border-border',
 };
 
@@ -188,7 +188,7 @@ function Badge({ label, color }: { label: string; color: keyof typeof BADGE_COLO
   return (
     <span
       className={cn(
-        'inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium border',
+        'inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border',
         BADGE_COLORS[color],
       )}
     >
@@ -244,8 +244,8 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-primary" />
+          <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-foreground truncate">
@@ -261,7 +261,7 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Stage pill */}
       <div
         className={cn(
-          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[12px] font-medium',
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-[12px] font-medium',
           colors?.text,
           colors?.bg,
           colors?.border,
@@ -302,9 +302,9 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
 
       {/* Paused banner */}
       {data.isPaused && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25">
-          <Warning className="w-3.5 h-3.5 text-amber-600 dark:text-amber-300 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+        <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
+          <Warning className="w-3.5 h-3.5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] text-[#B7791F] dark:text-[#D2992F] leading-snug">
             {locale === 'es' ? 'Cobranza pausada' : 'Collections paused'}
           </p>
         </div>
@@ -364,8 +364,8 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+        <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+          <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
         </div>
         <div className="min-w-0">
           <p className="text-[14px] font-semibold text-foreground truncate">{name}</p>
@@ -385,13 +385,13 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
         )}
       </div>
       <div className="grid grid-cols-2 gap-2 pt-1">
-        <div className="bg-muted rounded-lg p-2">
+        <div className="bg-muted rounded-md p-2">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             {locale === 'es' ? 'Propiedades' : 'Properties'}
           </p>
           <p className="text-[16px] font-semibold text-foreground">{propertyCount}</p>
         </div>
-        <div className="bg-muted rounded-lg p-2">
+        <div className="bg-muted rounded-md p-2">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             {locale === 'es' ? 'Arriendos' : 'Leases'}
           </p>
@@ -399,11 +399,11 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
         </div>
       </div>
       {totalMonthlyRent > 0 && (
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-lg p-2.5">
-          <p className="text-[10px] text-emerald-600 dark:text-emerald-300 font-medium">
+        <div className="bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 rounded-md p-2.5">
+          <p className="text-[10px] text-[#2C7A53] dark:text-[#3EAE70] font-medium">
             {locale === 'es' ? 'Renta mensual total' : 'Total monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-emerald-800 dark:text-emerald-200">
+          <p className="text-[14px] font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
             ${totalMonthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -433,10 +433,10 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
   const status = String(data.status ?? '');
 
   const STATUS_COLORS: Record<string, string> = {
-    available: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/25',
-    published: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/25',
-    rented: 'bg-accent text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/25',
-    pending: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/25',
+    available: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    published: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    rented: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#8FA3FF] border-[#1A40FF]/20 dark:border-[#1A40FF]/30',
+    pending: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
     draft: 'bg-muted text-muted-foreground border-border',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
@@ -454,17 +454,17 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
         <p className="text-[11px] text-muted-foreground truncate mt-0.5">{address}, {city}</p>
       </div>
       <span className={cn(
-        'inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium border',
+        'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
         STATUS_COLORS[status] ?? 'bg-muted text-muted-foreground border-border',
       )}>
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-accent border border-indigo-100 dark:border-indigo-500/20 rounded-lg p-2.5">
-          <p className="text-[10px] text-primary font-medium">
+        <div className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md p-2.5">
+          <p className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-indigo-800 dark:text-indigo-200">
+          <p className="text-[14px] font-semibold text-foreground">
             ${monthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -472,19 +472,19 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
       {(bedrooms != null || area != null) && (
         <div className="grid grid-cols-3 gap-1.5">
           {bedrooms != null && (
-            <div className="bg-muted rounded-lg p-2 text-center">
+            <div className="bg-muted rounded-md p-2 text-center">
               <p className="text-[16px] font-semibold text-foreground">{bedrooms}</p>
               <p className="text-[9px] text-muted-foreground uppercase">{locale === 'es' ? 'Hab' : 'Bed'}</p>
             </div>
           )}
           {bathrooms != null && (
-            <div className="bg-muted rounded-lg p-2 text-center">
+            <div className="bg-muted rounded-md p-2 text-center">
               <p className="text-[16px] font-semibold text-foreground">{bathrooms}</p>
               <p className="text-[9px] text-muted-foreground uppercase">{locale === 'es' ? 'Baños' : 'Bath'}</p>
             </div>
           )}
           {area != null && (
-            <div className="bg-muted rounded-lg p-2 text-center">
+            <div className="bg-muted rounded-md p-2 text-center">
               <p className="text-[16px] font-semibold text-foreground">{area}</p>
               <p className="text-[9px] text-muted-foreground uppercase">m²</p>
             </div>
@@ -515,15 +515,15 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
   const endDate = data.endDate != null ? String(data.endDate) : null;
 
   const STATUS_COLORS_PILL: Record<string, string> = {
-    ACTIVE: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/25',
-    SIGNED: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-500/25',
-    PENDING_TENANT: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/25',
-    PENDING_TENANT_SIGNATURE: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/25',
-    PENDING_LANDLORD: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/25',
-    PENDING_LANDLORD_SIGNATURE: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/25',
+    ACTIVE: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    SIGNED: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
+    PENDING_TENANT: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    PENDING_TENANT_SIGNATURE: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    PENDING_LANDLORD: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    PENDING_LANDLORD_SIGNATURE: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/30 dark:border-[#B7791F]/40',
     DRAFT: 'bg-muted text-muted-foreground border-border',
-    EXPIRED: 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/25',
-    CANCELLED: 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/25',
+    EXPIRED: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
+    CANCELLED: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] border-[#C4503B]/30 dark:border-[#C4503B]/40',
   };
   const STATUS_LABELS_ES: Record<string, string> = {
     ACTIVE: 'Activo',
@@ -553,8 +553,8 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
     <div className="p-5 space-y-4">
       {tenantName && (
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-violet-600 dark:text-violet-300" />
+          <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-foreground truncate">{tenantName}</p>
@@ -568,17 +568,17 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
         <p className="text-[12px] text-muted-foreground truncate">{propertyAddress}</p>
       )}
       <span className={cn(
-        'inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium border',
+        'inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium border',
         STATUS_COLORS_PILL[status] ?? 'bg-muted text-muted-foreground border-border',
       )}>
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20 rounded-lg p-2.5">
-          <p className="text-[10px] text-violet-600 dark:text-violet-300 font-medium">
+        <div className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md p-2.5">
+          <p className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-violet-800 dark:text-violet-200">
+          <p className="text-[14px] font-semibold text-neutral-600 dark:text-neutral-300">
             ${monthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -618,7 +618,7 @@ function ResultPreview({ result }: { result: SearchResult | null }) {
   if (!result) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8 gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
           <MagnifyingGlass className="w-5 h-5 text-muted-foreground" />
         </div>
         <p className="text-[13px] text-muted-foreground">
@@ -721,10 +721,10 @@ function NovadadesState({
           {recentItems.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-start gap-3 px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+              className="flex items-start gap-3 px-2.5 py-2 rounded-md hover:bg-muted/50 transition-colors"
             >
-              <div className="grid place-items-center w-7 h-7 rounded-full bg-accent flex-shrink-0 mt-0.5">
-                <Clock className="w-3.5 h-3.5 text-primary" />
+              <div className="grid place-items-center w-7 h-7 rounded-full bg-muted flex-shrink-0 mt-0.5">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-medium text-foreground leading-snug">
@@ -863,10 +863,9 @@ export function CommandPalette() {
           'fixed inset-x-0 left-0 top-0 translate-x-0 translate-y-0',
           'h-[100dvh] max-h-[100dvh] w-full max-w-none rounded-none',
           'md:inset-x-auto md:left-1/2 md:top-[12%] md:-translate-x-1/2 md:translate-y-0',
-          'md:h-auto md:max-h-none md:w-[min(720px,94vw)] md:rounded-2xl',
+          'md:h-auto md:max-h-none md:w-[min(720px,94vw)] md:rounded-xl',
           'flex flex-col p-0 gap-0',
-          'border border-border bg-popover text-popover-foreground shadow-2xl',
-          'ring-1 ring-black/[0.04] dark:ring-white/[0.06]',
+          'border border-border bg-popover text-popover-foreground',
           'overflow-hidden md:[&>button]:hidden',
           // Disable the default slide-in animation — we use our own
           'data-[state=open]:animate-none data-[state=closed]:animate-none',
@@ -902,7 +901,7 @@ export function CommandPalette() {
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="grid place-items-center w-6 h-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="grid place-items-center w-6 h-6 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label={locale === 'es' ? 'Limpiar búsqueda' : 'Clear search'}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -965,14 +964,14 @@ export function CommandPalette() {
                                 onClick={() => handleNavigate(result.href)}
                                 onMouseEnter={() => setHighlightIdx(flatIdx)}
                                 className={cn(
-                                  'w-full flex items-start gap-3 px-2 py-2 rounded-lg text-left transition-colors',
+                                  'w-full flex items-start gap-3 px-2 py-2 rounded-md text-left transition-colors',
                                   isHighlighted ? 'bg-accent' : 'hover:bg-muted/60',
                                 )}
                               >
                                 {/* Icon */}
                                 <div
                                   className={cn(
-                                    'grid place-items-center w-7 h-7 rounded-lg flex-shrink-0 mt-0.5 transition-colors',
+                                    'grid place-items-center w-7 h-7 rounded-md flex-shrink-0 mt-0.5 transition-colors',
                                     isHighlighted ? 'bg-primary/15' : 'bg-muted',
                                   )}
                                 >

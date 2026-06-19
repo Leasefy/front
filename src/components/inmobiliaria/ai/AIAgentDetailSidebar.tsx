@@ -102,7 +102,7 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
   const accentColor = 'text-neutral-600 dark:text-neutral-400';
   const accentBg = 'bg-neutral-50';
   const accentBorder = 'border-neutral-200';
-  const accentDot = 'bg-emerald-500';
+  const accentDot = 'bg-[#2C7A53]';
 
   const content = (
     <div
@@ -116,7 +116,7 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
         aria-hidden="true"
       />
 
-      <div className="absolute top-0 right-0 bottom-0 w-full max-w-[460px] bg-white shadow-2xl flex flex-col overflow-hidden">
+      <div className="absolute top-0 right-0 bottom-0 w-full max-w-[460px] bg-white flex flex-col overflow-hidden">
         <div
           className="flex-1 overflow-y-auto overscroll-none"
           style={{ WebkitOverflowScrolling: 'touch' }}
@@ -125,7 +125,7 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
           <div className={cn('px-6 pt-6 pb-6', accentBg)}>
             <div className="flex items-start justify-between mb-5">
               <div className="flex items-center gap-2">
-                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider', accentBg, accentColor)} style={{ border: `1px solid` }}>
+                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider', accentBg, accentColor)} style={{ border: `1px solid` }}>
                   <Robot weight="bold" className="h-2.5 w-2.5" />
                   Agente AI
                 </span>
@@ -139,14 +139,14 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
               </div>
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 hover:bg-black/5 transition-colors -mr-1"
+                className="rounded-md p-1.5 hover:bg-black/5 transition-colors -mr-1"
               >
                 <X weight="bold" className="h-4 w-4 text-neutral-500" />
               </button>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className={cn('rounded-2xl p-3', 'bg-white')} style={{ border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div className={cn('rounded-xl p-3', 'bg-white')} style={{ border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
                 <AgentIcon weight="duotone" className={cn('h-7 w-7', accentColor)} />
               </div>
               <div>
@@ -192,7 +192,7 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
                     )}
                     <div className="relative z-10 flex-shrink-0">
                       <div
-                        className="h-[30px] w-[30px] rounded-lg bg-white flex items-center justify-center"
+                        className="h-[30px] w-[30px] rounded-md bg-white flex items-center justify-center"
                         style={{ border: '1px solid rgba(0,0,0,0.1)' }}
                       >
                         <StepIcon weight="duotone" className={cn('h-3.5 w-3.5', accentColor)} />

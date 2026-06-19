@@ -51,7 +51,7 @@ export function SubscriptionToggles({
         </p>
       )}
       {error && (
-        <div className="rounded-md border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-2 text-xs text-rose-700 dark:text-rose-400 font-mono">
+        <div className="rounded-sm border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-2 text-xs text-[#C4503B] dark:text-[#E0664D] font-mono">
           {locale.startsWith('es') ? 'Error al actualizar suscripción' : 'Subscription update failed'}: {error}
         </div>
       )}
@@ -71,7 +71,7 @@ function ToggleRow({
   onChange: (v: boolean) => void
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card shadow-sm p-4 cursor-pointer hover:bg-muted/30 transition">
+    <label className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 cursor-pointer hover:bg-muted/30 transition">
       <span className="flex items-center gap-2 text-sm text-foreground">
         <Icon className="w-4 h-4 text-muted-foreground" aria-hidden={true} />
         {label}
@@ -83,7 +83,7 @@ function ToggleRow({
         onClick={() => onChange(!checked)}
         className={[
           'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-          checked ? 'bg-emerald-500' : 'bg-muted',
+          checked ? 'bg-[#2C7A53]' : 'bg-muted',
         ].join(' ')}
       >
         <span

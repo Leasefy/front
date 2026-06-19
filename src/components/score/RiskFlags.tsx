@@ -35,14 +35,14 @@ const SEVERITY_STYLES = {
     icon: 'text-muted-foreground',
   },
   medium: {
-    dot: 'bg-amber-400',
-    text: 'text-amber-700',
-    icon: 'text-amber-500',
+    dot: 'bg-[#B7791F]',
+    text: 'text-[#B7791F]',
+    icon: 'text-[#B7791F]',
   },
   high: {
-    dot: 'bg-rose-400',
-    text: 'text-rose-700',
-    icon: 'text-rose-500',
+    dot: 'bg-[#C4503B]',
+    text: 'text-[#C4503B]',
+    icon: 'text-[#C4503B]',
   },
 } as const;
 
@@ -103,7 +103,7 @@ export function RiskFlags({
     >
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Warning className="h-4 w-4 text-amber-500" />
+        <Warning className="h-4 w-4 text-[#B7791F]" />
         <h4 className="text-sm font-medium text-foreground">Aspectos a considerar</h4>
       </div>
 

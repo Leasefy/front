@@ -39,7 +39,7 @@ export function PublishShell({ children }: PublishShellProps) {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-10 bg-white dark:bg-[#222224] border-b border-neutral-200 dark:border-neutral-700">
         <div className="px-4 py-3">
@@ -65,7 +65,7 @@ export function PublishShell({ children }: PublishShellProps) {
           </div>
           <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-indigo-600 transition-all duration-500 rounded-full"
+              className="h-full bg-[#1A40FF] transition-all duration-500 rounded-full"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
             />
           </div>
@@ -121,7 +121,7 @@ export function PublishShell({ children }: PublishShellProps) {
                       <div
                         className={cn(
                           'absolute left-[11px] top-[28px] w-[2px] h-[32px]',
-                          completedSteps.includes(step.id) ? 'bg-indigo-600' : 'bg-neutral-200 dark:bg-neutral-700'
+                          completedSteps.includes(step.id) ? 'bg-[#1A40FF]' : 'bg-neutral-200 dark:bg-neutral-700'
                         )}
                       />
                     )}
@@ -142,9 +142,9 @@ export function PublishShell({ children }: PublishShellProps) {
                           'relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all',
                           'border-2',
                           isCompleted
-                            ? 'bg-indigo-600 border-indigo-600'
+                            ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                             : isCurrent
-                            ? 'bg-indigo-600 border-indigo-600'
+                            ? 'bg-[#1A40FF] border-[#1A40FF]/30'
                             : 'bg-white dark:bg-[#222224] border-neutral-300 dark:border-neutral-600'
                         )}
                       >
@@ -180,11 +180,11 @@ export function PublishShell({ children }: PublishShellProps) {
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
             {/* Step content */}
-            <div className="bg-white dark:bg-[#222224] rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm">
+            <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700">
               {/* Desktop step header */}
               <div className="hidden lg:block px-6 py-5 border-b border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-sm font-medium">
                     {currentStep}
                   </span>
                   <div>
@@ -212,9 +212,9 @@ export function PublishShell({ children }: PublishShellProps) {
 
               {/* Error message */}
               {submissionError && (
-                <div className="mx-4 mb-4 lg:mx-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-2">
-                  <WarningCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700 dark:text-red-300">{submissionError}</p>
+                <div className="mx-4 mb-4 lg:mx-6 p-3 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-xl flex items-start gap-2">
+                  <WarningCircle className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{submissionError}</p>
                 </div>
               )}
 

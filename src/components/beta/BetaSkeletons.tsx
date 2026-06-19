@@ -36,8 +36,8 @@ export function ChatMessageSkeleton() {
       {/* User bubble - right aligned */}
       <div className="flex justify-end">
         <div className="w-2/3 space-y-1.5">
-          <div className="h-4 bg-indigo-100 dark:bg-indigo-600/10 rounded-2xl w-full" />
-          <div className="h-4 bg-indigo-100 dark:bg-indigo-600/10 rounded-2xl w-3/4 ml-auto" />
+          <div className="h-4 bg-[#EEF1FF] dark:bg-[#1A40FF]/10 rounded-xl w-full" />
+          <div className="h-4 bg-[#EEF1FF] dark:bg-[#1A40FF]/10 rounded-xl w-3/4 ml-auto" />
         </div>
       </div>
 
@@ -54,7 +54,7 @@ export function ChatMessageSkeleton() {
       {/* User bubble - right aligned */}
       <div className="flex justify-end">
         <div className="w-1/2 space-y-1.5">
-          <div className="h-4 bg-indigo-100 dark:bg-indigo-600/10 rounded-2xl w-full" />
+          <div className="h-4 bg-[#EEF1FF] dark:bg-[#1A40FF]/10 rounded-xl w-full" />
         </div>
       </div>
     </div>
@@ -119,7 +119,7 @@ export function BriefingCardSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-lg border border-neutral-200/60 dark:border-border/50 border-l-[3px] border-l-neutral-300 dark:border-l-neutral-600 p-3 space-y-2"
+          className="rounded-md border border-neutral-200/60 dark:border-border/50 border-l-[3px] border-l-neutral-300 dark:border-l-neutral-600 p-3 space-y-2"
         >
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700 shrink-0" />

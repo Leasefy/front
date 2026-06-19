@@ -4,8 +4,8 @@
  * CostKpiStrip.tsx — Phase 35 plan 35-10
  *
  * 3-KPI strip for the cost dashboard:
- *   1. Cost per quote (indigo-500)
- *   2. Monthly burn (teal-500)
+ *   1. Cost per quote ([#1A40FF])
+ *   2. Monthly burn ([#6B6B6B])
  *   3. 30-day forecast (neutral-400) — null → "—" (T-35-14 mitigation)
  *
  * Forecast caption + tooltip rendered below forecast card at all times (even when null).
@@ -54,7 +54,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       label: t('inmobiliaria.ai.cotizador.costos.kpiCostPerQuote'),
       value: formatUsd4(kpis?.costPerQuoteUsd),
       Icon: CurrencyDollar,
-      iconColor: 'text-indigo-500',
+      iconColor: 'text-[#1A40FF]',
       caption: null,
     },
     {
@@ -62,7 +62,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       label: t('inmobiliaria.ai.cotizador.costos.kpiMonthlyBurn'),
       value: formatUsd2(kpis?.monthlyBurnUsd),
       Icon: Wallet,
-      iconColor: 'text-teal-500',
+      iconColor: 'text-neutral-600 dark:text-neutral-300',
       caption: null,
     },
     {

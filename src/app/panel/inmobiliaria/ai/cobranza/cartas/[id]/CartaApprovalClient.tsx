@@ -143,7 +143,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
   if (envMissing) {
     return (
       <div className="p-4 lg:p-8">
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-md border border-[#B7791F] bg-[#B7791F] px-4 py-3 text-sm text-[#B7791F] dark:border-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]">
           {t('inmobiliaria.ai.cobranza.cartas.envMissing')}
         </div>
       </div>
@@ -181,7 +181,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           type="button"
           data-testid="carta-back"
           onClick={() => router.back()}
-          className="inline-flex items-center text-sm text-neutral-600 hover:text-violet-700 dark:text-neutral-400"
+          className="inline-flex items-center text-sm text-neutral-600 hover:text-[#6B6B6B] dark:text-neutral-400"
         >
           ← {t('inmobiliaria.ai.cobranza.cartas.back')}
         </button>
@@ -208,14 +208,14 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
         />
         {pdfError && (
-          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+          <div className="rounded-md border border-[#C4503B]/20 bg-[#F8EAE7] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B]/40 dark:bg-[#C4503B]/15 dark:text-[#E0664D]">
             {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.error')}
           </div>
         )}
       </section>
 
       {/* Pre-approve form */}
-      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+      <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
         <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
           {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}
           <select
@@ -225,7 +225,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               setSendMethod(e.target.value as CartaPhysicalSendMethod | '')
             }
             disabled={approveResult !== null}
-            className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+            className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
           >
             <option value="">
               {t('inmobiliaria.ai.cobranza.cartas.physicalSend.placeholder')}
@@ -251,7 +251,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               'inmobiliaria.ai.cobranza.cartas.sentToAddress.placeholder',
             )}
             disabled={approveResult !== null}
-            className="mt-1 block w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+            className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
           />
         </label>
       </section>
@@ -268,7 +268,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               ? t('inmobiliaria.ai.cobranza.cartas.permissionTooltip')
               : undefined
           }
-          className="inline-flex items-center rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
+          className="inline-flex items-center rounded-sm bg-[#6B6B6B] px-4 py-2 text-sm font-medium text-white hover:bg-[#6B6B6B] disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
         >
           {isApproving
             ? t('inmobiliaria.ai.cobranza.cartas.aprobar.submitting')
@@ -284,24 +284,24 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               ? t('inmobiliaria.ai.cobranza.cartas.permissionTooltip')
               : undefined
           }
-          className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-red-400 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+          className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:border-[#C4503B] hover:text-[#C4503B] disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
         >
           {t('inmobiliaria.ai.cobranza.cartas.rechazar.label')}
         </button>
       </div>
 
       {approveError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-sm border border-[#C4503B] bg-[#C4503B] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B]">
           {approveError}
         </div>
       )}
       {rejectError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-sm border border-[#C4503B] bg-[#C4503B] px-3 py-2 text-sm text-[#C4503B] dark:border-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B]">
           {rejectError}
         </div>
       )}
       {rejectResult?.ok && (
-        <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-700 dark:bg-green-950/30 dark:text-green-200">
+        <div className="rounded-sm border border-[#2C7A53] bg-[#2C7A53] px-3 py-2 text-sm text-[#2C7A53] dark:border-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53]">
           {t('inmobiliaria.ai.cobranza.cartas.rechazar.success')}
         </div>
       )}
@@ -310,14 +310,14 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       {approveResult && pdfDownloadUrl && (
         <section
           data-testid="carta-download-card"
-          className="space-y-3 rounded-lg border-l-4 border-amber-400 bg-amber-50 p-4 dark:border-amber-600 dark:bg-amber-950/30"
+          className="space-y-3 rounded-md border-l-4 border-[#B7791F] bg-[#B7791F] p-4 dark:border-[#B7791F] dark:bg-[#B7791F]/30"
         >
-          <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+          <h2 className="text-sm font-semibold text-[#B7791F] dark:text-[#B7791F]">
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.success.title')}
           </h2>
           <p
             data-testid="carta-legal-notice"
-            className="text-sm text-amber-800 dark:text-amber-200"
+            className="text-sm text-[#B7791F] dark:text-[#B7791F]"
           >
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.legalNotice')}
           </p>
@@ -327,11 +327,11 @@ export default function CartaApprovalClient({ artifactId }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             data-testid="carta-download-link"
-            className="inline-flex items-center rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+            className="inline-flex items-center rounded-sm bg-[#B7791F] px-4 py-2 text-sm font-medium text-white hover:bg-[#B7791F]"
           >
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.download.label')} →
           </a>
-          <div className="text-xs text-amber-700 dark:text-amber-300">
+          <div className="text-xs text-[#B7791F] dark:text-[#B7791F]">
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.download.ttl', {
               days: daysRemaining,
             })}

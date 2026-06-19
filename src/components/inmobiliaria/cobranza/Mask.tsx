@@ -71,7 +71,7 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
         data-pii-revealed="true"
         className={
           'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
-          'text-violet-700 dark:text-violet-300 ' +
+          'text-neutral-600 dark:text-neutral-300 ' +
           (className ?? '')
         }
       >
@@ -79,7 +79,7 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
         {countdownSeconds != null && countdownSeconds > 0 && (
           <span
             aria-label={`tiempo restante ${formatCountdown(countdownSeconds)}`}
-            className="px-1 py-0.5 rounded text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+            className="px-1 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300"
           >
             {formatCountdown(countdownSeconds)}
           </span>
@@ -149,8 +149,8 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
       className={
         'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
         'text-neutral-700 dark:text-neutral-200 cursor-pointer ' +
-        'hover:text-violet-600 dark:hover:text-violet-400 focus:outline-none ' +
-        'focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm ' +
+        'hover:text-neutral-600 dark:text-neutral-300 dark:hover:text-neutral-600 dark:text-neutral-300 focus:outline-none ' +
+        'focus-visible:ring-2 focus-visible:ring-[#6B6B6B] rounded-sm ' +
         (className ?? '')
       }
     >

@@ -38,8 +38,8 @@ export function StepWelcome() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pb-2"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-100 mb-4">
-          <UserCircle className="w-8 h-8 text-indigo-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-[#EEF1FF] mb-4">
+          <UserCircle className="w-8 h-8 text-[#1A40FF]" />
         </div>
         <h3 className="text-2xl font-bold text-neutral-900">
           ¡Hola! Cuéntanos sobre ti
@@ -71,8 +71,8 @@ export function StepWelcome() {
               'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white',
               'transition-all duration-200',
               'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-              draft.displayName ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
+              draft.displayName ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
             )}
           />
         </div>
@@ -101,8 +101,8 @@ export function StepWelcome() {
               'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white',
               'transition-all duration-200',
               'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-              draft.phone ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
+              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
+              draft.phone ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
             )}
           />
         </div>
@@ -136,14 +136,14 @@ export function StepWelcome() {
                 className={cn(
                   'relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF]'
+                    : 'border-neutral-200 bg-white hover:border-neutral-300 hover:'
                 )}
               >
                 <div
                   className={cn(
-                    'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
-                    isSelected ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
+                    'w-10 h-10 rounded-md flex items-center justify-center transition-colors',
+                    isSelected ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -152,7 +152,7 @@ export function StepWelcome() {
                   <p
                     className={cn(
                       'text-sm font-semibold',
-                      isSelected ? 'text-indigo-600' : 'text-neutral-700'
+                      isSelected ? 'text-[#1A40FF]' : 'text-neutral-700'
                     )}
                   >
                     {option.label}
@@ -164,7 +164,7 @@ export function StepWelcome() {
                 {isSelected && (
                   <motion.div
                     layoutId="contact-selection"
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center"
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-[#1A40FF] rounded-full flex items-center justify-center"
                   >
                     <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />

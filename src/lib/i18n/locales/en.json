@@ -5500,10 +5500,26 @@
         },
         "llamadas": {
           "list": {
+            "pageTitle": "Calls",
+            "pageSubtitle": "Global call and contact log across all channels",
             "empty": {
-              "title": "Global calls view unavailable",
-              "description": "Calls are managed per debtor. Go to the Debtors list to access a debtor’s call history.",
+              "title": "No calls yet",
+              "description": "No calls have been logged for this portfolio. The list will appear here once the agent starts making contacts.",
               "cta": "Go to Debtors"
+            },
+            "filters": {
+              "outcome": "Outcome",
+              "channel": "Channel",
+              "direction": "Direction"
+            },
+            "columns": {
+              "debtor": "Debtor",
+              "channel": "Channel",
+              "outcome": "Outcome",
+              "duration": "Duration",
+              "initiatedAt": "Started",
+              "qaScore": "QA",
+              "flags": "Flags"
             }
           }
         }

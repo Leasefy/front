@@ -18,6 +18,7 @@ import {
   Wrench,
   UserCircle,
   PaperPlaneTilt,
+  Robot,
   ChatCircleText,
   ShieldCheck,
   SlidersHorizontal,
@@ -85,7 +86,6 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-
   const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole } = usePermissionsContext();
 
   // All nav items with their corresponding permission module (null = always visible).
@@ -176,7 +176,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
-    { label: t('inmobiliaria.ai.nav.pagosHome'), href: '/panel/inmobiliaria/ai/pagos',      icon: Wallet,        module: 'cobranza' },
     { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar, module: 'cobros' },
     // ── PORTAFOLIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
@@ -220,7 +219,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cotizador',
         } as NavItemWithModule,
       ],
-    },
+    } as NavItemWithModule,
     // ── INTELIGENCIA ──
     { kind: 'section', label: t('inmobiliaria.nav.secInteligencia'), href: '#sec-inteligencia', icon: ChartLine, module: null },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,     module: 'reportes' },
@@ -241,6 +240,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     if (permissionsLoading) return ALL_NAV_ITEMS;
 
     const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
+      // Module-based gate (unchanged): cobranza/cotizador use agent permissions;
+      // other modules use the legacy effectivePermissions map.
       if (item.module && !canAccess(item.module, 'view')) return null;
       // Role-based gate: if the item declares `roles`, the current user must
       // be a super-admin (isAdmin) OR have an agencyRole that is in the list.
@@ -262,18 +263,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
     const filtered = ALL_NAV_ITEMS.map(filterItem).filter((item): item is NavItem => item !== null);
     // Drop a section header left with no real items after permission filtering.
-    // Keep a section only if at least one non-section item exists after it
-    // before the next section header (handles consecutive empty sections and
-    // a trailing dangling header).
     return filtered.filter((item, idx) => {
       if (item.kind !== 'section') return true;
-      for (let j = idx + 1; j < filtered.length; j++) {
-        if (filtered[j].kind === 'section') return false; // hit next header first → empty section
-        return true; // first thing after is a real item → keep
-      }
-      return false; // trailing header
+      const next = filtered[idx + 1];
+      return next != null && next.kind !== 'section';
     });
-  }, [ALL_NAV_ITEMS, canAccess, isAdmin, agencyRole, permissionsLoading]);
+  }, [ALL_NAV_ITEMS, canAccess, permissionsLoading, isAdmin, agencyRole]);
 
   return (
     <div className="min-h-screen bg-plan-page">

@@ -15,11 +15,14 @@ import { useRouter } from 'next/navigation'
 import { CaretLeft, CurrencyDollar } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { useI18n } from '@/lib/i18n'
 
 function PagosCola() {
   const router = useRouter()
+  const { t } = useI18n()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('pagos')
 
   return (
@@ -33,13 +36,11 @@ function PagosCola() {
           >
             <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <CurrencyDollar className="w-3.5 h-3.5" aria-hidden="true" />
-            Agente · Pagos (AP)
+            {t('inmobiliaria.ai.workspace.pages.pagos.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">Cola de aprobación</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.pagos.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Facturas de proveedor pendientes de aprobar. Revisa el monto, el proveedor y el
-            vencimiento, luego aprueba o rechaza. La matriz por monto/centro de costo y la separación
-            de funciones se validan en el servidor. Modo Copiloto: ninguna dispersión sale sin ti.
+            {t('inmobiliaria.ai.workspace.pages.pagos.colaDesc')}
           </p>
         </div>
 
@@ -49,7 +50,7 @@ function PagosCola() {
             {isLoading ? '—' : total}
           </p>
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
-            Por aprobar
+            {t('inmobiliaria.ai.workspace.pages.pagos.porAprobar')}
           </p>
         </div>
       </header>
@@ -61,7 +62,7 @@ function PagosCola() {
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/pagos/${encodeURIComponent(item.id)}`)}
-        emptyHint="No hay facturas pendientes de aprobación."
+        emptyHint={t('inmobiliaria.ai.workspace.pages.pagos.colaEmptyHint')}
       />
     </div>
   )
@@ -69,7 +70,7 @@ function PagosCola() {
 
 export default function PagosColaPage() {
   return (
-    <PageGuard>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <PagosCola />
     </PageGuard>
   )

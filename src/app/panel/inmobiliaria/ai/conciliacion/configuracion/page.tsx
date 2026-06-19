@@ -10,10 +10,14 @@
 import Link from 'next/link'
 import { Bank, CaretLeft } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
+import { useI18n } from '@/lib/i18n'
 
-export default function ConciliacionConfiguracionPage() {
+function ConciliacionConfiguracion() {
+  const { t } = useI18n()
   const { data, isLoading, error } = useAgentAutonomia('conciliacion')
 
   return (
@@ -26,16 +30,23 @@ export default function ConciliacionConfiguracionPage() {
         >
           <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
           <Bank className="w-3.5 h-3.5" aria-hidden="true" />
-          Agente · Conciliación
+          {t('inmobiliaria.ai.workspace.pages.conciliacion.eyebrow')}
         </Link>
-        <h1 className="text-2xl font-semibold text-foreground">Configuración y autonomía</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Modo de operación del agente y la valla que delimita lo que puede hacer. Solo lectura por
-          ahora — los cambios de modo llegan con la certificación de la valla.
+          {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
         </p>
       </header>
 
       <AutonomiaPanel data={data} isLoading={isLoading} error={error} />
     </div>
+  )
+}
+
+export default function ConciliacionConfiguracionPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <ConciliacionConfiguracion />
+    </PageGuard>
   )
 }

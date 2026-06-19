@@ -12,15 +12,18 @@
 import { useParams, useRouter } from 'next/navigation'
 import { GitMerge } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
 import { WorkItemDetalle } from '@/components/inmobiliaria/ai/WorkItemDetalle'
+import { useI18n } from '@/lib/i18n'
 
 const COLA_HREF = '/panel/inmobiliaria/ai/matching/cola'
 
-export default function MatchingCasoPage() {
+function MatchingCaso() {
   const router = useRouter()
+  const { t } = useI18n()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
 
@@ -43,14 +46,22 @@ export default function MatchingCasoPage() {
       error={error}
       notAvailable={notAvailable}
       colaHref={COLA_HREF}
-      colaLabel="Cola de matching"
+      colaLabel={t('inmobiliaria.ai.workspace.pages.matching.casoColaLabel')}
       icon={GitMerge}
       onAction={handleAction}
       crossLink={{
-        pregunta: '¿Es confiable este candidato?',
-        destino: 'Estudio del inquilino',
+        pregunta: t('inmobiliaria.ai.workspace.pages.matching.crossPregunta'),
+        destino: t('inmobiliaria.ai.workspace.pages.matching.crossDestino'),
         href: '/panel/inmobiliaria/ai/estudio',
       }}
     />
+  )
+}
+
+export default function MatchingCasoPage() {
+  return (
+    <PageGuard module="matching">
+      <MatchingCaso />
+    </PageGuard>
   )
 }

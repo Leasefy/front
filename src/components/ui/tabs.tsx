@@ -14,7 +14,13 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-11 items-center justify-center rounded-full bg-muted/80 p-1.5 text-muted-foreground",
+      // max-w-full + overflow-x-auto makes long tab sets horizontally
+      // scrollable on narrow viewports instead of blowing out the layout
+      // (scrollbar hidden). Desktop look for <=4 tabs is unchanged.
+      // NOTE for consumers with MANY tabs: pass `justify-start` so the first
+      // tab stays reachable when the list overflows (centered flex content
+      // clips its start edge inside a scroll container).
+      "inline-flex h-11 max-w-full items-center justify-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-full bg-muted/80 p-1.5 text-muted-foreground",
       className
     )}
     {...props}

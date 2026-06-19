@@ -64,6 +64,7 @@ export function StepPersonal() {
       >
         <LightInput
           id="fullName"
+          autoComplete="name"
           placeholder="Cómo aparece en tu documento"
           value={personal.fullName || ''}
           onChange={(e) => handleInputChange('fullName', e.target.value)}
@@ -82,7 +83,7 @@ export function StepPersonal() {
       >
         <LightInput
           id="email"
-          type="email"
+          kind="email"
           placeholder="tu@email.com"
           value={personal.email || ''}
           onChange={(e) => handleInputChange('email', e.target.value)}
@@ -120,6 +121,7 @@ export function StepPersonal() {
         >
           <LightInput
             id="documentNumber"
+            kind="cedula"
             placeholder="Sin puntos ni guiones"
             value={personal.documentNumber || ''}
             onChange={(e) =>
@@ -143,6 +145,7 @@ export function StepPersonal() {
           <LightInput
             id="dateOfBirth"
             type="date"
+            autoComplete="bday"
             value={personal.dateOfBirth || ''}
             onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
             onBlur={() => handleBlur('dateOfBirth')}
@@ -160,7 +163,7 @@ export function StepPersonal() {
         >
           <LightInput
             id="phone"
-            type="tel"
+            kind="tel"
             placeholder="3XX XXX XXXX"
             value={personal.phone || ''}
             onChange={(e) =>
@@ -182,6 +185,7 @@ export function StepPersonal() {
       >
         <LightInput
           id="currentAddress"
+          autoComplete="street-address"
           placeholder="Calle, número, barrio, ciudad"
           value={personal.currentAddress || ''}
           onChange={(e) => handleInputChange('currentAddress', e.target.value)}
@@ -201,6 +205,7 @@ export function StepPersonal() {
         <LightInput
           id="timeAtCurrentAddress"
           type="number"
+          inputMode="numeric"
           min={0}
           placeholder="Ej: 24"
           value={personal.timeAtCurrentAddress ?? ''}
@@ -245,6 +250,7 @@ export function StepPersonal() {
           <LightInput
             id="dependents"
             type="number"
+            inputMode="numeric"
             min={0}
             max={20}
             placeholder="0"

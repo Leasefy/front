@@ -13,10 +13,13 @@ import Link from 'next/link'
 import { CaretLeft, CurrencyDollar } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
+import { useI18n } from '@/lib/i18n'
 
 function PagosConfiguracion() {
+  const { t } = useI18n()
   const { data, isLoading, error } = useAgentAutonomia('pagos')
 
   return (
@@ -29,12 +32,11 @@ function PagosConfiguracion() {
         >
           <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
           <CurrencyDollar className="w-3.5 h-3.5" aria-hidden="true" />
-          Agente · Pagos (AP)
+          {t('inmobiliaria.ai.workspace.pages.pagos.eyebrow')}
         </Link>
-        <h1 className="text-2xl font-semibold text-foreground">Configuración y autonomía</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Modo de operación del agente y la valla que delimita lo que puede hacer. Solo lectura por
-          ahora — los cambios de modo llegan con la certificación de la valla.
+          {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
         </p>
       </header>
 
@@ -45,7 +47,7 @@ function PagosConfiguracion() {
 
 export default function PagosConfiguracionPage() {
   return (
-    <PageGuard>
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <PagosConfiguracion />
     </PageGuard>
   )

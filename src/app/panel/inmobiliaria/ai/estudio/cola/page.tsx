@@ -15,11 +15,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CaretLeft, ShieldCheck } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { useI18n } from '@/lib/i18n'
 
-export default function EstudioColaPage() {
+function EstudioCola() {
   const router = useRouter()
+  const { t } = useI18n()
   const { items, total, isLoading, error, runAction } = useAgentWorkItems('estudio')
 
   return (
@@ -33,13 +36,11 @@ export default function EstudioColaPage() {
           >
             <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-            Agente · Estudio del inquilino
+            {t('inmobiliaria.ai.workspace.pages.estudio.eyebrow')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">Cola humana</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Estudios de arrendamiento que el agente escaló o marcó como borderline. Revisa el verdict
-            (nivel y puntaje) y su evidencia, luego aprueba o rechaza al inquilino. Cada decisión queda
-            auditada (derecho a revisión humana, T-323). Modo Copiloto: nada se decide sin ti.
+            {t('inmobiliaria.ai.workspace.pages.estudio.colaDesc')}
           </p>
         </div>
 
@@ -49,7 +50,7 @@ export default function EstudioColaPage() {
             {isLoading ? '—' : total}
           </p>
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
-            En cola
+            {t('inmobiliaria.ai.workspace.pages.comun.enCola')}
           </p>
         </div>
       </header>
@@ -61,8 +62,16 @@ export default function EstudioColaPage() {
         error={error}
         onAction={(item, action, body) => runAction(item, action, body)}
         onOpen={(item) => router.push(`/panel/inmobiliaria/ai/estudio/${encodeURIComponent(item.id)}`)}
-        emptyHint="No hay estudios pendientes de revisión. El agente escala aquí los casos riesgosos."
+        emptyHint={t('inmobiliaria.ai.workspace.pages.estudio.colaEmptyHint')}
       />
     </div>
+  )
+}
+
+export default function EstudioColaPage() {
+  return (
+    <PageGuard module="estudio">
+      <EstudioCola />
+    </PageGuard>
   )
 }

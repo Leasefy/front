@@ -53,7 +53,7 @@ function stageChipClasses(active: boolean): string {
 }
 
 export default function DeudoresListClient() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -341,7 +341,7 @@ export default function DeudoresListClient() {
               onClick={() => setFiltersDrawerOpen(false)}
               className="absolute inset-0 bg-black/40"
             />
-            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-2xl p-5 max-h-[80vh] overflow-y-auto">
+            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-2xl p-5 max-h-[80vh] overflow-y-auto overscroll-contain">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                   {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
@@ -403,9 +403,9 @@ export default function DeudoresListClient() {
             </div>
           )}
 
-          {/* Table */}
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          {/* md+ table */}
+          <div className="hidden md:block overflow-x-auto overscroll-contain rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+            <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-neutral-50 dark:[&_th]:bg-neutral-950">
               <thead className="bg-neutral-50 dark:bg-neutral-950/50">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -470,15 +470,15 @@ export default function DeudoresListClient() {
                     }}
                     className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
                   >
-                    <td className="px-3 py-2 text-neutral-900 dark:text-white whitespace-nowrap">
+                    <td className="px-3 py-2.5 text-neutral-900 dark:text-white whitespace-nowrap">
                       {d.fullName}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">
                         {d.currentStage}
                       </span>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <span
                         className={
                           'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
@@ -488,22 +488,78 @@ export default function DeudoresListClient() {
                         {d.daysInStage}
                       </span>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <Mask field="cedula" value={d.cedulaMasked} />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <Mask field="phone" value={d.phoneMasked} />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <Mask field="email" value={d.emailMasked} />
                     </td>
-                    <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400">
+                    <td className="px-3 py-2.5 text-xs text-neutral-500 dark:text-neutral-400">
                       {d.channel}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* sm cards (mirrors LlamadasTab md+/sm pattern) */}
+          <div className="md:hidden">
+            {!isLoading && pages.length === 0 && !error ? (
+              <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-12 text-center">
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                  {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
+                </p>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="text-xs font-medium px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                >
+                  {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
+                </button>
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {pages.map((d) => (
+                  <li key={d.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigateToDebtor(d.id)}
+                      className="w-full min-h-11 text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                          {d.fullName}
+                        </p>
+                        <span className="text-xs font-semibold text-violet-700 dark:text-violet-300 shrink-0">
+                          {d.currentStage}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span
+                          className={
+                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
+                            daysBadgeClasses(d.daysInStage)
+                          }
+                        >
+                          {d.daysInStage} {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
+                        </span>
+                        <Mask field="cedula" value={d.cedulaMasked} />
+                      </div>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5">
+                        {d.channel}
+                        {d.lastActivityAt
+                          ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
+                          : ''}
+                      </p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Sentinel + loadingMore spinner */}

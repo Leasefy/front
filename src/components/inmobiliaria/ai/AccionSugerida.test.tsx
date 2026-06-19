@@ -13,11 +13,17 @@ import { act } from 'react'
 
 void React // jsx-preserve
 
+// Resolve chrome via the REAL es.json so literal assertions keep verifying
+// the byte-identical es output (stub avoids the provider's localStorage effect).
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 import { AccionSugerida } from './AccionSugerida'
+import { I18nProvider } from '@/lib/i18n'
 import type { WorkItemAction } from '@/lib/api/work-item'
 
 const APPROVE: WorkItemAction = {
@@ -66,12 +72,18 @@ afterEach(() => {
 function render(props: Partial<React.ComponentProps<typeof AccionSugerida>> = {}) {
   act(() => {
     root.render(
-      React.createElement(AccionSugerida, {
-        accion: ACCION,
-        actions: [APPROVE, REJECT],
-        onAction: onAction as unknown as React.ComponentProps<typeof AccionSugerida>['onAction'],
-        ...props,
-      }),
+      // Real I18nProvider (default locale 'es') — chrome literals below assert
+      // the byte-identical es output of the extracted i18n keys.
+      React.createElement(
+        I18nProvider,
+        null,
+        React.createElement(AccionSugerida, {
+          accion: ACCION,
+          actions: [APPROVE, REJECT],
+          onAction: onAction as unknown as React.ComponentProps<typeof AccionSugerida>['onAction'],
+          ...props,
+        }),
+      ),
     )
   })
 }

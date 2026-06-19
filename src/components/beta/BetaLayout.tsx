@@ -46,7 +46,9 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
       <BetaKeyboardShortcuts onCloseDrawer={() => setDrawerOpen(false)} drawerOpen={drawerOpen} />
       <div
         className={cn(
-          'fixed inset-0 z-50',
+          // h-[100dvh] (not inset-0/100vh) keeps the chat input visible above
+          // the on-screen keyboard / collapsing URL bar on mobile.
+          'fixed inset-x-0 top-0 h-[100dvh] z-50',
           'flex flex-col md:flex-row',
           'bg-[#f5f5f7] dark:bg-[#0c0c0e]'
         )}
@@ -71,7 +73,7 @@ export function BetaLayout({ children, basePath }: BetaLayoutProps) {
           <button
             onClick={() => setDrawerOpen(true)}
             className={cn(
-              'w-9 h-9 rounded-lg',
+              'w-11 h-11 rounded-lg',
               'flex items-center justify-center',
               'text-muted-foreground hover:text-foreground',
               'hover:bg-neutral-100 dark:hover:bg-neutral-800',
@@ -160,7 +162,7 @@ function MobileNewChatButton() {
     <button
       onClick={createConversation}
       className={cn(
-        'w-9 h-9 rounded-lg',
+        'w-11 h-11 rounded-lg',
         'flex items-center justify-center',
         'text-indigo-500 hover:text-indigo-600',
         'hover:bg-indigo-50 dark:hover:bg-indigo-700/10',

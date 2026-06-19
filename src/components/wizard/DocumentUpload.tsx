@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useId } from 'react';
 import { Upload, File, X, Check, WarningCircle, SpinnerGap } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 // ============================================================================
 
 interface DocumentUploadProps {
+  /** Optional stable id for the file input (enables label association + programmatic focus) */
+  id?: string;
   label: string;
   required?: boolean;
   accept?: string;
@@ -36,6 +38,7 @@ type UploadState = 'idle' | 'dragging' | 'uploading' | 'success' | 'error';
  * DocumentUpload - Luxterra-style drag and drop file upload
  */
 export function DocumentUpload({
+  id,
   label,
   required = false,
   accept = '.pdf,.jpg,.jpeg,.png',
@@ -49,6 +52,8 @@ export function DocumentUpload({
   const [state, setState] = useState<UploadState>(value?.file || value?.fileName ? 'success' : 'idle');
   const [uploadError, setUploadError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const generatedId = useId();
+  const inputId = id ?? `${generatedId}-file`;
 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
@@ -192,7 +197,7 @@ export function DocumentUpload({
   return (
     <div className="space-y-2">
       {/* Label */}
-      <label className="block text-sm font-medium text-foreground/70">
+      <label htmlFor={inputId} className="block text-sm font-medium text-foreground/70">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
@@ -234,7 +239,16 @@ export function DocumentUpload({
       ) : (
         // Drop zone - Luxterra style
         <div
+          role="button"
+          tabIndex={0}
+          aria-label={`Subir ${label}`}
           onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -248,10 +262,12 @@ export function DocumentUpload({
         >
           <input
             ref={fileInputRef}
+            id={inputId}
             type="file"
             accept={accept}
             onChange={handleInputChange}
             className="sr-only"
+            tabIndex={-1}
           />
 
           {state === 'uploading' ? (
@@ -291,7 +307,7 @@ export function DocumentUpload({
               <div>
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground hover:underline">
-                    Haz clic para subir
+                    Toca para subir
                   </span>{' '}
                   o arrastra tu archivo
                 </p>

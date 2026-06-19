@@ -7,13 +7,19 @@
  */
 
 import * as React from 'react'
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
 void React // jsx-preserve
 
+// Resolve chrome via the REAL es.json so literal assertions keep verifying
+// the byte-identical es output (stub avoids the provider's localStorage effect).
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+
+
 import { AutonomiaPanel } from './AutonomiaPanel'
+import { I18nProvider } from '@/lib/i18n'
 import type { AgentAutonomiaResponse } from '@/lib/api/agent-workspace'
 
 const DATA: AgentAutonomiaResponse = {
@@ -47,7 +53,10 @@ afterEach(() => {
 
 function render(props: Partial<React.ComponentProps<typeof AutonomiaPanel>> = {}) {
   act(() => {
-    root.render(React.createElement(AutonomiaPanel, { data: null, ...props }))
+    // Real I18nProvider (default 'es') — assertions check byte-identical es chrome.
+    root.render(
+      React.createElement(I18nProvider, null, React.createElement(AutonomiaPanel, { data: null, ...props })),
+    )
   })
 }
 

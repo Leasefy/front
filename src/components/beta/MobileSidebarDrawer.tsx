@@ -63,27 +63,34 @@ export function MobileSidebarDrawer({ open, onClose, children }: MobileSidebarDr
         className={cn(
           'fixed inset-y-0 left-0 z-[61]',
           'w-[280px]',
+          'flex flex-col',
+          'bg-white dark:bg-[#141416]',
           'transition-transform duration-200 ease-out',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* Close button overlaid on top-right of drawer */}
-        <button
-          onClick={onClose}
-          className={cn(
-            'absolute top-3 right-3 z-10',
-            'w-7 h-7 rounded-full',
-            'flex items-center justify-center',
-            'bg-neutral-100 dark:bg-neutral-800',
-            'text-muted-foreground hover:text-foreground',
-            'transition-colors duration-150'
-          )}
-          aria-label={t('beta.mobile.closeMenu')}
-        >
-          <X className="w-3.5 h-3.5" weight="bold" />
-        </button>
+        {/* Drawer header row — the close button gets its own row so it no
+            longer overlaps the AppSwitcher at the top of BetaSidebar. */}
+        <div className="flex items-center justify-end px-1.5 pt-1.5 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className={cn(
+              'w-11 h-11 rounded-xl',
+              'flex items-center justify-center',
+              'text-muted-foreground hover:text-foreground',
+              'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+              'transition-colors duration-150'
+            )}
+            aria-label={t('beta.mobile.closeMenu')}
+          >
+            <X className="w-4 h-4" weight="bold" />
+          </button>
+        </div>
 
-        {children}
+        {/* Drawer scroll region */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          {children}
+        </div>
       </div>
     </>
   );

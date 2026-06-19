@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -38,6 +39,14 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
   const currentStepConfig = ONBOARDING_STEPS[currentStep - 1]
   const isFirstStep = currentStep === 1
   const isLastStep = currentStep === totalSteps
+
+  // Shown when the user taps the disabled CTA: explains why it is disabled
+  const [disabledHint, setDisabledHint] = useState(false)
+
+  // Clear the disabled-CTA hint when changing steps or when the form becomes valid
+  useEffect(() => {
+    setDisabledHint(false)
+  }, [currentStep])
 
   // Step content
   const steps = [
@@ -141,7 +150,7 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
       </div>
 
       {/* Main Layout */}
-      <div className="max-w-7xl mx-auto lg:flex lg:gap-0 min-h-[calc(100vh-64px)]">
+      <div className="max-w-7xl mx-auto lg:flex lg:gap-0 min-h-[calc(100dvh-64px)]">
         {/* Left Sidebar - Step Compass */}
         <aside className="hidden lg:block w-72 xl:w-80 bg-white border-r border-stone-200 p-6 xl:p-8">
           {/* Progress indicator */}
@@ -293,35 +302,49 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
               </button>
 
               {/* Next/Submit button */}
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={!canProceed || isSubmitting}
-                className={cn(
-                  'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold',
-                  'rounded-lg bg-neutral-900 text-white',
-                  'hover:bg-neutral-800 transition-all duration-200',
-                  'disabled:opacity-50 disabled:cursor-not-allowed'
-                )}
+              <span
+                className={cn('inline-flex', !canProceed && !isSubmitting && 'cursor-not-allowed')}
+                onClick={() => {
+                  if (!canProceed && !isSubmitting) setDisabledHint(true)
+                }}
               >
-                {isSubmitting ? (
-                  <>
-                    <SpinnerGap className="h-4 w-4 animate-spin" />
-                    Guardando...
-                  </>
-                ) : isLastStep ? (
-                  <>
-                    Comenzar
-                    <Rocket className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    Continuar
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={!canProceed || isSubmitting}
+                  className={cn(
+                    'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold',
+                    'rounded-lg bg-neutral-900 text-white',
+                    'hover:bg-neutral-800 transition-all duration-200',
+                    'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none'
+                  )}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <SpinnerGap className="h-4 w-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : isLastStep ? (
+                    <>
+                      Comenzar
+                      <Rocket className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Continuar
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </span>
             </div>
+
+            {/* Disabled-CTA hint */}
+            {disabledHint && !canProceed && (
+              <p role="status" className="mt-3 text-xs text-amber-600 text-right">
+                Completa los campos obligatorios para continuar
+              </p>
+            )}
 
             {/* Auto-save indicator */}
             <div className="flex items-center justify-center gap-2 mt-6 text-stone-400">

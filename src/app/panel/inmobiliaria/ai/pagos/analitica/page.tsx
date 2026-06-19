@@ -10,10 +10,14 @@
 import Link from 'next/link'
 import { CaretLeft, CurrencyDollar } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
+import { useI18n } from '@/lib/i18n'
 
-export default function PagosAnaliticaPage() {
+function PagosAnalitica() {
+  const { t } = useI18n()
   const { data, isLoading, error, notAvailable } = useAgentAnalitica('pagos')
 
   return (
@@ -25,16 +29,23 @@ export default function PagosAnaliticaPage() {
         >
           <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
           <CurrencyDollar className="w-3.5 h-3.5" aria-hidden="true" />
-          Agente · Pagos (AP)
+          {t('inmobiliaria.ai.workspace.pages.pagos.eyebrow')}
         </Link>
-        <h1 className="text-2xl font-semibold text-foreground">Analítica</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Desempeño del agente de pagos en los últimos 30 días: facturas procesadas, aprobaciones
-          y monto dispersado por día.
+          {t('inmobiliaria.ai.workspace.pages.pagos.analiticaDesc')}
         </p>
       </header>
 
       <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
     </div>
+  )
+}
+
+export default function PagosAnaliticaPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <PagosAnalitica />
+    </PageGuard>
   )
 }

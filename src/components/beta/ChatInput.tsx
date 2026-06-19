@@ -56,7 +56,9 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
   );
 
   return (
-    <div className={cn('px-4 pb-4 pt-2', className)}>
+    // pb resolves to 1rem (= pb-4) on desktop; on devices with a home
+    // indicator the safe-area inset wins so the input clears it.
+    <div className={cn('px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2', className)}>
       <div className="max-w-3xl mx-auto">
         <div
           className={cn(
@@ -99,6 +101,8 @@ export function ChatInput({ onSend, disabled = false, className }: ChatInputProp
               'flex-shrink-0',
               'w-8 h-8 rounded-lg',
               'flex items-center justify-center',
+              // ≥44px hit target (32 + 2×6) without growing the visual button
+              "relative before:absolute before:-inset-1.5 before:content-['']",
               'transition-all duration-150',
               isDisabled
                 ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed'

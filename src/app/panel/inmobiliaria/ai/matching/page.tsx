@@ -15,10 +15,13 @@
 
 import { GitMerge } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
+import { useI18n } from '@/lib/i18n'
 
-export default function MatchingSalaPage() {
+function MatchingSala() {
+  const { t } = useI18n()
   const { data, isLoading, error } = useAgentOverview('matching')
 
   // CTA count: prefer the backend's "en_cola" KPI; absent → CTA without count.
@@ -27,8 +30,8 @@ export default function MatchingSalaPage() {
   return (
     <SalaAgente
       agente="matching"
-      titulo="Matching"
-      descripcion="El agente empareja cada candidato con las propiedades compatibles del portafolio, con score de compatibilidad y factores de calce. El contacto (outreach) solo sale con tu aprobación. Modo Copiloto: nada se hace sin ti."
+      titulo={t('inmobiliaria.ai.workspace.pages.matching.salaTitulo')}
+      descripcion={t('inmobiliaria.ai.workspace.pages.matching.salaDesc')}
       icon={GitMerge}
       overview={data}
       isLoading={isLoading}
@@ -36,5 +39,15 @@ export default function MatchingSalaPage() {
       colaHref="/panel/inmobiliaria/ai/matching/cola"
       colaCount={colaCount}
     />
+  )
+}
+
+export default function MatchingSalaPage() {
+  return (
+    // Agent module gate — ABSENT key in my-permissions = allowed
+    // (see agent-module-access.ts); present without 'view' = denied.
+    <PageGuard module="matching">
+      <MatchingSala />
+    </PageGuard>
   )
 }

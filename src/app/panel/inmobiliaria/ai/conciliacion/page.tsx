@@ -16,10 +16,14 @@
 import Link from 'next/link'
 import { ArrowSquareOut, Bank } from '@phosphor-icons/react'
 
+import { PageGuard } from '@/components/auth/PageGuard'
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
+import { useI18n } from '@/lib/i18n'
 
-export default function ConciliacionSalaPage() {
+function ConciliacionSala() {
+  const { t } = useI18n()
   const { data, isLoading, error } = useAgentOverview('conciliacion')
 
   // CTA count: prefer the backend's "en_cola" KPI; absent → CTA without count.
@@ -28,8 +32,8 @@ export default function ConciliacionSalaPage() {
   return (
     <SalaAgente
       agente="conciliacion"
-      titulo="Conciliación bancaria"
-      descripcion="El agente cruza los movimientos del extracto contra recaudos, dispersiones y comisiones, y deja los casos dudosos en tu cola. Modo Copiloto: nada se aplica sin tu aprobación."
+      titulo={t('inmobiliaria.ai.workspace.pages.conciliacion.salaTitulo')}
+      descripcion={t('inmobiliaria.ai.workspace.pages.conciliacion.salaDesc')}
       icon={Bank}
       overview={data}
       isLoading={isLoading}
@@ -43,8 +47,16 @@ export default function ConciliacionSalaPage() {
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition"
       >
         <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
-        Ver movimientos y subir extractos
+        {t('inmobiliaria.ai.workspace.pages.conciliacion.verMovimientos')}
       </Link>
     </SalaAgente>
+  )
+}
+
+export default function ConciliacionSalaPage() {
+  return (
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+      <ConciliacionSala />
+    </PageGuard>
   )
 }

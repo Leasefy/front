@@ -104,6 +104,8 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
                 className={cn(
                   'relative flex-1 flex items-center justify-center',
                   'py-2 rounded-lg',
+                  // ≥44px touch target on coarse pointers (desktop visual unchanged)
+                  '[@media(pointer:coarse)]:min-h-11',
                   'transition-all duration-150',
                   isActive
                     ? 'bg-white dark:bg-neutral-700 shadow-sm text-foreground'
@@ -139,6 +141,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
           onClick={() => handleTabChange('settings')}
           className={cn(
             'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg',
+            '[@media(pointer:coarse)]:min-h-11',
             'text-[13px] transition-colors duration-150',
             activeTab === 'settings'
               ? 'text-foreground font-medium bg-neutral-100 dark:bg-neutral-800'

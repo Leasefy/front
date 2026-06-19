@@ -9,12 +9,12 @@ import {
   Gear,
   Table,
   SquaresFour,
-  CaretLeft,
-  CaretRight,
   Plus,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Pagination } from '@/components/ui/pagination';
 import {
   useCobros,
   useCobroSummary,
@@ -94,8 +94,15 @@ function CobrosContent() {
   // Fetch config for reminder defaults
   const { config: inmobiliariaConfig, isLoading: configLoading } = useInmobiliariaConfig();
 
-  // State for view mode
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  // State for view mode.
+  // `null` = no explicit user choice → default from viewport (cards under md).
+  // useIsMobile is false on SSR + first client render and only flips after
+  // mount, so the server and client first paint agree ('table') and the
+  // mobile default applies post-hydration without a mismatch.
+  const isMobile = useIsMobile();
+  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
+  const viewMode: ViewMode = viewModeOverride ?? (isMobile ? 'cards' : 'table');
+  const setViewMode = setViewModeOverride;
 
   // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -489,51 +496,15 @@ function CobrosContent() {
           )}
         </div>
 
-        {/* Pagination Footer */}
+        {/* Pagination Footer — windowed (1 … 4 5 6 … 12) via ui/pagination */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={cn(
-                'p-2 rounded-md border border-border transition-all',
-                currentPage === 1
-                  ? 'text-muted-foreground/40 cursor-not-allowed'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <CaretLeft className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={cn(
-                    'w-8 h-8 rounded-md text-sm font-medium transition-all',
-                    page === currentPage
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:bg-muted'
-                  )}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className={cn(
-                'p-2 rounded-md border border-border transition-all',
-                currentPage === totalPages
-                  ? 'text-muted-foreground/40 cursor-not-allowed'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <CaretRight className="w-4 h-4" />
-            </button>
+          <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              siblingCount={1}
+            />
           </div>
         )}
       </motion.div>

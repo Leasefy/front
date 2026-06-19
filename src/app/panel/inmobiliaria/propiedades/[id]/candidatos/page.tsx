@@ -162,6 +162,13 @@ function ActionModal({
 
 // ─── Row actions ──────────────────────────────────────────────────────────────
 
+// Touch-only (pointer: coarse) hit-area expansion to >=44px for the
+// approve/reject action chips. The visual chip stays 26px tall; an invisible
+// ::after pseudo-element extends the tap target. Desktop (fine pointer) is
+// untouched.
+const COARSE_HIT_AREA =
+  "relative [@media(pointer:coarse)]:after:absolute [@media(pointer:coarse)]:after:-inset-y-2.5 [@media(pointer:coarse)]:after:-inset-x-0.5 [@media(pointer:coarse)]:after:content-['']";
+
 function CandidateActions({
   candidate,
   existingContract,
@@ -178,19 +185,19 @@ function CandidateActions({
       <div className="flex items-center gap-1 flex-wrap">
         <button
           onClick={() => onAction('preapprove', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors whitespace-nowrap')}
         >
           Pre-aprobar
         </button>
         <button
           onClick={() => onAction('request-info', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors whitespace-nowrap')}
         >
           Pedir info
         </button>
         <button
           onClick={() => onAction('reject', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap')}
         >
           Rechazar
         </button>
@@ -203,13 +210,13 @@ function CandidateActions({
       <div className="flex items-center gap-1">
         <button
           onClick={() => onAction('approve', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors whitespace-nowrap')}
         >
           Aprobar
         </button>
         <button
           onClick={() => onAction('reject', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap')}
         >
           Rechazar
         </button>
@@ -224,7 +231,7 @@ function CandidateActions({
       return (
         <Link
           href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-neutral-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs font-semibold transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-neutral-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs font-semibold transition-colors whitespace-nowrap')}
         >
           Ver contrato
           <ArrowUpRight className="w-3 h-3" />
@@ -234,7 +241,7 @@ function CandidateActions({
     return (
       <Link
         href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors whitespace-nowrap"
+        className={cn(COARSE_HIT_AREA, 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors whitespace-nowrap')}
       >
         Crear contrato
         <ArrowUpRight className="w-3 h-3" />
@@ -376,7 +383,7 @@ function CandidatosContent() {
 
       {/* Stats */}
       {candidates.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
             <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{activeCount}</p>
             <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">En revisión</p>
@@ -405,8 +412,8 @@ function CandidatosContent() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[580px]">
+          <div className="overflow-x-auto overscroll-contain">
+            <table className="w-full min-w-[580px] [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-card">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">

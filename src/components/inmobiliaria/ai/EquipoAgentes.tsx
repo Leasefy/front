@@ -23,6 +23,7 @@ import {
   FileText,
   GitMerge,
   Robot,
+  Scales,
   ShieldCheck,
   Tray,
   UsersThree,
@@ -30,15 +31,19 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import type { AiHubResumenResponse } from '@/lib/api/agent-workspace'
-import type { AgenteId, OwnerRole } from '@/lib/api/work-item'
-import { relativeTime } from './ColaHumana'
+import type { AgenteId } from '@/lib/api/work-item'
+import { useI18n } from '@/lib/i18n'
+import { relativeTime, workspaceVocab, type TranslateFn } from './ColaHumana'
+
+const NS = 'inmobiliaria.ai.workspace.equipo'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
 /**
  * Canonical per-agent icons — same mapping the workspace salas + nav use
  * (conciliación=Bank, estudio=ShieldCheck, matching=GitMerge,
- * pagos=CurrencyDollar, cobranza=ChatCircleText, cotizador=FileText).
+ * pagos=CurrencyDollar, cobranza=ChatCircleText, cotizador=FileText,
+ * avalúos=Scales — the same icon the onboarding uses for the avalúos service).
  * Finite icon maps crash when a key is missing — ALWAYS fall back to Robot.
  */
 const AGENT_ICON: Record<AgenteId, Icon> = {
@@ -48,22 +53,17 @@ const AGENT_ICON: Record<AgenteId, Icon> = {
   pagos: CurrencyDollar,
   estudio: ShieldCheck,
   matching: GitMerge,
+  avaluos: Scales,
 }
 
-const AGENT_NOMBRE: Record<AgenteId, string> = {
-  cobranza: 'Cobranza',
-  cotizador: 'Cotizador',
-  conciliacion: 'Conciliación',
-  pagos: 'Pagos (AP)',
-  estudio: 'Estudio del inquilino',
-  matching: 'Matching',
+/** Agent display name (inmobiliaria.ai.workspace.agente.*; raw-id fallback). */
+function agenteNombre(t: TranslateFn, agente: string): string {
+  return workspaceVocab(t, 'agente', agente)
 }
 
-const ROL_LABEL: Record<OwnerRole, string> = {
-  cobrador: 'Cobrador',
-  analista_riesgo: 'Analista de riesgo',
-  contador: 'Contador',
-  comercial: 'Comercial',
+/** Owner-role group label (inmobiliaria.ai.workspace.rol.*; raw fallback). */
+function rolLabel(t: TranslateFn, rol: string): string {
+  return workspaceVocab(t, 'rol', rol)
 }
 
 const AI_BASE = '/panel/inmobiliaria/ai'
@@ -102,8 +102,9 @@ function AgenteCard({
   enCola: number
   disponible: boolean
 }) {
+  const { t } = useI18n()
   const AgentIcon = AGENT_ICON[agente] ?? Robot
-  const nombre = AGENT_NOMBRE[agente] ?? agente
+  const nombre = agenteNombre(t, agente)
 
   return (
     <div
@@ -130,10 +131,10 @@ function AgenteCard({
           <span
             className="inline-flex items-baseline gap-1.5 shrink-0"
             data-testid="equipo-sin-datos"
-            title="El agente aún no reporta su conteo"
+            title={t(`${NS}.sinDatosTitle`)}
           >
             <span className="text-[11px] font-mono text-muted-foreground">—</span>
-            <span className="text-[10px] text-muted-foreground">sin datos</span>
+            <span className="text-[10px] text-muted-foreground">{t(`${NS}.sinDatos`)}</span>
           </span>
         )}
       </div>
@@ -144,14 +145,14 @@ function AgenteCard({
           className="flex-1 text-center text-[11px] font-mono uppercase tracking-wide px-2 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
           data-testid={`equipo-sala-${agente}`}
         >
-          Sala
+          {t(`${NS}.sala`)}
         </Link>
         <Link
           href={colaHref(agente)}
           className="flex-1 text-center text-[11px] font-mono uppercase tracking-wide px-2 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
           data-testid={`equipo-cola-${agente}`}
         >
-          Cola
+          {t(`${NS}.cola`)}
         </Link>
       </div>
     </div>
@@ -161,6 +162,7 @@ function AgenteCard({
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAgentesProps) {
+  const { t } = useI18n()
   if (isLoading) {
     return (
       <div className="space-y-4" data-testid="equipo-agentes-loading">
@@ -180,7 +182,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
         className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
         data-testid="equipo-agentes-error"
       >
-        No se pudo cargar el equipo de agentes: {error}
+        {t(`${NS}.error`, { error })}
       </div>
     )
   }
@@ -193,10 +195,8 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
         data-testid="equipo-agentes-empty"
       >
         <UsersThree className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">El equipo aún no reporta sus colas</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Este panel se activa cuando el backend del hub publique el resumen por rol.
-        </p>
+        <p className="text-sm font-medium text-foreground">{t(`${NS}.emptyTitle`)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.emptyBody`)}</p>
       </div>
     )
   }
@@ -207,11 +207,11 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm text-foreground">
           <span className="font-semibold tabular-nums" data-testid="equipo-total">
-            En cola ahora: {numberFormatter.format(data.totalEnCola)}
+            {t(`${NS}.enColaAhora`, { n: numberFormatter.format(data.totalEnCola) })}
           </span>
         </p>
         <p className="text-[11px] text-muted-foreground tabular-nums">
-          Actualizado {relativeTime(data.generatedAt)}
+          {t(`${NS}.actualizado`, { tiempo: relativeTime(data.generatedAt, t) })}
         </p>
       </div>
 
@@ -220,10 +220,10 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
         <div key={cola.rol} className="space-y-2" data-testid={`equipo-rol-${cola.rol}`}>
           <div className="flex items-baseline gap-2">
             <h3 className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
-              {cola.label || ROL_LABEL[cola.rol] || cola.rol}
+              {cola.label || rolLabel(t, cola.rol)}
             </h3>
             <span className="text-[11px] text-muted-foreground tabular-nums">
-              · {numberFormatter.format(cola.total)} en cola
+              {t(`${NS}.enColaCount`, { n: numberFormatter.format(cola.total) })}
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

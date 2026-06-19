@@ -37,6 +37,7 @@ import {
   Siren,
   GitMerge,
   ArrowsClockwise,
+  Scales,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -96,7 +97,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
   // `roles` is an optional role-based gate (in addition to module-based gating).
-  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[] };
+  // `adminOnly` is a stricter gate: only super-admins see the item (no role list).
+  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[]; adminOnly?: boolean };
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ── PRINCIPAL ──
@@ -210,6 +212,31 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       ],
     } as NavItemWithModule,
     {
+      // Avalúos (7º agente): standalone service proxied by the agent backend;
+      // read-only tracking workspace (la inmobiliaria solicita y consulta —
+      // la firma del certificado la gestiona el avaluador Portofino/Leasefy).
+      // Gated by the agent module 'avaluos' with the ABSENT-module = ALLOWED
+      // fallback (see agent-module-access.ts) so either repo merges first.
+      label: t('inmobiliaria.ai.nav.avaluos'),
+      href: '/panel/inmobiliaria/ai/avaluos',
+      icon: Scales,
+      module: 'avaluos',
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.avaluosCola'),
+          href: '/panel/inmobiliaria/ai/avaluos/cola',
+          icon: ClipboardText,
+          module: 'avaluos',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.avaluosConfiguracion'),
+          href: '/panel/inmobiliaria/ai/avaluos/configuracion',
+          icon: SlidersHorizontal,
+          module: 'avaluos',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
+    {
       // F6: Conciliación is the first complete agent workspace — the parent
       // now points at the Sala (/ai/conciliacion); the legacy /conciliacion
       // movimientos page stays reachable from the Sala's domain slot.
@@ -253,63 +280,65 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       ],
     } as NavItemWithModule,
     {
-      // F7: Estudio del inquilino complete workspace. The F2 page shipped
-      // URL-only without module/role gates — that ungated posture is
-      // preserved here (backend scopes by agency membership; decisions are
-      // audit-first per T-323).
+      // F7: Estudio del inquilino complete workspace. Gated by the agent
+      // module 'estudio' (my-permissions payload, agent-repo pair PR) with
+      // an ABSENT-module = ALLOWED fallback (see agent-module-access.ts) so
+      // either repo can merge first; backend still scopes by membership and
+      // decisions are audit-first per T-323.
       label: t('inmobiliaria.ai.nav.estudio'),
       href: '/panel/inmobiliaria/ai/estudio',
       icon: ShieldCheck,
-      module: null,
+      module: 'estudio',
       children: [
         {
           label: t('inmobiliaria.ai.nav.estudioCola'),
           href: '/panel/inmobiliaria/ai/estudio/cola',
           icon: ClipboardText,
-          module: null,
+          module: 'estudio',
         } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.nav.estudioConfiguracion'),
           href: '/panel/inmobiliaria/ai/estudio/configuracion',
           icon: SlidersHorizontal,
-          module: null,
+          module: 'estudio',
         } as NavItemWithModule,
         {
-          // F10: per-agent analítica (superficie 6) — ungated like the rest of estudio.
+          // F10: per-agent analítica (superficie 6) — same gate as the rest of estudio.
           label: t('inmobiliaria.ai.nav.estudioAnalitica'),
           href: '/panel/inmobiliaria/ai/estudio/analitica',
           icon: ChartLineUp,
-          module: null,
+          module: 'estudio',
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
     {
-      // F8: Matching complete workspace. The F3 page shipped URL-only without
-      // module/role gates — that ungated posture is preserved here (backend
-      // scopes by agency membership; outreach only with approval).
+      // F8: Matching complete workspace. Gated by the agent module 'matching'
+      // with the same ABSENT-module = ALLOWED fallback as estudio (see
+      // agent-module-access.ts); backend scopes by agency membership and
+      // outreach happens only with approval.
       label: t('inmobiliaria.ai.nav.matching'),
       href: '/panel/inmobiliaria/ai/matching',
       icon: GitMerge,
-      module: null,
+      module: 'matching',
       children: [
         {
           label: t('inmobiliaria.ai.nav.matchingCola'),
           href: '/panel/inmobiliaria/ai/matching/cola',
           icon: ClipboardText,
-          module: null,
+          module: 'matching',
         } as NavItemWithModule,
         {
           label: t('inmobiliaria.ai.nav.matchingConfiguracion'),
           href: '/panel/inmobiliaria/ai/matching/configuracion',
           icon: SlidersHorizontal,
-          module: null,
+          module: 'matching',
         } as NavItemWithModule,
         {
-          // F10: per-agent analítica (superficie 6) — ungated like the rest of matching.
+          // F10: per-agent analítica (superficie 6) — same gate as the rest of matching.
           label: t('inmobiliaria.ai.nav.matchingAnalitica'),
           href: '/panel/inmobiliaria/ai/matching/analitica',
           icon: ChartLineUp,
-          module: null,
+          module: 'matching',
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
@@ -415,7 +444,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       const next = filtered[idx + 1];
       return next != null && next.kind !== 'section';
     });
-  }, [ALL_NAV_ITEMS, canAccess, isAdmin, agencyRole]);
+  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin, permissionsLoading]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -439,7 +468,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Main content area */}
       <div
         className={cn(
-          'transition-all duration-200 pb-20 md:pb-0',
+          // pb-20 reserves space for the mobile bottom nav, which is visible
+          // below lg (same breakpoint where the desktop sidebar appears).
+          'transition-all duration-200 pb-20 lg:pb-0',
           isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
         )}
       >
@@ -448,7 +479,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         <main id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
-      {/* Mobile bottom navigation — hidden at md+ breakpoints */}
+      {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
       <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
       {/* Toast notifications - Premium style */}

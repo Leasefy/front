@@ -12,11 +12,13 @@ import {
 import { apiClient, getAccessToken } from '@/lib/api/client';
 import type { MemberPermissionsResponse } from '@/lib/api/inmobiliaria.service';
 import { useAuth } from '@/lib/auth';
+import {
+  isAgentModule,
+  resolveAgentModuleAccess,
+  type AgentModulePermissions,
+} from '@/lib/auth/agent-module-access';
 
-interface AgentPermissions {
-  cobranza: string[];
-  cotizador: string[];
-}
+type AgentPermissions = AgentModulePermissions;
 
 interface PermissionsContextValue {
   permissions: MemberPermissionsResponse | null;
@@ -117,8 +119,11 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const canAccess = useCallback(
     (module: string, action: string): boolean => {
       if (isLoading) return false;
-      if (module === 'cobranza' || module === 'cotizador') {
-        return agentPerms?.[module]?.includes(action) ?? false;
+      if (isAgentModule(module)) {
+        // Posture per module lives in agent-module-access.ts:
+        // cobranza/cotizador fail CLOSED; estudio/matching treat an ABSENT
+        // payload key as ALLOWED (mergeable in any order with the agent PR).
+        return resolveAgentModuleAccess(agentPerms, module, action);
       }
       if (!permissions) return false;
       if (permissions.isAdmin) return true;

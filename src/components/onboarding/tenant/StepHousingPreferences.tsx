@@ -101,6 +101,9 @@ export function StepHousingPreferences() {
               </div>
               <input
                 type="text"
+                inputMode="numeric"
+                id="budgetMin"
+                aria-label="Presupuesto mínimo mensual"
                 value={draft.budgetMin ? formatCurrency(draft.budgetMin).replace('COP', '').trim() : ''}
                 onChange={handleBudgetMinChange}
                 placeholder="Mínimo"
@@ -121,6 +124,9 @@ export function StepHousingPreferences() {
               </div>
               <input
                 type="text"
+                inputMode="numeric"
+                id="budgetMax"
+                aria-label="Presupuesto máximo mensual"
                 value={draft.budgetMax ? formatCurrency(draft.budgetMax).replace('COP', '').trim() : ''}
                 onChange={handleBudgetMaxChange}
                 placeholder="Máximo"

@@ -31,15 +31,19 @@ import type { Icon } from '@phosphor-icons/react'
 
 import type { WorkItemAction, WorkItemEstado } from '@/lib/api/work-item'
 import type { WorkItemDetailResponse } from '@/lib/api/agent-workspace'
+import { useI18n } from '@/lib/i18n'
 import { AccionSugerida } from './AccionSugerida'
 import { TrazaCaso } from './TrazaCaso'
 import {
-  ESTADO_LABEL,
   FLAG_META,
-  SEVERIDAD_LABEL,
   SEVERIDAD_TOKEN,
+  estadoLabel,
+  flagLabel,
   relativeTime,
+  severidadLabel,
 } from './ColaHumana'
+
+const NS = 'inmobiliaria.ai.workspace.detalle'
 
 /**
  * Estados where the human can still act. Everything else
@@ -96,6 +100,7 @@ export function WorkItemDetalle({
   onAction,
   crossLink,
 }: WorkItemDetalleProps) {
+  const { t } = useI18n()
   // Finite icon maps crash when a key is missing — ALWAYS fall back here.
   const BreadcrumbIcon = icon ?? Robot
 
@@ -136,7 +141,7 @@ export function WorkItemDetalle({
           className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
           data-testid="caso-error"
         >
-          No se pudo cargar el caso: {error}
+          {t(`${NS}.error`, { error })}
         </div>
       </div>
     )
@@ -156,15 +161,13 @@ export function WorkItemDetalle({
             weight="duotone"
             aria-hidden="true"
           />
-          <p className="text-sm font-medium text-foreground">Caso no encontrado</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Puede que ya se haya resuelto o que el enlace no sea válido.
-          </p>
+          <p className="text-sm font-medium text-foreground">{t(`${NS}.notFoundTitle`)}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.notFoundBody`)}</p>
           <Link
             href={colaHref}
             className="inline-flex items-center gap-1 mt-3 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
           >
-            Volver a la cola
+            {t(`${NS}.volverACola`)}
           </Link>
         </div>
       </div>
@@ -186,10 +189,10 @@ export function WorkItemDetalle({
           <span
             className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
           >
-            {SEVERIDAD_LABEL[item.severidad]}
+            {severidadLabel(t, item.severidad)}
           </span>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
-            {ESTADO_LABEL[item.estado]}
+            {estadoLabel(t, item.estado)}
           </span>
           {item.flags.map((flag) => {
             // Unknown flags are silently skipped (finite-map fallback).
@@ -202,13 +205,13 @@ export function WorkItemDetalle({
                 className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ring-1 ${meta.cls}`}
               >
                 <FlagIcon className="w-3 h-3" aria-hidden="true" />
-                {meta.label}
+                {flagLabel(t, flag)}
               </span>
             )
           })}
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
             <Clock className="w-3 h-3" aria-hidden="true" />
-            {relativeTime(item.createdAt)}
+            {relativeTime(item.createdAt, t)}
           </span>
         </div>
       </header>
@@ -223,7 +226,7 @@ export function WorkItemDetalle({
               data-testid="caso-decision"
             >
               <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
-                Decisión
+                {t(`${NS}.decision`)}
               </p>
               <div className="flex items-center gap-2">
                 {item.estado === 'rechazado' || item.estado === 'fallo' ? (
@@ -238,13 +241,15 @@ export function WorkItemDetalle({
                     item.estado === 'fallo' ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'
                   }`}
                 >
-                  {ESTADO_LABEL[item.estado] ?? item.estado}
+                  {estadoLabel(t, item.estado)}
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
                 {[
-                  item.decidedBy ? `Por ${item.decidedBy}` : 'Decisión registrada',
-                  item.decidedAt ? relativeTime(item.decidedAt) : '',
+                  item.decidedBy
+                    ? t(`${NS}.decididoPor`, { nombre: item.decidedBy })
+                    : t(`${NS}.decisionRegistrada`),
+                  item.decidedAt ? relativeTime(item.decidedAt, t) : '',
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -303,7 +308,7 @@ export function WorkItemDetalle({
 
         {/* Traza */}
         <aside className="lg:col-span-2 space-y-2">
-          <h2 className="text-sm font-semibold text-foreground">Traza del caso</h2>
+          <h2 className="text-sm font-semibold text-foreground">{t(`${NS}.trazaTitle`)}</h2>
           <TrazaCaso entries={traza} />
         </aside>
       </div>

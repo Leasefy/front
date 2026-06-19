@@ -8,7 +8,8 @@
  * it generically via `<ColaHumana>` and posts back to `WorkItemAction.path`.
  */
 
-/** The 6 agents that own a workspace (roster closed 2026-06-08). */
+/** The 7 agents that own a workspace (roster closed 2026-06-08; avalúos added
+ *  2026-06-10 — standalone service proxied by the agent, read-only tracking). */
 export type AgenteId =
   | 'cobranza'
   | 'cotizador'
@@ -16,6 +17,7 @@ export type AgenteId =
   | 'pagos'
   | 'estudio'
   | 'matching'
+  | 'avaluos'
 
 /** Who despatches the queue — the hub shows one cola per role. */
 export type OwnerRole = 'cobrador' | 'analista_riesgo' | 'contador' | 'comercial'

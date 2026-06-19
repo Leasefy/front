@@ -21,7 +21,10 @@ import type {
   AccionSugerida as AccionSugeridaModel,
   WorkItemAction,
 } from '@/lib/api/work-item'
+import { useI18n } from '@/lib/i18n'
 import { ACTION_KIND_CLS } from './ColaHumana'
+
+const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
 export interface AccionSugeridaProps {
   accion: AccionSugeridaModel
@@ -35,6 +38,7 @@ export interface AccionSugeridaProps {
 }
 
 export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSugeridaProps) {
+  const { t } = useI18n()
   const [reasonForActionId, setReasonForActionId] = useState<string | null>(null)
   const [reasonText, setReasonText] = useState('')
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
@@ -44,11 +48,11 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
     const res = await onAction(action, body)
     setBusyActionId(null)
     if (res.ok) {
-      toast.success(`${action.label} · listo`)
+      toast.success(t(`${WORKSPACE_NS}.acciones.toastOk`, { label: action.label }))
       setReasonForActionId(null)
       setReasonText('')
     } else {
-      toast.error(`No se pudo: ${res.error ?? 'error'}`)
+      toast.error(t(`${WORKSPACE_NS}.acciones.toastFail`, { error: res.error ?? 'error' }))
     }
   }
 
@@ -71,7 +75,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
       {/* Eyebrow */}
       <p className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
         <Sparkle className="w-3.5 h-3.5" weight="duotone" aria-hidden="true" />
-        El agente propone
+        {t(`${WORKSPACE_NS}.accionSugerida.eyebrow`)}
       </p>
 
       {/* Suggestion */}
@@ -80,7 +84,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
           <p className="text-sm font-semibold text-foreground">{accion.label}</p>
           {typeof accion.confianza === 'number' && (
             <span className="text-[11px] font-mono text-muted-foreground tabular-nums shrink-0">
-              {Math.round(accion.confianza * 100)}% conf.
+              {t(`${WORKSPACE_NS}.acciones.confianza`, { pct: Math.round(accion.confianza * 100) })}
             </span>
           )}
         </div>
@@ -101,7 +105,9 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
       {pendingReasonAction && (
         <div className="space-y-1.5 rounded-lg border border-border p-2">
           <label className="text-[11px] text-muted-foreground" htmlFor="accion-sugerida-reason">
-            Motivo para {pendingReasonAction.label.toLowerCase()}
+            {t(`${WORKSPACE_NS}.acciones.motivoPara`, {
+              accion: pendingReasonAction.label.toLowerCase(),
+            })}
           </label>
           <textarea
             id="accion-sugerida-reason"
@@ -109,7 +115,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
             onChange={(e) => setReasonText(e.target.value)}
             rows={2}
             className="w-full text-xs rounded-md border border-border bg-background px-2 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-            placeholder="Escribe el motivo…"
+            placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
           />
           <div className="flex items-center gap-2">
             <button
@@ -123,7 +129,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
-              Confirmar
+              {t(`${WORKSPACE_NS}.acciones.confirmar`)}
             </button>
             <button
               type="button"
@@ -133,7 +139,7 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               }}
               className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
             >
-              Cancelar
+              {t(`${WORKSPACE_NS}.acciones.cancelar`)}
             </button>
           </div>
         </div>

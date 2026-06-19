@@ -21,7 +21,10 @@
 import { ChartBar, Robot } from '@phosphor-icons/react'
 
 import type { AgentAnaliticaResponse, AnaliticaSerie } from '@/lib/api/agent-workspace'
+import { useI18n } from '@/lib/i18n'
 import { formatKpiValue } from './SalaAgente'
+
+const NS = 'inmobiliaria.ai.workspace.analitica'
 
 // ── Props ───────────────────────────────────────────────────────────────────
 
@@ -50,6 +53,7 @@ function formatDay(date: string): string {
 // ── Serie block ─────────────────────────────────────────────────────────────
 
 function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
+  const { t } = useI18n()
   const max = serie.points.reduce((acc, p) => Math.max(acc, p.value), 0)
 
   return (
@@ -61,13 +65,17 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
 
       {max === 0 ? (
         <p className="text-xs text-muted-foreground" data-testid="analitica-serie-empty">
-          Sin actividad en 30 días.
+          {t(`${NS}.serieEmpty`)}
         </p>
       ) : (
         <div
           className="flex items-end gap-[2px] h-24 w-full"
           role="img"
-          aria-label={`${serie.label}: ${serie.points.length} días, máximo ${formatKpiValue(max, serie.format)}`}
+          aria-label={t(`${NS}.serieAria`, {
+            label: serie.label,
+            dias: serie.points.length,
+            max: formatKpiValue(max, serie.format),
+          })}
         >
           {serie.points.map((point) => (
             <div
@@ -97,6 +105,7 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function AnaliticaAgente({ data, isLoading, error, notAvailable }: AnaliticaAgenteProps) {
+  const { t } = useI18n()
   if (isLoading) {
     return (
       <div className="space-y-4" data-testid="analitica-loading">
@@ -117,7 +126,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
         className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
         data-testid="analitica-error"
       >
-        No se pudo cargar la analítica: {error}
+        {t(`${NS}.error`, { error })}
       </div>
     )
   }
@@ -130,10 +139,8 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
         data-testid="analitica-empty"
       >
         <Robot className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">El agente aún no reporta analítica</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Este panel se activa cuando el agente publique sus métricas históricas.
-        </p>
+        <p className="text-sm font-medium text-foreground">{t(`${NS}.emptyTitle`)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{t(`${NS}.emptyBody`)}</p>
       </div>
     )
   }
@@ -162,7 +169,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
       {data.series.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
           <ChartBar className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-          <p className="text-sm text-muted-foreground">Sin series para mostrar.</p>
+          <p className="text-sm text-muted-foreground">{t(`${NS}.sinSeries`)}</p>
         </div>
       ) : (
         data.series.map((serie) => <SerieBlock key={serie.id} serie={serie} />)

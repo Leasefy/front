@@ -13,16 +13,24 @@ import type {
   PendingDecision,
   ResponseMeta,
   BetaPreferences,
+  ActionProposal,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { getTodayBriefing, getMockBriefings } from '@/lib/data/mock-briefings';
+import { getMockResponse, getMockResponseMeta } from '@/lib/data/mock-chat-responses';
 import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
 import { useAuth } from '@/lib/auth/use-auth';
 import {
   postChatTurn,
+  streamChatTurn,
+  fetchBriefing,
+  isAgentConfigured,
   suggestedActionToResponseAction,
   backendAgentToFrontType,
+  executeAction,
   type BackendDispatch,
+  type BackendSuggestedAction,
+  type BackendActionProposal,
 } from '@/lib/api/ai-hub-chat';
 
 // ============================================================================
@@ -235,6 +243,10 @@ export interface UseBetaChatReturn {
   preferences: BetaPreferences;
   updatePreferences: (partial: Partial<BetaPreferences>) => void;
   resetPreferences: () => void;
+
+  // Action proposals (F5 — human-in-the-loop confirmations)
+  confirmActionProposal: (messageId: string, workItemId: string, reason?: string) => Promise<void>;
+  discardActionProposal: (messageId: string, workItemId: string) => void;
 }
 
 // ============================================================================
@@ -278,10 +290,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Briefing state
-  const [currentBriefing] = useState<DailyBriefing | null>(() => getTodayBriefing());
+  // Briefing state. Starts on the mock briefing (the SOLE mock fallback seam,
+  // together with the no-backend chat reply below) and is replaced by the real
+  // GET /ai-hub/briefing payload when the backend answers (effect further down).
+  const [currentBriefing, setCurrentBriefing] = useState<DailyBriefing | null>(
+    () => getTodayBriefing()
+  );
   const [hasNewBriefing, setHasNewBriefing] = useState(true);
-  const [briefings] = useState<DailyBriefing[]>(() => getMockBriefings());
+  const [briefings, setBriefings] = useState<DailyBriefing[]>(() => getMockBriefings());
   const [selectedBriefingId, setSelectedBriefingId] = useState<string | null>(null);
 
   // Preferences state
@@ -317,6 +333,25 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   useEffect(() => {
     saveToStorage(conversations);
   }, [conversations]);
+
+  // Real daily briefing (F4): fetch GET /ai-hub/briefing once the agency is
+  // known. fetchBriefing never throws and resolves `null` on 404/error/unusable
+  // payload — in that case we keep the mock briefing already in state, so the
+  // chat home works with or without the backend (fail-open).
+  useEffect(() => {
+    if (!agencyId || !isAgentConfigured()) return;
+    const controller = new AbortController();
+    void fetchBriefing({ agencyId, signal: controller.signal }).then((real) => {
+      if (!real || controller.signal.aborted) return;
+      setCurrentBriefing(real);
+      // Once real data exists, showing mock "history" next to it would be
+      // dishonest — the history list becomes just today's real briefing.
+      setBriefings([real]);
+      setSelectedBriefingId(null);
+      setHasNewBriefing(true);
+    });
+    return () => controller.abort();
+  }, [agencyId]);
 
   // Active conversation messages
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
@@ -638,8 +673,260 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   // ========================================================================
-  // Send message — real AI chat backend (F2). One-shot POST; the typewriter
-  // (startStreaming) gives the streaming feel. SSE streaming is a follow-up (F2c).
+  // Finish a turn — shared by the SSE path and the one-shot POST fallback.
+  // When the SSE path already animated dispatches live, `liveBlock` carries
+  // that block so we settle it instead of re-simulating with driveAgentBlock.
+  // ========================================================================
+
+  const finishTurn = useCallback(
+    (
+      resp: {
+        responseText: string;
+        suggestedActions: BackendSuggestedAction[];
+        dispatches: BackendDispatch[];
+      },
+      assistantId: string,
+      conversationId: string,
+      liveBlock: AgentActivityBlock | null
+    ) => {
+      const actions = resp.suggestedActions.map(suggestedActionToResponseAction);
+      const summaries = resp.dispatches
+        .map((d) => d.summary)
+        .filter((s): s is string => Boolean(s));
+      const fullText = [resp.responseText, ...summaries].filter(Boolean).join('\n\n');
+      const responseMeta: ResponseMeta = {
+        type: 'informative',
+        title: 'Asistente Leasefy',
+        summary: '',
+        actions,
+        ...(resp.dispatches[0]
+          ? { primaryAgent: backendAgentToFrontType(resp.dispatches[0].agent) }
+          : {}),
+      };
+      pendingResponseMetaRef.current = responseMeta;
+
+      if (liveBlock && liveBlock.agents.length > 0) {
+        // The stream already showed the dispatches live — settle any straggler
+        // still "running", attach the block to the message, then stream the text.
+        const terminal: AgentExecution[] = liveBlock.agents.map((a) =>
+          a.status === 'running'
+            ? {
+                ...a,
+                status: 'completed' as AgentExecutionStatus,
+                completedAt: new Date(),
+              }
+            : a
+        );
+        const completedBlock: AgentActivityBlock = { ...liveBlock, agents: terminal };
+        setActiveAgentBlock(completedBlock);
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id !== conversationId
+              ? c
+              : {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, agentActivity: completedBlock, responseMeta }
+                      : m
+                  ),
+                }
+          )
+        );
+        setIsAgentsRunning(false);
+        const toStream = setTimeout(() => {
+          setActiveAgentBlock(null);
+          startStreaming(assistantId, fullText, conversationId);
+        }, 400);
+        agentTimeoutsRef.current.push(toStream);
+      } else if (resp.dispatches.length > 0) {
+        driveAgentBlock(resp.dispatches, assistantId, fullText, conversationId, responseMeta);
+      } else {
+        attachResponseMeta(assistantId, conversationId, responseMeta);
+        setIsThinking(false);
+        startStreaming(assistantId, fullText, conversationId);
+      }
+    },
+    [startStreaming, driveAgentBlock, attachResponseMeta]
+  );
+
+  // ========================================================================
+  // F2c — streaming turn over SSE. Drives the agent-activity block LIVE from
+  // dispatch_start/dispatch_result events while the stream is open, then
+  // resolves with the final response pieces (from `done`, falling back to the
+  // accumulated `message` event). Throws when the stream fails or yields
+  // nothing usable — the caller falls back to the one-shot POST.
+  // ========================================================================
+
+  const runStreamTurn = useCallback(
+    async (args: {
+      agencyId: string;
+      message: string;
+      history: { role: 'user' | 'assistant'; content: string }[];
+      assistantId: string;
+      conversationId: string;
+    }): Promise<{
+      responseText: string;
+      suggestedActions: BackendSuggestedAction[];
+      dispatches: BackendDispatch[];
+      liveBlock: AgentActivityBlock | null;
+    }> => {
+      const startedAt = new Date();
+      let liveBlock: AgentActivityBlock | null = null;
+      let messageText = '';
+      let messageActions: BackendSuggestedAction[] = [];
+      const resultDispatches: BackendDispatch[] = [];
+      // Object holder (not bare `let`s): assignments happen inside the stream
+      // callbacks, where TS control-flow narrowing would otherwise pin the
+      // outer reads to the initializer type.
+      const collected: {
+        final: {
+          responseText: string;
+          suggestedActions: BackendSuggestedAction[];
+          dispatches: BackendDispatch[];
+        } | null;
+        streamError: string | null;
+      } = { final: null, streamError: null };
+
+      await streamChatTurn({
+        agencyId: args.agencyId,
+        message: args.message,
+        history: args.history,
+        handlers: {
+          onMessage: (text, actions) => {
+            messageText = text;
+            messageActions = actions;
+          },
+          onDispatchStart: (agent, taskDescription) => {
+            const exec: AgentExecution = {
+              id: generateId(),
+              agentType: backendAgentToFrontType(agent),
+              taskDescription,
+              status: 'running' as AgentExecutionStatus,
+              startedAt: new Date(),
+            };
+            liveBlock = liveBlock
+              ? { ...liveBlock, agents: [...liveBlock.agents, exec] }
+              : {
+                  id: generateId(),
+                  messageId: args.assistantId,
+                  agents: [exec],
+                  startedAt,
+                };
+            setIsThinking(false);
+            setIsAgentsRunning(true);
+            setActiveAgentBlock(liveBlock);
+          },
+          onDispatchResult: (dispatch) => {
+            resultDispatches.push(dispatch);
+            if (!liveBlock) return;
+            const agentType = backendAgentToFrontType(dispatch.agent);
+            let settled = false;
+            const agents = liveBlock.agents.map((a) => {
+              if (settled || a.status !== 'running' || a.agentType !== agentType) {
+                return a;
+              }
+              settled = true;
+              return {
+                ...a,
+                status: (dispatch.status === 'failed'
+                  ? 'failed'
+                  : 'completed') as AgentExecutionStatus,
+                completedAt: new Date(),
+                ...(dispatch.status === 'failed' ? { error: dispatch.summary } : {}),
+              };
+            });
+            liveBlock = { ...liveBlock, agents };
+            setActiveAgentBlock(liveBlock);
+          },
+          // F5: action_proposal events — append to the assistant message (D-42-03 fail-open).
+          onActionProposal: (proposal: BackendActionProposal) => {
+            try {
+              const frontProposal: ActionProposal = {
+                workItemId: proposal.workItemId,
+                colaType: proposal.colaType,
+                action: proposal.action,
+                resumen: proposal.resumen,
+                requiresConfirmation: true,
+                status: 'pending',
+              };
+              setConversations((prev) =>
+                prev.map((c) => {
+                  if (c.id !== args.conversationId) return c;
+                  return {
+                    ...c,
+                    messages: c.messages.map((m) => {
+                      if (m.id !== args.assistantId) return m;
+                      const existing = m.actionProposals ?? [];
+                      // Deduplicate by workItemId (stream may re-send).
+                      if (existing.some((p) => p.workItemId === proposal.workItemId)) return m;
+                      return { ...m, actionProposals: [...existing, frontProposal] };
+                    }),
+                  };
+                })
+              );
+            } catch {
+              // Fail-open: never crash the stream.
+              console.warn('[useBetaChat] failed to apply action_proposal, ignored');
+            }
+          },
+          onDone: (f) => {
+            collected.final = {
+              responseText: f.responseText,
+              suggestedActions: f.suggestedActions,
+              dispatches: f.dispatches,
+            };
+          },
+          onError: (message) => {
+            collected.streamError = message;
+          },
+        },
+      });
+
+      const { final, streamError } = collected;
+      if (streamError && !final) throw new Error(streamError);
+      const responseText = final?.responseText || messageText;
+      const dispatches =
+        final && final.dispatches.length > 0 ? final.dispatches : resultDispatches;
+      const suggestedActions =
+        final && final.suggestedActions.length > 0
+          ? final.suggestedActions
+          : messageActions;
+      if (!responseText && dispatches.length === 0) {
+        throw new Error('empty stream');
+      }
+      return { responseText, suggestedActions, dispatches, liveBlock };
+    },
+    []
+  );
+
+  // ========================================================================
+  // MOCK FALLBACK SEAM — the ONE mock path kept on purpose (dev posture).
+  // Reached only when there is no agency tenant yet (auth still resolving /
+  // outside the agency layout) or no NEXT_PUBLIC_AGENT_URL in the build
+  // (local dev without the agent service). Answers from the keyword mock so
+  // the chat home stays demoable; real-backend turns never reach this.
+  // ========================================================================
+
+  const runMockTurn = useCallback(
+    (text: string, assistantId: string, conversationId: string) => {
+      const responseText = getMockResponse(text);
+      const responseMeta = getMockResponseMeta(text);
+      pendingResponseMetaRef.current = responseMeta;
+      attachResponseMeta(assistantId, conversationId, responseMeta);
+      const thinkDelay = setTimeout(() => {
+        setIsThinking(false);
+        startStreaming(assistantId, responseText, conversationId);
+      }, 600);
+      agentTimeoutsRef.current.push(thinkDelay);
+    },
+    [attachResponseMeta, startStreaming]
+  );
+
+  // ========================================================================
+  // Send message — real AI chat backend, SSE-first (F2c):
+  //   stream → (on failure) one-shot POST → (on failure) honest error.
+  //   No backend configured / no agency → mock fallback seam.
   // ========================================================================
 
   const sendMessage = useCallback(
@@ -695,50 +982,40 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingDecisionRef.current = null;
       pendingResponseMetaRef.current = null;
 
-      if (!agencyId) {
-        finalizeError(
-          assistantId,
-          conversationId,
-          'No pude identificar tu inmobiliaria. Recargá la página e intentá de nuevo.'
-        );
+      // MOCK FALLBACK SEAM (see runMockTurn above).
+      if (!agencyId || !isAgentConfigured()) {
+        runMockTurn(trimmed, assistantId, conversationId);
         return;
       }
 
-      void postChatTurn({ agencyId, message: trimmed, history })
-        .then((resp) => {
-          const actions = resp.suggestedActions.map(suggestedActionToResponseAction);
-          const summaries = resp.dispatches
-            .map((d) => d.summary)
-            .filter((s): s is string => Boolean(s));
-          const fullText = [resp.responseText, ...summaries]
-            .filter(Boolean)
-            .join('\n\n');
-          const responseMeta: ResponseMeta = {
-            type: 'informative',
-            title: 'Asistente Leasefy',
-            summary: '',
-            actions,
-            ...(resp.dispatches[0]
-              ? { primaryAgent: backendAgentToFrontType(resp.dispatches[0].agent) }
-              : {}),
-          };
-          pendingResponseMetaRef.current = responseMeta;
-
-          if (resp.dispatches.length > 0) {
-            driveAgentBlock(resp.dispatches, assistantId, fullText, conversationId, responseMeta);
-          } else {
-            attachResponseMeta(assistantId, conversationId, responseMeta);
-            setIsThinking(false);
-            startStreaming(assistantId, fullText, conversationId);
-          }
-        })
-        .catch(() => {
-          finalizeError(
+      void (async () => {
+        try {
+          // F2c: SSE first — live dispatch indicators + lower perceived latency.
+          const streamed = await runStreamTurn({
+            agencyId,
+            message: trimmed,
+            history,
             assistantId,
             conversationId,
-            'No pude conectarme con el asistente en este momento. Intentá de nuevo en un momento.'
-          );
-        });
+          });
+          finishTurn(streamed, assistantId, conversationId, streamed.liveBlock);
+        } catch {
+          // Stream failed (route missing, proxy buffering, mid-stream drop) →
+          // clear any partial live UI and fall back to the one-shot POST.
+          setActiveAgentBlock(null);
+          setIsAgentsRunning(false);
+          try {
+            const resp = await postChatTurn({ agencyId, message: trimmed, history });
+            finishTurn(resp, assistantId, conversationId, null);
+          } catch {
+            finalizeError(
+              assistantId,
+              conversationId,
+              'No pude conectarme con el asistente en este momento. Intentá de nuevo en un momento.'
+            );
+          }
+        }
+      })();
     },
     [
       isThinking,
@@ -747,9 +1024,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       activeConversationId,
       conversations,
       agencyId,
-      startStreaming,
-      driveAgentBlock,
-      attachResponseMeta,
+      runMockTurn,
+      runStreamTurn,
+      finishTurn,
       finalizeError,
     ]
   );
@@ -896,6 +1173,84 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   // ========================================================================
+  // Action proposals (F5)
+  // ========================================================================
+
+  /**
+   * Execute a confirmed action proposal. Updates the proposal status to
+   * 'confirming' → 'executed' | 'error' in conversation state.
+   */
+  const confirmActionProposal = useCallback(
+    async (messageId: string, workItemId: string, reason?: string): Promise<void> => {
+      if (!agencyId) throw new Error('No agency');
+
+      // Mark as confirming
+      const updateStatus = (
+        status: ActionProposal['status'],
+        extra?: Partial<ActionProposal>
+      ) => {
+        setConversations((prev) =>
+          prev.map((c) => ({
+            ...c,
+            messages: c.messages.map((m) => {
+              if (m.id !== messageId || !m.actionProposals) return m;
+              return {
+                ...m,
+                actionProposals: m.actionProposals.map((p) =>
+                  p.workItemId === workItemId ? { ...p, status, ...extra } : p
+                ),
+              };
+            }),
+          }))
+        );
+      };
+
+      updateStatus('confirming');
+      try {
+        // Find the action from state to pass to the network call
+        let action: ActionProposal['action'] | undefined;
+        setConversations((prev) => {
+          const msg = prev
+            .flatMap((c) => c.messages)
+            .find((m) => m.id === messageId);
+          action = msg?.actionProposals?.find((p) => p.workItemId === workItemId)?.action;
+          return prev;
+        });
+
+        if (!action) throw new Error('Proposal not found');
+        await executeAction({ agencyId, workItemId, action, reason });
+        updateStatus('executed', { result: true });
+      } catch (err) {
+        const error = err instanceof Error ? err.message : 'Error al ejecutar la acción';
+        updateStatus('error', { error });
+        throw err; // re-throw so the card can show the error (if it handles it)
+      }
+    },
+    [agencyId]
+  );
+
+  /** Discard a proposal UI-only (no network call). */
+  const discardActionProposal = useCallback(
+    (messageId: string, workItemId: string) => {
+      setConversations((prev) =>
+        prev.map((c) => ({
+          ...c,
+          messages: c.messages.map((m) => {
+            if (m.id !== messageId || !m.actionProposals) return m;
+            return {
+              ...m,
+              actionProposals: m.actionProposals.map((p) =>
+                p.workItemId === workItemId ? { ...p, status: 'discarded' as const } : p
+              ),
+            };
+          }),
+        }))
+      );
+    },
+    []
+  );
+
+  // ========================================================================
   // Search / Summaries
   // ========================================================================
 
@@ -1036,5 +1391,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     preferences,
     updatePreferences,
     resetPreferences,
+
+    // Action proposals (F5)
+    confirmActionProposal,
+    discardActionProposal,
   };
 }

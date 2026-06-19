@@ -27,7 +27,7 @@ const DropdownListSubTrigger = React.forwardRef<
   <DropdownListPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 [@media(pointer:coarse)]:py-2.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       inset && "pl-8",
       className
     )}
@@ -84,7 +84,7 @@ const DropdownListItem = React.forwardRef<
   <DropdownListPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-neutral-700 dark:text-neutral-200 outline-none transition-colors focus:bg-neutral-100 dark:focus:bg-white/10 focus:text-neutral-900 dark:focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-neutral-500 dark:[&>svg]:text-neutral-400",
+      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 [@media(pointer:coarse)]:py-2.5 text-sm text-neutral-700 dark:text-neutral-200 outline-none transition-colors focus:bg-neutral-100 dark:focus:bg-white/10 focus:text-neutral-900 dark:focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-neutral-500 dark:[&>svg]:text-neutral-400",
       inset && "pl-8",
       className
     )}
@@ -100,7 +100,7 @@ const DropdownListCheckboxItem = React.forwardRef<
   <DropdownListPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 [@media(pointer:coarse)]:py-2.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     checked={checked}
@@ -124,7 +124,7 @@ const DropdownListRadioItem = React.forwardRef<
   <DropdownListPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 [@media(pointer:coarse)]:py-2.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}

@@ -670,7 +670,7 @@ function NovadadesState({
   );
 
   return (
-    <div className="max-h-[min(60vh,460px)] overflow-y-auto p-2">
+    <div className="flex-1 min-h-0 md:flex-none max-h-none md:max-h-[min(60vh,460px)] overflow-y-auto overscroll-contain p-2">
       {/* Acciones rápidas — primary, full width */}
       <p className="px-2.5 pt-1.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
         {t('inmobiliaria.commandPalette.quickActions.title')}
@@ -857,15 +857,19 @@ export function CommandPalette() {
       {/* We override DialogContent styling for the palette layout */}
       <DialogContent
         className={cn(
-          // Override default DialogContent styles
-          'fixed left-1/2 top-[12%] -translate-x-1/2 translate-y-0',
-          'w-[min(720px,94vw)] p-0 gap-0',
-          'rounded-2xl border border-border bg-popover text-popover-foreground shadow-2xl',
+          // Override default DialogContent styles.
+          // <md: full-screen takeover (dvh — la URL bar / teclado no dejan franja
+          // muerta) con el close X por defecto visible; md+: palette centrado clasico.
+          'fixed inset-x-0 left-0 top-0 translate-x-0 translate-y-0',
+          'h-[100dvh] max-h-[100dvh] w-full max-w-none rounded-none',
+          'md:inset-x-auto md:left-1/2 md:top-[12%] md:-translate-x-1/2 md:translate-y-0',
+          'md:h-auto md:max-h-none md:w-[min(720px,94vw)] md:rounded-2xl',
+          'flex flex-col p-0 gap-0',
+          'border border-border bg-popover text-popover-foreground shadow-2xl',
           'ring-1 ring-black/[0.04] dark:ring-white/[0.06]',
-          'overflow-hidden [&>button]:hidden',
+          'overflow-hidden md:[&>button]:hidden',
           // Disable the default slide-in animation — we use our own
           'data-[state=open]:animate-none data-[state=closed]:animate-none',
-          'max-h-[70vh]',
         )}
         // Remove the close button from the Radix default
         aria-describedby={undefined}
@@ -908,15 +912,16 @@ export function CommandPalette() {
           )}
         </div>
 
-        {/* ── Body ───────────────────────────────────────────────────────── */}
-        {!isQuerying ? (
-          /* Empty state — single-column command list */
-          <NovadadesState onNavigate={handleNavigate} />
-        ) : (
-          <div className="flex min-h-[320px] max-h-[calc(70vh-100px)]">
+        {/* ── Body — llena la pantalla en movil, height-capped en md+ ────── */}
+        <div className="flex flex-1 min-h-0 pb-[env(safe-area-inset-bottom)] md:pb-0 md:flex-none md:min-h-[320px] md:max-h-[calc(70vh-100px)]">
+          {!isQuerying ? (
+            /* Empty state — single-column command list */
+            <NovadadesState onNavigate={handleNavigate} />
+          ) : (
+            <>
               {/* Results list */}
-              <div className="flex-1 min-w-0 border-r border-border overflow-hidden flex flex-col">
-                <ScrollArea className="flex-1">
+              <div className="flex-1 min-w-0 md:border-r border-border overflow-hidden flex flex-col">
+                <ScrollArea className="flex-1 [&>[data-radix-scroll-area-viewport]]:overscroll-contain">
                   {!hasResults && !isAnyLoading && (
                     <div className="flex flex-col items-center justify-center py-12 gap-2">
                       <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
@@ -1020,9 +1025,9 @@ export function CommandPalette() {
                 </ScrollArea>
               </div>
 
-              {/* Preview panel */}
-              <div className="w-[240px] flex-shrink-0 overflow-hidden flex flex-col">
-                <ScrollArea className="flex-1">
+              {/* Preview panel — mouse/hover-driven, hidden on mobile */}
+              <div className="hidden md:flex w-[240px] flex-shrink-0 overflow-hidden flex-col">
+                <ScrollArea className="flex-1 [&>[data-radix-scroll-area-viewport]]:overscroll-contain">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={highlightedResult?.id ?? 'empty'}
@@ -1036,11 +1041,12 @@ export function CommandPalette() {
                   </AnimatePresence>
                 </ScrollArea>
               </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
-        {/* ── Footer / keyboard hints ─────────────────────────────────────── */}
-        <div className="flex items-center gap-4 px-4 h-10 border-t border-border bg-muted/30">
+        {/* ── Footer / keyboard hints — desktop-only (no hay teclado en touch) ── */}
+        <div className="hidden md:flex items-center gap-4 px-4 h-10 border-t border-border bg-muted/30">
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <kbd className="grid place-items-center w-[18px] h-[18px] rounded border border-border bg-background">
               <ArrowUp className="w-2.5 h-2.5" />

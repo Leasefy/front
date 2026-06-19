@@ -19,9 +19,11 @@ import type { Icon } from '@phosphor-icons/react'
 
 import type { AgenteId, WorkItemEstado } from '@/lib/api/work-item'
 import type { AgentOverviewResponse, KpiFormat } from '@/lib/api/agent-workspace'
-import { ESTADO_LABEL } from './ColaHumana'
-import { actorMeta } from './TrazaCaso'
-import { relativeTime } from './ColaHumana'
+import { useI18n } from '@/lib/i18n'
+import { estadoLabel, relativeTime } from './ColaHumana'
+import { actorLabel, actorMeta } from './TrazaCaso'
+
+const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
@@ -85,6 +87,7 @@ function OverviewBody({
   isLoading,
   error,
 }: Pick<SalaAgenteProps, 'overview' | 'isLoading' | 'error'>) {
+  const { t } = useI18n()
   if (isLoading) {
     return (
       <div className="space-y-4" data-testid="sala-agente-loading">
@@ -105,7 +108,7 @@ function OverviewBody({
         className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
         data-testid="sala-agente-error"
       >
-        No se pudo cargar la sala: {error}
+        {t(`${WORKSPACE_NS}.sala.error`, { error })}
       </div>
     )
   }
@@ -118,9 +121,9 @@ function OverviewBody({
         data-testid="sala-agente-empty"
       >
         <Robot className="w-8 h-8 mx-auto text-muted-foreground mb-2" weight="duotone" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">El agente aún no reporta métricas</p>
+        <p className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.sala.emptyTitle`)}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Este panel se activa cuando el agente publique su resumen de actividad.
+          {t(`${WORKSPACE_NS}.sala.emptyBody`)}
         </p>
       </div>
     )
@@ -150,15 +153,15 @@ function OverviewBody({
 
       {/* Pipeline por estado */}
       <section className="rounded-xl border border-border bg-card p-4 space-y-3" data-testid="sala-pipeline">
-        <h2 className="text-sm font-semibold text-foreground">Pipeline por estado</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t(`${WORKSPACE_NS}.sala.pipelineTitle`)}</h2>
         {pipelineTotal === 0 ? (
-          <p className="text-xs text-muted-foreground">Sin casos en el pipeline.</p>
+          <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.pipelineEmpty`)}</p>
         ) : (
           <>
             <div
               className="flex h-3 w-full overflow-hidden rounded-full bg-muted"
               role="img"
-              aria-label={`Pipeline: ${pipelineTotal} casos`}
+              aria-label={t(`${WORKSPACE_NS}.sala.pipelineAria`, { total: pipelineTotal })}
             >
               {overview.pipeline
                 .filter((seg) => seg.count > 0)
@@ -167,7 +170,7 @@ function OverviewBody({
                     key={seg.estado}
                     className={`${ESTADO_BAR_CLS[seg.estado] ?? 'bg-neutral-400'} h-full`}
                     style={{ width: `${(seg.count / pipelineTotal) * 100}%` }}
-                    title={`${ESTADO_LABEL[seg.estado] ?? seg.estado}: ${seg.count}`}
+                    title={`${estadoLabel(t, seg.estado)}: ${seg.count}`}
                   />
                 ))}
             </div>
@@ -179,7 +182,7 @@ function OverviewBody({
                     aria-hidden="true"
                   />
                   <dt className="text-[11px] text-muted-foreground">
-                    {ESTADO_LABEL[seg.estado] ?? seg.estado}
+                    {estadoLabel(t, seg.estado)}
                   </dt>
                   <dd className="text-[11px] font-medium text-foreground tabular-nums">{seg.count}</dd>
                 </div>
@@ -191,9 +194,9 @@ function OverviewBody({
 
       {/* Actividad reciente */}
       <section className="rounded-xl border border-border bg-card p-4 space-y-3" data-testid="sala-feed">
-        <h2 className="text-sm font-semibold text-foreground">Actividad reciente</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t(`${WORKSPACE_NS}.sala.feedTitle`)}</h2>
         {overview.feed.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Sin actividad reciente.</p>
+          <p className="text-xs text-muted-foreground">{t(`${WORKSPACE_NS}.sala.feedEmpty`)}</p>
         ) : (
           <ul className="divide-y divide-border">
             {overview.feed.map((entry) => {
@@ -203,14 +206,14 @@ function OverviewBody({
                   <span
                     className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full ring-1 shrink-0 mt-0.5 ${meta.cls}`}
                   >
-                    {meta.label}
+                    {actorLabel(t, entry.actorType)}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{entry.titulo}</p>
                     <p className="text-xs text-muted-foreground truncate">{entry.detalle}</p>
                   </div>
                   <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 mt-0.5">
-                    {relativeTime(entry.occurredAt)}
+                    {relativeTime(entry.occurredAt, t)}
                   </span>
                 </li>
               )
@@ -236,6 +239,7 @@ export function SalaAgente({
   colaCount,
   children,
 }: SalaAgenteProps) {
+  const { t } = useI18n()
   // Finite icon maps crash when a key is missing — ALWAYS fall back here.
   const HeaderIcon = icon ?? Robot
 
@@ -246,7 +250,7 @@ export function SalaAgente({
         <div className="space-y-2">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
             <HeaderIcon className="w-3.5 h-3.5" weight="duotone" aria-hidden="true" />
-            Agente · {titulo}
+            {t(`${WORKSPACE_NS}.sala.eyebrow`, { titulo })}
           </span>
           <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">{descripcion}</p>
@@ -257,7 +261,8 @@ export function SalaAgente({
           className="shrink-0 inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wide px-3 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
           data-testid="sala-cola-cta"
         >
-          Ir a la cola{typeof colaCount === 'number' ? ` (${numberFormatter.format(colaCount)})` : ''}
+          {t(`${WORKSPACE_NS}.sala.irACola`)}
+          {typeof colaCount === 'number' ? ` (${numberFormatter.format(colaCount)})` : ''}
           <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </Link>
       </header>

@@ -10,7 +10,9 @@
  * kanban) into a prop-driven, agent-agnostic component.
  *
  * Content (titulo, accionSugerida, action labels) is backend-provided Spanish;
- * the chrome labels here are inline literals (no new i18n keys for F1).
+ * the chrome labels live under the `inmobiliaria.ai.workspace.*` i18n
+ * namespace (extracted from the original inline literals — es output is
+ * byte-identical).
  *
  * Styling vocabulary harvested from EscalationCard (mvp:docs/COLOR_SYSTEM.md):
  * rose = error/critical, amber = warning, emerald = ok; theme tokens for chrome.
@@ -32,14 +34,39 @@ import type {
   Severidad,
   WorkItem,
   WorkItemAction,
-  WorkItemEstado,
   WorkItemFlag,
 } from '@/lib/api/work-item'
+import { useI18n } from '@/lib/i18n'
+import type { TranslationParams } from '@/lib/i18n'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 // Exported (F6): the workspace primitives (SalaAgente, AccionSugerida, the
-// detail page) reuse these maps so estado/severidad/flag chips render
-// identically everywhere.
+// detail page) reuse these maps + label helpers so estado/severidad/flag
+// chips render identically everywhere. Label TEXT lives in the
+// `inmobiliaria.ai.workspace.*` i18n namespace; the helpers take `t` (from
+// useI18n) and degrade to the raw backend value when a key is unknown —
+// t() echoes the key path on a miss, which we never want to render.
+
+const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
+
+/** Shape of useI18n().t — primitives thread it into the shared helpers. */
+export type TranslateFn = (key: string, params?: TranslationParams) => string
+
+/** Vocabulary lookup with raw-value fallback for out-of-contract keys. */
+export function workspaceVocab(t: TranslateFn, group: string, key: string): string {
+  const full = `${WORKSPACE_NS}.${group}.${key}`
+  const label = t(full)
+  return label === full ? key : label
+}
+
+export const severidadLabel = (t: TranslateFn, sev: string): string =>
+  workspaceVocab(t, 'severidad', sev)
+
+export const estadoLabel = (t: TranslateFn, estado: string): string =>
+  workspaceVocab(t, 'estado', estado)
+
+export const flagLabel = (t: TranslateFn, flag: string): string =>
+  workspaceVocab(t, 'flag', flag)
 
 export const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring: string }> = {
   critica: {
@@ -64,54 +91,34 @@ export const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring
   },
 }
 
-export const SEVERIDAD_LABEL: Record<Severidad, string> = {
-  critica: 'Crítica',
-  alta: 'Alta',
-  media: 'Media',
-  baja: 'Baja',
-}
-
 const SEVERIDAD_RANK: Record<Severidad, number> = { critica: 3, alta: 2, media: 1, baja: 0 }
 
-export const ESTADO_LABEL: Record<WorkItemEstado, string> = {
-  detectado: 'Detectado',
-  sugerido: 'Sugerido',
-  en_revision: 'En revisión',
-  aprobado: 'Aprobado',
-  ejecutando: 'Ejecutando',
-  resuelto: 'Resuelto',
-  rechazado: 'Rechazado',
-  fallo: 'Falló',
-}
-
-export const FLAG_META: Record<WorkItemFlag, { label: string; icon: typeof WarningCircle; cls: string }> = {
+/** Flag chip icon + classes; label text resolves via flagLabel(t, flag). */
+export const FLAG_META: Record<WorkItemFlag, { icon: typeof WarningCircle; cls: string }> = {
   necesita_humano: {
-    label: 'Necesita humano',
     icon: WarningCircle,
     cls: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 ring-amber-200 dark:ring-amber-900',
   },
   t323: {
-    label: 'Revisión T-323',
     icon: ShieldWarning,
     cls: 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 ring-rose-200 dark:ring-rose-900',
   },
   en_espera: {
-    label: 'En espera',
     icon: Hourglass,
     cls: 'bg-muted text-muted-foreground ring-border',
   },
 }
 
-export function relativeTime(iso: string): string {
+export function relativeTime(iso: string, t: TranslateFn): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
   const deltaSec = Math.max(0, Math.round((Date.now() - then) / 1000))
-  if (deltaSec < 60) return `hace ${deltaSec}s`
+  if (deltaSec < 60) return t(`${WORKSPACE_NS}.tiempo.s`, { n: deltaSec })
   const deltaMin = Math.round(deltaSec / 60)
-  if (deltaMin < 60) return `hace ${deltaMin}m`
+  if (deltaMin < 60) return t(`${WORKSPACE_NS}.tiempo.m`, { n: deltaMin })
   const deltaHr = Math.round(deltaMin / 60)
-  if (deltaHr < 24) return `hace ${deltaHr}h`
-  return `hace ${Math.round(deltaHr / 24)}d`
+  if (deltaHr < 24) return t(`${WORKSPACE_NS}.tiempo.h`, { n: deltaHr })
+  return t(`${WORKSPACE_NS}.tiempo.d`, { n: Math.round(deltaHr / 24) })
 }
 
 export const ACTION_KIND_CLS: Record<WorkItemAction['kind'], string> = {
@@ -149,6 +156,7 @@ function WorkItemCard({
   onAction: ColaHumanaProps['onAction']
   onOpen?: (item: WorkItem) => void
 }) {
+  const { t } = useI18n()
   // Finite maps crash on unknown keys — ALWAYS fall back (SalaAgente invariant).
   const sev = SEVERIDAD_TOKEN[item.severidad] ?? SEVERIDAD_TOKEN.media
   const [reasonForActionId, setReasonForActionId] = useState<string | null>(null)
@@ -160,11 +168,11 @@ function WorkItemCard({
     const res = await onAction(item, action, body)
     setBusyActionId(null)
     if (res.ok) {
-      toast.success(`${action.label} · listo`)
+      toast.success(t(`${WORKSPACE_NS}.acciones.toastOk`, { label: action.label }))
       setReasonForActionId(null)
       setReasonText('')
     } else {
-      toast.error(`No se pudo: ${res.error ?? 'error'}`)
+      toast.error(t(`${WORKSPACE_NS}.acciones.toastFail`, { error: res.error ?? 'error' }))
     }
   }
 
@@ -190,10 +198,10 @@ function WorkItemCard({
           <span
             className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
           >
-            {SEVERIDAD_LABEL[item.severidad]}
+            {severidadLabel(t, item.severidad)}
           </span>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
-            {ESTADO_LABEL[item.estado]}
+            {estadoLabel(t, item.estado)}
           </span>
           {item.flags.map((flag) => {
             // Unknown flags are silently skipped (finite-map fallback).
@@ -206,14 +214,14 @@ function WorkItemCard({
                 className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ring-1 ${meta.cls}`}
               >
                 <Icon className="w-3 h-3" aria-hidden="true" />
-                {meta.label}
+                {flagLabel(t, flag)}
               </span>
             )
           })}
         </div>
         <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
           <Clock className="w-3 h-3" aria-hidden="true" />
-          {relativeTime(item.createdAt)}
+          {relativeTime(item.createdAt, t)}
         </span>
       </div>
 
@@ -223,7 +231,7 @@ function WorkItemCard({
         onClick={() => onOpen?.(item)}
         disabled={!onOpen}
         className="w-full text-left space-y-1.5 focus:outline-none focus:ring-2 focus:ring-primary rounded-md disabled:cursor-default"
-        aria-label={`Abrir ${item.titulo}`}
+        aria-label={t(`${WORKSPACE_NS}.acciones.abrir`, { titulo: item.titulo })}
       >
         <p className="text-sm font-semibold text-foreground flex items-center gap-1">
           {item.titulo}
@@ -236,7 +244,9 @@ function WorkItemCard({
             <p className="text-xs font-medium text-foreground">{item.accionSugerida.label}</p>
             {typeof item.accionSugerida.confianza === 'number' && (
               <span className="text-[11px] font-mono text-muted-foreground tabular-nums shrink-0">
-                {Math.round(item.accionSugerida.confianza * 100)}% conf.
+                {t(`${WORKSPACE_NS}.acciones.confianza`, {
+                  pct: Math.round(item.accionSugerida.confianza * 100),
+                })}
               </span>
             )}
           </div>
@@ -260,7 +270,9 @@ function WorkItemCard({
       {pendingReasonAction && (
         <div className="space-y-1.5 rounded-lg border border-border p-2">
           <label className="text-[11px] text-muted-foreground" htmlFor={`reason-${item.id}`}>
-            Motivo para {pendingReasonAction.label.toLowerCase()}
+            {t(`${WORKSPACE_NS}.acciones.motivoPara`, {
+              accion: pendingReasonAction.label.toLowerCase(),
+            })}
           </label>
           <textarea
             id={`reason-${item.id}`}
@@ -268,7 +280,7 @@ function WorkItemCard({
             onChange={(e) => setReasonText(e.target.value)}
             rows={2}
             className="w-full text-xs rounded-md border border-border bg-background px-2 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-            placeholder="Escribe el motivo…"
+            placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
           />
           <div className="flex items-center gap-2">
             <button
@@ -278,7 +290,7 @@ function WorkItemCard({
               className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-600 dark:bg-rose-700 text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
-              Confirmar
+              {t(`${WORKSPACE_NS}.acciones.confirmar`)}
             </button>
             <button
               type="button"
@@ -288,7 +300,7 @@ function WorkItemCard({
               }}
               className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
             >
-              Cancelar
+              {t(`${WORKSPACE_NS}.acciones.cancelar`)}
             </button>
           </div>
         </div>
@@ -320,6 +332,7 @@ function WorkItemCard({
 // ── List ────────────────────────────────────────────────────────────────────
 
 export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHint }: ColaHumanaProps) {
+  const { t } = useI18n()
   const sorted = useMemo(
     () =>
       [...items].sort((a, b) => {
@@ -346,7 +359,7 @@ export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHin
         className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-400"
         data-testid="cola-humana-error"
       >
-        No se pudo cargar la cola: {error}
+        {t(`${WORKSPACE_NS}.cola.error`, { error })}
       </div>
     )
   }
@@ -358,9 +371,9 @@ export function ColaHumana({ items, isLoading, error, onAction, onOpen, emptyHin
         data-testid="cola-humana-empty"
       >
         <CheckCircle className="w-8 h-8 mx-auto text-emerald-500 mb-2" aria-hidden="true" />
-        <p className="text-sm font-medium text-foreground">Cola vacía</p>
+        <p className="text-sm font-medium text-foreground">{t(`${WORKSPACE_NS}.cola.vacia`)}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {emptyHint ?? 'No hay casos pendientes de revisión.'}
+          {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
         </p>
       </div>
     )

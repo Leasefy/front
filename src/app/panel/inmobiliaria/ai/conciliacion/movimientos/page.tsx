@@ -23,6 +23,7 @@ import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import {
   useConciliacionQueue,
   type ConciliacionQueueItem,
@@ -578,7 +579,9 @@ function ConciliacionContent() {
 
 export default function ConciliacionPage() {
   return (
-    <PageGuard adminOnly>
+    // Aligned with the nav gate in layout.tsx: ADMIN|CONTADOR (was adminOnly,
+    // which blocked agency ADMIN/CONTADOR members the nav already lets in).
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
       <ConciliacionContent />
     </PageGuard>
   );

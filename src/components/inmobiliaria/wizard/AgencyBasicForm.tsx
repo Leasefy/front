@@ -41,7 +41,7 @@ export function AgencyBasicForm({ data, onChange }: AgencyBasicFormProps) {
         <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
           <span className="flex items-center gap-1.5">
             <Building className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-            Nombre de la agencia <span className="text-[#C4503B]">*</span>
+            Nombre de la agencia <span className="text-danger">*</span>
           </span>
         </label>
         <input
@@ -51,7 +51,7 @@ export function AgencyBasicForm({ data, onChange }: AgencyBasicFormProps) {
           placeholder="Inmobiliaria Rodríguez & Asociados"
           className={cn(
             'w-full px-4 py-3 text-sm rounded-xl border bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white',
-            'placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all',
+            'placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all',
             !data.name ? 'border-neutral-200 dark:border-neutral-700' : 'border-neutral-300 dark:border-neutral-600'
           )}
         />
@@ -70,7 +70,7 @@ export function AgencyBasicForm({ data, onChange }: AgencyBasicFormProps) {
           value={data.nit}
           onChange={(e) => onChange({ nit: e.target.value })}
           placeholder="900.123.456-7"
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
         />
       </div>
 
@@ -87,7 +87,7 @@ export function AgencyBasicForm({ data, onChange }: AgencyBasicFormProps) {
           value={data.address}
           onChange={(e) => onChange({ address: e.target.value })}
           placeholder="Calle 123 # 45-67"
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
         />
       </div>
 
@@ -97,7 +97,7 @@ export function AgencyBasicForm({ data, onChange }: AgencyBasicFormProps) {
         <select
           value={data.city}
           onChange={(e) => onChange({ city: e.target.value })}
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all appearance-none"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
             backgroundPosition: 'right 1rem center',
@@ -125,7 +125,7 @@ export function AgencyBasicForm({ data, onChange }: AgencyBasicFormProps) {
           value={data.phone}
           onChange={(e) => onChange({ phone: e.target.value })}
           placeholder="601 234 5678"
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
         />
       </div>
 
@@ -142,7 +142,7 @@ export function AgencyBasicForm({ data, onChange }: AgencyBasicFormProps) {
           value={data.email}
           onChange={(e) => onChange({ email: e.target.value })}
           placeholder="contacto@miinmobiliaria.com"
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
         />
       </div>
     </div>

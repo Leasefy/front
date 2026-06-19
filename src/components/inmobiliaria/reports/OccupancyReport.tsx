@@ -84,12 +84,12 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
                       occupancyRate >= 90
-                        ? 'bg-[#2C7A53]'
+                        ? 'bg-success'
                         : occupancyRate >= 70
-                          ? 'bg-[#1A40FF]'
+                          ? 'bg-primary'
                           : occupancyRate >= 50
-                            ? 'bg-[#B7791F]'
-                            : 'bg-[#C4503B]'
+                            ? 'bg-warning'
+                            : 'bg-danger'
                     )}
                     style={{ width: `${occupancyRate}%` }}
                   />
@@ -122,10 +122,10 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                     className={cn(
                       'w-full rounded-t transition-all duration-300 group-hover:opacity-80',
                       m.occupancyRate >= 90
-                        ? 'bg-[#2C7A53] dark:bg-[#2C7A53]'
+                        ? 'bg-success dark:bg-success'
                         : m.occupancyRate >= 85
-                          ? 'bg-[#1A40FF] dark:bg-[#1A40FF]'
-                          : 'bg-[#B7791F] dark:bg-[#B7791F]'
+                          ? 'bg-primary dark:bg-primary'
+                          : 'bg-warning dark:bg-warning'
                     )}
                     style={{ height: `${height}%` }}
                   />
@@ -172,8 +172,8 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                       className={cn(
                         'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
                         prop.status === 'rented'
-                          ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
-                          : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
+                          ? 'bg-success-soft text-success'
+                          : 'bg-warning-soft text-warning'
                       )}
                     >
                       {prop.status === 'rented' ? 'Arrendado' : 'Vacante'}
@@ -204,20 +204,20 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
 
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   emerald: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   amber: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
   red: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
   },
 } as const;
 

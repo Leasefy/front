@@ -84,24 +84,24 @@ export const flagLabel = (t: TranslateFn, flag: string): string =>
 
 export const SEVERIDAD_TOKEN: Record<Severidad, { bg: string; text: string; ring: string }> = {
   critica: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    ring: 'ring-[#C4503B]/30 dark:ring-[#C4503B]/40 animate-pulse',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    ring: 'ring-danger/30 animate-pulse',
   },
   alta: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    ring: 'ring-[#C4503B]/30 dark:ring-[#C4503B]/40',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    ring: 'ring-danger/30',
   },
   media: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-    ring: 'ring-[#B7791F]/30 dark:ring-[#B7791F]/40',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    ring: 'ring-warning/30',
   },
   baja: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    ring: 'ring-[#2C7A53]/30 dark:ring-[#2C7A53]/40',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    ring: 'ring-success/30',
   },
 }
 
@@ -111,11 +111,11 @@ const SEVERIDAD_RANK: Record<Severidad, number> = { critica: 3, alta: 2, media: 
 export const FLAG_META: Record<WorkItemFlag, { icon: typeof WarningCircle; cls: string }> = {
   necesita_humano: {
     icon: WarningCircle,
-    cls: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] ring-[#B7791F]/30 dark:ring-[#B7791F]/40',
+    cls: 'bg-warning-soft text-warning ring-warning/30',
   },
   t323: {
     icon: ShieldWarning,
-    cls: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] ring-[#C4503B]/30 dark:ring-[#C4503B]/40',
+    cls: 'bg-danger-soft text-danger ring-danger/30',
   },
   en_espera: {
     icon: Hourglass,
@@ -138,7 +138,7 @@ export function relativeTime(iso: string, t: TranslateFn): string {
 export const ACTION_KIND_CLS: Record<WorkItemAction['kind'], string> = {
   primary: 'bg-primary text-primary-foreground hover:opacity-90',
   // Destructive confirm keeps the danger fill + white text (brand exception).
-  danger: 'bg-[#C4503B] text-white hover:opacity-90',
+  danger: 'bg-danger text-white hover:opacity-90',
   neutral: 'border border-border text-foreground hover:bg-muted',
 }
 
@@ -313,7 +313,7 @@ function WorkItemCard({
               type="button"
               disabled={reasonText.trim().length === 0 || busyActionId !== null}
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-[#C4503B] text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-danger text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t(`${WORKSPACE_NS}.acciones.confirmar`)}
@@ -392,7 +392,7 @@ export function ColaHumana({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
         data-testid="cola-humana-error"
       >
         {t(`${WORKSPACE_NS}.cola.error`, { error })}

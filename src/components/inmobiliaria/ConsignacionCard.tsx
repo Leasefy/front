@@ -62,23 +62,23 @@ export function ConsignacionCard({
   // Availability status colors
   const AVAILABILITY_COLORS: Record<PropertyAvailability, { bg: string; text: string; label: string }> = useMemo(() => ({
     available: {
-      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      bg: 'bg-success-soft',
+      text: 'text-success',
       label: t('inmobiliaria.portafolio.card.availability.available'),
     },
     rented: {
-      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-      text: 'text-[#1A40FF] dark:text-[#5570FF]',
+      bg: 'bg-primary-soft',
+      text: 'text-primary',
       label: t('inmobiliaria.portafolio.card.availability.rented'),
     },
     in_process: {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
       label: t('inmobiliaria.portafolio.card.availability.inProcess'),
     },
     maintenance: {
-      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-      text: 'text-[#C4503B] dark:text-[#E0664D]',
+      bg: 'bg-danger-soft',
+      text: 'text-danger',
       label: t('inmobiliaria.portafolio.card.availability.maintenance'),
     },
   }), [t]);
@@ -86,13 +86,13 @@ export function ConsignacionCard({
   // Consignacion status colors (secondary indicator)
   const STATUS_COLORS: Record<ConsignacionStatus, { bg: string; text: string; label: string }> = useMemo(() => ({
     active: {
-      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      bg: 'bg-success-soft',
+      text: 'text-success',
       label: t('inmobiliaria.portafolio.card.status.active'),
     },
     pending: {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
       label: t('inmobiliaria.portafolio.card.status.pending'),
     },
     expired: {
@@ -101,8 +101,8 @@ export function ConsignacionCard({
       label: t('inmobiliaria.portafolio.card.status.expired'),
     },
     terminated: {
-      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-      text: 'text-[#C4503B] dark:text-[#E0664D]',
+      bg: 'bg-danger-soft',
+      text: 'text-danger',
       label: t('inmobiliaria.portafolio.card.status.terminated'),
     },
   }), [t]);
@@ -121,7 +121,7 @@ export function ConsignacionCard({
         className={cn(
           'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
           selected
-            ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 dark:border-[#1A40FF]/30'
+            ? 'border-primary/30 bg-primary-soft dark:border-primary/30'
             : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
         )}
       >
@@ -157,7 +157,7 @@ export function ConsignacionCard({
 
         {/* Selection indicator */}
         {selected && (
-          <div className="w-5 h-5 rounded-full bg-[#1A40FF] flex items-center justify-center shrink-0">
+          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -181,7 +181,7 @@ export function ConsignacionCard({
       className={cn(
         'w-full rounded-xl border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group',
         selected
-          ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
+          ? 'border-primary/30 ring-2 ring-primary/30'
           : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:',
         onClick && 'cursor-pointer'
       )}
@@ -278,8 +278,8 @@ export function ConsignacionCard({
                   className="w-7 h-7 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                  <span className="text-xs font-medium text-primary">
                     {agenteName.charAt(0)}
                   </span>
                 </div>
@@ -296,13 +296,13 @@ export function ConsignacionCard({
 
         {/* Tenant info (if rented) */}
         {consignacion.availability === 'rented' && consignacion.currentTenantName && (
-          <div className="mb-4 p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
-            <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mb-0.5">{t('inmobiliaria.portafolio.card.currentTenant')}</p>
-            <p className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
+          <div className="mb-4 p-3 rounded-xl bg-primary-soft">
+            <p className="text-xs text-primary mb-0.5">{t('inmobiliaria.portafolio.card.currentTenant')}</p>
+            <p className="text-sm font-medium text-primary">
               {consignacion.currentTenantName}
             </p>
             {consignacion.leaseEndDate && (
-              <p className="text-xs text-[#1A40FF] dark:text-[#5570FF] mt-1">
+              <p className="text-xs text-primary mt-1">
                 {t('inmobiliaria.portafolio.card.leaseUntil', {
                   date: new Date(consignacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                     day: 'numeric',
@@ -338,7 +338,7 @@ export function ConsignacionCard({
             )}
           </div>
           {onClick && (
-            <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors">
+            <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-primary transition-colors">
               {t('inmobiliaria.portafolio.card.viewDetail')}
               <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>

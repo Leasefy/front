@@ -55,15 +55,16 @@ export function StreamCompleteBanner({
     return (
       <div
         role="status"
-        className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-5 flex items-center justify-between gap-4 flex-wrap"
+        className="rounded-xl border border-border bg-surface-muted p-5 flex items-center justify-between gap-4 flex-wrap"
       >
-        <p className="text-body-sm font-medium text-neutral-600 dark:text-neutral-300">
+        <p className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.banner.stubModeWarning')}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="ghost"
             size="sm"
+            hideArrow
             onClick={onBack}
           >
             <ArrowLeft weight="regular" className="w-4 h-4" />
@@ -81,13 +82,13 @@ export function StreamCompleteBanner({
     <div
       role="status"
       aria-live="polite"
-      className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-5 flex items-center justify-between gap-4 flex-wrap"
+      className="rounded-xl border border-success/30 bg-success-soft p-5 flex items-center justify-between gap-4 flex-wrap"
     >
       {/* Left: completion summary */}
       <div className="flex items-center gap-3">
-        <CheckCircle weight="fill" className="w-6 h-6 text-[#2C7A53] shrink-0" />
+        <CheckCircle weight="fill" className="w-6 h-6 text-success shrink-0" />
         <div>
-          <p className="font-medium text-[#2C7A53] dark:text-[#3EAE70] text-sm">
+          <p className="font-medium text-success text-sm">
             {t('inmobiliaria.ai.cotizador.detail.banner.allReadyTemplate')
               .replace('{count}', String(carrierCount))
               .replace('{total}', String(carrierCount))
@@ -102,6 +103,7 @@ export function StreamCompleteBanner({
         <Button
           variant="outline"
           size="sm"
+          hideArrow
           disabled
           aria-disabled="true"
           title={t('inmobiliaria.ai.cotizador.detail.banner.reQuoteTooltip')}
@@ -115,6 +117,7 @@ export function StreamCompleteBanner({
         <Button
           variant="secondary"
           size="sm"
+          hideArrow
           onClick={downloadPdf}
           disabled={isGenerating || !pdfReady}
           isLoading={isGenerating}
@@ -129,6 +132,7 @@ export function StreamCompleteBanner({
         <Button
           variant="ghost"
           size="sm"
+          hideArrow
           onClick={onBack}
         >
           <ArrowLeft weight="regular" className="w-4 h-4" />

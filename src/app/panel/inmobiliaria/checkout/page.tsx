@@ -10,7 +10,6 @@ import { getAgencyPlanById } from '@/lib/constants/subscription-plans';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import { formatCurrency } from '@/lib/format';
 import type { AgencyPlanId } from '@/lib/types/subscription';
-import { cn } from '@/lib/utils';
 
 function AgencyCheckoutInner() {
   const searchParams = useSearchParams();
@@ -90,13 +89,13 @@ function AgencyCheckoutInner() {
         </div>
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
+        <div className="mb-8 space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {isCustom ? 'Solicitar cotización' : 'Confirmar suscripción'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-fg-muted">
             Suscribirse al plan{' '}
-            <span className="font-medium text-foreground">{plan.name}</span>
+            <span className="font-medium text-fg">{plan.name}</span>
           </p>
         </div>
 
@@ -105,8 +104,8 @@ function AgencyCheckoutInner() {
           <div className="lg:col-span-3 space-y-6">
             <div className="bg-card rounded-xl border border-border p-5">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                  <Buildings className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+                <div className="w-12 h-12 rounded-lg bg-surface-muted flex items-center justify-center shrink-0">
+                  <Buildings className="w-6 h-6 text-fg-muted" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-foreground">Plan {plan.name}</h2>
@@ -114,7 +113,7 @@ function AgencyCheckoutInner() {
                   <ul className="mt-3 space-y-1.5">
                     {plan.features.slice(0, 6).map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Check className="w-3.5 h-3.5 text-[#2C7A53] shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-success shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -177,11 +176,9 @@ function AgencyCheckoutInner() {
               )}
 
               <Button
-                className={cn(
-                  'w-full font-semibold',
-                  'bg-[#1A40FF] hover:opacity-90 text-white'
-                )}
+                className="w-full"
                 size="lg"
+                hideArrow
                 onClick={handleProceed}
                 disabled={!backendPlanId || isRedirecting}
               >

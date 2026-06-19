@@ -191,7 +191,7 @@ export function EscalationResolveModal({
                 className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1.5"
               >
                 {t('inmobiliaria.ai.cobranza.escalaciones.resolveModal.categoryLabel')}
-                <span className="text-[#C4503B] dark:text-[#E0664D] ml-1">*</span>
+                <span className="text-danger ml-1">*</span>
               </label>
               <select
                 id="resolve-category"
@@ -215,23 +215,23 @@ export function EscalationResolveModal({
 
             {/* Escalated-to-legal warning (rose banner per DESIGN.md §4) */}
             {requiresLegalAck && (
-              <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 flex items-start gap-2">
+              <div className="rounded-xl bg-danger-soft border border-danger/30 p-3 flex items-start gap-2">
                 <WarningCircle
-                  className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5"
+                  className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
                   aria-hidden="true"
                 />
                 <div className="flex-1 space-y-2">
-                  <p className="text-xs font-semibold text-[#C4503B] dark:text-[#E0664D]">
+                  <p className="text-xs font-semibold text-danger">
                     {t(
                       'inmobiliaria.ai.cobranza.escalaciones.resolveModal.escalatedToLegalWarning',
                     )}
                   </p>
-                  <label className="flex items-center gap-2 text-xs text-[#C4503B] dark:text-[#E0664D] cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-danger cursor-pointer">
                     <input
                       type="checkbox"
                       checked={ackLegal}
                       onChange={(e) => setAckLegal(e.target.checked)}
-                      className="rounded border-[#C4503B]/30 text-[#C4503B] focus:ring-[#C4503B]"
+                      className="rounded border-danger/30 text-danger focus:ring-danger"
                       data-testid="ack-legal-checkbox"
                     />
                     <span>Esto pasará el deudor a pre_judicial</span>
@@ -247,7 +247,7 @@ export function EscalationResolveModal({
                 className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1.5"
               >
                 {t('inmobiliaria.ai.cobranza.escalaciones.resolveModal.textLabel')}
-                <span className="text-[#C4503B] dark:text-[#E0664D] ml-1">*</span>
+                <span className="text-danger ml-1">*</span>
               </label>
               <textarea
                 id="resolve-text"
@@ -264,9 +264,9 @@ export function EscalationResolveModal({
                 <span
                   className={
                     tooShort
-                      ? 'text-[#C4503B] dark:text-[#E0664D]'
+                      ? 'text-danger'
                       : tooLong
-                        ? 'text-[#C4503B] dark:text-[#E0664D]'
+                        ? 'text-danger'
                         : 'text-muted-foreground'
                   }
                 >
@@ -283,7 +283,7 @@ export function EscalationResolveModal({
             </div>
 
             {submitError && (
-              <p className="text-xs text-[#C4503B] dark:text-[#E0664D]">{submitError}</p>
+              <p className="text-xs text-danger">{submitError}</p>
             )}
           </div>
 
@@ -301,7 +301,7 @@ export function EscalationResolveModal({
               type="button"
               onClick={() => void handleSubmit()}
               disabled={!canSubmit}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-sm bg-[#2C7A53] dark:bg-[#3EAE70] text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-sm bg-success dark:bg-success text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               data-testid="resolve-submit-button"
             >
               <CheckCircle className="w-4 h-4" aria-hidden="true" />

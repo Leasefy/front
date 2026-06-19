@@ -63,13 +63,13 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaL
               // (5rem) for the MobileNavBar.
               'relative h-[calc(100dvh-4rem-5rem)] lg:h-[calc(100dvh-4rem)]',
           'flex flex-col md:flex-row',
-          'bg-[#f5f5f7] dark:bg-[#0c0c0e]'
+          'bg-background'
         )}
       >
         {/* Skip to chat link - visible only on focus for screen readers */}
         <a
           href="#beta-chat-main"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-[#1A40FF] focus:text-white focus:rounded-md focus:text-sm focus:font-medium"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-md focus:text-sm focus:font-medium"
         >
           {t('beta.a11y.skipToChat')}
         </a>
@@ -78,8 +78,8 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaL
           className={cn(
             'md:hidden flex items-center justify-between',
             'h-12 px-3 flex-shrink-0',
-            'border-b border-neutral-200 dark:border-border',
-            'bg-white dark:bg-card'
+            'border-b border-border',
+            'bg-card'
           )}
         >
           {/* Hamburger button */}
@@ -88,8 +88,8 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaL
             className={cn(
               'w-11 h-11 rounded-md',
               'flex items-center justify-center',
-              'text-muted-foreground hover:text-foreground',
-              'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+              'text-fg-muted hover:text-fg',
+              'hover:bg-surface-hover',
               'transition-colors duration-150'
             )}
             aria-label={t('beta.mobile.openMenu')}
@@ -99,8 +99,8 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaL
 
           {/* Title */}
           <div className="flex items-center gap-1.5">
-            <Sparkle className="w-4 h-4 text-[#1A40FF]" weight="fill" />
-            <span className="text-[14px] font-semibold text-foreground">
+            <Sparkle className="w-4 h-4 text-primary" weight="fill" />
+            <span className="text-sm font-semibold text-fg">
               {t('beta.title')}
             </span>
           </div>
@@ -177,8 +177,8 @@ function MobileNewChatButton() {
       className={cn(
         'w-11 h-11 rounded-md',
         'flex items-center justify-center',
-        'text-[#1A40FF] hover:text-[#1A40FF]',
-        'hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/10',
+        'text-primary',
+        'hover:bg-primary-soft',
         'transition-colors duration-150'
       )}
       aria-label={t('beta.mobile.newChat')}

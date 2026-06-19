@@ -32,8 +32,8 @@ const BLOCKS: SystemBlock[] = [
   {
     key: 'crm',
     icon: Users,
-    iconWrap: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    iconColor: 'text-[#1A40FF] dark:text-[#5570FF]',
+    iconWrap: 'bg-primary-soft',
+    iconColor: 'text-primary',
     titleKey: 'inmobiliaria.hoy.crmTitle',
     descKey: 'inmobiliaria.hoy.crmDesc',
     cta: '/panel/inmobiliaria/propietarios',
@@ -49,8 +49,8 @@ const BLOCKS: SystemBlock[] = [
   {
     key: 'erp',
     icon: CurrencyDollar,
-    iconWrap: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    iconWrap: 'bg-success-soft',
+    iconColor: 'text-success',
     titleKey: 'inmobiliaria.hoy.erpTitle',
     descKey: 'inmobiliaria.hoy.erpDesc',
     cta: '/panel/inmobiliaria/cobros',
@@ -67,8 +67,8 @@ const BLOCKS: SystemBlock[] = [
   {
     key: 'autopilot',
     icon: Robot,
-    iconWrap: 'bg-neutral-100 dark:bg-neutral-800',
-    iconColor: 'text-neutral-600 dark:text-neutral-300',
+    iconWrap: 'bg-surface-muted',
+    iconColor: 'text-fg-muted',
     titleKey: 'inmobiliaria.hoy.autopilotTitle',
     descKey: 'inmobiliaria.hoy.autopilotDesc',
     cta: '/panel/inmobiliaria/ai',
@@ -80,8 +80,8 @@ const BLOCKS: SystemBlock[] = [
   {
     key: 'ops',
     icon: Wrench,
-    iconWrap: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
+    iconWrap: 'bg-warning-soft',
+    iconColor: 'text-warning',
     titleKey: 'inmobiliaria.hoy.opsTitle',
     descKey: 'inmobiliaria.hoy.opsDesc',
     cta: '/panel/inmobiliaria/operaciones',
@@ -126,8 +126,8 @@ export default function HoyPage() {
         <section className="rounded-xl border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-[#2C7A53]" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#2C7A53]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-success" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
             </span>
             <div>
               <p className="text-overline text-muted-foreground">{t('inmobiliaria.hoy.autopilotActiveLabel')}</p>
@@ -139,7 +139,7 @@ export default function HoyPage() {
           </div>
           <Link
             href="/panel/inmobiliaria/ai"
-            className="inline-flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] transition-colors flex-shrink-0"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline transition-colors flex-shrink-0"
           >
             {t('inmobiliaria.common.viewAll')}
             <ArrowRight className="w-4 h-4" />
@@ -183,7 +183,7 @@ export default function HoyPage() {
                         title={t('inmobiliaria.nav.pronto')}
                       >
                         <span className="truncate">{t(item.labelKey)}</span>
-                        <span className="text-[9px] font-mono uppercase tracking-wide px-1 py-0.5 rounded-full bg-muted text-muted-foreground/70 flex-shrink-0">
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-surface-muted text-fg-muted flex-shrink-0">
                           {t('inmobiliaria.nav.pronto')}
                         </span>
                       </li>

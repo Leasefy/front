@@ -69,16 +69,16 @@ const FORMAT_CONFIG = {
   pdf: {
     icon: FilePdf,
     label: 'Descargar PDF',
-    color: 'text-[#C4503B] dark:text-[#E0664D]',
-    bgColor: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    buttonBg: 'bg-[#C4503B] hover:bg-[#C4503B]',
+    color: 'text-danger',
+    bgColor: 'bg-danger-soft',
+    buttonBg: 'bg-danger hover:opacity-90',
   },
   excel: {
     icon: FileXls,
     label: 'Descargar Excel',
-    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    buttonBg: 'bg-[#2C7A53] hover:bg-[#2C7A53]',
+    color: 'text-success',
+    bgColor: 'bg-success-soft',
+    buttonBg: 'bg-success hover:opacity-90',
   },
 };
 
@@ -124,7 +124,7 @@ export function ExportButton({
           'inline-flex items-center justify-center font-medium transition-all',
           sizeConfig.button,
           internalSuccess
-            ? 'bg-[#2C7A53] hover:bg-[#2C7A53] text-white'
+            ? 'bg-success hover:opacity-90 text-white'
             : disabled
               ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
               : `${config.buttonBg} text-white shadow-${format === 'pdf' ? 'red' : 'green'}-500/25`,
@@ -179,7 +179,7 @@ export function ExportButton({
             sizeConfig.button,
             disabled
               ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              : 'bg-[#1A40FF] hover:opacity-90 text-white',
+              : 'bg-primary hover:opacity-90 text-white',
             className
           )}
         >

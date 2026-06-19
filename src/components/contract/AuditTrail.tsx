@@ -66,14 +66,14 @@ interface TimelineEvent {
 // ============================================================================
 
 const EVENT_VISUAL: Record<TimelineEventType, { icon: typeof FileText; color: string; bgColor: string }> = {
-  created:                  { icon: FileText,      color: 'text-[#1A40FF] dark:text-[#5570FF]',       bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15' },
-  sent_for_signing:         { icon: PaperPlaneTilt, color: 'text-[#1A40FF] dark:text-[#5570FF]',  bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15' },
-  tenant_signed:            { icon: PenNib,         color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
-  landlord_signed:          { icon: PenNib,         color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
-  rejection_modifications:  { icon: PencilSimple,   color: 'text-[#B7791F] dark:text-[#D2992F]',    bgColor: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15' },
-  rejection_definitive:     { icon: XCircle,        color: 'text-[#C4503B] dark:text-[#E0664D]',      bgColor: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15' },
-  fully_signed:             { icon: CheckCircle,    color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
-  activated:                { icon: CheckCircle,    color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
+  created:                  { icon: FileText,      color: 'text-primary',       bgColor: 'bg-primary-soft' },
+  sent_for_signing:         { icon: PaperPlaneTilt, color: 'text-primary',  bgColor: 'bg-primary-soft' },
+  tenant_signed:            { icon: PenNib,         color: 'text-success', bgColor: 'bg-success-soft' },
+  landlord_signed:          { icon: PenNib,         color: 'text-success', bgColor: 'bg-success-soft' },
+  rejection_modifications:  { icon: PencilSimple,   color: 'text-warning',    bgColor: 'bg-warning-soft' },
+  rejection_definitive:     { icon: XCircle,        color: 'text-danger',      bgColor: 'bg-danger-soft' },
+  fully_signed:             { icon: CheckCircle,    color: 'text-success', bgColor: 'bg-success-soft' },
+  activated:                { icon: CheckCircle,    color: 'text-success', bgColor: 'bg-success-soft' },
 };
 
 // ============================================================================
@@ -256,8 +256,8 @@ function TimelineEventItem({
             )}
             {event.otpVerified && (
               <div className="flex items-center gap-2 text-xs">
-                <Shield className="h-3 w-3 text-[#2C7A53]" />
-                <span className="text-[#2C7A53] font-medium">Identidad verificada por código de un solo uso</span>
+                <Shield className="h-3 w-3 text-success" />
+                <span className="text-success font-medium">Identidad verificada por código de un solo uso</span>
               </div>
             )}
           </div>
@@ -265,7 +265,7 @@ function TimelineEventItem({
 
         {/* Badge verificado en vista compacta */}
         {isSignature && !showDetails && event.otpVerified && (
-          <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#2C7A53]">
+          <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-success">
             <Shield className="h-3 w-3" />
             <span>Verificado</span>
           </div>

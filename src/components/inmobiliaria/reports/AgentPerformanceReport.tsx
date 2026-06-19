@@ -22,16 +22,16 @@ interface AgentPerformanceReportProps {
 
 const COLOR_MAP = {
   amber: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
   blue: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   emerald: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   violet: {
     bg: 'bg-neutral-100 dark:bg-neutral-800',
@@ -137,7 +137,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                     className={cn(
                       'border-b border-neutral-50 dark:border-neutral-800/50 transition-colors',
                       isTop
-                        ? 'bg-[#F8F0E0]/50 dark:bg-[#B7791F]/10 hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20'
+                        ? 'bg-warning-soft/50 dark:bg-warning/10 hover:bg-warning-soft'
                         : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/30'
                     )}
                   >
@@ -146,7 +146,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                       <div className="flex items-center">
                         {isTop ? (
                           <Medal
-                            className="w-5 h-5 text-[#B7791F]"
+                            className="w-5 h-5 text-warning"
                             weight="fill"
                           />
                         ) : (
@@ -184,10 +184,10 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                             className={cn(
                               'h-full rounded-full transition-all duration-500',
                               agent.conversionRate >= 70
-                                ? 'bg-[#2C7A53]'
+                                ? 'bg-success'
                                 : agent.conversionRate >= 50
-                                  ? 'bg-[#1A40FF]'
-                                  : 'bg-[#B7791F]'
+                                  ? 'bg-primary'
+                                  : 'bg-warning'
                             )}
                             style={{ width: `${conversionWidth}%` }}
                           />
@@ -248,10 +248,10 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
                       agent.conversionRate >= 70
-                        ? 'bg-[#2C7A53]'
+                        ? 'bg-success'
                         : agent.conversionRate >= 50
-                          ? 'bg-[#1A40FF]'
-                          : 'bg-[#B7791F]'
+                          ? 'bg-primary'
+                          : 'bg-warning'
                     )}
                     style={{ width: `${barWidth}%` }}
                   />

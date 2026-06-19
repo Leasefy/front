@@ -75,9 +75,9 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-md',
               'border border-neutral-200 dark:border-border',
-              'bg-white dark:bg-card',
-              'text-[13px] font-medium text-muted-foreground',
-              'hover:text-[#C4503B] hover:border-[#C4503B]/30 dark:hover:text-[#C4503B] dark:hover:border-[#C4503B]/30',
+              'bg-card',
+              'text-sm font-medium text-fg-muted',
+              'hover:text-danger hover:border-danger/30',
               'transition-colors duration-150'
             )}
           >

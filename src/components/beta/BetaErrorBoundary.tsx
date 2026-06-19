@@ -46,7 +46,7 @@ export class BetaErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="flex flex-col items-center justify-center h-full px-6 py-12">
-          <WarningCircle className="w-12 h-12 text-[#C4503B] mb-4" weight="fill" />
+          <WarningCircle className="w-12 h-12 text-danger mb-4" weight="fill" />
           <h2 className="text-lg font-semibold text-foreground mb-2">
             Algo salio mal
           </h2>
@@ -56,7 +56,7 @@ export class BetaErrorBoundary extends Component<Props, State> {
           <button
             onClick={this.handleRetry}
             className="flex items-center gap-2 px-4 py-2 rounded-md
- bg-[#1A40FF] text-white hover:opacity-90
+ bg-primary text-white hover:opacity-90
  text-sm font-medium transition-colors"
           >
             <ArrowClockwise className="w-4 h-4" />

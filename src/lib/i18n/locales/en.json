@@ -4236,7 +4236,35 @@
         "cobranzaCasos": "Cases",
         "cobranzaPendientes": "Pending",
         "cobranzaPlaybooks": "Playbooks",
-        "cobranzaReportes": "Reports"
+        "cobranzaReportes": "Reports",
+        "conciliacionConexiones": "Connections",
+        "conciliacionLiquidaciones": "Settlements",
+        "pagosCobros": "Tenant charges",
+        "pagosGenerar": "Generate charges",
+        "pagosFallidos": "Failed payments",
+        "pagosRecordatorios": "Reminders",
+        "pagosPropietarios": "Owner payouts",
+        "pagosEquipo": "AI team",
+        "pagosReglas": "Rules",
+        "cobranzaInbox": "Conversation inbox",
+        "cobranzaPromesas": "Payment promises",
+        "cobranzaAcuerdos": "Payment agreements",
+        "cobranzaDisputas": "Disputes",
+        "cobranzaReportesPropietarios": "Owner reports",
+        "cobranzaResultados": "Results",
+        "cobranzaEquipo": "AI team",
+        "estudioResumen": "Overview",
+        "estudioCasos": "Studies",
+        "estudioCrear": "New study",
+        "estudioEquipo": "AI team",
+        "cotizadorResumen": "Overview",
+        "cotizadorNueva": "New request",
+        "cotizadorComparar": "Comparator",
+        "cotizadorEquipo": "AI team",
+        "estudioSolicitud": "Candidate request",
+        "estudioReglas": "Rules",
+        "cotizadorEjecucion": "Execution",
+        "cotizadorIntegraciones": "Integrations"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -4259,7 +4287,14 @@
             "quotesToday": "Quotes today",
             "approvalRate": "Approval rate",
             "primaPromedio": "Avg monthly premium",
-            "costPerQuote": "Cost per quote"
+            "costPerQuote": "Cost per quote",
+            "asegurables": "Insurable",
+            "tasaAsegurabilidad": "Insurability rate",
+            "multiOpcion": "With multiple options",
+            "sinAseguradora": "No insurer",
+            "tiempoRespuesta": "Response time",
+            "arriendosCerrados": "Leases closed",
+            "valorAsegurado": "Insured value"
           },
           "recentQuotes": {
             "title": "Recent quotes",
@@ -4289,6 +4324,18 @@
             "description": "Generate the first one to start seeing metrics and verdicts.",
             "cta": {
               "label": "New quote"
+            }
+          },
+          "radarSubtitle": "Your insurability radar: the agent queries several insurers at once and flags which candidates you can close and which need your attention.",
+          "inbox": {
+            "titulo": "Queries that need attention",
+            "desc": "Cases prioritized by urgency awaiting your decision.",
+            "accionSugerida": "Suggested action",
+            "verTodas": "See all",
+            "error": "We couldn't load the queries queue",
+            "empty": {
+              "title": "All caught up",
+              "description": "No queries pending review. They'll appear here when one needs your attention."
             }
           }
         },
@@ -4344,7 +4391,37 @@
             "tipoRequerido": "Select a property type",
             "arcoBloqueado": "This ID has an active data objection — contact your administrator",
             "sinPermiso": "You do not have permission to create quotes"
-          }
+          },
+          "config": {
+            "titulo": "Configure the request",
+            "aseguradoras": {
+              "titulo": "Which insurers should we query?",
+              "todas": "All insurers",
+              "todasDesc": "We query every insurer available to your agency.",
+              "favoritas": "Favorites",
+              "favoritasDesc": "Manually pick the insurers you want to query.",
+              "recomendar": "Let Leasefy recommend",
+              "recomendarDesc": "Leasefy picks the best insurers for the candidate's profile.",
+              "cargando": "Loading insurers…",
+              "sinAseguradoras": "No insurers available. We'll use the ones Leasefy recommends.",
+              "seleccionaUna": "Select at least one insurer."
+            },
+            "prioridad": {
+              "titulo": "What should we prioritize?",
+              "rapidez": "Speed",
+              "costo": "Lowest cost",
+              "cobertura": "Best coverage",
+              "probabilidad": "Highest approval odds"
+            },
+            "modo": {
+              "titulo": "Run mode",
+              "automatico": "Automatic",
+              "automaticoDesc": "Leasefy runs the request and picks the best option with no intervention.",
+              "revision": "With review",
+              "revisionDesc": "You review the results before moving forward with an insurer."
+            }
+          },
+          "ctaConsultar": "Check insurability"
         },
         "reQuote": {
           "cedulaNotice": {
@@ -4475,7 +4552,15 @@
             "asesorHint": "We don't have an automatic adjustment to suggest for this case. Talk to a Leasefy advisor to review options manually.",
             "footerNote": "Re-quoting opens the form with the current data so you can adjust what's needed.",
             "recotizar": "Re-quote with changes",
-            "sugerirAsesor": "Talk to an advisor"
+            "sugerirAsesor": "Talk to an advisor",
+            "menu": {
+              "eyebrow": "Other paths",
+              "otroCandidato": "Find another candidate",
+              "complementarIngresos": "Supplement income",
+              "otraEntidad": "Query another insurer",
+              "guardarNoAsegurable": "Save as not insurable",
+              "sugerirInmueble": "Suggest another property"
+            }
           },
           "condiciones": {
             "titulo": "Conditions to resolve",
@@ -4495,6 +4580,28 @@
             "condicionesVisibleHint": "Conditions listed above",
             "avanzarAction": "Proceed",
             "proximamente": "Coming soon"
+          },
+          "acciones": {
+            "barLabel": "Case actions",
+            "avanzar": "Proceed with recommended",
+            "comparar": "Compare options",
+            "codeudor": "Request co-signer",
+            "descargar": "Download",
+            "compartir": "Share",
+            "contrato": "Send to contract",
+            "reintentar": "Retry",
+            "proximamente": "Coming soon",
+            "cerrar": "Close"
+          },
+          "postSeleccion": {
+            "titulo": "What do you want to do now?",
+            "radicar": "File the policy",
+            "expediente": "Generate case file",
+            "notificar": "Notify the advisor",
+            "propietario": "Share with the owner",
+            "contrato": "Move to contract",
+            "guardar": "Save the chosen option",
+            "sinOpcion": "Available once there is an insurable option."
           }
         },
         "pdf": {
@@ -4850,6 +4957,67 @@
         "configuracion": {
           "title": "Settings & autonomy",
           "subtitle": "What the agent can do on its own and what always requires your approval. Read-only for now: today nothing is applied without your sign-off."
+        },
+        "labels": {
+          "mas_rapida": "Fastest",
+          "menor_costo": "Lowest cost",
+          "mejor_cobertura": "Best coverage",
+          "menor_friccion": "Least friction",
+          "requiere_codeudor": "Needs co-signer",
+          "no_recomendada": "Not recommended"
+        },
+        "caso": {
+          "eyebrow": "Case",
+          "estadoLabel": "Overall status",
+          "estado": {
+            "yes": "Insurable",
+            "partial": "Partial",
+            "no": "Not insurable",
+            "enProceso": "In progress",
+            "sinResultado": "No result"
+          },
+          "candidato": "Candidate",
+          "inmueble": "Property",
+          "canon": "Rent",
+          "ciudad": "City",
+          "tipo": "Property type",
+          "fecha": "Query date"
+        },
+        "recomendacion": {
+          "eyebrow": "Recommendation",
+          "sinRecomendacion": "The recommendation will appear once the analysis finishes.",
+          "conclusion": "Conclusion",
+          "mejorOpcion": "Best option",
+          "mensual": "/mo",
+          "ningunaAsegura": "No insurer covers this case for now.",
+          "sinMejorOpcion": "No recommended option yet.",
+          "porQue": "Why",
+          "siguienteAccion": "Next best action",
+          "avanzar": "Proceed with recommended",
+          "recotizar": "Re-quote with changes"
+        },
+        "comparar": {
+          "title": "Comparison",
+          "subtitle": "Pit candidate insurers against each other, criterion by criterion, to decide which one to move forward with.",
+          "empty": {
+            "title": "Nothing to compare yet",
+            "description": "The comparison fills in when you run an insurability query. You'll see here, side by side, which insurer approves the candidate, whether it requires a co-signer, its estimated time and cost, the additional documents and the friction of the process.",
+            "cta": "New query"
+          },
+          "preview": {
+            "aria": "Comparison preview",
+            "label": "Here's what it will look like",
+            "criterioCol": "Criterion"
+          },
+          "criteria": {
+            "aseguraCandidato": "Insures candidate",
+            "codeudor": "Co-signer",
+            "tiempoEstimado": "Estimated time",
+            "costoEstimado": "Estimated cost",
+            "documentosAdicionales": "Additional documents",
+            "friccion": "Friction",
+            "recomendacion": "Recommendation"
+          }
         }
       },
       "access": {
@@ -6612,6 +6780,742 @@
             },
             "importarProximamente": "Coming soon",
             "importarNota": "First portfolio? Write to your Leasefy contact to load it."
+          }
+        }
+      },
+      "estudio": {
+        "resultados": {
+          "viable": "Viable",
+          "viable_con_condiciones": "Viable with conditions",
+          "requiere_analisis_humano": "Needs human review",
+          "no_recomendado": "Not recommended"
+        },
+        "indicadores": {
+          "identidad": "Identity",
+          "documentos": "Documents",
+          "ingresos": "Income",
+          "capacidad_pago": "Payment capacity",
+          "riesgo_documental": "Document risk",
+          "credito": "Credit",
+          "codeudor": "Co-signer"
+        },
+        "condiciones": {
+          "agregar_codeudor": "Add co-signer",
+          "cargar_documento": "Upload document",
+          "mejorar_soporte_ingresos": "Improve income support",
+          "confirmar_laboral": "Confirm employment",
+          "revisar_inconsistencia": "Review inconsistency"
+        },
+        "acciones": {
+          "enviar_a_asegurabilidad": "Send to insurability",
+          "crear_contrato": "Create contract",
+          "compartir_propietario": "Share with owner",
+          "descargar": "Download study",
+          "solicitar_codeudor": "Request co-signer",
+          "pedir_documentos": "Request more documents",
+          "enviar_revision_humana": "Send to human review",
+          "buscar_otro_candidato": "Find another candidate",
+          "sugerir_inmueble_menor": "Suggest a lower-rent property"
+        },
+        "detalle": {
+          "titulo": "Study detail",
+          "expediente": "File",
+          "contexto": "Context",
+          "recomendacion": "Recommendation",
+          "nivel": "Level",
+          "puntaje": "Score",
+          "motivos": "Reasons",
+          "porQue": "Why",
+          "siguienteMejorAccion": "Next best action",
+          "accionesRapidas": "Quick actions",
+          "notaHumano": "The final decision is always yours — the agent only recommends.",
+          "sinPermisoAccion": "You don’t have permission for this action.",
+          "relacionIngresoCanon": "Income / rent",
+          "documentosProcesados": "Documents",
+          "codeudorRecomendado": "Adding a co-signer is recommended to improve viability.",
+          "condicionesTitulo": "Conditions to proceed",
+          "sinDatos": "No study data yet.",
+          "sinRecomendacion": "No recommendation yet.",
+          "enProceso": "The study is in progress. We’ll show the decision as soon as it’s ready.",
+          "error": "Could not load the study",
+          "reintentar": "Retry",
+          "noDisponible": "Not available",
+          "noDisponibleTitulo": "Study not available",
+          "noDisponibleDesc": "This study does not exist or does not belong to your agency.",
+          "volverLista": "Back to studies",
+          "tabs": {
+            "decision": "Decision",
+            "indicadores": "Indicators",
+            "documentos": "Documents",
+            "consistencia": "Consistency",
+            "racional": "Rationale",
+            "historial": "History",
+            "conversaciones": "Conversations",
+            "codeudores": "Co-signers",
+            "reporte": "Report"
+          },
+          "severidad": {
+            "low": "Low",
+            "medium": "Medium",
+            "high": "High"
+          },
+          "factores": {
+            "solvencia": "Solvency",
+            "credito": "Credit",
+            "estabilidad_laboral": "Job stability",
+            "consistencia_cruzada": "Cross-consistency",
+            "identidad": "Identity"
+          },
+          "documentos": {
+            "empty": "No document information for this study.",
+            "resumenTitulo": "Documents summary",
+            "enviados": "Sent",
+            "procesados": "Processed",
+            "omitidos": "Skipped",
+            "tiposPresentes": "Types present",
+            "banderasTitulo": "Integrity flags",
+            "observacionesTitulo": "Observations"
+          },
+          "consistencia": {
+            "empty": "No consistency checks for this study.",
+            "verificacionesTitulo": "Cross-checks",
+            "desgloseTitulo": "Score breakdown",
+            "estado": {
+              "passed": "Passed",
+              "partial": "Partial",
+              "skipped": "Skipped",
+              "failed": "Failed"
+            }
+          },
+          "racional": {
+            "explicacionTitulo": "Agent explanation",
+            "aporteTitulo": "Per-factor contribution",
+            "fuente": "Source",
+            "puntajeFinal": "Final score"
+          },
+          "historial": {
+            "empty": {
+              "title": "No history yet",
+              "description": "Once the study records events, you'll see the full timeline here: from the request to the decision and the team's actions."
+            },
+            "ejemplo": {
+              "title": "Timeline example",
+              "solicitud": {
+                "title": "Request created",
+                "desc": "The candidate started the study process."
+              },
+              "documentos": {
+                "title": "Documents received",
+                "desc": "Identity and income supporting documents were uploaded."
+              },
+              "evaluacion": {
+                "title": "Study evaluated",
+                "desc": "The engine analyzed the information and calculated the score."
+              },
+              "decision": {
+                "title": "Decision recorded",
+                "desc": "The result and next actions were determined."
+              },
+              "pendiente": "— · —",
+              "nota": "Illustrative structure. Real events will appear with their date and author when available."
+            }
+          },
+          "conversaciones": {
+            "empty": {
+              "title": "No conversations yet",
+              "description": "Once you exchange messages with the candidate during the study, the conversation thread will appear here."
+            },
+            "ejemplo": {
+              "title": "Conversation example",
+              "autorAgencia": "Agency",
+              "autorCandidato": "Candidate",
+              "msg1": "Hi, to move forward with your study we need your employment certificate.",
+              "msg2": "Sure, I'll upload it today.",
+              "msg3": "Perfect, thank you. We'll let you know once we have the result.",
+              "nota": "Illustrative structure. Real messages will appear with their date and channel when available."
+            }
+          },
+          "codeudores": {
+            "empty": {
+              "title": "No co-signers yet",
+              "description": "When this study includes one or more co-signers, you'll see their identity, income and document validation here."
+            },
+            "recomendado": "This study would improve its viability with a co-signer. Once added, their validation will appear here.",
+            "ejemplo": {
+              "title": "Co-signer card example",
+              "nombre": "Co-signer name",
+              "documento": "ID — · — · —",
+              "identidad": "Identity",
+              "ingresos": "Income",
+              "documentos": "Documents",
+              "nota": "Illustrative structure. Each real co-signer will bring its own complete validation when available."
+            }
+          },
+          "reporte": {
+            "empty": {
+              "title": "The report isn't ready yet",
+              "description": "Once the study has a decision, you'll be able to view and share the final report here."
+            },
+            "audiencia": "Report view",
+            "interna": "Agency internal",
+            "propietario": "Owner",
+            "descargar": "Download",
+            "compartir": "Share",
+            "proximamente": "Coming soon",
+            "accionesNota": "Download and share will be available once the report generator is connected.",
+            "tituloInterna": "Study report · internal use",
+            "tituloPropietario": "Study report for the owner",
+            "subInterna": "Full version with score, reasons and conditions.",
+            "subPropietario": "Summary version, ready to send to the owner.",
+            "resultado": "Result",
+            "puntaje": "Score",
+            "motivos": "Reasons",
+            "condiciones": "Conditions",
+            "notaPropietario": "The owner view omits the score and internal analysis details."
+          }
+        },
+        "overview": {
+          "title": "Tenant studies",
+          "subtitle": "Evaluate candidates, validate their information, and decide with more confidence who can move forward in the lease process.",
+          "lastUpdated": "Updated",
+          "verEstudios": "View studies",
+          "errorLoading": "Error loading studies",
+          "atencion": {
+            "title": "What needs your attention",
+            "desc": "Review studies prioritized by severity and open each case to decide.",
+            "cta": "Open inbox"
+          },
+          "pipeline": {
+            "title": "Pipeline by status"
+          },
+          "feed": {
+            "title": "Recent activity"
+          },
+          "empty": {
+            "title": "No studies yet",
+            "description": "When a tenant study comes in, its metrics and pending items will appear here."
+          }
+        },
+        "list": {
+          "title": "Studies",
+          "subtitle": "Tenant study inbox: filter, prioritize, and open each case to decide.",
+          "count": "{{n}} studies",
+          "error": "Could not load studies",
+          "errorRetry": "Retry",
+          "emptyFiltered": "No studies match these filters.",
+          "empty": {
+            "title": "No studies yet",
+            "description": "When a tenant study request comes in, it will show up here for your review."
+          },
+          "filters": {
+            "title": "Filters",
+            "severidad": "Severity",
+            "estado": "Status",
+            "flags": "Flags",
+            "clear": "Clear filters",
+            "search": {
+              "label": "Search studies",
+              "placeholder": "Search by name, action, or document…"
+            }
+          },
+          "columns": {
+            "estudio": "Study",
+            "severidad": "Severity",
+            "estado": "Status",
+            "accionSugerida": "Suggested action",
+            "tiempo": "Time"
+          }
+        },
+        "nuevo": {
+          "title": "New study",
+          "subtitle": "Capture the property and the candidate to open a study and send the information request.",
+          "inmueble": {
+            "title": "Property",
+            "desc": "Details of the property to be leased.",
+            "propiedad": "Property",
+            "propiedadPlaceholder": "Apt 502, North Tower — Calle 100 #15-20",
+            "ciudad": "City",
+            "ciudadPlaceholder": "Bogotá",
+            "fechaInicio": "Tentative start date",
+            "canon": "Monthly rent (COP)",
+            "administracion": "HOA fee (COP)",
+            "valorTotal": "Total monthly amount",
+            "valorTotalPlaceholder": "Computed from rent + HOA fee",
+            "valorTotalHint": "Computed automatically: rent + HOA fee.",
+            "propietario": "Owner",
+            "propietarioPlaceholder": "Owner name",
+            "asesor": "Responsible agent",
+            "asesorPlaceholder": "Agent name"
+          },
+          "candidato": {
+            "title": "Candidate",
+            "desc": "Person who will receive the information request.",
+            "nombre": "Full name",
+            "nombrePlaceholder": "María Fernanda Gómez",
+            "documento": "ID document",
+            "documentoPlaceholder": "ID 1,020,304,050",
+            "celular": "Mobile",
+            "correo": "Email",
+            "ocupacion": "Occupation",
+            "origen": "Source",
+            "codeudor": "Has a co-signer?",
+            "codeudorHint": "Whether the candidate provides a co-signer to back the lease."
+          },
+          "ocupacion": {
+            "empleado": "Employee",
+            "independiente": "Self-employed",
+            "pensionado": "Retiree",
+            "empresa": "Company",
+            "estudiante": "Student",
+            "otro": "Other"
+          },
+          "origen": {
+            "lead": "Lead",
+            "solicitud": "Application",
+            "asesor": "Agent"
+          },
+          "confirmacion": "Coming soon: this will create the study and send the request to the candidate.",
+          "cta": "Create study and send request"
+        },
+        "equipo": {
+          "title": "AI Team",
+          "subtitle": "A team of AI functions coordinates each study end to end and delivers an explained recommendation, step by step.",
+          "pipeline": {
+            "label": "Team pipeline"
+          },
+          "stepLabel": "Step",
+          "queHace": "What it does",
+          "resultados": "Results",
+          "steps": {
+            "recoleccion": {
+              "title": "Collection",
+              "b1": "Receives the candidate's application and builds their digital folder.",
+              "b2": "Requests missing data and supporting documents through the enabled channels.",
+              "b3": "Confirms identity and consent before moving forward.",
+              "m1": "Applications received",
+              "m2": "Complete folders"
+            },
+            "documentos": {
+              "title": "Documents",
+              "b1": "Reads and classifies each submitted document.",
+              "b2": "Detects illegible, expired, or potentially altered documents.",
+              "b3": "Flags what needs resubmission or human review.",
+              "m1": "Documents validated",
+              "m2": "Open findings"
+            },
+            "ingresos": {
+              "title": "Income",
+              "b1": "Estimates payment capacity from the financial supporting documents.",
+              "b2": "Cross-checks income against the rent to calculate the margin.",
+              "b3": "Flags inconsistencies between what is declared and what is supported.",
+              "m1": "Average margin",
+              "m2": "Cases without support"
+            },
+            "riesgo": {
+              "title": "Risk",
+              "b1": "Combines documents, income, and background into a risk score.",
+              "b2": "Applies the rules and thresholds defined by the agency.",
+              "b3": "Explains which factors raise or lower the risk of each case.",
+              "m1": "Average risk",
+              "m2": "Cases on alert"
+            },
+            "reporte": {
+              "title": "Report",
+              "b1": "Brings everything together in a single report with an explained recommendation.",
+              "b2": "Summarizes strengths, alerts, and pending items to decide.",
+              "b3": "Leaves the case ready to approve, reject, or request more information.",
+              "m1": "Reports delivered",
+              "m2": "Study time"
+            }
+          },
+          "empty": {
+            "title": "No team activity yet",
+            "description": "Once the first study is processed, each step's results and the team's final recommendation will appear here.",
+            "cta": "View studies"
+          }
+        },
+        "solicitud": {
+          "title": "Application sent to the candidate",
+          "subtitle": "This is what the candidate experiences when you send them the study application: a guided, step-by-step form designed to be completed without friction from their phone.",
+          "nota": {
+            "title": "This is how the candidate sees it when you send the application",
+            "desc": "This is a preview. Walk through the steps to see the full experience; no real information is saved or sent here."
+          },
+          "progreso": {
+            "label": "Application progress",
+            "paso": "Step",
+            "de": "of"
+          },
+          "stepper": {
+            "label": "Application steps"
+          },
+          "pasos": {
+            "personales": {
+              "title": "Personal details",
+              "helper": "Let’s start with the basics to identify you. It only takes a couple of minutes.",
+              "f1": "Full name",
+              "f2": "ID type and number",
+              "f3": "Date of birth",
+              "f4": "Mobile and email",
+              "f5": "City of residence"
+            },
+            "laboral": {
+              "title": "Employment and financial information",
+              "helper": "Tell us what you do. This helps us understand your situation and move faster.",
+              "f1": "Occupation (employee, self-employed, retiree…)",
+              "f2": "Company or activity",
+              "f3": "Position and seniority",
+              "f4": "Contract type"
+            },
+            "ingresos": {
+              "title": "Income",
+              "helper": "Tell us your monthly income. Your data is protected and used only for your study.",
+              "f1": "Monthly income",
+              "f2": "Other income (optional)",
+              "f3": "Expenses / financial obligations"
+            },
+            "documentos": {
+              "title": "Documents",
+              "helper": "Upload your supporting files from your phone or computer. We accept photos or PDFs, whatever you have on hand.",
+              "f1": "ID document",
+              "f2": "Income proof (pay stubs, statements)",
+              "f3": "Employment certificate (if applicable)"
+            },
+            "codeudor": {
+              "title": "Co-signer",
+              "helper": "If you have a co-signer to back the lease, add them here. It’s optional depending on the property.",
+              "f1": "Co-signer details",
+              "f2": "Relationship to the candidate",
+              "f3": "Co-signer documents"
+            },
+            "autorizacion": {
+              "title": "Data authorization",
+              "helper": "You authorize the processing of your data and credit bureau checks, in accordance with the law.",
+              "f1": "Personal data processing authorization",
+              "f2": "Credit bureau check authorization"
+            },
+            "confirmacion": {
+              "title": "Confirmation",
+              "helper": "All set! Review your information and submit it. We’ll notify you by email when we have a response.",
+              "f1": "Summary of submitted information",
+              "f2": "Submission confirmation"
+            }
+          },
+          "candidatoCta": {
+            "continuar": "Continue",
+            "enviar": "Submit application",
+            "hint": "Preview: the candidate will see this button to move to the next step."
+          },
+          "preview": {
+            "anterior": "Previous step",
+            "siguiente": "See next step",
+            "reiniciar": "Back to start"
+          }
+        },
+        "reglas": {
+          "title": "Study rules",
+          "subtitle": "Define how the agent evaluates your agency's candidates: criteria, documents, escalations, and how it communicates with each person.",
+          "relacion": {
+            "title": "Minimum income-to-rent ratio",
+            "desc": "How many times the candidate's income must exceed the rent to be considered sufficient.",
+            "minima": "Times the rent (minimum)",
+            "hint": "Example: 3 = income must be at least 3 times the rent."
+          },
+          "codeudor": {
+            "title": "When to require a co-signer",
+            "desc": "Decide in which situations the agent requests a co-signer to back the lease.",
+            "regla": "Rule",
+            "siempre": "Always required",
+            "porRelacion": "When the income-to-rent ratio is low",
+            "porOcupacion": "Based on the candidate's occupation",
+            "nunca": "Never required automatically",
+            "umbral": "Require a co-signer if the ratio is below"
+          },
+          "docs": {
+            "title": "Required documents by occupation",
+            "desc": "Pick an occupation and mark which documents that type of candidate must provide.",
+            "ocupacionTablist": "Occupation"
+          },
+          "ocupacion": {
+            "empleado": "Employee",
+            "independiente": "Self-employed",
+            "pensionado": "Retiree",
+            "empresa": "Company",
+            "estudiante": "Student"
+          },
+          "doc": {
+            "cedula": "ID document",
+            "laboral": "Employment letter",
+            "extractos": "Bank statements",
+            "declaracionRenta": "Tax return",
+            "rut": "Tax ID (RUT)",
+            "camaraComercio": "Chamber of commerce certificate",
+            "referencias": "References"
+          },
+          "revision": {
+            "title": "Cases that require human review",
+            "desc": "When any of these cases occur, the agent does not decide alone: it hands the case to an advisor.",
+            "sinIngresos": "Income cannot be verified",
+            "alertaListas": "Alert on restrictive lists",
+            "relacionBaja": "Income-to-rent ratio below the minimum",
+            "docInconsistente": "Inconsistent documents",
+            "extranjero": "Foreign candidate"
+          },
+          "asegurabilidad": {
+            "title": "When to send to insurability",
+            "desc": "Define when the agent sends the candidate to an insurability study.",
+            "regla": "Submission rule",
+            "aprobados": "Approved candidates only",
+            "todos": "All candidates",
+            "manual": "Only when the advisor decides"
+          },
+          "propietario": {
+            "title": "Information to share with owners",
+            "desc": "Control what the owner sees when the agent reports a candidate.",
+            "decision": "Final decision",
+            "decisionHint": "Approved, conditional, or rejected.",
+            "resumen": "Candidate summary",
+            "resumenHint": "Summarized profile: occupation, income, and background.",
+            "score": "Risk score",
+            "scoreHint": "The numeric score calculated by the agent.",
+            "documentos": "Candidate documents",
+            "documentosHint": "Access to the supporting files uploaded by the candidate."
+          },
+          "tono": {
+            "title": "Tone of messages to the candidate",
+            "desc": "How the agent communicates with the candidate during the process.",
+            "cercano": "Friendly",
+            "neutral": "Neutral",
+            "formal": "Formal"
+          },
+          "recordatorios": {
+            "title": "Reminder timing",
+            "desc": "How often and how many times the agent reminds the candidate to complete their information.",
+            "cadaHoras": "Remind every (hours)",
+            "maximo": "Maximum reminders"
+          },
+          "canales": {
+            "title": "Allowed channels",
+            "desc": "Through which channels the agent can contact the candidate."
+          },
+          "canal": {
+            "whatsapp": "WhatsApp",
+            "correo": "Email",
+            "sms": "SMS",
+            "llamada": "Call"
+          },
+          "confirmacion": "Coming soon: these rules will be saved and the agent will apply them to new studies.",
+          "aviso": "Configuration preview. Not yet connected to the agent: changes are not applied.",
+          "guardar": "Save rules"
+        }
+      },
+      "asegurabilidad": {
+        "equipo": {
+          "title": "AI Team",
+          "subtitle": "For each case, Leasefy queries several insurers at once and then compares and recommends the best option. Here you see how the AI team that does this work operates, step by step.",
+          "queHace": "What it does",
+          "resultados": "Results",
+          "emptyNote": "Results will appear here as the team processes cases. For now they are shown blank (—).",
+          "flow": {
+            "aria": "Insurability team flow",
+            "fanOut": "In parallel, one per insurer",
+            "fanIn": "Responses are gathered"
+          },
+          "nodes": {
+            "preparador": {
+              "title": "Query preparer",
+              "bullet1": "Gathers the candidate's and property's data into a single package.",
+              "bullet2": "Checks that the information is complete before querying.",
+              "bullet3": "Builds a uniform query to send to all insurers at once.",
+              "metric1": "Queries prepared",
+              "metric2": "Complete data",
+              "metric3": "Assembly time"
+            },
+            "consultorA": {
+              "title": "Consultant · Insurer A",
+              "bullet1": "Queries the insurer using that partner's own rules.",
+              "bullet2": "Brings back the verdict, the premium and the conditions.",
+              "metric1": "Responses",
+              "metric2": "Estimated premium"
+            },
+            "consultorB": {
+              "title": "Consultant · Insurer B",
+              "bullet1": "Queries in parallel, without waiting for the other insurers.",
+              "bullet2": "Normalizes the response so it can be compared later.",
+              "metric1": "Responses",
+              "metric2": "Estimated premium"
+            },
+            "consultorC": {
+              "title": "Consultant · Insurer C",
+              "bullet1": "Applies the specific requirements of each partner's product.",
+              "bullet2": "Flags exclusions or conditions the operator must review.",
+              "metric1": "Responses",
+              "metric2": "Estimated premium"
+            },
+            "comparador": {
+              "title": "Comparer",
+              "bullet1": "Puts the responses from all insurers side by side.",
+              "bullet2": "Aligns criteria (coverage, premium, conditions) for a fair comparison.",
+              "bullet3": "Highlights relevant differences between each option.",
+              "metric1": "Options compared",
+              "metric2": "Viable insurers"
+            },
+            "recomendador": {
+              "title": "Recommender",
+              "bullet1": "Ranks the options by how suitable they are for the case.",
+              "bullet2": "Explains why it suggests one insurer over the others.",
+              "bullet3": "Leaves the final decision in the operator's hands.",
+              "metric1": "Recommendations",
+              "metric2": "Accepted by the operator"
+            },
+            "avance": {
+              "title": "Progress manager",
+              "bullet1": "Takes the chosen option and pushes it to the next step of the process.",
+              "bullet2": "Notifies the agency and keeps a record of the progress.",
+              "bullet3": "Follows up until the case is resolved.",
+              "metric1": "Cases in progress",
+              "metric2": "Time to resolution"
+            }
+          }
+        },
+        "ejecucion": {
+          "title": "Real-time execution",
+          "subtitle": "When you run a query, each insurer advances in parallel through its own status. Here you'll see each one's live progress.",
+          "cta": "New query",
+          "empty": {
+            "title": "No query in progress",
+            "description": "This view activates when you run an insurability query: each insurer will appear with its status updating in real time. Below you can see the legend of possible statuses."
+          },
+          "leyenda": {
+            "title": "Status legend",
+            "desc": "Each insurer can be in one of these statuses during a query."
+          },
+          "ejemplo": {
+            "title": "Parallel query example",
+            "desc": "This is how the board would look with several insurers being queried at once. Illustrative data.",
+            "disclaimer": "The insurers and statuses shown are examples; real data will appear when you run a query."
+          },
+          "como": {
+            "title": "How execution works",
+            "desc": "When you launch a query, Leasefy contacts each configured insurer simultaneously. You don't have to wait for one to start another: the board updates as each portal responds, and you can open the case as soon as there's a verdict."
+          },
+          "estado": {
+            "noConsultada": {
+              "label": "Not queried",
+              "desc": "The request has not yet been sent to this insurer."
+            },
+            "consultando": {
+              "label": "Querying",
+              "desc": "Sending the request to the insurer's portal or API."
+            },
+            "enEspera": {
+              "label": "Waiting",
+              "desc": "The request is queued on the insurer's side."
+            },
+            "respondio": {
+              "label": "Responded",
+              "desc": "The insurer responded; the result still needs to be classified."
+            },
+            "aprobado": {
+              "label": "Approved",
+              "desc": "The candidate is insurable with no conditions."
+            },
+            "aprobadoCondicionado": {
+              "label": "Approved with conditions",
+              "desc": "Insurable, but subject to conditions or premium adjustment."
+            },
+            "noAsegurable": {
+              "label": "Not insurable",
+              "desc": "The insurer declined coverage for this candidate."
+            },
+            "requiereRevision": {
+              "label": "Needs manual review",
+              "desc": "The response needs a person to interpret it."
+            },
+            "faltanDatos": {
+              "label": "Missing data",
+              "desc": "The insurer requests additional information about the candidate."
+            },
+            "portalNoDisponible": {
+              "label": "Portal unavailable",
+              "desc": "The insurer's portal or API is not responding."
+            },
+            "error": {
+              "label": "Error",
+              "desc": "A technical error occurred during the query."
+            },
+            "resultadoVencido": {
+              "label": "Expired result",
+              "desc": "The response expired; it must be queried again."
+            }
+          }
+        },
+        "integraciones": {
+          "title": "Integrations",
+          "subtitle": "How insurability connects with the rest of the platform, what each result source means, and which business metrics you'll be able to track.",
+          "integraciones": {
+            "title": "Integrations",
+            "desc": "Connect insurability with the systems you already use so information flows without re-typing it.",
+            "crm": {
+              "title": "CRM",
+              "desc": "Pull candidates and contacts from the CRM to start the query without re-typing data."
+            },
+            "propiedades": {
+              "title": "Properties",
+              "desc": "Take property data (city, rent, type) directly from the properties inventory."
+            },
+            "estudio": {
+              "title": "Tenant study",
+              "desc": "Connect the study result with insurability to decide with complete information."
+            },
+            "contratos": {
+              "title": "Contracts",
+              "desc": "Send the approved option to contracts to move to the next step of the lease."
+            },
+            "matching": {
+              "title": "Matching",
+              "desc": "Share insurability with matching to pair candidates and properties with more certainty."
+            },
+            "reportes": {
+              "title": "Reports",
+              "desc": "Bring insurability metrics into the business reports to see them alongside the rest."
+            }
+          },
+          "estado": {
+            "conectar": "Connect",
+            "desconectado": "Not connected",
+            "proximamente": "Coming soon"
+          },
+          "trazabilidad": {
+            "title": "Traceability",
+            "desc": "Every insurability result carries a source label so you always know where it comes from and how much you can trust it.",
+            "estimado": {
+              "title": "Estimated · Leasefy pre-validation",
+              "desc": "It's a guide generated by Leasefy using each insurer's known rules. It informs the decision, but it is NOT yet the entity's official verdict."
+            },
+            "confirmado": {
+              "title": "Confirmed · Entity response",
+              "desc": "It's the insurer's official response to the query. Once it appears, the result is no longer an estimate and becomes the real verdict."
+            },
+            "manual": {
+              "title": "Manual · Operator review",
+              "desc": "The operator adjusted or entered the result by hand. It's flagged as manual to keep traceability of who decided what."
+            }
+          },
+          "metricas": {
+            "title": "Business metrics",
+            "desc": "The pulse of the insurability business. Each metric will fill in as you process cases; for now they show blank (—).",
+            "consultas": "Queries",
+            "asegurables": "Insurable",
+            "noAsegurables": "Not insurable",
+            "multiOpcion": "With multiple options",
+            "recuperadosAlternativa": "Recovered via alternative",
+            "tiempoPromedio": "Average response time",
+            "entidadMejorAprobacion": "Entity with best approval",
+            "entidadMasRapida": "Fastest entity",
+            "enviadosContrato": "Sent to contract",
+            "valorAsegurado": "Insured value",
+            "emptyNote": "Blank metrics (—) have no data yet. They'll appear automatically once insurability processes cases."
           }
         }
       }

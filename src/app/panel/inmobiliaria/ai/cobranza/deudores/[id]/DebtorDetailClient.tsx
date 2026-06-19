@@ -34,6 +34,7 @@ import {
   type PIIFieldKey,
 } from '@/lib/context/PIIRevealContext'
 import { PIIRevealModal } from '@/components/inmobiliaria/cobranza/PIIRevealModal'
+import { Button } from '@/components/ui'
 
 import { DebtorSidebar } from './DebtorSidebar'
 import { DebtorActionRail } from './DebtorActionRail'
@@ -59,12 +60,12 @@ function isTabKey(s: string | null): s is TabKey {
 
 function daysBadgeClasses(days: number): string {
   if (days <= 3) {
-    return 'bg-[#2C7A53] text-[#2C7A53] ring-1 ring-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53] dark:ring-[#2C7A53]'
+    return 'bg-success-soft text-success ring-1 ring-success/30'
   }
   if (days <= 7) {
-    return 'bg-[#B7791F] text-[#B7791F] ring-1 ring-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:ring-[#B7791F]'
+    return 'bg-warning-soft text-warning ring-1 ring-warning/30'
   }
-  return 'bg-[#C4503B] text-[#C4503B] ring-1 ring-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B] dark:ring-[#C4503B]'
+  return 'bg-danger-soft text-danger ring-1 ring-danger/30'
 }
 
 interface DebtorDetailClientProps {
@@ -238,7 +239,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               </span>
             )}
             {data?.isPaused && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#B7791F] dark:bg-[#B7791F]/30 text-[#B7791F] dark:text-[#B7791F]">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning">
                 {t('inmobiliaria.ai.cobranza.detail.header.paused')}
               </span>
             )}
@@ -248,17 +249,19 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
       {/* Error */}
       {error && (
-        <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 mb-4 flex items-center justify-between">
-          <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
+        <div className="rounded-md border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.detail.error')}: {error}
           </p>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => void refetch()}
-            className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
+            hideArrow
           >
             {t('inmobiliaria.ai.cobranza.detail.errorRetry')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -281,7 +284,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
           <h2 className="flex items-center gap-2.5 mb-3">
             <span
               aria-hidden="true"
-              className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0"
+              className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
             />
             <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500">
               {t('inmobiliaria.ai.cobranza.detalle.conversacion')}
@@ -304,7 +307,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                 className={
                   'px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ' +
                   (activeTab === k
-                    ? 'border-[#6B6B6B] text-[#6B6B6B] dark:text-[#6B6B6B]'
+                    ? 'border-primary text-primary'
                     : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200')
                 }
               >
@@ -361,7 +364,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                         className={
                           'w-full text-left px-3 py-2 rounded-sm text-sm font-medium ' +
                           (activeTab === k
-                            ? 'bg-[#6B6B6B] dark:bg-[#6B6B6B]/30 text-[#6B6B6B] dark:text-[#6B6B6B]'
+                            ? 'bg-primary-soft text-primary'
                             : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800')
                         }
                       >

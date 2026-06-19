@@ -26,6 +26,11 @@ interface WizardStep3ReviewProps {
   isLoading: boolean
   arcoError: boolean
   canCreate: boolean
+  /**
+   * Optional submit-CTA override. Asegurabilidad Tier-B (visión #5) renames the
+   * final CTA to "Consultar asegurabilidad". Falls back to the legacy enviar key.
+   */
+  ctaLabel?: string
 }
 
 function maskCedula(raw: string): string {
@@ -42,8 +47,10 @@ export function WizardStep3Review({
   isLoading,
   arcoError,
   canCreate,
+  ctaLabel,
 }: WizardStep3ReviewProps) {
   const { t } = useI18n()
+  const submitLabel = ctaLabel ?? t('inmobiliaria.ai.cotizador.nueva.actions.enviar')
 
   const rows: { label: string; value: string }[] = [
     { label: t('inmobiliaria.ai.cotizador.nueva.step3.cedulaRow'), value: maskCedula(candidato.cedula) },
@@ -80,7 +87,7 @@ export function WizardStep3Review({
       {arcoError && (
         <div
           role="alert"
-          className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+          className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
         >
           {t('inmobiliaria.ai.cotizador.nueva.errors.arcoBloqueado')}
         </div>
@@ -90,6 +97,7 @@ export function WizardStep3Review({
       <div className="flex gap-3">
         <Button
           variant="secondary"
+          hideArrow
           onClick={onBack}
           disabled={isLoading}
           className="flex-1"
@@ -100,6 +108,7 @@ export function WizardStep3Review({
 
         {canCreate ? (
           <Button
+            hideArrow
             onClick={onSubmit}
             disabled={isLoading}
             className="flex-1"
@@ -108,7 +117,7 @@ export function WizardStep3Review({
             {isLoading ? (
               <SpinnerGap size={18} weight="fill" className="animate-spin" />
             ) : (
-              t('inmobiliaria.ai.cotizador.nueva.actions.enviar')
+              submitLabel
             )}
           </Button>
         ) : (
@@ -118,10 +127,11 @@ export function WizardStep3Review({
           >
             <Button
               disabled
+              hideArrow
               className="w-full"
               size="lg"
             >
-              {t('inmobiliaria.ai.cotizador.nueva.actions.enviar')}
+              {submitLabel}
             </Button>
           </span>
         )}

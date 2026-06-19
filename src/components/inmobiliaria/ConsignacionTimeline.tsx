@@ -44,8 +44,8 @@ interface TimelineEvent {
 // Event type styling
 const EVENT_STYLES: Record<TimelineEventType, { bg: string; text: string; icon: React.ElementType }> = {
   consignacion_created: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
     icon: FileText,
   },
   agent_assigned: {
@@ -54,13 +54,13 @@ const EVENT_STYLES: Record<TimelineEventType, { bg: string; text: string; icon: 
     icon: UserPlus,
   },
   property_published: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
     icon: Megaphone,
   },
   visit_scheduled: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
     icon: CalendarCheck,
   },
   visit_completed: {
@@ -69,23 +69,23 @@ const EVENT_STYLES: Record<TimelineEventType, { bg: string; text: string; icon: 
     icon: Eye,
   },
   candidate_approved: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     icon: CheckCircle,
   },
   contract_signed: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     icon: Signature,
   },
   handover_completed: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
     icon: Key,
   },
   lease_renewal: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
     icon: ArrowsClockwise,
   },
 };
@@ -341,7 +341,7 @@ export function ConsignacionTimeline({
         {hasMoreEvents && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium"
+            className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-sm text-primary hover:text-primary dark:hover:text-primary font-medium"
           >
             {isExpanded ? t('inmobiliaria.consignaciones.timeline.showLess') : t('inmobiliaria.consignaciones.timeline.showMoreEvents', { count: events.length - maxVisibleItems })}
             <CaretDown

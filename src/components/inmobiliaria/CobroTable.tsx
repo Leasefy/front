@@ -193,8 +193,8 @@ export function CobroTable({
                 {/* Property */}
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                      <HouseLine className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                    <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
+                      <HouseLine className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[180px]">
@@ -231,10 +231,10 @@ export function CobroTable({
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/30 transition-colors"
+                          className="p-1 rounded hover:bg-success-soft dark:hover:bg-success/30 transition-colors"
                           title="WhatsApp"
                         >
-                          <WhatsappLogo className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
+                          <WhatsappLogo className="w-3.5 h-3.5 text-success" weight="fill" />
                         </a>
                       </div>
                     </div>
@@ -260,9 +260,9 @@ export function CobroTable({
                   <span className={cn(
                     'font-medium',
                     cobro.paidAmount >= cobro.totalAmount
-                      ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                      ? 'text-success'
                       : cobro.paidAmount > 0
-                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                      ? 'text-primary'
                       : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.paidAmount)}
@@ -274,9 +274,9 @@ export function CobroTable({
                   <span className={cn(
                     'font-medium',
                     cobro.pendingAmount > 0 && cobro.daysLate > 0
-                      ? 'text-[#C4503B] dark:text-[#E0664D]'
+                      ? 'text-danger'
                       : cobro.pendingAmount > 0
-                      ? 'text-[#B7791F] dark:text-[#D2992F]'
+                      ? 'text-warning'
                       : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.pendingAmount)}
@@ -293,12 +293,12 @@ export function CobroTable({
                 {/* Days Late */}
                 <td className="p-4">
                   {cobro.daysLate > 0 ? (
-                    <div className="flex items-center gap-1.5 text-[#B7791F] dark:text-[#D2992F]">
+                    <div className="flex items-center gap-1.5 text-warning">
                       <Warning className="w-4 h-4" weight="fill" />
                       <span className="text-sm font-medium">{cobro.daysLate}d</span>
                     </div>
                   ) : cobro.status === 'paid' ? (
-                    <div className="flex items-center gap-1.5 text-[#2C7A53] dark:text-[#3EAE70]">
+                    <div className="flex items-center gap-1.5 text-success">
                       <CheckCircle className="w-4 h-4" weight="fill" />
                     </div>
                   ) : (
@@ -345,7 +345,7 @@ export function CobroTable({
                                 onRegisterPayment(cobro);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft dark:hover:bg-primary/20 transition-colors"
                             >
                               <CurrencyCircleDollar className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.cobros.table.registerPayment')}</span>
@@ -376,12 +376,12 @@ export function CobroTable({
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-[#2C7A53] dark:text-[#3EAE70]">
+                <span className="font-bold text-success">
                   {formatCurrency(summary.totalCollected)}
                 </span>
               </td>
               <td className="p-4">
-                <span className="font-bold text-[#B7791F] dark:text-[#D2992F]">
+                <span className="font-bold text-warning">
                   {formatCurrency(summary.totalPending)}
                 </span>
               </td>

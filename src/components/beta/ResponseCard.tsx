@@ -42,12 +42,12 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const AGENT_DOT_COLORS: Record<string, string> = {
-  emerald: 'bg-[#2C7A53]',
-  blue: 'bg-[#1A40FF]',
-  amber: 'bg-[#B7791F]',
+  emerald: 'bg-success',
+  blue: 'bg-primary',
+  amber: 'bg-warning',
   purple: 'bg-neutral-100 dark:bg-neutral-800',
-  pink: 'bg-[#C4503B]',
-  indigo: 'bg-[#1A40FF]',
+  pink: 'bg-danger',
+  indigo: 'bg-primary',
 };
 
 // ============================================================================
@@ -78,7 +78,7 @@ function TypeBadge({ type }: { type: 'informative' | 'actionable' }) {
         'text-[11px] font-medium leading-none',
         'shrink-0',
         isActionable
-          ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/10 dark:text-[#1A40FF]'
+          ? 'bg-primary-soft text-primary'
           : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
       )}
     >
@@ -106,10 +106,10 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   const variantClasses: Record<string, string> = {
     primary: cn(
-      'bg-[#1A40FF] text-white uppercase tracking-wide font-mono',
+      'bg-primary text-white uppercase tracking-wide font-mono',
       'hover:opacity-90',
       ' hover:',
-      'dark:bg-[#1A40FF] dark:hover:opacity-90'
+      'bg-primary dark:hover:opacity-90'
     ),
     secondary: cn(
       'bg-white text-foreground',

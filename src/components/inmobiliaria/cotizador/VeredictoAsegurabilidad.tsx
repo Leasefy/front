@@ -57,25 +57,22 @@ function asegurabilidadTone(asegurabilidad: FinalVerdict['asegurabilidad']): Ase
     case 'yes':
       return {
         Icon: CheckCircle,
-        badge:
-          'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] border-[#2C7A53]/25 dark:border-[#2C7A53]/40',
-        iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
+        badge: 'bg-success-soft text-success border-success/25',
+        iconColor: 'text-success',
       }
     case 'partial':
       return {
         Icon: WarningCircle,
-        badge:
-          'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] border-[#B7791F]/25 dark:border-[#B7791F]/40',
-        iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
+        badge: 'bg-warning-soft text-warning border-warning/25',
+        iconColor: 'text-warning',
       }
     case 'no':
     default:
       // Neutro deliberado — no es un "error", es un resultado. Sin rojo.
       return {
         Icon: MinusCircle,
-        badge:
-          'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
-        iconColor: 'text-neutral-500 dark:text-neutral-400',
+        badge: 'bg-surface-muted text-fg-muted border-border',
+        iconColor: 'text-fg-muted',
       }
   }
 }
@@ -145,7 +142,7 @@ export function VeredictoAsegurabilidad({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       aria-label={t('inmobiliaria.ai.cotizador.detail.veredicto.regionLabel')}
-      className="rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+      className="rounded-2xl border border-border bg-card overflow-hidden"
     >
       {/* ── CONCLUSIÓN ───────────────────────────────────────────────────── */}
       <div className="px-6 pt-6 pb-5">
@@ -153,22 +150,22 @@ export function VeredictoAsegurabilidad({
         <div className="flex items-center gap-2.5 flex-wrap">
           <span
             className={[
-              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.04em]',
+              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium uppercase tracking-wide',
               tone.badge,
             ].join(' ')}
           >
             <Icon weight="fill" className={`w-3.5 h-3.5 ${tone.iconColor}`} />
             {asegStatusLabel}
           </span>
-          {/* Badge de honestidad — neutro, mono, sin azul de relleno */}
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800/70 px-2.5 py-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.06em] text-neutral-500 dark:text-neutral-400">
-            <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-neutral-400 dark:bg-neutral-500" />
+          {/* Badge de honestidad — neutro, sin azul de relleno */}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-fg-muted" />
             {provenanceLabel}
           </span>
         </div>
 
         {/* Titular en lenguaje natural */}
-        <h2 className="mt-4 text-[22px] font-medium tracking-[-0.02em] leading-tight text-[#0B1220] dark:text-white">
+        <h2 className="mt-4 text-2xl font-semibold tracking-tight leading-tight text-fg">
           {finalVerdict.asegurabilidad === 'no'
             ? t('inmobiliaria.ai.cotizador.detail.veredicto.headlineNo')
             : t('inmobiliaria.ai.cotizador.detail.veredicto.headline', {
@@ -179,14 +176,14 @@ export function VeredictoAsegurabilidad({
 
         {/* reasoning_trace_es como párrafo */}
         {finalVerdict.reasoning_trace_es && (
-          <p className="mt-2.5 text-[14px] leading-relaxed text-neutral-600 dark:text-neutral-300 max-w-2xl">
+          <p className="mt-2.5 text-sm leading-relaxed text-fg-muted max-w-2xl">
             {finalVerdict.reasoning_trace_es}
           </p>
         )}
 
         {/* cohort_insights — línea sutil */}
         {finalVerdict.cohort_insights && (
-          <p className="mt-3 text-[12.5px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
+          <p className="mt-3 text-xs text-fg-muted leading-relaxed">
             {t('inmobiliaria.ai.cotizador.detail.veredicto.cohort', {
               label: finalVerdict.cohort_insights.label_es,
               confidence: Math.round(finalVerdict.cohort_insights.confidence * 100),
@@ -197,19 +194,19 @@ export function VeredictoAsegurabilidad({
 
       {/* ── RECOMENDACIÓN ────────────────────────────────────────────────── */}
       {showRecommendation && recommendedCarrierName && (
-        <div className="border-t border-neutral-200/80 dark:border-neutral-800 bg-[#F7F8FF] dark:bg-[#1A40FF]/[0.07] px-6 py-5">
+        <div className="border-t border-border bg-primary-soft px-6 py-5">
           <div className="flex items-start gap-3">
-            {/* El ÚNICO acento de marca #1A40FF del bloque */}
-            <span className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-[#1A40FF] text-white">
+            {/* El ÚNICO acento de marca del bloque */}
+            <span className="shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-fg">
               <Sparkle weight="fill" className="w-[18px] h-[18px]" />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#1A40FF] dark:text-[#8FA3FF]">
+                <span className="text-xs font-medium uppercase tracking-wide text-primary">
                   {t('inmobiliaria.ai.cotizador.detail.veredicto.recomendadaEyebrow')}
                 </span>
               </div>
-              <h3 className="mt-1.5 text-[17px] font-semibold tracking-[-0.01em] text-[#0B1220] dark:text-white">
+              <h3 className="mt-1.5 text-base font-semibold tracking-tight text-fg">
                 {t('inmobiliaria.ai.cotizador.detail.veredicto.recomendamos', {
                   carrier: recommendedCarrierName,
                 })}
@@ -219,10 +216,10 @@ export function VeredictoAsegurabilidad({
               <div className="mt-3 space-y-2.5">
                 {recommendedPrima != null && (
                   <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-[20px] font-bold tabular-nums text-[#0B1220] dark:text-white">
+                    <span className="text-xl font-bold tabular-nums text-fg">
                       {formatCurrency(recommendedPrima)}
                     </span>
-                    <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">
+                    <span className="text-xs text-fg-muted">
                       {t('inmobiliaria.ai.cotizador.detail.veredicto.primaPorMes')}
                     </span>
                   </div>
@@ -230,18 +227,18 @@ export function VeredictoAsegurabilidad({
 
                 {recommendedCondiciones.length > 0 ? (
                   <div>
-                    <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400 dark:text-neutral-500">
+                    <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
                       {t('inmobiliaria.ai.cotizador.detail.veredicto.porQue')}
                     </p>
                     <ul className="mt-1.5 space-y-1">
                       {recommendedCondiciones.map((c, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-[13.5px] text-neutral-600 dark:text-neutral-300"
+                          className="flex items-start gap-2 text-sm text-fg-muted"
                         >
                           <ArrowRight
                             weight="bold"
-                            className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#1A40FF] dark:text-[#8FA3FF]"
+                            className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary"
                           />
                           <span>{c}</span>
                         </li>
@@ -249,7 +246,7 @@ export function VeredictoAsegurabilidad({
                     </ul>
                   </div>
                 ) : (
-                  <p className="text-[13.5px] text-neutral-600 dark:text-neutral-300">
+                  <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.ai.cotizador.detail.veredicto.porQueMejorPrecio')}
                   </p>
                 )}

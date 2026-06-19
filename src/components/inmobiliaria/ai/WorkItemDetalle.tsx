@@ -148,7 +148,7 @@ export function WorkItemDetalle({
       <div className="p-6 lg:p-8 space-y-4">
         {backToCola}
         <div
-          className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+          className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
           data-testid="caso-error"
         >
           {t(`${NS}.error`, { error })}
@@ -294,15 +294,15 @@ export function WorkItemDetalle({
               </p>
               <div className="flex items-center gap-2">
                 {item.estado === 'rechazado' || item.estado === 'fallo' ? (
-                  <XCircle className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" weight="duotone" aria-hidden="true" />
+                  <XCircle className="w-5 h-5 text-danger" weight="duotone" aria-hidden="true" />
                 ) : item.estado === 'ejecutando' ? (
                   <Clock className="w-5 h-5 text-muted-foreground" weight="duotone" aria-hidden="true" />
                 ) : (
-                  <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" weight="duotone" aria-hidden="true" />
+                  <CheckCircle className="w-5 h-5 text-success" weight="duotone" aria-hidden="true" />
                 )}
                 <p
                   className={`text-sm font-semibold ${
-                    item.estado === 'fallo' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-foreground'
+                    item.estado === 'fallo' ? 'text-danger' : 'text-foreground'
                   }`}
                 >
                   {estadoLabel(t, item.estado, item.agente)}

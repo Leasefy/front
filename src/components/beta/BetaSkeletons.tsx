@@ -36,8 +36,8 @@ export function ChatMessageSkeleton() {
       {/* User bubble - right aligned */}
       <div className="flex justify-end">
         <div className="w-2/3 space-y-1.5">
-          <div className="h-4 bg-[#EEF1FF] dark:bg-[#1A40FF]/10 rounded-xl w-full" />
-          <div className="h-4 bg-[#EEF1FF] dark:bg-[#1A40FF]/10 rounded-xl w-3/4 ml-auto" />
+          <div className="h-4 bg-primary-soft rounded-xl w-full" />
+          <div className="h-4 bg-primary-soft rounded-xl w-3/4 ml-auto" />
         </div>
       </div>
 
@@ -54,7 +54,7 @@ export function ChatMessageSkeleton() {
       {/* User bubble - right aligned */}
       <div className="flex justify-end">
         <div className="w-1/2 space-y-1.5">
-          <div className="h-4 bg-[#EEF1FF] dark:bg-[#1A40FF]/10 rounded-xl w-full" />
+          <div className="h-4 bg-primary-soft rounded-xl w-full" />
         </div>
       </div>
     </div>

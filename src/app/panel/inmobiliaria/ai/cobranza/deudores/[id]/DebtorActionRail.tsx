@@ -23,6 +23,7 @@ import Link from 'next/link'
 import { ArrowRight } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { stageDisplayName } from '@/lib/cartera'
 import type { DebtorDetailResponse } from '@/lib/hooks/cobranza/use-debtor-detail'
@@ -124,13 +125,13 @@ export function DebtorActionRail({
 
   return (
     <div className="space-y-4">
-      {/* Zone eyebrow — brand mono + dot (FeatureAnnouncementCard pattern) */}
+      {/* Zone eyebrow — brand dot + uppercase (único uppercase permitido, §4) */}
       <h2 className="flex items-center gap-2.5">
         <span
           aria-hidden="true"
-          className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0"
+          className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
         />
-        <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {t(`${NS}.detalle.recomendacion`)}
         </span>
       </h2>
@@ -149,7 +150,7 @@ export function DebtorActionRail({
               <p className="text-sm font-medium text-neutral-900 dark:text-white capitalize">
                 {nextAction.channel}
               </p>
-              <p className="font-mono text-xs text-[#1A40FF] dark:text-[#8FA3FF] tabular-nums">
+              <p className="text-xs text-primary tabular-nums">
                 {formatPlannedTime(nextAction.plannedFor, locale)} ·{' '}
                 {formatRelative(nextAction.plannedFor, now, locale)}
               </p>
@@ -164,7 +165,7 @@ export function DebtorActionRail({
               <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
                 {t(`${NS}.detalle.porQue`)}
               </p>
-              <p className="mt-0.5 text-[13px] leading-snug text-neutral-700 dark:text-neutral-300">
+              <p className="mt-0.5 text-sm leading-snug text-neutral-700 dark:text-neutral-300">
                 {whyText}
               </p>
             </div>
@@ -219,17 +220,19 @@ export function DebtorActionRail({
 
         {/* Escalar → cola de escalaciones */}
         <div className="mt-3 pt-3 border-t border-neutral-200/80 dark:border-neutral-800">
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/escalaciones"
-            data-testid="rail-escalate-link"
-            className="group inline-flex items-center gap-1.5 text-[13px] font-medium text-[#1A40FF] dark:text-[#8FA3FF] hover:underline underline-offset-2"
-          >
-            {t(`${NS}.escalaciones.pageTitle`)}
-            <ArrowRight
-              className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-              aria-hidden="true"
-            />
-          </Link>
+          <Button asChild variant="link" size="sm" hideArrow className="px-0 h-auto">
+            <Link
+              href="/panel/inmobiliaria/ai/cobranza/escalaciones"
+              data-testid="rail-escalate-link"
+              className="group gap-1.5"
+            >
+              {t(`${NS}.escalaciones.pageTitle`)}
+              <ArrowRight
+                className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                aria-hidden="true"
+              />
+            </Link>
+          </Button>
         </div>
       </section>
 
@@ -292,13 +295,13 @@ function RailAction({
       disabled={disabled}
       title={disabled ? disabledTooltip : undefined}
       data-testid={testId}
-      className="w-full flex items-center justify-between gap-2 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2 text-left transition-colors hover:border-[#1A40FF]/40 dark:hover:border-[#8FA3FF]/40 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none"
+      className="w-full flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none"
     >
-      <span className="text-[13px] font-medium text-neutral-900 dark:text-white">
+      <span className="text-sm font-medium text-neutral-900 dark:text-white">
         {label}
       </span>
       {badge && (
-        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[#B7791F]/10 dark:bg-[#B7791F]/20 text-[#B7791F] dark:text-[#D2992F]">
+        <span className="shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-warning-soft text-warning">
           {badge}
         </span>
       )}

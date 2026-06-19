@@ -24,6 +24,8 @@ import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui'
+import { Chip, SegmentedControl } from '@leasefy/ui'
 import {
   usePaymentsFunnel,
   type UsePaymentsFunnelFilters,
@@ -53,29 +55,25 @@ function formatCop(value: number | null | undefined): string {
   return copFormat.format(value)
 }
 
-function chipClasses(active: boolean): string {
-  return active
-    ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]'
-}
-
+// Semantic status tints vía tokens del DS (contrato §8). Antes: bg/text del mismo
+// hex → texto invisible; ahora soft-bg + texto sólido para contraste real.
 function statusBadgeClasses(status: Status): string {
   switch (status) {
     case 'approved':
-      return 'bg-[#2C7A53] text-[#2C7A53] ring-1 ring-[#2C7A53] dark:bg-[#2C7A53]/30 dark:text-[#2C7A53] dark:ring-[#2C7A53]'
+      return 'bg-success-soft text-success ring-1 ring-success/30'
     case 'pending':
-      return 'bg-[#B7791F] text-[#B7791F] ring-1 ring-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:ring-[#B7791F]'
+      return 'bg-warning-soft text-warning ring-1 ring-warning/30'
     case 'declined':
-      return 'bg-[#C4503B] text-[#C4503B] ring-1 ring-[#C4503B] dark:bg-[#C4503B]/30 dark:text-[#C4503B] dark:ring-[#C4503B]'
+      return 'bg-danger-soft text-danger ring-1 ring-danger/30'
     case 'disbursed':
-      return 'bg-[#6B6B6B] text-[#6B6B6B] ring-1 ring-[#6B6B6B] dark:bg-[#6B6B6B]/30 dark:text-[#6B6B6B] dark:ring-[#6B6B6B]'
+      return 'bg-muted text-muted-foreground ring-1 ring-border'
   }
 }
 
 function providerBadgeClasses(provider: Provider): string {
   return provider === 'wompi'
-    ? 'bg-[#1A40FF] text-[#1A40FF] ring-1 ring-[#1A40FF] dark:bg-[#1A40FF]/30 dark:text-[#1A40FF] dark:ring-[#1A40FF]'
-    : 'bg-[#6B6B6B] text-[#6B6B6B] ring-1 ring-[#6B6B6B] dark:bg-[#6B6B6B]/30 dark:text-[#6B6B6B] dark:ring-[#6B6B6B]'
+    ? 'bg-primary-soft text-primary ring-1 ring-primary/30'
+    : 'bg-muted text-muted-foreground ring-1 ring-border'
 }
 
 function KpiCard({
@@ -92,7 +90,7 @@ function KpiCard({
   return (
     <div
       data-testid={testId}
-      className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3"
+      className="rounded-lg border border-border bg-card px-4 py-3"
     >
       <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
         {label}
@@ -267,23 +265,17 @@ export default function PagosFunnelClient() {
       {/* KPI strip */}
       {renderKpis(kpis)}
 
-      {/* Date-window selector */}
+      {/* Date-window selector — excluyente → SegmentedControl (contrato §3) */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        {DATE_WINDOWS.map((w) => (
-          <button
-            key={w}
-            type="button"
-            onClick={() => setDateWindow(w)}
-            aria-pressed={dateWindow === w}
-            data-testid={`pagos-date-window-${w}`}
-            className={
-              'px-3 py-1 text-xs font-medium rounded-full border transition-colors ' +
-              chipClasses(dateWindow === w)
-            }
-          >
-            {t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`)}
-          </button>
-        ))}
+        <SegmentedControl<DateWindow>
+          value={dateWindow}
+          onChange={setDateWindow}
+          aria-label={t('inmobiliaria.ai.cobranza.pagos.title')}
+          options={DATE_WINDOWS.map((w) => ({
+            value: w,
+            label: t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`),
+          }))}
+        />
       </div>
 
       {/* Filters row */}
@@ -294,19 +286,15 @@ export default function PagosFunnelClient() {
           </legend>
           <span className="inline-flex flex-wrap gap-2 align-middle">
             {PROVIDERS.map((p) => (
-              <button
+              <Chip
                 key={p}
-                type="button"
+                size="sm"
+                selected={providers.includes(p)}
                 onClick={() => toggleProvider(p)}
-                aria-pressed={providers.includes(p)}
                 data-testid={`pagos-provider-chip-${p}`}
-                className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                  chipClasses(providers.includes(p))
-                }
               >
                 {t(`inmobiliaria.ai.cobranza.pagos.filter.${p}`)}
-              </button>
+              </Chip>
             ))}
           </span>
         </fieldset>
@@ -317,30 +305,28 @@ export default function PagosFunnelClient() {
           </legend>
           <span className="inline-flex flex-wrap gap-2 align-middle">
             {STATUSES.map((s) => (
-              <button
+              <Chip
                 key={s}
-                type="button"
+                size="sm"
+                selected={statuses.includes(s)}
                 onClick={() => toggleStatus(s)}
-                aria-pressed={statuses.includes(s)}
                 data-testid={`pagos-status-chip-${s}`}
-                className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                  chipClasses(statuses.includes(s))
-                }
               >
                 {t(`inmobiliaria.ai.cobranza.pagos.status.${s}`)}
-              </button>
+              </Chip>
             ))}
           </span>
         </fieldset>
 
-        <button
-          type="button"
+        <Button
+          variant="link"
+          size="sm"
+          hideArrow
           onClick={clearFilters}
-          className="text-xs font-medium text-[#6B6B6B] dark:text-[#6B6B6B] hover:underline"
+          className="px-0 h-auto self-center"
         >
           {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
-        </button>
+        </Button>
       </div>
 
       {/* Sort selector */}
@@ -356,7 +342,7 @@ export default function PagosFunnelClient() {
           value={sort}
           onChange={(e) => setSort(e.target.value as PaymentsFunnelSort)}
           data-testid="pagos-sort-select"
-          className="text-xs px-2 py-1 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
+          className="text-xs px-2 py-1 rounded-md border border-border bg-card text-neutral-700 dark:text-neutral-200"
         >
           <option value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</option>
           <option value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</option>
@@ -368,17 +354,19 @@ export default function PagosFunnelClient() {
 
       {/* Error banner */}
       {error && (
-        <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 mb-4 flex items-center justify-between">
-          <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.pagos.error')}: {error}
           </p>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
+            className="shrink-0"
           >
             {t('inmobiliaria.ai.cobranza.pagos.errorRetry')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -391,7 +379,7 @@ export default function PagosFunnelClient() {
                 {t('inmobiliaria.ai.cobranza.pagos.columns.nombre')}
               </th>
               <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-[#6B6B6B]"
+                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-foreground"
                 onClick={() => setSort('amount')}
                 data-testid="pagos-th-monto"
               >
@@ -408,7 +396,7 @@ export default function PagosFunnelClient() {
                 {t('inmobiliaria.ai.cobranza.pagos.columns.status')}
               </th>
               <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-[#6B6B6B]"
+                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-foreground"
                 onClick={() => setSort('created_at')}
                 data-testid="pagos-th-fecha"
               >
@@ -450,15 +438,15 @@ export default function PagosFunnelClient() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleRowClick(row)
                   }}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
+                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <td className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
                     <Mask field="cedula" value={row.debtor.fullName} />
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-neutral-900 dark:text-white">
+                  <td className="px-3 py-2 tabular-nums text-xs text-neutral-900 dark:text-white">
                     {formatCop(row.amount)}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-neutral-500 dark:text-neutral-400">
+                  <td className="px-3 py-2 tabular-nums text-xs text-neutral-500 dark:text-neutral-400">
                     {formatCop(row.feeCop)}
                   </td>
                   <td className="px-3 py-2">
@@ -484,7 +472,7 @@ export default function PagosFunnelClient() {
                       {isPending && (
                         <span
                           data-testid={`pagos-pending-pill-${row.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#B7791F] text-[#B7791F] ring-1 ring-[#B7791F] dark:bg-[#B7791F]/40 dark:text-[#B7791F] dark:ring-[#B7791F]"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning ring-1 ring-warning/30"
                         >
                           <span aria-hidden="true">⚠</span>
                           {t('inmobiliaria.ai.cobranza.pagos.pill.disbursementPending')}

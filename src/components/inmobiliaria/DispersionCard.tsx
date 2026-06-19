@@ -17,6 +17,7 @@ import {
   PaperPlaneTilt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import {
   formatCurrency,
@@ -33,10 +34,10 @@ interface DispersionCardProps {
 
 // Status border colors for left accent
 const STATUS_BORDER_COLORS: Record<DispersionStatus, string> = {
-  pending: 'border-l-[#B7791F]',
-  processing: 'border-l-[#1A40FF]',
-  completed: 'border-l-[#2C7A53]',
-  failed: 'border-l-[#C4503B]',
+  pending: 'border-l-warning',
+  processing: 'border-l-primary',
+  completed: 'border-l-success',
+  failed: 'border-l-danger',
 };
 
 /**
@@ -100,7 +101,7 @@ export function DispersionCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onViewDetail?.(dispersion)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:',
+          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-card border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:',
           borderColor
         )}
       >
@@ -117,7 +118,7 @@ export function DispersionCard({
 
         {/* Net Amount */}
         <div className="text-right">
-          <p className="font-bold text-[#2C7A53] dark:text-[#3EAE70] text-sm">
+          <p className="font-bold text-success text-sm">
             {formatCurrency(dispersion.netToPropietario)}
           </p>
         </div>
@@ -134,7 +135,7 @@ export function DispersionCard({
 
         {/* Processing spinner */}
         {dispersion.status === 'processing' && (
-          <SpinnerGap className="w-4 h-4 text-[#1A40FF] animate-spin shrink-0" />
+          <SpinnerGap className="w-4 h-4 text-primary animate-spin shrink-0" />
         )}
       </motion.div>
     );
@@ -145,7 +146,7 @@ export function DispersionCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border-l-4 border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group hover:',
+        'w-full rounded-xl border-l-4 border bg-white dark:bg-card overflow-hidden transition-all duration-200 group hover:',
         borderColor,
         'border-neutral-200 dark:border-neutral-700',
         onViewDetail && 'cursor-pointer'
@@ -183,8 +184,8 @@ export function DispersionCard({
       {/* Bank Account Section */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-            <Bank className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+            <Bank className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-0.5">
@@ -208,7 +209,7 @@ export function DispersionCard({
           <span className="text-sm text-neutral-500 dark:text-neutral-400">
             Neto a dispersar
           </span>
-          <span className="text-xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
+          <span className="text-xl font-bold text-success">
             {formatCurrency(dispersion.netToPropietario)}
           </span>
         </div>
@@ -219,7 +220,7 @@ export function DispersionCard({
             <span>Total recaudado</span>
             <span>{formatCurrency(dispersion.totalCollected)}</span>
           </div>
-          <div className="flex items-center justify-between text-[#B7791F] dark:text-[#D2992F]">
+          <div className="flex items-center justify-between text-warning">
             <span>Comision agencia</span>
             <span>- {formatCurrency(dispersion.totalCommission)}</span>
           </div>
@@ -227,7 +228,7 @@ export function DispersionCard({
       </div>
 
       {/* Properties Summary */}
-      <div className="px-5 py-4 bg-neutral-50 dark:bg-[#141416]">
+      <div className="px-5 py-4 bg-neutral-50 dark:bg-muted/20">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -286,7 +287,7 @@ export function DispersionCard({
           dispersion.processedAt &&
           dispersion.transferReference && (
             <>
-              <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
+              <div className="flex items-center gap-2 text-sm text-success">
                 <CheckCircle className="w-4 h-4" weight="fill" />
                 <span>
                   Procesado el{' '}
@@ -308,7 +309,7 @@ export function DispersionCard({
 
         {/* Processing: Show processing message */}
         {dispersion.status === 'processing' && (
-          <div className="flex items-center gap-2 text-sm text-[#1A40FF] dark:text-[#5570FF]">
+          <div className="flex items-center gap-2 text-sm text-primary">
             <SpinnerGap className="w-4 h-4 animate-spin" />
             <span>Procesando transferencia...</span>
           </div>
@@ -316,7 +317,7 @@ export function DispersionCard({
 
         {/* Pending: Show pending info */}
         {dispersion.status === 'pending' && (
-          <div className="flex items-center gap-2 text-sm text-[#B7791F] dark:text-[#D2992F]">
+          <div className="flex items-center gap-2 text-sm text-warning">
             <CalendarBlank className="w-4 h-4" />
             <span>Pendiente de procesamiento</span>
           </div>
@@ -324,7 +325,7 @@ export function DispersionCard({
 
         {/* Failed: Show error reason */}
         {dispersion.status === 'failed' && dispersion.failureReason && (
-          <div className="flex items-center gap-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
+          <div className="flex items-center gap-2 text-sm text-danger">
             <Warning className="w-4 h-4" weight="fill" />
             <span>{dispersion.failureReason}</span>
           </div>
@@ -334,43 +335,47 @@ export function DispersionCard({
       {/* Actions */}
       <div className="px-5 py-4 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800">
         {dispersion.status === 'pending' && onProcess && (
-          <button
+          <Button
+            size="sm"
+            hideArrow
             onClick={(e) => {
               e.stopPropagation();
               onProcess(dispersion);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
           >
             <PaperPlaneTilt className="w-4 h-4" />
             Procesar
-          </button>
+          </Button>
         )}
         {dispersion.status === 'failed' && onProcess && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={(e) => {
               e.stopPropagation();
               onProcess(dispersion);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#B7791F] text-white text-sm font-medium hover:bg-[#B7791F] transition-colors"
+            className="text-warning border-warning/30"
           >
             <CurrencyCircleDollar className="w-4 h-4" />
             Reintentar
-          </button>
+          </Button>
         )}
         {dispersion.status === 'completed' && (
-          <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70]">
+          <div className="flex items-center gap-2 text-sm text-success">
             <CheckCircle className="w-4 h-4" weight="fill" />
             <span>Dispersado</span>
           </div>
         )}
         {dispersion.status === 'processing' && (
-          <div className="flex items-center gap-2 text-sm text-[#1A40FF] dark:text-[#5570FF]">
+          <div className="flex items-center gap-2 text-sm text-primary">
             <SpinnerGap className="w-4 h-4 animate-spin" />
             <span>En proceso</span>
           </div>
         )}
         {onViewDetail && (
-          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors ml-auto">
+          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-primary transition-colors ml-auto">
             Ver detalle
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>

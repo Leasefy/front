@@ -24,6 +24,7 @@ import { useEscalationDetail } from '@/lib/hooks/cobranza/use-escalation-detail'
 import { useEscalations } from '@/lib/hooks/cobranza/use-escalations'
 import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/EscalationResolveModal'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { Button } from '@/components/ui'
 
 function EscalationDetailContent() {
   const params = useParams()
@@ -71,7 +72,7 @@ function EscalationDetailContent() {
           <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.open')}
         </button>
-        <div className="mt-4 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="mt-4 rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
           {error ?? t('inmobiliaria.ai.cobranza.escalaciones.errors.notFound')}
         </div>
       </div>
@@ -212,13 +213,13 @@ function EscalationDetailContent() {
       {/* Bottom action bar */}
       {canResolveThis && (
         <div className="sticky bottom-4 md:static flex justify-end">
-          <button
+          <Button
             type="button"
             onClick={() => setResolveOpen(true)}
-            className="inline-flex items-center gap-1 px-4 py-2 text-sm rounded-sm bg-[#2C7A53] dark:bg-[#3EAE70] text-white hover:opacity-90 active:scale-[0.97] transition font-medium"
+            hideArrow
           >
             {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
-          </button>
+          </Button>
         </div>
       )}
 

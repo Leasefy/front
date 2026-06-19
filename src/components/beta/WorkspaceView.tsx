@@ -56,24 +56,24 @@ const ICON_MAP: Record<string, Icon> = {
 
 const AGENT_BG: Record<string, string> = {
   emerald:
-    'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-  blue: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+    'bg-success-soft text-success',
+  blue: 'bg-primary-soft text-primary',
   amber:
-    'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
+    'bg-warning-soft text-warning',
   purple:
     'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
   pink: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
   indigo:
-    'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+    'bg-primary-soft text-primary',
 };
 
 const STATUS_DOT: Record<string, string> = {
-  emerald: 'bg-[#2C7A53]',
-  blue: 'bg-[#1A40FF]',
-  amber: 'bg-[#B7791F]',
+  emerald: 'bg-success',
+  blue: 'bg-primary',
+  amber: 'bg-warning',
   purple: 'bg-neutral-100 dark:bg-neutral-800',
   pink: 'bg-neutral-100 dark:bg-neutral-800',
-  indigo: 'bg-[#1A40FF]',
+  indigo: 'bg-primary',
 };
 
 // ============================================================================
@@ -123,12 +123,12 @@ function StepItem({
         <div className="relative z-10 flex-shrink-0">
           {step.status === 'completed' ? (
             <CheckCircle
-              className="w-5 h-5 text-[#2C7A53]"
+              className="w-5 h-5 text-success"
               weight="fill"
             />
           ) : step.status === 'active' ? (
             <CircleNotch
-              className="w-5 h-5 text-[#1A40FF] animate-spin"
+              className="w-5 h-5 text-primary animate-spin"
               weight="bold"
             />
           ) : (
@@ -145,7 +145,7 @@ function StepItem({
             className={cn(
               'w-px flex-1 min-h-[20px]',
               step.status === 'completed'
-                ? 'bg-[#2C7A53] dark:bg-[#2C7A53]/40'
+                ? 'bg-success-soft'
                 : 'bg-neutral-200 dark:bg-neutral-700'
             )}
           />
@@ -206,10 +206,10 @@ function ActionButton({ action }: { action: ResponseAction }) {
     'px-4 py-2 rounded-xl',
     'text-[13px] font-medium',
     'transition-all duration-150',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF]/50 focus-visible:ring-offset-1',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1',
     action.variant === 'primary' && [
-      'bg-[#1A40FF] text-white uppercase tracking-wide font-mono',
-      'hover:opacity-90 active:bg-[#1A40FF]',
+      'bg-primary text-white uppercase tracking-wide font-mono',
+      'hover:opacity-90 active:bg-primary',
       '',
     ],
     action.variant === 'secondary' && [
@@ -305,7 +305,7 @@ function MiniChatInput({
           'transition-all duration-150',
           disabled || isEmpty
             ? 'text-muted-foreground/40 cursor-not-allowed'
-            : 'text-[#1A40FF] hover:bg-[#EEF1FF] dark:hover:opacity-90/10 active:scale-95'
+            : 'text-primary hover:bg-primary-soft dark:hover:opacity-90/10 active:scale-95'
         )}
         aria-label={t('beta.workspace.sendMessage')}
       >
@@ -431,7 +431,7 @@ export function WorkspaceView({
               'transition-colors duration-150',
               'border-b-2',
               mobileTab === tab.key
-                ? 'text-[#1A40FF] dark:text-[#5570FF] border-[#1A40FF]/30'
+                ? 'text-primary border-primary/30'
                 : 'text-muted-foreground border-transparent hover:text-foreground'
             )}
           >
@@ -487,7 +487,7 @@ export function WorkspaceView({
           >
             <div className="flex items-center gap-2">
               <ListChecks
-                className="w-4 h-4 text-[#1A40FF]"
+                className="w-4 h-4 text-primary"
                 weight="duotone"
               />
               <span className="text-[13px] font-semibold text-foreground">
@@ -501,8 +501,8 @@ export function WorkspaceView({
                   'min-w-[36px] px-2 py-0.5',
                   'rounded-full text-[11px] font-semibold',
                   completedCount === totalSteps
-                    ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
-                    : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                    ? 'bg-success-soft text-success'
+                    : 'bg-primary-soft text-primary'
                 )}
               >
                 {completedCount}/{totalSteps}
@@ -561,8 +561,8 @@ export function WorkspaceView({
                     'px-2 py-0.5 rounded-full',
                     'text-[10px] font-semibold uppercase tracking-wider',
                     meta.type === 'actionable'
-                      ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
-                      : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                      ? 'bg-warning-soft text-warning'
+                      : 'bg-primary-soft text-primary'
                   )}
                 >
                   {meta.type === 'actionable'
@@ -668,7 +668,7 @@ export function WorkspaceView({
             )}
           >
             <Sparkle
-              className="w-4 h-4 text-[#1A40FF]"
+              className="w-4 h-4 text-primary"
               weight="fill"
             />
             <span className="text-[13px] font-semibold text-foreground">
@@ -694,7 +694,7 @@ export function WorkspaceView({
                     'max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? [
-                          'bg-[#1A40FF] text-white uppercase tracking-wide font-mono',
+                          'bg-primary text-white uppercase tracking-wide font-mono',
                           'rounded-br-sm',
                         ]
                       : [

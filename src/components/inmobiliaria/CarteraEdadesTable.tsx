@@ -18,6 +18,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { SegmentedControl } from '@leasefy/ui';
 import type { CarteraReport, CarteraItem } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -43,24 +45,24 @@ function getBucketColor(bucket: CarteraItem['bucket']): {
 } {
   const colors: Record<CarteraItem['bucket'], { bg: string; text: string; border: string }> = {
     '0-30': {
-      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-      border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+      bg: 'bg-success-soft',
+      text: 'text-success',
+      border: 'border-success/30',
     },
     '31-60': {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
-      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
+      border: 'border-warning/30',
     },
     '61-90': {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
-      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
+      border: 'border-warning/30',
     },
     '90+': {
-      bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-      text: 'text-[#C4503B] dark:text-[#E0664D]',
-      border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
+      bg: 'bg-danger-soft',
+      text: 'text-danger',
+      border: 'border-danger/30',
     },
   };
   return colors[bucket];
@@ -193,52 +195,52 @@ export function CarteraEdadesTable({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {/* Total Pendiente */}
-        <div className="col-span-2 md:col-span-1 p-4 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/12 text-white">
-          <p className="text-sm font-medium text-[#C4503B]">{t('inmobiliaria.finance.aging.totalPending')}</p>
-          <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
-          <p className="text-xs text-[#C4503B] mt-1">{data.items.length} {t('inmobiliaria.finance.aging.overdueCharges')}</p>
+        <div className="col-span-2 md:col-span-1 p-4 rounded-xl border border-danger/30 bg-danger-soft">
+          <p className="text-sm font-medium text-danger">{t('inmobiliaria.finance.aging.totalPending')}</p>
+          <p className="text-2xl font-bold text-danger">{formatCurrency(data.summary.totalPending)}</p>
+          <p className="text-xs text-danger mt-1">{data.items.length} {t('inmobiliaria.finance.aging.overdueCharges')}</p>
         </div>
 
         {/* 0-30 dias */}
-        <div className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
-          <p className="text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70]">{t('inmobiliaria.finance.aging.days030')}</p>
-          <p className="text-xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
+        <div className="p-4 rounded-xl border border-success/30 bg-success-soft">
+          <p className="text-sm font-medium text-success">{t('inmobiliaria.finance.aging.days030')}</p>
+          <p className="text-xl font-bold text-success">
             {formatCurrency(data.summary.bucket0to30)}
           </p>
-          <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70] mt-1">
+          <p className="text-xs text-success mt-1">
             {bucketCounts['0-30']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
 
         {/* 31-60 dias */}
-        <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
-          <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.finance.aging.days3160')}</p>
-          <p className="text-xl font-bold text-[#B7791F] dark:text-[#D2992F]">
+        <div className="p-4 rounded-xl border border-warning/30 bg-warning-soft">
+          <p className="text-sm font-medium text-warning">{t('inmobiliaria.finance.aging.days3160')}</p>
+          <p className="text-xl font-bold text-warning">
             {formatCurrency(data.summary.bucket31to60)}
           </p>
-          <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-1">
+          <p className="text-xs text-warning mt-1">
             {bucketCounts['31-60']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
 
         {/* 61-90 dias */}
-        <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
-          <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.finance.aging.days6190')}</p>
-          <p className="text-xl font-bold text-[#B7791F] dark:text-[#D2992F]">
+        <div className="p-4 rounded-xl border border-warning/30 bg-warning-soft">
+          <p className="text-sm font-medium text-warning">{t('inmobiliaria.finance.aging.days6190')}</p>
+          <p className="text-xl font-bold text-warning">
             {formatCurrency(data.summary.bucket61to90)}
           </p>
-          <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-1">
+          <p className="text-xs text-warning mt-1">
             {bucketCounts['61-90']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
 
         {/* 90+ dias */}
-        <div className="p-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15">
-          <p className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">{t('inmobiliaria.finance.aging.days90plus')}</p>
-          <p className="text-xl font-bold text-[#C4503B] dark:text-[#E0664D]">
+        <div className="p-4 rounded-xl border border-danger/30 bg-danger-soft">
+          <p className="text-sm font-medium text-danger">{t('inmobiliaria.finance.aging.days90plus')}</p>
+          <p className="text-xl font-bold text-danger">
             {formatCurrency(data.summary.bucket90plus)}
           </p>
-          <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">
+          <p className="text-xs text-danger mt-1">
             {bucketCounts['90+']} {t('inmobiliaria.finance.aging.charges')}
           </p>
         </div>
@@ -247,89 +249,82 @@ export function CarteraEdadesTable({
       {/* Filter Tabs and Export */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Bucket Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 overflow-x-auto">
-          <button
-            onClick={() => setBucketFilter('all')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === 'all'
-                ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            <Funnel className="w-4 h-4" />
-            {t('inmobiliaria.finance.aging.all')}
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-neutral-200 dark:bg-neutral-700">
-              {bucketCounts.all}
-            </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('0-30')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === '0-30'
-                ? 'bg-white dark:bg-[#1a1a1c] text-[#2C7A53] dark:text-[#3EAE70]'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            0-30d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]">
-              {bucketCounts['0-30']}
-            </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('31-60')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === '31-60'
-                ? 'bg-white dark:bg-[#1a1a1c] text-[#B7791F] dark:text-[#D2992F]'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            31-60d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
-              {bucketCounts['31-60']}
-            </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('61-90')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === '61-90'
-                ? 'bg-white dark:bg-[#1a1a1c] text-[#B7791F] dark:text-[#D2992F]'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            61-90d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
-              {bucketCounts['61-90']}
-            </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('90+')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === '90+'
-                ? 'bg-white dark:bg-[#1a1a1c] text-[#C4503B] dark:text-[#E0664D]'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            90+d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]">
-              {bucketCounts['90+']}
-            </span>
-          </button>
+        <div className="overflow-x-auto">
+          <SegmentedControl<BucketFilter>
+            value={bucketFilter}
+            onChange={setBucketFilter}
+            options={[
+              {
+                value: 'all',
+                ariaLabel: t('inmobiliaria.finance.aging.all'),
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    <Funnel className="w-4 h-4" />
+                    {t('inmobiliaria.finance.aging.all')}
+                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-neutral-200 dark:bg-neutral-700">
+                      {bucketCounts.all}
+                    </span>
+                  </span>
+                ),
+              },
+              {
+                value: '0-30',
+                ariaLabel: '0-30 días',
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    0-30d
+                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-success-soft text-success">
+                      {bucketCounts['0-30']}
+                    </span>
+                  </span>
+                ),
+              },
+              {
+                value: '31-60',
+                ariaLabel: '31-60 días',
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    31-60d
+                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-warning-soft text-warning">
+                      {bucketCounts['31-60']}
+                    </span>
+                  </span>
+                ),
+              },
+              {
+                value: '61-90',
+                ariaLabel: '61-90 días',
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    61-90d
+                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-warning-soft text-warning">
+                      {bucketCounts['61-90']}
+                    </span>
+                  </span>
+                ),
+              },
+              {
+                value: '90+',
+                ariaLabel: '90+ días',
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    90+d
+                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-danger-soft text-danger">
+                      {bucketCounts['90+']}
+                    </span>
+                  </span>
+                ),
+              },
+            ]}
+          />
         </div>
 
         {/* Export Button */}
         {onExport && (
-          <button
-            onClick={onExport}
-            className="flex items-center gap-2 px-4 py-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-          >
+          <Button variant="secondary" size="sm" hideArrow onClick={onExport} className="gap-2">
             <Download className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('inmobiliaria.finance.aging.exportExcel')}</span>
-          </button>
+            {t('inmobiliaria.finance.aging.exportExcel')}
+          </Button>
         )}
       </div>
 
@@ -363,8 +358,8 @@ export function CarteraEdadesTable({
                   {/* Property */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-                        <HouseLine className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                      <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
+                        <HouseLine className="w-5 h-5 text-primary" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[160px]">
@@ -401,11 +396,11 @@ export function CarteraEdadesTable({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="p-1 rounded hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/30 transition-colors"
+                            className="p-1 rounded hover:bg-success-soft transition-colors"
                             title="WhatsApp"
                           >
                             <WhatsappLogo
-                              className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]"
+                              className="w-3.5 h-3.5 text-success"
                               weight="fill"
                             />
                           </a>
@@ -437,7 +432,7 @@ export function CarteraEdadesTable({
 
                   {/* Pending Amount */}
                   <td className="p-4">
-                    <span className="font-semibold text-[#C4503B] dark:text-[#E0664D]">
+                    <span className="font-semibold text-danger">
                       {formatCurrency(item.pendingAmount)}
                     </span>
                   </td>
@@ -510,7 +505,7 @@ export function CarteraEdadesTable({
                                   onNotifyAgent(item);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft transition-colors"
                               >
                                 <Envelope className="w-4 h-4" />
                                 <span className="text-sm">{t('inmobiliaria.finance.aging.notifyAgent')}</span>
@@ -530,13 +525,13 @@ export function CarteraEdadesTable({
         {/* Empty State */}
         {filteredAndSortedItems.length === 0 && (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-              <Warning className="w-8 h-8 text-[#2C7A53] dark:text-[#3EAE70]" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success-soft flex items-center justify-center">
+              <Warning className="w-8 h-8 text-success" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+            <h3 className="text-base font-semibold text-fg mb-1">
               {t('inmobiliaria.finance.aging.noOverdue')}
             </h3>
-            <p className="text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-fg-muted">
               {bucketFilter === 'all'
                 ? t('inmobiliaria.finance.aging.noOverdueDesc')
                 : t('inmobiliaria.finance.aging.noOverdueRange', { range: bucketFilter })}

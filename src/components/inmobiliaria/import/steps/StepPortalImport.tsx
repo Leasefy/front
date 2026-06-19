@@ -19,21 +19,21 @@ const PORTALS: PortalItem[] = [
     id: 'fincaraiz',
     name: 'FincaRaíz',
     domain: 'fincaraiz.com.co',
-    color: 'bg-[#2C7A53]',
+    color: 'bg-success',
     description: 'Ideal para agencias con 50+ propiedades publicadas',
   },
   {
     id: 'metrocuadrado',
     name: 'Metrocuadrado',
     domain: 'metrocuadrado.com',
-    color: 'bg-[#1A40FF]',
+    color: 'bg-primary',
     description: 'Importa tu portafolio de Metrocuadrado',
   },
   {
     id: 'ciencuadras',
     name: 'Ciencuadras',
     domain: 'ciencuadras.com',
-    color: 'bg-[#B7791F]',
+    color: 'bg-warning',
     description: 'Próxima integración disponible',
   },
 ];
@@ -112,10 +112,10 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
       </div>
 
       {/* Email capture */}
-      <div className="rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-6">
+      <div className="rounded-xl border border-primary/30 bg-primary-soft p-6">
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-            <Envelope className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+            <Envelope className="w-5 h-5 text-primary" />
           </div>
           <div>
             <p className="font-semibold text-neutral-900 dark:text-white">
@@ -128,7 +128,7 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
         </div>
 
         {submitted ? (
-          <div className="py-3 px-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
+          <div className="py-3 px-4 rounded-xl bg-success-soft text-success font-medium">
             {t('inmobiliaria.import.portal.emailCapture.success')}
           </div>
         ) : (
@@ -138,11 +138,11 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t('inmobiliaria.import.portal.emailCapture.placeholder')}
-              className="flex-1 px-4 py-2.5 rounded-l-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent"
+              className="flex-1 px-4 py-2.5 rounded-l-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             <button
               type="submit"
-              className="px-4 py-2.5 rounded-r-xl bg-[#1A40FF] text-white font-medium text-sm hover:opacity-90 transition-colors whitespace-nowrap"
+              className="px-4 py-2.5 rounded-r-xl bg-primary text-white font-medium text-sm hover:opacity-90 transition-colors whitespace-nowrap"
             >
               {t('inmobiliaria.import.portal.emailCapture.submit')}
             </button>

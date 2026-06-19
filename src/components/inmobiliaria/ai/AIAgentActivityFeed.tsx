@@ -61,7 +61,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
         </div>
         <Link
           href="/panel/inmobiliaria/ai"
-          className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] transition-colors"
+          className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary transition-colors"
         >
           {locale === 'es' ? 'Ver toda' : 'View all'}
           <ArrowRight className="h-4 w-4" />
@@ -86,10 +86,10 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
             {items.map((activity) => {
               const AgentIcon = AGENT_ICONS[activity.agentId] || ShieldCheck;
               const levelCfg = activity.metadata?.level ? {
-                A: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]' },
-                B: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]' },
-                C: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]' },
-                D: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]' },
+                A: { bg: 'bg-success-soft', text: 'text-success' },
+                B: { bg: 'bg-primary-soft', text: 'text-primary' },
+                C: { bg: 'bg-warning-soft', text: 'text-warning' },
+                D: { bg: 'bg-danger-soft', text: 'text-danger' },
               }[activity.metadata.level] : null;
 
               const isEscalation = activity.type === 'escalation' || activity.status === 'pending';
@@ -101,7 +101,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   className={cn(
                     'flex items-start gap-3 py-3.5 first:pt-1 -mx-2 px-2 rounded-md transition-colors',
                     'hover:bg-neutral-50 dark:hover:bg-white/[0.03] cursor-pointer',
-                    isEscalation && 'bg-[#F8F0E0]/50 dark:bg-[#B7791F]/10 hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/20',
+                    isEscalation && 'bg-warning-soft/50 dark:bg-warning/10 hover:bg-warning-soft',
                   )}
                 >
                   {/* Agent icon with status dot */}
@@ -109,21 +109,21 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                     <div className={cn(
                       'rounded-full p-2',
                       activity.agentId === 'tenant-scoring'
-                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                        ? 'bg-primary-soft'
                         : 'bg-neutral-100 dark:bg-neutral-800',
                     )}>
                       <AgentIcon weight="duotone" className={cn(
                         'h-4 w-4',
                         activity.agentId === 'tenant-scoring'
-                          ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                          ? 'text-primary'
                           : 'text-neutral-600 dark:text-neutral-300',
                       )} />
                     </div>
                     <div className={cn(
                       'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#1a1a1c]',
-                      activity.status === 'success' && 'bg-[#2C7A53]',
-                      activity.status === 'pending' && 'bg-[#B7791F]',
-                      activity.status === 'failed' && 'bg-[#C4503B]',
+                      activity.status === 'success' && 'bg-success',
+                      activity.status === 'pending' && 'bg-warning',
+                      activity.status === 'failed' && 'bg-danger',
                     )} />
                   </div>
 
@@ -134,7 +134,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                         {activity.title}
                       </p>
                       {isEscalation && (
-                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
+                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-warning-soft text-warning">
                           {locale === 'es' ? 'Acción' : 'Action'}
                         </span>
                       )}

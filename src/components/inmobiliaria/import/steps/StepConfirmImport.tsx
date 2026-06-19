@@ -102,8 +102,8 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
         <div className="animate-scale-in">
-          <div className="w-20 h-20 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-            <CheckCircle className="w-12 h-12 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
+          <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center">
+            <CheckCircle className="w-12 h-12 text-success" weight="fill" />
           </div>
         </div>
 
@@ -124,7 +124,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           <button
             type="button"
             onClick={() => router.push('/panel/inmobiliaria/portafolio')}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A40FF] text-white text-sm hover:opacity-90 transition-colors font-medium"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white text-sm hover:opacity-90 transition-colors font-medium"
           >
             Ver portafolio
           </button>
@@ -173,8 +173,8 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       {/* Summary card */}
       <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-            <FileArrowUp className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+            <FileArrowUp className="w-6 h-6 text-primary" />
           </div>
           <div>
             <h3 className="font-semibold text-neutral-900 dark:text-white">
@@ -189,11 +189,11 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-4 pt-2">
           {/* Properties to import */}
-          <div className="rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-4">
-            <p className="text-xs font-mono uppercase tracking-wide text-[#1A40FF] dark:text-[#5570FF] mb-1">
+          <div className="rounded-md bg-primary-soft p-4">
+            <p className="text-xs font-mono uppercase tracking-wide text-primary mb-1">
               {t('inmobiliaria.import.confirm.propertiesToImport')}
             </p>
-            <p className="text-3xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
+            <p className="text-3xl font-bold text-primary">
               {importCount}
             </p>
           </div>
@@ -209,11 +209,11 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           </div>
 
           {/* AI suggestions accepted */}
-          <div className="rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-4">
-            <p className="text-xs font-mono uppercase tracking-wide text-[#2C7A53] dark:text-[#3EAE70] mb-1">
+          <div className="rounded-md bg-success-soft p-4">
+            <p className="text-xs font-mono uppercase tracking-wide text-success mb-1">
               {t('inmobiliaria.import.confirm.suggestionsAccepted')}
             </p>
-            <p className="text-3xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
+            <p className="text-3xl font-bold text-success">
               {acceptedSuggestionsCount}
             </p>
           </div>
@@ -223,16 +223,16 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             className={cn(
               'rounded-md p-4',
               remainingErrorsCount > 0
-                ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
-                : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                ? 'bg-danger-soft'
+                : 'bg-success-soft'
             )}
           >
             <p
               className={cn(
                 'text-xs font-mono uppercase tracking-wide mb-1',
                 remainingErrorsCount > 0
-                  ? 'text-[#C4503B] dark:text-[#E0664D]'
-                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                  ? 'text-danger'
+                  : 'text-success'
               )}
             >
               {t('inmobiliaria.import.confirm.remainingErrors')}
@@ -241,8 +241,8 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
               className={cn(
                 'text-3xl font-bold',
                 remainingErrorsCount > 0
-                  ? 'text-[#C4503B] dark:text-[#E0664D]'
-                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                  ? 'text-danger'
+                  : 'text-success'
               )}
             >
               {remainingErrorsCount}
@@ -278,11 +278,11 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             {progress < 100 ? (
               <div
-                className="h-full bg-[#1A40FF] rounded-full transition-all duration-150 ease-out"
+                className="h-full bg-primary rounded-full transition-all duration-150 ease-out"
                 style={{ width: `${progress}%` }}
               />
             ) : (
-              <div className="h-full bg-[#2C7A53] rounded-full w-full transition-colors duration-300" />
+              <div className="h-full bg-success rounded-full w-full transition-colors duration-300" />
             )}
           </div>
           <p className="text-xs text-right font-mono text-neutral-400 dark:text-neutral-500">
@@ -300,7 +300,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           className={cn(
             'inline-flex items-center gap-2 px-8 py-3 rounded-xl text-sm transition-all font-medium',
             importCount > 0 && !isImporting
-              ? 'bg-[#1A40FF] text-white hover:opacity-90'
+              ? 'bg-primary text-white hover:opacity-90'
               : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
           )}
         >

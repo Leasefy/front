@@ -169,7 +169,7 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
                 'w-12 h-12 rounded-xl flex items-center justify-center',
                 isCompany
                   ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
-                  : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                  : 'bg-primary-soft text-primary'
               )}
             >
               {isCompany ? <Buildings className="w-6 h-6" /> : <User className="w-6 h-6" />}
@@ -183,7 +183,7 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
           </div>
           <Link
             href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-            className="text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] flex items-center gap-1"
+            className="text-sm text-primary hover:text-primary dark:hover:text-primary flex items-center gap-1"
           >
             {t('inmobiliaria.consignaciones.detail.viewProfile')}
             <ArrowRight className="w-4 h-4" />
@@ -263,8 +263,8 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
               className="w-12 h-12 rounded-xl object-cover"
             />
           ) : (
-            <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-              <span className="text-lg font-semibold text-[#1A40FF] dark:text-[#5570FF]">
+            <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center">
+              <span className="text-lg font-semibold text-primary">
                 {agente.name.charAt(0)}
               </span>
             </div>
@@ -279,9 +279,9 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
             className={cn(
               'px-2 py-1 rounded-full text-xs font-medium',
               agente.status === 'active'
-                ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+                ? 'bg-success-soft text-success'
                 : agente.status === 'on_leave'
-                ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
+                ? 'bg-warning-soft text-warning'
                 : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
             )}
           >
@@ -307,7 +307,7 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
           </div>
           <div className="mt-2 h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex">
             <div
-              className="bg-[#1A40FF] dark:bg-[#5570FF]"
+              className="bg-primary dark:bg-primary"
               style={{ width: `${agente.commissionSplit}%` }}
             />
             <div
@@ -364,8 +364,8 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
         <div className="space-y-4">
           {/* Tenant Info */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-              <UserCircle className="w-6 h-6 text-[#2C7A53] dark:text-[#3EAE70]" />
+            <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center">
+              <UserCircle className="w-6 h-6 text-success" />
             </div>
             <div className="flex-1">
               <h4 className="font-semibold text-neutral-900 dark:text-white">{consignacion.currentTenantName}</h4>
@@ -438,8 +438,8 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
           disabled
           title={t('inmobiliaria.consignaciones.header.comingSoon')}
         >
-          <div className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
+            <FileText className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1">
             <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.consignmentContract')}</p>
@@ -453,8 +453,8 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
           onClick={onViewInventory}
           className="w-full flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-[#141416] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left"
         >
-          <div className="w-10 h-10 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
+            <FileText className="w-5 h-5 text-success" />
           </div>
           <div className="flex-1">
             <p className="font-medium text-neutral-900 dark:text-white text-sm">{t('inmobiliaria.consignaciones.detail.handoverReport')}</p>
@@ -482,7 +482,7 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
               ))}
             </div>
             {consignacion.photosUrls!.length > 4 && (
-              <button className="w-full mt-2 text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF]">
+              <button className="w-full mt-2 text-sm text-primary hover:text-primary dark:hover:text-primary">
                 {t('inmobiliaria.consignaciones.detail.viewMorePhotos', { count: consignacion.photosUrls!.length - 4 })}
               </button>
             )}

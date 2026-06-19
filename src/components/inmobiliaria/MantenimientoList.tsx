@@ -61,19 +61,19 @@ type SortDirection = 'asc' | 'desc';
 // ============================================================================
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
-  low: { bg: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]', text: 'text-[#6B6B6B] dark:text-[#6B6B6B]', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
-  medium: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
-  high: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
-  emergency: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
+  low: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  medium: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
+  high: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
+  emergency: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]', text: 'text-[#6B6B6B] dark:text-[#6B6B6B]', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
-  quoted: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
-  approved: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
-  in_progress: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
-  completed: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
-  cancelled: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
+  reported: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
+  quoted: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
+  approved: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
+  in_progress: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
+  completed: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
+  cancelled: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
 };
 
 const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
@@ -129,12 +129,12 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
   }, [data]);
 
   const cards = [
-    { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-[#1A40FF]' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-[#6B6B6B]' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusQuoted', value: stats.quoted, color: 'bg-[#1A40FF]' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusApproved', value: stats.approved, color: 'bg-[#2C7A53]' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusInProgress', value: stats.in_progress, color: 'bg-[#B7791F]' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusCompleted', value: stats.completed, color: 'bg-[#2C7A53]' },
+    { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-primary' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-fg-muted' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusQuoted', value: stats.quoted, color: 'bg-primary' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusApproved', value: stats.approved, color: 'bg-success' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusInProgress', value: stats.in_progress, color: 'bg-warning' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusCompleted', value: stats.completed, color: 'bg-success' },
   ];
 
   return (
@@ -202,7 +202,7 @@ function FilterBar({
           placeholder={t('inmobiliaria.mantenimiento.searchPropertyOrZone')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
         />
       </div>
 
@@ -213,7 +213,7 @@ function FilterBar({
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as MantenimientoType | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
           >
             <option value="all">{t('inmobiliaria.mantenimiento.allTypes')}</option>
             {MANTENIMIENTO_TYPES.map((type) => (
@@ -230,7 +230,7 @@ function FilterBar({
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as MantenimientoPriority | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
           >
             <option value="all">{t('inmobiliaria.mantenimiento.allPriorities')}</option>
             <option value="emergency">{t('inmobiliaria.mantenimiento.priorityEmergency')}</option>
@@ -246,7 +246,7 @@ function FilterBar({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as MantenimientoStatus | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
           >
             <option value="all">{t('inmobiliaria.mantenimiento.allStatuses')}</option>
             <option value="reported">{t('inmobiliaria.mantenimiento.statusReported')}</option>
@@ -268,7 +268,7 @@ function FilterBar({
               setSortField(field);
               setSortDirection(dir);
             }}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
           >
             <option value="priority-asc">{t('inmobiliaria.mantenimiento.sortPriorityHigh')}</option>
             <option value="priority-desc">{t('inmobiliaria.mantenimiento.sortPriorityLow')}</option>
@@ -330,13 +330,13 @@ function MantenimientoCard({
           <div
             className={cn(
               'w-10 h-10 rounded-md flex items-center justify-center',
-              solicitud.priority === 'emergency' ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15' : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+              solicitud.priority === 'emergency' ? 'bg-danger-soft' : 'bg-primary-soft'
             )}
           >
             <TypeIcon
               className={cn(
                 'w-5 h-5',
-                solicitud.priority === 'emergency' ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-[#1A40FF] dark:text-[#5570FF]'
+                solicitud.priority === 'emergency' ? 'text-danger' : 'text-primary'
               )}
             />
           </div>
@@ -385,7 +385,7 @@ function MantenimientoCard({
                         onAddQuote();
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#1A40FF] dark:text-[#5570FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft transition-colors"
                     >
                       <CurrencyCircleDollar className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.addQuote')}</span>
@@ -398,7 +398,7 @@ function MantenimientoCard({
                         onApproveQuote(solicitud.quotes[0].id);
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-success hover:bg-success-soft transition-colors"
                     >
                       <Check className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.approveQuote')}</span>
@@ -411,7 +411,7 @@ function MantenimientoCard({
                         onComplete();
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#2C7A53] dark:text-[#3EAE70] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-success hover:bg-success-soft transition-colors"
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.markCompleted')}</span>
@@ -424,7 +424,7 @@ function MantenimientoCard({
                         onCancel();
                         setShowMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-danger hover:bg-danger-soft transition-colors"
                     >
                       <X className="w-4 h-4" />
                       <span className="text-sm">{t('inmobiliaria.mantenimiento.cancelRequest')}</span>
@@ -501,7 +501,7 @@ function MantenimientoCard({
 
         {/* Approved amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
+          <span className="font-medium text-success">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}
@@ -635,7 +635,7 @@ export function MantenimientoList({
                 setStatusFilter('all');
                 setSearchQuery('');
               }}
-              className="text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+              className="text-sm text-primary hover:underline"
             >
               {t('inmobiliaria.mantenimiento.clearFilters')}
             </button>

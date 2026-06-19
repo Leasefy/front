@@ -86,12 +86,12 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
           {`Vas a desenmascarar la ${fieldLabel} de ${debtorName || '—'}. ` +
             t('inmobiliaria.ai.cobranza.detail.pii.modalBody')}
         </p>
-        <p className="mt-3 text-xs text-[#B7791F] dark:text-[#D2992F]">
+        <p className="mt-3 text-xs text-warning">
           {t('inmobiliaria.ai.cobranza.detail.pii.auditNote')}
         </p>
 
         {(localError ?? error) && (
-          <p className="mt-3 text-xs text-[#C4503B] dark:text-[#E0664D]">
+          <p className="mt-3 text-xs text-danger">
             {localError ?? error}
           </p>
         )}
@@ -109,7 +109,7 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
             type="button"
             onClick={() => void handleConfirm()}
             disabled={isMinting}
-            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-neutral-500 text-white hover:bg-[#6B6B6B] disabled:opacity-50"
+            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-neutral-500 text-white hover:bg-fg-muted disabled:opacity-50"
           >
             {isMinting
               ? t('inmobiliaria.ai.cobranza.detail.pii.modalMinting')

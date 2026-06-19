@@ -81,7 +81,7 @@ function SerieBlock({ serie }: { serie: AnaliticaSerie }) {
             <div
               key={point.date}
               data-testid="analitica-bar"
-              className="flex-1 min-w-0 rounded-t-sm bg-[#1A40FF]/80 hover:bg-[#1A40FF] transition-colors"
+              className="flex-1 min-w-0 rounded-t-sm bg-primary/80 hover:bg-primary transition-colors"
               style={{
                 // 0 keeps a 2px floor so the day remains hover-discoverable.
                 height: point.value === 0 ? '2px' : `${Math.max((point.value / max) * 100, 4)}%`,
@@ -123,7 +123,7 @@ export function AnaliticaAgente({ data, isLoading, error, notAvailable }: Analit
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
         data-testid="analitica-error"
       >
         {t(`${NS}.error`, { error })}

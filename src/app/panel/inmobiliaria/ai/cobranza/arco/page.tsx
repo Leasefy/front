@@ -34,10 +34,10 @@ import type { ArcoRequestRow } from '@/lib/hooks/cobranza/use-arco-requests'
 type TabValue = 'all' | 'acceso' | 'rectificacion' | 'cancelacion' | 'oposicion'
 
 const TYPE_COLORS: Record<ArcoRequestRow['type'], string> = {
-  acceso: 'text-[#1A40FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  acceso: 'text-primary bg-primary-soft',
   rectificacion: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800',
-  cancelacion: 'text-[#B7791F] bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-  oposicion: 'text-[#C4503B] bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+  cancelacion: 'text-warning bg-warning-soft',
+  oposicion: 'text-danger bg-danger-soft',
 }
 
 function KpiSkeleton() {
@@ -161,7 +161,7 @@ function RequestsTable({ requests }: RequestsTableProps) {
                 <Link href={`/panel/inmobiliaria/ai/cobranza/arco/${row.id}`}>
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-sm text-neutral-500 hover:text-[#1A40FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
+                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-sm text-neutral-500 hover:text-primary hover:bg-primary-soft transition-colors"
                     aria-label={t('inmobiliaria.ai.arco.actions.view', { name: row.requesterName })}
                   >
                     <ArrowSquareOut className="h-4 w-4" weight="regular" />
@@ -270,13 +270,13 @@ export default function ArcoInboxPage() {
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<CheckCircle className="h-5 w-5 text-[#2C7A53]" weight="duotone" />}
+          icon={<CheckCircle className="h-5 w-5 text-success" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.onTime')}
           value={kpis?.onTime}
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<Warning className="h-5 w-5 text-[#C4503B]" weight="duotone" />}
+          icon={<Warning className="h-5 w-5 text-danger" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.overdue')}
           value={kpis?.overdue}
           isLoading={isLoading && !data}

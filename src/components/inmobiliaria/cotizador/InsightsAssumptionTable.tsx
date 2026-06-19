@@ -7,12 +7,9 @@ import type { AssumptionRow } from '@/lib/hooks/cotizador/use-insights'
 // State pill semantic colors (mirrors SLA_COLORS pattern from CotizadorCarriersStatus)
 // ---------------------------------------------------------------------------
 const STATE_COLORS: Record<string, string> = {
-  active:
-    'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-  deprecated:
-    'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
-  under_review:
-    'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
+  active: 'bg-success-soft text-success',
+  deprecated: 'bg-danger-soft text-danger',
+  under_review: 'bg-warning-soft text-warning',
 }
 
 // ---------------------------------------------------------------------------
@@ -39,7 +36,7 @@ export function InsightsAssumptionTable({
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="h-10 bg-neutral-100 dark:bg-neutral-800 rounded"
+            className="h-10 bg-surface-muted rounded"
           />
         ))}
       </div>
@@ -49,7 +46,7 @@ export function InsightsAssumptionTable({
   // Empty state
   if (!assumptions || assumptions.length === 0) {
     return (
-      <p className="text-sm text-neutral-500 text-center py-6">
+      <p className="text-sm text-fg-muted text-center py-6">
         {t('inmobiliaria.ai.cotizador.insights.assumptions.empty')}
       </p>
     )
@@ -61,22 +58,22 @@ export function InsightsAssumptionTable({
     <div className="overflow-x-auto">
       <table className="w-full text-sm text-left">
         <thead>
-          <tr className="border-b border-neutral-200 dark:border-neutral-700">
-            <th className="pb-2 pr-4 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide">
+          <tr className="border-b border-border">
+            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.name')}
             </th>
-            <th className="pb-2 pr-4 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide hidden md:table-cell">
+            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide hidden md:table-cell">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.description')}
             </th>
-            <th className="pb-2 pr-4 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide">
+            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.state')}
             </th>
-            <th className="pb-2 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide hidden sm:table-cell">
+            <th className="pb-2 font-medium text-fg-muted text-xs uppercase tracking-wide hidden sm:table-cell">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.updatedAt')}
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <tbody className="divide-y divide-border">
           {rows.map((row) => {
             const stateKey = row.status ?? 'active'
             const stateLabel =
@@ -97,14 +94,14 @@ export function InsightsAssumptionTable({
             return (
               <tr
                 key={row.id}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
+                className="hover:bg-surface-muted/50 transition-colors"
               >
                 {/* Name / Statement */}
-                <td className="py-2.5 pr-4 font-medium text-neutral-800 dark:text-neutral-200 max-w-[200px] truncate">
+                <td className="py-2.5 pr-4 font-medium text-fg max-w-[200px] truncate">
                   {row.statement || row.id}
                 </td>
                 {/* Description (hidden on mobile) — use source as description if available */}
-                <td className="py-2.5 pr-4 text-neutral-500 dark:text-neutral-400 max-w-[220px] truncate hidden md:table-cell">
+                <td className="py-2.5 pr-4 text-fg-muted max-w-[220px] truncate hidden md:table-cell">
                   {row.source ?? '—'}
                 </td>
                 {/* State pill */}
@@ -116,7 +113,7 @@ export function InsightsAssumptionTable({
                   </span>
                 </td>
                 {/* Updated At (hidden on xs) */}
-                <td className="py-2.5 text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap hidden sm:table-cell">
+                <td className="py-2.5 text-xs text-fg-muted whitespace-nowrap hidden sm:table-cell">
                   {formattedDate}
                 </td>
               </tr>

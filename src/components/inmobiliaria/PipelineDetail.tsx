@@ -114,10 +114,10 @@ function RiskBadge({ score, level }: { score?: number; level?: string }) {
   if (!score && !level) return null;
 
   const colors: Record<string, string> = {
-    A: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
-    B: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
-    C: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-    D: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+    A: 'bg-primary-soft text-primary',
+    B: 'bg-primary-soft text-primary',
+    C: 'bg-warning-soft text-warning',
+    D: 'bg-danger-soft text-danger',
     E: 'bg-muted text-muted-foreground',
   };
 
@@ -269,14 +269,14 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-foreground truncate">{item.propertyTitle}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5 truncate">{item.propertyAddress}</p>
-                <p className="text-lg font-semibold text-[#1A40FF] dark:text-[#5570FF] mt-2 tabular-nums">
+                <p className="text-lg font-semibold text-primary mt-2 tabular-nums">
                   {formatCurrency(item.monthlyRent)}<span className="text-sm font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
                 </p>
               </div>
             </div>
             <Link
               href={`/panel/inmobiliaria/portafolio/${item.consignacionId}`}
-              className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
             >
               <span>{t('inmobiliaria.pipeline.viewConsignment')}</span>
               <CaretRight className="w-4 h-4" />
@@ -298,7 +298,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                     className="w-11 h-11 rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#1A40FF] to-[#6B6B6B] flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-semibold shrink-0">
                     {item.candidateName.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()}
                   </div>
                 )}
@@ -328,7 +328,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               {/* WhatsApp Button */}
               <button
                 onClick={() => openWhatsApp(item.candidatePhone)}
-                className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md bg-[#2C7A53] hover:bg-[#2C7A53] text-white text-sm font-medium transition-colors"
+                className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md bg-success hover:opacity-90 text-white text-sm font-medium transition-colors"
               >
                 <WhatsappLogo className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.pipeline.sendWhatsApp')}
@@ -362,7 +362,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 <span className="text-sm text-muted-foreground">{t('inmobiliaria.pipeline.daysInStage')}</span>
                 <span className={cn(
                   'flex items-center gap-1.5 text-sm font-semibold tabular-nums',
-                  isOverdue ? 'text-[#B7791F] dark:text-[#D2992F]' : 'text-foreground'
+                  isOverdue ? 'text-warning' : 'text-foreground'
                 )}>
                   {item.daysInStage} {t('inmobiliaria.pipeline.days')}
                   {isOverdue && <Warning className="w-4 h-4" weight="fill" />}
@@ -408,7 +408,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                         <div
                           className={cn(
                             'absolute -left-5 w-2.5 h-2.5 rounded-full mt-1.5 ring-2 ring-card',
-                            entry.isCurrent ? 'bg-[#1A40FF]' : 'bg-muted-foreground/30'
+                            entry.isCurrent ? 'bg-primary' : 'bg-muted-foreground/30'
                           )}
                         />
 
@@ -454,18 +454,18 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('inmobiliaria.pipeline.addNotePlaceholder')}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-sm"
             />
           </div>
 
           {/* Lost Reason */}
           {item.stage === 'lost' && item.lostReason && (
-            <div className="p-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15">
-              <h4 className="font-medium text-[#C4503B] dark:text-[#E0664D] text-sm mb-2 flex items-center gap-2">
+            <div className="p-4 rounded-xl border border-danger/30 bg-danger-soft">
+              <h4 className="font-medium text-danger text-sm mb-2 flex items-center gap-2">
                 <XCircle className="w-4 h-4" weight="fill" />
                 {t('inmobiliaria.pipeline.lostReason')}
               </h4>
-              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{item.lostReason}</p>
+              <p className="text-sm text-danger">{item.lostReason}</p>
             </div>
           )}
         </div>
@@ -476,7 +476,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
             <button
               onClick={handleMarkAsLost}
               disabled={isMarking || isMoving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-danger/30 text-danger font-medium hover:bg-danger-soft transition-colors disabled:opacity-50"
             >
               {isMarking ? (
                 <span className="flex items-center gap-2">
@@ -498,7 +498,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               <button
                 onClick={handleMoveToNext}
                 disabled={isMoving || isMarking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
               >
                 {isMoving ? (
                   <span className="flex items-center gap-2">

@@ -32,8 +32,8 @@ function PagosAnalitica() {
             { label: t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle') },
           ]}
         />
-        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.pagos.analiticaDesc')}
         </p>
       </header>

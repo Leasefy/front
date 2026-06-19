@@ -13,6 +13,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Chip, SegmentedControl } from '@leasefy/ui';
 import type { ReportCategory } from '@/lib/types/inmobiliaria';
 
 export interface ReporteFiltersState {
@@ -190,7 +192,7 @@ export function ReporteFilters({
           placeholder={t('inmobiliaria.reporte.searchReports')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+          className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary/30 transition-all"
         />
         {searchInput && (
           <button
@@ -208,39 +210,33 @@ export function ReporteFilters({
       {/* Row 2: All Filters */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Category Tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted overflow-x-auto">
-          {CATEGORY_TAB_KEYS.map((tab) => {
+        <SegmentedControl<'all' | ReportCategory>
+          value={filters.category}
+          onChange={(v) => updateFilter('category', v)}
+          options={CATEGORY_TAB_KEYS.map((tab) => {
             const count = reportCounts[tab.value as keyof typeof reportCounts] || 0;
             const isActive = filters.category === tab.value;
-
-            return (
-              <button
-                key={tab.value}
-                onClick={() => updateFilter('category', tab.value)}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-                  isActive
-                    ? 'bg-background text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {t(tab.labelKey)}
-                {count > 0 && (
-                  <span
-                    className={cn(
-                      'px-1.5 py-0.5 rounded-full text-xs min-w-[18px] text-center',
-                      isActive
-                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                        : 'bg-muted-foreground/20'
-                    )}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
+            return {
+              value: tab.value,
+              ariaLabel: t(tab.labelKey),
+              label: (
+                <span className="flex items-center gap-2 whitespace-nowrap">
+                  {t(tab.labelKey)}
+                  {count > 0 && (
+                    <span
+                      className={cn(
+                        'px-1.5 py-0.5 rounded-full text-xs min-w-[18px] text-center',
+                        isActive ? 'bg-primary-soft text-primary' : 'bg-muted-foreground/20'
+                      )}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </span>
+              ),
+            };
           })}
-        </div>
+        />
 
         {/* Separator */}
         <div className="hidden sm:block w-px h-6 bg-border" />
@@ -251,7 +247,7 @@ export function ReporteFilters({
             onClick={() =>
               setOpenDropdown(openDropdown === 'period' ? null : 'period')
             }
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-background text-sm font-medium hover:bg-muted transition-all"
+            className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background text-sm font-medium hover:bg-muted transition-all"
           >
             <CalendarBlank className="w-4 h-4 text-muted-foreground" />
             <span className="text-foreground">
@@ -274,7 +270,7 @@ export function ReporteFilters({
                     className={cn(
                       'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                       selectedPeriodOption === option.value
-                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
+                        ? 'bg-primary-soft text-primary font-medium'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
@@ -288,23 +284,20 @@ export function ReporteFilters({
 
         {/* Zone Dropdown */}
         <div className="relative">
-          <button
+          <Chip
+            selected={!!filters.zone}
             onClick={() =>
               setOpenDropdown(openDropdown === 'zone' ? null : 'zone')
             }
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
-              filters.zone
-                ? 'bg-[#1A40FF] text-white border-[#1A40FF]/30'
-                : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
-            )}
+            icon={<MapPin className="w-3.5 h-3.5" />}
           >
-            <MapPin className="w-4 h-4" />
-            <span className="max-w-[100px] truncate">
-              {filters.zone || t('inmobiliaria.reporte.zone')}
+            <span className="flex items-center gap-1.5">
+              <span className="max-w-[100px] truncate">
+                {filters.zone || t('inmobiliaria.reporte.zone')}
+              </span>
+              <CaretDown className="w-3.5 h-3.5" />
             </span>
-            <CaretDown className="w-3.5 h-3.5" />
-          </button>
+          </Chip>
           <AnimatePresence>
             {openDropdown === 'zone' && (
               <motion.div
@@ -321,7 +314,7 @@ export function ReporteFilters({
                   className={cn(
                     'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                     !filters.zone
-                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
+                      ? 'bg-primary-soft text-primary font-medium'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
@@ -337,7 +330,7 @@ export function ReporteFilters({
                     className={cn(
                       'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
                       filters.zone === zone
-                        ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] font-medium'
+                        ? 'bg-primary-soft text-primary font-medium'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
@@ -350,32 +343,32 @@ export function ReporteFilters({
         </div>
 
         {/* Favorites Toggle */}
-        <button
+        <Chip
+          selected={filters.favoritesOnly}
           onClick={() => updateFilter('favoritesOnly', !filters.favoritesOnly)}
-          className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
-            filters.favoritesOnly
-              ? 'bg-[#B7791F] text-white border-[#B7791F]/30'
-              : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
-          )}
+          icon={
+            <Star
+              className="w-3.5 h-3.5"
+              weight={filters.favoritesOnly ? 'fill' : 'regular'}
+            />
+          }
         >
-          <Star
-            className="w-4 h-4"
-            weight={filters.favoritesOnly ? 'fill' : 'regular'}
-          />
           {t('inmobiliaria.reporte.favorites')}
-        </button>
+        </Chip>
 
         {/* Clear Filters */}
         {activeFiltersCount > 0 && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            hideArrow
             onClick={clearAllFilters}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-sm font-medium hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/30 transition-colors"
+            className="gap-1.5"
           >
             <Funnel className="w-4 h-4" weight="fill" />
             {t('inmobiliaria.reporte.clear')}
             <X className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         )}
       </div>
 

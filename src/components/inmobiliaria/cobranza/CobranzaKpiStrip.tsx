@@ -37,19 +37,19 @@ export function CobranzaKpiStrip({
       label: t('inmobiliaria.ai.cobranza.overview.kpis.pagadoHoy'),
       value: formatCOP(pagadoHoyCop),
       Icon: CurrencyDollar,
-      iconColor: 'text-[#2C7A53]',
+      iconColor: 'text-success',
     },
     {
       label: t('inmobiliaria.ai.cobranza.overview.kpis.llamadasHoy'),
       value: String(llamadasHoy),
       Icon: Phone,
-      iconColor: 'text-[#1A40FF]',
+      iconColor: 'text-primary',
     },
     {
       label: t('inmobiliaria.ai.cobranza.overview.kpis.escalacionesPendientes'),
       value: String(escalacionesPendientes),
       Icon: Warning,
-      iconColor: 'text-[#B7791F]',
+      iconColor: 'text-warning',
     },
   ]
 
@@ -61,7 +61,7 @@ export function CobranzaKpiStrip({
       {cards.map(({ label, value, Icon, iconColor }) => (
         <div
           key={label}
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4"
+          className="rounded-xl border border-border bg-card p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             <Icon size={18} className={iconColor} weight="duotone" />

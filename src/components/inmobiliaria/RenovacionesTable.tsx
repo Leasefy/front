@@ -20,6 +20,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   DropdownList,
   DropdownListTrigger,
@@ -206,7 +208,7 @@ export function RenovacionesTable({
     <th className={cn('text-left p-4', className)}>
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -249,7 +251,7 @@ export function RenovacionesTable({
             {t('inmobiliaria.finance.renewals.critical')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '0-30' ? 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:bg-[#C4503B]/40 dark:text-[#C4503B]' : 'bg-muted'
+              bucketFilter === '0-30' ? 'bg-danger-soft text-danger' : 'bg-muted'
             )}>
               {bucketCounts['0-30']}
             </span>
@@ -266,7 +268,7 @@ export function RenovacionesTable({
             {t('inmobiliaria.finance.renewals.urgent')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '31-60' ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:bg-[#B7791F]/40 dark:text-[#B7791F]' : 'bg-muted'
+              bucketFilter === '31-60' ? 'bg-warning-soft text-warning' : 'bg-muted'
             )}>
               {bucketCounts['31-60']}
             </span>
@@ -283,7 +285,7 @@ export function RenovacionesTable({
             {t('inmobiliaria.finance.renewals.upcoming')}
             <span className={cn(
               'px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '61-90' ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/40 dark:text-[#1A40FF]' : 'bg-muted'
+              bucketFilter === '61-90' ? 'bg-primary-soft text-primary' : 'bg-muted'
             )}>
               {bucketCounts['61-90']}
             </span>
@@ -325,7 +327,10 @@ export function RenovacionesTable({
             </span>
             <div className="flex items-center gap-2 ml-auto">
               {onNotifyTenant && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
                   onClick={() => {
                     selectedItems.forEach(id => {
                       const item = data.find(r => r.id === id);
@@ -333,14 +338,16 @@ export function RenovacionesTable({
                     });
                     setSelectedItems(new Set());
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors"
+                  className="gap-2"
                 >
                   <Bell className="w-4 h-4" />
                   {t('inmobiliaria.finance.renewals.notify')}
-                </button>
+                </Button>
               )}
               {onStartRenewal && (
-                <button
+                <Button
+                  size="sm"
+                  hideArrow
                   onClick={() => {
                     selectedItems.forEach(id => {
                       const item = data.find(r => r.id === id);
@@ -348,11 +355,11 @@ export function RenovacionesTable({
                     });
                     setSelectedItems(new Set());
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
+                  className="gap-2"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
                   {t('inmobiliaria.finance.renewals.startRenewal')}
-                </button>
+                </Button>
               )}
             </div>
           </motion.div>
@@ -363,7 +370,7 @@ export function RenovacionesTable({
       <div className="overflow-x-auto -mx-5 mt-5 border-t border-border">
         <table className="w-full min-w-[1100px]">
           <thead>
-            <tr className="border-b border-neutral-100 dark:border-neutral-800">
+            <tr className="border-b border-border">
               <th className="w-12 p-4">
                 <input
                   type="checkbox"
@@ -372,18 +379,18 @@ export function RenovacionesTable({
                     filteredAndSortedItems.length > 0
                   }
                   onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600"
+                  className="w-4 h-4 rounded border-border accent-primary"
                 />
               </th>
               <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
               <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
               <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
-              <th className="p-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {t('inmobiliaria.finance.renewals.expiration')}
               </th>
               <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.days')}</SortableHeader>
               <SortableHeader field="currentRent">{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
-              <th className="p-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <th className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {t('inmobiliaria.finance.renewals.proposed')}
               </th>
               <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
@@ -405,9 +412,9 @@ export function RenovacionesTable({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
                   className={cn(
-                    'border-b border-neutral-50 dark:border-neutral-800 transition-colors',
-                    isSelected && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-                    !isSelected && 'hover:bg-neutral-50 dark:hover:bg-[#141416]'
+                    'border-b border-border/60 transition-colors',
+                    isSelected && 'bg-primary-soft',
+                    !isSelected && 'hover:bg-muted/50'
                   )}
                 >
                   {/* Checkbox */}
@@ -416,7 +423,7 @@ export function RenovacionesTable({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleSelectItem(item.id)}
-                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600"
+                      className="w-4 h-4 rounded border-border accent-primary"
                     />
                   </td>
 
@@ -427,24 +434,24 @@ export function RenovacionesTable({
                         className={cn(
                           'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
                           isUrgent
-                            ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
-                            : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
+                            ? 'bg-danger-soft'
+                            : 'bg-primary-soft'
                         )}
                       >
                         <HouseLine
                           className={cn(
                             'w-5 h-5',
                             isUrgent
-                              ? 'text-[#C4503B] dark:text-[#E0664D]'
-                              : 'text-[#1A40FF] dark:text-[#5570FF]'
+                              ? 'text-danger'
+                              : 'text-primary'
                           )}
                         />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[160px]">
+                        <p className="font-medium text-foreground truncate max-w-[160px]">
                           {item.propertyTitle}
                         </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate max-w-[160px]">
+                        <p className="text-sm text-muted-foreground truncate max-w-[160px]">
                           {item.propertyAddress}
                         </p>
                       </div>
@@ -454,14 +461,14 @@ export function RenovacionesTable({
                   {/* Tenant */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[120px]">
+                        <p className="font-medium text-foreground truncate max-w-[120px]">
                           {item.tenantName}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-[120px]">
+                        <p className="text-xs text-muted-foreground truncate max-w-[120px]">
                           {item.tenantPhone}
                         </p>
                       </div>
@@ -470,14 +477,14 @@ export function RenovacionesTable({
 
                   {/* Propietario */}
                   <td className="p-4">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate block max-w-[100px]">
+                    <span className="text-sm text-foreground truncate block max-w-[100px]">
                       {item.propietarioName}
                     </span>
                   </td>
 
                   {/* End Date */}
                   <td className="p-4">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                    <span className="text-sm text-foreground">
                       {formatDate(item.leaseEndDate, locale)}
                     </span>
                   </td>
@@ -497,7 +504,7 @@ export function RenovacionesTable({
 
                   {/* Current Rent */}
                   <td className="p-4">
-                    <span className="text-sm font-medium text-neutral-900 dark:text-white">
+                    <span className="text-sm font-medium text-foreground">
                       {formatCurrencyLocal(item.currentRent, locale)}
                     </span>
                   </td>
@@ -506,11 +513,11 @@ export function RenovacionesTable({
                   <td className="p-4">
                     {item.proposedRent && (
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-neutral-900 dark:text-white">
+                        <span className="text-sm font-medium text-foreground">
                           {formatCurrencyLocal(item.negotiatedRent || item.proposedRent, locale)}
                         </span>
                         {ipcIncrease && (
-                          <span className="inline-flex items-center gap-1 text-xs text-[#2C7A53] dark:text-[#3EAE70]">
+                          <span className="inline-flex items-center gap-1 text-xs text-success">
                             <TrendUp className="w-3 h-3" />
                             +{ipcIncrease}% IPC
                           </span>
@@ -535,12 +542,15 @@ export function RenovacionesTable({
                   <td className="p-4">
                     <DropdownList>
                       <DropdownListTrigger asChild>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          hideArrow
                           onClick={(e) => e.stopPropagation()}
-                          className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                          className="h-8 w-8 text-muted-foreground"
                         >
-                          <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
-                        </button>
+                          <DotsThree className="w-5 h-5" weight="bold" />
+                        </Button>
                       </DropdownListTrigger>
                       <DropdownListContent align="end" className="w-52">
                         {onViewDetails && (
@@ -566,7 +576,7 @@ export function RenovacionesTable({
                             <DropdownListSeparator />
                             <DropdownListItem
                               onSelect={() => onStartRenewal(item)}
-                              className="flex items-center gap-3 px-3 py-2 cursor-pointer text-[#1A40FF] dark:text-[#5570FF] focus:text-[#1A40FF] dark:focus:text-[#1A40FF]"
+                              className="flex items-center gap-3 px-3 py-2 cursor-pointer text-primary focus:text-primary"
                             >
                               <ArrowsClockwise className="w-4 h-4" />
                               <span>{t('inmobiliaria.finance.renewals.startNegotiation')}</span>
@@ -602,19 +612,15 @@ export function RenovacionesTable({
 
         {/* Empty State */}
         {filteredAndSortedItems.length === 0 && (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-              <CheckSquare className="w-8 h-8 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
-            </div>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
-              {t('inmobiliaria.finance.renewals.noRenewals')}
-            </h3>
-            <p className="text-neutral-500 dark:text-neutral-400">
-              {bucketFilter === 'all' && statusFilter === 'all'
+          <EmptyState
+            icon={CheckSquare}
+            title={t('inmobiliaria.finance.renewals.noRenewals')}
+            description={
+              bucketFilter === 'all' && statusFilter === 'all'
                 ? t('inmobiliaria.finance.renewals.noRenewalsDesc')
-                : t('inmobiliaria.finance.renewals.noRenewalsFiltered')}
-            </p>
-          </div>
+                : t('inmobiliaria.finance.renewals.noRenewalsFiltered')
+            }
+          />
         )}
       </div>
       </div>

@@ -150,7 +150,7 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
         'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
         'text-neutral-700 dark:text-neutral-200 cursor-pointer ' +
         'hover:text-neutral-600 dark:text-neutral-300 dark:hover:text-neutral-600 dark:text-neutral-300 focus:outline-none ' +
-        'focus-visible:ring-2 focus-visible:ring-[#6B6B6B] rounded-sm ' +
+        'focus-visible:ring-2 focus-visible:ring-fg-muted rounded-sm ' +
         (className ?? '')
       }
     >

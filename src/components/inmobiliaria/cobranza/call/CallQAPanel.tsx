@@ -23,17 +23,17 @@ function tone(score: number | null): {
   }
   if (score >= 0.8) {
     return {
-      bar: 'bg-[#2C7A53]',
-      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      bar: 'bg-success',
+      text: 'text-success',
     }
   }
   if (score >= 0.6) {
     return {
-      bar: 'bg-[#B7791F]',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      bar: 'bg-warning',
+      text: 'text-warning',
     }
   }
-  return { bar: 'bg-[#C4503B]', text: 'text-[#C4503B] dark:text-[#E0664D]' }
+  return { bar: 'bg-danger', text: 'text-danger' }
 }
 
 function ScoreRow({

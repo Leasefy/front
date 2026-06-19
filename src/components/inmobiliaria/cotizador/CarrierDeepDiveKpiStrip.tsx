@@ -33,28 +33,28 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
       label: t('inmobiliaria.ai.cotizador.aseguradoras.carrier.kpis.latencyP95'),
       value: kpis ? `${kpis.latencyP95Ms}ms` : '—',
       Icon: Timer,
-      iconColor: 'text-neutral-600 dark:text-neutral-300',
+      iconColor: 'text-fg-muted',
       valueMono: true,
     },
     {
       label: t('inmobiliaria.ai.cotizador.aseguradoras.carrier.kpis.errorRate'),
       value: kpis ? `${(kpis.errorRate24h * 100).toFixed(1)}%` : '—',
       Icon: Warning,
-      iconColor: 'text-[#C4503B]',
+      iconColor: 'text-danger',
       valueMono: false,
     },
     {
       label: t('inmobiliaria.ai.cotizador.aseguradoras.carrier.kpis.approvalRate'),
       value: kpis ? `${(kpis.approvalRate30d * 100).toFixed(0)}%` : '—',
       Icon: CheckCircle,
-      iconColor: 'text-[#2C7A53]',
+      iconColor: 'text-success',
       valueMono: false,
     },
     {
       label: t('inmobiliaria.ai.cotizador.aseguradoras.carrier.kpis.costPerQuote'),
       value: kpis ? `$${kpis.costPerQuoteUsd30d.toFixed(3)}` : '—',
       Icon: CurrencyDollar,
-      iconColor: 'text-[#1A40FF]',
+      iconColor: 'text-primary',
       valueMono: true,
     },
   ]
@@ -64,18 +64,18 @@ export function CarrierDeepDiveKpiStrip({ kpis, isLoading = false }: CarrierDeep
       {cards.map(({ label, value, Icon, iconColor, valueMono }) => (
         <div
           key={label}
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4"
+          className="rounded-lg border border-border bg-card p-4"
         >
           <div className="flex items-center gap-2 mb-1">
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{label}</p>
+            <p className="text-xs text-fg-muted truncate">{label}</p>
           </div>
           {isLoading ? (
-            <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse mt-1" />
+            <div className="h-6 w-16 rounded bg-surface-muted animate-pulse mt-1" />
           ) : (
             <p
               className={[
-                'text-xl font-semibold text-neutral-900 dark:text-white mt-1',
+                'text-xl font-semibold text-fg mt-1',
                 valueMono ? 'font-mono tabular-nums' : '',
               ].join(' ').trim()}
             >

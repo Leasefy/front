@@ -122,7 +122,7 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
             'absolute right-2 top-1/2 -translate-y-1/2',
             'p-1 rounded-sm transition-colors',
             confirmDelete
-              ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B]'
+              ? 'bg-danger-soft text-danger'
               : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400'
           )}
           title={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
@@ -173,7 +173,7 @@ export function ConversationList() {
             'text-[13px] placeholder:text-neutral-400/60 dark:placeholder:text-neutral-500/60',
             'bg-neutral-50/80 dark:bg-neutral-800/40',
             'border-none',
-            'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
+            'focus:outline-none focus:ring-2 focus:ring-primary/20',
             'transition-all duration-150'
           )}
         />

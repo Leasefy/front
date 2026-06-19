@@ -10,9 +10,9 @@ import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotiza
 // ---------------------------------------------------------------------------
 
 const ROUTE_COLORS: Record<string, string> = {
-  rest: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
-  stub: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
-  disabled: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400',
+  rest: 'bg-surface-muted text-fg-muted',
+  stub: 'bg-warning-soft text-warning',
+  disabled: 'bg-surface-muted text-fg-subtle',
 }
 
 function RouteBadge({ mode, t }: { mode: string; t: (k: string) => string }) {
@@ -32,9 +32,9 @@ function RouteBadge({ mode, t }: { mode: string; t: (k: string) => string }) {
 }
 
 const SLA_COLORS: Record<string, string> = {
-  healthy: 'text-[#2C7A53] dark:text-[#3EAE70]',
-  degraded: 'text-[#B7791F] dark:text-[#D2992F]',
-  breached: 'text-[#C4503B] dark:text-[#E0664D]',
+  healthy: 'text-success',
+  degraded: 'text-warning',
+  breached: 'text-danger',
 }
 
 function SlaBadge({ state, t }: { state: string; t: (k: string) => string }) {
@@ -80,11 +80,11 @@ export function CotizadorCarriersStatus({
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 space-y-3"
+            className="rounded-xl border border-border bg-card p-4 space-y-3"
           >
-            <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-            <div className="h-3 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-            <div className="h-3 w-20 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+            <div className="h-4 w-24 rounded bg-surface-muted animate-pulse" />
+            <div className="h-3 w-16 rounded bg-surface-muted animate-pulse" />
+            <div className="h-3 w-20 rounded bg-surface-muted animate-pulse" />
           </div>
         ))}
       </div>
@@ -95,7 +95,7 @@ export function CotizadorCarriersStatus({
     <div>
       {/* All-breach banner */}
       {allInBreach && (
-        <div className="mb-4 rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 px-4 py-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2">
+        <div className="mb-4 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2">
           <Warning weight="fill" className="h-4 w-4 flex-shrink-0" />
           {t('inmobiliaria.ai.cotizador.overview.carriers.allBreachBanner')}
         </div>
@@ -106,11 +106,11 @@ export function CotizadorCarriersStatus({
         {enabledCarriers.map((carrier) => (
           <div
             key={carrier.name}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 space-y-3"
+            className="rounded-xl border border-border bg-card p-4 space-y-3"
           >
             {/* Carrier name + route mode badge */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-neutral-900 dark:text-white capitalize">
+              <span className="text-sm font-semibold text-fg capitalize">
                 {carrier.name}
               </span>
               <RouteBadge mode={carrier.mode} t={t} />
@@ -118,7 +118,7 @@ export function CotizadorCarriersStatus({
             {/* SLA state badge */}
             <SlaBadge state={carrier.slaState} t={t} />
             {/* Last verdict time */}
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted">
               {t('inmobiliaria.ai.cotizador.overview.carriers.lastVerdict')}:{' '}
               {carrier.lastVerdictAt
                 ? relativeTime(carrier.lastVerdictAt, locale)

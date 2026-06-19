@@ -67,7 +67,7 @@ function ThresholdsContent() {
       {isLoading && !active && <PageSkeleton variant="list" />}
 
       {error && (
-        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}

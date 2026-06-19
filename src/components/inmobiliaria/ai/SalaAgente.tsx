@@ -33,12 +33,12 @@ const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
  *  desaturados como señales reales. */
 const ESTADO_BAR_CLS: Record<WorkItemEstado, string> = {
   detectado: 'bg-neutral-400 dark:bg-neutral-500',
-  sugerido: 'bg-[#5570FF]',
-  en_revision: 'bg-[#B7791F]',
-  aprobado: 'bg-[#3EAE70]',
-  ejecutando: 'bg-[#1A40FF]',
-  resuelto: 'bg-[#2C7A53]',
-  rechazado: 'bg-[#C4503B]',
+  sugerido: 'bg-primary',
+  en_revision: 'bg-warning',
+  aprobado: 'bg-success',
+  ejecutando: 'bg-primary',
+  resuelto: 'bg-success',
+  rechazado: 'bg-danger',
   fallo: 'bg-[#A23A28]',
 }
 
@@ -124,7 +124,7 @@ function OverviewBody({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
         data-testid="sala-agente-error"
       >
         {t(`${WORKSPACE_NS}.sala.error`, { error })}

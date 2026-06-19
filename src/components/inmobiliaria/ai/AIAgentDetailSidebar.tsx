@@ -102,7 +102,7 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
   const accentColor = 'text-neutral-600 dark:text-neutral-400';
   const accentBg = 'bg-neutral-50';
   const accentBorder = 'border-neutral-200';
-  const accentDot = 'bg-[#2C7A53]';
+  const accentDot = 'bg-success';
 
   const content = (
     <div

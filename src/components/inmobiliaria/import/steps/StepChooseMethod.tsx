@@ -24,9 +24,9 @@ const METHOD_CARDS: MethodCard[] = [
     titleKey: 'inmobiliaria.import.methods.excel.title',
     descKey: 'inmobiliaria.import.methods.excel.desc',
     badgeKey: 'inmobiliaria.import.methods.excel.badge',
-    badgeColor: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    badgeColor: 'bg-success-soft text-success',
     icon: FileXls,
-    iconBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    iconBg: 'bg-success-soft',
     disabled: false,
   },
   {
@@ -34,9 +34,9 @@ const METHOD_CARDS: MethodCard[] = [
     titleKey: 'inmobiliaria.import.methods.software.title',
     descKey: 'inmobiliaria.import.methods.software.desc',
     badgeKey: 'inmobiliaria.import.methods.software.badge',
-    badgeColor: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    badgeColor: 'bg-warning-soft text-warning',
     icon: Desktop,
-    iconBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    iconBg: 'bg-warning-soft',
     disabled: false,
   },
   {
@@ -90,8 +90,8 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
                 card.disabled
                   ? 'opacity-60 cursor-not-allowed border-neutral-200 dark:border-neutral-700'
                   : isSelected
-                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 cursor-pointer'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 cursor-pointer'
+                    ? 'border-primary/30 bg-primary-soft cursor-pointer'
+                    : 'border-neutral-200 dark:border-neutral-700 hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer'
               )}
               style={{ animationDelay: `${index * 80}ms` }}
               disabled={card.disabled}
@@ -103,8 +103,8 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               )}>
                 <CardIcon className={cn(
                   'w-6 h-6',
-                  card.method === 'excel' ? 'text-[#2C7A53] dark:text-[#3EAE70]' :
-                  card.method === 'software' ? 'text-[#B7791F] dark:text-[#D2992F]' :
+                  card.method === 'excel' ? 'text-success' :
+                  card.method === 'software' ? 'text-warning' :
                   'text-neutral-500 dark:text-neutral-400'
                 )} />
               </div>
@@ -127,8 +127,8 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
 
               {/* Selected Indicator */}
               {isSelected && !card.disabled && (
-                <div className="mt-4 flex items-center gap-2 text-[#1A40FF] dark:text-[#5570FF]">
-                  <div className="w-2 h-2 rounded-full bg-[#1A40FF] dark:bg-[#5570FF]" />
+                <div className="mt-4 flex items-center gap-2 text-primary">
+                  <div className="w-2 h-2 rounded-full bg-primary dark:bg-primary" />
                   <span className="text-xs font-mono uppercase tracking-wide">Seleccionado</span>
                 </div>
               )}

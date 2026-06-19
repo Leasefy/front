@@ -12,7 +12,7 @@ export default function CotizadorLayout({ children }: { children: React.ReactNod
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-[#6B6B6B] border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-fg-muted border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -20,10 +20,10 @@ export default function CotizadorLayout({ children }: { children: React.ReactNod
   if (!canAccess('cotizador', 'view')) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3 px-6 text-center">
-        <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+        <p className="text-base font-semibold text-fg">
           {t('inmobiliaria.ai.access.noAccessCotizador')}
         </p>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
+        <p className="text-sm text-fg-muted max-w-sm">
           {t('inmobiliaria.ai.access.contactAdmin')}
         </p>
       </div>

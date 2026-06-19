@@ -103,19 +103,19 @@ const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
 };
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
-  low: { bg: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]', text: 'text-[#6B6B6B] dark:text-[#6B6B6B]', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
-  medium: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
-  high: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
-  emergency: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
+  low: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  medium: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
+  high: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
+  emergency: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]', text: 'text-[#6B6B6B] dark:text-[#6B6B6B]', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: Note },
-  quoted: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyDollar },
-  approved: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
-  in_progress: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Play },
-  completed: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
-  cancelled: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
+  reported: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: Note },
+  quoted: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyDollar },
+  approved: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
+  in_progress: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Play },
+  completed: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusCompleted', icon: CheckCircle },
+  cancelled: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.statusCancelled', icon: XCircle },
 };
 
 const STATUS_ORDER: MantenimientoStatus[] = ['reported', 'quoted', 'approved', 'in_progress', 'completed'];
@@ -246,7 +246,7 @@ function PhotoGallery({
         {onUpload && (
           <button
             onClick={onUpload}
-            className="inline-flex items-center gap-1 text-sm text-[#1A40FF] dark:text-[#5570FF] font-medium hover:underline"
+            className="inline-flex items-center gap-1 text-sm text-primary font-medium hover:underline"
           >
             <Upload className="w-4 h-4" />
             {t('inmobiliaria.mantenimiento.uploadPhotos')}
@@ -266,7 +266,7 @@ function PhotoGallery({
             onClick={() => setSelectedPhoto(url)}
             className="aspect-square rounded-md bg-muted overflow-hidden relative group"
           >
-            <div className="absolute inset-0 flex items-center justify-center bg-[#6B6B6B] dark:bg-[#6B6B6B]">
+            <div className="absolute inset-0 flex items-center justify-center bg-fg-muted dark:bg-fg-muted">
               <ImageIcon className="w-6 h-6 text-muted-foreground" />
             </div>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -277,7 +277,7 @@ function PhotoGallery({
         {onUpload && (
           <button
             onClick={onUpload}
-            className="aspect-square rounded-md border-2 border-dashed border-border hover:border-[#1A40FF]/30 transition-colors flex items-center justify-center"
+            className="aspect-square rounded-md border-2 border-dashed border-border hover:border-primary/30 transition-colors flex items-center justify-center"
           >
             <Plus className="w-6 h-6 text-muted-foreground" />
           </button>
@@ -309,7 +309,7 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
           event.status === 'quote_received' ||
           event.status === 'note_added' ||
           event.status === 'photo_added'
-            ? { bg: 'bg-[#6B6B6B] dark:bg-[#6B6B6B]', text: 'text-[#6B6B6B] dark:text-[#6B6B6B]' }
+            ? { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted' }
             : STATUS_STYLES[event.status as MantenimientoStatus] || STATUS_STYLES.reported;
 
         return (
@@ -632,12 +632,12 @@ export function MantenimientoViewer({
                   className={cn(
                     'px-2.5 py-1 rounded-full text-xs font-medium',
                     solicitud.paidBy === 'owner'
-                      ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
+                      ? 'bg-primary-soft text-primary'
                       : solicitud.paidBy === 'tenant'
-                      ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
+                      ? 'bg-warning-soft text-warning'
                       : solicitud.paidBy === 'split'
                       ? 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-                      : 'bg-[#6B6B6B] text-[#6B6B6B] dark:bg-[#6B6B6B] dark:text-[#6B6B6B]'
+                      : 'bg-fg-muted text-fg-muted dark:bg-fg-muted dark:text-fg-muted'
                   )}
                 >
                   {solicitud.paidBy === 'owner'
@@ -659,7 +659,7 @@ export function MantenimientoViewer({
               {solicitud.status === 'approved' && (
                 <button
                   onClick={handleStartWork}
-                  className="w-full py-3 px-4 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 rounded-xl bg-primary text-white font-medium hover:opacity-90 transition-colors flex items-center justify-center gap-2"
                 >
                   <Play className="w-5 h-5" weight="fill" />
                   {t('inmobiliaria.mantenimiento.startWork')}
@@ -669,7 +669,7 @@ export function MantenimientoViewer({
               {solicitud.status === 'in_progress' && (
                 <button
                   onClick={() => setShowCompleteDialog(true)}
-                  className="w-full py-3 px-4 rounded-xl bg-[#2C7A53] text-white font-medium hover:bg-[#2C7A53] transition-colors shadow-[#2C7A53]/20 flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 rounded-xl bg-success text-white font-medium hover:bg-success transition-colors shadow-[#2C7A53]/20 flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-5 h-5" weight="fill" />
                   {t('inmobiliaria.mantenimiento.markCompleted')}
@@ -687,7 +687,7 @@ export function MantenimientoViewer({
                 </button>
                 <button
                   onClick={() => setShowCancelDialog(true)}
-                  className="py-2.5 px-4 rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
+                  className="py-2.5 px-4 rounded-md border border-danger/30 text-danger hover:bg-danger-soft transition-colors"
                 >
                   <Trash className="w-4 h-4" />
                 </button>
@@ -710,7 +710,7 @@ export function MantenimientoViewer({
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             placeholder={t('inmobiliaria.mantenimiento.notePlaceholder')}
-            className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-[#1A40FF]"
+            className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <DialogFooter>
             <button
@@ -722,7 +722,7 @@ export function MantenimientoViewer({
             <button
               onClick={handleAddNote}
               disabled={!noteText.trim()}
-              className="px-4 py-2 rounded-md bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-md bg-primary text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('inmobiliaria.mantenimiento.saveNote')}
             </button>
@@ -748,7 +748,7 @@ export function MantenimientoViewer({
             </button>
             <button
               onClick={handleCancel}
-              className="px-4 py-2 rounded-md bg-[#C4503B] text-white font-medium hover:bg-[#C4503B] transition-colors"
+              className="px-4 py-2 rounded-md bg-danger text-white font-medium hover:bg-danger transition-colors"
             >
               {t('inmobiliaria.mantenimiento.yesCancel')}
             </button>
@@ -769,7 +769,7 @@ export function MantenimientoViewer({
             value={completionNotes}
             onChange={(e) => setCompletionNotes(e.target.value)}
             placeholder={t('inmobiliaria.mantenimiento.completionNotesPlaceholder')}
-            className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-[#2C7A53]"
+            className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-success"
           />
           <DialogFooter>
             <button
@@ -780,7 +780,7 @@ export function MantenimientoViewer({
             </button>
             <button
               onClick={handleComplete}
-              className="px-4 py-2 rounded-md bg-[#2C7A53] text-white font-medium hover:bg-[#2C7A53] transition-colors"
+              className="px-4 py-2 rounded-md bg-success text-white font-medium hover:bg-success transition-colors"
             >
               {t('inmobiliaria.mantenimiento.confirmCompleted')}
             </button>

@@ -175,7 +175,7 @@ function ReporteViewerContent() {
 
       {/* Error */}
       {error && !data && (
-        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -212,8 +212,8 @@ function ReporteViewerContent() {
                   className={[
                     'rounded-xl border p-3 flex items-start gap-3',
                     alert.severity === 'critical'
-                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15'
-                      : 'border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+                      ? 'border-danger/30 bg-danger-soft'
+                      : 'border-warning/30 bg-warning-soft',
                   ].join(' ')}
                   role="alert"
                 >
@@ -221,8 +221,8 @@ function ReporteViewerContent() {
                     className={[
                       'w-4 h-4 flex-shrink-0 mt-0.5',
                       alert.severity === 'critical'
-                        ? 'text-[#C4503B] dark:text-[#E0664D]'
-                        : 'text-[#B7791F] dark:text-[#D2992F]',
+                        ? 'text-danger'
+                        : 'text-warning',
                     ].join(' ')}
                     weight="fill"
                     aria-hidden="true"
@@ -231,8 +231,8 @@ function ReporteViewerContent() {
                     className={[
                       'text-xs font-mono tabular-nums',
                       alert.severity === 'critical'
-                        ? 'text-[#C4503B] dark:text-[#E0664D]'
-                        : 'text-[#B7791F] dark:text-[#D2992F]',
+                        ? 'text-danger'
+                        : 'text-warning',
                     ].join(' ')}
                   >
                     {alert.kpi}: {String(alert.actual)} (
@@ -407,7 +407,7 @@ function KpiTile({
       className={[
         'rounded-xl border bg-card p-4',
         alert
-          ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40'
+          ? 'border-danger/30'
           : 'border-border',
       ].join(' ')}
     >
@@ -418,8 +418,8 @@ function KpiTile({
         className={[
           'mt-2 text-3xl font-mono tabular-nums',
           alert
-            ? 'text-[#C4503B] dark:text-[#E0664D] font-bold'
-            : 'text-[#2C7A53] dark:text-[#3EAE70]',
+            ? 'text-danger font-bold'
+            : 'text-success',
         ].join(' ')}
       >
         {value}

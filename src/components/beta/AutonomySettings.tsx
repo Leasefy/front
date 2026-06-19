@@ -43,26 +43,26 @@ const LEVEL_ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_COLORS: Record<string, string> = {
-  emerald: 'border-l-[#2C7A53]',
-  blue: 'border-l-[#1A40FF]',
-  amber: 'border-l-[#B7791F]',
-  purple: 'border-l-[#6B6B6B]',
-  pink: 'border-l-[#6B6B6B]',
-  indigo: 'border-l-[#1A40FF]',
+  emerald: 'border-l-success',
+  blue: 'border-l-primary',
+  amber: 'border-l-warning',
+  purple: 'border-l-border-strong',
+  pink: 'border-l-border-strong',
+  indigo: 'border-l-primary',
 };
 
 const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
   emerald: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   blue: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   amber: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
   purple: {
     bg: 'bg-neutral-100 dark:bg-neutral-800',
@@ -73,8 +73,8 @@ const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
     text: 'text-neutral-600 dark:text-neutral-300',
   },
   indigo: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
 };
 
@@ -193,7 +193,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
                         'text-[12px] font-medium',
                         'transition-all duration-150',
                         isActive
-                          ? 'bg-[#1A40FF] text-white'
+                          ? 'bg-primary text-white'
                           : 'text-muted-foreground hover:text-foreground'
                       )}
                     >

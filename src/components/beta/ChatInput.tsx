@@ -70,7 +70,7 @@ export function ChatInput({ onSend, disabled = false, className, variant = 'defa
             'flex flex-col',
             'px-4 pt-3.5 pb-3',
             'rounded-[22px]',
-            'bg-white dark:bg-[#18181b]',
+            'bg-card',
             'border border-neutral-200 dark:border-neutral-700/80',
             'shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]',
             'focus-within:border-neutral-300 dark:focus-within:border-neutral-500',

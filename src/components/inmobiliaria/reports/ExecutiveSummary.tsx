@@ -27,27 +27,27 @@ interface ExecutiveSummaryProps {
 
 const HEALTH_COLORS = {
   excellent: {
-    ring: 'text-[#2C7A53]',
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    track: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    ring: 'text-success',
+    bg: 'bg-success-soft',
+    track: 'text-success',
     label: { es: 'Excelente', en: 'Excellent' },
   },
   good: {
-    ring: 'text-[#1A40FF]',
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    track: 'text-[#1A40FF] dark:text-[#5570FF]',
+    ring: 'text-primary',
+    bg: 'bg-primary-soft',
+    track: 'text-primary',
     label: { es: 'Bueno', en: 'Good' },
   },
   warning: {
-    ring: 'text-[#B7791F]',
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    track: 'text-[#B7791F] dark:text-[#D2992F]',
+    ring: 'text-warning',
+    bg: 'bg-warning-soft',
+    track: 'text-warning',
     label: { es: 'Atencion', en: 'Warning' },
   },
   critical: {
-    ring: 'text-[#C4503B]',
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    track: 'text-[#C4503B] dark:text-[#E0664D]',
+    ring: 'text-danger',
+    bg: 'bg-danger-soft',
+    track: 'text-danger',
     label: { es: 'Critico', en: 'Critical' },
   },
 } as const;
@@ -187,8 +187,8 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
                     className={cn(
                       'text-xs font-semibold',
                       m.netIncome >= 0
-                        ? 'text-[#2C7A53] dark:text-[#3EAE70]'
-                        : 'text-[#C4503B] dark:text-[#E0664D]'
+                        ? 'text-success'
+                        : 'text-danger'
                     )}
                   >
                     {formatCurrency(m.netIncome)}
@@ -258,8 +258,8 @@ function MetricCard({
             className={cn(
               'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-sm',
               isGoodChange
-                ? 'text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
-                : 'text-[#C4503B] dark:text-[#E0664D] bg-[#F8EAE7] dark:bg-[#C4503B]/15'
+                ? 'text-success bg-success-soft'
+                : 'text-danger bg-danger-soft'
             )}
           >
             {isPositiveChange ? (

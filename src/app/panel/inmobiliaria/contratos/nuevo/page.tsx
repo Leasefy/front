@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { Button } from '@/components/ui/button';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import { contractsApi } from '@/lib/api/contracts.service';
@@ -259,11 +260,11 @@ function NuevoContratoContent() {
   if (loadError || !application) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[#C4503B]">No se pudo cargar la aplicación</p>
-            <p className="text-sm text-[#C4503B] mt-1">{loadError}</p>
+            <p className="font-semibold text-danger">No se pudo cargar la aplicación</p>
+            <p className="text-sm text-danger mt-1">{loadError}</p>
           </div>
         </div>
       </div>
@@ -274,13 +275,15 @@ function NuevoContratoContent() {
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div>
-        <button
+        <Button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
+          variant="link"
+          hideArrow
+          className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
         >
           <CaretLeft className="w-4 h-4" /> Volver
-        </button>
-        <h1 className="text-2xl font-semibold text-foreground">Crear contrato</h1>
+        </Button>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Crear contrato</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Candidato: <span className="font-medium text-foreground">{application.tenantName}</span>
           {property && (
@@ -292,7 +295,7 @@ function NuevoContratoContent() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1) Contract origin */}
         <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h2 className="font-semibold text-sm text-foreground">Tipo de contrato</h2>
+          <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ModeOption
               active={form.mode === 'upload'}
@@ -323,10 +326,10 @@ function NuevoContratoContent() {
         {/* 2) PDF upload */}
         {form.mode === 'upload' && (
           <section className="rounded-xl border border-border bg-card p-5 space-y-3">
-            <h2 className="font-semibold text-sm text-foreground">PDF del contrato</h2>
+            <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
             {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-[#2C7A53]/30 bg-[#E8F3EC]/60 dark:bg-[#2C7A53]/20">
-                <FileText className="w-5 h-5 text-[#C4503B] flex-shrink-0" />
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+                <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -336,7 +339,7 @@ function NuevoContratoContent() {
                 <button
                   type="button"
                   onClick={() => updateForm('pdfFile', null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft/50 transition-colors"
                   title="Quitar"
                 >
                   <X className="w-4 h-4" />
@@ -351,8 +354,8 @@ function NuevoContratoContent() {
                 className={cn(
                   'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
                   isDragging
-                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/40 dark:bg-[#1A40FF]/20'
-                    : 'border-border hover:border-[#1A40FF]/30 hover:bg-muted/50'
+                    ? 'border-primary/40 bg-primary-soft/40'
+                    : 'border-border hover:border-primary/40 hover:bg-muted/50'
                 )}
               >
                 <UploadSimple className="w-8 h-8 text-muted-foreground" />
@@ -370,7 +373,7 @@ function NuevoContratoContent() {
               </label>
             )}
             {validation.pdfFile && (
-              <p className="text-xs text-[#C4503B]">{validation.pdfFile}</p>
+              <p className="text-xs text-danger">{validation.pdfFile}</p>
             )}
 
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
@@ -385,7 +388,7 @@ function NuevoContratoContent() {
 
         {/* 3) Dates + amounts */}
         <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h2 className="font-semibold text-sm text-foreground">Términos</h2>
+          <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
               <input
@@ -460,24 +463,26 @@ function NuevoContratoContent() {
 
         {/* Errors + submit */}
         {submitError && (
-          <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-4 flex items-start gap-2">
-            <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-[#C4503B]">{submitError}</p>
+          <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+            <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-danger">{submitError}</p>
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3">
-          <button
+        <div className="flex items-center justify-end gap-2">
+          <Button
             type="button"
+            variant="secondary"
+            hideArrow
             onClick={() => router.back()}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            hideArrow
             disabled={!isValid || actions.isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="gap-2"
           >
             {actions.isSubmitting ? (
               <Spinner className="w-4 h-4 animate-spin" />
@@ -485,7 +490,7 @@ function NuevoContratoContent() {
               <CheckCircle className="w-4 h-4" />
             )}
             Crear contrato
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -518,13 +523,13 @@ function ModeOption({
       disabled={disabled}
       className={cn(
         'relative text-left p-4 rounded-xl border transition-colors',
-        active && 'border-[#1A40FF]/30 bg-[#EEF1FF]/40 dark:bg-[#1A40FF]/20',
-        !active && !disabled && 'border-border hover:border-[#1A40FF]/30 hover:bg-muted/50',
+        active && 'border-primary/40 bg-primary-soft/40',
+        !active && !disabled && 'border-border hover:border-primary/40 hover:bg-muted/50',
         disabled && 'border-border opacity-50 cursor-not-allowed'
       )}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <Icon className={cn('w-4 h-4', active ? 'text-[#1A40FF]' : 'text-muted-foreground')} />
+        <Icon className={cn('w-4 h-4', active ? 'text-primary' : 'text-muted-foreground')} />
         <p className="text-sm font-semibold text-foreground">{title}</p>
       </div>
       <p className="text-xs text-muted-foreground">{desc}</p>
@@ -553,7 +558,7 @@ function Field({
       <label className="block text-xs font-medium text-foreground">{label}</label>
       {children}
       {error ? (
-        <p className="text-xs text-[#C4503B]">{error}</p>
+        <p className="text-xs text-danger">{error}</p>
       ) : hint ? (
         <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}

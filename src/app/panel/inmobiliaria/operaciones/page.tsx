@@ -28,6 +28,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { SegmentedControl } from '@leasefy/ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Sheet,
@@ -136,8 +138,8 @@ function StatCard({
   iconColor,
 }: StatCardProps) {
   const subValueColors = {
-    warning: 'text-[#B7791F] dark:text-[#D2992F] font-medium',
-    info: 'text-[#1A40FF] dark:text-[#5570FF]',
+    warning: 'text-warning font-medium',
+    info: 'text-primary',
     default: 'text-muted-foreground',
   };
 
@@ -396,10 +398,10 @@ function OperacionesContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('inmobiliaria.operaciones.title')}</h1>
-          <p className="text-muted-foreground mt-1">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.operaciones.title')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.operaciones.subtitle')}
           </p>
         </div>
@@ -445,8 +447,8 @@ function OperacionesContent() {
                 : undefined
             }
             subValueColor={stats.renovaciones.critical > 0 ? 'warning' : 'default'}
-            bgColor="bg-[#F8F0E0] dark:bg-[#B7791F]/15"
-            iconColor="text-[#B7791F] dark:text-[#D2992F]"
+            bgColor="bg-warning-soft"
+            iconColor="text-warning"
           />
           <StatCard
             icon={Wrench}
@@ -458,8 +460,8 @@ function OperacionesContent() {
                 : undefined
             }
             subValueColor={stats.mantenimiento.quoted > 0 ? 'info' : 'default'}
-            bgColor="bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
-            iconColor="text-[#1A40FF] dark:text-[#5570FF]"
+            bgColor="bg-primary-soft"
+            iconColor="text-primary"
           />
           <StatCard
             icon={CurrencyDollar}
@@ -473,8 +475,8 @@ function OperacionesContent() {
             label={t('inmobiliaria.operaciones.stats.currentIPC')}
             value={`${stats.ipc.currentRate.toFixed(2)}%`}
             subValue={stats.ipc.description}
-            bgColor="bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
-            iconColor="text-[#2C7A53] dark:text-[#3EAE70]"
+            bgColor="bg-success-soft"
+            iconColor="text-success"
           />
         </motion.div>
       )}
@@ -533,17 +535,17 @@ function OperacionesContent() {
             {/* Tab-specific Actions */}
             <AnimatePresence mode="wait">
               {activeTab === 'mantenimiento' && (
-                <motion.button
+                <motion.div
                   key="new-mant"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  onClick={handleNewMantenimiento}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-sm font-medium hover:opacity-90 transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  {t('inmobiliaria.operaciones.maintenance.new')}
-                </motion.button>
+                  <Button size="sm" hideArrow onClick={handleNewMantenimiento} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    {t('inmobiliaria.operaciones.maintenance.new')}
+                  </Button>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -571,38 +573,38 @@ function OperacionesContent() {
                   </span>
                   {' '}{t('inmobiliaria.operaciones.maintenance.activeRequests')}
                   {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
-                    <span className="ml-2 text-[#1A40FF] dark:text-[#5570FF]">
+                    <span className="ml-2 text-primary">
                       ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: mantenimientos.filter((m) => m.status === 'quoted').length })})
                     </span>
                   )}
                 </p>
               </div>
-              <div className="flex items-center gap-1 p-1 rounded-md bg-muted/50">
-                <button
-                  onClick={() => setMantenimientoView('kanban')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                    mantenimientoView === 'kanban'
-                      ? 'bg-background text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Kanban className="w-4 h-4" />
-                  {t('inmobiliaria.operaciones.maintenance.kanbanView')}
-                </button>
-                <button
-                  onClick={() => setMantenimientoView('cards')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                    mantenimientoView === 'cards'
-                      ? 'bg-background text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <SquaresFour className="w-4 h-4" />
-                  {t('inmobiliaria.operaciones.maintenance.listView')}
-                </button>
-              </div>
+              <SegmentedControl<MantenimientoViewMode>
+                value={mantenimientoView}
+                onChange={setMantenimientoView}
+                options={[
+                  {
+                    value: 'kanban',
+                    ariaLabel: t('inmobiliaria.operaciones.maintenance.kanbanView'),
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <Kanban className="w-4 h-4" />
+                        {t('inmobiliaria.operaciones.maintenance.kanbanView')}
+                      </span>
+                    ),
+                  },
+                  {
+                    value: 'cards',
+                    ariaLabel: t('inmobiliaria.operaciones.maintenance.listView'),
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <SquaresFour className="w-4 h-4" />
+                        {t('inmobiliaria.operaciones.maintenance.listView')}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             </div>
 
             {/* Content based on view mode */}

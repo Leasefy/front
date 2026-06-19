@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Warning, WarningCircle, Bell, ClockCountdown, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 type MoraSeverity = 'warning' | 'critical' | 'severe';
@@ -46,27 +47,27 @@ const SEVERITY_STYLES: Record<
   }
 > = {
   warning: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
-    icon: 'text-[#B7791F] dark:text-[#D2992F]',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-    textSecondary: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    border: 'border-warning/30',
+    icon: 'text-warning',
+    text: 'text-warning',
+    textSecondary: 'text-warning',
     pulse: false,
   },
   critical: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
-    icon: 'text-[#C4503B] dark:text-[#E0664D]',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    textSecondary: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    border: 'border-danger/30',
+    icon: 'text-danger',
+    text: 'text-danger',
+    textSecondary: 'text-danger',
     pulse: true,
   },
   severe: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
-    icon: 'text-[#C4503B] dark:text-[#E0664D]',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    textSecondary: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    border: 'border-danger/30',
+    icon: 'text-danger',
+    text: 'text-danger',
+    textSecondary: 'text-danger',
     pulse: true,
   },
 };
@@ -185,34 +186,30 @@ export function MoraAlert({
 
           {/* Actions */}
           {(onSendReminder || onViewHistory) && (
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               {onSendReminder && (
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
                   onClick={onSendReminder}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md',
-                    'bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/30',
-                    'border transition-colors',
-                    styles.border,
-                    styles.text
-                  )}
+                  className={cn('bg-card/60', styles.border, styles.text)}
                 >
                   <Bell className="w-3.5 h-3.5" />
                   {t('inmobiliaria.cobros.mora.sendReminder')}
-                </button>
+                </Button>
               )}
               {onViewHistory && (
-                <button
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
                   onClick={onViewHistory}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md',
-                    'hover:underline transition-colors',
-                    styles.textSecondary
-                  )}
+                  className={cn('gap-1.5', styles.textSecondary)}
                 >
                   {t('inmobiliaria.cobros.mora.viewHistory')}
                   <ArrowRight className="w-3 h-3" />
-                </button>
+                </Button>
               )}
             </div>
           )}

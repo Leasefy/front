@@ -130,13 +130,13 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
     return (
       <div className="space-y-4">
         {extracted ? (
-          <div className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-3 flex items-start gap-2.5">
-            <PencilSimple className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] flex-shrink-0 mt-0.5" weight="fill" />
+          <div className="rounded-xl bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
+            <PencilSimple className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
             <div>
-              <p className="text-xs font-semibold text-[#B7791F] dark:text-[#D2992F]">
+              <p className="text-xs font-semibold text-warning">
                 {t(k('reviewBannerTitle'))}
               </p>
-              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]/90 mt-0.5">
+              <p className="text-xs text-warning/90 mt-0.5">
                 {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
               </p>
             </div>
@@ -168,8 +168,8 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
   if (step === 'error') {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center">
-          <WarningCircle className="w-7 h-7 text-[#C4503B] dark:text-[#E0664D]" />
+        <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
+          <WarningCircle className="w-7 h-7 text-danger" />
         </div>
         <div className="space-y-1">
           <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
@@ -199,8 +199,8 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
-          <Sparkle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
+        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+          <Sparkle className="w-5 h-5 text-primary" weight="fill" />
         </div>
         <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
       </div>
@@ -246,8 +246,8 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
             aria-label={file?.name}
           />
         ) : (
-          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center mb-1">
-            <IdentificationCard className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center mb-1">
+            <IdentificationCard className="w-6 h-6 text-primary" />
           </div>
         )}
         <p className="text-body-sm font-medium text-foreground">

@@ -179,7 +179,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
         data-testid="equipo-agentes-error"
       >
         {t(`${NS}.error`, { error })}

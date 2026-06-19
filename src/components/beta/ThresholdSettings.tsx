@@ -203,21 +203,21 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
   } => {
     if (score < 50) {
       return {
-        bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-        text: 'text-[#C4503B] dark:text-[#E0664D]',
+        bg: 'bg-danger-soft',
+        text: 'text-danger',
         label: t('beta.preferences.thresholds.scoreRisky'),
       };
     }
     if (score < 70) {
       return {
-        bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-        text: 'text-[#B7791F] dark:text-[#D2992F]',
+        bg: 'bg-warning-soft',
+        text: 'text-warning',
         label: t('beta.preferences.thresholds.scoreModerate'),
       };
     }
     return {
-      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      bg: 'bg-success-soft',
+      text: 'text-success',
       label: t('beta.preferences.thresholds.scoreSafe'),
     };
   };

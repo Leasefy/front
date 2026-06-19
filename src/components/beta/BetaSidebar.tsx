@@ -51,7 +51,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
       aria-label={t('beta.a11y.sidebarNav')}
       className={cn(
         'flex flex-col w-[272px] h-full',
-        'bg-white dark:bg-[#141416]',
+        'bg-card',
         'border-r border-neutral-200/80 dark:border-neutral-800/60',
         className
       )}
@@ -114,12 +114,12 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
               >
                 <Icon className="w-[17px] h-[17px]" weight={isActive ? 'fill' : 'regular'} />
                 {hasBadge && (
-                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] font-semibold flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-primary text-white uppercase tracking-wide font-mono text-[10px] font-semibold flex items-center justify-center leading-none">
                     {pendingDecisionsCount}
                   </span>
                 )}
                 {hasDot && (
-                  <span className="absolute top-0.5 right-1.5 w-[5px] h-[5px] rounded-full bg-[#B7791F]" />
+                  <span className="absolute top-0.5 right-1.5 w-[5px] h-[5px] rounded-full bg-warning" />
                 )}
               </button>
             );

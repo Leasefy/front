@@ -47,12 +47,12 @@ const AGENT_TYPES: AgentType[] = [
 // ============================================================================
 
 const DOT_COLORS: Record<string, string> = {
-  emerald: 'bg-[#2C7A53]',
-  blue: 'bg-[#1A40FF]',
-  amber: 'bg-[#B7791F]',
+  emerald: 'bg-success',
+  blue: 'bg-primary',
+  amber: 'bg-warning',
   purple: 'bg-neutral-100 dark:bg-neutral-800',
   pink: 'bg-neutral-100 dark:bg-neutral-800',
-  indigo: 'bg-[#1A40FF]',
+  indigo: 'bg-primary',
 };
 
 // ============================================================================
@@ -164,9 +164,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                 onClick={() => handleToggle(agentType)}
                 className={cn(
                   'relative w-9 h-5 rounded-full transition-colors duration-200',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                   isEnabled
-                    ? 'bg-[#1A40FF]'
+                    ? 'bg-primary'
                     : 'bg-neutral-300 dark:bg-neutral-600'
                 )}
                 role="switch"
@@ -210,7 +210,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                   'text-[12px] font-medium',
                   'transition-all duration-150',
                   isActive
-                    ? 'bg-[#1A40FF] text-white'
+                    ? 'bg-primary text-white'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >

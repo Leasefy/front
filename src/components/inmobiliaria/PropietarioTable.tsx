@@ -129,7 +129,7 @@ export function PropietarioTable({
               placeholder={t('inmobiliaria.propietario.table.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
             />
             {searchQuery && (
               <button
@@ -186,7 +186,7 @@ export function PropietarioTable({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
               filterPending
-                ? 'bg-[#B7791F] text-white border-[#B7791F]/30'
+                ? 'bg-warning text-white border-warning/30'
                 : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             )}
           >
@@ -201,7 +201,7 @@ export function PropietarioTable({
                 setFilterPending(false);
                 setFilterType('all');
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-sm font-medium hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-warning/30 bg-warning-soft text-warning text-sm font-medium hover:bg-warning-soft transition-colors"
             >
               <Funnel className="w-4 h-4" weight="fill" />
               {t('inmobiliaria.propietario.table.clear')}
@@ -291,7 +291,7 @@ export function PropietarioTable({
                           'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
                           isCompany
                             ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
-                            : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
+                            : 'bg-primary-soft text-primary'
                         )}
                       >
                         {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
@@ -329,12 +329,12 @@ export function PropietarioTable({
                   {/* Pending Balance */}
                   <td className="p-4">
                     {hasPending ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-sm font-medium tabular-nums">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-warning-soft text-warning text-sm font-medium tabular-nums">
                         <Warning className="w-3.5 h-3.5" />
                         {formatCurrency(propietario.pendingBalance)}
                       </span>
                     ) : (
-                      <span className="text-[#1A40FF] dark:text-[#5570FF] text-sm font-medium">
+                      <span className="text-primary text-sm font-medium">
                         {t('inmobiliaria.propietario.table.upToDate')}
                       </span>
                     )}
@@ -419,7 +419,7 @@ export function PropietarioTable({
                                 onDelete(propietario);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-danger hover:bg-danger-soft transition-colors"
                             >
                               <TrashSimple className="w-4 h-4" />
                               <span className="text-sm">{t('inmobiliaria.propietario.table.delete')}</span>

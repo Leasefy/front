@@ -70,7 +70,7 @@ export function ThresholdVersionsTable({
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.versionsHeading')}
         </h2>
         {!supported && (
-          <span className="text-[10px] font-mono uppercase text-[#B7791F] dark:text-[#D2992F]">
+          <span className="text-[10px] font-mono uppercase text-warning">
             {locale.startsWith('es') ? 'Sólo versión activa' : 'Active only'}
           </span>
         )}
@@ -109,7 +109,7 @@ export function ThresholdVersionsTable({
                   <td className="px-3 py-2 font-mono tabular-nums text-foreground">
                     {v.version != null ? `v${v.version}` : '—'}
                     {isCurrent && (
-                      <span className="ml-2 text-[10px] font-mono uppercase text-[#2C7A53] dark:text-[#3EAE70]">
+                      <span className="ml-2 text-[10px] font-mono uppercase text-success">
                         {locale.startsWith('es') ? 'vigente' : 'active'}
                       </span>
                     )}
@@ -122,7 +122,7 @@ export function ThresholdVersionsTable({
                   </td>
                   <td className="px-3 py-2">
                     {v.is_rollback_of_version != null ? (
-                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]">
+                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-warning-soft text-warning">
                         {locale.startsWith('es')
                           ? `Rollback de v${v.is_rollback_of_version}`
                           : `Rollback of v${v.is_rollback_of_version}`}
@@ -156,7 +156,7 @@ export function ThresholdVersionsTable({
 
       {/* Toast */}
       {toast && (
-        <div className="px-4 py-2 border-t border-border bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-xs font-mono text-[#2C7A53] dark:text-[#3EAE70]">
+        <div className="px-4 py-2 border-t border-border bg-success-soft text-success">
           {toast}
         </div>
       )}

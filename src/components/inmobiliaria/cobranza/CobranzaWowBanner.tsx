@@ -37,6 +37,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import type { DailyReportResponse } from '@/lib/hooks/cobranza/use-daily-report'
 import { useLegalArtifacts } from '@/lib/hooks/cobranza/use-legal-artifacts'
@@ -146,15 +147,15 @@ export function CobranzaWowBanner({
         className="rounded-xl border border-border bg-card p-5 md:p-6"
         data-testid="cobranza-wow-banner"
       >
-        {/* Eyebrow — BrandDot + mono uppercase (patrón FeatureAnnouncementCard) */}
+        {/* Eyebrow — BrandDot + uppercase (único uppercase permitido, contrato §4) */}
         <div className="flex items-center gap-2.5">
           <span
             aria-hidden="true"
-            className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0"
+            className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
           />
           <span
             id="cobranza-wow-titulo"
-            className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#1A40FF] dark:text-[#8FA3FF]"
+            className="text-xs font-medium uppercase tracking-wide text-primary"
           >
             {t(`${NS}.resumen.wow.titulo`)}
           </span>
@@ -167,7 +168,7 @@ export function CobranzaWowBanner({
             <div className="h-6 w-2/3 max-w-md rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
           </div>
         ) : (
-          <p className="mt-3.5 max-w-3xl text-[19px] md:text-[22px] font-medium tracking-[-0.02em] leading-snug text-[#0B1220] dark:text-white">
+          <p className="mt-3.5 max-w-3xl text-xl md:text-2xl font-medium tracking-tight leading-snug text-foreground">
             {t(`${NS}.resumen.wow.frase`, {
               enMora,
               gestionados,
@@ -178,24 +179,18 @@ export function CobranzaWowBanner({
           </p>
         )}
 
-        {/* Footer — hairline + CTA brand con la firma de la flecha */}
+        {/* Footer — hairline + CTA brand (CTA de hero: flecha de marca) */}
         <div className="mt-5 pt-4 border-t border-border flex items-center justify-end">
-          <Link
-            href={PENDIENTES_HREF}
-            className="group inline-flex items-center gap-2 h-10 px-5 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 transition-colors motion-reduce:transition-none"
-            data-testid="cobranza-wow-cta"
-          >
-            {t(`${NS}.resumen.bloques.verPendientes`)}
-            {!fraseLoading && porAprobar > 0 && (
-              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold tabular-nums">
-                {porAprobar}
-              </span>
-            )}
-            <ArrowRight
-              className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-              aria-hidden="true"
-            />
-          </Link>
+          <Button asChild data-testid="cobranza-wow-cta">
+            <Link href={PENDIENTES_HREF}>
+              {t(`${NS}.resumen.bloques.verPendientes`)}
+              {!fraseLoading && porAprobar > 0 && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold tabular-nums">
+                  {porAprobar}
+                </span>
+              )}
+            </Link>
+          </Button>
         </div>
       </section>
 
@@ -206,7 +201,7 @@ export function CobranzaWowBanner({
       >
         <BenefitCard
           icon={CurrencyDollar}
-          iconColor="text-[#2C7A53] dark:text-[#3EAE70]"
+          iconColor="text-success"
           label={t(`${NS}.resumen.bloques.recuperadoHoy`)}
           value={COP_FORMATTER.format(recuperadoCop)}
           isLoading={dailyLoading}
@@ -214,7 +209,7 @@ export function CobranzaWowBanner({
         />
         <BenefitCard
           icon={Handshake}
-          iconColor="text-[#1A40FF] dark:text-[#8FA3FF]"
+          iconColor="text-primary"
           label={t(`${NS}.resumen.bloques.promesasHoy`)}
           value={String(promesas)}
           detail={proximaDetalle ?? undefined}
@@ -223,7 +218,7 @@ export function CobranzaWowBanner({
         />
         <BenefitCard
           icon={Stamp}
-          iconColor="text-[#B7791F] dark:text-[#D2992F]"
+          iconColor="text-warning"
           label={t(`${NS}.resumen.bloques.porAprobar`)}
           value={String(porAprobar)}
           href={PENDIENTES_HREF}
@@ -232,7 +227,7 @@ export function CobranzaWowBanner({
         />
         <BenefitCard
           icon={Scales}
-          iconColor="text-[#C4503B] dark:text-[#E0664D]"
+          iconColor="text-danger"
           label={t(`${NS}.resumen.bloques.riesgoJuridico`)}
           value={String(prejuridicoCount)}
           href={PREJURIDICO_HREF}
@@ -272,12 +267,12 @@ function BenefitCard({
     <>
       <div className="flex items-center gap-2">
         <IconCmp size={18} className={iconColor} weight="duotone" aria-hidden="true" />
-        <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground leading-tight">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground leading-tight">
           {label}
         </p>
         {href && (
           <ArrowRight
-            className="ml-auto w-3.5 h-3.5 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-[#1A40FF] dark:group-hover:text-[#8FA3FF] motion-reduce:transition-none"
+            className="ml-auto w-3.5 h-3.5 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
             aria-hidden="true"
           />
         )}
@@ -303,7 +298,7 @@ function BenefitCard({
     return (
       <Link
         href={href}
-        className={`${baseClass} group block hover:border-[#1A40FF]/40 dark:hover:border-[#8FA3FF]/40 transition-colors motion-reduce:transition-none`}
+        className={`${baseClass} group block hover:border-primary/40 transition-colors motion-reduce:transition-none`}
         data-testid={testId}
       >
         {body}

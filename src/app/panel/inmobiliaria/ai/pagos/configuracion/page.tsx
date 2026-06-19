@@ -35,8 +35,8 @@ function PagosConfiguracion() {
             { label: t('inmobiliaria.ai.workspace.pages.comun.configTitle') },
           ]}
         />
-        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
         </p>
       </header>

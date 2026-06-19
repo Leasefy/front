@@ -4237,7 +4237,35 @@
         "cobranzaCasos": "Casos",
         "cobranzaPendientes": "Pendientes",
         "cobranzaPlaybooks": "Playbooks",
-        "cobranzaReportes": "Reportes"
+        "cobranzaReportes": "Reportes",
+        "conciliacionConexiones": "Conexiones",
+        "conciliacionLiquidaciones": "Liquidaciones",
+        "pagosCobros": "Cobros a inquilinos",
+        "pagosGenerar": "Generar cobros",
+        "pagosFallidos": "Pagos fallidos",
+        "pagosRecordatorios": "Recordatorios",
+        "pagosPropietarios": "Pagos a propietarios",
+        "pagosEquipo": "Equipo IA",
+        "pagosReglas": "Reglas",
+        "cobranzaInbox": "Inbox de conversaciones",
+        "cobranzaPromesas": "Promesas de pago",
+        "cobranzaAcuerdos": "Acuerdos de pago",
+        "cobranzaDisputas": "Disputas",
+        "cobranzaReportesPropietarios": "Reportes a propietarios",
+        "cobranzaResultados": "Resultados",
+        "cobranzaEquipo": "Equipo IA",
+        "estudioResumen": "Resumen",
+        "estudioCasos": "Estudios",
+        "estudioCrear": "Crear estudio",
+        "estudioEquipo": "Equipo IA",
+        "cotizadorResumen": "Resumen",
+        "cotizadorNueva": "Nueva consulta",
+        "cotizadorComparar": "Comparador",
+        "cotizadorEquipo": "Equipo IA",
+        "estudioSolicitud": "Solicitud al candidato",
+        "estudioReglas": "Reglas",
+        "cotizadorEjecucion": "Ejecución",
+        "cotizadorIntegraciones": "Integraciones"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -4260,7 +4288,14 @@
             "quotesToday": "Cotizaciones hoy",
             "approvalRate": "Tasa de aprobación",
             "primaPromedio": "Prima promedio/mes",
-            "costPerQuote": "Costo por cotización"
+            "costPerQuote": "Costo por cotización",
+            "asegurables": "Asegurables",
+            "tasaAsegurabilidad": "Tasa de asegurabilidad",
+            "multiOpcion": "Con varias opciones",
+            "sinAseguradora": "Sin aseguradora",
+            "tiempoRespuesta": "Tiempo de respuesta",
+            "arriendosCerrados": "Arriendos cerrados",
+            "valorAsegurado": "Valor asegurado"
           },
           "recentQuotes": {
             "title": "Últimas cotizaciones",
@@ -4290,6 +4325,18 @@
             "description": "Genera la primera para empezar a ver métricas y veredictos.",
             "cta": {
               "label": "Nueva cotización"
+            }
+          },
+          "radarSubtitle": "Tu radar de asegurabilidad: el agente consulta varias aseguradoras a la vez y te avisa qué candidatos puedes cerrar y cuáles necesitan tu atención.",
+          "inbox": {
+            "titulo": "Consultas que necesitan atención",
+            "desc": "Casos priorizados por urgencia que esperan tu decisión.",
+            "accionSugerida": "Acción sugerida",
+            "verTodas": "Ver todas",
+            "error": "No pudimos cargar la cola de consultas",
+            "empty": {
+              "title": "Todo al día",
+              "description": "No hay consultas pendientes de revisión. Aparecerán aquí cuando una requiera tu atención."
             }
           }
         },
@@ -4345,7 +4392,37 @@
             "tipoRequerido": "Selecciona un tipo de inmueble",
             "arcoBloqueado": "Esta cédula tiene una oposición activa — contacta al administrador",
             "sinPermiso": "No tienes permiso para crear cotizaciones"
-          }
+          },
+          "config": {
+            "titulo": "Configura la consulta",
+            "aseguradoras": {
+              "titulo": "¿A qué aseguradoras consultamos?",
+              "todas": "Todas las entidades",
+              "todasDesc": "Consultamos a todas las aseguradoras disponibles para tu inmobiliaria.",
+              "favoritas": "Favoritas",
+              "favoritasDesc": "Elige manualmente las aseguradoras que quieres consultar.",
+              "recomendar": "Que Leasefy recomiende",
+              "recomendarDesc": "Leasefy elige las mejores aseguradoras según el perfil del candidato.",
+              "cargando": "Cargando aseguradoras…",
+              "sinAseguradoras": "No hay aseguradoras disponibles. Usaremos las que Leasefy recomiende.",
+              "seleccionaUna": "Selecciona al menos una aseguradora."
+            },
+            "prioridad": {
+              "titulo": "¿Qué priorizamos?",
+              "rapidez": "Rapidez",
+              "costo": "Menor costo",
+              "cobertura": "Mayor cobertura",
+              "probabilidad": "Mayor probabilidad"
+            },
+            "modo": {
+              "titulo": "Modo de ejecución",
+              "automatico": "Automático",
+              "automaticoDesc": "Leasefy ejecuta la consulta y selecciona la mejor opción sin intervención.",
+              "revision": "Con revisión",
+              "revisionDesc": "Revisas los resultados antes de avanzar con una aseguradora."
+            }
+          },
+          "ctaConsultar": "Consultar asegurabilidad"
         },
         "reQuote": {
           "cedulaNotice": {
@@ -4476,7 +4553,15 @@
             "asesorHint": "No tenemos un ajuste automático que sugerir para este caso. Habla con un asesor de Leasefy para revisar opciones manualmente.",
             "footerNote": "Re-cotizar abre el formulario con los datos actuales para que ajustes lo necesario.",
             "recotizar": "Re-cotizar con cambios",
-            "sugerirAsesor": "Hablar con un asesor"
+            "sugerirAsesor": "Hablar con un asesor",
+            "menu": {
+              "eyebrow": "Otras rutas",
+              "otroCandidato": "Buscar otro candidato",
+              "complementarIngresos": "Complementar ingresos",
+              "otraEntidad": "Consultar otra entidad",
+              "guardarNoAsegurable": "Guardar como no asegurable",
+              "sugerirInmueble": "Sugerir otro inmueble"
+            }
           },
           "condiciones": {
             "titulo": "Condiciones por resolver",
@@ -4496,6 +4581,28 @@
             "condicionesVisibleHint": "Condiciones listadas arriba",
             "avanzarAction": "Avanzar",
             "proximamente": "Próximamente"
+          },
+          "acciones": {
+            "barLabel": "Acciones del caso",
+            "avanzar": "Avanzar con la recomendada",
+            "comparar": "Comparar opciones",
+            "codeudor": "Solicitar codeudor",
+            "descargar": "Descargar",
+            "compartir": "Compartir",
+            "contrato": "Enviar a contrato",
+            "reintentar": "Reintentar",
+            "proximamente": "Próximamente",
+            "cerrar": "Cerrar"
+          },
+          "postSeleccion": {
+            "titulo": "¿Qué quieres hacer ahora?",
+            "radicar": "Radicar la póliza",
+            "expediente": "Generar expediente",
+            "notificar": "Notificar al asesor",
+            "propietario": "Compartir con el propietario",
+            "contrato": "Pasar a contrato",
+            "guardar": "Guardar la opción elegida",
+            "sinOpcion": "Disponible cuando haya una opción asegurable."
           }
         },
         "pdf": {
@@ -4851,6 +4958,67 @@
         "configuracion": {
           "title": "Configuración y autonomía",
           "subtitle": "Qué puede hacer el agente por su cuenta y qué requiere siempre tu aprobación. Por ahora solo lectura: hoy nada se aplica sin tu visto bueno."
+        },
+        "labels": {
+          "mas_rapida": "Más rápida",
+          "menor_costo": "Menor costo",
+          "mejor_cobertura": "Mejor cobertura",
+          "menor_friccion": "Menor fricción",
+          "requiere_codeudor": "Requiere codeudor",
+          "no_recomendada": "No recomendada"
+        },
+        "caso": {
+          "eyebrow": "Caso",
+          "estadoLabel": "Estado general",
+          "estado": {
+            "yes": "Asegurable",
+            "partial": "Parcial",
+            "no": "No asegurable",
+            "enProceso": "En proceso",
+            "sinResultado": "Sin resultado"
+          },
+          "candidato": "Candidato",
+          "inmueble": "Inmueble",
+          "canon": "Canon",
+          "ciudad": "Ciudad",
+          "tipo": "Tipo de inmueble",
+          "fecha": "Fecha de consulta"
+        },
+        "recomendacion": {
+          "eyebrow": "Recomendación",
+          "sinRecomendacion": "La recomendación aparecerá cuando el análisis termine.",
+          "conclusion": "Conclusión",
+          "mejorOpcion": "Mejor opción",
+          "mensual": "/mes",
+          "ningunaAsegura": "Ninguna entidad asegura este caso por ahora.",
+          "sinMejorOpcion": "Aún no hay una opción recomendada.",
+          "porQue": "Por qué",
+          "siguienteAccion": "Siguiente mejor acción",
+          "avanzar": "Avanzar con la recomendada",
+          "recotizar": "Re-cotizar con cambios"
+        },
+        "comparar": {
+          "title": "Comparador",
+          "subtitle": "Enfrenta a las aseguradoras candidatas criterio por criterio para decidir con cuál avanzar.",
+          "empty": {
+            "title": "Aún no hay nada que comparar",
+            "description": "El comparador se llena al ejecutar una consulta de asegurabilidad. Verás aquí, lado a lado, qué aseguradora aprueba al candidato, si exige codeudor, su tiempo y costo estimados, los documentos adicionales y la fricción del trámite.",
+            "cta": "Nueva consulta"
+          },
+          "preview": {
+            "aria": "Vista previa del comparador",
+            "label": "Así se verá",
+            "criterioCol": "Criterio"
+          },
+          "criteria": {
+            "aseguraCandidato": "Asegura candidato",
+            "codeudor": "Codeudor",
+            "tiempoEstimado": "Tiempo estimado",
+            "costoEstimado": "Costo estimado",
+            "documentosAdicionales": "Documentos adicionales",
+            "friccion": "Fricción",
+            "recomendacion": "Recomendación"
+          }
         }
       },
       "access": {
@@ -6613,6 +6781,742 @@
             },
             "importarProximamente": "Próximamente",
             "importarNota": "¿Primera cartera? Escríbele a tu contacto Leasefy para cargarla."
+          }
+        }
+      },
+      "estudio": {
+        "resultados": {
+          "viable": "Viable",
+          "viable_con_condiciones": "Viable con condiciones",
+          "requiere_analisis_humano": "Requiere análisis humano",
+          "no_recomendado": "No recomendado"
+        },
+        "indicadores": {
+          "identidad": "Identidad",
+          "documentos": "Documentos",
+          "ingresos": "Ingresos",
+          "capacidad_pago": "Capacidad de pago",
+          "riesgo_documental": "Riesgo documental",
+          "credito": "Crédito",
+          "codeudor": "Codeudor"
+        },
+        "condiciones": {
+          "agregar_codeudor": "Agregar codeudor",
+          "cargar_documento": "Cargar documento",
+          "mejorar_soporte_ingresos": "Mejorar soporte de ingresos",
+          "confirmar_laboral": "Confirmar información laboral",
+          "revisar_inconsistencia": "Revisar inconsistencia"
+        },
+        "acciones": {
+          "enviar_a_asegurabilidad": "Enviar a asegurabilidad",
+          "crear_contrato": "Crear contrato",
+          "compartir_propietario": "Compartir con propietario",
+          "descargar": "Descargar estudio",
+          "solicitar_codeudor": "Solicitar codeudor",
+          "pedir_documentos": "Pedir documentos adicionales",
+          "enviar_revision_humana": "Enviar a revisión humana",
+          "buscar_otro_candidato": "Buscar otro candidato",
+          "sugerir_inmueble_menor": "Sugerir inmueble de menor valor"
+        },
+        "detalle": {
+          "titulo": "Detalle del estudio",
+          "expediente": "Expediente",
+          "contexto": "Contexto",
+          "recomendacion": "Recomendación",
+          "nivel": "Nivel",
+          "puntaje": "Puntaje",
+          "motivos": "Motivos",
+          "porQue": "Por qué",
+          "siguienteMejorAccion": "Siguiente mejor acción",
+          "accionesRapidas": "Acciones rápidas",
+          "notaHumano": "La decisión final siempre es tuya. El agente solo recomienda.",
+          "sinPermisoAccion": "No tienes permiso para esta acción.",
+          "relacionIngresoCanon": "Ingreso / canon",
+          "documentosProcesados": "Documentos",
+          "codeudorRecomendado": "Se recomienda agregar un codeudor para mejorar la viabilidad.",
+          "condicionesTitulo": "Condiciones para avanzar",
+          "sinDatos": "Aún no hay datos del estudio.",
+          "sinRecomendacion": "Aún no hay una recomendación.",
+          "enProceso": "El estudio está en proceso. Te mostraremos la decisión apenas termine.",
+          "error": "No se pudo cargar el estudio",
+          "reintentar": "Reintentar",
+          "noDisponible": "No disponible",
+          "noDisponibleTitulo": "Estudio no disponible",
+          "noDisponibleDesc": "Este estudio no existe o no pertenece a tu agencia.",
+          "volverLista": "Volver a estudios",
+          "tabs": {
+            "decision": "Decisión",
+            "indicadores": "Indicadores",
+            "documentos": "Documentos",
+            "consistencia": "Consistencia",
+            "racional": "Racional",
+            "historial": "Historial",
+            "conversaciones": "Conversaciones",
+            "codeudores": "Codeudores",
+            "reporte": "Reporte"
+          },
+          "severidad": {
+            "low": "Bajo",
+            "medium": "Medio",
+            "high": "Alto"
+          },
+          "factores": {
+            "solvencia": "Solvencia",
+            "credito": "Crédito",
+            "estabilidad_laboral": "Estabilidad laboral",
+            "consistencia_cruzada": "Consistencia cruzada",
+            "identidad": "Identidad"
+          },
+          "documentos": {
+            "empty": "No hay información de documentos para este estudio.",
+            "resumenTitulo": "Resumen de documentos",
+            "enviados": "Enviados",
+            "procesados": "Procesados",
+            "omitidos": "Omitidos",
+            "tiposPresentes": "Tipos presentes",
+            "banderasTitulo": "Banderas de integridad",
+            "observacionesTitulo": "Observaciones"
+          },
+          "consistencia": {
+            "empty": "No hay verificaciones de consistencia para este estudio.",
+            "verificacionesTitulo": "Verificaciones cruzadas",
+            "desgloseTitulo": "Desglose de puntaje",
+            "estado": {
+              "passed": "Pasó",
+              "partial": "Parcial",
+              "skipped": "Omitida",
+              "failed": "No pasó"
+            }
+          },
+          "racional": {
+            "explicacionTitulo": "Explicación del agente",
+            "aporteTitulo": "Aporte por factor",
+            "fuente": "Fuente",
+            "puntajeFinal": "Puntaje final"
+          },
+          "historial": {
+            "empty": {
+              "title": "Aún no hay historial",
+              "description": "Cuando el estudio registre eventos, verás aquí la línea de tiempo completa: desde la solicitud hasta la decisión y las acciones del equipo."
+            },
+            "ejemplo": {
+              "title": "Ejemplo de la línea de tiempo",
+              "solicitud": {
+                "title": "Solicitud creada",
+                "desc": "El candidato inició el proceso de estudio."
+              },
+              "documentos": {
+                "title": "Documentos recibidos",
+                "desc": "Se cargaron los soportes de identidad e ingresos."
+              },
+              "evaluacion": {
+                "title": "Estudio evaluado",
+                "desc": "El motor analizó la información y calculó el puntaje."
+              },
+              "decision": {
+                "title": "Decisión registrada",
+                "desc": "Se determinó el resultado y las próximas acciones."
+              },
+              "pendiente": "— · —",
+              "nota": "Estructura ilustrativa. Los eventos reales aparecerán con su fecha y autor cuando estén disponibles."
+            }
+          },
+          "conversaciones": {
+            "empty": {
+              "title": "Aún no hay conversaciones",
+              "description": "Cuando intercambies mensajes con el candidato durante el estudio, el hilo de la conversación aparecerá aquí."
+            },
+            "ejemplo": {
+              "title": "Ejemplo de la conversación",
+              "autorAgencia": "Inmobiliaria",
+              "autorCandidato": "Candidato",
+              "msg1": "Hola, para avanzar con tu estudio necesitamos tu certificado laboral.",
+              "msg2": "Claro, lo subo hoy mismo.",
+              "msg3": "Perfecto, gracias. Te avisamos cuando tengamos el resultado.",
+              "nota": "Estructura ilustrativa. Los mensajes reales aparecerán con su fecha y canal cuando estén disponibles."
+            }
+          },
+          "codeudores": {
+            "empty": {
+              "title": "Aún no hay codeudores",
+              "description": "Cuando este estudio incluya uno o más codeudores, verás aquí su validación de identidad, ingresos y documentos."
+            },
+            "recomendado": "Este estudio mejoraría su viabilidad con un codeudor. Cuando se agregue, su validación aparecerá aquí.",
+            "ejemplo": {
+              "title": "Ejemplo de una ficha de codeudor",
+              "nombre": "Nombre del codeudor",
+              "documento": "C.C. — · — · —",
+              "identidad": "Identidad",
+              "ingresos": "Ingresos",
+              "documentos": "Documentos",
+              "nota": "Estructura ilustrativa. Cada codeudor real traerá su propia validación completa cuando esté disponible."
+            }
+          },
+          "reporte": {
+            "empty": {
+              "title": "El reporte aún no está listo",
+              "description": "Cuando el estudio tenga una decisión, podrás ver y compartir el reporte final desde aquí."
+            },
+            "audiencia": "Vista del reporte",
+            "interna": "Interna inmobiliaria",
+            "propietario": "Propietario",
+            "descargar": "Descargar",
+            "compartir": "Compartir",
+            "proximamente": "Próximamente",
+            "accionesNota": "Descargar y compartir estarán disponibles cuando se conecte el generador de reportes.",
+            "tituloInterna": "Reporte del estudio · uso interno",
+            "tituloPropietario": "Reporte del estudio para el propietario",
+            "subInterna": "Versión completa con puntaje, motivos y condiciones.",
+            "subPropietario": "Versión resumida, lista para enviar al propietario.",
+            "resultado": "Resultado",
+            "puntaje": "Puntaje",
+            "motivos": "Motivos",
+            "condiciones": "Condiciones",
+            "notaPropietario": "La vista del propietario omite el puntaje y los detalles internos del análisis."
+          }
+        },
+        "overview": {
+          "title": "Estudios de inquilinos",
+          "subtitle": "Evalúa candidatos, valida su información y decide con mayor seguridad quién puede avanzar en el proceso de arriendo.",
+          "lastUpdated": "Actualizado hace",
+          "verEstudios": "Ver estudios",
+          "errorLoading": "Error al cargar los estudios",
+          "atencion": {
+            "title": "Qué necesita tu atención",
+            "desc": "Revisa los estudios priorizados por severidad y abre cada caso para decidir.",
+            "cta": "Abrir bandeja"
+          },
+          "pipeline": {
+            "title": "Pipeline por estado"
+          },
+          "feed": {
+            "title": "Actividad reciente"
+          },
+          "empty": {
+            "title": "Aún no hay estudios",
+            "description": "Cuando llegue un estudio de inquilino, sus métricas y pendientes aparecerán aquí."
+          }
+        },
+        "list": {
+          "title": "Estudios",
+          "subtitle": "Bandeja de estudios de inquilino: filtra, prioriza y abre cada caso para decidir.",
+          "count": "{{n}} estudios",
+          "error": "No se pudieron cargar los estudios",
+          "errorRetry": "Reintentar",
+          "emptyFiltered": "Ningún estudio coincide con estos filtros.",
+          "empty": {
+            "title": "Aún no hay estudios",
+            "description": "Cuando llegue una solicitud de estudio de inquilino, aparecerá aquí para tu revisión."
+          },
+          "filters": {
+            "title": "Filtros",
+            "severidad": "Severidad",
+            "estado": "Estado",
+            "flags": "Marcas",
+            "clear": "Limpiar filtros",
+            "search": {
+              "label": "Buscar estudios",
+              "placeholder": "Buscar por nombre, acción o documento…"
+            }
+          },
+          "columns": {
+            "estudio": "Estudio",
+            "severidad": "Severidad",
+            "estado": "Estado",
+            "accionSugerida": "Acción sugerida",
+            "tiempo": "Tiempo"
+          }
+        },
+        "nuevo": {
+          "title": "Crear estudio",
+          "subtitle": "Captura el inmueble y el candidato para abrir un estudio y enviar la solicitud de información.",
+          "inmueble": {
+            "title": "Inmueble",
+            "desc": "Datos del inmueble que se va a arrendar.",
+            "propiedad": "Propiedad",
+            "propiedadPlaceholder": "Apto 502, Torre Norte — Calle 100 #15-20",
+            "ciudad": "Ciudad",
+            "ciudadPlaceholder": "Bogotá",
+            "fechaInicio": "Fecha tentativa de inicio",
+            "canon": "Canon mensual (COP)",
+            "administracion": "Administración (COP)",
+            "valorTotal": "Valor total mensual",
+            "valorTotalPlaceholder": "Se calcula con canon + administración",
+            "valorTotalHint": "Se calcula automáticamente: canon + administración.",
+            "propietario": "Propietario",
+            "propietarioPlaceholder": "Nombre del propietario",
+            "asesor": "Asesor responsable",
+            "asesorPlaceholder": "Nombre del asesor"
+          },
+          "candidato": {
+            "title": "Candidato",
+            "desc": "Persona a quien se le enviará la solicitud de información.",
+            "nombre": "Nombre completo",
+            "nombrePlaceholder": "María Fernanda Gómez",
+            "documento": "Documento",
+            "documentoPlaceholder": "C.C. 1.020.304.050",
+            "celular": "Celular",
+            "correo": "Correo",
+            "ocupacion": "Ocupación",
+            "origen": "Origen",
+            "codeudor": "¿Tiene codeudor?",
+            "codeudorHint": "Si el candidato aporta un codeudor para respaldar el arriendo."
+          },
+          "ocupacion": {
+            "empleado": "Empleado",
+            "independiente": "Independiente",
+            "pensionado": "Pensionado",
+            "empresa": "Empresa",
+            "estudiante": "Estudiante",
+            "otro": "Otro"
+          },
+          "origen": {
+            "lead": "Lead",
+            "solicitud": "Solicitud",
+            "asesor": "Asesor"
+          },
+          "confirmacion": "Próximamente: esto creará el estudio y enviará la solicitud al candidato.",
+          "cta": "Crear estudio y enviar solicitud"
+        },
+        "equipo": {
+          "title": "Equipo IA",
+          "subtitle": "Un equipo de funciones de IA coordina cada estudio de punta a punta y entrega una recomendación explicada, paso a paso.",
+          "pipeline": {
+            "label": "Pipeline del equipo"
+          },
+          "stepLabel": "Paso",
+          "queHace": "Qué hace",
+          "resultados": "Resultados",
+          "steps": {
+            "recoleccion": {
+              "title": "Recolección",
+              "b1": "Recibe la solicitud del candidato y arma su carpeta digital.",
+              "b2": "Pide los datos y soportes que faltan por los canales habilitados.",
+              "b3": "Confirma identidad y consentimiento antes de avanzar.",
+              "m1": "Solicitudes recibidas",
+              "m2": "Carpetas completas"
+            },
+            "documentos": {
+              "title": "Documentos",
+              "b1": "Lee y clasifica cada documento aportado.",
+              "b2": "Detecta soportes ilegibles, vencidos o con indicios de alteración.",
+              "b3": "Marca lo que requiere reenvío o revisión humana.",
+              "m1": "Documentos validados",
+              "m2": "Hallazgos abiertos"
+            },
+            "ingresos": {
+              "title": "Ingresos",
+              "b1": "Estima la capacidad de pago a partir de los soportes financieros.",
+              "b2": "Cruza ingresos contra el canon para calcular la holgura.",
+              "b3": "Señala inconsistencias entre lo declarado y lo soportado.",
+              "m1": "Holgura promedio",
+              "m2": "Casos sin soporte"
+            },
+            "riesgo": {
+              "title": "Riesgo",
+              "b1": "Combina documentos, ingresos y antecedentes en un puntaje de riesgo.",
+              "b2": "Aplica las reglas y umbrales definidos por la inmobiliaria.",
+              "b3": "Explica qué factores suben o bajan el riesgo de cada caso.",
+              "m1": "Riesgo promedio",
+              "m2": "Casos en alerta"
+            },
+            "reporte": {
+              "title": "Reporte",
+              "b1": "Reúne todo en un reporte único con recomendación explicada.",
+              "b2": "Resume fortalezas, alertas y los pendientes para decidir.",
+              "b3": "Deja el caso listo para aprobar, rechazar o pedir más información.",
+              "m1": "Reportes entregados",
+              "m2": "Tiempo de estudio"
+            }
+          },
+          "empty": {
+            "title": "Aún no hay actividad del equipo",
+            "description": "Cuando se procese el primer estudio, los resultados de cada paso y la recomendación final del equipo aparecerán aquí.",
+            "cta": "Ver estudios"
+          }
+        },
+        "solicitud": {
+          "title": "Solicitud al candidato",
+          "subtitle": "Esta es la experiencia que vive el candidato cuando le envías la solicitud de estudio: un formulario guiado, paso a paso, pensado para que la complete sin fricción desde su celular.",
+          "nota": {
+            "title": "Así lo ve el candidato cuando le envías la solicitud",
+            "desc": "Esta es una vista previa. Recorre los pasos para conocer la experiencia completa; aquí no se guarda ni se envía información real."
+          },
+          "progreso": {
+            "label": "Progreso de la solicitud",
+            "paso": "Paso",
+            "de": "de"
+          },
+          "stepper": {
+            "label": "Pasos de la solicitud"
+          },
+          "pasos": {
+            "personales": {
+              "title": "Datos personales",
+              "helper": "Empecemos por lo básico para identificarte. Solo te tomará un par de minutos.",
+              "f1": "Nombre completo",
+              "f2": "Tipo y número de documento",
+              "f3": "Fecha de nacimiento",
+              "f4": "Celular y correo",
+              "f5": "Ciudad de residencia"
+            },
+            "laboral": {
+              "title": "Información laboral y económica",
+              "helper": "Cuéntanos a qué te dedicas. Esto nos ayuda a entender tu situación y avanzar más rápido.",
+              "f1": "Ocupación (empleado, independiente, pensionado…)",
+              "f2": "Empresa o actividad",
+              "f3": "Cargo y antigüedad",
+              "f4": "Tipo de contrato"
+            },
+            "ingresos": {
+              "title": "Ingresos",
+              "helper": "Indícanos tus ingresos mensuales. Tus datos están protegidos y solo se usan para tu estudio.",
+              "f1": "Ingresos mensuales",
+              "f2": "Otros ingresos (opcional)",
+              "f3": "Egresos / obligaciones financieras"
+            },
+            "documentos": {
+              "title": "Documentos",
+              "helper": "Sube los soportes desde tu celular o computador. Aceptamos foto o PDF, lo que tengas a la mano.",
+              "f1": "Documento de identidad",
+              "f2": "Soportes de ingresos (desprendibles, extractos)",
+              "f3": "Certificación laboral (si aplica)"
+            },
+            "codeudor": {
+              "title": "Codeudor",
+              "helper": "Si cuentas con un codeudor que respalde el arriendo, agrégalo aquí. Es opcional según el inmueble.",
+              "f1": "Datos del codeudor",
+              "f2": "Relación con el candidato",
+              "f3": "Documentos del codeudor"
+            },
+            "autorizacion": {
+              "title": "Autorización de datos",
+              "helper": "Autorizas el tratamiento de tus datos y la consulta en centrales de riesgo, conforme a la ley.",
+              "f1": "Autorización de tratamiento de datos personales",
+              "f2": "Autorización de consulta en centrales de riesgo"
+            },
+            "confirmacion": {
+              "title": "Confirmación",
+              "helper": "¡Listo! Revisa tu información y envíala. Te avisaremos por correo cuando tengamos una respuesta.",
+              "f1": "Resumen de la información enviada",
+              "f2": "Confirmación de envío"
+            }
+          },
+          "candidatoCta": {
+            "continuar": "Continuar",
+            "enviar": "Enviar solicitud",
+            "hint": "Vista previa: el candidato verá este botón para avanzar al siguiente paso."
+          },
+          "preview": {
+            "anterior": "Paso anterior",
+            "siguiente": "Ver siguiente paso",
+            "reiniciar": "Volver al inicio"
+          }
+        },
+        "reglas": {
+          "title": "Reglas del estudio",
+          "subtitle": "Define cómo el agente evalúa a los candidatos de tu inmobiliaria: criterios, documentos, escalamientos y cómo se comunica con cada persona.",
+          "relacion": {
+            "title": "Relación mínima ingreso/canon",
+            "desc": "Cuántas veces el ingreso del candidato debe superar el canon para considerarse suficiente.",
+            "minima": "Veces el canon (mínimo)",
+            "hint": "Ejemplo: 3 = el ingreso debe ser al menos 3 veces el canon."
+          },
+          "codeudor": {
+            "title": "Cuándo pedir codeudor",
+            "desc": "Decide en qué situaciones el agente solicita un codeudor para respaldar el arriendo.",
+            "regla": "Regla",
+            "siempre": "Siempre lo exige",
+            "porRelacion": "Cuando la relación ingreso/canon es baja",
+            "porOcupacion": "Según la ocupación del candidato",
+            "nunca": "Nunca lo exige automáticamente",
+            "umbral": "Exigir codeudor si la relación es menor a"
+          },
+          "docs": {
+            "title": "Documentos requeridos por ocupación",
+            "desc": "Elige una ocupación y marca qué documentos debe presentar ese tipo de candidato.",
+            "ocupacionTablist": "Ocupación"
+          },
+          "ocupacion": {
+            "empleado": "Empleado",
+            "independiente": "Independiente",
+            "pensionado": "Pensionado",
+            "empresa": "Empresa",
+            "estudiante": "Estudiante"
+          },
+          "doc": {
+            "cedula": "Cédula",
+            "laboral": "Certificación laboral",
+            "extractos": "Extractos bancarios",
+            "declaracionRenta": "Declaración de renta",
+            "rut": "RUT",
+            "camaraComercio": "Cámara de comercio",
+            "referencias": "Referencias"
+          },
+          "revision": {
+            "title": "Casos que requieren revisión humana",
+            "desc": "Cuando ocurra alguno de estos casos, el agente no decide solo: lo pasa a un asesor.",
+            "sinIngresos": "No se pueden verificar ingresos",
+            "alertaListas": "Alerta en listas restrictivas",
+            "relacionBaja": "Relación ingreso/canon por debajo del mínimo",
+            "docInconsistente": "Documentos inconsistentes",
+            "extranjero": "Candidato extranjero"
+          },
+          "asegurabilidad": {
+            "title": "Cuándo enviar a asegurabilidad",
+            "desc": "Define en qué momento el agente envía el candidato a estudio de asegurabilidad.",
+            "regla": "Regla de envío",
+            "aprobados": "Solo candidatos aprobados",
+            "todos": "Todos los candidatos",
+            "manual": "Solo cuando lo decida el asesor"
+          },
+          "propietario": {
+            "title": "Información a compartir con propietarios",
+            "desc": "Controla qué ve el propietario cuando el agente le reporta un candidato.",
+            "decision": "Decisión final",
+            "decisionHint": "Aprobado, con condiciones o rechazado.",
+            "resumen": "Resumen del candidato",
+            "resumenHint": "Perfil resumido: ocupación, ingresos y antecedentes.",
+            "score": "Puntaje de riesgo",
+            "scoreHint": "El score numérico que calcula el agente.",
+            "documentos": "Documentos del candidato",
+            "documentosHint": "Acceso a los soportes cargados por el candidato."
+          },
+          "tono": {
+            "title": "Tono de los mensajes al candidato",
+            "desc": "Cómo se comunica el agente con el candidato durante el proceso.",
+            "cercano": "Cercano",
+            "neutral": "Neutral",
+            "formal": "Formal"
+          },
+          "recordatorios": {
+            "title": "Tiempo de recordatorios",
+            "desc": "Cada cuánto y cuántas veces el agente le recuerda al candidato que complete su información.",
+            "cadaHoras": "Recordar cada (horas)",
+            "maximo": "Máximo de recordatorios"
+          },
+          "canales": {
+            "title": "Canales permitidos",
+            "desc": "Por dónde puede contactar el agente al candidato."
+          },
+          "canal": {
+            "whatsapp": "WhatsApp",
+            "correo": "Correo",
+            "sms": "SMS",
+            "llamada": "Llamada"
+          },
+          "confirmacion": "Próximamente: estas reglas se guardarán y el agente las aplicará a los nuevos estudios.",
+          "aviso": "Vista previa de configuración. Aún no se conecta con el agente: los cambios no se aplican.",
+          "guardar": "Guardar reglas"
+        }
+      },
+      "asegurabilidad": {
+        "equipo": {
+          "title": "Equipo IA",
+          "subtitle": "Por cada caso, Leasefy consulta varias aseguradoras a la vez y luego compara y recomienda la mejor opción. Aquí ves cómo trabaja, paso a paso, el equipo de IA que hace ese trabajo.",
+          "queHace": "Qué hace",
+          "resultados": "Resultados",
+          "emptyNote": "Los resultados aparecerán aquí a medida que el equipo procese casos. Por ahora se muestran en blanco (—).",
+          "flow": {
+            "aria": "Flujo del equipo de asegurabilidad",
+            "fanOut": "En paralelo, una por aseguradora",
+            "fanIn": "Se juntan las respuestas"
+          },
+          "nodes": {
+            "preparador": {
+              "title": "Preparador de consulta",
+              "bullet1": "Reúne los datos del candidato y del inmueble en un solo paquete.",
+              "bullet2": "Verifica que la información esté completa antes de consultar.",
+              "bullet3": "Arma una consulta uniforme para enviar a todas las aseguradoras a la vez.",
+              "metric1": "Consultas preparadas",
+              "metric2": "Datos completos",
+              "metric3": "Tiempo de armado"
+            },
+            "consultorA": {
+              "title": "Consultor · Aseguradora A",
+              "bullet1": "Consulta a la aseguradora con las reglas propias de ese aliado.",
+              "bullet2": "Trae el veredicto, la prima y las condiciones.",
+              "metric1": "Respuestas",
+              "metric2": "Prima estimada"
+            },
+            "consultorB": {
+              "title": "Consultor · Aseguradora B",
+              "bullet1": "Consulta en paralelo, sin esperar a las demás aseguradoras.",
+              "bullet2": "Normaliza la respuesta para poder compararla después.",
+              "metric1": "Respuestas",
+              "metric2": "Prima estimada"
+            },
+            "consultorC": {
+              "title": "Consultor · Aseguradora C",
+              "bullet1": "Aplica los requisitos específicos del producto de cada aliado.",
+              "bullet2": "Marca exclusiones o condiciones que el operador debe revisar.",
+              "metric1": "Respuestas",
+              "metric2": "Prima estimada"
+            },
+            "comparador": {
+              "title": "Comparador",
+              "bullet1": "Pone lado a lado las respuestas de todas las aseguradoras.",
+              "bullet2": "Iguala criterios (cobertura, prima, condiciones) para comparar de forma justa.",
+              "bullet3": "Resalta diferencias relevantes entre cada opción.",
+              "metric1": "Opciones comparadas",
+              "metric2": "Aseguradoras viables"
+            },
+            "recomendador": {
+              "title": "Recomendador",
+              "bullet1": "Ordena las opciones según conveniencia para el caso.",
+              "bullet2": "Explica por qué sugiere una aseguradora sobre las demás.",
+              "bullet3": "Deja la decisión final en manos del operador.",
+              "metric1": "Recomendaciones",
+              "metric2": "Aceptadas por el operador"
+            },
+            "avance": {
+              "title": "Gestor de avance",
+              "bullet1": "Toma la opción elegida y la empuja al siguiente paso del proceso.",
+              "bullet2": "Notifica a la inmobiliaria y deja registro del avance.",
+              "bullet3": "Hace seguimiento hasta que el caso queda resuelto.",
+              "metric1": "Casos en avance",
+              "metric2": "Tiempo hasta resolución"
+            }
+          }
+        },
+        "ejecucion": {
+          "title": "Ejecución en tiempo real",
+          "subtitle": "Cuando ejecutas una consulta, cada aseguradora avanza en paralelo por su propio estado. Aquí verás el progreso en vivo de cada una.",
+          "cta": "Nueva consulta",
+          "empty": {
+            "title": "No hay ninguna consulta en curso",
+            "description": "Esta vista se activa al ejecutar una consulta de asegurabilidad: cada aseguradora aparecerá con su estado actualizándose en tiempo real. Abajo puedes ver la leyenda de estados posibles."
+          },
+          "leyenda": {
+            "title": "Leyenda de estados",
+            "desc": "Cada aseguradora puede estar en uno de estos estados durante una consulta."
+          },
+          "ejemplo": {
+            "title": "Ejemplo de consulta en paralelo",
+            "desc": "Así se vería el tablero con varias aseguradoras consultándose a la vez. Datos ilustrativos.",
+            "disclaimer": "Las aseguradoras y estados mostrados son ejemplos; los datos reales aparecerán al ejecutar una consulta."
+          },
+          "como": {
+            "title": "Cómo funciona la ejecución",
+            "desc": "Al lanzar una consulta, Leasefy contacta a cada aseguradora configurada de forma simultánea. No tienes que esperar a una para empezar otra: el tablero se actualiza a medida que cada portal responde, y puedes abrir el caso apenas haya un veredicto."
+          },
+          "estado": {
+            "noConsultada": {
+              "label": "No consultada",
+              "desc": "Aún no se ha enviado la solicitud a esta aseguradora."
+            },
+            "consultando": {
+              "label": "Consultando",
+              "desc": "Enviando la solicitud al portal o API de la aseguradora."
+            },
+            "enEspera": {
+              "label": "En espera",
+              "desc": "La solicitud quedó en cola del lado de la aseguradora."
+            },
+            "respondio": {
+              "label": "Respondió",
+              "desc": "La aseguradora respondió; falta clasificar el resultado."
+            },
+            "aprobado": {
+              "label": "Aprobado",
+              "desc": "El candidato es asegurable sin condiciones."
+            },
+            "aprobadoCondicionado": {
+              "label": "Aprobado condicionado",
+              "desc": "Asegurable, pero sujeto a condiciones o ajuste de prima."
+            },
+            "noAsegurable": {
+              "label": "No asegurable",
+              "desc": "La aseguradora rechazó la cobertura para este candidato."
+            },
+            "requiereRevision": {
+              "label": "Requiere revisión manual",
+              "desc": "La respuesta necesita que una persona la interprete."
+            },
+            "faltanDatos": {
+              "label": "Faltan datos",
+              "desc": "La aseguradora pide información adicional del candidato."
+            },
+            "portalNoDisponible": {
+              "label": "Portal no disponible",
+              "desc": "El portal o API de la aseguradora no está respondiendo."
+            },
+            "error": {
+              "label": "Error",
+              "desc": "Ocurrió un error técnico durante la consulta."
+            },
+            "resultadoVencido": {
+              "label": "Resultado vencido",
+              "desc": "La respuesta caducó; debe volver a consultarse."
+            }
+          }
+        },
+        "integraciones": {
+          "title": "Integraciones",
+          "subtitle": "Cómo se conecta la asegurabilidad con el resto de la plataforma, qué significa cada procedencia de un resultado y qué métricas de negocio podrás seguir.",
+          "integraciones": {
+            "title": "Integraciones",
+            "desc": "Conecta la asegurabilidad con los sistemas que ya usas para que la información fluya sin volver a digitarla.",
+            "crm": {
+              "title": "CRM",
+              "desc": "Trae candidatos y contactos del CRM para iniciar la consulta sin volver a digitar datos."
+            },
+            "propiedades": {
+              "title": "Propiedades",
+              "desc": "Toma los datos del inmueble (ciudad, canon, tipo) directamente del inventario de propiedades."
+            },
+            "estudio": {
+              "title": "Estudio del inquilino",
+              "desc": "Conecta el resultado del estudio con la asegurabilidad para decidir con la información completa."
+            },
+            "contratos": {
+              "title": "Contratos",
+              "desc": "Envía la opción aprobada a contratos para avanzar al siguiente paso del arriendo."
+            },
+            "matching": {
+              "title": "Matching",
+              "desc": "Comparte la asegurabilidad con matching para emparejar candidatos y propiedades con más certeza."
+            },
+            "reportes": {
+              "title": "Reportes",
+              "desc": "Lleva las métricas de asegurabilidad a los reportes del negocio para verlas junto al resto."
+            }
+          },
+          "estado": {
+            "conectar": "Conectar",
+            "desconectado": "Sin conectar",
+            "proximamente": "Próximamente"
+          },
+          "trazabilidad": {
+            "title": "Trazabilidad",
+            "desc": "Cada resultado de asegurabilidad lleva una etiqueta de procedencia para que siempre sepas de dónde viene y cuánto puedes confiar en él.",
+            "estimado": {
+              "title": "Estimado · Prevalidación Leasefy",
+              "desc": "Es una guía generada por Leasefy con las reglas conocidas de cada aseguradora. Orienta la decisión, pero todavía NO es el veredicto oficial de la entidad."
+            },
+            "confirmado": {
+              "title": "Confirmado · Respuesta de entidad",
+              "desc": "Es la respuesta oficial de la aseguradora a la consulta. Cuando aparece, el resultado deja de ser una estimación y pasa a ser el veredicto real."
+            },
+            "manual": {
+              "title": "Manual · Revisión del operador",
+              "desc": "El operador ajustó o cargó el resultado a mano. Queda marcado como manual para mantener la trazabilidad de quién decidió qué."
+            }
+          },
+          "metricas": {
+            "title": "Métricas de negocio",
+            "desc": "El pulso del negocio de asegurabilidad. Cada métrica se llenará a medida que proceses casos; por ahora se muestran en blanco (—).",
+            "consultas": "Consultas",
+            "asegurables": "Asegurables",
+            "noAsegurables": "No asegurables",
+            "multiOpcion": "Con varias opciones",
+            "recuperadosAlternativa": "Recuperados por alternativa",
+            "tiempoPromedio": "Tiempo promedio de respuesta",
+            "entidadMejorAprobacion": "Entidad con mejor aprobación",
+            "entidadMasRapida": "Entidad más rápida",
+            "enviadosContrato": "Enviados a contrato",
+            "valorAsegurado": "Valor asegurado",
+            "emptyNote": "Las métricas en blanco (—) aún no tienen datos. Aparecerán automáticamente cuando la asegurabilidad procese casos."
           }
         }
       }

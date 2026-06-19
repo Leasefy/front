@@ -18,10 +18,16 @@ import { hashCedula, CedulaValidationError } from '@/lib/cotizador/hash-cedula'
 import { WizardStepIndicator } from '@/components/inmobiliaria/cotizador/WizardStepIndicator'
 import { WizardStep1Candidato } from '@/components/inmobiliaria/cotizador/WizardStep1Candidato'
 import { WizardStep2Propiedad } from '@/components/inmobiliaria/cotizador/WizardStep2Propiedad'
+import {
+  WizardStep3Config,
+  EMPTY_WIZARD_CONFIG,
+  type WizardConfigValue,
+} from '@/components/inmobiliaria/cotizador/WizardStep3Config'
 import { WizardStep3Review } from '@/components/inmobiliaria/cotizador/WizardStep3Review'
 import { WizardRestoreBanner } from '@/components/inmobiliaria/cotizador/WizardRestoreBanner'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
+import { Button } from '@/components/ui/button'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
 const EMPTY_PROPIEDAD = { canonCop: '' as number | '', tipoInmueble: '', codeudoresCount: 0 }
@@ -32,6 +38,11 @@ const RE_QUOTE_DRAFT_KEY_PREFIX = 'cotizador.draft.wizard:'
 
 export default function NuevaCotizacionPage() {
   const { t } = useI18n()
+  // t()-with-fallback: missing keys never render raw.
+  const tf = (k: string, fb: string) => {
+    const r = t(k)
+    return r === k ? fb : r
+  }
   const router = useRouter()
   const searchParams = useSearchParams()
   const { agency } = useAuth()
@@ -40,8 +51,8 @@ export default function NuevaCotizacionPage() {
 
   const canCreate = canAccess('cotizador', 'create-quote')
 
-  // Wizard state
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  // Wizard state — steps: candidato(1) → propiedad(2) → config(3) → review(4)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [showRestoreBanner, setShowRestoreBanner] = useState(true)
   const [candidato, setCandidato] = useState(EMPTY_CANDIDATO)
   const [propiedad, setPropiedad] = useState<{
@@ -49,6 +60,8 @@ export default function NuevaCotizacionPage() {
     tipoInmueble: string
     codeudoresCount: number
   }>(EMPTY_PROPIEDAD)
+  // Asegurabilidad Tier-B visión #6: config (carriers/priority/mode) — pure UI state.
+  const [config, setConfig] = useState<WizardConfigValue>(EMPTY_WIZARD_CONFIG)
   const [step1Errors, setStep1Errors] = useState<{ cedula?: string; nombre?: string; ciudad?: string }>({})
   const [step2Errors, setStep2Errors] = useState<{ canonCop?: string; tipoInmueble?: string }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -238,7 +251,14 @@ export default function NuevaCotizacionPage() {
     setStep(3)
   }, [validateStep2, save, candidato, propiedad, isReQuoteMode, parentQuoteId, prefillCedulaHash])
 
-  // ---- Step 3 submit ----
+  // ---- Step 3 (config) handler ----
+  // Config is pure UI state (not persisted in the draft contract) — advance to review.
+
+  const handleStep3Next = useCallback(() => {
+    setStep(4)
+  }, [])
+
+  // ---- Step 4 submit ----
 
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true)
@@ -254,6 +274,15 @@ export default function NuevaCotizacionPage() {
         canonCop: Number(propiedad.canonCop),
         tipoInmueble: propiedad.tipoInmueble,
         codeudoresCount: propiedad.codeudoresCount,
+      }
+      // Asegurabilidad Tier-B visión #6: attach consultation config.
+      // Backend tolerant-ignores unknown fields; only send carriers[] when the
+      // operator explicitly picked favoritas (else backend chooses the set).
+      submitBody.priority = config.priority
+      submitBody.mode = config.runMode
+      submitBody.carrierMode = config.carrierMode
+      if (config.carrierMode === 'favoritas' && config.selectedCarriers.length > 0) {
+        submitBody.carriers = config.selectedCarriers
       }
       // D-08 INVARIANT: POST body NEVER contains a 'cedula' field — only 'cedulaHash'.
       if (prefillCedulaHash) {
@@ -312,7 +341,7 @@ export default function NuevaCotizacionPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [candidato, propiedad, agency, clear, router, t, prefillCedulaHash, isReQuoteMode, parentQuoteId, prefillDismissed])
+  }, [candidato, propiedad, config, agency, clear, router, t, prefillCedulaHash, isReQuoteMode, parentQuoteId, prefillDismissed])
 
   // ── Skeleton guard (Phase 38 plan 38-04b / D-38-04 wizard rule) ───────────
   // Re-quote hydration only — normal new-quote path always has immediate form
@@ -330,16 +359,16 @@ export default function NuevaCotizacionPage() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="border-b border-border bg-card px-4 py-4 sm:px-6">
-          <h1 className="text-h4 text-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.ai.cotizador.nueva.title')}
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.ai.cotizador.nueva.subtitle')}
           </p>
         </div>
 
-        {/* Step indicator */}
-        <WizardStepIndicator totalSteps={3} currentStep={step} />
+        {/* Step indicator — candidato → propiedad → config → review */}
+        <WizardStepIndicator totalSteps={4} currentStep={step} />
 
         {/* Main content */}
         <div className="mx-auto max-w-lg px-4 pb-8 sm:px-6">
@@ -347,30 +376,31 @@ export default function NuevaCotizacionPage() {
           {isReQuoteMode && prefillFailed && !prefillDismissed && (
             <div
               role="alert"
-              className="mb-6 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-4"
+              className="mb-6 rounded-xl border border-warning/30 bg-warning-soft p-4"
             >
-              <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">
+              <p className="text-sm text-warning">
                 {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.banner')}
               </p>
-              <div className="mt-3 flex gap-3">
-                <button
-                  type="button"
+              <div className="mt-3 flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
                   onClick={() => {
                     const hist = typeof window !== 'undefined' ? window.history.length : 0
                     if (hist > 1) router.back()
                     else router.push('/panel/inmobiliaria/ai/asegurabilidad')
                   }}
-                  className="rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
                 >
                   {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.volver')}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  size="sm"
+                  hideArrow
                   onClick={() => setPrefillDismissed(true)}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.continuar')}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -387,18 +417,20 @@ export default function NuevaCotizacionPage() {
             <div
               role="region"
               aria-label={t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.ariaLabel')}
-              className="mb-4 flex items-center justify-between rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-4 py-3"
+              className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-soft px-4 py-3"
             >
-              <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
+              <p className="text-sm text-primary">
                 {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.message')}
               </p>
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
+                hideArrow
                 onClick={handleClearPrefill}
-                className="ml-3 shrink-0 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                className="shrink-0"
               >
                 {t('inmobiliaria.ai.cotizador.reQuote.cedulaNotice.changeButton')}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -422,15 +454,26 @@ export default function NuevaCotizacionPage() {
             />
           )}
 
+          {/* Asegurabilidad Tier-B visión #6: consultation config step */}
           {step === 3 && (
+            <WizardStep3Config
+              value={config}
+              onChange={setConfig}
+              onNext={handleStep3Next}
+              onBack={() => setStep(2)}
+            />
+          )}
+
+          {step === 4 && (
             <WizardStep3Review
               candidato={candidato}
               propiedad={{ ...propiedad, canonCop: Number(propiedad.canonCop) }}
               onSubmit={handleSubmit}
-              onBack={() => setStep(2)}
+              onBack={() => setStep(3)}
               isLoading={isSubmitting}
               arcoError={arcoError}
               canCreate={canCreate}
+              ctaLabel={tf('inmobiliaria.ai.cotizador.nueva.ctaConsultar', 'Consultar asegurabilidad')}
             />
           )}
 
@@ -438,7 +481,7 @@ export default function NuevaCotizacionPage() {
           {sessionCapError && (
             <div
               role="alert"
-              className="mt-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+              className="mt-4 rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {t('inmobiliaria.ai.cotizador.reQuote.sessionCapHit')}
             </div>
@@ -447,7 +490,7 @@ export default function NuevaCotizacionPage() {
           {submitError && (
             <div
               role="alert"
-              className="mt-4 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+              className="mt-4 rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {submitError}
             </div>

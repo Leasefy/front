@@ -458,15 +458,15 @@ export function DispersionWizard({
                     className={cn(
                       'p-4 rounded-xl border-2 text-left transition-all relative',
                       isSelected
-                        ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                        : 'border-border bg-card hover:border-[#1A40FF]/30'
+                        ? 'border-primary/30 bg-primary-soft'
+                        : 'border-border bg-card hover:border-primary/30'
                     )}
                   >
                     <p
                       className={cn(
                         'font-medium capitalize',
                         isSelected
-                          ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                          ? 'text-primary'
                           : 'text-foreground'
                       )}
                     >
@@ -485,18 +485,18 @@ export function DispersionWizard({
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40"
+                className="p-4 rounded-xl bg-warning-soft border border-warning/30 dark:border-warning/40"
               >
                 <div className="flex items-start gap-3">
                   <Warning
-                    className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] flex-shrink-0 mt-0.5"
+                    className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
                     weight="fill"
                   />
                   <div>
-                    <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
+                    <p className="text-sm font-medium text-warning">
                       Ya existen dispersiones para este mes
                     </p>
-                    <p className="text-sm text-[#B7791F] dark:text-[#D2992F] mt-1">
+                    <p className="text-sm text-warning mt-1">
                       Se encontraron {existingDispersiones.length} dispersiones creadas.
                       Puedes continuar para regenerarlas si es necesario.
                     </p>
@@ -544,8 +544,8 @@ export function DispersionWizard({
                   className="p-4 rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                      <User className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                    <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-foreground">
@@ -702,8 +702,8 @@ export function DispersionWizard({
                   className="p-5 rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                      <User className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+                    <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
+                      <User className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground truncate">
@@ -724,7 +724,7 @@ export function DispersionWizard({
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Comision</span>
-                      <span className="font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                      <span className="font-medium text-primary">
                         -{formatCurrency(draft.totalCommission)}
                       </span>
                     </div>
@@ -763,12 +763,12 @@ export function DispersionWizard({
                       ? deselectAll()
                       : selectAll()
                   }
-                  className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                  className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary dark:hover:text-primary transition-colors"
                 >
                   {state.selectedForApproval.length ===
                   state.generatedDispersiones.length ? (
                     <CheckSquare
-                      className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]"
+                      className="w-5 h-5 text-primary"
                       weight="fill"
                     />
                   ) : (
@@ -797,8 +797,8 @@ export function DispersionWizard({
                     className={cn(
                       'w-full p-4 rounded-xl border-2 text-left transition-all',
                       isSelected
-                        ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                        : 'border-border bg-card hover:border-[#1A40FF]/30'
+                        ? 'border-primary/30 bg-primary-soft'
+                        : 'border-border bg-card hover:border-primary/30'
                     )}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -806,7 +806,7 @@ export function DispersionWizard({
                     <div className="flex items-center gap-4">
                       {isSelected ? (
                         <CheckSquare
-                          className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]"
+                          className="w-6 h-6 text-primary"
                           weight="fill"
                         />
                       ) : (
@@ -887,7 +887,7 @@ export function DispersionWizard({
             {/* Actions */}
             <div className="space-y-3">
               <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border">
-                <Lightning className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                <Lightning className="w-5 h-5 text-primary" />
                 <p className="text-sm text-foreground">
                   Al confirmar, las dispersiones quedaran listas para procesamiento
                 </p>
@@ -941,7 +941,7 @@ export function DispersionWizard({
                     className={cn(
                       'text-xs font-medium',
                       status === 'current'
-                        ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                        ? 'text-primary'
                         : status === 'completed'
                           ? 'text-neutral-900 dark:text-white'
                           : 'text-neutral-400'
@@ -978,7 +978,7 @@ export function DispersionWizard({
           </div>
           <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-[#1A40FF]"
+              className="h-full bg-primary"
               initial={false}
               animate={{ width: `${(currentStep / 6) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -988,7 +988,7 @@ export function DispersionWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-white dark:bg-card rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -1004,7 +1004,7 @@ export function DispersionWizard({
         </div>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-[#141416] flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-muted/20 flex items-center justify-between">
           <button
             type="button"
             onClick={handleCancel}
@@ -1033,7 +1033,7 @@ export function DispersionWizard({
                 className={cn(
                   'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all',
                   isStepValid
-                    ? 'bg-[#1A40FF] text-white hover:opacity-90'
+                    ? 'bg-primary text-white hover:opacity-90'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
@@ -1062,7 +1062,7 @@ export function DispersionWizard({
                 className={cn(
                   'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
                   isStepValid && !isSubmitting
-                    ? 'bg-[#1A40FF] text-white hover:opacity-90'
+                    ? 'bg-primary text-white hover:opacity-90'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
@@ -1098,11 +1098,11 @@ export function DispersionWizard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700"
+              className="w-full max-w-md p-6 rounded-xl bg-white dark:bg-card border border-neutral-200 dark:border-neutral-700"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
-                  <X className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
+                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
+                  <X className="w-5 h-5 text-warning" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900 dark:text-white">
@@ -1123,7 +1123,7 @@ export function DispersionWizard({
                 </button>
                 <button
                   onClick={confirmCancel}
-                  className="px-4 py-2 rounded-xl bg-[#C4503B] text-white font-medium hover:bg-[#C4503B] transition-colors"
+                  className="px-4 py-2 rounded-xl bg-danger text-white font-medium hover:bg-danger transition-colors"
                 >
                   Si, cancelar
                 </button>

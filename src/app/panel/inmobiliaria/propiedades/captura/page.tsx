@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CaretLeft, Sparkle } from '@phosphor-icons/react';
+import { Sparkle } from '@phosphor-icons/react';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
+import { BackButton } from '@leasefy/ui';
 import { PropertyIACapture } from '@/components/inmobiliaria/PropertyIACapture';
 
 function CapturaContent() {
@@ -14,21 +15,18 @@ function CapturaContent() {
   return (
     <div className="p-4 md:p-6 max-w-3xl space-y-6">
       <div className="space-y-4">
-        <button
+        <BackButton
+          label={t(k('back'))}
           onClick={() => router.push('/panel/inmobiliaria/propiedades')}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <CaretLeft className="w-4 h-4" />
-          {t(k('back'))}
-        </button>
+        />
 
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-            <Sparkle className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
+          <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+            <Sparkle className="w-6 h-6 text-primary" weight="duotone" />
           </div>
           <div>
-            <h1 className="text-h2 text-foreground">{t(k('pageTitle'))}</h1>
-            <p className="text-muted-foreground text-sm">{t(k('pageSubtitle'))}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(k('pageTitle'))}</h1>
+            <p className="text-sm text-fg-muted">{t(k('pageSubtitle'))}</p>
           </div>
         </div>
       </div>

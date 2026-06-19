@@ -89,7 +89,7 @@ export const CobranzaStageCard = React.forwardRef<
         </p>
 
         {/* Stage code + day range — secondary, muted */}
-        <p className={`font-mono text-[10px] tracking-widest uppercase mt-0.5 ${colors.text} opacity-60`}>
+        <p className={`text-xs tracking-wide uppercase mt-0.5 ${colors.text} opacity-60`}>
           {stage}
           {dayRange ? ` · ${dayRange}` : ''}
         </p>
@@ -112,13 +112,13 @@ export const CobranzaStageCard = React.forwardRef<
         <div className="flex items-center gap-1 mt-1.5">
           {weeklyDelta > 0 ? (
             <>
-              <ArrowUp size={12} className="text-[#C4503B]" />
-              <span className="text-xs text-[#C4503B]">+{weeklyDelta}</span>
+              <ArrowUp size={12} className="text-danger" />
+              <span className="text-xs text-danger">+{weeklyDelta}</span>
             </>
           ) : weeklyDelta < 0 ? (
             <>
-              <ArrowDown size={12} className="text-[#2C7A53]" />
-              <span className="text-xs text-[#2C7A53]">{weeklyDelta}</span>
+              <ArrowDown size={12} className="text-success" />
+              <span className="text-xs text-success">{weeklyDelta}</span>
             </>
           ) : (
             <>

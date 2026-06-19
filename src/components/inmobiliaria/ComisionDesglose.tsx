@@ -67,10 +67,10 @@ function calculateTotals(items: DispersionItem[]) {
 function CommissionBadge({ percent }: { percent: number }) {
   const colorClass =
     percent >= 12
-      ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
+      ? 'bg-primary-soft text-primary dark:bg-primary/15 dark:text-primary'
       : percent >= 10
-      ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
-      : 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]';
+      ? 'bg-primary-soft text-primary dark:bg-primary/15 dark:text-primary'
+      : 'bg-success-soft text-success dark:bg-success/15 dark:text-success';
 
   return (
     <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', colorClass)}>
@@ -100,10 +100,10 @@ function CommissionRatioBar({
   return (
     <div className={cn('space-y-1.5', className)}>
       <div className="flex items-center justify-between text-xs">
-        <span className="text-[#1A40FF] dark:text-[#5570FF] font-medium">
+        <span className="text-primary font-medium">
           {t('inmobiliaria.finance.commBreakdown.commission')}: {formatCurrency(commission)}
         </span>
-        <span className="text-[#2C7A53] dark:text-[#3EAE70] font-medium">
+        <span className="text-success font-medium">
           {t('inmobiliaria.finance.commBreakdown.net')}: {formatCurrency(net)}
         </span>
       </div>
@@ -112,13 +112,13 @@ function CommissionRatioBar({
           initial={{ width: 0 }}
           animate={{ width: `${commissionPercent}%` }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="h-full bg-[#1A40FF]"
+          className="h-full bg-primary"
         />
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${100 - commissionPercent}%` }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="h-full bg-[#2C7A53]"
+          className="h-full bg-success"
         />
       </div>
     </div>
@@ -228,10 +228,10 @@ export function ComisionDesglose({
                         <CommissionBadge percent={item.commissionPercent} />
                       </TableCell>
                     )}
-                    <TableCell className="text-right font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                    <TableCell className="text-right font-medium text-primary">
                       {formatCurrency(item.commissionAmount)}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-[#2C7A53] dark:text-[#3EAE70]">
+                    <TableCell className="text-right font-semibold text-success">
                       {formatCurrency(item.netAmount)}
                     </TableCell>
                   </motion.tr>
@@ -248,10 +248,10 @@ export function ComisionDesglose({
                 {formatCurrency(totals.totalCollected)}
               </TableCell>
               {showPercentages && <TableCell />}
-              <TableCell className="text-right text-[#1A40FF] dark:text-[#5570FF]">
+              <TableCell className="text-right text-primary">
                 {formatCurrency(totals.totalCommission)}
               </TableCell>
-              <TableCell className="text-right text-[#2C7A53] dark:text-[#3EAE70]">
+              <TableCell className="text-right text-success">
                 {formatCurrency(totals.totalNet)}
               </TableCell>
             </TableRow>
@@ -288,7 +288,7 @@ export function ComisionDesgloseCompact({
         <span className="text-sm text-muted-foreground">
           {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
         </span>
-        <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
+        <span className="text-sm font-medium text-primary">
           {formatCurrency(totals.totalCommission)} {t('inmobiliaria.finance.commBreakdown.inCommissions')}
         </span>
       </div>

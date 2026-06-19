@@ -38,6 +38,11 @@ import {
   ArrowsClockwise,
   Scales,
   ListChecks,
+  BellRinging,
+  Handshake,
+  Files,
+  Trophy,
+  UsersThree,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -200,6 +205,48 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           module: 'cobranza',
         } as NavItemWithModule,
         {
+          label: t('inmobiliaria.ai.nav.cobranzaInbox'),
+          href: '/panel/inmobiliaria/ai/cobranza/inbox',
+          icon: ChatCircleText,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaPromesas'),
+          href: '/panel/inmobiliaria/ai/cobranza/promesas',
+          icon: BellRinging,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaAcuerdos'),
+          href: '/panel/inmobiliaria/ai/cobranza/acuerdos',
+          icon: Handshake,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaDisputas'),
+          href: '/panel/inmobiliaria/ai/cobranza/disputas',
+          icon: Scales,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaReportesPropietarios'),
+          href: '/panel/inmobiliaria/ai/cobranza/reportes-propietarios',
+          icon: Files,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaResultados'),
+          href: '/panel/inmobiliaria/ai/cobranza/resultados',
+          icon: Trophy,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.cobranzaEquipo'),
+          href: '/panel/inmobiliaria/ai/cobranza/equipo',
+          icon: UsersThree,
+          module: 'cobranza',
+        } as NavItemWithModule,
+        {
           label: t('inmobiliaria.ai.nav.configuracion'),
           href: '/panel/inmobiliaria/ai/cobranza/configuracion',
           icon: SlidersHorizontal,
@@ -311,6 +358,20 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           label: t('inmobiliaria.ai.nav.conciliacionAnalitica'),
           href: '/panel/inmobiliaria/ai/conciliacion/analitica',
           icon: ChartLineUp,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionConexiones'),
+          href: '/panel/inmobiliaria/ai/conciliacion/conexiones',
+          icon: GitMerge,
+          module: null,
+          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+        } as NavItemWithModule,
+        {
+          label: t('inmobiliaria.ai.nav.conciliacionLiquidaciones'),
+          href: '/panel/inmobiliaria/ai/conciliacion/liquidaciones',
+          icon: Wallet,
           module: null,
           roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
         } as NavItemWithModule,

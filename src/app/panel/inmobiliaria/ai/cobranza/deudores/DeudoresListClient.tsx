@@ -18,14 +18,17 @@
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FileArrowUp, Users } from '@phosphor-icons/react'
+import { Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button, Input } from '@/components/ui'
+import { Chip } from '@leasefy/ui'
 
 void React
 
@@ -36,20 +39,15 @@ const DAYS_MIN_DEFAULT = 0
 const DAYS_MAX_DEFAULT = 90
 
 // Tailwind tokens for days-in-stage badge — D-31 spec: green ≤3, amber 4-7, red ≥8
+// (semantic status tints vía tokens del DS — contrato §8)
 function daysBadgeClasses(days: number): string {
   if (days <= 3) {
-    return 'bg-[#E8F3EC] text-[#2C7A53] ring-1 ring-[#2C7A53]/30 dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:ring-[#2C7A53]/40'
+    return 'bg-success-soft text-success ring-1 ring-success/30'
   }
   if (days <= 7) {
-    return 'bg-[#F8F0E0] text-[#B7791F] ring-1 ring-[#B7791F]/30 dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:ring-[#B7791F]/40'
+    return 'bg-warning-soft text-warning ring-1 ring-warning/30'
   }
-  return 'bg-[#F8EAE7] text-[#C4503B] ring-1 ring-[#C4503B]/30 dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:ring-[#C4503B]/40'
-}
-
-function stageChipClasses(active: boolean): string {
-  return active
-    ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]'
+  return 'bg-danger-soft text-danger ring-1 ring-danger/30'
 }
 
 export default function DeudoresListClient() {
@@ -170,27 +168,11 @@ export default function DeudoresListClient() {
           title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
           description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
         />
-        {/* Importar cartera — visible pero aún sin importador real (patrón avalúos):
-            el importador de /portafolio/importar solo carga propiedades, así que
-            la acción degrada a "próximamente" en vez de mentir con un link. */}
-        <div className="rounded-lg border border-border bg-card p-5 max-w-3xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-md bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
-              <FileArrowUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" aria-hidden="true" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-0.5">
-              <h2 className="text-base font-semibold text-foreground">
-                {t('inmobiliaria.ai.cobranza.deudores.empty.cta.label')}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t('inmobiliaria.ai.workspace.pages.cobranza.importarNota')}
-              </p>
-            </div>
-            <span className="shrink-0 inline-flex items-center px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-label">
-              {t('inmobiliaria.ai.workspace.pages.cobranza.importarProximamente')}
-            </span>
-          </div>
-        </div>
+        {/* Importar cartera — cableada al endpoint POST /cartera/import.
+            FAIL-SOFT: si el backend no está desplegado (404/red), el card
+            degrada a "Próximamente — requiere despliegue" sin romper. Tras un
+            import exitoso refrescamos la lista para salir del empty state. */}
+        <CobranzaImportCard onImported={() => void refetch()} />
       </main>
     )
   }
@@ -228,19 +210,15 @@ export default function DeudoresListClient() {
         </legend>
         <div className="flex flex-wrap gap-2">
           {CARTERA_STAGES.map((s) => (
-            <button
+            <Chip
               key={s}
-              type="button"
+              size="sm"
+              selected={stages.includes(s)}
               onClick={() => toggleStage(s)}
-              aria-pressed={stages.includes(s)}
               data-testid={`stage-chip-${s}`}
-              className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                stageChipClasses(stages.includes(s))
-              }
             >
               {s}
-            </button>
+            </Chip>
           ))}
         </div>
       </fieldset>
@@ -252,20 +230,14 @@ export default function DeudoresListClient() {
         </legend>
         <div className="flex flex-wrap gap-2">
           {CHANNELS.map((c) => (
-            <button
+            <Chip
               key={c}
-              type="button"
+              size="sm"
+              selected={channels.includes(c)}
               onClick={() => toggleChannel(c)}
-              aria-pressed={channels.includes(c)}
-              className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                (channels.includes(c)
-                  ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
-                  : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]')
-              }
             >
               {t(`inmobiliaria.ai.cobranza.deudores.channels.${c}` as Parameters<typeof t>[0])}
-            </button>
+            </Chip>
           ))}
         </div>
       </fieldset>
@@ -304,13 +276,15 @@ export default function DeudoresListClient() {
         </div>
       </fieldset>
 
-      <button
-        type="button"
+      <Button
+        variant="link"
+        size="sm"
         onClick={clearFilters}
-        className="text-xs font-medium text-[#6B6B6B] dark:text-[#6B6B6B] hover:underline"
+        hideArrow
+        className="px-0 h-auto"
       >
         {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-      </button>
+      </Button>
     </div>
   )
 
@@ -340,13 +314,14 @@ export default function DeudoresListClient() {
           >
             {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => setFiltersDrawerOpen(true)}
-            className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
           >
             {t('inmobiliaria.ai.cobranza.deudores.openFilters')}
-          </button>
+          </Button>
         </div>
 
         {/* Mobile drawer */}
@@ -363,13 +338,15 @@ export default function DeudoresListClient() {
                 <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                   {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
                 </h2>
-                <button
-                  type="button"
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
                   onClick={() => setFiltersDrawerOpen(false)}
-                  className="text-sm text-neutral-500"
+                  className="px-0 h-auto text-muted-foreground"
                 >
                   {t('inmobiliaria.ai.cobranza.deudores.closeFilters')}
-                </button>
+                </Button>
               </div>
               <FiltersPanel />
             </div>
@@ -384,16 +361,15 @@ export default function DeudoresListClient() {
               <label htmlFor="debtor-search" className="sr-only">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.search.label')}
               </label>
-              <input
+              <Input
                 id="debtor-search"
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('inmobiliaria.ai.cobranza.deudores.filters.search.placeholder')}
-                className="w-full px-3 py-2 text-sm rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
               />
               {searchHint && (
-                <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-1">{searchHint}</p>
+                <p className="text-xs text-warning mt-1">{searchHint}</p>
               )}
             </div>
             <span
@@ -406,17 +382,19 @@ export default function DeudoresListClient() {
 
           {/* Error */}
           {error && (
-            <div className="rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 mb-4 flex items-center justify-between">
-              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+              <p className="text-sm text-danger">
                 {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
               </p>
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={() => void refetch()}
-                className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
+                className="shrink-0"
               >
                 {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -466,13 +444,14 @@ export default function DeudoresListClient() {
                       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
                         {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                       </p>
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        hideArrow
                         onClick={clearFilters}
-                        className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                       >
                         {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 )}
@@ -485,13 +464,13 @@ export default function DeudoresListClient() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') navigateToDebtor(d.id)
                     }}
-                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
+                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <td className="px-3 py-2.5 text-neutral-900 dark:text-white whitespace-nowrap">
                       {d.fullName}
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className="text-xs font-semibold text-[#6B6B6B] dark:text-[#6B6B6B]">
+                      <span className="text-xs font-semibold text-foreground">
                         {d.currentStage}
                       </span>
                     </td>
@@ -530,13 +509,14 @@ export default function DeudoresListClient() {
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
                   {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                 </p>
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
                   onClick={clearFilters}
-                  className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-                </button>
+                </Button>
               </div>
             ) : (
               <ul className="space-y-2">
@@ -545,13 +525,13 @@ export default function DeudoresListClient() {
                     <button
                       type="button"
                       onClick={() => navigateToDebtor(d.id)}
-                      className="w-full min-h-11 text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
+                      className="w-full min-h-11 text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                           {d.fullName}
                         </p>
-                        <span className="text-xs font-semibold text-[#6B6B6B] dark:text-[#6B6B6B] shrink-0">
+                        <span className="text-xs font-semibold text-foreground shrink-0">
                           {d.currentStage}
                         </span>
                       </div>

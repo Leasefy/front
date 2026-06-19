@@ -205,8 +205,8 @@ function CTACard({
 }: CTACardProps) {
   const accentClass =
     accent === 'amber'
-      ? 'hover:border-[#B7791F] dark:hover:border-[#B7791F]'
-      : 'hover:border-[#6B6B6B] dark:hover:border-[#6B6B6B]'
+      ? 'hover:border-warning/50'
+      : 'hover:border-primary/50'
   return (
     <button
       type="button"
@@ -224,7 +224,7 @@ function CTACard({
           {label}
         </span>
         {badge && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#B7791F] dark:bg-[#B7791F]/30 text-[#B7791F] dark:text-[#B7791F]">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning-soft text-warning">
             {badge}
           </span>
         )}

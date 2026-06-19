@@ -126,7 +126,7 @@ export function RechazarForm({
           data-testid="rechazar-confirm"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-sm bg-[#C4503B] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#C4503B] disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
+          className="inline-flex items-center rounded-sm bg-danger px-3 py-1.5 text-sm font-medium text-white hover:bg-danger disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
         >
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.confirm')}
         </button>

@@ -306,6 +306,54 @@ const AGENTS: AIAgentDefinition[] = [
     colorBg: 'bg-orange-50',
     status: 'coming-soon',
   },
+  {
+    id: 'retencion',
+    nameEn: 'Retention',
+    nameEs: 'Retención',
+    descriptionEn: 'Detects owners and properties at risk of leaving the managed portfolio, explains the root cause, prioritizes by commission at risk and activates retention plans — before it is too late.',
+    descriptionEs: 'Detecta propietarios e inmuebles en riesgo de salir del portafolio administrado, explica la causa raíz, prioriza por comisión en riesgo y activa planes de retención — antes de que sea tarde.',
+    icon: 'ArrowsClockwise',
+    color: 'text-rose-600 dark:text-rose-400',
+    colorBg: 'bg-rose-50 dark:bg-rose-950/30',
+    status: 'active',
+    detail: {
+      taglineEn: 'Keep your portfolio from leaking — see who is leaving, why, and what to do',
+      taglineEs: 'Tu portafolio se puede fugar en silencio — mira dónde, por qué y qué hacer',
+      triggersEn: [
+        'An owner payout is delayed or a liquidation is disputed',
+        'A property exceeds the average vacancy days or its admin contract nears renewal',
+        'An owner goes 30+ days without contact, or sends negative / exit-intent messages',
+        'More than 2 maintenance tickets in 60 days on the same property',
+      ],
+      triggersEs: [
+        'Un pago al propietario se retrasa o se disputa una liquidación',
+        'Un inmueble supera los días de vacancia promedio o su contrato de administración está por renovar',
+        'Un propietario pasa 30+ días sin contacto, o envía mensajes negativos / con intención de salida',
+        'Más de 2 mantenimientos en 60 días sobre el mismo inmueble',
+      ],
+      escalationEn: [
+        'Owner explicitly asks to terminate, sell, or switch agencies',
+        'Financial data is inconsistent (payout reconciliation fails)',
+        'A contract renewal is overdue or tenant arrears exceed 60 days',
+        'A retention message draft would require human review before sending (always, v1)',
+      ],
+      escalationEs: [
+        'El propietario pide explícitamente terminar, vender o cambiar de inmobiliaria',
+        'Datos financieros inconsistentes (la conciliación del pago no cuadra)',
+        'Renovación de contrato vencida o mora del inquilino superior a 60 días',
+        'Todo borrador de mensaje requiere revisión humana antes de enviar (siempre, v1)',
+      ],
+      impactEn: 'Surfaces silent churn early and turns invisible management into visible value, protecting recurring administration commission.',
+      impactEs: 'Anticipa la fuga silenciosa y vuelve visible la gestión invisible, protegiendo la comisión recurrente de administración.',
+      pipelineSteps: [
+        { labelEn: 'Build Portfolio Snapshot', labelEs: 'Construir Snapshot del Portafolio', icon: 'Kanban' },
+        { labelEn: 'Score Retiro Risk', labelEs: 'Calcular Riesgo de Retiro', icon: 'ChartLineUp' },
+        { labelEn: 'Prioritize Inbox', labelEs: 'Priorizar la Bandeja', icon: 'ListChecks' },
+        { labelEn: 'Build Retention Plan', labelEs: 'Armar Plan de Retención', icon: 'ClipboardText' },
+        { labelEn: 'Draft Message (human review)', labelEs: 'Redactar Mensaje (revisión humana)', icon: 'PaperPlaneTilt' },
+      ],
+    },
+  },
 ];
 
 // =============================================================================

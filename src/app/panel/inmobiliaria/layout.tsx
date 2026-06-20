@@ -220,6 +220,23 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     },
+    // ── RETENCIÓN (Laura) ──
+    { kind: 'section', label: 'Retención', href: '#sec-retencion', icon: Users, module: null },
+    {
+      label: 'Retención',
+      href: '/panel/inmobiliaria/ai/retencion',
+      icon: Users,
+      module: 'retencion',
+      dataTourTarget: 'sidebar-retencion',
+      children: [
+        {
+          label: 'Bandeja de riesgos',
+          href: '/panel/inmobiliaria/ai/retencion/bandeja',
+          icon: Warning,
+          module: 'retencion',
+        } as NavItemWithModule,
+      ],
+    },
     // ── INTELIGENCIA ──
     { kind: 'section', label: t('inmobiliaria.nav.secInteligencia'), href: '#sec-inteligencia', icon: ChartLine, module: null },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,     module: 'reportes' },

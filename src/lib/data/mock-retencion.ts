@@ -4,14 +4,18 @@
  * la UI siempre renderiza una demo coherente.
  */
 import type {
+  AutonomousDecision,
   BandejaResult,
   CaseBundle,
+  DecisionsResult,
   OwnerMessageDraft,
   OwnerProfile,
+  PatchDecisionResult,
   RetencionDashboard,
   RetencionPlanDTO,
   RetentionCase,
   RetentionGuard,
+  ReviewOutcome,
 } from '@/lib/types/retencion'
 
 const CASES: RetentionCase[] = [
@@ -268,4 +272,147 @@ export function getMockCaseBundle(caseId: string): CaseBundle {
 
 export function formatCop(n: number): string {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n)
+}
+
+// ── Cola de revisión de decisiones autónomas (T-323) ──
+// NOTA: `patchMockDecision` muta este array module-level, así que una revisión
+// persiste durante la sesión del navegador (no entre recargas de página).
+
+const DECISIONS: AutonomousDecision[] = [
+  {
+    id: 'dec-001',
+    caseId: 'owner:ana-restrepo',
+    ownerId: 'ana-restrepo',
+    decisionType: 'escalated_legal',
+    tier: 3,
+    reviewable: true,
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewOutcome: null,
+    createdAt: '2026-06-20T08:05:00Z',
+  },
+  {
+    id: 'dec-002',
+    caseId: 'owner:jorge-pelaez',
+    ownerId: 'jorge-pelaez',
+    decisionType: 'plan_created',
+    tier: 2,
+    reviewable: true,
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewOutcome: null,
+    createdAt: '2026-06-20T07:40:00Z',
+  },
+  {
+    id: 'dec-003',
+    caseId: 'owner:claudia-ome',
+    ownerId: 'claudia-ome',
+    decisionType: 'parked_review',
+    tier: 1,
+    reviewable: true,
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewOutcome: null,
+    createdAt: '2026-06-19T18:15:00Z',
+  },
+  {
+    id: 'dec-004',
+    caseId: 'owner:hector-rios',
+    ownerId: 'hector-rios',
+    decisionType: 'notified',
+    tier: 0,
+    reviewable: false,
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewOutcome: null,
+    createdAt: '2026-06-19T14:30:00Z',
+  },
+  {
+    id: 'dec-005',
+    caseId: 'owner:marcela-vega',
+    ownerId: 'marcela-vega',
+    decisionType: 'plan_created',
+    tier: 2,
+    reviewable: true,
+    reviewedBy: 'Laura G.',
+    reviewedAt: '2026-06-19T11:00:00Z',
+    reviewOutcome: 'upheld',
+    createdAt: '2026-06-19T09:20:00Z',
+  },
+  {
+    id: 'dec-006',
+    caseId: 'owner:ana-restrepo',
+    ownerId: 'ana-restrepo',
+    decisionType: 'plan_created',
+    tier: 3,
+    reviewable: true,
+    reviewedBy: 'Gerencia',
+    reviewedAt: '2026-06-18T16:45:00Z',
+    reviewOutcome: 'overridden',
+    createdAt: '2026-06-18T15:10:00Z',
+  },
+  {
+    id: 'dec-007',
+    caseId: 'owner:jorge-pelaez',
+    ownerId: 'jorge-pelaez',
+    decisionType: 'notified',
+    tier: 1,
+    reviewable: true,
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewOutcome: null,
+    createdAt: '2026-06-18T10:00:00Z',
+  },
+]
+
+export interface MockDecisionsOpts {
+  reviewableOnly?: boolean
+  caseId?: string
+  limit?: number
+}
+
+export function getMockDecisions(opts: MockDecisionsOpts = {}): DecisionsResult {
+  let rows = DECISIONS.slice()
+  if (opts.reviewableOnly) {
+    rows = rows.filter((d) => d.reviewable && d.reviewedBy === null)
+  }
+  if (opts.caseId) {
+    rows = rows.filter((d) => d.caseId === opts.caseId)
+  }
+  rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  if (typeof opts.limit === 'number') {
+    rows = rows.slice(0, opts.limit)
+  }
+  return { decisions: rows }
+}
+
+export function patchMockDecision(
+  decisionId: string,
+  body: { reviewOutcome: ReviewOutcome; reviewedBy?: string },
+): PatchDecisionResult {
+  const row = DECISIONS.find((d) => d.id === decisionId)
+  if (!row) {
+    // Fila inexistente: devolvemos un stub coherente (no crashea la UI demo).
+    const stub: AutonomousDecision = {
+      id: decisionId,
+      caseId: 'owner:desconocido',
+      ownerId: 'desconocido',
+      decisionType: 'parked_review',
+      tier: 0,
+      reviewable: true,
+      reviewedBy: body.reviewedBy ?? 'Revisor demo',
+      reviewedAt: new Date().toISOString(),
+      reviewOutcome: body.reviewOutcome,
+      createdAt: new Date().toISOString(),
+    }
+    return { decision: stub, alreadyReviewed: false }
+  }
+  if (row.reviewOutcome !== null) {
+    // Ya estaba revisada → carrera: devolvemos el estado existente sin mutar.
+    return { decision: { ...row }, alreadyReviewed: true }
+  }
+  row.reviewOutcome = body.reviewOutcome
+  row.reviewedBy = body.reviewedBy ?? 'Revisor demo'
+  row.reviewedAt = new Date().toISOString()
+  return { decision: { ...row }, alreadyReviewed: false }
 }

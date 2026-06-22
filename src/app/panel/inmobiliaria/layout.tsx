@@ -235,6 +235,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           icon: Warning,
           module: 'retencion',
         } as NavItemWithModule,
+        {
+          label: 'Cola de revisión',
+          href: '/panel/inmobiliaria/ai/retencion/revisiones',
+          icon: ClipboardText,
+          module: 'retencion',
+        } as NavItemWithModule,
       ],
     },
     // ── INTELIGENCIA ──

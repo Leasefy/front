@@ -9,12 +9,17 @@ import {
   getMockBandeja,
   getMockCaseBundle,
   getMockDashboard,
+  getMockDecisions,
+  patchMockDecision,
 } from '@/lib/data/mock-retencion'
 import type {
   BandejaResult,
   BandejaTab,
   CaseBundle,
+  DecisionsResult,
+  PatchDecisionResult,
   RetencionDashboard,
+  ReviewOutcome,
 } from '@/lib/types/retencion'
 
 export interface Fetched<T> {
@@ -87,5 +92,64 @@ export async function fetchCaseBundle(
     return { data: { caseId, profile, plan, guard, message }, usingMock: false }
   } catch {
     return { data: getMockCaseBundle(caseId), usingMock: true }
+  }
+}
+
+export interface FetchDecisionsOpts {
+  reviewableOnly?: boolean
+  caseId?: string
+  limit?: number
+}
+
+/**
+ * Cola de revisión de decisiones autónomas (T-323). `base` ya incluye
+ * `/retencion`, así que la ruta final es `${base}/decisions`. Mock-first.
+ */
+export async function fetchDecisions(
+  agencyId: string,
+  opts: FetchDecisionsOpts = {},
+  signal?: AbortSignal,
+): Promise<Fetched<DecisionsResult>> {
+  const base = agentBase(agencyId)
+  if (!base) return { data: getMockDecisions(opts), usingMock: true }
+  const params = new URLSearchParams()
+  if (opts.reviewableOnly) params.set('reviewableOnly', 'true')
+  if (opts.caseId) params.set('caseId', opts.caseId)
+  if (typeof opts.limit === 'number') params.set('limit', String(opts.limit))
+  const qs = params.toString()
+  try {
+    return {
+      data: await getJson<DecisionsResult>(`${base}/decisions${qs ? `?${qs}` : ''}`, signal),
+      usingMock: false,
+    }
+  } catch {
+    return { data: getMockDecisions(opts), usingMock: true }
+  }
+}
+
+/**
+ * Revisa una decisión autónoma. `PATCH ${base}/decisions/:id`. Mock-first.
+ * `agentAuthHeaders({ 'content-type': 'application/json' })` conserva el bearer
+ * (construye `new Headers(extra)` y luego setea Authorization — no se pierde).
+ */
+export async function patchDecisionReview(
+  agencyId: string,
+  decisionId: string,
+  body: { reviewOutcome: ReviewOutcome; reviewedBy?: string },
+  signal?: AbortSignal,
+): Promise<Fetched<PatchDecisionResult>> {
+  const base = agentBase(agencyId)
+  if (!base) return { data: patchMockDecision(decisionId, body), usingMock: true }
+  try {
+    const res = await globalThis.fetch(`${base}/decisions/${encodeURIComponent(decisionId)}`, {
+      method: 'PATCH',
+      headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify(body),
+      signal,
+    })
+    if (!res.ok) throw new Error(`${res.status}`)
+    return { data: (await res.json()) as PatchDecisionResult, usingMock: false }
+  } catch {
+    return { data: patchMockDecision(decisionId, body), usingMock: true }
   }
 }

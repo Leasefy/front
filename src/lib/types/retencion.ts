@@ -190,3 +190,35 @@ export interface CaseBundle {
   guard: RetentionGuard
   message: OwnerMessageDraft
 }
+
+// ── Cola de revisión de decisiones autónomas (T-323) ──
+// Contrato del backend `GET /retencion/decisions` + `PATCH /retencion/decisions/:id`.
+// `tier` es un número (0–3) — el nivel de autonomía con el que Laura actuó.
+
+export type DecisionType = 'plan_created' | 'escalated_legal' | 'parked_review' | 'notified'
+
+export type ReviewOutcome = 'upheld' | 'overridden' | 'escalated'
+
+export interface AutonomousDecision {
+  id: string
+  caseId: string
+  ownerId: string
+  decisionType: DecisionType
+  /** Nivel de autonomía (0–3) con el que se tomó la decisión. NO es enum. */
+  tier: number
+  reviewable: boolean
+  reviewedBy: string | null
+  reviewedAt: string | null
+  reviewOutcome: ReviewOutcome | null
+  createdAt: string
+}
+
+export interface DecisionsResult {
+  decisions: AutonomousDecision[]
+}
+
+export interface PatchDecisionResult {
+  decision: AutonomousDecision
+  /** true = otra persona ya había revisado esta decisión (carrera de revisión). */
+  alreadyReviewed: boolean
+}

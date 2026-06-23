@@ -20,7 +20,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FileArrowUp, Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
+import { CARTERA_STAGES, relativeTime, type CarteraStage } from '@/lib/cartera'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -435,6 +435,9 @@ export default function DeudoresListClient() {
                     {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                    {locale === 'es' ? 'Intentos' : 'Attempts'}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                     {t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -452,7 +455,7 @@ export default function DeudoresListClient() {
                 {isLoading && pages.length === 0 && (
                   Array.from({ length: 5 }, (_, i) => (
                     <tr key={`skeleton-${i}`} className="animate-pulse">
-                      {Array.from({ length: 7 }, (_, j) => (
+                      {Array.from({ length: 8 }, (_, j) => (
                         <td key={j} className="px-3 py-3">
                           <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
                         </td>
@@ -462,7 +465,7 @@ export default function DeudoresListClient() {
                 )}
                 {!isLoading && pages.length === 0 && !error && (
                   <tr>
-                    <td colSpan={7} className="px-3 py-12 text-center">
+                    <td colSpan={8} className="px-3 py-12 text-center">
                       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
                         {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                       </p>
@@ -503,6 +506,19 @@ export default function DeudoresListClient() {
                         }
                       >
                         {d.daysInStage}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <span className="text-sm text-neutral-900 dark:text-white tabular-nums">
+                        {d.attempts?.total ?? 0}{' '}
+                        <span className="text-neutral-500 dark:text-neutral-400">
+                          {locale === 'es' ? 'intentos' : 'attempts'}
+                        </span>
+                      </span>
+                      <span className="block text-[11px] text-neutral-500 dark:text-neutral-400">
+                        {d.attempts?.lastAttemptAt
+                          ? `${locale === 'es' ? 'Últ. contacto ' : 'Last contact '}${relativeTime(d.attempts.lastAttemptAt, locale)}`
+                          : '—'}
                       </span>
                     </td>
                     <td className="px-3 py-2.5">
@@ -570,6 +586,12 @@ export default function DeudoresListClient() {
                         {d.channel}
                         {d.lastActivityAt
                           ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
+                          : ''}
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 tabular-nums">
+                        {`${d.attempts?.total ?? 0} ${locale === 'es' ? 'intentos' : 'attempts'}`}
+                        {d.attempts?.lastAttemptAt
+                          ? ` · ${locale === 'es' ? 'Últ. contacto ' : 'Last contact '}${relativeTime(d.attempts.lastAttemptAt, locale)}`
                           : ''}
                       </p>
                     </button>

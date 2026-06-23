@@ -35,6 +35,7 @@ function makePage(opts: {
     channel: 'voice'
     isPaused: false
     carteraPausedUntil: null
+    attempts: { total: number; lastAttemptAt: string | null }
   }>
   nextCursor: string | null
   generatedAt: string
@@ -53,6 +54,8 @@ function makePage(opts: {
       channel: 'voice' as const,
       isPaused: false as const,
       carteraPausedUntil: null,
+      // NEW backend field — per-item contact-attempts summary.
+      attempts: { total: 5, lastAttemptAt: '2026-05-10T00:00:00Z' },
     })),
     nextCursor: opts.nextCursor === undefined ? null : opts.nextCursor,
     generatedAt: '2026-05-27T00:00:00Z',
@@ -252,6 +255,26 @@ describe('useDebtorList', () => {
       await ref.current!.loadMore()
     })
     expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('surfaces the NEW optional per-item attempts summary', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => makePage({ count: 1 }),
+    })) as unknown as typeof globalThis.fetch
+    globalThis.fetch = fetchMock
+
+    const { ref, root, container } = mountHarness({})
+    await flushPromises()
+
+    expect(ref.current?.pages[0]?.attempts).toEqual({
+      total: 5,
+      lastAttemptAt: '2026-05-10T00:00:00Z',
+    })
 
     act(() => root.unmount())
     container.remove()

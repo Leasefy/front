@@ -34,7 +34,21 @@ export type DebtorListQuery = NonNullable<DebtorListOp['parameters']['query']>
 export type DebtorListResponse =
   DebtorListOp['responses']['200']['content']['application/json']
 
-export type DebtorListItem = DebtorListResponse['items'][number]
+// ── Manual augmentation of NEW backend list-item field ────────────────────────
+// Each list item now additionally carries a contact-attempts summary. The
+// generated client lacks it; we extend the type here (instead of regenerating
+// the whole client) and keep `attempts` OPTIONAL so the column degrades
+// gracefully if the API hasn't shipped it yet.
+
+/** Per-item contact-attempts summary (NEW — see backend shapes). */
+export interface DebtorListItemAttempts {
+  total: number
+  lastAttemptAt: string | null
+}
+
+export type DebtorListItem = DebtorListResponse['items'][number] & {
+  attempts?: DebtorListItemAttempts
+}
 
 export interface UseDebtorListFilters {
   /** stage CSV ("S1,S2") or undefined for all */

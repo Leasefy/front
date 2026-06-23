@@ -286,7 +286,7 @@ function PoliticaAutoMatch() {
         <p className="text-xs">
           Activar el auto-match es una decisión humana explícita: autoriza al sistema a confirmar
           movimientos de dinero sin revisión. Los cambios no se aplican hasta que hagas clic en
-          "Guardar política" y confirmes.
+          &ldquo;Guardar política&rdquo; y confirmes.
         </p>
       </div>
 

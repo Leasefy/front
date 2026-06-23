@@ -246,6 +246,7 @@ export default function AIAgentsPage() {
 
   const cobranzaAgent = getActiveAgents().find((a) => a.id === 'cobranza');
   const cotizadorAgent = getActiveAgents().find((a) => a.id === 'cotizador');
+  const mantenimientoAgent = getActiveAgents().find((a) => a.id === 'maintenance');
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -387,6 +388,18 @@ export default function AIAgentsPage() {
                   <NoDataYetBadge phase={37} reason={locale === 'es' ? 'Sin permiso cotizador:view' : 'Missing cotizador:view permission'} />
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Mantenimiento card — click-through to the maintenance triage center (Phase 7 / C7-01) */}
+          {mantenimientoAgent && (
+            <div
+              className="relative cursor-pointer"
+              onClick={() => router.push('/panel/inmobiliaria/ai/mantenimiento')}
+              data-testid="mantenimiento-agent-card"
+              data-tour-target="mantenimiento-card"
+            >
+              <AIAgentCard agent={mantenimientoAgent} />
             </div>
           )}
         </div>

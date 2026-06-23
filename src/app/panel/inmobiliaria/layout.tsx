@@ -176,6 +176,21 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         } as NavItemWithModule,
       ],
     } as NavItemWithModule,
+    {
+      label: t('inmobiliaria.ai.nav.mantenimiento'),
+      href: '/panel/inmobiliaria/ai/mantenimiento',
+      icon: Wrench,
+      module: 'mantenimiento',
+      dataTourTarget: 'sidebar-mantenimiento',
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.mantenimientoTickets'),
+          href: '/panel/inmobiliaria/ai/mantenimiento/tickets',
+          icon: ClipboardText,
+          module: 'mantenimiento',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
     { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar, module: 'cobros' },
     // ── PORTAFOLIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },

@@ -304,7 +304,7 @@ const AGENTS: AIAgentDefinition[] = [
     icon: 'Wrench',
     color: 'text-orange-600',
     colorBg: 'bg-orange-50',
-    status: 'coming-soon',
+    status: 'active',
   },
 ];
 

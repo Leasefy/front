@@ -25,11 +25,13 @@
 
 import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phosphor-icons/react'
+import { Warning, Download, GearSix, BellRinging, CalendarBlank, ArrowRight } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
+import { formatRelativeTime } from '@/lib/format'
 import { useAuth } from '@/lib/auth'
 import { useDailyReport, useDailyReportHistory, downloadHistoryCsv } from '@/lib/hooks/cobranza/use-daily-report'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
@@ -49,8 +51,13 @@ const RENDER_MEASURE = 'reporte:render'
 
 function ReporteViewerContent() {
   const { t, locale } = useI18n()
+  const router = useRouter()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
+
+  const navigateToDebtor = (debtorId: string) => {
+    router.push(`/panel/inmobiliaria/ai/cobranza/deudores/${debtorId}`)
+  }
 
   // Mark render-start once at mount (before first SWR settle)
   useEffect(() => {
@@ -275,28 +282,106 @@ function ReporteViewerContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.top_debtors.slice(0, topN).map((d) => (
-                    <tr key={d.debtor_id} className="border-b border-border last:border-0">
-                      <td className="px-3 py-2">
-                        <Mask
-                          field="cedula"
-                          value={d.debtor_id_masked ?? d.debtor_id}
-                          onReveal={undefined}
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
-                        {d.dpd}
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
-                        {COP_FORMATTER.format(d.balance_cop)}
-                      </td>
-                      <td className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
-                        {d.last_contact_at
-                          ? new Date(d.last_contact_at).toLocaleDateString(locale)
-                          : '—'}
-                      </td>
-                    </tr>
-                  ))}
+                  {data.top_debtors.slice(0, topN).map((d) => {
+                    // Per-client narrative (additive — each sub-part hides when its field is null/absent).
+                    const nextStepLabel = d.next_step?.label ?? null
+                    const nextStepReason = d.next_step?.reason ?? null
+                    const attemptsTotal = d.attempts?.total ?? null
+                    const attemptsLastContact = d.attempts?.last_contact_at ?? null
+                    const lastInteraction = d.last_interaction ?? null
+                    const hasNarrative =
+                      nextStepLabel != null ||
+                      nextStepReason != null ||
+                      attemptsTotal != null ||
+                      lastInteraction != null
+                    return (
+                      <tr
+                        key={d.debtor_id}
+                        onClick={() => navigateToDebtor(d.debtor_id)}
+                        role="link"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') navigateToDebtor(d.debtor_id)
+                        }}
+                        aria-label={
+                          locale.startsWith('es')
+                            ? 'Ver expediente del deudor'
+                            : 'View debtor expediente'
+                        }
+                        className="group border-b border-border last:border-0 cursor-pointer hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/40 transition-colors"
+                      >
+                        <td className="px-3 py-2 align-top">
+                          <div className="flex items-center gap-2">
+                            <Mask
+                              field="cedula"
+                              value={d.debtor_id_masked ?? d.debtor_id}
+                              onReveal={undefined}
+                            />
+                            <ArrowRight
+                              className="w-3.5 h-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                              aria-hidden="true"
+                            />
+                          </div>
+                          {/* Per-client narrative — rendered additively under the debtor cell. */}
+                          {hasNarrative && (
+                            <div className="mt-1.5 space-y-1">
+                              {nextStepLabel && (
+                                <p className="text-xs text-foreground">
+                                  <span className="font-medium">{nextStepLabel}</span>
+                                  {nextStepReason && (
+                                    <span className="text-muted-foreground">
+                                      {' · '}
+                                      {nextStepReason}
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+                              {attemptsTotal != null && (
+                                <p className="text-xs text-muted-foreground">
+                                  {attemptsTotal}{' '}
+                                  {locale.startsWith('es')
+                                    ? attemptsTotal === 1
+                                      ? 'intento'
+                                      : 'intentos'
+                                    : attemptsTotal === 1
+                                      ? 'attempt'
+                                      : 'attempts'}
+                                  {attemptsLastContact && (
+                                    <span>
+                                      {' · '}
+                                      {locale.startsWith('es')
+                                        ? 'último contacto'
+                                        : 'last contact'}{' '}
+                                      {formatRelativeTime(
+                                        attemptsLastContact,
+                                        locale.startsWith('es') ? 'es' : 'en',
+                                      )}
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+                              {lastInteraction && (
+                                <p className="text-xs text-muted-foreground/90 italic">
+                                  &ldquo;{lastInteraction}&rdquo;
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground align-top">
+                          {d.dpd}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground align-top">
+                          {COP_FORMATTER.format(d.balance_cop)}
+                        </td>
+                        <td className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground align-top">
+                          {d.last_contact_at
+                            ? new Date(d.last_contact_at).toLocaleDateString(locale)
+                            : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
               </div>

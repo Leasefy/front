@@ -34,12 +34,33 @@ export interface DailyReportSummary {
   connect_rate_pct?: number
 }
 
+/** Per-row "next recommended step" narrative (additive — D-client-report). */
+export interface DailyReportDebtorNextStep {
+  action: string | null
+  label: string | null
+  reason: string | null
+}
+
+/** Per-row contact-attempt rollup (additive — D-client-report). */
+export interface DailyReportDebtorAttempts {
+  total: number
+  last_contact_at: string | null
+}
+
 export interface DailyReportDebtor {
   debtor_id: string
   debtor_id_masked?: string
   dpd: number
   balance_cop: number
   last_contact_at?: string | null
+  /**
+   * Backend additively enriches each top-N row with a per-client narrative.
+   * All OPTIONAL so the page renders unchanged if the API has not shipped them.
+   */
+  attempts?: DailyReportDebtorAttempts
+  next_step?: DailyReportDebtorNextStep
+  /** <=300 chars, Spanish, no PII — short summary of the last interaction. */
+  last_interaction?: string | null
 }
 
 export interface DailyReportAlert {

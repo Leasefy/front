@@ -23,6 +23,9 @@ export type AgentType =
   | 'cotizador'
   | 'estudio'
   | 'matching'
+  | 'avaluo'
+  | 'conciliacion'
+  | 'pagos'
   | 'pipeline'
   | 'mantenimiento'
   | 'documentos'
@@ -195,6 +198,9 @@ export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; co
   cotizador:     { label: 'Cotizador',     icon: 'FileText',       color: 'blue' },
   estudio:       { label: 'Estudio',       icon: 'ChartBar',       color: 'purple' },
   matching:      { label: 'Matching',      icon: 'FunnelSimple',   color: 'amber' },
+  avaluo:        { label: 'Avalúos',       icon: 'Scales',         color: 'indigo' },
+  conciliacion:  { label: 'Conciliación',  icon: 'ArrowsLeftRight', color: 'blue' },
+  pagos:         { label: 'Pagos',         icon: 'Bank',           color: 'emerald' },
   pipeline:      { label: 'Pipeline',      icon: 'FunnelSimple',   color: 'blue' },
   mantenimiento: { label: 'Mantenimiento', icon: 'Wrench',         color: 'amber' },
   documentos:    { label: 'Documentos',    icon: 'FileText',       color: 'purple' },

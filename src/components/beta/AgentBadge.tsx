@@ -7,6 +7,9 @@ import {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
   CheckCircle,
   XCircle,
   CircleNotch,
@@ -27,6 +30,9 @@ const ICON_MAP: Record<string, Icon> = {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 };
 
 // ============================================================================
@@ -38,40 +44,40 @@ const COLOR_CLASSES: Record<
   { bg: string; border: string; text: string; activeBg: string }
 > = {
   emerald: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    activeBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    bg: 'bg-success-soft',
+    border: 'border-success/30',
+    text: 'text-success',
+    activeBg: 'bg-success-soft',
   },
   blue: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
-    activeBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    bg: 'bg-primary-soft',
+    border: 'border-primary/30',
+    text: 'text-primary',
+    activeBg: 'bg-primary-soft',
   },
   amber: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-    activeBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    bg: 'bg-warning-soft',
+    border: 'border-warning/30',
+    text: 'text-warning',
+    activeBg: 'bg-warning-soft',
   },
   purple: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    border: 'border-neutral-200 dark:border-neutral-700',
-    text: 'text-neutral-600 dark:text-neutral-300',
-    activeBg: 'bg-neutral-100 dark:bg-neutral-800',
+    bg: 'bg-surface-muted',
+    border: 'border-border',
+    text: 'text-fg-muted',
+    activeBg: 'bg-surface-muted',
   },
   pink: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    border: 'border-neutral-200 dark:border-neutral-700',
-    text: 'text-neutral-600 dark:text-neutral-300',
-    activeBg: 'bg-neutral-100 dark:bg-neutral-800',
+    bg: 'bg-surface-muted',
+    border: 'border-border',
+    text: 'text-fg-muted',
+    activeBg: 'bg-surface-muted',
   },
   indigo: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
-    activeBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    bg: 'bg-primary-soft',
+    border: 'border-primary/30',
+    text: 'text-primary',
+    activeBg: 'bg-primary-soft',
   },
 };
 
@@ -120,14 +126,14 @@ export function AgentBadge({ agentType, status, duration, className }: AgentBadg
           colors.text,
         ],
         status === 'completed' && [
-          'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-          'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-          'text-[#2C7A53] dark:text-[#3EAE70]',
+          'bg-success-soft',
+          'border-success/30',
+          'text-success',
         ],
         status === 'failed' && [
-          'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-          'border-[#C4503B]/30 dark:border-[#C4503B]/40',
-          'text-[#C4503B] dark:text-[#E0664D]',
+          'bg-danger-soft',
+          'border-danger/30',
+          'text-danger',
         ],
         className
       )}

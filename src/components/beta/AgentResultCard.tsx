@@ -12,6 +12,9 @@ import {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -30,6 +33,9 @@ const ICON_MAP: Record<string, Icon> = {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 };
 
 // ============================================================================
@@ -37,21 +43,21 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_LEFT_COLORS: Record<string, string> = {
-  emerald: 'border-l-[#2C7A53] dark:border-l-[#2C7A53]',
-  blue: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
-  amber: 'border-l-[#B7791F] dark:border-l-[#B7791F]',
-  purple: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
-  pink: 'border-l-[#6B6B6B] dark:border-l-[#6B6B6B]',
-  indigo: 'border-l-[#1A40FF] dark:border-l-[#1A40FF]',
+  emerald: 'border-l-success',
+  blue: 'border-l-primary',
+  amber: 'border-l-warning',
+  purple: 'border-l-border-strong',
+  pink: 'border-l-border-strong',
+  indigo: 'border-l-primary',
 };
 
 const ICON_COLORS: Record<string, string> = {
-  emerald: 'text-[#2C7A53] dark:text-[#3EAE70]',
-  blue: 'text-[#1A40FF] dark:text-[#5570FF]',
-  amber: 'text-[#B7791F] dark:text-[#D2992F]',
+  emerald: 'text-success',
+  blue: 'text-primary',
+  amber: 'text-warning',
   purple: 'text-neutral-600 dark:text-neutral-300',
   pink: 'text-neutral-600 dark:text-neutral-300',
-  indigo: 'text-[#1A40FF] dark:text-[#5570FF]',
+  indigo: 'text-primary',
 };
 
 // ============================================================================
@@ -63,6 +69,9 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   cotizador: 'Cotización de seguro lista para revisar.',
   estudio: 'Estudio del inquilino completado.',
   matching: 'Propiedades sugeridas según el perfil.',
+  avaluo: 'Avalúo del inmueble listo para revisar.',
+  conciliacion: 'Conciliación de pagos completada.',
+  pagos: 'Pagos a propietarios procesados.',
   pipeline: '5 propiedades en portafolio. 1 vacante con 3 candidatos.',
   mantenimiento: '3 solicitudes activas. 1 urgente (fuga Apt 502).',
   documentos: '5 contratos vigentes. 1 vence en 18 dias.',
@@ -75,9 +84,12 @@ const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   cotizador: 'No se pudo cotizar en este momento. Reintente.',
   estudio: 'No se pudo completar el estudio del inquilino.',
   matching: 'No se pudo generar el matching de propiedades.',
+  avaluo: 'No se pudo completar el avalúo del inmueble.',
+  conciliacion: 'No se pudo conciliar los pagos en este momento.',
+  pagos: 'No se pudieron procesar los pagos. Reintente.',
   pipeline: 'Error al consultar el pipeline de propiedades.',
   mantenimiento: 'Tiempo de espera agotado al consultar mantenimientos.',
-  documentos: 'Error al acceder al repositorio de documentos.',
+  documentos: 'Error al acceder repositorio de documentos.',
   comunicacion: 'Fallo al preparar notificaciones. Servicio no disponible.',
   reportes: 'Error al generar el reporte. Datos incompletos.',
 };
@@ -120,10 +132,10 @@ export function AgentResultCard({
   const meta = AGENT_METADATA[agentType];
   const AgentIcon = ICON_MAP[meta.icon];
   const borderColor = isFailed
-    ? 'border-l-[#C4503B] dark:border-l-[#C4503B]'
+    ? 'border-l-danger'
     : BORDER_LEFT_COLORS[meta.color] ?? BORDER_LEFT_COLORS.blue;
   const iconColor = isFailed
-    ? 'text-[#C4503B] dark:text-[#E0664D]'
+    ? 'text-danger'
     : ICON_COLORS[meta.color] ?? ICON_COLORS.blue;
 
   const resultText = isFailed
@@ -167,9 +179,9 @@ export function AgentResultCard({
 
         {/* Status indicator */}
         {isFailed ? (
-          <WarningCircle className="w-3.5 h-3.5 text-[#C4503B] flex-shrink-0" weight="fill" />
+          <WarningCircle className="w-3.5 h-3.5 text-danger flex-shrink-0" weight="fill" />
         ) : (
-          <CheckCircle className="w-3.5 h-3.5 text-[#2C7A53] flex-shrink-0" weight="fill" />
+          <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" weight="fill" />
         )}
 
         {/* Duration */}
@@ -201,7 +213,7 @@ export function AgentResultCard({
               className={cn(
                 'text-xs leading-relaxed',
                 isFailed
-                  ? 'text-[#C4503B] dark:text-[#E0664D]'
+                  ? 'text-danger'
                   : 'text-muted-foreground'
               )}
             >
@@ -220,10 +232,10 @@ export function AgentResultCard({
                   'mt-2 inline-flex items-center gap-1.5',
                   'px-2.5 py-1 rounded-sm',
                   'text-xs font-medium',
-                  'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-                  'text-[#C4503B] dark:text-[#E0664D]',
-                  'border border-[#C4503B]/30 dark:border-[#C4503B]/40',
-                  'hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20',
+                  'bg-danger-soft',
+                  'text-danger',
+                  'border border-danger/30 border-danger/40',
+                  'hover:bg-danger-soft',
                   'transition-colors duration-150'
                 )}
               >

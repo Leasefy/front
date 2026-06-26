@@ -105,9 +105,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
     // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
     // exact match so it doesn't stay highlighted on every subroute.
-    { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: Sparkle,       exact: true, module: null },
-    { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
+    { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: House,         exact: true, module: null },
     // ── AGENTES IA ──
     { kind: 'section', label: t('inmobiliaria.nav.secAgentes'), href: '#sec-agentes', icon: Sparkle, module: null },
     {
@@ -431,6 +429,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
     // ── ANÁLISIS ──
     { kind: 'section', label: t('inmobiliaria.nav.secAnalisis'), href: '#sec-analisis', icon: ChartLine, module: null },
+    // Resumen del negocio: el antiguo "Dashboard" (sin su parte de agentes IA),
+    // ahora vive en Análisis como el resumen ejecutivo. module:null para preservar
+    // su visibilidad siempre-presente; la página gatea sus propios datos internamente.
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,     module: 'reportes' },
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,   module: 'analytics' },
     // ── OPERACIONES ──

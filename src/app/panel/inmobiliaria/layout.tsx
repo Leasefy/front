@@ -38,6 +38,7 @@ import {
   ArrowsClockwise,
   Scales,
   ListChecks,
+  Brain,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -413,6 +414,16 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
         } as NavItemWithModule,
       ],
+    } as NavItemWithModule,
+    {
+      // F3: Aprendizaje del asistente — certification fence for the AI chat's
+      // self-learning lessons. Visible to every agency member (read-only for
+      // VIEWER/CONTADOR; certify/discard actions inside the page are gated to
+      // OPERATOR+). Plain label (no t() key) to keep this an additive change.
+      label: 'Aprendizaje del asistente',
+      href: '/panel/inmobiliaria/ai/aprendizaje',
+      icon: Brain,
+      module: null,
     } as NavItemWithModule,
     { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', icon: ClipboardText, module: null },
     // ── PORTAFOLIO ──

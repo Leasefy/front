@@ -26,8 +26,11 @@ import {
   isAgentConfigured,
   suggestedActionToResponseAction,
   backendAgentToFrontType,
+  pendingApprovalToPendingDecision,
+  resolveChatApproval,
   type BackendDispatch,
   type BackendSuggestedAction,
+  type BackendPendingApproval,
 } from '@/lib/api/ai-hub-chat';
 
 // ============================================================================
@@ -677,6 +680,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         responseText: string;
         suggestedActions: BackendSuggestedAction[];
         dispatches: BackendDispatch[];
+        pendingApprovals?: BackendPendingApproval[];
       },
       assistantId: string,
       conversationId: string,
@@ -697,6 +701,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           : {}),
       };
       pendingResponseMetaRef.current = responseMeta;
+
+      // Approval gate (F2): if the turn proposed a binding action, attach it as
+      // the message's decision card (it streams in on completion — see
+      // startStreaming). Resolving an option later relays the operator's choice
+      // via resolveChatApproval (selectDecisionOption). null = no proposal.
+      const approval = resp.pendingApprovals?.[0];
+      pendingDecisionRef.current = approval
+        ? pendingApprovalToPendingDecision(approval)
+        : null;
 
       if (liveBlock && liveBlock.agents.length > 0) {
         // The stream already showed the dispatches live — settle any straggler
@@ -762,6 +775,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       responseText: string;
       suggestedActions: BackendSuggestedAction[];
       dispatches: BackendDispatch[];
+      pendingApprovals: BackendPendingApproval[];
       liveBlock: AgentActivityBlock | null;
     }> => {
       const startedAt = new Date();
@@ -769,6 +783,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       let messageText = '';
       let messageActions: BackendSuggestedAction[] = [];
       const resultDispatches: BackendDispatch[] = [];
+      const streamedApprovals: BackendPendingApproval[] = [];
       // Object holder (not bare `let`s): assignments happen inside the stream
       // callbacks, where TS control-flow narrowing would otherwise pin the
       // outer reads to the initializer type.
@@ -777,6 +792,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           responseText: string;
           suggestedActions: BackendSuggestedAction[];
           dispatches: BackendDispatch[];
+          pendingApprovals: BackendPendingApproval[];
         } | null;
         streamError: string | null;
       } = { final: null, streamError: null };
@@ -832,11 +848,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             liveBlock = { ...liveBlock, agents };
             setActiveAgentBlock(liveBlock);
           },
+          onPendingApproval: (approval) => {
+            streamedApprovals.push(approval);
+          },
           onDone: (f) => {
             collected.final = {
               responseText: f.responseText,
               suggestedActions: f.suggestedActions,
               dispatches: f.dispatches,
+              pendingApprovals: f.pendingApprovals,
             };
           },
           onError: (message) => {
@@ -854,10 +874,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         final && final.suggestedActions.length > 0
           ? final.suggestedActions
           : messageActions;
+      const pendingApprovals =
+        final && final.pendingApprovals.length > 0
+          ? final.pendingApprovals
+          : streamedApprovals;
       if (!responseText && dispatches.length === 0) {
         throw new Error('empty stream');
       }
-      return { responseText, suggestedActions, dispatches, liveBlock };
+      return { responseText, suggestedActions, dispatches, pendingApprovals, liveBlock };
     },
     []
   );
@@ -1065,8 +1089,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     (messageId: string, optionId: string) => {
       if (!activeConversationId) return;
 
-      // Find the option label for the user response message
+      // Find the option label (mock follow-up) + any backend approval id (relay).
       let optionLabel = '';
+      let approvalId: string | undefined;
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== activeConversationId) return c;
@@ -1076,6 +1101,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               if (m.id !== messageId || !m.decision) return m;
               const option = m.decision.options.find((o) => o.id === optionId);
               if (option) optionLabel = option.label;
+              approvalId = m.decision.approvalId;
               return {
                 ...m,
                 decision: {
@@ -1090,7 +1116,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         })
       );
 
-      // Send a user message confirming the selection, then trigger a mock response
+      // Backend binding-action approval (F2): relay the operator's decision so the
+      // chat LEARNS whether its proposals are accepted. The chat does NOT execute
+      // the action (that stays gated in the agent's frente), so there is no mock
+      // follow-up turn. Fail-soft: the card is already resolved optimistically, so
+      // a failed relay only loses the learning signal — it never breaks the UX.
+      if (approvalId && agencyId) {
+        const outcome = optionId === 'approve' ? 'approved' : 'rejected';
+        void resolveChatApproval({ agencyId, approvalId, outcome }).catch(() => {});
+        return;
+      }
+
+      // Local/mock decision: send a user message confirming the selection, then
+      // trigger a mock response.
       if (optionLabel) {
         // Small delay so the decision card updates visually first
         setTimeout(() => {
@@ -1098,7 +1136,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         }, 300);
       }
     },
-    [activeConversationId, sendMessage]
+    [activeConversationId, agencyId, sendMessage]
   );
 
   // ========================================================================

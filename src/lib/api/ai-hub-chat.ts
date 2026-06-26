@@ -20,6 +20,7 @@ import type {
   AgentType,
   AgentExecution,
   ResponseAction,
+  PendingDecision,
   DailyBriefing,
   BriefingSection,
 } from '@/lib/types/beta-chat';
@@ -50,12 +51,38 @@ export interface BackendSuggestedAction {
   target: BackendActionTarget;
 }
 
+export interface BackendApprovalOption {
+  id: string;
+  label: string;
+  description: string;
+  recommendation: 'recommended' | 'neutral' | 'not_recommended';
+}
+
+/**
+ * A binding action the chat PROPOSED but must NOT auto-execute (mirror of the
+ * agent's PendingApproval). The front renders it as a DecisionCard; resolving an
+ * option relays the operator's decision via resolveChatApproval. The chat never
+ * executes it — the real, gated execution lives in the agent's frente.
+ */
+export interface BackendPendingApproval {
+  id: string;
+  agent: BackendDispatchAgent;
+  actionType: string;
+  title: string;
+  description: string;
+  payloadPreview: Record<string, string>;
+  options: BackendApprovalOption[];
+  requiresApproval: true;
+}
+
 export interface BackendDispatch {
   agent: BackendDispatchAgent;
   taskDescription: string;
   status: 'completed' | 'failed';
   summary: string;
   nextStep?: string;
+  /** Set when the specialist proposed a binding action (NOT executed). */
+  pendingApproval?: BackendPendingApproval;
 }
 
 export interface BackendSnapshot {
@@ -71,6 +98,8 @@ export interface BackendChatResponse {
   responseText: string;
   suggestedActions: BackendSuggestedAction[];
   dispatches: BackendDispatch[];
+  /** Pending, human-gated binding actions proposed this turn (NOT executed). */
+  pendingApprovals: BackendPendingApproval[];
   snapshot: BackendSnapshot | null;
   generatedAt: string;
 }
@@ -154,6 +183,30 @@ export function dispatchToAgentExecution(
   };
 }
 
+/**
+ * Backend binding-action approval → a front `PendingDecision` (rendered as a
+ * `<DecisionCard>`). Carries `approvalId` so resolving an option relays the
+ * operator's decision via `resolveChatApproval`. `category` = the proposing
+ * agent (the front `AgentType` roster is a superset of the dispatch roster).
+ */
+export function pendingApprovalToPendingDecision(
+  approval: BackendPendingApproval,
+): PendingDecision {
+  return {
+    id: approval.id,
+    approvalId: approval.id,
+    title: approval.title,
+    description: approval.description,
+    category: backendAgentToFrontType(approval.agent),
+    options: approval.options.map((o) => ({
+      id: o.id,
+      label: o.label,
+      description: o.description,
+      recommendation: o.recommendation,
+    })),
+  };
+}
+
 // ── SSE parsing (pure, testable) ──────────────────────────────────────────────
 
 export interface ChatStreamHandlers {
@@ -167,10 +220,13 @@ export interface ChatStreamHandlers {
     taskDescription: string,
   ) => void;
   onDispatchResult?: (dispatch: BackendDispatch) => void;
+  /** A binding action was proposed (NOT executed) → render a decision card. */
+  onPendingApproval?: (approval: BackendPendingApproval) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
     dispatches: BackendDispatch[];
+    pendingApprovals: BackendPendingApproval[];
     generatedAt: string;
   }) => void;
   onError?: (message: string) => void;
@@ -233,11 +289,16 @@ export function handleSSEEvent(
     case 'dispatch_result':
       if (obj.dispatch) handlers.onDispatchResult?.(obj.dispatch as BackendDispatch);
       break;
+    case 'pending_approval':
+      if (obj.approval)
+        handlers.onPendingApproval?.(obj.approval as BackendPendingApproval);
+      break;
     case 'done':
       handlers.onDone?.({
         responseText: String(obj.responseText ?? ''),
         suggestedActions: (obj.suggestedActions as BackendSuggestedAction[]) ?? [],
         dispatches: (obj.dispatches as BackendDispatch[]) ?? [],
+        pendingApprovals: (obj.pendingApprovals as BackendPendingApproval[]) ?? [],
         generatedAt: String(obj.generatedAt ?? ''),
       });
       break;
@@ -329,6 +390,46 @@ export async function streamChatTurn(args: {
   } finally {
     reader.releaseLock();
   }
+}
+
+// ── Approval resolution (POST .../ai-hub/chat/approvals/:id/resolve) ──────────
+
+export type ChatApprovalOutcome = 'approved' | 'rejected';
+
+export interface ChatApprovalResolution {
+  approvalId: string;
+  outcome: ChatApprovalOutcome;
+  /** The chat's knowledge item was found + flipped (false if not found / stub). */
+  knowledgeUpdated: boolean;
+  /** The gated vector mirror was flipped (false until ops provisions it). */
+  semanticUpdated: boolean;
+  resolvedAt: string;
+}
+
+/**
+ * Relay the operator's approve/reject for a binding action the chat proposed, so
+ * the chat LEARNS whether its proposals are accepted. It does NOT execute the
+ * action — that stays gated in the agent's frente. Throws on a non-OK status;
+ * the caller decides whether to surface it (the card is marked resolved
+ * optimistically, so a failed relay is a learning-signal loss, not a UX break).
+ */
+export async function resolveChatApproval(args: {
+  agencyId: string;
+  approvalId: string;
+  outcome: ChatApprovalOutcome;
+  signal?: AbortSignal;
+}): Promise<ChatApprovalResolution> {
+  const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/approvals/${encodeURIComponent(
+    args.approvalId,
+  )}/resolve`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify({ outcome: args.outcome }),
+    ...(args.signal ? { signal: args.signal } : {}),
+  });
+  if (!res.ok) throw new Error(`ai-hub chat approval resolve ${res.status}`);
+  return (await res.json()) as ChatApprovalResolution;
 }
 
 // ── Daily briefing (GET /api/agency/:id/ai-hub/briefing) ─────────────────────

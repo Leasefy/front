@@ -38,6 +38,19 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      # @leasefy/ui is a `file:../design-system` dependency — the private sibling
+      # repo Leasefy/design-system. CI only checks out `front`, so the design
+      # system must exist at ../design-system BEFORE install or `pnpm install`
+      # fails with ENOENT (the actual cause of the long-standing red CI). Its built
+      # `dist/` is committed, so a shallow clone is enough — no build step needed.
+      # Requires a `DESIGN_SYSTEM_TOKEN` secret with read access to that repo (the
+      # default GITHUB_TOKEN is scoped to `front` only and cannot read it).
+      - name: Provide @leasefy/ui (sibling design-system repo)
+        run: |
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${{ secrets.DESIGN_SYSTEM_TOKEN }}@github.com/Leasefy/design-system.git" \
+            ../design-system
+
       - name: Install dependencies
         # --frozen-lockfile fails if pnpm-lock.yaml is out of sync with package.json.
         # The `postinstall` runs `prisma generate`, which only needs the committed
@@ -93,6 +106,14 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      # See the `test` job: @leasefy/ui = file:../design-system (private sibling
+      # repo). Clone it alongside `front` before install. Needs DESIGN_SYSTEM_TOKEN.
+      - name: Provide @leasefy/ui (sibling design-system repo)
+        run: |
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${{ secrets.DESIGN_SYSTEM_TOKEN }}@github.com/Leasefy/design-system.git" \
+            ../design-system
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

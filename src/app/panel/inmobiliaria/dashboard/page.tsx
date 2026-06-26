@@ -35,12 +35,6 @@ import {
 } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
-import { AIAgentActivityFeed } from '@/components/inmobiliaria/ai/AIAgentActivityFeed';
-import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
-import { getActiveAgents } from '@/lib/types/ai-agents';
-import type { AgentActivity } from '@/lib/types/ai-agents';
-import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
-import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 
 /**
  * KPI Card Component
@@ -252,76 +246,6 @@ function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: 
 }
 
 /**
- * Agent section — compact layout with smart summary
- */
-function AgentSection({
-  agents,
-  activities,
-  metricsMap,
-}: {
-  agents: ReturnType<typeof getActiveAgents>;
-  activities: AgentActivity[];
-  metricsMap: Record<string, { label: string; value: string | number }[]>;
-}) {
-  const { t } = useI18n();
-
-  function getLastAction(agentId: string) {
-    const last = activities.find(a => a.agentId === agentId);
-    if (!last) return null;
-    const now = new Date();
-    const diffMin = Math.floor((now.getTime() - last.timestamp.getTime()) / 60_000);
-    const diffH = Math.floor(diffMin / 60);
-    const time = diffMin < 60 ? `hace ${diffMin} min` : `hace ${diffH}h`;
-    return { title: last.title, time };
-  }
-
-  // Smart summary
-  const escalations = activities.filter(a => a.type === 'escalation' || a.status === 'pending');
-  const todayActions = activities.filter(a => {
-    const diffH = (Date.now() - a.timestamp.getTime()) / 3_600_000;
-    return diffH < 24;
-  });
-
-  return (
-    <div className="space-y-4">
-      {/* Smart summary header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 bg-neutral-400" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-neutral-500" />
-            </span>
-            <h2 className="text-base font-semibold text-fg tracking-tight">Agentes AI</h2>
-          </div>
-          <span className="text-sm text-fg-muted">
-            {todayActions.length} {todayActions.length === 1 ? 'acción' : 'acciones'} hoy
-            {escalations.length > 0 && (
-              <span className="text-danger font-medium"> · {escalations.length} {escalations.length === 1 ? 'requiere' : 'requieren'} atención</span>
-            )}
-          </span>
-        </div>
-        <Link
-          href="/panel/inmobiliaria/ai"
-          className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline transition-colors"
-        >
-          {t('inmobiliaria.common.viewAll')}
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
-
-      {/* Agent cards — side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {agents.map((agent) => (
-          <AIAgentCard key={agent.id} agent={agent} metrics={metricsMap[agent.id]} lastAction={getLastAction(agent.id)} />
-        ))}
-      </div>
-
-    </div>
-  );
-}
-
-/**
  * Inmobiliaria Dashboard Page
  * Main overview for real estate agency operations
  */
@@ -360,28 +284,6 @@ export default function InmobiliariaDashboardPage() {
   const pendingMaintenance = mantenimientos.filter(
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
-
-  const aiAgents = getActiveAgents();
-  const { activities: aiActivities } = useAgentActivity();
-
-  // Agent metrics from real data (hook auto-refreshes)
-  const scoringCount = aiActivities.filter(a => a.agentId === 'tenant-scoring' && a.type === 'execution').length;
-  const matchingCount = aiActivities.filter(a => a.agentId === 'smart-matching').length;
-
-  const agentMetricsMap: Record<string, { label: string; value: string | number }[]> = {
-    'tenant-scoring': [
-      { label: t('inmobiliaria.dashboard.aiAgents.evaluationsThisMonth'), value: scoringCount || 0 },
-      { label: t('inmobiliaria.dashboard.aiAgents.avgTime'), value: '< 3 min' },
-      { label: t('inmobiliaria.dashboard.aiAgents.precision'), value: scoringCount ? '94%' : '0%' },
-      { label: t('inmobiliaria.dashboard.aiAgents.escalatedToHuman'), value: scoringCount ? '2%' : '0%' },
-    ],
-    'smart-matching': [
-      { label: t('inmobiliaria.dashboard.aiAgents.suggestedThisWeek'), value: matchingCount || 0 },
-      { label: t('inmobiliaria.dashboard.aiAgents.conversionRate'), value: matchingCount ? '32%' : '0%' },
-      { label: t('inmobiliaria.dashboard.aiAgents.redirectedCandidates'), value: matchingCount || 0 },
-      { label: t('inmobiliaria.dashboard.aiAgents.avgCompatibility'), value: matchingCount ? '78%' : '0%' },
-    ],
-  };
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -438,11 +340,6 @@ export default function InmobiliariaDashboardPage() {
         <SecondaryStat icon={FileText} value={kpis.contractsInProgress} label={t('inmobiliaria.dashboard.kpi.contractsInProgress')} />
         <SecondaryStat icon={Warning} value={pendingCobros.length} label={t('inmobiliaria.dashboard.kpi.pendingCollections')} />
       </div>
-
-      {/* AI Agents Section */}
-      <FeatureGate feature="ai-agents">
-        <AgentSection agents={aiAgents} activities={aiActivities} metricsMap={agentMetricsMap} />
-      </FeatureGate>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,84 +1,66 @@
-'use client';
+'use client'
 
-import { useRef, useState, useCallback } from 'react';
-import { toast } from 'sonner';
-import { ImageSquare, X, CircleNotch, WarningCircle } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
-import { uploadPhotoToS3 } from '@/lib/api/avaluo.service';
-import { useAvaluo } from './AvaluoContext';
+import { useRef, useState, useCallback } from 'react'
+import { toast } from 'sonner'
+import { ImageSquare, X, WarningCircle } from '@phosphor-icons/react'
+import { cn } from '@/lib/utils'
+import { useAvaluo } from './AvaluoContext'
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_PHOTOS = 10;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const ACCEPTED_ACCEPT = 'image/jpeg,image/png,image/webp';
-
-// ---------------------------------------------------------------------------
-// Per-file upload state
-// ---------------------------------------------------------------------------
-
-interface UploadingFile {
-  /** Temporary blob URL for preview while uploading */
-  previewUrl: string;
-  /** Original filename */
-  filename: string;
-}
+const MAX_PHOTOS = 10
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const ACCEPTED_ACCEPT = 'image/jpeg,image/png,image/webp'
 
 // ---------------------------------------------------------------------------
 // StepFotos — Step 3
 // ---------------------------------------------------------------------------
 
 /**
- * Step 3: Photo upload via presigned S3 URLs.
- * Photos are optional — this step is always valid.
+ * Step 3: Photo collection (staging only — no upload here).
  *
- * Stores S3 object keys in formData.photoKeys.
+ * Photos are STAGED as File objects in formData.pendingPhotoFiles.
+ * The actual upload to S3 happens in AvaluoContext.submitAvaluo() AFTER
+ * submitIntake() returns the {id, token} needed for the presign endpoint.
+ *
+ * This reorder (intake first, photos after) is required by the micro contract:
+ * photo-presign requires submissionId + capability token.
+ *
+ * Photos are optional — this step is always valid.
  */
 export function StepFotos() {
-  const { formData, updateFormData } = useAvaluo();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
-  /** Files currently uploading — keyed by previewUrl */
-  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const { formData, updateFormData } = useAvaluo()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
 
-  const totalCount = formData.photoKeys.length + uploadingFiles.length;
-  const isFull = totalCount >= MAX_PHOTOS;
+  const pendingFiles = formData.pendingPhotoFiles ?? []
+  const totalCount = pendingFiles.length
+  const isFull = totalCount >= MAX_PHOTOS
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Upload a single file
+  // Stage a single file (validation only — no S3 call here)
   // ──────────────────────────────────────────────────────────────────────────
 
-  const uploadFile = useCallback(
-    async (file: File) => {
+  const stageFile = useCallback(
+    (file: File) => {
       if (!ACCEPTED_TYPES.includes(file.type)) {
-        toast.error('Solo se aceptan imágenes JPG, PNG o WebP.');
-        return;
+        toast.error('Solo se aceptan imágenes JPG, PNG o WebP.')
+        return
       }
       if (file.size > MAX_FILE_SIZE) {
-        toast.error('Cada imagen debe pesar menos de 10 MB.');
-        return;
+        toast.error('Cada imagen debe pesar menos de 10 MB.')
+        return
       }
 
-      const previewUrl = URL.createObjectURL(file);
-      const entry: UploadingFile = { previewUrl, filename: file.name };
-
-      setUploadingFiles((prev) => [...prev, entry]);
-
-      try {
-        const key = await uploadPhotoToS3(file);
-        updateFormData({ photoKeys: [...formData.photoKeys, key] });
-      } catch {
-        toast.error(`No pudimos subir "${file.name}". Intentá de nuevo.`);
-      } finally {
-        URL.revokeObjectURL(previewUrl);
-        setUploadingFiles((prev) => prev.filter((u) => u.previewUrl !== previewUrl));
-      }
+      updateFormData({
+        pendingPhotoFiles: [...pendingFiles, file],
+      })
     },
-    [formData.photoKeys, updateFormData]
-  );
+    [pendingFiles, updateFormData]
+  )
 
   // ──────────────────────────────────────────────────────────────────────────
   // Process a FileList / File[]
@@ -86,20 +68,20 @@ export function StepFotos() {
 
   const processFiles = useCallback(
     (files: FileList | File[]) => {
-      const fileArray = Array.from(files);
-      const remaining = MAX_PHOTOS - totalCount;
+      const fileArray = Array.from(files)
+      const remaining = MAX_PHOTOS - totalCount
 
       if (remaining <= 0) {
-        toast.error('Ya alcanzaste el máximo de fotos permitidas.');
-        return;
+        toast.error('Ya alcanzaste el máximo de fotos permitidas.')
+        return
       }
 
       fileArray.slice(0, remaining).forEach((file) => {
-        uploadFile(file);
-      });
+        stageFile(file)
+      })
     },
-    [totalCount, uploadFile]
-  );
+    [totalCount, stageFile]
+  )
 
   // ──────────────────────────────────────────────────────────────────────────
   // Event handlers
@@ -107,37 +89,38 @@ export function StepFotos() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processFiles(e.target.files);
+      processFiles(e.target.files)
     }
-    e.target.value = '';
-  };
+    e.target.value = ''
+  }
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
+    e.preventDefault()
+    setIsDragOver(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(e.dataTransfer.files);
+      processFiles(e.dataTransfer.files)
     }
-  };
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
+    e.preventDefault()
+    setIsDragOver(true)
+  }
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
+    e.preventDefault()
+    setIsDragOver(false)
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Remove an uploaded key
+  // Remove a staged file
   // ──────────────────────────────────────────────────────────────────────────
 
-  const removeKey = (index: number) => {
-    const next = formData.photoKeys.filter((_, i) => i !== index);
-    updateFormData({ photoKeys: next });
-  };
+  const removeFile = (index: number) => {
+    updateFormData({
+      pendingPhotoFiles: pendingFiles.filter((_, i) => i !== index),
+    })
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // Render
@@ -152,7 +135,7 @@ export function StepFotos() {
         </h3>
         <p className="text-sm text-muted-foreground">
           Las fotos ayudan al avaluador a contextualizar el inmueble. Podés
-          continuar sin ellas.
+          continuar sin ellas — se subirán al enviar el formulario.
         </p>
       </div>
 
@@ -196,49 +179,29 @@ export function StepFotos() {
         </p>
       </button>
 
-      {/* Uploaded keys list */}
-      {formData.photoKeys.length > 0 && (
-        <ul className="space-y-2" aria-label="Fotos subidas">
-          {formData.photoKeys.map((key, index) => {
-            const filename = key.split('/').pop() ?? key;
-            return (
-              <li
-                key={key}
-                className="flex items-center gap-3 px-3 py-2.5 bg-muted/40 rounded-lg border border-border"
-              >
-                <ImageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm text-foreground truncate flex-1">
-                  {filename}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeKey(index)}
-                  className="shrink-0 p-1 rounded-md hover:bg-border transition-colors"
-                  aria-label={`Eliminar ${filename}`}
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {/* Uploading files (in-progress) */}
-      {uploadingFiles.length > 0 && (
-        <ul className="space-y-2" aria-label="Subiendo fotos" aria-live="polite">
-          {uploadingFiles.map((u) => (
+      {/* Staged files list */}
+      {pendingFiles.length > 0 && (
+        <ul className="space-y-2" aria-label="Fotos seleccionadas">
+          {pendingFiles.map((file, index) => (
             <li
-              key={u.previewUrl}
-              className="flex items-center gap-3 px-3 py-2.5 bg-muted/40 rounded-lg border border-border opacity-60"
+              key={`${file.name}-${index}`}
+              className="flex items-center gap-3 px-3 py-2.5 bg-muted/40 rounded-lg border border-border"
             >
-              <CircleNotch className="h-4 w-4 text-muted-foreground shrink-0 animate-spin" />
+              <ImageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-foreground truncate flex-1">
-                {u.filename}
+                {file.name}
               </span>
               <span className="text-xs text-muted-foreground shrink-0">
-                Subiendo...
+                {(file.size / 1024 / 1024).toFixed(1)} MB
               </span>
+              <button
+                type="button"
+                onClick={() => removeFile(index)}
+                className="shrink-0 p-1 rounded-md hover:bg-border transition-colors"
+                aria-label={`Eliminar ${file.name}`}
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
             </li>
           ))}
         </ul>
@@ -258,5 +221,5 @@ export function StepFotos() {
         </div>
       </div>
     </div>
-  );
+  )
 }

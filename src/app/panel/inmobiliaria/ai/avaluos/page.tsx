@@ -11,7 +11,7 @@
  * CONSULTA. Mirrors the F6/F7/F8/F9 workspaces 1:1.
  *
  * Domain slot: "Solicitar avalúo" CTA → the public wizard app at
- * NEXT_PUBLIC_AVALUO_URL (rendered ONLY when the env var is set) + the
+ * NEXT_PUBLIC_AVALUO_API_URL (rendered ONLY when the env var is set) + the
  * firma-del-certificado note.
  */
 
@@ -35,7 +35,7 @@ const PAGES_NS = 'inmobiliaria.ai.workspace.pages.avaluos'
 
 /** Public wizard app (external). When unset the CTA degrades to a visible
  * "próximamente" state — the main action must NEVER silently disappear. */
-const AVALUO_URL = process.env.NEXT_PUBLIC_AVALUO_URL
+const AVALUO_URL = process.env.NEXT_PUBLIC_AVALUO_API_URL
 
 /** "Cómo funciona" — the 4 steps of the avalúo journey. */
 const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [

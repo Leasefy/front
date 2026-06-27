@@ -21,7 +21,7 @@ export default function AvaluoEstadoPage() {
   const searchParams = useSearchParams()
   const submissionId = params.submissionId
 
-  const { statusData, isLoading } = useAvaluoStatus(submissionId ?? null)
+  const { statusData, isLoading, isError } = useAvaluoStatus(submissionId ?? null)
 
   // Wompi return: check ?id= and ?status= query params
   useEffect(() => {
@@ -60,6 +60,7 @@ export default function AvaluoEstadoPage() {
           submissionId={submissionId ?? ''}
           statusData={statusData}
           isLoading={isLoading}
+          isError={isError}
         />
       </div>
     </main>

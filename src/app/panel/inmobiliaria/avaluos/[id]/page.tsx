@@ -20,7 +20,7 @@ export default function PanelAvaluoDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 
-  const { statusData, isLoading } = useAvaluoStatus(id ?? null);
+  const { statusData, isLoading, isError } = useAvaluoStatus(id ?? null);
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -54,6 +54,7 @@ export default function PanelAvaluoDetailPage() {
           submissionId={id ?? ''}
           statusData={statusData}
           isLoading={isLoading}
+          isError={isError}
         />
       </div>
     </div>

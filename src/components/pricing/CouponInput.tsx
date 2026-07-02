@@ -43,21 +43,26 @@ export function CouponInput({
     setIsLoading(true);
     setError(null);
 
-    const result = await subscriptionsApi.validateCoupon(code.trim(), planId);
+    try {
+      const result = await subscriptionsApi.validateCoupon(code.trim(), planId);
 
-    if (result.valid && result.coupon && result.discount) {
-      onApplyCoupon({
-        code: result.coupon.code,
-        type: result.coupon.type,
-        discount: result.discount.value,
-        description: result.discount.description,
-      });
-      setCode('');
-    } else {
-      setError(result.error || 'Cupon no valido');
+      if (result.valid && result.coupon && result.discount) {
+        onApplyCoupon({
+          code: result.coupon.code,
+          type: result.coupon.type,
+          discount: result.discount.value,
+          description: result.discount.description,
+        });
+        setCode('');
+      } else {
+        setError(result.error || 'Cupón no válido');
+      }
+    } catch (err) {
+      // Infrastructure failure (network down, 5xx) — distinct from "cupón inválido".
+      setError(err instanceof Error ? err.message : 'No pudimos verificar el cupón. Intentá de nuevo.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const handleRemove = () => {

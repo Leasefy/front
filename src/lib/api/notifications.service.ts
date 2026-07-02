@@ -3,7 +3,7 @@
  * Handles CRUD operations for notifications
  */
 
-import { apiClient } from '@/lib/api/client';
+import { apiClient, ApiError } from '@/lib/api/client';
 import type {
   BackendNotification,
   BackendNotificationsResponse,
@@ -74,9 +74,12 @@ export const notificationsApi = {
       const qs = searchParams.toString();
       const path = `/notifications${qs ? `?${qs}` : ''}`;
       return await apiClient.get<BackendNotificationsResponse>(path);
-    } catch {
-      // Notifications inbox endpoint not yet implemented in backend
-      return { notifications: [], total: 0, unreadCount: 0 };
+    } catch (err) {
+      // 404 = endpoint returns nothing for this user (empty inbox) — legitimate empty state.
+      // Any other error (5xx, network) is an infrastructure failure — propagate so callers
+      // can show "no pudimos cargar las notificaciones" instead of a silent empty list.
+      if (err instanceof ApiError && err.status === 404) return { notifications: [], total: 0, unreadCount: 0 };
+      throw err;
     }
   },
 

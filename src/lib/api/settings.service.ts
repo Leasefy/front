@@ -2,7 +2,7 @@
  * Settings API service.
  * Handles notification preferences, data export, account deletion, and team management.
  */
-import { apiClient, getAccessToken } from './client'
+import { apiClient, getAccessToken, ApiError } from './client'
 import type { TeamMember, TeamRole } from '@/lib/types/team'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
@@ -106,15 +106,21 @@ export const settingsApi = {
     const headers: Record<string, string> = {}
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const res = await fetch(`${BACKEND_URL}/users/me/avatar`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    })
+    let res: Response
+    try {
+      res = await fetch(`${BACKEND_URL}/users/me/avatar`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err)
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`)
+    }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.message || `Avatar upload failed: ${res.status}`)
+      const body = await res.json().catch(() => ({}))
+      throw new ApiError(res.status, (body as { message?: string }).message || `Avatar upload failed: ${res.status}`)
     }
 
     return res.json()

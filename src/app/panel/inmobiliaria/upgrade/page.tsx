@@ -3,7 +3,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreditCard, CheckCircle, Shield, Sparkle, Lock, ArrowRight, Crown, Robot, ChartBar, Buildings } from '@phosphor-icons/react';
+import { CreditCard, CheckCircle, Shield, Sparkle, Lock, ArrowRight, Crown, Robot, ChartBar, Buildings, WarningCircle, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
 import { Button } from '@/components/ui/button';
@@ -18,13 +18,18 @@ import type { AgencyPlanId } from '@/lib/types/subscription';
  */
 function AgencyUpgradeContent() {
   const router = useRouter();
-  const { subscription } = useMySubscription();
+  const { subscription, error: subscriptionError, refetch: subscriptionRefetch } = useMySubscription();
   const { plans, isLoading } = useAgencyPlans();
 
-  const currentPlanId = (subscription?.planId ?? 'starter') as AgencyPlanId;
+  // On error, leave currentPlanId undefined so PricingTable does not falsely
+  // highlight 'starter' as the active plan — we genuinely don't know it.
+  const currentPlanId = (subscriptionError
+    ? undefined
+    : subscription?.planId ?? 'starter') as AgencyPlanId | undefined;
   const [selectedPlan, setSelectedPlan] = useState<AgencyPlanId | null>(null);
 
-  const currentPlan = getAgencyPlanById(currentPlanId);
+  // currentPlan is null when subscription failed to load (currentPlanId is undefined).
+  const currentPlan = currentPlanId ? getAgencyPlanById(currentPlanId) : null;
   const newPlan = selectedPlan ? getAgencyPlanById(selectedPlan) : null;
 
   const handleSelectPlan = (planId: string) => {
@@ -67,11 +72,26 @@ function AgencyUpgradeContent() {
               Evaluaciones automáticas, matching inteligente y 19 agentes IA. Todo en un solo lugar.
             </p>
 
-            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
-              <Crown className="w-4 h-4 text-white" />
-              <span className="text-sm text-white/90">Plan actual</span>
-              <span className="text-sm font-semibold text-white">{currentPlan.name}</span>
-            </div>
+            {subscriptionError ? (
+              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
+                <WarningCircle className="w-4 h-4 text-white/70" />
+                <span className="text-sm text-white/70">No pudimos cargar tu plan actual</span>
+                <button
+                  type="button"
+                  onClick={subscriptionRefetch}
+                  className="text-sm font-medium text-white underline underline-offset-2 flex items-center gap-1"
+                >
+                  <ArrowCounterClockwise className="w-3.5 h-3.5" />
+                  Reintentar
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
+                <Crown className="w-4 h-4 text-white" />
+                <span className="text-sm text-white/90">Plan actual</span>
+                <span className="text-sm font-semibold text-white">{currentPlan?.name}</span>
+              </div>
+            )}
           </div>
         </div>
 

@@ -20,13 +20,18 @@ import { useI18n } from '@/lib/i18n';
 export default function UpgradePage() {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const { subscription } = useMySubscription();
-  const currentPlanId = subscription?.planId ?? 'starter';
+  const { subscription, error: subscriptionError, refetch: subscriptionRefetch } = useMySubscription();
+  // On error, leave currentPlanId undefined so PricingTable does not falsely
+  // highlight 'starter' as the active plan — we genuinely don't know it.
+  const currentPlanId = (subscriptionError
+    ? undefined
+    : subscription?.planId ?? 'starter') as PlanId | undefined;
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const currentPlan = getPlanById(currentPlanId);
+  // currentPlan is null when subscription failed to load (currentPlanId is undefined).
+  const currentPlan = currentPlanId ? getPlanById(currentPlanId as PlanId) : null;
   const newPlan = selectedPlan ? getPlanById(selectedPlan) : null;
 
   const handleSelectPlan = (planId: string) => {
@@ -89,59 +94,97 @@ export default function UpgradePage() {
             </p>
 
             {/* Current Plan Badge */}
-            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-              <Crown className="w-4 h-4 text-[#B7791F]" />
-              <span className="text-sm text-white/90">{t('landlord.upgrade.currentPlan')}</span>
-              <span className="text-sm font-semibold text-white">{currentPlan.name}</span>
-            </div>
+            {subscriptionError ? (
+              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+                <WarningCircle className="w-4 h-4 text-white/70" />
+                <span className="text-sm text-white/70">{t('landlord.upgrade.subscriptionLoadError')}</span>
+                <button
+                  type="button"
+                  onClick={subscriptionRefetch}
+                  className="text-sm font-medium text-white underline underline-offset-2"
+                >
+                  {t('landlord.upgrade.subscriptionRetry')}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+                <Crown className="w-4 h-4 text-[#B7791F]" />
+                <span className="text-sm text-white/90">{t('landlord.upgrade.currentPlan')}</span>
+                <span className="text-sm font-semibold text-white">{currentPlan?.name}</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Current plan summary card */}
         <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-6 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center gap-4 flex-1">
+          {subscriptionError ? (
+            /* Error state — do not assert a plan name or billing details we could not load */
+            <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
                 <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className="font-semibold text-neutral-900 dark:text-white">
                   {t('landlord.upgrade.currentSubscription')}
                 </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  {currentPlan.price.monthly > 0 ? (
-                    <>
-                      {t('landlord.upgrade.nextPayment')} <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(currentPlan.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
-                      <span className="font-medium text-neutral-900 dark:text-white">
-                        {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-                          day: 'numeric',
-                          month: 'long',
-                        })}
-                      </span>
-                    </>
-                  ) : (
-                    t('landlord.upgrade.freePlanHint')
-                  )}
+                  {t('landlord.upgrade.subscriptionLoadError')}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={subscriptionRefetch}
+                className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline shrink-0"
+              >
+                {t('landlord.upgrade.subscriptionRetry')}
+              </button>
             </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+                  <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-neutral-900 dark:text-white">
+                    {t('landlord.upgrade.currentSubscription')}
+                  </h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    {(currentPlan?.price.monthly ?? 0) > 0 ? (
+                      <>
+                        {t('landlord.upgrade.nextPayment')} <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(currentPlan!.price.monthly)}</span> {t('landlord.upgrade.nextPaymentDate')}{' '}
+                        <span className="font-medium text-neutral-900 dark:text-white">
+                          {new Date(subscription?.currentPeriodEnd ?? new Date().toISOString()).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+                            day: 'numeric',
+                            month: 'long',
+                          })}
+                        </span>
+                      </>
+                    ) : (
+                      t('landlord.upgrade.freePlanHint')
+                    )}
+                  </p>
+                </div>
+              </div>
 
-            {/* Quick stats */}
-            <div className="flex gap-6 sm:gap-8">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                  {currentPlan.features.find(f => f.id === 'property_listing')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'property_listing')?.limit || 1}
-                </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.propertiesLabel')}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                  {currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit || 1}
-                </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.contractsLabel')}</p>
+              {/* Quick stats */}
+              <div className="flex gap-6 sm:gap-8">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                    {currentPlan?.features.find(f => f.id === 'property_listing')?.limit === 'unlimited' ? '∞' : currentPlan?.features.find(f => f.id === 'property_listing')?.limit || 1}
+                  </p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.propertiesLabel')}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                    {currentPlan?.features.find(f => f.id === 'unlimited_contracts')?.limit === 'unlimited' ? '∞' : currentPlan?.features.find(f => f.id === 'unlimited_contracts')?.limit || 1}
+                  </p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlord.upgrade.contractsLabel')}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Benefits highlight */}
@@ -231,8 +274,8 @@ export default function UpgradePage() {
               </button>
             </div>
 
-            {/* Downgrade warning */}
-            {newPlan.price.monthly < currentPlan.price.monthly && (
+            {/* Downgrade warning — only shown when we know the current plan price */}
+            {currentPlan && newPlan.price.monthly < currentPlan.price.monthly && (
               <div className="mt-4 flex items-start gap-3 p-4 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
                 <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" />
                 <p className="text-sm text-[#B7791F] dark:text-[#D2992F]">

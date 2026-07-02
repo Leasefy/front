@@ -28,7 +28,7 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
-import { getAccessToken } from '@/lib/api/client';
+import { getAccessToken, ApiError } from '@/lib/api/client';
 import type { DocumentItem } from '@/lib/api/documents.service';
 import type {
   LandlordCandidate,
@@ -243,8 +243,16 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 setIsLoadingAI(false);
                 stopPolling();
               }
-            } catch {
-              // keep polling on transient errors
+            } catch (err) {
+              if (err instanceof ApiError && err.status === 503) {
+                // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
+                // Stop polling and surface the error; user can retry via "Re-evaluar".
+                setAiError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
+                setIsLoadingAI(false);
+                stopPolling();
+                return;
+              }
+              // Keep polling on other transient errors.
             }
           }, 120_000); // 2 minutes
           return;
@@ -327,8 +335,16 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             setReevalMessage('Re-evaluación completada.');
             stopPolling();
           }
-        } catch {
-          // Keep polling on transient errors
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 503) {
+            // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
+            // Stop polling and surface the error; user can retry via "Re-evaluar".
+            setReevalError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
+            setIsLoadingAI(false);
+            stopPolling();
+            return;
+          }
+          // Keep polling on other transient errors.
         }
       }, 3000);
     } catch (err) {

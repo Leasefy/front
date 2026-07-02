@@ -3,7 +3,7 @@
  * Endpoints: /subscriptions, /subscription-plans, /coupons
  */
 
-import { apiClient } from './client';
+import { apiClient, ApiError } from './client';
 import type {
   BackendSubscription,
   BackendSubscriptionMeResponse,
@@ -142,9 +142,13 @@ export const subscriptionsApi = {
         : (response as BackendSubscription);
       if (!sub || !sub.id) return FREE_SUBSCRIPTION;
       return mapSubscription(sub);
-    } catch {
-      // If 404 or error, user is on the base (starter) tier
-      return FREE_SUBSCRIPTION;
+    } catch (err) {
+      // 404 = user has no subscription yet → legitimately on the base tier.
+      // Any other error (5xx, network) is a backend/infra failure — propagate so
+      // callers can surface an honest error instead of silently degrading to free.
+      // Degrading to free on 5xx could hide paid features from paying users.
+      if (err instanceof ApiError && err.status === 404) return FREE_SUBSCRIPTION;
+      throw err;
     }
   },
 
@@ -201,15 +205,11 @@ export const subscriptionsApi = {
    * Validate a coupon code against a plan
    */
   async validateCoupon(code: string, planId: PlanId): Promise<CouponValidationResult> {
-    try {
-      const dto: ValidateCouponDto = { code, planId };
-      const backend = await apiClient.post<BackendCouponValidationResult>('/coupons/validate', dto);
-      return mapCouponValidation(backend);
-    } catch {
-      return {
-        valid: false,
-        error: 'Error al validar el cupon. Intenta de nuevo.',
-      };
-    }
+    // Business outcomes (valid/invalid) come as 200 body with `valid: false` — handled by
+    // mapCouponValidation. Infrastructure failures (network, 5xx) throw ApiError so callers
+    // can distinguish "server down" from "coupon is invalid". Do NOT catch here.
+    const dto: ValidateCouponDto = { code, planId };
+    const backend = await apiClient.post<BackendCouponValidationResult>('/coupons/validate', dto);
+    return mapCouponValidation(backend);
   },
 };

@@ -143,13 +143,19 @@ export function PlanHeader({
   };
 
   // Get subscription data
-  const { subscription } = useMySubscription();
+  const {
+    subscription,
+    error: subscriptionError,
+    refetch: subscriptionRefetch,
+  } = useMySubscription();
+  // Keep 'starter' as a silent fallback for avatar badge styling only.
+  // Never use planId for plan-name display when subscriptionError is set.
   const planId = subscription?.planId ?? 'starter';
   const currentPlan = getPlanById(planId);
 
-  // Tier helpers — canonical tiers: starter | pro | flex
-  const isBaseTier = planId === 'starter';
-  const isTopTier = planId === 'flex';
+  // Tier helpers — false when error to avoid asserting a tier we didn't load.
+  const isBaseTier = !subscriptionError && planId === 'starter';
+  const isTopTier = !subscriptionError && planId === 'flex';
   const teamMembers = getTeamMembers();
   const pendingInvites = getPendingInvites();
 
@@ -506,63 +512,81 @@ export function PlanHeader({
 
                   {/* Current Plan */}
                   <div className="p-5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={cn(
-                        'w-10 h-10 flex items-center justify-center rounded-sm',
-                        isBaseTier ? 'bg-muted' : 'bg-plan-primary'
-                      )}>
-                        {isBaseTier ? (
-                          <Lightning className="w-5 h-5 text-plan-secondary" />
-                        ) : (
-                          <Crown className="w-5 h-5 text-plan-accent" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-plan-primary">
-                          Plan {currentPlan.name}
+                    {subscriptionError ? (
+                      /* Honest error state — do not assert a plan name we could not load */
+                      <div className="flex flex-col items-center gap-3 py-2 text-center">
+                        <p className="text-[13px] text-neutral-600 dark:text-neutral-300">
+                          No pudimos cargar tu plan
                         </p>
-                        <p className="text-[12px] text-plan-secondary">
-                          {isBaseTier
-                            ? 'Funciones limitadas'
-                            : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
-                          }
-                        </p>
+                        <button
+                          type="button"
+                          onClick={subscriptionRefetch}
+                          className="text-[12px] font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                        >
+                          Reintentar
+                        </button>
                       </div>
-                    </div>
-
-                    {/* Features preview */}
-                    <div className="space-y-2 mb-4">
-                      {currentPlan.features.slice(0, 4).map((feature) => (
-                        <div key={feature.id} className="flex items-center gap-2">
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3 mb-4">
                           <div className={cn(
-                            'w-4 h-4 flex items-center justify-center rounded-sm',
-                            feature.included ? 'bg-plan-status-green-bg text-[#2C7A53]' : 'bg-muted text-plan-muted'
+                            'w-10 h-10 flex items-center justify-center rounded-sm',
+                            isBaseTier ? 'bg-muted' : 'bg-plan-primary'
                           )}>
-                            <Check className="w-3 h-3" />
+                            {isBaseTier ? (
+                              <Lightning className="w-5 h-5 text-plan-secondary" />
+                            ) : (
+                              <Crown className="w-5 h-5 text-plan-accent" />
+                            )}
                           </div>
-                          <span className={cn(
-                            'text-[12px]',
-                            feature.included ? 'text-foreground' : 'text-plan-muted'
-                          )}>
-                            {feature.name}
-                            {feature.limit && feature.limit !== 'unlimited' && ` (${feature.limit})`}
-                          </span>
+                          <div>
+                            <p className="text-[14px] font-semibold text-plan-primary">
+                              Plan {currentPlan.name}
+                            </p>
+                            <p className="text-[12px] text-plan-secondary">
+                              {isBaseTier
+                                ? 'Funciones limitadas'
+                                : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
+                              }
+                            </p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
 
-                    {/* Upgrade CTA — hide only when already on the top tier */}
-                    {!isTopTier && (
-                      <Link
-                        href={upgradePlanHref}
-                        onClick={() => setSubscriptionOpen(false)}
-                        className="block w-full py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-[12px] font-semibold text-center rounded-xl transition-colors"
-                      >
-                        {isBaseTier ? 'Mejorar Plan' : 'Ver Planes'}
-                      </Link>
+                        {/* Features preview */}
+                        <div className="space-y-2 mb-4">
+                          {currentPlan.features.slice(0, 4).map((feature) => (
+                            <div key={feature.id} className="flex items-center gap-2">
+                              <div className={cn(
+                                'w-4 h-4 flex items-center justify-center rounded-sm',
+                                feature.included ? 'bg-plan-status-green-bg text-[#2C7A53]' : 'bg-muted text-plan-muted'
+                              )}>
+                                <Check className="w-3 h-3" />
+                              </div>
+                              <span className={cn(
+                                'text-[12px]',
+                                feature.included ? 'text-foreground' : 'text-plan-muted'
+                              )}>
+                                {feature.name}
+                                {feature.limit && feature.limit !== 'unlimited' && ` (${feature.limit})`}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Upgrade CTA — hide only when already on the top tier */}
+                        {!isTopTier && (
+                          <Link
+                            href={upgradePlanHref}
+                            onClick={() => setSubscriptionOpen(false)}
+                            className="block w-full py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-[12px] font-semibold text-center rounded-xl transition-colors"
+                          >
+                            {isBaseTier ? 'Mejorar Plan' : 'Ver Planes'}
+                          </Link>
+                        )}
+                      </>
                     )}
 
-                    {/* Manage subscription */}
+                    {/* Manage subscription — always visible */}
                     <Link
                       href={manageSubscriptionHref}
                       onClick={() => setSubscriptionOpen(false)}

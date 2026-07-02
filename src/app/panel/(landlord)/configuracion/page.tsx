@@ -57,7 +57,7 @@ export default function ConfiguracionPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const { subscription } = useMySubscription();
+  const { subscription, error: subscriptionError, refetch: subscriptionRefetch } = useMySubscription();
   const currentPlanId = subscription?.planId ?? 'starter';
   const currentPlan = getPlanById(currentPlanId);
 
@@ -210,45 +210,71 @@ export default function ConfiguracionPage() {
             className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 overflow-hidden relative"
           >
             <div className="relative px-6 py-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-14 h-14 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                    <Crown className="w-7 h-7 text-[#B7791F] dark:text-[#D2992F]" />
+              {subscriptionError ? (
+                /* Error state — do not assert a plan name we could not load */
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-14 h-14 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                      <Crown className="w-7 h-7 text-[#B7791F] dark:text-[#D2992F]" />
+                    </div>
+                    <div>
+                      <p className="text-[#1A40FF]/70 dark:text-[#1A40FF]/70 text-sm">
+                        {t('landlordSettings.subscription.currentPlan')}
+                      </p>
+                      <p className="text-base text-[#1A40FF]/60 dark:text-[#1A40FF]/60">
+                        {t('landlordSettings.subscription.loadError')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[#1A40FF]/70 dark:text-[#1A40FF]/70 text-sm">{t('landlordSettings.subscription.currentPlan')}</p>
-                    <p className="text-xl font-semibold text-[#1A40FF] dark:text-[#5570FF]">{currentPlan.name}</p>
-                    <p className="text-[#1A40FF]/60 dark:text-[#1A40FF]/60 text-sm">
-                      {currentPlanId === 'starter'
-                        ? t('landlordSettings.subscription.freePlan')
-                        : `${formatCurrencyUtil(currentPlan.price.monthly)}/${t('landlordSettings.subscription.month')}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-6">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
-                      {currentPlan.features.find(f => f.id === 'property_listing')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'property_listing')?.limit || 1}
-                    </p>
-                    <p className="text-xs text-[#1A40FF]/60 dark:text-[#1A40FF]/60">{t('landlordSettings.subscription.properties')}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
-                      {currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit || 1}
-                    </p>
-                    <p className="text-xs text-[#1A40FF]/60 dark:text-[#1A40FF]/60">{t('landlordSettings.subscription.contracts')}</p>
-                  </div>
-                </div>
-                {currentPlanId !== 'flex' && (
-                  <Link
-                    href="/panel/upgrade"
-                    className="px-5 py-2.5 bg-[#1A40FF] dark:bg-[#5570FF] text-white text-sm font-semibold rounded-xl hover:opacity-90 dark:hover:opacity-90 transition-colors flex items-center gap-2"
+                  <button
+                    type="button"
+                    onClick={subscriptionRefetch}
+                    className="px-5 py-2.5 border border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] text-sm font-semibold rounded-xl hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors self-start sm:self-auto"
                   >
-                    {t('landlordSettings.subscription.upgradePlan')}
-                    <ArrowUpRight className="w-4 h-4" />
-                  </Link>
-                )}
-              </div>
+                    {t('landlordSettings.subscription.retry')}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-14 h-14 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                      <Crown className="w-7 h-7 text-[#B7791F] dark:text-[#D2992F]" />
+                    </div>
+                    <div>
+                      <p className="text-[#1A40FF]/70 dark:text-[#1A40FF]/70 text-sm">{t('landlordSettings.subscription.currentPlan')}</p>
+                      <p className="text-xl font-semibold text-[#1A40FF] dark:text-[#5570FF]">{currentPlan.name}</p>
+                      <p className="text-[#1A40FF]/60 dark:text-[#1A40FF]/60 text-sm">
+                        {currentPlanId === 'starter'
+                          ? t('landlordSettings.subscription.freePlan')
+                          : `${formatCurrencyUtil(currentPlan.price.monthly)}/${t('landlordSettings.subscription.month')}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-6">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
+                        {currentPlan.features.find(f => f.id === 'property_listing')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'property_listing')?.limit || 1}
+                      </p>
+                      <p className="text-xs text-[#1A40FF]/60 dark:text-[#1A40FF]/60">{t('landlordSettings.subscription.properties')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
+                        {currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit === 'unlimited' ? '∞' : currentPlan.features.find(f => f.id === 'unlimited_contracts')?.limit || 1}
+                      </p>
+                      <p className="text-xs text-[#1A40FF]/60 dark:text-[#1A40FF]/60">{t('landlordSettings.subscription.contracts')}</p>
+                    </div>
+                  </div>
+                  {currentPlanId !== 'flex' && (
+                    <Link
+                      href="/panel/upgrade"
+                      className="px-5 py-2.5 bg-[#1A40FF] dark:bg-[#5570FF] text-white text-sm font-semibold rounded-xl hover:opacity-90 dark:hover:opacity-90 transition-colors flex items-center gap-2"
+                    >
+                      {t('landlordSettings.subscription.upgradePlan')}
+                      <ArrowUpRight className="w-4 h-4" />
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           </motion.section>
 

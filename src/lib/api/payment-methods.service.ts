@@ -1,6 +1,6 @@
 'use client';
 
-import { apiClient } from './client';
+import { apiClient, ApiError } from './client';
 import type {
   PaymentAccount,
   PropertyAccountAssignment,
@@ -12,8 +12,11 @@ export const paymentMethodsApi = {
   async getAll(): Promise<PaymentAccount[]> {
     try {
       return await apiClient.get<PaymentAccount[]>(BASE);
-    } catch {
-      return [];
+    } catch (err) {
+      // 404 = landlord has no payment methods yet — legitimate empty state.
+      // Other errors (5xx, network) propagate so callers can show an error.
+      if (err instanceof ApiError && err.status === 404) return [];
+      throw err;
     }
   },
 
@@ -34,7 +37,10 @@ export const paymentMethodsApi = {
   },
 
   async getAssignments(): Promise<PropertyAccountAssignment[]> {
-    // Assignments endpoint not yet implemented in backend
+    // PENDING FEATURE: the backend does not expose a property-to-account assignments
+    // endpoint yet. This returns [] intentionally — it is NOT a fail-open catch;
+    // no network call is made, no data is silently swallowed.
+    // Follow-up: wire to the real endpoint when it is added to the backend.
     return [];
   },
 

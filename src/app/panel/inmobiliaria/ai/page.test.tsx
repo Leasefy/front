@@ -60,7 +60,6 @@ vi.mock('@/lib/hooks/use-agent', () => ({
     result: null,
     trace: null,
     runScoring: vi.fn(),
-    runMatching: vi.fn(),
     clearResult: vi.fn(),
   }),
 }))

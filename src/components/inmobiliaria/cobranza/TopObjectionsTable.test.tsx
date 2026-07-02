@@ -3,7 +3,7 @@
  *
  * Tests for three render branches:
  *   1. populated=true + 10 rows → all 10 data rows rendered (11 total with header)
- *   2. populated=false + reason='insufficient-objections' → SampleDataWatermark + stub rows
+ *   2. populated=false + reason='insufficient-objections' → EmptyState (no fake data)
  *   3. populated=false + reason='agency-gate' → returns null (empty container)
  *
  * NOTE: @testing-library/react is not installed in this project.
@@ -22,18 +22,7 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k }),
 }))
 
-// Mock SampleDataWatermark
-vi.mock('@/components/data-display/SampleDataWatermark', () => ({
-  SampleDataWatermark: ({ children, show }: { children: React.ReactNode; show: boolean }) =>
-    React.createElement(
-      'div',
-      { role: show ? 'note' : undefined, 'data-testid': 'sample-data-watermark', 'data-show': String(show) },
-      children
-    ),
-}))
-
 import { TopObjectionsTable } from './TopObjectionsTable'
-import { STUB_TOP_OBJECTIONS } from '@/lib/fixtures/cobranza-analytics-stub'
 
 const TEN_OBJECTIONS = [
   { rank: 1,  literal: 'No tengo plata ahorita',                      count: 12, pct: 0.185 },
@@ -78,7 +67,7 @@ describe('<TopObjectionsTable>', () => {
     expect(rows).toHaveLength(11)
   })
 
-  it('renders SampleDataWatermark + stub rows when populated=false + reason=insufficient-objections', () => {
+  it('renders EmptyState (no watermark, no fake rows) when populated=false + reason=insufficient-objections', () => {
     act(() => {
       root.render(
         React.createElement(TopObjectionsTable, {
@@ -87,14 +76,10 @@ describe('<TopObjectionsTable>', () => {
         })
       )
     })
-    // SampleDataWatermark mock renders role="note" when show=true
-    const watermark = container.querySelector('[role="note"]')
-    expect(watermark).not.toBeNull()
-    // Stub rows should be rendered (STUB_TOP_OBJECTIONS has 10 entries → 10 tbody rows + 1 thead = 11)
-    const rows = container.querySelectorAll('tr')
-    expect(rows.length).toBeGreaterThan(1)
-    // Sanity: STUB_TOP_OBJECTIONS has entries
-    expect(STUB_TOP_OBJECTIONS.objections.length).toBe(10)
+    // No sample-data watermark and no fake table rows — honest empty state instead
+    expect(container.querySelector('[role="note"]')).toBeNull()
+    expect(container.querySelectorAll('tr')).toHaveLength(0)
+    expect(container.textContent).toContain('Sin datos suficientes todavía')
   })
 
   it('renders nothing when populated=false + reason=agency-gate', () => {

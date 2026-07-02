@@ -51,8 +51,7 @@ export default function CotizadorInsightsPage() {
   } = useInsights()
 
   // Phase 38-05b: PageSkeleton replaces inline animate-pulse grid (D-38-04: skeleton only;
-  // per-widget SampleDataWatermark inside child components is PRESERVED; NoDataYetBadge
-  // for Widgets 5+6 below is PRESERVED).
+  // NoDataYetBadge for Widgets 5+6 below is PRESERVED).
   if (isLoading && approvalRateMonthly.length === 0) return <PageSkeleton variant="dashboard" />
 
   return (

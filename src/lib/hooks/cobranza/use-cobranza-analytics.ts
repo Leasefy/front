@@ -80,10 +80,10 @@ type CostPerPesoData = {
   sparkline_90d?: SparklinePoint[]
 }
 
-// Phase 38 plan 38-04a — TopScripts type widened to support both stub (D-38-14
-// not-yet-shipped backend) and real-data shapes. The Phase 37 stub remains valid
-// in the unpopulated branch; the populated branch unlocks once D-38-14 ships the
-// schema + handler swap (38-03-05).
+// Phase 38 plan 38-04a — TopScripts type covers two real shapes: an unpopulated
+// branch (backend schema pending, reason 'schema_pending' → honest empty UI, no
+// fake rows) and a populated branch that unlocks once D-38-14 ships the schema +
+// handler swap (38-03-05).
 export type TopScriptsRow = {
   scriptTemplateId: string
   scriptName: string

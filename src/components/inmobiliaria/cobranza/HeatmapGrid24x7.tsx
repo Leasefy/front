@@ -10,7 +10,7 @@
  *
  * Three render branches (D-37-05):
  *   A — populated=false + reason='agency-gate' → return null
- *   B — populated=false + reason='insufficient-heatmap' → SampleDataWatermark + stub cells
+ *   B — populated=false + reason='insufficient-heatmap' → EmptyState (honest empty, never stub cells)
  *   C — populated=true → real cells
  *
  * Grid structure:
@@ -21,9 +21,9 @@
 
 import { Fragment, useState } from 'react';
 
+import { GridFour } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
-import { SampleDataWatermark } from '@/components/data-display/SampleDataWatermark';
-import { STUB_CADENCE } from '@/lib/fixtures/cobranza-analytics-stub';
+import { EmptyState } from '@/components/data-display/EmptyState';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -79,14 +79,20 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
     return null;
   }
 
-  // Branch B / C — stub or real data
-  const isStub = !data.populated;
-  const sourceCells: HeatmapCell[] = data.populated
-    ? data.cells
-    : ((STUB_CADENCE.heatmap?.cells ?? []) as HeatmapCell[]);
-  const effectiveMax: number = data.populated
-    ? data.maxCount
-    : Math.max(1, ...sourceCells.map((c) => c.call_count));
+  // Branch B — no real data yet
+  if (!data.populated) {
+    return (
+      <EmptyState
+        icon={GridFour}
+        title={t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.heatmap.title')}
+        description="Sin datos suficientes todavía"
+      />
+    );
+  }
+
+  // Branch C — real data
+  const sourceCells: HeatmapCell[] = data.cells;
+  const effectiveMax: number = data.maxCount;
 
   // Build 7×24 matrix — fill missing cells with zeroes
   const matrix: HeatmapCell[][] = Array.from({ length: 7 }, (_, d) =>
@@ -116,7 +122,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
 
   const selectedCell = selected ? matrix[selected.day][selected.hour] : null;
 
-  const grid = (
+  return (
     <div role="region" aria-label={regionTitle}>
       <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
         {regionTitle}
@@ -203,11 +209,5 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
         {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.heatmap.legend')}
       </p>
     </div>
-  );
-
-  return (
-    <SampleDataWatermark show={isStub}>
-      {grid}
-    </SampleDataWatermark>
   );
 }

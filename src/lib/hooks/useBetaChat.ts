@@ -16,8 +16,6 @@ import type {
   ActionProposal,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
-import { getTodayBriefing, getMockBriefings } from '@/lib/data/mock-briefings';
-import { getMockResponse, getMockResponseMeta } from '@/lib/data/mock-chat-responses';
 import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
 import { useAuth } from '@/lib/auth/use-auth';
 import {
@@ -290,14 +288,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Briefing state. Starts on the mock briefing (the SOLE mock fallback seam,
-  // together with the no-backend chat reply below) and is replaced by the real
-  // GET /ai-hub/briefing payload when the backend answers (effect further down).
-  const [currentBriefing, setCurrentBriefing] = useState<DailyBriefing | null>(
-    () => getTodayBriefing()
-  );
-  const [hasNewBriefing, setHasNewBriefing] = useState(true);
-  const [briefings, setBriefings] = useState<DailyBriefing[]>(() => getMockBriefings());
+  // Briefing state. Starts empty and is populated by the real GET /ai-hub/briefing
+  // payload when the backend answers (effect further down).
+  const [currentBriefing, setCurrentBriefing] = useState<DailyBriefing | null>(null);
+  const [hasNewBriefing, setHasNewBriefing] = useState(false);
+  const [briefings, setBriefings] = useState<DailyBriefing[]>([]);
   const [selectedBriefingId, setSelectedBriefingId] = useState<string | null>(null);
 
   // Preferences state
@@ -901,29 +896,6 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   // ========================================================================
-  // MOCK FALLBACK SEAM — the ONE mock path kept on purpose (dev posture).
-  // Reached only when there is no agency tenant yet (auth still resolving /
-  // outside the agency layout) or no NEXT_PUBLIC_AGENT_URL in the build
-  // (local dev without the agent service). Answers from the keyword mock so
-  // the chat home stays demoable; real-backend turns never reach this.
-  // ========================================================================
-
-  const runMockTurn = useCallback(
-    (text: string, assistantId: string, conversationId: string) => {
-      const responseText = getMockResponse(text);
-      const responseMeta = getMockResponseMeta(text);
-      pendingResponseMetaRef.current = responseMeta;
-      attachResponseMeta(assistantId, conversationId, responseMeta);
-      const thinkDelay = setTimeout(() => {
-        setIsThinking(false);
-        startStreaming(assistantId, responseText, conversationId);
-      }, 600);
-      agentTimeoutsRef.current.push(thinkDelay);
-    },
-    [attachResponseMeta, startStreaming]
-  );
-
-  // ========================================================================
   // Send message — real AI chat backend, SSE-first (F2c):
   //   stream → (on failure) one-shot POST → (on failure) honest error.
   //   No backend configured / no agency → mock fallback seam.
@@ -982,9 +954,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingDecisionRef.current = null;
       pendingResponseMetaRef.current = null;
 
-      // MOCK FALLBACK SEAM (see runMockTurn above).
+      // No agent configured — fail visibly
       if (!agencyId || !isAgentConfigured()) {
-        runMockTurn(trimmed, assistantId, conversationId);
+        finalizeError(
+          assistantId,
+          conversationId,
+          'El asistente de IA no está disponible (agente no configurado).'
+        );
         return;
       }
 
@@ -1024,7 +1000,6 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       activeConversationId,
       conversations,
       agencyId,
-      runMockTurn,
       runStreamTurn,
       finishTurn,
       finalizeError,

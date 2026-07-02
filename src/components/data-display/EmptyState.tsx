@@ -4,8 +4,9 @@ import * as React from 'react'
 
 /**
  * EmptyState — primitiva universal de estado vacío ("nada todavía": cero
- * cotizaciones, cero deudores, etc.). NO para casos "bajo umbral" — esos
- * siguen usando <NoDataYetBadge /> y <SampleDataWatermark />.
+ * cotizaciones, cero deudores, datos insuficientes, etc.). Honesto: nunca
+ * rellena con datos de muestra. Para el caso "bajo umbral / pendiente de
+ * backend" todavía existe <NoDataYetBadge />.
  *
  * Estilo (rediseño 2026-06-16, pedido de Nico): limpio y MONOCROMO —
  * sin caja, sin borde punteado, sin fondo gris, sin líneas decorativas ni

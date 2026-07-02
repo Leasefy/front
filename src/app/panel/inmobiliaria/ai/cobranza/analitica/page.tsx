@@ -8,7 +8,7 @@ import { PhoneCall } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { EmptyState } from '@/components/data-display/EmptyState'
-// SampleDataWatermark is used inside widget components (37-08, 37-09, 37-10).
+// Widgets render an honest EmptyState when the agent has no real data — never sample data.
 import { useCobranzaAnalytics } from '@/lib/hooks/cobranza/use-cobranza-analytics'
 import { RecoveryRateChart }      from '@/components/inmobiliaria/cobranza/RecoveryRateChart'
 import { TopObjectionsTable }     from '@/components/inmobiliaria/cobranza/TopObjectionsTable'

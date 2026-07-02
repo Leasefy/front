@@ -38,8 +38,8 @@ export default function CostosPage() {
   } = useCostos()
 
   // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
-  // per-section table skeleton + inline empty prose preserved below; no EmptyState since
-  // costos uses Phase 35 SampleDataWatermark semantics — no "truly nothing" zero state).
+  // per-section table skeleton + inline empty prose preserved below; no full-page EmptyState
+  // because costos always has section structure — empty sections show honest inline prose).
   if (isLoadingSummary && !summaryData) return <PageSkeleton variant="dashboard" />
 
   // Derive table rows by joining costSources registry labels with source totals

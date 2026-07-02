@@ -4,7 +4,7 @@
  * Tests for three render branches:
  *   1. populated=true → SVG chart rendered
  *   2. populated=false + reason='agency-gate' → NoDataYetBadge (no SVG)
- *   3. populated=false + reason='insufficient-buckets' → SampleDataWatermark + SVG
+ *   3. populated=false + reason='insufficient-buckets' → EmptyState (no fake data)
  *
  * NOTE: @testing-library/react is not installed in this project.
  * Uses createRoot + act pattern (same as Mask.test.tsx baseline).
@@ -42,18 +42,7 @@ vi.mock('@/components/data-display/no-data-yet-badge', () => ({
     React.createElement('div', { 'data-testid': 'no-data-yet-badge' }, reason),
 }))
 
-// Mock SampleDataWatermark
-vi.mock('@/components/data-display/SampleDataWatermark', () => ({
-  SampleDataWatermark: ({ children, show }: { children: React.ReactNode; show: boolean }) =>
-    React.createElement(
-      'div',
-      { role: show ? 'note' : undefined, 'data-testid': 'sample-data-watermark', 'data-show': String(show) },
-      children
-    ),
-}))
-
 import { RecoveryRateChart } from './RecoveryRateChart'
-import { STUB_RECOVERY_RATE } from '@/lib/fixtures/cobranza-analytics-stub'
 
 // Minimal populated fixture — 3 rows for two bucket_dates × stages
 const POPULATED_ROWS = [
@@ -132,7 +121,7 @@ describe('<RecoveryRateChart>', () => {
     expect(container.querySelector('svg')).toBeNull()
   })
 
-  it('renders SampleDataWatermark (role=note) AND SVG when populated=false + reason=insufficient-buckets', () => {
+  it('renders EmptyState (no chart, no watermark) when populated=false + reason=insufficient-buckets', () => {
     act(() => {
       root.render(
         React.createElement(RecoveryRateChart, {
@@ -141,12 +130,8 @@ describe('<RecoveryRateChart>', () => {
         })
       )
     })
-    // SampleDataWatermark mock renders role="note" when show=true
-    const watermark = container.querySelector('[role="note"]')
-    expect(watermark).not.toBeNull()
-    // Stub data renders behind the watermark — SVG should be present
-    expect(container.querySelector('svg')).not.toBeNull()
-    // Sanity: STUB_RECOVERY_RATE has rows
-    expect(STUB_RECOVERY_RATE.rows.length).toBeGreaterThan(0)
+    // No sample-data watermark and no recharts chart — honest empty state instead
+    expect(container.querySelector('[role="note"]')).toBeNull()
+    expect(container.querySelector('[data-testid="line-chart"]')).toBeNull()
   })
 })

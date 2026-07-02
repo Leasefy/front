@@ -4,7 +4,7 @@
  * Tests for HeatmapGrid24x7 component:
  *   1. populated=true + 168-cell array → screen.getAllByRole('gridcell').length === 168
  *   2. first cell aria-label includes hour "0", day name, call count, and percentage
- *   3. populated=false + reason='insufficient-heatmap' → SampleDataWatermark present
+ *   3. populated=false + reason='insufficient-heatmap' → EmptyState (honest empty)
  *   4. populated=false + reason='agency-gate' → container empty (returns null)
  *   5. cell with call_count=0 renders with aria-label containing "0"
  *
@@ -21,16 +21,6 @@ void React // keep import alive under "jsx": "preserve"
 // Mock i18n — expose locale for day-label selection
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
-}))
-
-// Mock SampleDataWatermark
-vi.mock('@/components/data-display/SampleDataWatermark', () => ({
-  SampleDataWatermark: ({ children, show }: { children: React.ReactNode; show: boolean }) =>
-    React.createElement(
-      'div',
-      { role: show ? 'note' : undefined, 'data-testid': 'sample-data-watermark', 'data-show': String(show) },
-      children
-    ),
 }))
 
 import { HeatmapGrid24x7 } from './HeatmapGrid24x7'
@@ -93,7 +83,7 @@ describe('<HeatmapGrid24x7>', () => {
     expect(firstLabel).toMatch(/Dom|Lun|Mar|Mié|Jue|Vie|Sáb|Sun|Mon|Tue|Wed|Thu|Fri|Sat/)
   })
 
-  it('renders SampleDataWatermark (role=note) when populated=false + reason=insufficient-heatmap', () => {
+  it('renders EmptyState (no watermark, no grid cells) when populated=false + reason=insufficient-heatmap', () => {
     act(() => {
       root.render(
         React.createElement(HeatmapGrid24x7, {
@@ -101,11 +91,10 @@ describe('<HeatmapGrid24x7>', () => {
         })
       )
     })
-    const watermark = container.querySelector('[role="note"]')
-    expect(watermark).not.toBeNull()
-    // Stub data renders cells behind the watermark
-    const cells = container.querySelectorAll('[role="gridcell"]')
-    expect(cells.length).toBe(168)
+    // Honest empty state — no sample-data watermark, no fake grid
+    expect(container.querySelector('[role="note"]')).toBeNull()
+    expect(container.querySelectorAll('[role="gridcell"]')).toHaveLength(0)
+    expect(container.textContent).toContain('Sin datos suficientes todavía')
   })
 
   it('renders nothing when populated=false + reason=agency-gate', () => {

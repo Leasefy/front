@@ -9,7 +9,7 @@
  *
  * Three render branches:
  *   A — agency-gate → NoDataYetBadge
- *   B — insufficient-buckets or other populated=false → SampleDataWatermark + stub chart
+ *   B — insufficient-buckets or other populated=false → EmptyState (honest empty, never stub chart)
  *   C — populated=true → real data chart
  *
  * D-37-01: Dual-axis single LineChart layout (pct_n left, pct_cop right) is
@@ -27,9 +27,9 @@ import {
   Legend,
 } from 'recharts';
 import { useI18n } from '@/lib/i18n';
+import { ChartLine } from '@phosphor-icons/react';
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge';
-import { SampleDataWatermark } from '@/components/data-display/SampleDataWatermark';
-import { STUB_RECOVERY_RATE } from '@/lib/fixtures/cobranza-analytics-stub';
+import { EmptyState } from '@/components/data-display/EmptyState';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -102,12 +102,20 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
     );
   }
 
-  // Branch B / C — stub or real data
-  const sourceRows: RecoveryRateRow[] = data.populated ? data.rows : STUB_RECOVERY_RATE.rows;
-  const showWatermark = !data.populated;
+  // Branch B — no real data yet
+  if (!data.populated) {
+    return (
+      <EmptyState
+        icon={ChartLine}
+        title={t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
+        description="Sin datos suficientes todavía"
+      />
+    );
+  }
 
-  const stages = Array.from(new Set(sourceRows.map((r) => r.stage))).sort();
-  const pivotedData = pivotRows(sourceRows);
+  // Branch C — real data
+  const stages = Array.from(new Set(data.rows.map((r) => r.stage))).sort();
+  const pivotedData = pivotRows(data.rows);
 
   const chart = (
     <ResponsiveContainer width="100%" height={220}>
@@ -160,9 +168,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
       <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
       </p>
-      <SampleDataWatermark show={showWatermark}>
-        {chart}
-      </SampleDataWatermark>
+      {chart}
     </div>
   );
 }

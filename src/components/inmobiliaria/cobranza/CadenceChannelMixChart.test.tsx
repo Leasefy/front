@@ -4,7 +4,7 @@
  * Tests for three render branches:
  *   1. populated=true → SVG chart rendered
  *   2. populated=false + reason='agency-gate' → container empty (returns null)
- *   3. populated=false + reason='insufficient-channel-mix' → SampleDataWatermark present
+ *   3. populated=false + reason='insufficient-channel-mix' → EmptyState (honest empty)
  *   4. populated=true + 2 channels → x-axis tick count = 2
  *
  * NOTE: @testing-library/react is not installed in this project.
@@ -35,16 +35,6 @@ vi.mock('recharts', () => ({
 // Mock i18n — expose locale for day-label selection
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
-}))
-
-// Mock SampleDataWatermark
-vi.mock('@/components/data-display/SampleDataWatermark', () => ({
-  SampleDataWatermark: ({ children, show }: { children: React.ReactNode; show: boolean }) =>
-    React.createElement(
-      'div',
-      { role: show ? 'note' : undefined, 'data-testid': 'sample-data-watermark', 'data-show': String(show) },
-      children
-    ),
 }))
 
 import { CadenceChannelMixChart } from './CadenceChannelMixChart'
@@ -94,7 +84,7 @@ describe('<CadenceChannelMixChart>', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('renders SampleDataWatermark (role=note) when populated=false + reason=insufficient-channel-mix', () => {
+  it('renders EmptyState (no watermark) when populated=false + reason=insufficient-channel-mix', () => {
     act(() => {
       root.render(
         React.createElement(CadenceChannelMixChart, {
@@ -102,10 +92,9 @@ describe('<CadenceChannelMixChart>', () => {
         })
       )
     })
-    const watermark = container.querySelector('[role="note"]')
-    expect(watermark).not.toBeNull()
-    // Stub data renders a chart behind the watermark
-    expect(container.querySelector('svg')).not.toBeNull()
+    // Honest empty state — no sample-data watermark
+    expect(container.querySelector('[role="note"]')).toBeNull()
+    expect(container.textContent).toContain('Sin datos suficientes todavía')
   })
 
   it('renders chart with 2 pivot rows (one per channel) when populated=true with voice + whatsapp', () => {

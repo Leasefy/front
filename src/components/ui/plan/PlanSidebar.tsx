@@ -187,7 +187,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
           )}
         >
           <Icon
-            weight={(isActive || isChildActive) ? 'fill' : 'regular'}
+            weight={(isActive || isChildActive) ? 'duotone' : 'regular'}
             className={cn(
               'w-[18px] h-[18px] stroke-[1.5px]',
               (isActive || isChildActive) ? 'text-primary' : 'text-plan-muted'
@@ -241,7 +241,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         )}
       >
         <Icon
-          weight={isActive ? 'fill' : 'regular'}
+          weight={isActive ? 'duotone' : 'regular'}
           className={cn('w-[18px] h-[18px]', isActive ? 'text-primary' : 'text-fg-muted')}
         />
       </Link>
@@ -255,7 +255,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
   const row = (
     <Link href={item.href} legacyBehavior passHref>
       <SidebarItem
-        icon={<Icon weight={isActive ? 'fill' : 'regular'} className="w-[18px] h-[18px]" />}
+        icon={<Icon weight={isActive ? 'duotone' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-primary')} />}
         label={item.label}
         active={isActive}
         count={item.badge !== undefined && item.badge > 0 ? item.badge : undefined}

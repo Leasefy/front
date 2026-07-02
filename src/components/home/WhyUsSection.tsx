@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { MonoLabel } from "@leasefy/cadence";
 import { SectionLabel } from "@/components/ui/section-label";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
@@ -52,8 +53,8 @@ function StatCard({ stat, index }: { stat: typeof stats[number]; index: number }
       style={{ border: "1px solid rgba(0,0,0,0.06)" }}
     >
       {/* Icon top-right — subtle */}
-      <div className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-foreground/[0.03] group-hover:bg-[#EEF1FF] transition-colors duration-300">
-        <Icon className="w-3.5 h-3.5 text-foreground/20 group-hover:text-[#1A40FF] transition-colors duration-300" strokeWidth={1.5} />
+      <div className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-foreground/[0.03] group-hover:bg-accent-soft transition-colors duration-300">
+        <Icon className="w-3.5 h-3.5 text-foreground/20 group-hover:text-primary transition-colors duration-300" strokeWidth={1.5} />
       </div>
 
       <div>
@@ -138,8 +139,8 @@ export function WhyUsSection() {
               className="absolute top-6 right-6 md:top-8 md:right-8"
             >
               <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-white/50 px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-md bg-[#EEF1FF] flex items-center justify-center">
-                  <Lightning className="w-4 h-4 text-[#1A40FF]" />
+                <div className="w-8 h-8 rounded-md bg-accent-soft flex items-center justify-center">
+                  <Lightning className="w-4 h-4 text-primary" />
                 </div>
                 <div>
                   <p className="text-[12px] font-medium text-foreground">Cobro Automatizado</p>
@@ -171,9 +172,9 @@ export function WhyUsSection() {
             <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
               <div className="flex items-center gap-2 mb-3">
                 <span className="h-1 w-1 rounded-full bg-white/50" />
-                <span className="text-[11px] font-mono font-normal text-white/60 tracking-wide uppercase">
+                <MonoLabel className="text-[11px] font-normal text-white/60 tracking-wide">
                   La plataforma de arriendos de Colombia
-                </span>
+                </MonoLabel>
               </div>
               <h3 className="text-[1.5rem] md:text-[2rem] font-heading font-light text-white leading-[1.2] tracking-[-0.02em] max-w-md mb-3">
                 Arrienda sin pagar comisiones innecesarias

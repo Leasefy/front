@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   MagnifyingGlass,
   Funnel,
   SortAscending,
   SortDescending,
-  CaretDown,
   Buildings,
   User,
   Warning,
@@ -21,12 +20,32 @@ import {
   Export,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListSeparator,
+} from '@/components/ui/dropdown-menu';
+import { IconButton, Chip, SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 type SortField = 'name' | 'propertyCount' | 'totalMonthlyRent' | 'pendingBalance' | 'lastPaymentDate';
 type SortDirection = 'asc' | 'desc';
+type TypeFilter = 'all' | 'person' | 'company';
 
 interface PropietarioTableProps {
   propietarios: Propietario[];
@@ -52,9 +71,7 @@ export function PropietarioTable({
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPending, setFilterPending] = useState(false);
-  const [filterType, setFilterType] = useState<'all' | 'person' | 'company'>('all');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [filterType, setFilterType] = useState<TypeFilter>('all');
 
   // Filter and sort propietarios
   const filteredPropietarios = useMemo(() => {
@@ -113,6 +130,25 @@ export function PropietarioTable({
 
   const SortIcon = sortDirection === 'asc' ? SortAscending : SortDescending;
 
+  const SortableHeader = ({
+    field,
+    children,
+  }: {
+    field: SortField;
+    children: React.ReactNode;
+  }) => (
+    <TableHead className="text-left p-4">
+      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      <button
+        onClick={() => handleSort(field)}
+        className="flex items-center gap-2 hover:text-foreground"
+      >
+        {children}
+        {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
+      </button>
+    </TableHead>
+  );
+
   const activeFiltersCount = [filterPending, filterType !== 'all'].filter(Boolean).length;
 
   return (
@@ -123,90 +159,82 @@ export function PropietarioTable({
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+            <Input
               type="text"
               placeholder={t('inmobiliaria.propietario.table.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+              className="w-full pl-10 pr-4"
             />
             {searchQuery && (
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={<X className="w-4 h-4" />}
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+                aria-label={t('inmobiliaria.propietario.table.clear')}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2"
+              />
             )}
           </div>
 
           {/* Export */}
           {onExport && (
-            <button
+            <Button
+              variant="secondary"
+              hideArrow
               onClick={onExport}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-all font-medium"
+              className="gap-2"
             >
               <Export className="w-4 h-4" />
               <span className="text-sm">{t('inmobiliaria.propietario.table.export')}</span>
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Row 2: Inline Filters */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Type Filter Tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-muted">
-            {[
+          <SegmentedControl<TypeFilter>
+            value={filterType}
+            onChange={setFilterType}
+            options={[
               { value: 'all', label: t('inmobiliaria.propietario.table.all') },
               { value: 'person', label: t('inmobiliaria.propietario.table.person') },
               { value: 'company', label: t('inmobiliaria.propietario.table.company') },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setFilterType(option.value as typeof filterType)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                  filterType === option.value
-                    ? 'bg-background text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+            ]}
+          />
 
           {/* Separator */}
           <div className="hidden sm:block w-px h-6 bg-border" />
 
           {/* Pending Balance Toggle */}
-          <button
+          <Chip
+            selected={filterPending}
+            icon={<Warning className="w-4 h-4" />}
             onClick={() => setFilterPending(!filterPending)}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
-              filterPending
-                ? 'bg-warning text-white border-warning/30'
-                : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground'
-            )}
+            aria-pressed={filterPending}
           >
-            <Warning className="w-4 h-4" />
             {t('inmobiliaria.propietario.table.withPendingBalance')}
-          </button>
+          </Chip>
 
           {/* Clear Filters */}
           {activeFiltersCount > 0 && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={() => {
                 setFilterPending(false);
                 setFilterType('all');
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-warning/30 bg-warning-soft text-warning text-sm font-medium hover:bg-warning-soft transition-colors"
+              className="gap-1.5 text-warning"
             >
               <Funnel className="w-4 h-4" weight="fill" />
               {t('inmobiliaria.propietario.table.clear')}
               <X className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           )}
 
           {/* Results Count */}
@@ -218,58 +246,18 @@ export function PropietarioTable({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="text-left p-4">
-                <button
-                  onClick={() => handleSort('name')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  {t('inmobiliaria.propietario.table.owner')}
-                  {sortField === 'name' && <SortIcon className="w-3.5 h-3.5" />}
-                </button>
-              </th>
-              <th className="text-left p-4">
-                <button
-                  onClick={() => handleSort('propertyCount')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  {t('inmobiliaria.propietario.table.properties')}
-                  {sortField === 'propertyCount' && <SortIcon className="w-3.5 h-3.5" />}
-                </button>
-              </th>
-              <th className="text-left p-4">
-                <button
-                  onClick={() => handleSort('totalMonthlyRent')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  {t('inmobiliaria.propietario.table.monthlyRent')}
-                  {sortField === 'totalMonthlyRent' && <SortIcon className="w-3.5 h-3.5" />}
-                </button>
-              </th>
-              <th className="text-left p-4">
-                <button
-                  onClick={() => handleSort('pendingBalance')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  {t('inmobiliaria.propietario.table.pending')}
-                  {sortField === 'pendingBalance' && <SortIcon className="w-3.5 h-3.5" />}
-                </button>
-              </th>
-              <th className="text-left p-4">
-                <button
-                  onClick={() => handleSort('lastPaymentDate')}
-                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  {t('inmobiliaria.propietario.table.lastPayment')}
-                  {sortField === 'lastPaymentDate' && <SortIcon className="w-3.5 h-3.5" />}
-                </button>
-              </th>
-              <th className="w-12 p-4"></th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="min-w-[800px]">
+          <TableHeader>
+            <TableRow className="border-b border-border bg-muted/30">
+              <SortableHeader field="name">{t('inmobiliaria.propietario.table.owner')}</SortableHeader>
+              <SortableHeader field="propertyCount">{t('inmobiliaria.propietario.table.properties')}</SortableHeader>
+              <SortableHeader field="totalMonthlyRent">{t('inmobiliaria.propietario.table.monthlyRent')}</SortableHeader>
+              <SortableHeader field="pendingBalance">{t('inmobiliaria.propietario.table.pending')}</SortableHeader>
+              <SortableHeader field="lastPaymentDate">{t('inmobiliaria.propietario.table.lastPayment')}</SortableHeader>
+              <TableHead className="w-12 p-4" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredPropietarios.map((propietario, index) => {
               const isCompany = propietario.documentType === 'NIT';
               const hasPending = propietario.pendingBalance > 0;
@@ -284,13 +272,13 @@ export function PropietarioTable({
                   className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
                 >
                   {/* Propietario */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
                           'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
                           isCompany
-                            ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+                            ? 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
                             : 'bg-primary-soft text-primary'
                         )}
                       >
@@ -305,10 +293,10 @@ export function PropietarioTable({
                         </p>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Properties */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div>
                       <span className="font-semibold text-foreground tabular-nums">
                         {propietario.propertyCount}
@@ -317,31 +305,31 @@ export function PropietarioTable({
                         ({propietario.activeLeases} {t('inmobiliaria.propietario.table.rented')})
                       </span>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Monthly Rent */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span className="font-semibold text-foreground tabular-nums">
                       {formatCurrency(propietario.totalMonthlyRent)}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Pending Balance */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     {hasPending ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-warning-soft text-warning text-sm font-medium tabular-nums">
+                      <Badge variant="warning" className="gap-1 tabular-nums">
                         <Warning className="w-3.5 h-3.5" />
                         {formatCurrency(propietario.pendingBalance)}
-                      </span>
+                      </Badge>
                     ) : (
                       <span className="text-primary text-sm font-medium">
                         {t('inmobiliaria.propietario.table.upToDate')}
                       </span>
                     )}
-                  </td>
+                  </TableCell>
 
                   {/* Last Payment */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span className="text-muted-foreground text-sm tabular-nums">
                       {propietario.lastPaymentDate
                         ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
@@ -351,89 +339,63 @@ export function PropietarioTable({
                           })
                         : '—'}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Actions */}
-                  <td className="p-4">
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuId(openMenuId === propietario.id ? null : propietario.id);
-                        }}
-                        className="p-2 rounded-md hover:bg-muted transition-colors"
-                      >
-                        <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
-                      </button>
-
-                      <AnimatePresence>
-                        {openMenuId === propietario.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card z-10"
+                  <TableCell className="p-4">
+                    <DropdownList>
+                      <DropdownListTrigger asChild>
+                        <IconButton
+                          variant="ghost"
+                          size="sm"
+                          icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="Acciones"
+                        />
+                      </DropdownListTrigger>
+                      <DropdownListContent align="end" className="w-48">
+                        <DropdownListItem onSelect={() => onView(propietario)}>
+                          <Eye className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.propietario.table.viewDetail')}</span>
+                        </DropdownListItem>
+                        <DropdownListItem onSelect={() => onEdit(propietario)}>
+                          <PencilSimple className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.propietario.table.edit')}</span>
+                        </DropdownListItem>
+                        <DropdownListItem asChild>
+                          <a
+                            href={`mailto:${propietario.email}`}
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onView(propietario);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.propietario.table.viewDetail')}</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onEdit(propietario);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                            >
-                              <PencilSimple className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.propietario.table.edit')}</span>
-                            </button>
-                            <a
-                              href={`mailto:${propietario.email}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                            >
-                              <Envelope className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
-                            </a>
-                            <a
-                              href={`tel:${propietario.phone}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                            >
-                              <Phone className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
-                            </a>
-                            <div className="h-px bg-border my-1" />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(propietario);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-danger hover:bg-danger-soft transition-colors"
-                            >
-                              <TrashSimple className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.propietario.table.delete')}</span>
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </td>
+                            <Envelope className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
+                          </a>
+                        </DropdownListItem>
+                        <DropdownListItem asChild>
+                          <a
+                            href={`tel:${propietario.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Phone className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
+                          </a>
+                        </DropdownListItem>
+                        <DropdownListSeparator />
+                        <DropdownListItem
+                          onSelect={() => onDelete(propietario)}
+                          className="text-danger"
+                        >
+                          <TrashSimple className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.propietario.table.delete')}</span>
+                        </DropdownListItem>
+                      </DropdownListContent>
+                    </DropdownList>
+                  </TableCell>
                 </motion.tr>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         {/* Empty State */}
         {filteredPropietarios.length === 0 && (

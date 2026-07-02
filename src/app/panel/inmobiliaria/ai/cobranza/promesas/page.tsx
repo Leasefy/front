@@ -21,7 +21,7 @@
  * "Próximamente" deshabilitado. El seguimiento/recontacto real se hace desde el
  * detalle del deudor. Nunca se auto-rechaza, escala ni presiona.
  *
- * Estilo: contrato DS 2026-06-16 — PageGuard module="cobranza", MigaDePan,
+ * Estilo: contrato DS 2026-06-16 — PageGuard module="cobranza",
  * SegmentedControl para el filtro por estado, tonos por token.
  */
 
@@ -35,10 +35,9 @@ import {
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { SegmentedControl } from '@leasefy/ui'
+import { Button, Spinner } from '@/components/ui'
+import { SegmentedControl } from '@leasefy/cadence'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
 import {
   PromesaCard,
@@ -118,16 +117,6 @@ function PromesasContent() {
   const header = (
     <header className="flex items-start justify-between gap-4 flex-wrap">
       <div className="space-y-1">
-        <MigaDePan
-          backHref={BASE}
-          icon={Handshake}
-          className="mb-2"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-            { label: 'Promesas de pago' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">
           Promesas de pago
         </h1>
@@ -156,7 +145,7 @@ function PromesasContent() {
       <main className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" />
         </div>
       </main>
     )

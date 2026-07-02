@@ -1,5 +1,5 @@
 /**
- * Bridge preset — exposes the @leasefy/ui design-system theme inside mvp.
+ * Bridge preset — exposes the @leasefy/cadence design-system theme inside mvp.
  *
  * The DS preset is consumed ALMOST whole: where keys collide (primary, ring,
  * border, success, warning, blue, shadcn aliases…) mvp's own config wins by
@@ -14,11 +14,11 @@
  *  - darkMode: mvp manages its own strategy.
  *
  * The CSS vars the DS classes resolve to live in src/app/globals.css
- * ("@leasefy/ui bridge" block).
+ * ("@leasefy/cadence bridge" block).
  */
 // @ts-ignore — the preset ships as .ts; Tailwind loads it via jiti at build
 // time, TS has no declarations for it and doesn't need them here.
-import dsPreset from "@leasefy/ui/tailwind-preset";
+import dsPreset from "@leasefy/cadence/tailwind-preset";
 
 const preset = JSON.parse(JSON.stringify(dsPreset)) as Record<string, any>;
 delete preset.darkMode;

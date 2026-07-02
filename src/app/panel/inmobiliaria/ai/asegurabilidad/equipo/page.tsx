@@ -26,12 +26,11 @@ import {
   Scales,
   Lightbulb,
   PaperPlaneTilt,
-  UsersThree,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
+import { MonoLabel } from '@leasefy/cadence'
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.asegurabilidad.equipo'
@@ -167,9 +166,9 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
 
       {/* Qué hace */}
       <div className="space-y-2">
-        <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+        <MonoLabel>
           {tf(`${NS}.queHace`, 'Qué hace')}
-        </p>
+        </MonoLabel>
         <ul role="list" className="space-y-1.5">
           {node.bulletsFb.map((fb, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground leading-snug">
@@ -185,9 +184,9 @@ function FlowNode({ node, tf }: { node: NodeDef; tf: (k: string, fb: string) => 
 
       {/* Resultados — EMPTY STATE ('—'), la métrica real necesita backend */}
       <div className="space-y-2 mt-auto">
-        <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+        <MonoLabel>
           {tf(`${NS}.resultados`, 'Resultados')}
-        </p>
+        </MonoLabel>
         <div className="grid grid-cols-2 gap-2">
           {node.metricsFb.map((fb, i) => (
             <div
@@ -214,9 +213,9 @@ function FlowConnector({ label }: { label?: string }) {
     <div className="flex flex-col items-center gap-1 py-1" aria-hidden="true">
       <ArrowDown className="w-5 h-5 text-muted-foreground/60" weight="bold" />
       {label ? (
-        <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground/70">
+        <MonoLabel className="text-muted-foreground/70">
           {label}
-        </span>
+        </MonoLabel>
       ) : null}
     </div>
   )
@@ -235,19 +234,6 @@ function EquipoAsegurabilidad() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="min-w-0">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/asegurabilidad"
-          icon={UsersThree}
-          className="mb-2"
-          crumbs={[
-            { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-            {
-              label: tf('inmobiliaria.ai.workspace.agente.cotizador', 'Asegurabilidad'),
-              href: '/panel/inmobiliaria/ai/asegurabilidad',
-            },
-            { label: tf(`${NS}.title`, 'Equipo IA') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
           {tf(`${NS}.title`, 'Equipo IA')}
         </h1>

@@ -15,6 +15,19 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui';
 import type {
   ReminderLogEntry,
   ReminderType,
@@ -57,10 +70,10 @@ const TYPE_META: Record<
   'contract-expiry': {
     icon: FileText,
     label: 'Vencimiento contrato',
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    color: 'text-neutral-600 dark:text-neutral-300',
-    badgeBg: 'bg-neutral-100 dark:bg-neutral-800',
-    badgeText: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-surface-muted dark:bg-ink',
+    color: 'text-fg-muted dark:text-fg-subtle',
+    badgeBg: 'bg-surface-muted dark:bg-ink',
+    badgeText: 'text-fg-muted dark:text-fg-subtle',
   },
 };
 
@@ -70,14 +83,14 @@ const STATUS_META: Record<
 > = {
   sent: {
     label: 'Enviado',
-    bg: 'bg-neutral-700 dark:bg-neutral-600',
+    bg: 'bg-ink dark:bg-ink',
     text: 'text-white',
     dot: 'bg-success',
   },
   scheduled: {
     label: 'Programado',
-    bg: 'bg-neutral-200 dark:bg-neutral-700',
-    text: 'text-neutral-700 dark:text-neutral-200',
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg dark:text-white',
     dot: 'bg-primary',
   },
   failed: {
@@ -88,9 +101,9 @@ const STATUS_META: Record<
   },
   cancelled: {
     label: 'Cancelado',
-    bg: 'bg-neutral-300 dark:bg-neutral-700',
-    text: 'text-neutral-600 dark:text-neutral-300',
-    dot: 'bg-neutral-400',
+    bg: 'bg-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
+    dot: 'bg-muted',
   },
 };
 
@@ -164,8 +177,8 @@ export function ReminderLog({ entries }: ReminderLogProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <ClockCounterClockwise className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+          <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+            <ClockCounterClockwise className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">
@@ -186,73 +199,79 @@ export function ReminderLog({ entries }: ReminderLogProps) {
         <Funnel className="w-4 h-4 text-muted-foreground shrink-0" />
 
         {/* Type filter */}
-        <select
+        <Select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as ReminderType | 'all')}
-          className={cn(
-            'h-8 px-3 text-xs font-medium rounded-md border border-border bg-background',
-            'focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-neutral-600',
-            'text-foreground'
-          )}
+          onValueChange={(v) => setTypeFilter(v as ReminderType | 'all')}
         >
-          <option value="all">
-            {tryTranslate('inmobiliaria.reminders.filterAllTypes', 'Todos los tipos')}
-          </option>
-          <option value="pre-payment">{TYPE_META['pre-payment'].label}</option>
-          <option value="overdue">{TYPE_META.overdue.label}</option>
-          <option value="escalation">{TYPE_META.escalation.label}</option>
-          <option value="contract-expiry">{TYPE_META['contract-expiry'].label}</option>
-        </select>
+          <SelectTrigger
+            className="h-8 w-auto gap-2 px-3 text-xs font-medium"
+            aria-label={tryTranslate('inmobiliaria.reminders.filterAllTypes', 'Todos los tipos')}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              {tryTranslate('inmobiliaria.reminders.filterAllTypes', 'Todos los tipos')}
+            </SelectItem>
+            <SelectItem value="pre-payment">{TYPE_META['pre-payment'].label}</SelectItem>
+            <SelectItem value="overdue">{TYPE_META.overdue.label}</SelectItem>
+            <SelectItem value="escalation">{TYPE_META.escalation.label}</SelectItem>
+            <SelectItem value="contract-expiry">{TYPE_META['contract-expiry'].label}</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Status filter */}
-        <select
+        <Select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as ReminderStatus | 'all')}
-          className={cn(
-            'h-8 px-3 text-xs font-medium rounded-md border border-border bg-background',
-            'focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-neutral-600',
-            'text-foreground'
-          )}
+          onValueChange={(v) => setStatusFilter(v as ReminderStatus | 'all')}
         >
-          <option value="all">
-            {tryTranslate('inmobiliaria.reminders.filterAllStatuses', 'Todos los estados')}
-          </option>
-          <option value="sent">{STATUS_META.sent.label}</option>
-          <option value="scheduled">{STATUS_META.scheduled.label}</option>
-          <option value="failed">{STATUS_META.failed.label}</option>
-          <option value="cancelled">{STATUS_META.cancelled.label}</option>
-        </select>
+          <SelectTrigger
+            className="h-8 w-auto gap-2 px-3 text-xs font-medium"
+            aria-label={tryTranslate('inmobiliaria.reminders.filterAllStatuses', 'Todos los estados')}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              {tryTranslate('inmobiliaria.reminders.filterAllStatuses', 'Todos los estados')}
+            </SelectItem>
+            <SelectItem value="sent">{STATUS_META.sent.label}</SelectItem>
+            <SelectItem value="scheduled">{STATUS_META.scheduled.label}</SelectItem>
+            <SelectItem value="failed">{STATUS_META.failed.label}</SelectItem>
+            <SelectItem value="cancelled">{STATUS_META.cancelled.label}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Desktop Table */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <Table className="min-w-[800px]">
+          <TableHeader>
+            <TableRow className="border-b border-border">
+              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {tryTranslate('inmobiliaria.reminders.colType', 'Tipo')}
-              </th>
-              <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {tryTranslate('inmobiliaria.reminders.colRecipient', 'Destinatario')}
-              </th>
-              <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {tryTranslate('inmobiliaria.reminders.colProperty', 'Inmueble')}
-              </th>
-              <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {tryTranslate('inmobiliaria.reminders.colDate', 'Fecha')}
-              </th>
-              <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {tryTranslate('inmobiliaria.reminders.colStatus', 'Estado')}
-              </th>
-              <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {tryTranslate('inmobiliaria.reminders.colChannel', 'Canal')}
-              </th>
-              <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {tryTranslate('inmobiliaria.reminders.colAmount', 'Monto')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredEntries.map((entry) => {
               const typeMeta = TYPE_META[entry.type];
               const statusMeta = STATUS_META[entry.status];
@@ -261,12 +280,12 @@ export function ReminderLog({ entries }: ReminderLogProps) {
               const ChannelIcon = channelMeta.icon;
 
               return (
-                <tr
+                <TableRow
                   key={entry.id}
                   className="border-b border-border/50 last:border-b-0 hover:bg-muted/30 transition-colors"
                 >
                   {/* Type */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-2.5">
                       <div
                         className={cn(
@@ -286,10 +305,10 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                         {typeMeta.label}
                       </span>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Recipient */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate max-w-[160px]">
                         {entry.recipientName}
@@ -305,24 +324,24 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                         {entry.recipientType === 'tenant' ? 'Inquilino' : 'Propietario'}
                       </span>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Property */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <p className="text-sm text-foreground truncate max-w-[180px]">
                       {entry.propertyTitle}
                     </p>
-                  </td>
+                  </TableCell>
 
                   {/* Date */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span className="text-sm text-muted-foreground whitespace-nowrap">
                       {formatDateShort(entry.scheduledAt)}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Status */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span
                       className={cn(
                         'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
@@ -333,20 +352,20 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                       <span className={cn('w-1.5 h-1.5 rounded-full', statusMeta.dot)} />
                       {statusMeta.label}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Channel */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-1.5">
                       <ChannelIcon className="w-4 h-4 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
                         {channelMeta.label}
                       </span>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Amount */}
-                  <td className="p-4 text-right">
+                  <TableCell className="p-4 text-right">
                     {entry.amount ? (
                       <span className="text-sm font-medium text-foreground">
                         {formatCOP(entry.amount)}
@@ -354,12 +373,12 @@ export function ReminderLog({ entries }: ReminderLogProps) {
                     ) : (
                       <span className="text-sm text-muted-foreground">&mdash;</span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Mobile Card List */}

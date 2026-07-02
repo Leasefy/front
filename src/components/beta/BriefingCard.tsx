@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Sparkle,
 } from '@phosphor-icons/react';
+import { Button, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { BriefingCardSkeleton } from './BetaSkeletons';
@@ -167,24 +168,23 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
 
             {/* Action button */}
             {section.actionLabel && section.actionContext && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onAction?.(section.id, section.actionContext!);
                 }}
                 className={cn(
-                  'inline-flex items-center gap-1.5',
-                  'px-2.5 py-1.5 rounded-md',
-                  'text-xs font-medium',
-                  'border',
-                  'transition-colors duration-150',
+                  'gap-1.5 px-2.5 py-1.5 h-auto rounded-md',
+                  'text-xs font-medium border',
                   actionBtnColor
                 )}
               >
                 <span>{section.actionLabel}</span>
                 <ArrowRight className="w-3 h-3" weight="bold" />
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -244,17 +244,10 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
             {formattedDate}
           </p>
           {briefing.isNew && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1',
-                'px-1.5 py-0.5 rounded-full',
-                'bg-primary-soft text-primary',
-                'text-[10px] font-semibold'
-              )}
-            >
+            <Badge variant="default" className="gap-1 px-1.5 py-0.5 text-[10px] font-semibold">
               <Sparkle className="w-2.5 h-2.5" weight="fill" />
               {t('beta.briefing.new')}
-            </span>
+            </Badge>
           )}
         </div>
         <p className="text-sm text-fg font-medium leading-snug">

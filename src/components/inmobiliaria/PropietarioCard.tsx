@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { User, Buildings, CurrencyDollar, Warning, CaretRight, Phone, Envelope } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Badge } from '@/components/ui/badge';
+import { IconButton } from '@leasefy/cadence';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -45,7 +47,7 @@ export function PropietarioCard({
           'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
           isCompany
             ? 'bg-muted text-muted-foreground'
-            : 'bg-primary-soft text-primary'
+            : 'bg-surface-brand text-primary'
         )}>
           {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
         </div>
@@ -107,10 +109,10 @@ export function PropietarioCard({
           </div>
         </div>
         {hasPendingBalance && (
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-warning-soft text-warning">
+          <Badge variant="warning" className="gap-1">
             <Warning className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">{t('inmobiliaria.propietarios.card.pendingBadge')}</span>
-          </div>
+            {t('inmobiliaria.propietarios.card.pendingBadge')}
+          </Badge>
         )}
       </div>
 
@@ -147,20 +149,22 @@ export function PropietarioCard({
       {/* Contact */}
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <div className="flex items-center gap-3">
-          <button
+          <IconButton
+            variant="solid"
+            size="md"
             onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${propietario.email}`; }}
-            className="p-2 rounded-md bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors"
             title={t('inmobiliaria.propietarios.card.sendEmail')}
-          >
-            <Envelope className="w-4 h-4" />
-          </button>
-          <button
+            aria-label={t('inmobiliaria.propietarios.card.sendEmail')}
+            icon={<Envelope className="w-4 h-4" />}
+          />
+          <IconButton
+            variant="solid"
+            size="md"
             onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${propietario.phone}`; }}
-            className="p-2 rounded-md bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors"
             title={t('inmobiliaria.propietarios.card.call')}
-          >
-            <Phone className="w-4 h-4" />
-          </button>
+            aria-label={t('inmobiliaria.propietarios.card.call')}
+            icon={<Phone className="w-4 h-4" />}
+          />
         </div>
         <div className="flex items-center gap-1 text-sm text-muted-foreground group-hover:text-primary transition-colors">
           {t('inmobiliaria.propietarios.card.viewDetail')}

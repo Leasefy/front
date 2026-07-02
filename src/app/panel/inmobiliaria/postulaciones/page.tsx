@@ -5,7 +5,9 @@ import { ClipboardText } from '@phosphor-icons/react'
 import { useAuth } from '@/lib/auth'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { ErrorState } from '@/components/ui/error-state'
-import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { StatusBadge } from '@leasefy/cadence'
 import {
   fetchFunnelApplications,
   shortApplicationRef,
@@ -55,8 +57,8 @@ export default function PostulacionesPage() {
       </header>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-24" role="status" aria-label="Cargando postulaciones">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 dark:border-neutral-600 border-t-transparent" />
+        <div className="flex items-center justify-center py-24">
+          <Spinner size="md" variant="muted" label="Cargando postulaciones" />
         </div>
       ) : error ? (
         <ErrorState
@@ -72,36 +74,36 @@ export default function PostulacionesPage() {
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Postulación</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3 font-medium">Puntaje</th>
-                <th className="px-4 py-3 font-medium">Evaluada</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Postulación</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Puntaje</TableHead>
+                <TableHead>Evaluada</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((a) => {
                 const v = VERDICT_CONFIG[a.verdict]
                 return (
-                  <tr key={a.applicationId || a.scoredAt} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 text-xs tabular-nums text-foreground">{shortApplicationRef(a.applicationId)}</td>
-                    <td className="px-4 py-3">
-                      <span className={cn('inline-flex rounded-full px-2.5 py-1 text-xs font-medium', v.className)}>
+                  <TableRow key={a.applicationId || a.scoredAt}>
+                    <TableCell className="text-xs tabular-nums text-foreground">{shortApplicationRef(a.applicationId)}</TableCell>
+                    <TableCell>
+                      <StatusBadge tone={a.verdict === 'approved' ? 'success' : 'warning'} dot={false}>
                         {v.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-foreground">
+                      </StatusBadge>
+                    </TableCell>
+                    <TableCell className="text-foreground">
                       {a.score !== null ? a.score : '—'}
                       {a.level ? <span className="ml-1 text-muted-foreground">· {a.level}</span> : null}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{formatScoredAt(a.scoredAt)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{formatScoredAt(a.scoredAt)}</TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, CaretLeft, Receipt, Prohibit, XCircle } from '@phosphor-icons/react';
+import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,10 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { Progress } from '@/components/ui/progress';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
 import type {
   BackendTenantPaymentRequest,
@@ -155,10 +159,10 @@ export default function PagosPage() {
       case 'CANCELLED':
         return {
           label: locale === 'es' ? 'Cancelado' : 'Cancelled',
-          color: 'bg-neutral-100 text-neutral-600',
+          color: 'bg-surface-muted text-fg-muted',
           icon: Prohibit,
-          iconBg: 'bg-neutral-100',
-          iconColor: 'text-neutral-500',
+          iconBg: 'bg-surface-muted',
+          iconColor: 'text-fg-muted',
         };
     }
   };
@@ -167,7 +171,7 @@ export default function PagosPage() {
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -193,10 +197,10 @@ export default function PagosPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
               {t('payments.title')}
             </h1>
-            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-fg-muted dark:text-fg-subtle">
               {t('payments.subtitle')}
             </p>
           </motion.header>
@@ -230,10 +234,10 @@ export default function PagosPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
             {t('payments.title')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
             {t('payments.subtitle')}
           </p>
         </motion.header>
@@ -247,40 +251,40 @@ export default function PagosPage() {
         >
           {/* Next Payment */}
           <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <CreditCard className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">{t('dashboard.nextPayment')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
               {formatCurrencyI18n(nextAmount)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">
               {daysUntil !== null ? t('dashboard.dueIn', { days: daysUntil }) : t('payments.noPayments')}
             </p>
           </div>
 
           {/* Total Paid */}
-          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <CurrencyDollar className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('payments.summary.totalPaid')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{t('payments.summary.totalPaid')}</p>
+            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
               {formatCurrencyI18n(totalPaid)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('payments.summary.thisYear')}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{t('payments.summary.thisYear')}</p>
           </div>
 
           {/* Pending */}
-          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <Calendar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <Calendar className="w-5 h-5 text-fg dark:text-fg-subtle" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('common.pending')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{t('common.pending')}</p>
+            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
               {formatCurrencyI18n(pendingAmount)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('payments.summary.nextDue')}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{t('payments.summary.nextDue')}</p>
           </div>
         </motion.div>
 
@@ -293,8 +297,8 @@ export default function PagosPage() {
             className="lg:col-span-2"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('payments.history')}</h2>
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">{allRequests.length} {t('nav.payments').toLowerCase()}</span>
+              <h2 className="text-xl font-semibold text-fg dark:text-white">{t('payments.history')}</h2>
+              <span className="text-sm text-fg-muted dark:text-fg-subtle">{allRequests.length} {t('nav.payments').toLowerCase()}</span>
             </div>
 
             {allRequests.length > 0 ? (
@@ -317,7 +321,7 @@ export default function PagosPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden"
                       >
                         <div className="flex items-center gap-4 p-4">
                           <div className={cn(
@@ -330,15 +334,15 @@ export default function PagosPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4">
                               <div>
-                                <h3 className="font-semibold text-neutral-900 dark:text-white">
+                                <h3 className="font-semibold text-fg dark:text-white">
                                   {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
                                 </h3>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
+                                <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
                                   {request.propertyTitle}
                                 </p>
                               </div>
                               <div className="text-right flex-shrink-0">
-                                <p className="text-lg font-bold text-neutral-900 dark:text-white">
+                                <p className="text-lg font-bold text-fg dark:text-white">
                                   {formatCurrencyI18n(request.amount)}
                                 </p>
                                 <span className={cn(
@@ -350,19 +354,21 @@ export default function PagosPage() {
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
-                              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-faint dark:border-border-strong">
+                              <span className="text-sm text-fg-muted dark:text-fg-subtle">
                                 {dateLabel}
                                 {request.bankName && <span className="ml-1">· {request.bankName}</span>}
                               </span>
                               {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
-                                <button
+                                <Button
+                                  variant="link"
+                                  size="sm"
                                   onClick={handlePayNow}
-                                  className="flex items-center gap-1 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium transition-colors"
+                                  className="h-auto gap-1 p-0"
                                 >
                                   {locale === 'es' ? 'Reintentar' : 'Retry'}
                                   <ArrowUpRight className="w-4 h-4" />
-                                </button>
+                                </Button>
                               )}
                             </div>
 
@@ -380,49 +386,12 @@ export default function PagosPage() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-6">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className={cn(
-                        'p-2 rounded-full transition-all',
-                        currentPage === 1
-                          ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
-                      )}
-                    >
-                      <CaretLeft className="w-5 h-5" />
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={cn(
-                            'w-10 h-10 rounded-full text-sm font-medium transition-all',
-                            currentPage === page
-                              ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                              : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
-                          )}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className={cn(
-                        'p-2 rounded-full transition-all',
-                        currentPage === totalPages
-                          ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
-                      )}
-                    >
-                      <CaretRight className="w-5 h-5" />
-                    </button>
+                  <div className="mt-6 flex justify-center">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
                   </div>
                 )}
               </>
@@ -464,25 +433,25 @@ export default function PagosPage() {
             )}
 
             {/* Quick Links */}
-            <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t('dashboard.quickActions')}</h3>
+            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+              <h3 className="font-semibold text-fg dark:text-white mb-4">{t('dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
                   { href: '/inquilino/documentos', icon: Receipt, label: locale === 'es' ? 'Ver recibos' : 'View receipts', desc: locale === 'es' ? 'Historial de comprobantes' : 'Receipt history' },
                   { href: '/inquilino/arriendo', icon: Buildings, label: t('nav.myRental'), desc: locale === 'es' ? 'Ver contrato actual' : 'View current contract' },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#2a2a2c] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
-                        <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-[#2a2a2c] transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
+                        <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                        <p className="text-sm font-medium text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                           {action.label}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
+                        <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">{action.desc}</p>
                       </div>
-                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors" />
+                      <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -541,18 +510,18 @@ function PeriodStatusCard({
     return (
       <div className="rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/12 border border-[#B7791F]/30 dark:border-[#B7791F]/40 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
             <Clock className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
           </div>
           <span className="text-sm text-[#B7791F] dark:text-[#D2992F] font-medium">
             {locale === 'es' ? 'Pago en verificación' : 'Payment in verification'}
           </span>
         </div>
-        <p className="text-3xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+        <p className="text-3xl font-bold tracking-tight mb-1 text-fg dark:text-white">
           {formatCurrency(amount)}
         </p>
-        <p className="text-neutral-600 dark:text-neutral-400 text-sm capitalize mb-4">{periodLabel}</p>
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+        <p className="text-fg-muted dark:text-fg-subtle text-sm capitalize mb-4">{periodLabel}</p>
+        <p className="text-sm text-fg dark:text-fg-subtle">
           {locale === 'es'
             ? 'Tu banco está verificando el pago. Vas a ver la confirmación cuando termine.'
             : 'Your bank is verifying the payment. You\'ll see the confirmation when it completes.'}
@@ -566,18 +535,18 @@ function PeriodStatusCard({
     return (
       <div className="rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/12 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
             <Check className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
           </div>
           <span className="text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
             {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
           </span>
         </div>
-        <p className="text-3xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+        <p className="text-3xl font-bold tracking-tight mb-1 text-fg dark:text-white">
           {formatCurrency(amount)}
         </p>
-        <p className="text-neutral-600 dark:text-neutral-400 text-sm capitalize mb-4">{periodLabel}</p>
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+        <p className="text-fg-muted dark:text-fg-subtle text-sm capitalize mb-4">{periodLabel}</p>
+        <p className="text-sm text-fg dark:text-fg-subtle">
           {locale === 'es'
             ? 'Tu pago de este mes ya está al día.'
             : 'You\'re up to date for this month.'}
@@ -590,7 +559,7 @@ function PeriodStatusCard({
   return (
     <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
           <CreditCard className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
         </div>
         <span className="text-sm text-[#1A40FF] dark:text-[#5570FF] font-medium">
@@ -606,33 +575,28 @@ function PeriodStatusCard({
         </div>
       )}
 
-      <p className="text-4xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+      <p className="text-4xl font-bold tracking-tight mb-1 text-fg dark:text-white">
         {formatCurrency(amount)}
       </p>
-      <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-6 truncate">
+      <p className="text-fg-muted dark:text-fg-subtle text-sm mb-6 truncate">
         {propertyTitle}
       </p>
 
       <div className="mb-4">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-neutral-500 dark:text-neutral-400">
+          <span className="text-fg-muted dark:text-fg-subtle">
             {locale === 'es' ? 'Progreso del mes' : 'Monthly progress'}
           </span>
-          <span className="text-neutral-900 dark:text-white font-medium">{progress}%</span>
+          <span className="text-fg dark:text-white font-medium">{progress}%</span>
         </div>
-        <div className="h-2 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#1A40FF] dark:bg-[#5570FF] rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <Progress value={progress} size="sm" />
       </div>
 
       <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
-        <span className="text-neutral-500 dark:text-neutral-400">
+        <span className="text-fg-muted dark:text-fg-subtle">
           {locale === 'es' ? 'Día de pago' : 'Payment day'}
         </span>
-        <span className="text-neutral-900 dark:text-white font-medium">
+        <span className="text-fg dark:text-white font-medium">
           {locale === 'es' ? `Día ${paymentDay}` : `Day ${paymentDay}`}
         </span>
       </div>
@@ -640,22 +604,19 @@ function PeriodStatusCard({
       {daysUntil !== null && (
         <div className="flex items-center justify-between text-sm mb-6">
           <span className={cn(
-            daysUntil <= 3 ? 'text-[#B7791F] dark:text-[#D2992F] font-medium' : 'text-neutral-500 dark:text-neutral-400'
+            daysUntil <= 3 ? 'text-[#B7791F] dark:text-[#D2992F] font-medium' : 'text-fg-muted dark:text-fg-subtle'
           )}>
             {daysUntil === 0 ? t('dashboard.dueToday') : t('dashboard.dueIn', { days: daysUntil })}
           </span>
         </div>
       )}
 
-      <button
-        onClick={onPay}
-        className="w-full py-3 bg-[#1A40FF] hover:opacity-90 text-white font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
-      >
+      <Button onClick={onPay} hideArrow className="w-full">
         {status === 'REJECTED'
           ? (locale === 'es' ? 'Reintentar pago' : 'Retry payment')
           : t('dashboard.payNow')}
         <ArrowUpRight className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   );
 }

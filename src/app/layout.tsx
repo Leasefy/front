@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { Ubuntu_Mono } from "next/font/google";
+import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -10,24 +9,20 @@ import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 
-// Leasefy DS (marca real): Satoshi — Regular (cuerpo) + Medium (títulos).
+// Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
 // Una sola familia para sans + heading; se mapea en globals.css.
-const satoshi = localFont({
-  variable: "--font-satoshi",
+const schibsted = Schibsted_Grotesk({
+  variable: "--font-schibsted",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
-  src: [
-    { path: "../../public/fonts/Satoshi-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../../public/fonts/Satoshi-Medium.woff2", weight: "500", style: "normal" },
-    { path: "../../public/fonts/Satoshi-Bold.woff2", weight: "700", style: "normal" },
-    { path: "../../public/fonts/Satoshi-Black.woff2", weight: "900", style: "normal" },
-  ],
 });
 
-// Ubuntu Mono — labels / tags / overlines (UPPERCASE)
-const ubuntuMono = Ubuntu_Mono({
-  variable: "--font-mono",
+// JetBrains Mono — numerals / labels / tags / overlines (UPPERCASE)
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "600"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
@@ -114,7 +109,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`lenis ${satoshi.variable} ${ubuntuMono.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`lenis ${schibsted.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

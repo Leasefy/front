@@ -7,7 +7,7 @@
  *
  * Wedge muting is driven by actual cost SUM (not the populated flag):
  *   - anthropic: electric-blue (#1A40FF), always full opacity
- *   - carrier_api: blue-tint (#8A9CFF), fillOpacity 0.4 when SUM === 0 else 1
+ *   - carrier_api: blue-tint (#7B95FF), fillOpacity 0.4 when SUM === 0 else 1
  *   - sekure_commission: same as carrier_api
  *   - datacredito: neutral-300 (#d4d4d4), always muted (fillOpacity 0.4)
  *
@@ -60,7 +60,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
 
   if (isLoading) {
     return (
-      <div className="h-[260px] w-full rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+      <div className="h-[260px] w-full rounded bg-surface-muted dark:bg-ink animate-pulse" />
     )
   }
 
@@ -96,7 +96,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('carrier_api'),
       value: totalSum === 0 ? 0 : carrierApiTotal,
-      fill: '#8A9CFF',   // blue-tint
+      fill: '#7B95FF',   // blue-tint
       fillOpacity: carrierApiTotal === 0 ? 0.4 : 1,  // muted when SUM=0
       sourceKey: 'carrier_api',
       isMuted: carrierApiTotal === 0,
@@ -105,7 +105,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
     {
       name: findLabel('sekure_commission'),
       value: totalSum === 0 ? 0 : sekureCommissionTotal,
-      fill: '#8A9CFF',   // blue-tint
+      fill: '#7B95FF',   // blue-tint
       fillOpacity: sekureCommissionTotal === 0 ? 0.4 : 1,
       sourceKey: 'sekure_commission',
       isMuted: sekureCommissionTotal === 0,
@@ -139,7 +139,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
                 <TooltipProvider>
                   <ShadcnTooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-neutral-400 cursor-help underline decoration-dotted">
+                      <span className="text-fg-subtle cursor-help underline decoration-dotted">
                         {entry.value}
                       </span>
                     </TooltipTrigger>
@@ -160,7 +160,7 @@ export function CostSourcePieChart({ sources, costSources, isLoading = false }: 
                 className="inline-block h-2 w-2 rounded-full flex-shrink-0"
                 style={{ background: entry.color }}
               />
-              <span className="text-neutral-700 dark:text-neutral-300">{entry.value}</span>
+              <span className="text-fg dark:text-fg-subtle">{entry.value}</span>
             </li>
           )
         })}

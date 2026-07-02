@@ -17,6 +17,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 
@@ -49,8 +50,8 @@ const EVENT_STYLES: Record<TimelineEventType, { bg: string; text: string; icon: 
     icon: FileText,
   },
   agent_assigned: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
     icon: UserPlus,
   },
   property_published: {
@@ -64,8 +65,8 @@ const EVENT_STYLES: Record<TimelineEventType, { bg: string; text: string; icon: 
     icon: CalendarCheck,
   },
   visit_completed: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
     icon: Eye,
   },
   candidate_approved: {
@@ -254,15 +255,15 @@ export function ConsignacionTimeline({
   const hasMoreEvents = events.length > maxVisibleItems;
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="px-5 py-4 border-b border-faint dark:border-strong">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Clock className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+          <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+            <Clock className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
           </div>
-          <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.consignaciones.timeline.title')}</h3>
-          <span className="ml-auto text-sm text-neutral-500 dark:text-neutral-400">
+          <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.consignaciones.timeline.title')}</h3>
+          <span className="ml-auto text-sm text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.timeline.eventsCount', { count: events.length })}
           </span>
         </div>
@@ -272,7 +273,7 @@ export function ConsignacionTimeline({
       <div className="p-5">
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-4 top-0 bottom-0 w-px bg-neutral-200 dark:bg-neutral-700" />
+          <div className="absolute left-4 top-0 bottom-0 w-px bg-surface-muted dark:bg-ink" />
 
           {/* Events */}
           <div className="space-y-4">
@@ -301,23 +302,23 @@ export function ConsignacionTimeline({
                     </div>
 
                     {/* Content */}
-                    <div className="p-3 rounded-xl bg-neutral-50 dark:bg-[#141416]">
+                    <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-medium text-neutral-900 dark:text-white text-sm">
+                        <h4 className="font-medium text-fg dark:text-white text-sm">
                           {event.title}
                         </h4>
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
+                        <span className="text-xs text-fg-muted dark:text-fg-subtle shrink-0">
                           {fmtRelDate(event.date)}
                         </span>
                       </div>
 
                       {event.description && (
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+                        <p className="text-sm text-fg-muted dark:text-fg-subtle mb-2">
                           {event.description}
                         </p>
                       )}
 
-                      <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+                      <div className="flex items-center gap-3 text-xs text-fg-muted dark:text-fg-subtle">
                         <span>{fmtDate(event.date)}</span>
                         {event.actor && (
                           <>
@@ -339,9 +340,13 @@ export function ConsignacionTimeline({
 
         {/* Show More / Less */}
         {hasMoreEvents && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            hideArrow
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-sm text-primary hover:text-primary dark:hover:text-primary font-medium"
+            aria-expanded={isExpanded}
+            className="w-full mt-4 gap-2 text-primary"
           >
             {isExpanded ? t('inmobiliaria.consignaciones.timeline.showLess') : t('inmobiliaria.consignaciones.timeline.showMoreEvents', { count: events.length - maxVisibleItems })}
             <CaretDown
@@ -350,7 +355,7 @@ export function ConsignacionTimeline({
                 isExpanded && 'rotate-180'
               )}
             />
-          </button>
+          </Button>
         )}
       </div>
     </div>

@@ -124,9 +124,11 @@ interface DatoProps {
   value: string
   /** Cita textual (mensaje original) — estilo distinto. */
   quote?: boolean
+  /** Dato numérico (monto / fecha) — mono tabular. */
+  mono?: boolean
 }
 
-function Dato({ icon: Icon, label, value, quote = false }: DatoProps) {
+function Dato({ icon: Icon, label, value, quote = false, mono = false }: DatoProps) {
   return (
     <div className="flex items-start gap-2">
       <Icon
@@ -143,7 +145,13 @@ function Dato({ icon: Icon, label, value, quote = false }: DatoProps) {
             {value === VACIO ? VACIO : `“${value}”`}
           </p>
         ) : (
-          <p className="mt-0.5 text-sm text-fg leading-relaxed break-words">{value}</p>
+          <p
+            className={`mt-0.5 text-sm text-fg leading-relaxed break-words${
+              mono ? ' font-mono tabular-nums' : ''
+            }`}
+          >
+            {value}
+          </p>
         )}
       </div>
     </div>
@@ -173,7 +181,7 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
 
   return (
     <li
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-xl border border-border bg-surface overflow-hidden"
       data-testid={`promesa-card-${promesa.key}`}
     >
       {/* Cabecera clicable — quién, valor, fecha, estado */}
@@ -196,11 +204,11 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-fg-muted">
-            <span className="inline-flex items-center gap-1 tabular-nums">
+            <span className="inline-flex items-center gap-1 font-mono tabular-nums">
               <CurrencyDollar className="w-3.5 h-3.5" aria-hidden="true" />
               {formatCurrency(promesa.valorCop)}
             </span>
-            <span className="inline-flex items-center gap-1 tabular-nums">
+            <span className="inline-flex items-center gap-1 font-mono tabular-nums">
               <CalendarBlank className="w-3.5 h-3.5" aria-hidden="true" />
               {fechaPrometidaStr}
             </span>

@@ -1,11 +1,11 @@
 import { ArrowsClockwise } from '@phosphor-icons/react';
-import { ErrorState as DSErrorState } from '@leasefy/ui';
+import { ErrorState as DSErrorState } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 /**
- * ErrorState — ADAPTER fino sobre el ErrorState de @leasefy/ui que preserva
+ * ErrorState — ADAPTER fino sobre el ErrorState de @leasefy/cadence que preserva
  * la API local (title/description/onRetry, todos opcionales con defaults en
  * español):
  * - description → prop `message` del DS.

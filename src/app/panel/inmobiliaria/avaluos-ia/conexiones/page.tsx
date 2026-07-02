@@ -31,10 +31,10 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { BrandContour, Eyebrow } from '@leasefy/ui'
+import { BrandContour, Eyebrow, StatusBadge } from '@leasefy/cadence'
 
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #0B1220 56%, #122457 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
 
 type ConTipo = 'auto' | 'click'
 
@@ -71,10 +71,10 @@ function TipoChip({ tipo }: { tipo: ConTipo }) {
     : { icon: CursorClick, label: 'Con un clic' }
   const ChipIcon = meta.icon
   return (
-    <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-md bg-neutral-100 font-mono text-[10px] font-medium uppercase tracking-[0.06em] text-neutral-500">
+    <StatusBadge tone="neutral" dot={false} className="text-[10px]">
       <ChipIcon className="w-3 h-3" weight="bold" />
       {meta.label}
-    </span>
+    </StatusBadge>
   )
 }
 
@@ -83,17 +83,17 @@ function ConexionCard({ c }: { c: Conexion }) {
   const inner = (
     <>
       <div className="flex items-start gap-3">
-        <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-neutral-100 text-neutral-600 shrink-0">
+        <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-surface-muted text-fg-muted shrink-0">
           <CIcon className="w-5 h-5" weight="duotone" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="text-[14px] font-semibold text-[#0B1220]">{c.modulo}</span>
+            <span className="text-[14px] font-semibold text-fg">{c.modulo}</span>
             {c.href && (
-              <ArrowRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#1A40FF] group-hover:translate-x-0.5 transition-all" weight="bold" />
+              <ArrowRight className="w-3.5 h-3.5 text-fg-subtle group-hover:text-primary group-hover:translate-x-0.5 transition-all" weight="bold" />
             )}
           </div>
-          <p className="mt-1 text-[12.5px] text-neutral-500 leading-snug">{c.ejemplo}</p>
+          <p className="mt-1 text-[12.5px] text-fg-muted leading-snug">{c.ejemplo}</p>
         </div>
       </div>
       <div className="mt-3.5">
@@ -102,7 +102,7 @@ function ConexionCard({ c }: { c: Conexion }) {
     </>
   )
 
-  const cls = 'group block rounded-xl border border-neutral-200/80 bg-white p-4 transition-colors hover:border-neutral-300'
+  const cls = 'group block rounded-xl border border-border bg-surface p-4 transition-colors hover:border-border-strong'
   return c.href ? (
     <Link href={c.href} className={cls}>{inner}</Link>
   ) : (
@@ -117,7 +117,7 @@ export default function ConexionesPage() {
         {/* Header */}
         <Link
           href="/panel/inmobiliaria/avaluos-ia"
-          className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#0B1220] transition-colors"
+          className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-fg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Avalúos IA
@@ -126,7 +126,7 @@ export default function ConexionesPage() {
         {/* ── Hero (ink anchor) — el flujo ─────────────────────────────── */}
         <section
           className="relative overflow-hidden rounded-2xl px-7 py-8"
-          style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(11,18,32,0.55)' }}
+          style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[52%] h-[42%] text-white/[0.10]">
             <BrandContour />
@@ -179,7 +179,7 @@ export default function ConexionesPage() {
         <section className="space-y-4">
           <div>
             <Eyebrow>Entra · de dónde saca los datos</Eyebrow>
-            <p className="mt-1.5 text-[13px] text-neutral-500">
+            <p className="mt-1.5 text-[13px] text-fg-muted">
               El equipo arranca con lo que ya está en tu Leasefy — cero formularios repetidos.
             </p>
           </div>
@@ -194,7 +194,7 @@ export default function ConexionesPage() {
         <section className="space-y-4">
           <div>
             <Eyebrow accent>Sale · qué activa cuando decides</Eyebrow>
-            <p className="mt-1.5 text-[13px] text-neutral-500">
+            <p className="mt-1.5 text-[13px] text-fg-muted">
               Cuando aceptas un avalúo, Gabriela mueve el resto de la operación por ti.
             </p>
           </div>

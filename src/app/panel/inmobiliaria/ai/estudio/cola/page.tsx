@@ -12,12 +12,10 @@
  */
 
 import { useRouter } from 'next/navigation'
-import { ShieldCheck } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function EstudioCola() {
@@ -30,15 +28,6 @@ function EstudioCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/estudio"
-            icon={ShieldCheck}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.estudio'), href: '/panel/inmobiliaria/ai/estudio' },
-              { label: t('inmobiliaria.ai.workspace.pages.estudio.colaTitle') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-fg tracking-tight">{t('inmobiliaria.ai.workspace.pages.estudio.colaTitle')}</h1>
           <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.estudio.colaDesc')}

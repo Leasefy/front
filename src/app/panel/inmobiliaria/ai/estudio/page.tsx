@@ -20,7 +20,6 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
 import { useEstudioOverview } from '@/lib/hooks/estudio/use-estudio-overview'
@@ -58,15 +57,6 @@ function EstudioOverview() {
       {/* Header — resumen ejecutivo */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai"
-            icon={ShieldCheck}
-            className="mb-2"
-            crumbs={[
-              { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-              { label: tf(`${NS}.overview.title`, 'Estudios de inquilinos') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {tf(`${NS}.overview.title`, 'Estudios de inquilinos')}
           </h1>

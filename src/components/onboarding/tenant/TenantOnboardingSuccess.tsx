@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { MagnifyingGlass, Confetti, ArrowRight, House, Star, SealCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import confetti from 'canvas-confetti'
 
@@ -199,36 +200,36 @@ export function TenantOnboardingSuccess({ userName = 'inquilino' }: TenantOnboar
 
           {/* Action buttons */}
           <div className="px-8 py-6 space-y-3">
-            <motion.button
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
-              onClick={() => router.push('/propiedades')}
-              className={cn(
-                'w-full inline-flex items-center justify-center gap-2 px-6 py-4 text-sm font-semibold',
-                'rounded-xl bg-[#1A40FF] text-white uppercase tracking-wide font-mono',
-                'hover:opacity-90 transition-all duration-200',
-                ' shadow-[#1A40FF]/20 hover: hover:shadow-[#1A40FF]/30'
-              )}
             >
-              <MagnifyingGlass className="h-4 w-4" />
-              {t.explore}
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </motion.button>
+              <Button
+                onClick={() => router.push('/propiedades')}
+                hideArrow
+                className="w-full"
+              >
+                <MagnifyingGlass className="h-4 w-4" />
+                {t.explore}
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </motion.div>
 
-            <motion.button
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1 }}
-              onClick={() => router.push('/inquilino')}
-              className={cn(
-                'w-full inline-flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium',
-                'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-700 dark:text-neutral-300',
-                'hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-[#222224] transition-all duration-200'
-              )}
             >
-              {t.dashboard}
-            </motion.button>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/inquilino')}
+                hideArrow
+                className="w-full"
+              >
+                {t.dashboard}
+              </Button>
+            </motion.div>
           </div>
 
           {/* Countdown */}

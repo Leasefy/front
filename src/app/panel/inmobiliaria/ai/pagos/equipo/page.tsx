@@ -42,14 +42,20 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import {
   EquipoPagosPersona,
   type EquipoPagosPersonaData,
 } from '@/components/inmobiliaria/pagos/EquipoPagosPersona'
 import { PagoEstadoBadge } from '@/components/inmobiliaria/pagos/PagoEstadoBadge'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import { useI18n } from '@/lib/i18n'
 
 // ── Personas del equipo (visión §13) ─────────────────────────────────────────
 
@@ -327,31 +333,10 @@ function FlowConnector() {
 // ── Página ─────────────────────────────────────────────────────────────────────
 
 function EquipoPagos() {
-  const { t } = useI18n()
-
-  /** i18n con fallback — nunca muestra la clave cruda. */
-  const tf = (key: string, fallback: string): string => {
-    const r = t(key)
-    return r === key ? fallback : r
-  }
-
   return (
     <main className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <header className="min-w-0">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/pagos"
-          icon={UsersThree}
-          className="mb-2"
-          crumbs={[
-            { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-            {
-              label: tf('inmobiliaria.ai.workspace.agente.pagos', 'Pagos'),
-              href: '/panel/inmobiliaria/ai/pagos',
-            },
-            { label: 'Equipo IA' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-fg tracking-tight">Equipo IA</h1>
         <p className="text-fg-muted mt-0.5 text-sm max-w-2xl">
           Un equipo de agentes —cada uno con su nombre y su rol— se reparte el trabajo de los pagos,
@@ -458,34 +443,34 @@ function EquipoPagos() {
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full min-w-[640px] text-left">
-            <thead>
-              <tr className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                <th scope="col" className="py-2.5 px-4 font-medium">Agente</th>
-                <th scope="col" className="py-2.5 pr-4 font-medium">Trabajo</th>
-                <th scope="col" className="py-2.5 pr-4 font-medium">Estado</th>
-                <th scope="col" className="py-2.5 px-4 font-medium">Resultado</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full min-w-[640px] text-left">
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">Agente</TableHead>
+                <TableHead scope="col">Trabajo</TableHead>
+                <TableHead scope="col">Estado</TableHead>
+                <TableHead scope="col">Resultado</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {LOTE_EJEMPLO.map((row, i) => (
-                <tr key={i} className="border-t border-border align-top">
-                  <td className="py-3 px-4 whitespace-nowrap">
+                <TableRow key={i} className="border-t border-border align-top">
+                  <TableCell className="py-3 px-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-fg">{row.agente}</span>
-                  </td>
-                  <td className="py-3 pr-4">
+                  </TableCell>
+                  <TableCell className="py-3 pr-4">
                     <span className="text-sm text-fg leading-snug">{row.trabajo}</span>
-                  </td>
-                  <td className="py-3 pr-4 whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="py-3 pr-4 whitespace-nowrap">
                     <PagoEstadoBadge estado={row.estado} />
-                  </td>
-                  <td className="py-3 px-4">
+                  </TableCell>
+                  <TableCell className="py-3 px-4">
                     <span className="text-sm text-fg-muted leading-snug">{row.resultado}</span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         <p className="text-xs text-fg-muted max-w-2xl">

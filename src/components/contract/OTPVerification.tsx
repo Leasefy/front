@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { SpinnerGap, CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
+import { CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
+import { Spinner } from '@/components/ui/spinner';
 import { contractsApi } from '@/lib/api/contracts.service';
 import type { ContractOtpRole } from '@/lib/api/contracts.types';
 
@@ -199,7 +200,7 @@ export function OTPVerification({
           </DialogTitle>
           <DialogDescription>
             {sentTo
-              ? <>Enviamos un código de 6 dígitos a <span className="font-medium text-foreground">{sentTo}</span></>
+              ? <>Enviamos un código de 6 dígitos a <span className="font-medium text-fg">{sentTo}</span></>
               : 'Preparando el envío del código a tu correo...'}
           </DialogDescription>
         </DialogHeader>
@@ -207,7 +208,7 @@ export function OTPVerification({
         <div className="space-y-6 py-4">
           {/* Error de envío (antes de poder ingresar código) */}
           {sendError && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            <div className="flex items-start gap-2 rounded-[14px] border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
               <WarningCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <span>{sendError}</span>
             </div>
@@ -230,11 +231,11 @@ export function OTPVerification({
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   disabled={status === 'verifying' || status === 'verified'}
                   className={cn(
-                    'h-14 w-12 rounded-sm border-2 bg-background text-center text-2xl font-semibold transition-all',
-                    'focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20',
-                    digit ? 'border-foreground/30' : 'border-border',
-                    status === 'error' && 'border-destructive animate-shake',
-                    status === 'verified' && 'border-success/30 bg-success-soft',
+                    'h-[56px] w-[46px] rounded-[12px] bg-surface text-center font-mono text-[22px] font-semibold transition-all',
+                    'focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-[rgba(26,64,255,0.14)]',
+                    digit ? 'border-[1.5px] border-fg' : 'border border-border',
+                    status === 'error' && 'border-danger bg-danger-soft animate-shake',
+                    status === 'verified' && 'border-success bg-success-soft',
                     (status === 'verifying' || status === 'verified') && 'opacity-70'
                   )}
                 />
@@ -244,16 +245,16 @@ export function OTPVerification({
 
           {/* Loader inicial */}
           {!sentTo && !sendError && (
-            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-              <SpinnerGap className="h-4 w-4 animate-spin" />
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-muted">
+              <Spinner size="sm" variant="current" />
               Enviando código a tu correo...
             </div>
           )}
 
           {/* Estado en vivo */}
           {status === 'verifying' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <SpinnerGap className="h-4 w-4 animate-spin" />
+            <div className="flex items-center justify-center gap-2 text-sm text-fg-muted">
+              <Spinner size="sm" variant="current" />
               Verificando...
             </div>
           )}
@@ -266,7 +267,7 @@ export function OTPVerification({
           )}
 
           {error && (
-            <div className="flex items-center justify-center gap-2 text-sm text-destructive">
+            <div className="flex items-center justify-center gap-2 text-sm text-danger">
               <WarningCircle className="h-4 w-4" />
               {error}
             </div>
@@ -286,16 +287,16 @@ export function OTPVerification({
                   Reenviar código
                 </Button>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-fg-muted">
                   Podés reenviar el código en{' '}
-                  <span className="font-medium text-foreground">{cooldown}s</span>
+                  <span className="font-mono tabular-nums font-medium text-fg">{cooldown}s</span>
                 </p>
               )}
             </div>
           )}
 
           {/* Help text */}
-          <div className="rounded-sm bg-muted p-3 text-xs text-muted-foreground">
+          <div className="rounded-[14px] bg-surface-muted p-3 text-xs text-fg-muted">
             <p>
               <strong>Nota:</strong> La verificación por código enviado a tu correo garantiza que
               solo vos podés firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre

@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import type { AgentExecutionTrace, ExecutionStep, ExecutionStepStatus } from '@/lib/types/ai-agents';
@@ -93,7 +94,7 @@ function StepStatusDot({ status }: { status: ExecutionStepStatus }) {
       );
     default:
       return (
-        <div className="flex items-center justify-center h-6 w-6 rounded-full border-2 border-neutral-300 dark:border-neutral-600 bg-transparent" />
+        <div className="flex items-center justify-center h-6 w-6 rounded-full border-2 border-border-strong bg-transparent" />
       );
   }
 }
@@ -110,20 +111,20 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
   return (
     <div className="h-full flex flex-col">
       {/* Browser chrome */}
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-neutral-100 dark:bg-[#1a1a1c] border-b border-neutral-200 dark:border-neutral-700 rounded-t-xl">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-muted border-b border-border rounded-t-xl">
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rounded-full bg-danger" />
           <div className="h-3 w-3 rounded-full bg-warning" />
           <div className="h-3 w-3 rounded-full bg-success" />
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2 px-4 py-1 rounded-md bg-white dark:bg-[#0c0c0e] border border-neutral-200 dark:border-neutral-700 max-w-md w-full">
+          <div className="flex items-center gap-2 px-4 py-1 rounded-md bg-surface border border-border max-w-md w-full">
             {step?.stepType === 'browser' ? (
-              <Globe className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+              <Globe className="h-3.5 w-3.5 text-fg-subtle flex-shrink-0" />
             ) : (
-              <StepIcon className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />
+              <StepIcon className="h-3.5 w-3.5 text-fg-subtle flex-shrink-0" />
             )}
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+            <span className="text-xs text-fg-subtle truncate">
               {step?.stepType === 'browser'
                 ? 'datacredito.com.co/consulta/verificacion'
                 : `leasefy.ai/agent/${trace.agentId}/${step?.stepType || 'process'}`}
@@ -131,24 +132,24 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
           </div>
         </div>
         {step && (
-          <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase">
+          <span className="text-[10px] font-medium text-fg-subtle uppercase">
             {typeLabel?.[locale as 'es' | 'en'] || step.stepType}
           </span>
         )}
       </div>
 
       {/* Screen content */}
-      <div className="flex-1 bg-[#0c0c0e] rounded-b-xl overflow-hidden relative">
+      <div className="flex-1 bg-ink rounded-b-xl overflow-hidden relative">
         {!step ? (
           /* No step selected — show overview */
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
             <div className="w-16 h-16 rounded-xl bg-white/[0.05] flex items-center justify-center mb-4">
-              <Monitor weight="duotone" className="h-8 w-8 text-neutral-500" />
+              <Monitor weight="duotone" className="h-8 w-8 text-fg-subtle" />
             </div>
-            <p className="text-sm text-neutral-400 mb-1">
+            <p className="text-sm text-fg-subtle mb-1">
               {locale === 'es' ? 'Vista del agente' : 'Agent view'}
             </p>
-            <p className="text-xs text-neutral-500 max-w-xs">
+            <p className="text-xs text-fg-subtle max-w-xs">
               {locale === 'es'
                 ? 'Selecciona un paso para ver lo que el agente estaba haciendo en ese momento'
                 : 'Select a step to see what the agent was doing at that moment'}
@@ -162,19 +163,19 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
               {step.stepType === 'browser' && (
                 <div className="space-y-4">
                   {/* Simulated DataCrédito page */}
-                  <div className="bg-white rounded-md p-4 max-w-lg mx-auto">
+                  <div className="bg-surface rounded-md p-4 max-w-lg mx-auto">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-white text-xs font-bold">DC</div>
-                      <span className="text-sm font-semibold text-neutral-900">DataCrédito</span>
-                      <span className="text-xs text-neutral-400">Consulta de historial crediticio</span>
+                      <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-primary-fg text-xs font-bold">DC</div>
+                      <span className="text-sm font-semibold text-fg">DataCrédito</span>
+                      <span className="text-xs text-fg-subtle">Consulta de historial crediticio</span>
                     </div>
                     <div className="border-t pt-3 space-y-2">
                       <div className="flex justify-between text-xs">
-                        <span className="text-neutral-500">Documento consultado:</span>
-                        <span className="font-mono text-neutral-700">{trace.title.includes('CC') ? trace.title.split('CC ')[1] || '1.023.456.789' : '52.789.123'}</span>
+                        <span className="text-fg-subtle">Documento consultado:</span>
+                        <span className="font-mono text-fg-muted">{trace.title.includes('CC') ? trace.title.split('CC ')[1] || '1.023.456.789' : '52.789.123'}</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-neutral-500">Estado consulta:</span>
+                        <span className="text-fg-subtle">Estado consulta:</span>
                         <span className={cn('font-medium', isRunning ? 'text-primary' : 'text-success')}>
                           {isRunning ? 'Procesando...' : 'Completada'}
                         </span>
@@ -199,7 +200,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                 <div className="space-y-3 max-w-lg mx-auto">
                   <div className="bg-white/[0.05] rounded-md border border-white/[0.08] p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Brain weight="duotone" className="h-5 w-5 text-neutral-400" />
+                      <Brain weight="duotone" className="h-5 w-5 text-fg-subtle" />
                       <span className="text-sm font-medium text-white/90">
                         {locale === 'es' ? 'Motor de Análisis' : 'Analysis Engine'}
                       </span>
@@ -212,8 +213,8 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                     </div>
                     {step.reasoning && (
                       <div className="mb-3 p-3 rounded bg-white/[0.03] border border-white/[0.06]">
-                        <p className="text-xs text-neutral-400 mb-1 uppercase tracking-wider">{locale === 'es' ? 'Pensamiento' : 'Thinking'}</p>
-                        <p className="text-sm text-neutral-300 leading-relaxed italic">&ldquo;{step.reasoning}&rdquo;</p>
+                        <p className="text-xs text-fg-subtle mb-1 uppercase tracking-wider">{locale === 'es' ? 'Pensamiento' : 'Thinking'}</p>
+                        <p className="text-sm text-fg-subtle leading-relaxed italic">&ldquo;{step.reasoning}&rdquo;</p>
                       </div>
                     )}
                     {step.output && (
@@ -228,16 +229,16 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'document' && (
                 <div className="max-w-lg mx-auto">
-                  <div className="bg-white rounded-md p-6">
+                  <div className="bg-surface rounded-md p-6">
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b">
-                      <FileText weight="duotone" className="h-5 w-5 text-neutral-500" />
-                      <span className="text-sm font-semibold text-neutral-900">{locale === 'es' ? 'Generando Documento' : 'Generating Document'}</span>
+                      <FileText weight="duotone" className="h-5 w-5 text-fg-subtle" />
+                      <span className="text-sm font-semibold text-fg">{locale === 'es' ? 'Generando Documento' : 'Generating Document'}</span>
                     </div>
                     {step.output && (
-                      <p className="text-xs text-neutral-600 font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
+                      <p className="text-xs text-fg-muted font-mono leading-relaxed whitespace-pre-wrap">{step.output}</p>
                     )}
                     {isRunning && (
-                      <div className="mt-4 flex items-center gap-2 text-neutral-500">
+                      <div className="mt-4 flex items-center gap-2 text-fg-subtle">
                         <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
                         <span className="text-sm">{locale === 'es' ? 'Generando PDF...' : 'Generating PDF...'}</span>
                       </div>
@@ -250,15 +251,15 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                 <div className="space-y-3 max-w-lg mx-auto">
                   <div className="bg-white/[0.05] rounded-md border border-white/[0.08] p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <MagnifyingGlass weight="duotone" className="h-5 w-5 text-neutral-400" />
+                      <MagnifyingGlass weight="duotone" className="h-5 w-5 text-fg-subtle" />
                       <span className="text-sm font-medium text-white/90">{locale === 'es' ? 'Búsqueda de Candidatos' : 'Candidate Search'}</span>
                     </div>
                     {step.reasoning && (
-                      <p className="text-sm text-neutral-400 mb-3 italic">&ldquo;{step.reasoning}&rdquo;</p>
+                      <p className="text-sm text-fg-subtle mb-3 italic">&ldquo;{step.reasoning}&rdquo;</p>
                     )}
                     {step.output && (
                       <div className="p-3 rounded bg-white/[0.05] border border-white/[0.08]">
-                        <p className="text-sm text-neutral-200 font-mono">{step.output}</p>
+                        <p className="text-sm text-fg-subtle font-mono">{step.output}</p>
                       </div>
                     )}
                     {isRunning && (
@@ -274,14 +275,14 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
 
               {step.stepType === 'notification' && (
                 <div className="max-w-sm mx-auto mt-8">
-                  <div className="bg-white rounded-xl p-5 border">
+                  <div className="bg-surface rounded-xl p-5 border">
                     <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                        <Bell weight="fill" className="h-5 w-5 text-neutral-600" />
+                      <div className="h-10 w-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+                        <Bell weight="fill" className="h-5 w-5 text-fg-muted" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-neutral-900">Leasefy</p>
-                        <p className="text-xs text-neutral-600 mt-0.5">{step.output || 'Enviando notificación...'}</p>
+                        <p className="text-sm font-semibold text-fg">Leasefy</p>
+                        <p className="text-xs text-fg-muted mt-0.5">{step.output || 'Enviando notificación...'}</p>
                       </div>
                     </div>
                   </div>
@@ -296,7 +297,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                       <span className="text-sm font-medium text-white/90">{locale === 'es' ? 'Tomando Decisión' : 'Making Decision'}</span>
                     </div>
                     {step.reasoning && (
-                      <p className="text-sm text-neutral-300 leading-relaxed italic mb-3">&ldquo;{step.reasoning}&rdquo;</p>
+                      <p className="text-sm text-fg-subtle leading-relaxed italic mb-3">&ldquo;{step.reasoning}&rdquo;</p>
                     )}
                     {step.output && (
                       <div className="p-3 rounded bg-warning/20 border border-warning/30">
@@ -315,7 +316,7 @@ function ComputerView({ step, trace, locale }: { step: ExecutionStep | null; tra
                   <Play weight="fill" className="h-4 w-4 text-white/70" />
                 </button>
                 <div className="flex-1 h-1 rounded-full bg-white/10 relative">
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-neutral-500" style={{ width: '60%' }} />
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-white/70" style={{ width: '60%' }} />
                 </div>
                 <span className="text-[11px] text-white/50 tabular-nums">
                   {step.durationMs ? formatDuration(step.durationMs) : '0:00'}
@@ -355,9 +356,9 @@ function TimelineStep({
       {!isLast && (
         <div className={cn(
           'absolute left-[11px] top-8 bottom-0 w-0.5',
-          isDone ? 'bg-success dark:bg-success' :
-          isActive ? 'bg-primary dark:bg-primary' :
-          'bg-neutral-200 dark:bg-neutral-700',
+          isDone ? 'bg-success' :
+          isActive ? 'bg-primary' :
+          'bg-surface-muted',
         )} />
       )}
 
@@ -366,8 +367,8 @@ function TimelineStep({
         disabled={isPending}
         className={cn(
           'relative z-10 w-full flex items-start gap-3 rounded-md px-2 py-2 -mx-2 text-left transition-colors',
-          isSelected && !isPending && 'bg-neutral-100 dark:bg-white/[0.04]',
-          !isSelected && !isPending && 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]',
+          isSelected && !isPending && 'bg-surface-muted',
+          !isSelected && !isPending && 'hover:bg-surface-muted',
           isPending && 'opacity-40 cursor-default',
         )}
       >
@@ -379,20 +380,20 @@ function TimelineStep({
           <div className="flex items-center gap-1.5">
             <span className={cn(
               'text-sm font-medium truncate',
-              isDone && 'text-neutral-900 dark:text-white',
+              isDone && 'text-fg',
               isActive && 'text-primary',
-              isPending && 'text-neutral-400 dark:text-neutral-500',
+              isPending && 'text-fg-subtle',
             )}>
               {step.label}
             </span>
           </div>
           {isActive && step.reasoning && (
-            <p className="mt-1 text-xs text-primary/80 dark:text-primary/80 line-clamp-2 italic">
+            <p className="mt-1 text-xs text-primary/80 line-clamp-2 italic">
               {step.reasoning}
             </p>
           )}
           {isDone && step.durationMs && (
-            <p className="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-500 tabular-nums">
+            <p className="mt-0.5 text-[11px] text-fg-subtle tabular-nums">
               {formatDuration(step.durationMs)}
             </p>
           )}
@@ -459,24 +460,27 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
   if (typeof window === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-white dark:bg-[#0c0c0e] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-surface flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center gap-4 px-5 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111113]">
-        <button
+      <div className="flex items-center gap-4 px-5 py-3 border-b border-border bg-surface">
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={onClose}
-          className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+          className="gap-2 text-fg-subtle hover:text-fg"
         >
           <ArrowLeft weight="bold" className="h-4 w-4" />
           <span>{locale === 'es' ? 'Volver' : 'Back'}</span>
-        </button>
+        </Button>
 
-        <div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700" />
+        <div className="h-5 w-px bg-surface-muted" />
 
         <div className={cn('rounded-md p-1.5', agent?.colorBg)}>
           <AgentIcon weight="duotone" className={cn('h-4 w-4', agent?.color)} />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
+          <h1 className="text-sm font-semibold text-fg truncate">
             {trace.title}
           </h1>
         </div>
@@ -494,15 +498,15 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
               {locale === 'es' ? 'Completado' : 'Completed'}
             </span>
           )}
-          <span className="text-xs text-neutral-400 tabular-nums">{completedSteps}/{totalSteps}</span>
-          <div className="w-24 h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+          <span className="text-xs text-fg-subtle tabular-nums">{completedSteps}/{totalSteps}</span>
+          <div className="w-24 h-1.5 rounded-full bg-surface-muted overflow-hidden">
             <div
               className={cn('h-full rounded-full transition-all duration-500', isRunning ? 'bg-primary' : 'bg-success')}
               style={{ width: `${progress}%` }}
             />
           </div>
           {trace.totalDurationMs && (
-            <span className="text-xs text-neutral-400 tabular-nums flex items-center gap-1">
+            <span className="text-xs text-fg-subtle tabular-nums flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatDuration(trace.totalDurationMs)}
             </span>
@@ -514,12 +518,12 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
       <div className="flex-1 flex overflow-hidden">
         {/* Left panel — Timeline */}
         <div
-          className="w-80 xl:w-96 flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111113] overflow-y-auto"
+          className="w-80 xl:w-96 flex-shrink-0 border-r border-border bg-surface overflow-y-auto"
           data-lenis-prevent
           style={{ overscrollBehavior: 'contain' }}
         >
           <div className="p-4">
-            <h3 className="text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <h3 className="text-xs font-medium text-fg-subtle uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Lightning weight="fill" className="h-3 w-3" />
               {locale === 'es' ? 'Ejecución' : 'Execution'}
             </h3>
@@ -539,17 +543,17 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
 
           {/* Conclusion */}
           {trace.status === 'completed' && trace.conclusion && (
-            <div className="mx-4 mb-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.03] p-4">
-              <h4 className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <div className="mx-4 mb-4 rounded-xl border border-border bg-surface-muted p-4">
+              <h4 className="text-[11px] font-medium text-fg-subtle uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <ChatCircleDots weight="fill" className="h-3 w-3" />
                 {locale === 'es' ? 'Conclusión' : 'Conclusion'}
               </h4>
-              <p className="text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed">
+              <p className="text-sm text-fg leading-relaxed">
                 {trace.conclusion}
               </p>
               {trace.result && (
-                <div className="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                <div className="mt-2 pt-2 border-t border-border">
+                  <p className="text-sm font-semibold text-fg">
                     {trace.result}
                   </p>
                 </div>
@@ -559,8 +563,8 @@ export function AIAgentExecutionPanel({ trace, onClose }: AIAgentExecutionPanelP
         </div>
 
         {/* Right panel — Computer View */}
-        <div className="flex-1 bg-neutral-50 dark:bg-[#0c0c0e] p-4 overflow-hidden">
-          <div className="h-full rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        <div className="flex-1 bg-surface-muted p-4 overflow-hidden">
+          <div className="h-full rounded-xl border border-border overflow-hidden">
             <ComputerView step={selectedStep} trace={trace} locale={locale} />
           </div>
         </div>

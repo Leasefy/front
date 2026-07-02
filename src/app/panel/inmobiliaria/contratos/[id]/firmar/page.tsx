@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CaretLeft, Spinner, WarningCircle, SealCheck, ArrowRight, Info } from '@phosphor-icons/react';
+import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
@@ -68,7 +69,7 @@ function FirmarContratoContent() {
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
-        <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Spinner size="md" variant="muted" />
       </div>
     );
   }
@@ -173,7 +174,7 @@ function FirmarContratoContent() {
           {hasTenantSignature && (isLoadingSignedPdf || signedPdfUrl) ? (
             isLoadingSignedPdf ? (
               <div className="py-20 flex items-center justify-center">
-                <Spinner className="w-5 h-5 animate-spin text-muted-foreground" />
+                <Spinner size="default" variant="muted" />
               </div>
             ) : (
               <iframe
@@ -184,7 +185,7 @@ function FirmarContratoContent() {
             )
           ) : isLoadingPreview ? (
             <div className="py-20 flex items-center justify-center">
-              <Spinner className="w-5 h-5 animate-spin text-muted-foreground" />
+              <Spinner size="sm" variant="muted" />
             </div>
           ) : preview?.origin === 'UPLOADED_PDF' ? (
             <iframe

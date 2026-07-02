@@ -26,11 +26,11 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { BrandMark, BrandContour } from '@leasefy/ui'
+import { BrandMark, BrandContour } from '@leasefy/cadence'
 
 // ── Brand constants ───────────────────────────────────────────────────────────
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #0B1220 56%, #122457 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
 const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 const fmt = (n: number) => COP.format(n)
 
@@ -64,7 +64,7 @@ export default function ReporteAvaluoPage() {
         <div className="mx-auto max-w-[560px] px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BrandMark size={26} />
-            <span className="text-[15px] font-semibold tracking-[-0.01em] text-[#0B1220]">Leasefy</span>
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-[#14130f]">Leasefy</span>
           </div>
           <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-neutral-400">
             <Sparkle className="w-3 h-3" weight="fill" style={{ color: BLUE }} />
@@ -76,12 +76,12 @@ export default function ReporteAvaluoPage() {
       <main className="mx-auto max-w-[560px] px-4 py-8 space-y-5">
         {/* ── Greeting ─────────────────────────────────────────────────── */}
         <div className="space-y-2">
-          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#0B1220]">
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#14130f]">
             Hola, Carlos
           </h1>
           <p className="text-[14.5px] text-neutral-600 leading-relaxed">
             Este es el avalúo de arriendo de tu inmueble en{' '}
-            <span className="font-medium text-[#0B1220]">Cra. 43 #5-20, El Poblado</span>.
+            <span className="font-medium text-[#14130f]">Cra. 43 #5-20, El Poblado</span>.
           </p>
           <p className="text-[12.5px] text-neutral-400">
             Preparado por Inmobiliaria Demo con Leasefy IA · 17 jun 2026
@@ -91,7 +91,7 @@ export default function ReporteAvaluoPage() {
         {/* ── The number (ink hero) ────────────────────────────────────── */}
         <section
           className="relative overflow-hidden rounded-2xl px-6 py-7 text-center"
-          style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(11,18,32,0.5)' }}
+          style={{ background: INK_GRADIENT, boxShadow: '0 24px 60px -28px rgba(20, 19, 15,0.5)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[52%] h-[42%] text-white/[0.10]">
             <BrandContour />
@@ -113,7 +113,7 @@ export default function ReporteAvaluoPage() {
 
         {/* ── Por qué este precio ──────────────────────────────────────── */}
         <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-          <h2 className="text-[15px] font-semibold text-[#0B1220] mb-3.5">Por qué este precio</h2>
+          <h2 className="text-[15px] font-semibold text-[#14130f] mb-3.5">Por qué este precio</h2>
 
           <p className="text-[12.5px] font-medium text-neutral-500 mb-2">Tu inmueble juega a favor</p>
           <ul className="space-y-2 mb-4">
@@ -122,7 +122,7 @@ export default function ReporteAvaluoPage() {
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0" style={{ background: '#E9F3EE', color: '#22663F' }}>
                   <ArrowUp className="w-3.5 h-3.5" weight="bold" />
                 </span>
-                <span className="text-[13.5px] text-[#0B1220]">{p}</span>
+                <span className="text-[13.5px] text-[#14130f]">{p}</span>
               </li>
             ))}
           </ul>
@@ -134,7 +134,7 @@ export default function ReporteAvaluoPage() {
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0" style={{ background: '#FBF3E2', color: '#8A5A12' }}>
                   <ArrowDown className="w-3.5 h-3.5" weight="bold" />
                 </span>
-                <span className="text-[13.5px] text-[#0B1220]">{c}</span>
+                <span className="text-[13.5px] text-[#14130f]">{c}</span>
               </li>
             ))}
           </ul>
@@ -142,7 +142,7 @@ export default function ReporteAvaluoPage() {
 
         {/* ── Qué pasa según el precio ─────────────────────────────────── */}
         <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-          <h2 className="text-[15px] font-semibold text-[#0B1220] mb-1">Qué pasa según el precio</h2>
+          <h2 className="text-[15px] font-semibold text-[#14130f] mb-1">Qué pasa según el precio</h2>
           <p className="text-[13px] text-neutral-500 mb-4 leading-relaxed">
             Mientras más alto el canon, más tarda en arrendarse. Este es el balance:
           </p>
@@ -162,15 +162,15 @@ export default function ReporteAvaluoPage() {
                     <EIcon className="w-[18px] h-[18px]" weight="duotone" />
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[13.5px] font-medium text-[#0B1220]">{e.label}</span>
+                    <span className="block text-[13.5px] font-medium text-[#14130f]">{e.label}</span>
                     <span className="block text-[12px] text-neutral-500">Se arrienda en {e.dias}</span>
                   </span>
-                  <span className="text-[15px] font-semibold text-[#0B1220] tabular-nums">{fmt(e.valor)}</span>
+                  <span className="text-[15px] font-semibold text-[#14130f] tabular-nums">{fmt(e.valor)}</span>
                 </li>
               )
             })}
           </ul>
-          <p className="mt-3.5 flex items-start gap-2 text-[13px] text-[#0B1220] leading-relaxed">
+          <p className="mt-3.5 flex items-start gap-2 text-[13px] text-[#14130f] leading-relaxed">
             <Sparkle className="w-4 h-4 mt-0.5 shrink-0" weight="fill" style={{ color: BLUE }} />
             <span>Recomendamos <span className="font-semibold">{fmt(RECOMENDADO)}</span>: el mejor equilibrio entre lo que ganas y la rapidez para arrendar.</span>
           </p>
@@ -193,16 +193,16 @@ export default function ReporteAvaluoPage() {
 
         {/* ── Inmuebles parecidos ──────────────────────────────────────── */}
         <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-          <h2 className="text-[15px] font-semibold text-[#0B1220] mb-1">Inmuebles parecidos cerca</h2>
+          <h2 className="text-[15px] font-semibold text-[#14130f] mb-1">Inmuebles parecidos cerca</h2>
           <p className="text-[13px] text-neutral-500 mb-3.5">Lo que se cobra hoy por propiedades como la tuya.</p>
           <ul className="space-y-2">
             {COMPARABLES.map((c) => (
               <li key={c.dir} className="flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-3.5 py-2.5">
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] font-medium text-[#0B1220] truncate">{c.dir}</span>
+                  <span className="block text-[13.5px] font-medium text-[#14130f] truncate">{c.dir}</span>
                   <span className="block text-[12px] text-neutral-500">{c.specs}</span>
                 </span>
-                <span className="text-[13.5px] font-semibold text-[#0B1220] tabular-nums shrink-0">{fmt(c.canon)}/mes</span>
+                <span className="text-[13.5px] font-semibold text-[#14130f] tabular-nums shrink-0">{fmt(c.canon)}/mes</span>
               </li>
             ))}
           </ul>
@@ -220,7 +220,7 @@ export default function ReporteAvaluoPage() {
           </button>
           <button
             type="button"
-            className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl border border-neutral-200 bg-white text-[#0B1220] text-[15px] font-medium hover:bg-neutral-50 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl border border-neutral-200 bg-white text-[#14130f] text-[15px] font-medium hover:bg-neutral-50 transition-colors"
           >
             <WhatsappLogo className="w-5 h-5" weight="fill" style={{ color: '#25D366' }} />
             Quiero hablarlo con un asesor

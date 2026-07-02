@@ -12,6 +12,7 @@
  */
 
 import { CurrencyDollar, Wallet, TrendUp, Info } from '@phosphor-icons/react'
+import { IconButton } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import {
   Tooltip,
@@ -100,9 +101,14 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="flex-shrink-0 text-fg-muted hover:text-fg">
-                      <Info className="h-3 w-3" />
-                    </button>
+                    <IconButton
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      icon={<Info className="h-3 w-3" />}
+                      aria-label={t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
+                      className="flex-shrink-0"
+                    />
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs text-xs">
                     {t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}

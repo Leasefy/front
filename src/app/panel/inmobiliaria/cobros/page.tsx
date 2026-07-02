@@ -14,9 +14,9 @@ import {
 import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Pagination } from '@/components/ui/pagination';
-import { Button } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 import { ErrorState } from '@/components/ui/error-state';
-import { SegmentedControl } from '@leasefy/ui';
+import { SegmentedControl } from '@leasefy/cadence';
 import {
   useCobros,
   useCobroSummary,
@@ -432,7 +432,7 @@ function CobrosContent() {
         <div>
           {cobrosLoading ? (
             <div className="p-12 text-center">
-              <div className="inline-block w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+              <Spinner size="lg" className="mb-4" />
               <p className="text-sm text-fg-muted">Cargando cobros...</p>
             </div>
           ) : cobrosError ? (

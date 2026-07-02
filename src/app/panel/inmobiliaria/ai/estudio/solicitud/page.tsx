@@ -30,7 +30,6 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -171,15 +170,6 @@ function EstudioSolicitud() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/estudio"
-          icon={PaperPlaneTilt}
-          crumbs={[
-            { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-            { label: tf(`${NS}.overview.title`, 'Estudios de inquilinos'), href: '/panel/inmobiliaria/ai/estudio' },
-            { label: tf(`${NS}.solicitud.title`, 'Solicitud al candidato') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {tf(`${NS}.solicitud.title`, 'Solicitud al candidato')}
         </h1>

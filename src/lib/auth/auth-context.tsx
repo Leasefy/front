@@ -23,7 +23,12 @@ interface AuthProviderProps {
 
 /** Map a backend user response to our frontend User type */
 function mapBackendUser(data: Record<string, unknown>): User {
-  const backendRole = (data.role as string) || 'TENANT'
+  // DEV-LOCAL-OVERRIDE (2026-06-14, NO COMMIT): en localhost trata cualquier
+  // cuenta como agencia para probar el panel de inmobiliaria con una cuenta
+  // tenant. Revertir antes de commit. Buscar "DEV-LOCAL-OVERRIDE".
+  const LOCAL_AGENCY =
+    typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  const backendRole = LOCAL_AGENCY ? 'AGENT' : ((data.role as string) || 'TENANT')
   const firstName = (data.firstName as string) || ''
   const lastName = (data.lastName as string) || ''
   const frontendRole = toFrontendRole(backendRole as import('./types').BackendRole)
@@ -87,7 +92,12 @@ function mapSupabaseUser(session: Session): User {
     firstName: meta.first_name || fullName.split(' ')[0] || '',
     lastName: meta.last_name || fullName.split(' ').slice(1).join(' ') || '',
     avatar: meta.avatar_url || meta.picture || undefined,
-    role: 'tenant',
+    // DEV-LOCAL-OVERRIDE (2026-06-14, NO COMMIT): agencia en localhost. Revertir
+    // a 'tenant' antes de commit. Buscar "DEV-LOCAL-OVERRIDE".
+    role:
+      typeof window !== 'undefined' && window.location.hostname === 'localhost'
+        ? 'agency'
+        : 'tenant',
     // When the backend is unreachable we have no way to confirm onboarding status.
     // Default to true so the user isn't incorrectly sent to the onboarding flow —
     // the panel will gracefully degrade on its own since all API calls will fail too.

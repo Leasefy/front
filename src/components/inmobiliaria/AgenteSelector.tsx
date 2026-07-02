@@ -10,10 +10,17 @@ import {
   MapPin,
   ChartLineUp,
   Percent,
-  CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
 interface AgenteSelectorProps {
@@ -123,38 +130,34 @@ export function AgenteSelector({
       {/* Filters Row */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Zone Filter */}
-        <div className="relative">
-          <select
-            value={zoneFilter}
-            onChange={(e) => setZoneFilter(e.target.value)}
-            className="appearance-none pl-4 pr-8 py-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="all">{t('inmobiliaria.agente.allZones')}</option>
+        <Select value={zoneFilter} onValueChange={setZoneFilter}>
+          <SelectTrigger className="w-auto">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('inmobiliaria.agente.allZones')}</SelectItem>
             {zones.map((zone) => (
-              <option key={zone} value={zone}>
+              <SelectItem key={zone} value={zone}>
                 {zone}
-              </option>
+              </SelectItem>
             ))}
-          </select>
-          <CaretDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
+          </SelectContent>
+        </Select>
 
         {/* Sort Selector */}
-        <div className="relative">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="appearance-none pl-4 pr-8 py-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="recommended">{t('inmobiliaria.agente.sortRecommended')}</option>
-            <option value="name">{t('inmobiliaria.agente.sortByName')}</option>
-            <option value="workload">{t('inmobiliaria.agente.sortLeastWorkload')}</option>
-            <option value="performance">{t('inmobiliaria.agente.sortBestPerformance')}</option>
-          </select>
-          <CaretDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+          <SelectTrigger className="w-auto">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recommended">{t('inmobiliaria.agente.sortRecommended')}</SelectItem>
+            <SelectItem value="name">{t('inmobiliaria.agente.sortByName')}</SelectItem>
+            <SelectItem value="workload">{t('inmobiliaria.agente.sortLeastWorkload')}</SelectItem>
+            <SelectItem value="performance">{t('inmobiliaria.agente.sortBestPerformance')}</SelectItem>
+          </SelectContent>
+        </Select>
 
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">
+        <span className="text-sm text-fg-muted dark:text-fg-subtle">
           {filteredAgentes.length === 1
             ? t('inmobiliaria.agente.availableAgentSingular')
             : t('inmobiliaria.agente.availableAgentsPlural', { count: String(filteredAgentes.length) })}
@@ -174,7 +177,7 @@ export function AgenteSelector({
                 'relative p-4 rounded-xl border text-left transition-all duration-200',
                 value === null
                   ? 'border-primary/30 bg-primary-soft ring-2 ring-primary/30'
-                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:'
+                  : 'border-border dark:border-strong bg-surface dark:bg-[#14130F] hover:border-border dark:hover:border-strong hover:'
               )}
             >
               {/* Selected Indicator */}
@@ -224,15 +227,15 @@ export function AgenteSelector({
                 'relative p-4 rounded-xl border text-left transition-all duration-200',
                 value === agente.id
                   ? 'border-primary/30 bg-primary-soft ring-2 ring-primary/30'
-                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:'
+                  : 'border-border dark:border-strong bg-surface dark:bg-[#14130F] hover:border-border dark:hover:border-strong hover:'
               )}
             >
               {/* Recommended Badge */}
               {isRecommended(agente.id) && (
-                <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-warning-soft text-warning text-xs font-medium flex items-center gap-1">
+                <Badge variant="warning" className="absolute -top-2 -right-2 gap-1">
                   <Star className="w-3 h-3" weight="fill" />
                   {t('inmobiliaria.agente.recommended')}
-                </div>
+                </Badge>
               )}
 
               {/* Selected Indicator */}
@@ -267,20 +270,13 @@ export function AgenteSelector({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-neutral-900 dark:text-white truncate text-sm">
+                  <h3 className="font-semibold text-fg dark:text-white truncate text-sm">
                     {agente.name}
                   </h3>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-full text-xs font-medium',
-                      agente.role === 'director'
-                        ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
-                        : agente.role === 'coordinator'
-                          ? 'bg-primary-soft text-primary'
-                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-                    )}>
+                    <Badge variant={agente.role === 'coordinator' ? 'default' : 'secondary'}>
                       {ROLE_LABELS[agente.role]}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -289,11 +285,11 @@ export function AgenteSelector({
               <div className="space-y-2 text-sm">
                 {/* Zone */}
                 {agente.zone && (
-                  <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-                    <MapPin className="w-4 h-4 text-neutral-400" />
+                  <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle">
+                    <MapPin className="w-4 h-4 text-fg-subtle" />
                     <span>{agente.zone}</span>
                     {agente.specialization && (
-                      <span className="text-neutral-400">
+                      <span className="text-fg-subtle">
                         · {SPECIALIZATION_LABELS[agente.specialization]}
                       </span>
                     )}
@@ -301,8 +297,8 @@ export function AgenteSelector({
                 )}
 
                 {/* Workload */}
-                <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-                  <Briefcase className="w-4 h-4 text-neutral-400" />
+                <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle">
+                  <Briefcase className="w-4 h-4 text-fg-subtle" />
                   <span>
                     {agente.assignedPropertyIds.length === 1
                       ? t('inmobiliaria.agente.assignedPropertySingular')
@@ -311,11 +307,11 @@ export function AgenteSelector({
                 </div>
 
                 {/* Metrics Row */}
-                <div className="flex items-center gap-4 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                <div className="flex items-center gap-4 pt-2 border-t border-faint dark:border-strong">
                   {/* Commission Split */}
                   <div className="flex items-center gap-1.5">
                     <Percent className="w-4 h-4 text-success" />
-                    <span className="text-neutral-900 dark:text-white font-medium">
+                    <span className="text-fg font-mono tabular-nums font-medium">
                       {agente.commissionSplit}%
                     </span>
                   </div>
@@ -323,14 +319,14 @@ export function AgenteSelector({
                   {/* Conversion Rate */}
                   <div className="flex items-center gap-1.5">
                     <ChartLineUp className="w-4 h-4 text-primary" />
-                    <span className="text-neutral-900 dark:text-white font-medium">
+                    <span className="text-fg font-mono tabular-nums font-medium">
                       {Math.round(agente.metrics.conversionRate * 100)}%
                     </span>
                   </div>
 
                   {/* Closed This Month */}
-                  <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
-                    <span>{agente.metrics.closedThisMonth} {t('inmobiliaria.agente.closedPerMonth')}</span>
+                  <div className="flex items-center gap-1.5 text-fg-muted">
+                    <span><span className="font-mono tabular-nums">{agente.metrics.closedThisMonth}</span> {t('inmobiliaria.agente.closedPerMonth')}</span>
                   </div>
                 </div>
               </div>
@@ -338,9 +334,9 @@ export function AgenteSelector({
           ))}
         </div>
       ) : (
-        <div className="p-8 text-center rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416]">
-          <User className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
-          <p className="text-neutral-500 dark:text-neutral-400">
+        <div className="p-8 text-center rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-[#14130F]">
+          <User className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
+          <p className="text-fg-muted dark:text-fg-subtle">
             {zoneFilter !== 'all'
               ? t('inmobiliaria.agente.noAgentsInZone')
               : t('inmobiliaria.agente.noActiveAgentsAvailable')}

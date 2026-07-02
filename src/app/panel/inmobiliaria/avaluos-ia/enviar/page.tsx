@@ -25,10 +25,12 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { BrandContour } from '@leasefy/ui'
+import { BrandContour, MonoLabel } from '@leasefy/cadence'
+
+import { Button, Card, Textarea } from '@/components/ui'
 
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #0B1220 56%, #122457 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
 const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
 const RECOMENDADO = 3_450_000
 
@@ -60,34 +62,33 @@ export default function EnviarReportePage() {
     return (
       <div className="p-6 lg:p-8">
         <div className="mx-auto max-w-[460px] pt-10 text-center space-y-5">
-          <span className="inline-flex items-center justify-center w-16 h-16 rounded-2xl" style={{ background: '#E9F3EE' }}>
-            <CheckCircle className="w-8 h-8" weight="fill" style={{ color: '#2C7A53' }} />
+          <span className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-success-soft">
+            <CheckCircle className="w-8 h-8 text-success" weight="fill" />
           </span>
           <div className="space-y-1.5">
-            <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#0B1220]">Reporte enviado a Carlos</h1>
-            <p className="text-[14px] text-neutral-500 leading-relaxed">
+            <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-fg">Reporte enviado a Carlos</h1>
+            <p className="text-[14px] text-fg-muted leading-relaxed">
               {channel === 'pdf'
                 ? 'Descargamos el PDF. Cuando se lo compartas, Camila vigila la respuesta.'
                 : `Se lo enviamos por ${channel === 'whatsapp' ? 'WhatsApp' : 'correo'}. Camila te avisa cuando lo abra y responda.`}
             </p>
           </div>
           <div className="flex items-center justify-center gap-3 pt-1">
-            <Link
-              href="/panel/inmobiliaria/avaluos-ia/r1"
-              className="inline-flex items-center gap-2 h-11 px-5 rounded-lg text-white text-sm font-medium"
-              style={{ background: BLUE }}
-            >
-              Volver al avalúo
-            </Link>
-            <a
-              href="/avaluo-ia/reporte"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 h-11 px-4 rounded-lg border border-neutral-200 text-[#0B1220] text-sm font-medium hover:bg-neutral-50 transition-colors"
-            >
-              Ver el reporte
-              <ArrowSquareOut className="w-4 h-4 text-neutral-500" />
-            </a>
+            <Button asChild hideArrow>
+              <Link href="/panel/inmobiliaria/avaluos-ia/r1">
+                Volver al avalúo
+              </Link>
+            </Button>
+            <Button asChild variant="outline" hideArrow>
+              <a
+                href="/avaluo-ia/reporte"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Ver el reporte
+                <ArrowSquareOut className="w-4 h-4 text-fg-muted" />
+              </a>
+            </Button>
           </div>
         </div>
       </div>
@@ -100,37 +101,37 @@ export default function EnviarReportePage() {
         {/* Header */}
         <Link
           href="/panel/inmobiliaria/avaluos-ia/r1"
-          className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#0B1220] transition-colors"
+          className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-fg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Resultado del avalúo
         </Link>
 
         <div className="space-y-1">
-          <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#0B1220]">Enviar reporte al propietario</h1>
-          <p className="text-[14px] text-neutral-500">Carlos verá el número sustentado y podrá aprobarlo desde el mismo enlace.</p>
+          <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-fg">Enviar reporte al propietario</h1>
+          <p className="text-[14px] text-fg-muted">Carlos verá el número sustentado y podrá aprobarlo desde el mismo enlace.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
           {/* ── Compose (left) ──────────────────────────────────────────── */}
           <div className="space-y-5 min-w-0">
             {/* Recipient */}
-            <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-              <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 mb-3">Para</p>
+            <Card className="rounded-2xl p-5">
+              <div className="mb-3"><MonoLabel>Para</MonoLabel></div>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full text-[14px] font-medium shrink-0" style={{ background: '#EEF1F6', color: '#3A4254' }}>
+                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full text-[14px] font-medium shrink-0 bg-surface-muted text-fg-muted">
                   CR
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[14px] font-medium text-[#0B1220]">Carlos Restrepo</p>
-                  <p className="text-[12.5px] text-neutral-500">Propietario · Cra. 43 #5-20, El Poblado</p>
+                  <p className="text-[14px] font-medium text-fg">Carlos Restrepo</p>
+                  <p className="text-[12.5px] text-fg-muted">Propietario · Cra. 43 #5-20, El Poblado</p>
                 </div>
               </div>
-            </section>
+            </Card>
 
             {/* Channel */}
-            <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-              <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 mb-3">Cómo enviarlo</p>
+            <Card className="rounded-2xl p-5">
+              <div className="mb-3"><MonoLabel>Cómo enviarlo</MonoLabel></div>
               <div className="grid grid-cols-3 gap-3">
                 {CHANNELS.map((c) => {
                   const CIcon = c.icon
@@ -141,12 +142,12 @@ export default function EnviarReportePage() {
                       type="button"
                       onClick={() => setChannel(c.key)}
                       aria-pressed={isSel}
-                      className="relative rounded-xl border bg-white p-3.5 text-left transition-all active:scale-[0.99]"
+                      className="relative rounded-xl border bg-surface p-3.5 text-left transition-all active:scale-[0.99]"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
                       <CIcon className="w-6 h-6 mb-2" weight="fill" style={{ color: c.color }} />
-                      <p className="text-[13.5px] font-medium text-[#0B1220]">{c.label}</p>
-                      <p className="text-[11.5px] text-neutral-500 truncate mt-0.5">{c.detail}</p>
+                      <p className="text-[13.5px] font-medium text-fg">{c.label}</p>
+                      <p className="text-[11.5px] text-fg-muted truncate mt-0.5">{c.detail}</p>
                       {isSel && (
                         <span className="absolute top-3 right-3 inline-flex items-center justify-center w-4 h-4 rounded-full" style={{ background: BLUE }}>
                           <Check className="w-2.5 h-2.5 text-white" weight="bold" />
@@ -156,34 +157,34 @@ export default function EnviarReportePage() {
                   )
                 })}
               </div>
-            </section>
+            </Card>
 
             {/* Message */}
             {channel !== 'pdf' && (
-              <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
+              <Card className="rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400">Mensaje</p>
-                  <span className="text-[11.5px] text-neutral-400">Redactado por Sofía · editable</span>
+                  <MonoLabel>Mensaje</MonoLabel>
+                  <span className="text-[11.5px] text-fg-subtle">Redactado por Sofía · editable</span>
                 </div>
-                <textarea
+                <Textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
-                  className="w-full rounded-lg border border-neutral-200 bg-white p-3 text-[13.5px] text-[#0B1220] leading-relaxed resize-none focus:outline-none focus:border-[#1A40FF] focus:ring-1 focus:ring-[#1A40FF]"
+                  className="text-[13.5px] leading-relaxed resize-none"
                 />
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-neutral-50 px-3 py-2">
-                  <span className="font-mono text-[11px] text-neutral-400 truncate flex-1">leasefy.co/r/aV3-9kQ</span>
-                  <span className="text-[11px] text-neutral-400">enlace del reporte</span>
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-2">
+                  <span className="font-mono text-[11px] text-fg-subtle truncate flex-1">leasefy.co/r/aV3-9kQ</span>
+                  <span className="text-[11px] text-fg-subtle">enlace del reporte</span>
                 </div>
-              </section>
+              </Card>
             )}
           </div>
 
           {/* ── Report preview (right) ──────────────────────────────────── */}
           <aside className="lg:sticky lg:top-6">
-            <section className="rounded-2xl border border-neutral-200/80 bg-white overflow-hidden">
-              <div className="px-4 pt-4 pb-3 border-b border-neutral-100">
-                <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400">Lo que verá Carlos</p>
+            <section className="rounded-2xl border border-border bg-surface overflow-hidden">
+              <div className="px-4 pt-4 pb-3 border-b border-border-faint">
+                <MonoLabel>Lo que verá Carlos</MonoLabel>
               </div>
               {/* mini ink preview */}
               <div className="p-4">
@@ -193,39 +194,41 @@ export default function EnviarReportePage() {
                   </div>
                   <div className="relative space-y-0.5">
                     <span className="font-mono text-[8.5px] font-medium uppercase tracking-[0.12em] text-white/50">Canon recomendado</span>
-                    <div className="text-[24px] font-semibold tracking-[-0.02em] text-white tabular-nums leading-none pt-1">
+                    <div className="text-[24px] font-semibold tracking-[-0.02em] text-white font-mono tabular-nums leading-none pt-1">
                       {COP.format(RECOMENDADO)}
                     </div>
                     <div className="text-[10px] text-white/50">por mes</div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1.5">
-                  <div className="h-2 rounded-full bg-neutral-100 w-3/4" />
-                  <div className="h-2 rounded-full bg-neutral-100 w-full" />
-                  <div className="h-2 rounded-full bg-neutral-100 w-2/3" />
+                  <div className="h-2 rounded-full bg-surface-muted w-3/4" />
+                  <div className="h-2 rounded-full bg-surface-muted w-full" />
+                  <div className="h-2 rounded-full bg-surface-muted w-2/3" />
                 </div>
-                <a
-                  href="/avaluo-ia/reporte"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 w-full inline-flex items-center justify-center gap-1.5 h-9 rounded-lg border border-neutral-200 text-[12.5px] font-medium text-[#0B1220] hover:bg-neutral-50 transition-colors"
-                >
-                  Ver reporte completo
-                  <ArrowSquareOut className="w-3.5 h-3.5 text-neutral-500" />
-                </a>
+                <Button asChild variant="outline" size="sm" hideArrow className="mt-4 w-full">
+                  <a
+                    href="/avaluo-ia/reporte"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Ver reporte completo
+                    <ArrowSquareOut className="w-3.5 h-3.5 text-fg-muted" />
+                  </a>
+                </Button>
               </div>
             </section>
 
             {/* Send CTA */}
-            <button
+            <Button
               type="button"
               onClick={() => setSent(true)}
-              className="mt-4 w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl text-white text-[15px] font-medium transition-colors"
-              style={{ background: BLUE }}
+              size="lg"
+              hideArrow
+              className="mt-4 w-full"
             >
               <PaperPlaneTilt className="w-4 h-4" weight="fill" />
               {CTA_LABEL[channel]}
-            </button>
+            </Button>
           </aside>
         </div>
       </div>

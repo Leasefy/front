@@ -67,14 +67,14 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
       <Link
         href={href ?? '#'}
         className="group relative h-full rounded-xl p-5 flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(150deg, #0B1220 58%, #122457 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
+        style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
       >
         {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
         <div className="absolute -inset-x-1 top-[34%] h-[44%] text-white/[0.14] pointer-events-none">
           <BrandContour />
         </div>
         <div className="flex items-start justify-between">
-          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-white/55">{title}</span>
+          <MonoLabel className="text-[11px] font-medium text-white/55">{title}</MonoLabel>
           <div className="rounded-xl p-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
             <Icon weight="duotone" className="h-4 w-4 text-white/90" />
           </div>
@@ -389,9 +389,9 @@ export default function InmobiliariaDashboardPage() {
       <div className="flex flex-col gap-1">
         <span className="inline-flex items-center gap-2 mb-1">
           <BrandDot />
-          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
+          <MonoLabel className="text-[11px] font-medium text-primary">
             {t('inmobiliaria.dashboard.title')}
-          </span>
+          </MonoLabel>
         </span>
         <h1 className="font-heading text-2xl font-semibold text-fg tracking-tight">
           {t('inmobiliaria.dashboard.subtitle')}

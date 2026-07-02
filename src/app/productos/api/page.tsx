@@ -91,6 +91,7 @@ export default function APIPage() {
               >
                 <Button
                   size="lg"
+                  hideArrow
                   className="w-full sm:w-auto h-12 px-6 rounded-xl bg-foreground text-white hover:bg-foreground/90"
                 >
                   <Bell className="w-4 h-4 mr-2" />

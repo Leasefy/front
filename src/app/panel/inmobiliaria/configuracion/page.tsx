@@ -28,7 +28,9 @@ import {
 } from '@phosphor-icons/react';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
 import { cn } from '@/lib/utils';
-import { Button, Switch } from '@/components/ui';
+import { Button, Switch, Spinner } from '@/components/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import {
@@ -111,7 +113,7 @@ function ConfiguracionContent() {
   const initialTab = (searchParams.get('tab') as ConfigTab) || 'perfil';
 
   // State
-  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab);
+  const [activeTab, setTab] = useState<ConfigTab>(initialTab);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
@@ -405,29 +407,21 @@ function ConfiguracionContent() {
       </div>
 
       {/* Tabs Navigation — selected = soft fill, never solid brand block */}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-4">
+      <Tabs value={activeTab} onValueChange={(v) => setTab(v as ConfigTab)}>
+      <TabsList variant="underline" className="flex-wrap">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary-soft text-primary'
-                  : 'text-fg-muted hover:bg-muted hover:text-fg'
-              )}
-            >
-              <Icon className="w-4 h-4" />
+            <TabsTrigger key={tab.id} value={tab.id} className="inline-flex items-center gap-2 whitespace-nowrap">
+              <Icon className="w-4 h-4 shrink-0" />
               <span>{tab.label}</span>
-            </button>
+            </TabsTrigger>
           );
         })}
-      </div>
+      </TabsList>
 
       {/* Tab Content with Animation */}
+      <TabsContent value={activeTab} className="mt-4">
       <motion.div
         key={activeTab}
         initial={{ opacity: 0, y: 10 }}
@@ -439,7 +433,7 @@ function ConfiguracionContent() {
         {activeTab === 'perfil' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30" />
+              <Spinner size="lg" />
             </div>
           ) : config ? (
             <ConfigPerfilAgencia config={config} onSave={handleSaveConfig} />
@@ -452,7 +446,7 @@ function ConfiguracionContent() {
         {activeTab === 'branding' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30" />
+              <Spinner size="lg" />
             </div>
           ) : config?.branding ? (
             <ConfigBranding branding={config.branding} onSave={handleSaveBranding} />
@@ -465,7 +459,7 @@ function ConfiguracionContent() {
         {activeTab === 'usuarios' && (
           usersLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30" />
+              <Spinner size="lg" />
             </div>
           ) : (
             <ConfigUsuarios
@@ -488,7 +482,7 @@ function ConfiguracionContent() {
         {activeTab === 'integraciones' && (
           integrationsLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30" />
+              <Spinner size="lg" />
             </div>
           ) : (
             <ConfigIntegraciones
@@ -503,7 +497,7 @@ function ConfiguracionContent() {
         {activeTab === 'facturacion' && (
           billingLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30" />
+              <Spinner size="lg" />
             </div>
           ) : billing ? (
             <ConfigFacturacion
@@ -638,20 +632,21 @@ function ConfiguracionContent() {
                     <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.languageDesc')}</p>
                   </div>
                 </div>
-                <div className="relative">
-                  <select
-                    value={locale}
-                    onChange={(e) => {
-                      setLocale(e.target.value as Locale);
-                      toast.success(e.target.value === 'en' ? t('inmobiliaria.config.preferences.langChangedEn') : t('inmobiliaria.config.preferences.langChangedEs'));
-                    }}
-                    className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-border rounded-md bg-background text-fg focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all cursor-pointer"
-                  >
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
-                  </select>
-                  <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted rotate-90 pointer-events-none" />
-                </div>
+                <Select
+                  value={locale}
+                  onValueChange={(v) => {
+                    setLocale(v as Locale);
+                    toast.success(v === 'en' ? t('inmobiliaria.config.preferences.langChangedEn') : t('inmobiliaria.config.preferences.langChangedEs'));
+                  }}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="es">Español</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               {/* AI panel tour toggle — Phase 38 plan 38-06 */}
               <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
@@ -732,9 +727,11 @@ function ConfiguracionContent() {
             <div className="divide-y divide-border">
               <MfaSetupSection />
               {/* Change password */}
-              <button
+              <Button
+                variant="ghost"
+                hideArrow
                 onClick={() => toast.info(t('inmobiliaria.config.security.changePassword'), { description: t('inmobiliaria.config.security.changePasswordToast') })}
-                className="flex items-center justify-between w-full px-6 py-4 hover:bg-muted/40 transition-colors text-left"
+                className="flex items-center justify-between w-full px-6 py-4 h-auto rounded-none text-left hover:bg-muted/40"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
@@ -746,11 +743,13 @@ function ConfiguracionContent() {
                   </div>
                 </div>
                 <CaretRight className="w-4 h-4 text-fg-muted" />
-              </button>
+              </Button>
               {/* Active sessions */}
-              <button
+              <Button
+                variant="ghost"
+                hideArrow
                 onClick={() => toast.info(t('inmobiliaria.config.security.activeSessions'), { description: t('inmobiliaria.config.security.activeSessionsDesc') })}
-                className="flex items-center justify-between w-full px-6 py-4 hover:bg-muted/40 transition-colors text-left"
+                className="flex items-center justify-between w-full px-6 py-4 h-auto rounded-none text-left hover:bg-muted/40"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
@@ -762,11 +761,13 @@ function ConfiguracionContent() {
                   </div>
                 </div>
                 <CaretRight className="w-4 h-4 text-fg-muted" />
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </motion.div>
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

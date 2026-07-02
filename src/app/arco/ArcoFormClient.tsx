@@ -100,7 +100,7 @@ export function ArcoFormClient() {
         : 'text-neutral-500';
 
   return (
-    <div className="w-full max-w-xl rounded-xl border border-neutral-200 bg-white p-8">
+    <div className="w-full max-w-xl rounded-[22px] border border-neutral-200 bg-white p-8">
       {/* Card header */}
       <div className="text-center mb-8">
         <p className="text-xl font-semibold font-heading text-neutral-900 mb-2">

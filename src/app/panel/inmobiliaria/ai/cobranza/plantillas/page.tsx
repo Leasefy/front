@@ -34,7 +34,7 @@ import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templat
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
+import { Button, Badge } from '@/components/ui'
 import {
   Tabs,
   TabsList,
@@ -76,15 +76,15 @@ function tokenBadgeLevel(count: number): 'normal' | 'amber' | 'rose' {
 function StatusPill({ status, t }: { status: 'draft' | 'published'; t: (k: string) => string }) {
   if (status === 'published') {
     return (
-      <span className="inline-flex items-center text-xs rounded-full bg-success-soft text-success px-2 py-0.5">
+      <Badge variant="success">
         {t('inmobiliaria.ai.templates.status.published')}
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex items-center text-xs rounded-full border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 px-2 py-0.5">
+    <Badge variant="outline">
       {t('inmobiliaria.ai.templates.status.draft')}
-    </span>
+    </Badge>
   )
 }
 
@@ -101,26 +101,26 @@ function WaPill({
 }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-success-soft text-success px-2 py-0.5">
+      <Badge variant="success">
         <CheckCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.approved')}
-      </span>
+      </Badge>
     )
   }
   if (status === 'rejected') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-danger-soft text-danger px-2 py-0.5">
+      <Badge variant="destructive">
         <WarningCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.rejected')}
-      </span>
+      </Badge>
     )
   }
   // pending
   return (
-    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-warning-soft text-warning px-2 py-0.5">
+    <Badge variant="warning">
       <Clock className="h-3 w-3" weight="fill" />
       {t('inmobiliaria.ai.templates.waStatus.pending')}
-    </span>
+    </Badge>
   )
 }
 

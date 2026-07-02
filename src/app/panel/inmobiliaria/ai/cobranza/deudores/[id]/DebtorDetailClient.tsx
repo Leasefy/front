@@ -34,7 +34,9 @@ import {
   type PIIFieldKey,
 } from '@/lib/context/PIIRevealContext'
 import { PIIRevealModal } from '@/components/inmobiliaria/cobranza/PIIRevealModal'
-import { Button } from '@/components/ui'
+import { Button, Badge } from '@/components/ui'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, MonoLabel } from '@leasefy/cadence'
 
 import { DebtorSidebar } from './DebtorSidebar'
 import { DebtorActionRail } from './DebtorActionRail'
@@ -90,7 +92,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
     ? (searchParams.get('tab') as TabKey)
     : 'timeline'
 
-  const [activeTab, setActiveTab] = useState<TabKey>(initialTab)
+  const [activeTab, setTab] = useState<TabKey>(initialTab)
   const [tabSwitcherOpen, setTabSwitcherOpen] = useState<boolean>(false)
 
   // Single shared PII reveal modal — driven by lifted state (Task 6).
@@ -179,7 +181,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
   // Write back ?tab=… on tab change (shallow).
   const onTabChange = useCallback(
     (tab: TabKey) => {
-      setActiveTab(tab)
+      setTab(tab)
       setTabSwitcherOpen(false)
       const qs = new URLSearchParams(searchParams.toString())
       qs.set('tab', tab)
@@ -191,7 +193,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
   useEffect(() => {
     // Re-sync if URL changes externally.
     const fromUrl = searchParams.get('tab')
-    if (isTabKey(fromUrl) && fromUrl !== activeTab) setActiveTab(fromUrl)
+    if (isTabKey(fromUrl) && fromUrl !== activeTab) setTab(fromUrl)
   }, [searchParams, activeTab])
 
   const stageColors = useMemo(
@@ -239,9 +241,9 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               </span>
             )}
             {data?.isPaused && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning">
+              <Badge variant="warning">
                 {t('inmobiliaria.ai.cobranza.detail.header.paused')}
-              </span>
+              </Badge>
             )}
           </div>
         </div>
@@ -286,99 +288,79 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               aria-hidden="true"
               className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
             />
-            <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500">
+            <MonoLabel className="text-[10.5px] font-medium text-neutral-400 dark:text-neutral-500">
               {t('inmobiliaria.ai.cobranza.detalle.conversacion')}
-            </span>
+            </MonoLabel>
           </h2>
 
+          <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as TabKey)}>
           {/* Tab nav — md+ horizontal */}
-          <nav
-            role="tablist"
+          <TabsList
+            variant="underline"
             aria-label="Debtor detail tabs"
-            className="hidden md:flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-800 mb-4"
+            className="hidden md:flex mb-4"
           >
             {TAB_KEYS.map((k) => (
-              <button
+              <TabsTrigger
                 key={k}
-                role="tab"
-                aria-selected={activeTab === k}
-                onClick={() => onTabChange(k)}
+                value={k}
                 data-testid={`tab-${k}`}
-                className={
-                  'px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ' +
-                  (activeTab === k
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200')
-                }
               >
                 {t(`inmobiliaria.ai.cobranza.detail.tabs.${k}`)}
-              </button>
+              </TabsTrigger>
             ))}
-          </nav>
+          </TabsList>
 
           {/* Tab switcher — sm bottom-drawer trigger */}
           <div className="md:hidden mb-3 flex items-center justify-between">
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
               onClick={() => setTabSwitcherOpen(true)}
               data-testid="tab-switcher-button"
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
+              className="gap-2"
             >
               <span>{t(`inmobiliaria.ai.cobranza.detail.tabs.${activeTab}`)}</span>
               <span className="text-xs text-neutral-400">▾</span>
-            </button>
+            </Button>
           </div>
 
-          {/* Tab switcher drawer */}
-          {tabSwitcherOpen && (
-            <div
-              className="md:hidden fixed inset-0 z-40 flex items-end"
-              role="dialog"
-              aria-modal="true"
+          {/* Tab switcher drawer → Cadence Sheet (bottom) */}
+          <Sheet open={tabSwitcherOpen} onOpenChange={setTabSwitcherOpen}>
+            <SheetContent
+              side="bottom"
+              className="md:hidden max-h-[60vh] overflow-y-auto rounded-t-xl"
             >
-              <button
-                type="button"
-                aria-label={t('inmobiliaria.ai.cobranza.detail.tabs.closeSwitcher')}
-                onClick={() => setTabSwitcherOpen(false)}
-                className="absolute inset-0 bg-black/40"
-              />
-              <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-xl p-4 max-h-[60vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                    {t('inmobiliaria.ai.cobranza.detail.tabs.switcher')}
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => setTabSwitcherOpen(false)}
-                    className="text-sm text-neutral-500"
-                  >
-                    {t('inmobiliaria.ai.cobranza.detail.tabs.closeSwitcher')}
-                  </button>
-                </div>
-                <ul className="space-y-1">
-                  {TAB_KEYS.map((k) => (
-                    <li key={k}>
-                      <button
-                        type="button"
-                        onClick={() => onTabChange(k)}
-                        className={
-                          'w-full text-left px-3 py-2 rounded-sm text-sm font-medium ' +
-                          (activeTab === k
-                            ? 'bg-primary-soft text-primary'
-                            : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800')
-                        }
-                      >
-                        {t(`inmobiliaria.ai.cobranza.detail.tabs.${k}`)}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+              <SheetHeader>
+                <SheetTitle>{t('inmobiliaria.ai.cobranza.detail.tabs.switcher')}</SheetTitle>
+              </SheetHeader>
+              <ul className="mt-3 space-y-1">
+                {TAB_KEYS.map((k) => (
+                  <li key={k}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
+                      onClick={() => onTabChange(k)}
+                      className={
+                        'w-full justify-start px-3 font-medium ' +
+                        (activeTab === k
+                          ? 'bg-primary-soft text-primary'
+                          : 'text-neutral-700 dark:text-neutral-200')
+                      }
+                    >
+                      {t(`inmobiliaria.ai.cobranza.detail.tabs.${k}`)}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </SheetContent>
+          </Sheet>
 
           {/* Lazy-mount per active tab (D-31-09): non-active tabs unmount,
               so their data hooks do not poll until activated. */}
+          <TabsContent value={activeTab} className="mt-0">
           {activeTab === 'timeline' && (
             <TimelineTab debtorId={debtorId} refetchKey={timelineRefetchKey} />
           )}
@@ -398,6 +380,8 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               onIntervention={onIntervention}
             />
           )}
+          </TabsContent>
+          </Tabs>
         </section>
 
         {/* DERECHA — recomendación */}

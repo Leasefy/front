@@ -144,6 +144,7 @@ export function ComisionDesglose({
     return (
       <button
         onClick={() => setIsExpanded(true)}
+        aria-expanded={false}
         className={cn(
           'w-full flex items-center justify-between p-4 text-left group hover:bg-muted/30 transition-colors',
           className
@@ -177,6 +178,7 @@ export function ComisionDesglose({
       {variant === 'compact' && isExpanded && (
         <button
           onClick={() => setIsExpanded(false)}
+          aria-expanded={true}
           className="w-full px-4 py-3 flex items-center justify-between text-left border-b border-border hover:bg-muted/30 transition-colors"
         >
           <span className="text-sm text-muted-foreground">

@@ -3,7 +3,7 @@ import leasefyBridge from "./tailwind.leasefy";
 
 const config: Config = {
     darkMode: ["class"],
-    // @leasefy/ui bridge — DS theme names (surface/fg/ink/text-label/shadow-glow…)
+    // @leasefy/cadence bridge — DS theme names (surface/fg/ink/text-label/shadow-glow…)
     // resolve here; mvp's own keys below win on collision (same brand values).
     presets: [leasefyBridge as Config],
     content: [
@@ -11,7 +11,7 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     // design-system components (symlinked package) — Tailwind must see their classes
-    "./node_modules/@leasefy/ui/src/**/*.{ts,tsx}",
+    "./node_modules/@leasefy/cadence/src/**/*.{ts,tsx}",
   ],
   theme: {
   	container: {
@@ -31,13 +31,21 @@ const config: Config = {
   			heading: ['var(--font-heading)'],
   			mono: ['var(--font-mono)'],
   		},
-  		// escala @leasefy/ui (BRAND-CONTRACT §3) — reemplaza la escala shadcn
-  		// tras el radius sweep (rounded-md→sm, rounded-lg→md, rounded-2xl/3xl→xl).
+  		// escala @leasefy/cadence (BRAND-CONTRACT §3 / .dc.html §04 Radius) — DEBE
+  		// coincidir EXACTAMENTE con cadence/tailwind.preset.ts, porque mvp genera el
+  		// CSS de las clases horneadas de los componentes cadence. La escala anterior
+  		// (6/8/12/16) estaba mal rotulada y achicaba todo radio cadence (lg 22→12).
   		borderRadius: {
-  			sm: '6px',
-  			md: '8px',
-  			lg: '12px',
-  			xl: '16px',
+  			sm: '8px',
+  			md: '14px',
+  			lg: '22px',
+  			xl: '32px',
+  			'2xl': '32px',
+  			full: '9999px',
+  		},
+  		// Cadence signature spring (overshoot) — mirrors cadence preset's `ease-spring`
+  		transitionTimingFunction: {
+  			spring: 'cubic-bezier(0.34,1.56,0.64,1)',
   		},
   		zIndex: {
   			dropdown: 'var(--z-dropdown)',
@@ -64,8 +72,8 @@ const config: Config = {
   				'100%': { transform: 'translateX(400%)' }
   			},
   			'shimmer': {
-  				'0%': { backgroundPosition: '-200% 0' },
-  				'100%': { backgroundPosition: '200% 0' }
+  				'0%': { backgroundPosition: '-340px 0' },
+  				'100%': { backgroundPosition: '340px 0' }
   			},
   			'fade-in': {
   				from: { opacity: '0' },
@@ -78,6 +86,14 @@ const config: Config = {
   			'scale-in': {
   				from: { opacity: '0', transform: 'scale(0.95)' },
   				to: { opacity: '1', transform: 'scale(1)' }
+  			},
+  			'command-pop': {
+  				from: { opacity: '0', transform: 'translateY(-12px) scale(0.96)' },
+  				to: { opacity: '1', transform: 'translateY(0) scale(1)' }
+  			},
+  			'command-rows': {
+  				from: { opacity: '0', transform: 'translateY(8px)' },
+  				to: { opacity: '1', transform: 'translateY(0)' }
   			},
   			'slide-in-right': {
   				from: { transform: 'translateX(100%)', opacity: '0.5' },
@@ -133,11 +149,13 @@ const config: Config = {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'indeterminate': 'indeterminate 1.5s ease-in-out infinite',
-  			'shimmer': 'shimmer 2s linear infinite',
+  			'shimmer': 'shimmer 1.4s linear infinite',
   			'sweep': 'sweep 3s ease-in-out infinite',
   			'fade-in': 'fade-in 0.2s ease-out',
   			'fade-in-up': 'fade-in-up 0.3s ease-out',
   			'scale-in': 'scale-in 0.2s ease-out',
+  			'command-pop': 'command-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1)',
+  			'command-rows': 'command-rows 0.34s ease 0.08s',
   			'slide-in-right': 'slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
   			'slide-in-left': 'slide-in-left 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
   			'slide-in-up': 'slide-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1)',

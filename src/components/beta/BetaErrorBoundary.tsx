@@ -2,6 +2,7 @@
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { WarningCircle, ArrowClockwise } from '@phosphor-icons/react';
+import { Button } from '@/components/ui';
 
 interface Props {
   children: ReactNode;
@@ -53,15 +54,14 @@ export class BetaErrorBoundary extends Component<Props, State> {
           <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
             Ocurrio un error inesperado. Puedes intentar de nuevo o recargar la pagina.
           </p>
-          <button
+          <Button
             onClick={this.handleRetry}
-            className="flex items-center gap-2 px-4 py-2 rounded-md
- bg-primary text-white hover:opacity-90
- text-sm font-medium transition-colors"
+            hideArrow
+            className="gap-2 px-4 py-2 h-auto rounded-md text-sm font-medium"
           >
             <ArrowClockwise className="w-4 h-4" />
             Intentar de nuevo
-          </button>
+          </Button>
         </div>
       );
     }

@@ -3,7 +3,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { FileArrowUp } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
-import { BackButton } from '@leasefy/ui';
+import { BackButton } from '@leasefy/cadence';
 import { ImportWizard } from '@/components/inmobiliaria/import/ImportWizard';
 
 function ImportarContent() {

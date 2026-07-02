@@ -33,12 +33,10 @@ import Link from 'next/link'
 import {
   Buildings,
   CheckCircle,
-  CircleNotch,
   Clock,
   DownloadSimple,
   FileText,
   FolderSimple,
-  Megaphone,
   NotePencil,
   PaperPlaneTilt,
   ShieldCheck,
@@ -46,11 +44,9 @@ import {
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { useI18n } from '@/lib/i18n'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Card, CardContent } from '@/components/ui'
-import { SegmentedControl, Eyebrow } from '@leasefy/ui'
+import { Button, Card, CardContent, Spinner } from '@/components/ui'
+import { SegmentedControl, Eyebrow } from '@leasefy/cadence'
 import {
   useOwnerReports,
   type OwnerReport,
@@ -58,7 +54,6 @@ import {
 } from '@/lib/hooks/cobranza/use-owner-reports'
 
 const BASE = '/panel/inmobiliaria/ai/cobranza'
-const NS = 'inmobiliaria.ai.cobranza.overview'
 const PROPIETARIOS_HREF = '/panel/inmobiliaria/propietarios'
 
 // ── Estado del reporte (vocabulario propio de esta superficie de preview) ─────
@@ -319,8 +314,6 @@ const FILTER_TO_STATUS: Record<string, OwnerReportStatus | undefined> = {
 }
 
 function ReportesPropietariosContent() {
-  const { t } = useI18n()
-
   const {
     reports,
     isLoading,
@@ -429,18 +422,8 @@ function ReportesPropietariosContent() {
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
-      {/* Header — patrón MigaDePan (cobranza) */}
+      {/* Header */}
       <header className="space-y-1">
-        <MigaDePan
-          backHref={BASE}
-          icon={Megaphone}
-          className="mb-2"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t(`${NS}.title`), href: BASE },
-            { label: 'Reportes a propietarios' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">
           Reportes a propietarios
         </h1>
@@ -483,7 +466,7 @@ function ReportesPropietariosContent() {
 
           {isLoading && !hayReales ? (
             <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-sm text-fg-muted">
-              <CircleNotch className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
+              <Spinner size="sm" variant="muted" className="shrink-0" />
               Cargando reportes…
             </div>
           ) : visibles.length > 0 ? (
@@ -538,7 +521,7 @@ function ReportesPropietariosContent() {
                   }
                 >
                   {isApproving ? (
-                    <CircleNotch className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                    <Spinner size="sm" variant="current" />
                   ) : (
                     <PaperPlaneTilt className="w-3.5 h-3.5" aria-hidden="true" />
                   )}
@@ -559,7 +542,7 @@ function ReportesPropietariosContent() {
                   }
                 >
                   {isGenerating ? (
-                    <CircleNotch className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                    <Spinner size="sm" variant="current" />
                   ) : (
                     <FileText className="w-3.5 h-3.5" aria-hidden="true" />
                   )}
@@ -578,7 +561,7 @@ function ReportesPropietariosContent() {
                   }
                 >
                   {isDownloading ? (
-                    <CircleNotch className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                    <Spinner size="sm" variant="current" />
                   ) : (
                     <DownloadSimple className="w-3.5 h-3.5" aria-hidden="true" />
                   )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   TrendUp,
   TrendDown,
@@ -18,7 +18,22 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/ui';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { SegmentedControl } from '@leasefy/cadence';
 import type {
   TrendAnalysis,
   ComparisonPeriod,
@@ -27,7 +42,6 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import {
   formatCurrency,
-  getAnomalySeverityColor,
   getSeasonColor,
   getTrendDirectionColor,
 } from '@/lib/types/inmobiliaria';
@@ -59,55 +73,54 @@ function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
   const isPercentMetric = analysis.metricId !== 'revenue' && analysis.metricId !== 'commissions';
 
   return (
-    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-      <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+      <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-4">
         {t('inmobiliaria.analytics.trendsComp.periodComparison')}
       </h3>
 
       <div className="grid grid-cols-2 gap-6">
         {/* Current Period */}
         <div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
             {comparison.current.label}
           </p>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <p className="text-2xl font-bold text-fg dark:text-white">
             {isPercentMetric
               ? `${comparison.current.value.toFixed(1)}%`
               : formatCurrency(comparison.current.value)}
           </p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+          <p className="text-xs text-fg-subtle dark:text-fg-muted mt-1">
             {comparison.current.startDate} - {comparison.current.endDate}
           </p>
         </div>
 
         {/* Previous Period */}
         <div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
             {comparison.previous.label}
           </p>
-          <p className="text-xl font-semibold text-neutral-600 dark:text-neutral-300">
+          <p className="text-xl font-semibold text-fg-muted dark:text-fg-subtle">
             {isPercentMetric
               ? `${comparison.previous.value.toFixed(1)}%`
               : formatCurrency(comparison.previous.value)}
           </p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+          <p className="text-xs text-fg-subtle dark:text-fg-muted mt-1">
             {comparison.previous.startDate} - {comparison.previous.endDate}
           </p>
         </div>
       </div>
 
       {/* Change Indicator */}
-      <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-        <div
-          className={cn(
-            'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium',
-            comparison.change.direction === 'up' &&
-              'bg-success-soft text-success',
-            comparison.change.direction === 'down' &&
-              'bg-danger-soft text-danger',
-            comparison.change.direction === 'stable' &&
-              'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-          )}
+      <div className="mt-4 pt-4 border-t border-faint dark:border-strong">
+        <Badge
+          variant={
+            comparison.change.direction === 'up'
+              ? 'success'
+              : comparison.change.direction === 'down'
+              ? 'destructive'
+              : 'secondary'
+          }
+          className="gap-2 px-3 py-1.5 text-sm"
         >
           {comparison.change.direction === 'up' && <TrendUp className="w-4 h-4" weight="bold" />}
           {comparison.change.direction === 'down' && (
@@ -125,7 +138,7 @@ function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
                 : formatCurrency(Math.abs(comparison.change.absolute))})
             </span>
           )}
-        </div>
+        </Badge>
       </div>
     </div>
   );
@@ -198,19 +211,19 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
   const isPercentMetric = analysis.metricId !== 'revenue' && analysis.metricId !== 'commissions';
 
   return (
-    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+        <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.analytics.trendsComp.historicTrend')}
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-0.5 bg-primary rounded" />
-            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.historic')}</span>
+            <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.trendsComp.historic')}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-neutral-400 rounded border-dashed" style={{ borderTop: '2px dashed' }} />
-            <span className="text-neutral-500 dark:text-neutral-400">
+            <span className="w-3 h-0.5 bg-muted rounded border-dashed" style={{ borderTop: '2px dashed' }} />
+            <span className="text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.analytics.trendsComp.trend')} ({(analysis.trendLine.confidence * 100).toFixed(0)}% {t('inmobiliaria.analytics.trendsComp.conf')})
             </span>
           </div>
@@ -237,7 +250,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
               x={padding.left - 8}
               y={padding.top + innerHeight * ratio + 4}
               textAnchor="end"
-              className="fill-neutral-400 dark:fill-neutral-500"
+              className="fill-[#B3AEA5] dark:fill-[#726E68]"
               fontSize={10}
             >
               {isPercentMetric
@@ -256,7 +269,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
               x={point.x}
               y={chartHeight - 8}
               textAnchor="middle"
-              className="fill-neutral-400 dark:fill-neutral-500"
+              className="fill-[#B3AEA5] dark:fill-[#726E68]"
               fontSize={10}
             >
               {point.data.label}
@@ -331,14 +344,14 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
               cx={ap.x}
               cy={ap.y}
               r={8}
-              fill={ap.anomaly.severity === 'high' ? '#C4503B' : '#9B9B9B'}
+              fill={ap.anomaly.severity === 'high' ? '#C0392B' : '#9B9B9B'}
               fillOpacity={0.3}
             />
             <circle
               cx={ap.x}
               cy={ap.y}
               r={5}
-              fill={ap.anomaly.severity === 'high' ? '#C4503B' : '#9B9B9B'}
+              fill={ap.anomaly.severity === 'high' ? '#C0392B' : '#9B9B9B'}
               stroke="white"
               strokeWidth={2}
             />
@@ -357,13 +370,13 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
               fill="white"
               stroke="#E5E7EB"
               strokeWidth={1}
-              className="dark:fill-neutral-800 dark:stroke-neutral-700"
+              className="dark:fill-[#2A2824] dark:stroke-[#4D4A45]"
             />
             <text
               x={points[hoveredIndex].x}
               y={points[hoveredIndex].y - 30}
               textAnchor="middle"
-              className="fill-neutral-900 dark:fill-white"
+              className="fill-[#14130F] dark:fill-white"
               fontSize={12}
               fontWeight={600}
             >
@@ -373,7 +386,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
               x={points[hoveredIndex].x}
               y={points[hoveredIndex].y - 16}
               textAnchor="middle"
-              className="fill-neutral-500 dark:fill-neutral-400"
+              className="fill-[#726E68] dark:fill-[#B3AEA5]"
               fontSize={10}
             >
               {points[hoveredIndex].data.date}
@@ -405,16 +418,16 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
   const maxDev = Math.max(...allMonths.map((m) => Math.abs(m.deviation)));
 
   return (
-    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-md bg-warning-soft flex items-center justify-center">
           <Calendar className="w-4 h-4 text-warning" />
         </div>
         <div>
-          <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
+          <h3 className="text-sm font-medium text-fg dark:text-white">
             {t('inmobiliaria.analytics.trendsComp.seasonalPatterns')}
           </h3>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.analytics.trendsComp.seasonalDeviationDesc')}
           </p>
         </div>
@@ -429,13 +442,13 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
             transition={{ delay: i * 0.03 }}
             className="flex items-center gap-3"
           >
-            <span className="w-8 text-xs font-medium text-neutral-500 dark:text-neutral-400 capitalize">
+            <span className="w-8 text-xs font-medium text-fg-muted dark:text-fg-subtle capitalize">
               {month.monthName.slice(0, 3)}
             </span>
 
             <div className="flex-1 h-6 flex items-center">
               {/* Zero line */}
-              <div className="absolute w-px h-6 bg-neutral-300 dark:bg-neutral-600" style={{ left: '50%' }} />
+              <div className="absolute w-px h-6 bg-muted dark:bg-ink" style={{ left: '50%' }} />
 
               {/* Bar */}
               <div className="w-full h-4 relative flex items-center justify-center">
@@ -458,7 +471,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
                 'w-12 text-xs font-medium text-right',
                 month.deviation > 0 && 'text-success',
                 month.deviation < 0 && 'text-danger',
-                month.deviation === 0 && 'text-neutral-500 dark:text-neutral-400'
+                month.deviation === 0 && 'text-fg-muted dark:text-fg-subtle'
               )}
             >
               {month.deviation > 0 && '+'}
@@ -475,18 +488,18 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center gap-4 text-xs">
+      <div className="mt-4 pt-4 border-t border-faint dark:border-strong flex items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
           <Sun className="w-4 h-4 text-warning" weight="fill" />
-          <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.highSeason')}</span>
+          <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.trendsComp.highSeason')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-2 bg-success rounded-sm" />
-          <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.aboveAverage')}</span>
+          <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.trendsComp.aboveAverage')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-2 bg-danger rounded-sm" />
-          <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.belowAverage')}</span>
+          <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.trendsComp.belowAverage')}</span>
         </div>
       </div>
 
@@ -498,9 +511,9 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
             .map((p, i) => (
               <div
                 key={i}
-                className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-400 p-2 rounded-md bg-neutral-50 dark:bg-neutral-800/50"
+                className="flex items-start gap-2 text-xs text-fg-muted dark:text-fg-subtle p-2 rounded-md bg-surface-muted dark:bg-ink/50"
               >
-                <Info className="w-3.5 h-3.5 text-neutral-400 shrink-0 mt-0.5" />
+                <Info className="w-3.5 h-3.5 text-fg-subtle shrink-0 mt-0.5" />
                 <span>
                   <strong>{p.monthName}:</strong> {p.notes}
                 </span>
@@ -521,14 +534,14 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
 
   if (anomalies.length === 0) {
     return (
-      <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+      <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center">
             <Warning className="w-4 h-4 text-success" />
           </div>
-          <h3 className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.trendsComp.anomalies')}</h3>
+          <h3 className="text-sm font-medium text-fg dark:text-white">{t('inmobiliaria.analytics.trendsComp.anomalies')}</h3>
         </div>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-6">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle text-center py-6">
           {t('inmobiliaria.analytics.trendsComp.noAnomalies')}
         </p>
       </div>
@@ -536,68 +549,68 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
   }
 
   return (
-    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-md bg-warning-soft flex items-center justify-center">
           <Warning className="w-4 h-4 text-warning" />
         </div>
         <div>
-          <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
+          <h3 className="text-sm font-medium text-fg dark:text-white">
             {t('inmobiliaria.analytics.trendsComp.anomaliesDetected')}
           </h3>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.analytics.trendsComp.anomaliesCount', { count: anomalies.length })}
           </p>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-neutral-100 dark:border-neutral-800">
-              <th className="text-left p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+        <Table className="w-full">
+          <TableHeader>
+            <TableRow className="border-b border-faint dark:border-strong">
+              <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.trendsComp.date')}
-              </th>
-              <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.trendsComp.value')}
-              </th>
-              <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.trendsComp.expected')}
-              </th>
-              <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.trendsComp.deviation')}
-              </th>
-              <th className="text-center p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-center p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.trendsComp.severity')}
-              </th>
-              <th className="text-left p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.trendsComp.description')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {anomalies.map((anomaly, index) => (
               <motion.tr
                 key={index}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="border-b border-neutral-50 dark:border-neutral-800/50"
+                className="border-b border-faint dark:border-strong/50"
               >
-                <td className="p-2 text-sm font-medium text-neutral-900 dark:text-white">
+                <TableCell className="p-2 text-sm font-medium text-fg dark:text-white">
                   {new Date(anomaly.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',
                   })}
-                </td>
-                <td className="p-2 text-sm text-right font-medium text-neutral-900 dark:text-white">
+                </TableCell>
+                <TableCell className="p-2 text-sm text-right font-medium text-fg dark:text-white">
                   {isPercentMetric ? `${anomaly.value}%` : formatCurrency(anomaly.value)}
-                </td>
-                <td className="p-2 text-sm text-right text-neutral-500 dark:text-neutral-400">
+                </TableCell>
+                <TableCell className="p-2 text-sm text-right text-fg-muted dark:text-fg-subtle">
                   {isPercentMetric ? `${anomaly.expectedValue}%` : formatCurrency(anomaly.expectedValue)}
-                </td>
-                <td
+                </TableCell>
+                <TableCell
                   className={cn(
                     'p-2 text-sm text-right font-medium',
                     anomaly.deviationPercent > 0
@@ -607,26 +620,30 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
                 >
                   {anomaly.deviationPercent > 0 && '+'}
                   {anomaly.deviationPercent}%
-                </td>
-                <td className="p-2 text-center">
-                  <span
-                    className={cn(
-                      'px-2 py-1 rounded-full text-xs font-medium capitalize',
-                      getAnomalySeverityColor(anomaly.severity)
-                    )}
+                </TableCell>
+                <TableCell className="p-2 text-center">
+                  <Badge
+                    variant={
+                      anomaly.severity === 'high'
+                        ? 'destructive'
+                        : anomaly.severity === 'medium'
+                        ? 'warning'
+                        : 'secondary'
+                    }
+                    className="capitalize"
                   >
                     {anomaly.severity === 'high' && t('inmobiliaria.analytics.trendsComp.severityHigh')}
                     {anomaly.severity === 'medium' && t('inmobiliaria.analytics.trendsComp.severityMedium')}
                     {anomaly.severity === 'low' && t('inmobiliaria.analytics.trendsComp.severityLow')}
-                  </span>
-                </td>
-                <td className="p-2 text-sm text-neutral-600 dark:text-neutral-400 max-w-[200px] truncate">
+                  </Badge>
+                </TableCell>
+                <TableCell className="p-2 text-sm text-fg-muted dark:text-fg-subtle max-w-[200px] truncate">
                   {anomaly.description}
-                </td>
+                </TableCell>
               </motion.tr>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -698,7 +715,7 @@ export function AnalyticsTrends({
 
   if (!currentAnalysis) {
     return (
-      <div className={cn('p-6 text-center text-neutral-500', className)}>
+      <div className={cn('p-6 text-center text-fg-muted', className)}>
         {t('inmobiliaria.analytics.trendsComp.noData')}
       </div>
     );
@@ -724,44 +741,25 @@ export function AnalyticsTrends({
 
         <div className="flex items-center gap-2">
           {/* Metric Selector */}
-          <div className="relative">
-            <Button
-              variant="secondary"
-              size="sm"
-              hideArrow
-              onClick={() => setIsMetricDropdownOpen(!isMetricDropdownOpen)}
-              className="gap-2"
-            >
-              {currentAnalysis.metricLabel}
-              <CaretDown className={cn('w-4 h-4 transition-transform', isMetricDropdownOpen && 'rotate-180')} />
-            </Button>
-
-            <AnimatePresence>
-              {isMetricDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-48 rounded-xl border border-border bg-card z-10 overflow-hidden"
+          <DropdownList open={isMetricDropdownOpen} onOpenChange={setIsMetricDropdownOpen}>
+            <DropdownListTrigger asChild>
+              <Button variant="secondary" size="sm" hideArrow className="gap-2">
+                {currentAnalysis.metricLabel}
+                <CaretDown className={cn('w-4 h-4 transition-transform', isMetricDropdownOpen && 'rotate-180')} />
+              </Button>
+            </DropdownListTrigger>
+            <DropdownListContent align="end" className="w-48">
+              {data.map((item) => (
+                <DropdownListItem
+                  key={item.metricId}
+                  onClick={() => handleMetricChange(item.metricId)}
+                  className={cn(activeMetric === item.metricId && 'bg-primary-soft text-primary font-medium')}
                 >
-                  {data.map((item) => (
-                    <button
-                      key={item.metricId}
-                      onClick={() => handleMetricChange(item.metricId)}
-                      className={cn(
-                        'w-full px-4 py-2.5 text-left text-sm transition-colors',
-                        activeMetric === item.metricId
-                          ? 'bg-primary-soft text-primary font-medium'
-                          : 'text-fg hover:bg-muted'
-                      )}
-                    >
-                      {item.metricLabel}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  {item.metricLabel}
+                </DropdownListItem>
+              ))}
+            </DropdownListContent>
+          </DropdownList>
 
           {/* Period Selector */}
           <SegmentedControl<ComparisonPeriod>
@@ -780,8 +778,8 @@ export function AnalyticsTrends({
         <PeriodComparisonCard analysis={currentAnalysis} />
 
         {/* Trend Summary Card */}
-        <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+        <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+          <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-4">
             {t('inmobiliaria.analytics.trendsComp.trendLine')}
           </h3>
           <div className="flex items-center gap-4">
@@ -790,7 +788,7 @@ export function AnalyticsTrends({
                 'w-14 h-14 rounded-xl flex items-center justify-center',
                 currentAnalysis.trendLine.direction === 'up' && 'bg-success-soft',
                 currentAnalysis.trendLine.direction === 'down' && 'bg-danger-soft',
-                currentAnalysis.trendLine.direction === 'stable' && 'bg-neutral-100 dark:bg-neutral-800'
+                currentAnalysis.trendLine.direction === 'stable' && 'bg-surface-muted dark:bg-ink'
               )}
             >
               {currentAnalysis.trendLine.direction === 'up' && (
@@ -800,23 +798,23 @@ export function AnalyticsTrends({
                 <TrendDown className="w-7 h-7 text-danger" weight="bold" />
               )}
               {currentAnalysis.trendLine.direction === 'stable' && (
-                <Minus className="w-7 h-7 text-neutral-600 dark:text-neutral-400" weight="bold" />
+                <Minus className="w-7 h-7 text-fg-muted dark:text-fg-subtle" weight="bold" />
               )}
             </div>
             <div>
-              <p className="text-lg font-semibold text-neutral-900 dark:text-white capitalize">
+              <p className="text-lg font-semibold text-fg dark:text-white capitalize">
                 {currentAnalysis.trendLine.direction === 'up' && t('inmobiliaria.analytics.trendsComp.trendUp')}
                 {currentAnalysis.trendLine.direction === 'down' && t('inmobiliaria.analytics.trendsComp.trendDown')}
                 {currentAnalysis.trendLine.direction === 'stable' && t('inmobiliaria.analytics.trendsComp.trendStable')}
               </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-fg-muted dark:text-fg-subtle">
                 {(currentAnalysis.trendLine.confidence * 100).toFixed(0)}% {t('inmobiliaria.analytics.trendsComp.confidence')}
               </p>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="mt-4 pt-4 border-t border-faint dark:border-strong">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.trendsComp.monthlySlope')}</span>
+              <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.trendsComp.monthlySlope')}</span>
               <span
                 className={cn(
                   'font-medium',
@@ -824,7 +822,7 @@ export function AnalyticsTrends({
                     ? 'text-success'
                     : currentAnalysis.trendLine.slope < 0
                     ? 'text-danger'
-                    : 'text-neutral-600 dark:text-neutral-400'
+                    : 'text-fg-muted dark:text-fg-subtle'
                 )}
               >
                 {currentAnalysis.trendLine.slope > 0 && '+'}

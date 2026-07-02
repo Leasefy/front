@@ -33,6 +33,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@leasefy/cadence';
 import type { ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
@@ -71,13 +72,13 @@ const ICON_MAP: Record<string, React.ElementType> = {
 const CATEGORY_BG_COLORS: Record<ReportCategory, string> = {
   financiero: 'bg-success-soft',
   operativo: 'bg-primary-soft',
-  agentes: 'bg-neutral-100 dark:bg-neutral-800',
+  agentes: 'bg-surface-muted dark:bg-ink',
 };
 
 const CATEGORY_ICON_COLORS: Record<ReportCategory, string> = {
   financiero: 'text-success',
   operativo: 'text-primary',
-  agentes: 'text-neutral-600 dark:text-neutral-300',
+  agentes: 'text-fg-muted dark:text-fg-subtle',
 };
 
 /**
@@ -215,7 +216,7 @@ function OcupacionPreview({ t }: { t: (key: string, params?: Record<string, stri
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-2">
         <div className="p-3 rounded-md bg-muted/50 text-center">
-          <Buildings className="w-5 h-5 mx-auto text-neutral-500 mb-1" />
+          <Buildings className="w-5 h-5 mx-auto text-fg-muted mb-1" />
           <p className="text-lg font-bold text-foreground">{data.totalProperties}</p>
           <p className="text-xs text-muted-foreground">{t('inmobiliaria.reporte.totalLabel')}</p>
         </div>
@@ -577,13 +578,13 @@ export function ReporteViewer({
         {/* Header */}
         <SheetHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-gradient-to-b from-background via-background to-background/95 backdrop-blur-sm z-10">
           {/* Close Button */}
-          <button
+          <IconButton
+            variant="ghost"
             onClick={onClose}
-            className="absolute right-4 top-4 p-2 rounded-md hover:bg-muted transition-colors group"
             aria-label={t('inmobiliaria.reporte.close')}
-          >
-            <X className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" weight="bold" />
-          </button>
+            icon={<X className="w-5 h-5" weight="bold" />}
+            className="absolute right-4 top-4"
+          />
 
           <div className="flex items-start gap-4 pr-10">
             <div

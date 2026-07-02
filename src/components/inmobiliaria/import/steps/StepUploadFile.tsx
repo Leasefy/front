@@ -5,12 +5,29 @@ import { useDropzone } from 'react-dropzone';
 import {
   UploadSimple,
   FileXls,
-  SpinnerGap,
   DownloadSimple,
   WarningCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { MonoLabel } from '@leasefy/cadence';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import { parseSpreadsheetFile, downloadTemplate } from '../lib/parseFile';
 import { autoMapColumns } from '../lib/columnMapping';
 import type { ImportStepProps } from '../ImportWizard';
@@ -107,8 +124,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
     disabled: isParsing,
   });
 
-  const handleSheetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newSheet = e.target.value;
+  const handleSheetChange = (newSheet: string) => {
     if (state.file) {
       updateState({ selectedSheet: newSheet });
       processFile(state.file, newSheet);
@@ -120,10 +136,10 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
+        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
           {t('inmobiliaria.import.steps.upload')}
         </h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.import.upload.formats')}
         </p>
       </div>
@@ -131,18 +147,19 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       {/* Sheet Selector (shown when multi-sheet workbook) */}
       {hasFile && state.sheetNames.length > 1 && (
         <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 shrink-0">
+          <label className="text-sm font-medium text-fg dark:text-fg-subtle shrink-0">
             {t('inmobiliaria.import.upload.selectSheet')}
           </label>
-          <select
-            value={state.selectedSheet}
-            onChange={handleSheetChange}
-            className="flex-1 max-w-xs px-3 py-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {state.sheetNames.map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+          <Select value={state.selectedSheet} onValueChange={handleSheetChange}>
+            <SelectTrigger className="flex-1 max-w-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {state.sheetNames.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
@@ -152,20 +169,21 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         className={cn(
           'border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-200',
           isParsing
-            ? 'border-neutral-300 dark:border-neutral-600 cursor-not-allowed'
+            ? 'border-border dark:border-strong cursor-not-allowed'
             : isDragActive
               ? 'border-primary/30 bg-primary-soft'
               : hasFile
                 ? 'border-success/30 bg-success-soft'
-                : 'border-neutral-300 dark:border-neutral-600 hover:border-primary/30 dark:hover:border-primary/30 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                : 'border-border dark:border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink/50'
         )}
       >
+        {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
         <input {...getInputProps()} />
 
         {isParsing ? (
           <div className="flex flex-col items-center gap-3">
-            <SpinnerGap className="w-16 h-16 text-primary animate-spin" />
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <Spinner size="2xl" />
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.import.upload.parsing')}
             </p>
           </div>
@@ -173,27 +191,27 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
           <div className="flex flex-col items-center gap-3">
             <FileXls className="w-16 h-16 text-success" />
             <div>
-              <p className="font-medium text-neutral-900 dark:text-white">
+              <p className="font-medium text-fg dark:text-white">
                 {state.fileName}
               </p>
               {state.file && (
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
                   {formatFileSize(state.file.size)} &middot; {t('inmobiliaria.import.upload.rowsDetected', { count: state.rawRows.length })}
                 </p>
               )}
             </div>
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-fg-subtle">
               Haz clic o arrastra un archivo para reemplazar
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <UploadSimple className="w-16 h-16 text-neutral-400" />
+            <UploadSimple className="w-16 h-16 text-fg-subtle" />
             <div>
-              <p className="font-medium text-neutral-700 dark:text-neutral-300">
+              <p className="font-medium text-fg dark:text-fg-subtle">
                 {t('inmobiliaria.import.upload.dragText')}
               </p>
-              <p className="text-sm text-neutral-400 mt-1">
+              <p className="text-sm text-fg-subtle mt-1">
                 {t('inmobiliaria.import.upload.formats')}
               </p>
             </div>
@@ -221,50 +239,50 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       {hasFile && state.headers.length > 0 && (
         <div className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+            <h3 className="text-sm font-semibold text-fg dark:text-white">
               Vista previa
             </h3>
-            <span className="text-xs font-mono uppercase tracking-wide text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-sm">
+            <MonoLabel className="text-xs text-fg-muted bg-surface-muted dark:bg-ink px-2 py-1 rounded-sm">
               {t('inmobiliaria.import.upload.rowsDetected', { count: state.rawRows.length })}
-            </span>
+            </MonoLabel>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-neutral-50 dark:bg-neutral-800">
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-strong">
+            <Table className="text-sm">
+              <TableHeader>
+                <TableRow className="bg-surface-muted dark:bg-ink">
                   {state.headers.map((header) => (
-                    <th
+                    <TableHead
                       key={header}
-                      className="px-3 py-2 text-left font-mono text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400 whitespace-nowrap border-b border-neutral-200 dark:border-neutral-700"
+                      className="px-3 py-2 text-left whitespace-nowrap border-b border-border dark:border-strong"
                     >
                       {header}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {state.rawRows.slice(0, 5).map((row) => (
-                  <tr key={row._rowIndex} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
+                  <TableRow key={row._rowIndex} className="border-b border-faint dark:border-strong last:border-0">
                     {state.headers.map((header) => {
                       const value = String(row[header] ?? '');
                       const truncated = value.length > 30 ? value.slice(0, 30) + '...' : value;
                       return (
-                        <td
+                        <TableCell
                           key={header}
-                          className="px-3 py-2 text-neutral-700 dark:text-neutral-300 whitespace-nowrap"
+                          className="px-3 py-2 text-fg dark:text-fg-subtle whitespace-nowrap"
                           title={value}
                         >
-                          {truncated || <span className="text-neutral-300 dark:text-neutral-600">—</span>}
-                        </td>
+                          {truncated || <span className="text-fg-subtle dark:text-fg-muted">—</span>}
+                        </TableCell>
                       );
                     })}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           {state.rawRows.length > 5 && (
-            <p className="text-xs text-neutral-400 mt-2 text-center">
+            <p className="text-xs text-fg-subtle mt-2 text-center">
               Mostrando 5 de {state.rawRows.length} filas
             </p>
           )}
@@ -274,14 +292,17 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       {/* Download Template Link */}
       {!hasFile && (
         <div className="text-center">
-          <button
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             type="button"
             onClick={downloadTemplate}
-            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+            className="gap-2"
           >
             <DownloadSimple className="w-4 h-4" />
             {t('inmobiliaria.import.upload.downloadTemplate')}
-          </button>
+          </Button>
         </div>
       )}
     </div>

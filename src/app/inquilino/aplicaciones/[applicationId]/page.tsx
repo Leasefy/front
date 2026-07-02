@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -173,7 +174,7 @@ export default function ApplicationDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
   }
@@ -186,13 +187,13 @@ export default function ApplicationDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center px-6"
         >
-          <div className="w-20 h-20 rounded-full bg-neutral-100 dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
-            <FileText className="w-10 h-10 text-neutral-400" />
+          <div className="w-20 h-20 rounded-full bg-surface-muted dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
+            <FileText className="w-10 h-10 text-fg-subtle" />
           </div>
-          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-3">
+          <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
             {locale === 'es' ? 'Aplicación no encontrada' : 'Application not found'}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
+          <p className="text-fg-muted dark:text-fg-subtle mb-6 max-w-sm">
             {error || (locale === 'es'
               ? 'No pudimos encontrar esta aplicación. Es posible que haya sido eliminada o el enlace sea incorrecto.'
               : 'We couldn\'t find this application. It may have been deleted or the link is incorrect.')}
@@ -214,7 +215,7 @@ export default function ApplicationDetailPage() {
     pre_approved: { label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved', color: 'text-[#1A40FF]', bgColor: 'bg-[#EEF1FF]', icon: ThumbsUp },
     approved: { label: locale === 'es' ? 'Aprobada' : 'Approved', color: 'text-[#2C7A53]', bgColor: 'bg-[#E8F3EC]', icon: Confetti },
     rejected: { label: locale === 'es' ? 'Rechazada' : 'Rejected', color: 'text-[#C4503B]', bgColor: 'bg-[#F8EAE7]', icon: XCircle },
-    withdrawn: { label: locale === 'es' ? 'Retirada' : 'Withdrawn', color: 'text-neutral-600', bgColor: 'bg-neutral-100', icon: XCircle },
+    withdrawn: { label: locale === 'es' ? 'Retirada' : 'Withdrawn', color: 'text-fg-muted', bgColor: 'bg-surface-muted', icon: XCircle },
   };
 
   const progressSteps = [
@@ -313,7 +314,7 @@ export default function ApplicationDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative rounded-xl overflow-hidden bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-[#1a1a1c] dark:to-[#1a1a1c] border border-transparent dark:border-neutral-800 mb-8"
+          className="relative rounded-xl overflow-hidden bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-[#1a1a1c] dark:to-[#1a1a1c] border border-transparent dark:border-border-strong mb-8"
         >
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
@@ -341,9 +342,11 @@ export default function ApplicationDetailPage() {
                   <StatusIcon className="w-4 h-4" />
                   {status.label}
                 </span>
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={copyTrackingCode}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-[#2a2a2c] hover:bg-white dark:hover:bg-[#3a3a3e] text-neutral-600 dark:text-neutral-300 text-sm transition-colors"
+                  className="rounded-full bg-surface/80 dark:bg-[#2a2a2c] hover:bg-surface dark:hover:bg-[#3a3a3e] text-fg-muted dark:text-fg-subtle"
                 >
                   {copied ? (
                     <>
@@ -356,16 +359,16 @@ export default function ApplicationDetailPage() {
                       {application.trackingCode}
                     </>
                   )}
-                </button>
+                </Button>
               </div>
 
               {/* Property Info */}
               {property && (
                 <Link href={`/propiedades/${property.id}`} className="group">
-                  <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors mb-2">
+                  <h1 className="text-2xl lg:text-3xl font-semibold text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors mb-2">
                     {property.title}
                   </h1>
-                  <p className="text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mb-4">
+                  <p className="text-fg-muted dark:text-fg-subtle flex items-center gap-1.5 mb-4">
                     <MapPin className="w-4 h-4" />
                     {property.neighborhood}, {property.city}
                   </p>
@@ -375,19 +378,19 @@ export default function ApplicationDetailPage() {
               {/* Price and Date */}
               <div className="flex flex-wrap items-center gap-6 mb-6">
                 <div>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">
                     {locale === 'es' ? 'Arriendo mensual' : 'Monthly rent'}
                   </p>
-                  <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                  <p className="text-2xl font-bold text-fg dark:text-white">
                     {formatCurrency(property?.monthlyRent || 0)}
                   </p>
                 </div>
-                <div className="h-10 w-px bg-neutral-200 dark:bg-neutral-700 hidden sm:block" />
+                <div className="h-10 w-px bg-surface-muted dark:bg-surface-muted hidden sm:block" />
                 <div>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">
                     {locale === 'es' ? 'Fecha de envío' : 'Submitted on'}
                   </p>
-                  <p className="text-lg font-medium text-neutral-700 dark:text-neutral-200 flex items-center gap-1.5">
+                  <p className="text-lg font-medium text-fg dark:text-neutral-200 flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
                     {formatShortDate(application.submittedAt)}
                   </p>
@@ -396,7 +399,7 @@ export default function ApplicationDetailPage() {
 
               {/* Progress Steps */}
               {!isFinalStatus && (
-                <div className="pt-6 border-t border-neutral-200 dark:border-neutral-700">
+                <div className="pt-6 border-t border-border dark:border-border-strong">
                   <div className="flex items-center justify-between">
                     {progressSteps.map((step, index) => {
                       const StepIcon = step.icon;
@@ -410,9 +413,9 @@ export default function ApplicationDetailPage() {
                               'w-10 h-10 rounded-full flex items-center justify-center transition-all',
                               isCompleted
                                 ? isCurrent
-                                  ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
+                                  ? 'bg-[#1A40FF] text-white'
                                   : 'bg-[#2C7A53] text-white'
-                                : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400'
+                                : 'bg-surface-muted dark:bg-surface-muted text-fg-subtle'
                             )}>
                               {isCompleted && !isCurrent ? (
                                 <CheckCircle className="w-5 h-5" />
@@ -422,7 +425,7 @@ export default function ApplicationDetailPage() {
                             </div>
                             <span className={cn(
                               'text-xs mt-2 font-medium hidden sm:block',
-                              isCurrent ? 'text-[#1A40FF] dark:text-[#5570FF]' : isCompleted ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-neutral-400'
+                              isCurrent ? 'text-[#1A40FF] dark:text-[#5570FF]' : isCompleted ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-fg-subtle'
                             )}>
                               {step.label}
                             </span>
@@ -430,7 +433,7 @@ export default function ApplicationDetailPage() {
                           {index < progressSteps.length - 1 && (
                             <div className={cn(
                               'w-8 sm:w-16 lg:w-24 h-1 mx-2 rounded-full transition-colors',
-                              index < currentStep ? 'bg-[#2C7A53]' : 'bg-neutral-200 dark:bg-neutral-700'
+                              index < currentStep ? 'bg-[#2C7A53]' : 'bg-surface-muted dark:bg-surface-muted'
                             )} />
                           )}
                         </div>
@@ -678,13 +681,15 @@ export default function ApplicationDetailPage() {
                           ? 'Revisá la sección de Acciones para completar lo que se te pidió y notificar a la inmobiliaria.'
                           : 'Check the Actions section to complete what was requested and notify the agency.'}
                       </p>
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
-                        className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-[#B7791F] hover:bg-[#B7791F] text-white rounded-xl text-sm font-semibold transition-colors"
+                        className="mt-3 bg-[#B7791F] hover:bg-[#B7791F] text-white"
                       >
                         <ArrowClockwise className="w-4 h-4" />
                         {locale === 'es' ? 'Completar información' : 'Complete information'}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -748,15 +753,15 @@ export default function ApplicationDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6"
+              className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6"
             >
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-6">
+              <h2 className="text-lg font-semibold text-fg dark:text-white mb-6">
                 {locale === 'es' ? 'Historial de la aplicación' : 'Application history'}
               </h2>
 
               <div className="relative">
                 {/* Timeline line */}
-                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-neutral-200 dark:bg-neutral-700" />
+                <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-surface-muted dark:bg-surface-muted" />
 
                 {/* Events */}
                 <div className="space-y-6">
@@ -776,8 +781,8 @@ export default function ApplicationDetailPage() {
                         <div className={cn(
                           'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-all',
                           isFirst
-                            ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
-                            : 'bg-white dark:bg-[#2a2a2c] border-2 border-neutral-200 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400'
+                            ? 'bg-[#1A40FF] text-white'
+                            : 'bg-surface dark:bg-[#2a2a2c] border-2 border-border dark:border-border-strong text-fg-muted dark:text-fg-subtle'
                         )}>
                           <EventIcon className="w-4 h-4" />
                         </div>
@@ -786,11 +791,11 @@ export default function ApplicationDetailPage() {
                         <div className="flex-1 pt-2">
                           <p className={cn(
                             'text-sm',
-                            isFirst ? 'font-semibold text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-300'
+                            isFirst ? 'font-semibold text-fg dark:text-white' : 'text-fg-muted dark:text-fg-subtle'
                           )}>
                             {event.description}
                           </p>
-                          <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1.5">
+                          <p className="text-xs text-fg-subtle mt-1 flex items-center gap-1.5">
                             <Clock className="w-3 h-3" />
                             {formatDate(event.timestamp)} · {formatTime(event.timestamp)}
                           </p>
@@ -808,9 +813,9 @@ export default function ApplicationDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6"
+                className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6"
               >
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+                <h2 className="text-lg font-semibold text-fg dark:text-white mb-4">
                   {locale === 'es' ? 'Propiedad' : 'Property'}
                 </h2>
 
@@ -825,21 +830,21 @@ export default function ApplicationDetailPage() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-neutral-900 dark:text-white">{property.title}</h3>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mt-1">
+                    <h3 className="font-semibold text-fg dark:text-white">{property.title}</h3>
+                    <p className="text-sm text-fg-muted dark:text-fg-subtle flex items-center gap-1 mt-1">
                       <MapPin className="w-3.5 h-3.5" />
                       {property.neighborhood}, {property.city}
                     </p>
-                    <p className="text-lg font-bold text-neutral-900 dark:text-white mt-1">
+                    <p className="text-lg font-bold text-fg dark:text-white mt-1">
                       {formatCurrency(property.monthlyRent)}
-                      <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">/mes</span>
+                      <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/mes</span>
                     </p>
                   </div>
                 </div>
 
                 <Link
                   href={`/propiedades/${property.id}`}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] hover:border-neutral-300 dark:hover:border-neutral-500 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-border dark:border-border-strong text-sm font-medium text-fg dark:text-neutral-200 hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:border-border dark:hover:border-border-strong transition-colors"
                 >
                   {locale === 'es' ? 'Ver propiedad completa' : 'View full property'}
                   <ArrowUpRight className="w-4 h-4" />
@@ -857,37 +862,37 @@ export default function ApplicationDetailPage() {
               transition={{ delay: 0.25 }}
               className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6"
             >
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
+              <h3 className="font-semibold text-fg dark:text-white mb-4">
                 {locale === 'es' ? 'Acciones' : 'Actions'}
               </h3>
 
               <div className="space-y-3">
                 <button
                   onClick={() => router.push(`/inquilino/mensajes?applicationId=${applicationId}`)}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-white dark:bg-[#1a1a1c] hover: transition-all group"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface dark:bg-[#1a1a1c] hover: transition-all group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center group-hover:opacity-90 transition-colors">
                     <ChatCircle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] group-hover:text-white transition-colors" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                    <p className="text-sm font-medium text-fg dark:text-white">
                       {locale === 'es' ? 'Contactar propietario' : 'Contact landlord'}
                     </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <p className="text-xs text-fg-muted dark:text-fg-subtle">
                       {locale === 'es' ? 'Envía un mensaje' : 'Send a message'}
                     </p>
                   </div>
                 </button>
 
-                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-white dark:bg-[#1a1a1c] hover: transition-all group">
+                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface dark:bg-[#1a1a1c] hover: transition-all group">
                   <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center group-hover:bg-[#2C7A53] transition-colors">
                     <Phone className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70] group-hover:text-white transition-colors" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                    <p className="text-sm font-medium text-fg dark:text-white">
                       {locale === 'es' ? 'Llamar' : 'Call'}
                     </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <p className="text-xs text-fg-muted dark:text-fg-subtle">
                       {locale === 'es' ? 'Contacto directo' : 'Direct contact'}
                     </p>
                   </div>
@@ -905,7 +910,7 @@ export default function ApplicationDetailPage() {
                       <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
                         {locale === 'es' ? 'Completar información' : 'Complete information'}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle">
                         {locale === 'es' ? 'La inmobiliaria aguarda tu respuesta' : 'Agency awaiting your response'}
                       </p>
                     </div>
@@ -917,7 +922,7 @@ export default function ApplicationDetailPage() {
                     type="button"
                     onClick={() => setConfirmWithdrawOpen(true)}
                     disabled={isWithdrawing}
-                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/50 dark:bg-[#1a1a1c]/50 hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/40 transition-all group border border-transparent hover:border-[#C4503B]/30 dark:hover:border-[#C4503B]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface/50 dark:bg-[#1a1a1c]/50 hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/40 transition-all group border border-transparent hover:border-[#C4503B]/30 dark:hover:border-[#C4503B]/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center group-hover:bg-[#F8EAE7] dark:group-hover:bg-[#C4503B]/50 transition-colors">
                       <XCircle className="w-5 h-5 text-[#C4503B]" />
@@ -926,7 +931,7 @@ export default function ApplicationDetailPage() {
                       <p className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">
                         {locale === 'es' ? 'Retirar aplicación' : 'Withdraw application'}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle">
                         {locale === 'es' ? 'Cancelar solicitud' : 'Cancel request'}
                       </p>
                     </div>
@@ -1016,39 +1021,39 @@ export default function ApplicationDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6"
+              className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6"
             >
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
+              <h3 className="font-semibold text-fg dark:text-white mb-4">
                 {locale === 'es' ? 'Resumen' : 'Summary'}
               </h3>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
                     {locale === 'es' ? 'Código' : 'Code'}
                   </span>
-                  <span className="text-sm font-mono font-medium text-neutral-900 dark:text-white">{application.trackingCode}</span>
+                  <span className="text-sm font-mono font-medium text-fg dark:text-white">{application.trackingCode}</span>
                 </div>
-                <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
+                <div className="h-px bg-surface-muted dark:bg-surface-muted" />
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
                     {locale === 'es' ? 'Enviada' : 'Submitted'}
                   </span>
-                  <span className="text-sm font-medium text-neutral-900 dark:text-white">{formatShortDate(application.submittedAt)}</span>
+                  <span className="text-sm font-medium text-fg dark:text-white">{formatShortDate(application.submittedAt)}</span>
                 </div>
-                <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
+                <div className="h-px bg-surface-muted dark:bg-surface-muted" />
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
                     {locale === 'es' ? 'Estado actual' : 'Current status'}
                   </span>
                   <span className={cn('text-sm font-medium', status.color)}>{status.label}</span>
                 </div>
-                <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
+                <div className="h-px bg-surface-muted dark:bg-surface-muted" />
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
                     {locale === 'es' ? 'Ubicación' : 'Location'}
                   </span>
-                  <span className="text-sm font-medium text-neutral-900 dark:text-white">{property?.city || '-'}</span>
+                  <span className="text-sm font-medium text-fg dark:text-white">{property?.city || '-'}</span>
                 </div>
               </div>
             </motion.div>

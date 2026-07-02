@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Chip } from '@leasefy/cadence';
 import {
   Tooltip,
   TooltipContent,
@@ -56,10 +57,10 @@ function IPCTrendChart({ data, t }: { data: IPCRecord[]; t: (key: string) => str
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">{t('inmobiliaria.finance.ipc.trend12m')}</span>
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-soft text-xs font-medium text-success">
+        <Badge variant="success" className="gap-1.5">
           <TrendDown className="h-3.5 w-3.5" weight="bold" />
           <span>{t('inmobiliaria.finance.ipc.decreasing')}</span>
-        </span>
+        </Badge>
       </div>
       <div className="relative h-28 flex items-end gap-2 p-3 rounded-xl bg-muted/30">
         <TooltipProvider>
@@ -119,18 +120,14 @@ function CurrentIPCDisplay({ ipc }: { ipc: IPCRecord }) {
           <p className="text-sm text-muted-foreground">{ipc.description}</p>
         </div>
       </div>
-      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
-        isDown
-          ? 'bg-success-soft text-success dark:bg-success/15 dark:text-success'
-          : 'bg-danger-soft text-danger dark:bg-danger/15 dark:text-danger'
-      }`}>
+      <Badge variant={isDown ? 'success' : 'destructive'} className="gap-1.5">
         {isDown ? (
           <TrendDown className="h-4 w-4" weight="bold" />
         ) : (
           <TrendUp className="h-4 w-4" weight="bold" />
         )}
         <span>{Math.abs(change).toFixed(2)}%</span>
-      </div>
+      </Badge>
     </div>
   );
 }
@@ -228,17 +225,13 @@ function CalculatorForm({
             </div>
             {t('inmobiliaria.finance.ipc.ipcRate')}
           </Label>
-          <button
-            type="button"
+          <Chip
+            size="sm"
+            selected={useCustomRate}
             onClick={() => setUseCustomRate(!useCustomRate)}
-            className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
-              useCustomRate
-                ? 'bg-primary-soft text-primary dark:bg-primary/15 dark:text-primary dark:bg-primary/40 dark:text-primary'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
           >
             {useCustomRate ? t('inmobiliaria.finance.ipc.useOfficial') : t('inmobiliaria.finance.ipc.customize')}
-          </button>
+          </Chip>
         </div>
         {useCustomRate ? (
           <Input

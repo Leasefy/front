@@ -19,7 +19,7 @@ import { FileText, DownloadSimple, ShareNetwork } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
-import { SegmentedControl } from '@leasefy/ui'
+import { SegmentedControl } from '@leasefy/cadence'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import type { EstudioDecision, TenantScoringResult } from '@/lib/estudio/decision'
 

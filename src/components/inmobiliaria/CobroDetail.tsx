@@ -35,8 +35,10 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@leasefy/cadence';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency as formatCurrencyUtil, getCobroStatusColor } from '@/lib/types/inmobiliaria';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 import { usePropietarios, useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { useLenis } from '@/components/providers/SmoothScroll';
 
@@ -119,13 +121,14 @@ function CopyButton({ text, tooltip }: { text: string; tooltip: string }) {
   };
 
   return (
-    <button
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={<Copy className="w-4 h-4" />}
       onClick={handleCopy}
-      className="p-1.5 rounded-sm hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+      aria-label={tooltip}
       title={tooltip}
-    >
-      <Copy className="w-4 h-4" />
-    </button>
+    />
   );
 }
 
@@ -173,11 +176,15 @@ function StatusBadge({ status }: { status: CobroStatus }) {
     defaulted: t('inmobiliaria.cobros.status.defaulted'),
   };
 
-  return (
-    <span className={cn('px-3 py-1.5 rounded-full text-sm font-medium', getCobroStatusColor(status))}>
-      {STATUS_LABELS[status]}
-    </span>
-  );
+  const STATUS_VARIANT = {
+    pending: 'warning',
+    paid: 'success',
+    partial: 'default',
+    late: 'destructive',
+    defaulted: 'destructive',
+  } as const;
+
+  return <Badge variant={STATUS_VARIANT[status]}>{STATUS_LABELS[status]}</Badge>;
 }
 
 /**
@@ -375,7 +382,7 @@ export function CobroDetail({
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center">
                   <User className="w-6 h-6 text-primary" />
                 </div>
                 <div>
@@ -583,7 +590,7 @@ export function CobroDetail({
                     className="p-3 rounded-xl border border-border bg-muted/30 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center">
                         {reminder.channel === 'email' ? (
                           <Envelope className="w-4 h-4 text-primary" />
                         ) : (
@@ -652,22 +659,7 @@ export function CobroDetail({
               >
                 {isSendingReminder ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
+                    <Spinner size="sm" variant="current" />
                     {t('inmobiliaria.cobros.detail.sendingReminder')}
                   </span>
                 ) : (

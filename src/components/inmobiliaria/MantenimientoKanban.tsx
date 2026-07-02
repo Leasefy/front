@@ -44,7 +44,7 @@ interface MantenimientoKanbanProps {
 // ============================================================================
 
 const PRIORITY_COLORS: Record<MantenimientoPriority, string> = {
-  emergency: 'border-l-[#C4503B]',
+  emergency: 'border-l-[#C0392B]',
   high: 'border-l-[#B7791F]',
   medium: 'border-l-[#1A40FF]',
   low: 'border-l-[#6B6B6B]',
@@ -147,9 +147,9 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
       exit={{ opacity: 0, scale: 0.95 }}
       onClick={onClick}
       className={cn(
-        'w-full text-left p-3 rounded-md border-l-4 bg-white dark:bg-neutral-800/80',
-        'border border-neutral-200 dark:border-neutral-700',
-        'hover: hover:border-neutral-300 dark:hover:border-neutral-600',
+        'w-full text-left p-3 rounded-md border-l-4 bg-surface dark:bg-ink/80',
+        'border border-border dark:border-strong',
+        'hover: hover:border-border dark:hover:border-strong',
         'transition-all cursor-pointer group',
         PRIORITY_COLORS[solicitud.priority]
       )}
@@ -174,24 +174,24 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
           />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-medium text-neutral-900 dark:text-white line-clamp-2 group-hover:text-primary dark:group-hover:text-primary transition-colors">
+          <h4 className="text-sm font-medium text-fg dark:text-white line-clamp-2 group-hover:text-primary dark:group-hover:text-primary transition-colors">
             {solicitud.title}
           </h4>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
             {typeInfo?.labelEs}
           </p>
         </div>
       </div>
 
       {/* Property */}
-      <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 line-clamp-1">
+      <div className="text-xs text-fg-muted dark:text-fg-subtle mb-2 line-clamp-1">
         <HouseLine className="w-3 h-3 inline mr-1" />
         {solicitud.propertyTitle}
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 text-neutral-400">
+        <div className="flex items-center gap-2 text-fg-subtle">
           <span className="flex items-center gap-1">
             <CalendarBlank className="w-3 h-3" />
             {daysSince}d
@@ -250,7 +250,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
       <div
         className={cn(
           'flex items-center gap-2 px-3 py-2.5 rounded-t-xl border border-b-0',
-          'border-neutral-200 dark:border-neutral-700',
+          'border-border dark:border-strong',
           column.bgColor
         )}
       >
@@ -259,7 +259,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
         <span
           className={cn(
             'ml-auto px-2 py-0.5 rounded-full text-xs font-medium',
-            'bg-white/80 dark:bg-neutral-800/80',
+            'bg-white/80 dark:bg-ink/80',
             column.color
           )}
         >
@@ -271,8 +271,8 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
       <div
         className={cn(
           'flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto',
-          'border-neutral-200 dark:border-neutral-700',
-          'bg-neutral-50/50 dark:bg-neutral-900/30',
+          'border-border dark:border-strong',
+          'bg-surface-muted/50 dark:bg-ink/30',
           'min-h-[200px] max-h-[calc(100vh-400px)]'
         )}
       >
@@ -290,7 +290,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center h-full py-8 text-neutral-400"
+              className="flex flex-col items-center justify-center h-full py-8 text-fg-subtle"
             >
               <Icon className="w-8 h-8 mb-2 opacity-50" />
               <p className="text-xs">{t('inmobiliaria.mantenimiento.noRequests')}</p>

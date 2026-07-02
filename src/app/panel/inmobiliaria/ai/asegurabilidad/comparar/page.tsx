@@ -17,13 +17,14 @@
 import {
   GitDiff,
   ShieldCheck,
-  Table as TableIcon,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
+import { MonoLabel } from '@leasefy/cadence'
+
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.cotizador.comparar'
@@ -56,19 +57,6 @@ function CompararView() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="min-w-0">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/asegurabilidad"
-          icon={TableIcon}
-          className="mb-2"
-          crumbs={[
-            { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-            {
-              label: tf('inmobiliaria.ai.cotizador.overview.title', 'Asegurabilidad'),
-              href: '/panel/inmobiliaria/ai/asegurabilidad',
-            },
-            { label: tf(`${NS}.title`, 'Comparador') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
           {tf(`${NS}.title`, 'Comparador')}
         </h1>
@@ -103,23 +91,23 @@ function CompararView() {
 
         {/* Esqueleto de la matriz: filas = criterios, columnas = aseguradoras */}
         <div className="px-5 pt-5 pb-2">
-          <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+          <MonoLabel>
             {tf(`${NS}.preview.label`, 'Así se verá')}
-          </p>
+          </MonoLabel>
         </div>
         <div className="overflow-x-auto overscroll-contain px-5 pb-5" aria-hidden="true">
-          <table className="min-w-full border-separate border-spacing-0">
-            <thead>
-              <tr>
+          <Table className="min-w-full border-separate border-spacing-0">
+            <TableHeader>
+              <TableRow>
                 {/* Esquina criterio × aseguradora */}
-                <th
+                <TableHead
                   scope="col"
                   className="sticky left-0 z-10 bg-card px-4 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide border-b border-border min-w-[180px]"
                 >
                   {tf(`${NS}.preview.criterioCol`, 'Criterio')}
-                </th>
+                </TableHead>
                 {Array.from({ length: PREVIEW_CARRIER_COLS }).map((_, i) => (
-                  <th
+                  <TableHead
                     key={`carrier-${i}`}
                     scope="col"
                     className="px-4 py-3 text-center border-b border-border min-w-[150px]"
@@ -134,18 +122,18 @@ function CompararView() {
                       </span>
                       <span className="h-2.5 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
                     </span>
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {CRITERIA.map((row, rowIdx) => {
                 const RowIcon = row.icon
                 const isLast = rowIdx === CRITERIA.length - 1
                 return (
-                  <tr key={row.key} className={isLast ? 'bg-neutral-50/60 dark:bg-neutral-800/30' : undefined}>
+                  <TableRow key={row.key} className={isLast ? 'bg-neutral-50/60 dark:bg-neutral-800/30' : undefined}>
                     {/* Etiqueta del criterio (real, para que se entienda la matriz) */}
-                    <th
+                    <TableHead
                       scope="row"
                       className="sticky left-0 z-10 bg-card px-4 py-3.5 text-left text-sm font-medium text-neutral-700 dark:text-neutral-200 border-b border-border align-middle"
                     >
@@ -157,23 +145,23 @@ function CompararView() {
                         />
                         {tf(row.key, row.fallback)}
                       </span>
-                    </th>
+                    </TableHead>
                     {/* Celdas esqueleto por aseguradora */}
                     {Array.from({ length: PREVIEW_CARRIER_COLS }).map((_, colIdx) => (
-                      <td
+                      <TableCell
                         key={`cell-${rowIdx}-${colIdx}`}
                         className="px-4 py-3.5 border-b border-border text-center"
                       >
                         <span
                           className="inline-block h-3 w-16 rounded bg-neutral-100 dark:bg-neutral-800"
                         />
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
     </main>

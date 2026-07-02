@@ -216,14 +216,14 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
 
                 {/* Price - More prominent */}
                 <div className="mt-5 flex items-baseline gap-2">
-                  <span className="text-[32px] md:text-[38px] font-heading font-bold text-foreground tracking-[-0.03em]">
+                  <span className="text-[32px] md:text-[38px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em]">
                     {formatCurrency(property.monthlyRent)}
                   </span>
                   <span className="text-[15px] text-muted-foreground">/mes</span>
                 </div>
                 {property.adminFee > 0 && (
                   <p className="text-[13px] text-muted-foreground mt-1">
-                    + {formatCurrency(property.adminFee)} de administración
+                    + <span className="font-mono tabular-nums">{formatCurrency(property.adminFee)}</span> de administración
                   </p>
                 )}
               </div>
@@ -238,21 +238,21 @@ export default function PropertyDetailPage({ params }: PropertyDetailPageProps) 
                     <ArrowsOut className="w-4 h-4 text-primary" strokeWidth={1.5} />
                     <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Área</span>
                   </div>
-                  <p className="text-[20px] font-heading font-bold text-foreground">{formatArea(property.area)}</p>
+                  <p className="text-[20px] font-mono tabular-nums font-bold text-foreground">{formatArea(property.area)}</p>
                 </div>
                 <div className="bg-neutral-50 border border-border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Bed className="w-4 h-4 text-primary" strokeWidth={1.5} />
                     <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Habitaciones</span>
                   </div>
-                  <p className="text-[20px] font-heading font-bold text-foreground">{property.bedrooms}</p>
+                  <p className="text-[20px] font-mono tabular-nums font-bold text-foreground">{property.bedrooms}</p>
                 </div>
                 <div className="bg-neutral-50 border border-border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Bathtub className="w-4 h-4 text-primary" strokeWidth={1.5} />
                     <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Baños</span>
                   </div>
-                  <p className="text-[20px] font-heading font-bold text-foreground">{property.bathrooms}</p>
+                  <p className="text-[20px] font-mono tabular-nums font-bold text-foreground">{property.bathrooms}</p>
                 </div>
                 <div className="bg-neutral-50 border border-border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">

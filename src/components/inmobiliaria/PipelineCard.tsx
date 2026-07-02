@@ -83,7 +83,7 @@ export function PipelineCard({
       <div
         className={cn(
           'h-1.5',
-          stageInfo?.color?.split(' ')[0] || 'bg-neutral-200'
+          stageInfo?.color?.split(' ')[0] || 'bg-surface-muted'
         )}
       />
 
@@ -130,7 +130,7 @@ export function PipelineCard({
               className="w-8 h-8 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
               <span className="text-xs font-semibold text-primary">
                 {initials}
               </span>

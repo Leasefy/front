@@ -15,16 +15,13 @@ import {
   CheckCircle,
   ChartLineUp,
   CurrencyDollar,
-  CaretLeft,
-  CaretRight,
   Trophy,
   ChartBar,
   UsersThree,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
+import { Button, Pagination } from '@/components/ui';
 import { EmptyState as DSEmptyState } from '@/components/ui/empty-state';
-import { SegmentedControl } from '@leasefy/ui';
+import { SegmentedControl } from '@leasefy/cadence';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
@@ -56,7 +53,7 @@ function AgentesContent() {
     { id: 'ranking', label: t('inmobiliaria.agentes.leaderboard'), icon: Trophy },
     { id: 'workload', label: t('inmobiliaria.agentes.tabs.workload'), icon: ChartBar },
   ], [t]);
-  const [activeTab, setActiveTab] = useState<TabType>('equipo');
+  const [activeTab, setTab] = useState<TabType>('equipo');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<AgenteFiltersState>({
@@ -257,7 +254,7 @@ function AgentesContent() {
         <div className="px-4 py-3 border-b border-border bg-muted/20">
           <SegmentedControl<TabType>
             value={activeTab}
-            onChange={setActiveTab}
+            onChange={setTab}
             aria-label={t('inmobiliaria.agentes.tabs.team')}
             options={TABS.map((tab) => {
               const Icon = tab.icon;
@@ -374,52 +371,12 @@ function AgentesContent() {
 
               {/* Pagination Footer */}
               {totalPages > 1 && (
-                <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    aria-label="Página anterior"
-                    className={cn(
-                      'p-2 rounded-md border border-border transition-colors',
-                      currentPage === 1
-                        ? 'text-fg-muted/40 cursor-not-allowed'
-                        : 'text-fg-muted hover:bg-muted'
-                    )}
-                  >
-                    <CaretLeft className="w-4 h-4" />
-                  </button>
-
-                  <div className="flex items-center gap-1 px-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        aria-current={page === currentPage ? 'page' : undefined}
-                        className={cn(
-                          'w-8 h-8 rounded-md text-sm font-medium tabular-nums transition-colors',
-                          page === currentPage
-                            ? 'bg-primary-soft text-primary'
-                            : 'text-fg-muted hover:bg-muted'
-                        )}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    aria-label="Página siguiente"
-                    className={cn(
-                      'p-2 rounded-md border border-border transition-colors',
-                      currentPage === totalPages
-                        ? 'text-fg-muted/40 cursor-not-allowed'
-                        : 'text-fg-muted hover:bg-muted'
-                    )}
-                  >
-                    <CaretRight className="w-4 h-4" />
-                  </button>
+                <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
               )}
             </motion.div>

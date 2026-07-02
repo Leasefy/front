@@ -30,9 +30,7 @@ export function ClusterMarker({ count, onClick }: ClusterMarkerProps) {
         // Circle shape and centering
         'rounded-full flex items-center justify-center',
         // Colors - primary for cluster visibility
-        'bg-primary text-white font-semibold',
-        // Shadow and depth
-        ' hover:',
+        'bg-primary text-white font-semibold font-mono tabular-nums',
         // Transitions
         'transition-all duration-150 ease-out',
         // Hover effect

@@ -1,5 +1,6 @@
 'use client';
 
+import { MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -134,9 +135,9 @@ export function DecisionHistory() {
       {/* Pending decisions */}
       {pending.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-warning mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-warning">
             {t('beta.decisions.pending')} ({pending.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {pending.map((entry) => (
               <DecisionItem
@@ -152,9 +153,9 @@ export function DecisionHistory() {
       {/* Resolved decisions */}
       {resolved.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-success mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-success">
             {t('beta.decisions.resolved')} ({resolved.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {resolved.map((entry) => (
               <DecisionItem

@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useI18n } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 
@@ -99,7 +102,7 @@ export function StepHousingPreferences() {
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
                 <CurrencyDollar className="h-5 w-5 text-neutral-400" />
               </div>
-              <input
+              <Input
                 type="text"
                 inputMode="numeric"
                 id="budgetMin"
@@ -107,22 +110,14 @@ export function StepHousingPreferences() {
                 value={draft.budgetMin ? formatCurrency(draft.budgetMin).replace('COP', '').trim() : ''}
                 onChange={handleBudgetMinChange}
                 placeholder="Mínimo"
-                className={cn(
-                  'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
-                  draft.budgetMin
-                    ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-                )}
+                className={cn('h-12 pl-12 rounded-xl', draft.budgetMin && 'border-primary/30')}
               />
             </div>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
                 <CurrencyDollar className="h-5 w-5 text-neutral-400" />
               </div>
-              <input
+              <Input
                 type="text"
                 inputMode="numeric"
                 id="budgetMax"
@@ -130,15 +125,7 @@ export function StepHousingPreferences() {
                 value={draft.budgetMax ? formatCurrency(draft.budgetMax).replace('COP', '').trim() : ''}
                 onChange={handleBudgetMaxChange}
                 placeholder="Máximo"
-                className={cn(
-                  'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
-                  draft.budgetMax
-                    ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-                )}
+                className={cn('h-12 pl-12 rounded-xl', draft.budgetMax && 'border-primary/30')}
               />
             </div>
           </div>
@@ -183,13 +170,14 @@ export function StepHousingPreferences() {
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded-full text-sm"
                 >
                   {zone}
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    aria-label="Quitar zona"
                     onClick={() => toggleZone(zone)}
-                    className="hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF] rounded-full p-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                    icon={<X className="h-3 w-3" />}
+                    className="rounded-full p-0.5 min-h-0 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
+                  />
                 </span>
               ))}
             </div>
@@ -201,32 +189,25 @@ export function StepHousingPreferences() {
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
                 <MapPin className="h-5 w-5 text-neutral-400" />
               </div>
-              <input
+              <Input
                 type="text"
                 value={customZone}
                 onChange={(e) => setCustomZone(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addCustomZone()}
                 placeholder="Agregar otro barrio o zona"
-                className={cn(
-                  'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-                )}
+                className="h-12 pl-12 rounded-xl"
               />
             </div>
-            <button
+            <Button
               type="button"
+              hideArrow
+              size="lg"
               onClick={addCustomZone}
               disabled={!customZone.trim()}
-              className={cn(
-                'px-4 py-3 rounded-xl font-medium transition-all duration-200',
-                'bg-[#1A40FF] text-white hover:opacity-90',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
+              className="rounded-xl"
             >
               Agregar
-            </button>
+            </Button>
           </div>
         </motion.div>
 
@@ -243,21 +224,13 @@ export function StepHousingPreferences() {
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
               <Calendar className="h-5 w-5 text-neutral-400" />
             </div>
-            <input
+            <Input
               type="date"
               id="moveInDate"
               value={draft.moveInDate || ''}
               onChange={(e) => updateDraft({ moveInDate: e.target.value })}
               min={new Date().toISOString().split('T')[0]}
-              className={cn(
-                'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                'transition-all duration-200',
-                'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
-                draft.moveInDate
-                  ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-              )}
+              className={cn('h-12 pl-12 rounded-xl', draft.moveInDate && 'border-primary/30')}
             />
           </div>
         </motion.div>
@@ -309,17 +282,12 @@ export function StepHousingPreferences() {
               animate={{ opacity: 1, height: 'auto' }}
               className="mt-3"
             >
-              <input
+              <Input
                 type="text"
                 value={draft.petDetails || ''}
                 onChange={(e) => updateDraft({ petDetails: e.target.value })}
                 placeholder="Describe tus mascotas (tipo, tamaño, cantidad)"
-                className={cn(
-                  'w-full h-12 px-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-                )}
+                className="h-12 rounded-xl"
               />
             </motion.div>
           )}

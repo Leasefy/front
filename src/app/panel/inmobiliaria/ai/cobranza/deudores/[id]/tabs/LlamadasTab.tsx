@@ -12,7 +12,16 @@ import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorCalls } from '@/lib/hooks/cobranza/use-debtor-calls'
-import { Button } from '@/components/ui'
+import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
 
 void React
 
@@ -90,29 +99,29 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
     <>
       {/* md+ table */}
       <div className="hidden md:block overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+            <TableRow>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.startedAt')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.duration')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.outcome')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.qa')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {calls.map((c) => (
-              <tr
+              <TableRow
                 key={c.id}
                 role="link"
                 tabIndex={0}
@@ -122,36 +131,29 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                 }}
                 className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <td className="px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
+                <TableCell className="px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
                   {new Date(c.started_at).toLocaleString(locale)}
-                </td>
-                <td className="px-3 py-2 font-mono text-xs">
+                </TableCell>
+                <TableCell className="px-3 py-2 font-mono text-xs">
                   {formatDuration(c.duration_seconds)}
-                </td>
-                <td className="px-3 py-2">
+                </TableCell>
+                <TableCell className="px-3 py-2">
                   <span className="text-xs">{c.status ?? '—'}</span>
-                </td>
-                <td className="px-3 py-2">
+                </TableCell>
+                <TableCell className="px-3 py-2">
                   <span className="text-xs font-mono">
                     {c.qa_score != null ? c.qa_score.toFixed(1) : '—'}
                   </span>
-                </td>
-                <td className="px-3 py-2">
-                  <span
-                    className={
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ' +
-                      (c.compliance_flags_count > 0
-                        ? 'bg-warning-soft text-warning'
-                        : 'bg-success-soft text-success')
-                    }
-                  >
+                </TableCell>
+                <TableCell className="px-3 py-2">
+                  <Badge variant={c.compliance_flags_count > 0 ? 'warning' : 'success'}>
                     {c.compliance_flags_count}
-                  </span>
-                </td>
-              </tr>
+                  </Badge>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* sm cards */}

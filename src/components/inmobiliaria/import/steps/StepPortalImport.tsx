@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { Globe, Envelope } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { MonoLabel } from '@leasefy/cadence';
 import type { ImportStepProps } from '../ImportWizard';
 
 interface PortalItem {
@@ -56,10 +59,10 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
+        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
           {t('inmobiliaria.import.portal.title')}
         </h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.import.portal.subtitle')}
         </p>
       </div>
@@ -69,13 +72,13 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
         {PORTALS.map((portal, index) => (
           <div
             key={portal.id}
-            className="animate-stagger-in rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 relative overflow-hidden"
+            className="animate-stagger-in rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-6 relative overflow-hidden"
             style={{ animationDelay: `${index * 80}ms` }}
           >
             {/* Próximamente badge */}
-            <div className="absolute top-0 right-0 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-xs font-mono uppercase tracking-wide px-3 py-1 rounded-bl-xl">
+            <MonoLabel className="absolute top-0 right-0 bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-xs px-3 py-1 rounded-bl-xl">
               {t('inmobiliaria.import.portal.comingSoon')}
-            </div>
+            </MonoLabel>
 
             {/* Icon */}
             <div className={cn(
@@ -86,25 +89,25 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
             </div>
 
             {/* Name & domain */}
-            <p className="font-semibold text-neutral-900 dark:text-white text-lg">
+            <p className="font-semibold text-fg dark:text-white text-lg">
               {portal.name}
             </p>
-            <p className="text-sm text-neutral-400 dark:text-neutral-500 font-mono mt-0.5">
+            <p className="text-sm text-fg-subtle dark:text-fg-muted font-mono mt-0.5">
               {portal.domain}
             </p>
 
             {/* Description */}
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2 leading-relaxed">
               {portal.description}
             </p>
 
             {/* Disabled URL input */}
             <div className="mt-4">
-              <input
+              <Input
                 type="url"
                 disabled
                 placeholder={`https://${portal.domain}/tu-agencia`}
-                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-sm text-neutral-400 dark:text-neutral-600 opacity-50 cursor-not-allowed"
+                className="w-full"
               />
             </div>
           </div>
@@ -114,14 +117,14 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
       {/* Email capture */}
       <div className="rounded-xl border border-primary/30 bg-primary-soft p-6">
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-surface-brand flex items-center justify-center shrink-0">
             <Envelope className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="font-semibold text-neutral-900 dark:text-white">
+            <p className="font-semibold text-fg dark:text-white">
               {t('inmobiliaria.import.portal.emailCapture.title')}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
               {t('inmobiliaria.import.portal.emailCapture.subtitle')}
             </p>
           </div>
@@ -133,19 +136,20 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
           </div>
         ) : (
           <form onSubmit={handleEmailSubmit} className="flex">
-            <input
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t('inmobiliaria.import.portal.emailCapture.placeholder')}
-              className="flex-1 px-4 py-2.5 rounded-l-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="flex-1 rounded-r-none"
             />
-            <button
+            <Button
               type="submit"
-              className="px-4 py-2.5 rounded-r-xl bg-primary text-white font-medium text-sm hover:opacity-90 transition-colors whitespace-nowrap"
+              hideArrow
+              className="rounded-l-none whitespace-nowrap"
             >
               {t('inmobiliaria.import.portal.emailCapture.submit')}
-            </button>
+            </Button>
           </form>
         )}
       </div>

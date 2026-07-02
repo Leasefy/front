@@ -8,11 +8,11 @@ import {
   BreadcrumbItem as DSBreadcrumbItem,
   BreadcrumbPage as DSBreadcrumbPage,
   BreadcrumbSeparator as DSBreadcrumbSeparator,
-} from '@leasefy/ui';
+} from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 
 /**
- * Breadcrumb — ADAPTER fino sobre @leasefy/ui que preserva la API local
+ * Breadcrumb — ADAPTER fino sobre @leasefy/cadence que preserva la API local
  * basada en `items[]` (label/href/icon/disabled + showHouseIcon/homeHref/
  * maxItems collapse). La estructura semántica (nav/ol/li, aria-current,
  * separador) viene del DS; los links usan next/link para conservar la
@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
  * soporta el DSBreadcrumbSeparator.
  *
  * La familia composable legacy (BreadcrumbRoot/List/Link/Ellipsis…) no tenía
- * call sites; para composición usar los primitivos de '@leasefy/ui'.
+ * call sites; para composición usar los primitivos de '@leasefy/cadence'.
  */
 
 // ============================================================================

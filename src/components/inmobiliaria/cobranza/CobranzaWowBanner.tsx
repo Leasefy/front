@@ -144,7 +144,7 @@ export function CobranzaWowBanner({
       {/* ── 1. Banner narrativo ──────────────────────────────────────────── */}
       <section
         aria-labelledby="cobranza-wow-titulo"
-        className="rounded-xl border border-border bg-card p-5 md:p-6"
+        className="rounded-xl border border-border bg-surface p-5 md:p-6"
         data-testid="cobranza-wow-banner"
       >
         {/* Eyebrow — BrandDot + uppercase (único uppercase permitido, contrato §4) */}
@@ -164,11 +164,11 @@ export function CobranzaWowBanner({
         {/* Frase narrativa con datos reales */}
         {fraseLoading ? (
           <div className="mt-4 space-y-2" aria-hidden="true">
-            <div className="h-6 w-full max-w-xl rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-            <div className="h-6 w-2/3 max-w-md rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+            <div className="h-6 w-full max-w-xl rounded bg-surface-muted animate-pulse" />
+            <div className="h-6 w-2/3 max-w-md rounded bg-surface-muted animate-pulse" />
           </div>
         ) : (
-          <p className="mt-3.5 max-w-3xl text-xl md:text-2xl font-medium tracking-tight leading-snug text-foreground">
+          <p className="mt-3.5 max-w-3xl text-xl md:text-2xl font-medium tracking-tight leading-snug text-fg">
             {t(`${NS}.resumen.wow.frase`, {
               enMora,
               gestionados,
@@ -185,7 +185,7 @@ export function CobranzaWowBanner({
             <Link href={PENDIENTES_HREF}>
               {t(`${NS}.resumen.bloques.verPendientes`)}
               {!fraseLoading && porAprobar > 0 && (
-                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold tabular-nums">
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold font-mono tabular-nums">
                   {porAprobar}
                 </span>
               )}
@@ -267,32 +267,32 @@ function BenefitCard({
     <>
       <div className="flex items-center gap-2">
         <IconCmp size={18} className={iconColor} weight="duotone" aria-hidden="true" />
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground leading-tight">
+        <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle leading-tight">
           {label}
         </p>
         {href && (
           <ArrowRight
-            className="ml-auto w-3.5 h-3.5 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
+            className="ml-auto w-3.5 h-3.5 text-fg-subtle/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
             aria-hidden="true"
           />
         )}
       </div>
       {isLoading ? (
-        <div className="mt-2.5 h-7 w-20 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+        <div className="mt-2.5 h-7 w-20 rounded bg-surface-muted animate-pulse" />
       ) : (
-        <p className="mt-2 text-xl font-semibold tabular-nums text-neutral-900 dark:text-white">
+        <p className="mt-2 text-xl font-semibold font-mono tabular-nums text-fg">
           {value}
         </p>
       )}
       {!isLoading && detail && (
-        <p className="mt-1 text-xs text-muted-foreground tabular-nums truncate">
+        <p className="mt-1 text-xs text-fg-subtle font-mono tabular-nums truncate">
           {detail}
         </p>
       )}
     </>
   )
 
-  const baseClass = 'rounded-xl border border-border bg-card p-4'
+  const baseClass = 'rounded-xl border border-border bg-surface p-4'
 
   if (href) {
     return (

@@ -5,7 +5,9 @@ import {
   FileText,
   Seal,
 } from "@phosphor-icons/react/dist/ssr";
+import { Eyebrow } from "@leasefy/cadence";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // ---------------------------------------------------------------------------
 // Metadata for this specific page is inherited from avaluo/layout.tsx
@@ -37,24 +39,22 @@ const HOW_IT_WORKS = [
 
 export default function AvaluoPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-bg">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="flex flex-col items-center justify-center px-4 pt-24 pb-16 text-center section-padding">
         {/* Overline label */}
-        <p className="text-overline text-muted-foreground mb-6 tracking-widest">
-          LEASEFY VALUACIONES
-        </p>
+        <Eyebrow className="justify-center mb-6">Leasefy valuaciones</Eyebrow>
 
         {/* Headline — highlighted word on ink (brand surface) */}
         <h1 className="text-display max-w-3xl mx-auto leading-tight">
           Avalúo comercial{" "}
-          <span className="inline-block px-4 py-1 rounded-xl bg-[#0B1220] text-white">
+          <span className="inline-block px-4 py-1 rounded-[14px] bg-ink text-ink-fg">
             certificado
           </span>
         </h1>
 
         {/* Description */}
-        <p className="text-body-lg text-muted-foreground max-w-xl mx-auto mt-6 leading-relaxed">
+        <p className="text-body-lg text-fg-muted max-w-xl mx-auto mt-6 leading-relaxed">
           Valoración profesional de tu inmueble para compraventa, arrendamiento,
           crédito hipotecario o procesos legales. Emitido por valuadores
           certificados. Entrega en&nbsp;48&nbsp;h.
@@ -68,7 +68,7 @@ export default function AvaluoPage() {
         </div>
 
         {/* Trust micro-copy */}
-        <p className="mt-5 text-xs text-muted-foreground font-mono tracking-wide uppercase">
+        <p className="mt-5 text-xs text-fg-subtle font-mono tracking-wide uppercase">
           Sin compromiso · Pago solo si aprobás · 100% en línea
         </p>
       </section>
@@ -76,26 +76,24 @@ export default function AvaluoPage() {
       {/* ── Cómo funciona — Step cards (DESIGN.md §10.4) ─────────────────── */}
       <section className="px-4 pb-24 max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <p className="text-overline text-muted-foreground tracking-widest mb-2">
-            EL PROCESO
-          </p>
+          <Eyebrow className="justify-center mb-2">El proceso</Eyebrow>
           <h2 className="text-h2">Cómo funciona</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {HOW_IT_WORKS.map(({ step, icon: Icon, title, tagline, body }) => (
-            <article
+            <Card
               key={step}
-              className="rounded-xl border border-border bg-card p-8 space-y-6"
+              className="rounded-[20px] p-8 space-y-6"
             >
               {/* Number + icon row */}
               <div className="flex items-start justify-between">
-                <span className="text-7xl font-light text-neutral-200 font-mono leading-none">
+                <span className="text-7xl font-light text-border font-mono tabular-nums leading-none">
                   {step}
                 </span>
-                <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-[14px] bg-surface-muted flex items-center justify-center flex-shrink-0">
                   <Icon
-                    className="w-6 h-6 text-neutral-600"
+                    className="w-6 h-6 text-fg-muted"
                     weight="duotone"
                     aria-hidden="true"
                   />
@@ -108,13 +106,13 @@ export default function AvaluoPage() {
               </h3>
 
               {/* Mono tagline */}
-              <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+              <p className="text-xs font-mono uppercase tracking-wider text-fg-muted">
                 {tagline}
               </p>
 
               {/* Body */}
-              <p className="text-body-sm text-muted-foreground">{body}</p>
-            </article>
+              <p className="text-body-sm text-fg-muted">{body}</p>
+            </Card>
           ))}
         </div>
 
@@ -123,7 +121,7 @@ export default function AvaluoPage() {
           <Button asChild size="lg">
             <Link href="/avaluo/nuevo">Solicitar avalúo</Link>
           </Button>
-          <p className="mt-4 text-xs text-muted-foreground">
+          <p className="mt-4 text-xs text-fg-muted">
             También podés escribirnos a{" "}
             <a
               href="mailto:avaluos@leasefy.co"
@@ -136,18 +134,18 @@ export default function AvaluoPage() {
       </section>
 
       {/* ── Buildings icon strip — visual anchor above footer ─────────────── */}
-      <section className="bg-muted/50 border-t border-border py-10 px-4">
+      <section className="bg-surface-muted border-t border-border py-10 px-4">
         <div className="max-w-3xl mx-auto flex flex-col items-center gap-4 text-center">
-          <div className="w-14 h-14 rounded-xl bg-neutral-100 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-[14px] bg-surface flex items-center justify-center">
             <Buildings
-              className="w-7 h-7 text-neutral-600"
+              className="w-7 h-7 text-fg-muted"
               weight="duotone"
               aria-hidden="true"
             />
           </div>
-          <p className="text-body-sm text-muted-foreground max-w-md">
+          <p className="text-body-sm text-fg-muted max-w-md">
             Avaluadores registrados en la{" "}
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-fg">
               Lonja de Propiedad Raíz
             </span>
             . Informes aceptados por bancos, notarías y despachos judiciales en

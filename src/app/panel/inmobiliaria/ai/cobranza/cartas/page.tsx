@@ -18,8 +18,17 @@ import { ArrowClockwise, Envelope, Warning } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { Chip } from '@leasefy/ui'
+import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
+import { Chip } from '@leasefy/cadence'
 import {
   useLegalArtifacts,
   type LegalArtifactKind,
@@ -27,17 +36,19 @@ import {
 } from '@/lib/hooks/cobranza/use-legal-artifacts'
 
 // ── Status badge colours — tokens semánticos del DS (contrato §8) ─────────────
-function statusBadgeClasses(status: string): string {
+function statusBadgeVariant(
+  status: string,
+): 'default' | 'secondary' | 'success' | 'warning' {
   switch (status) {
     case 'pending_human_review':
-      return 'bg-warning-soft text-warning ring-1 ring-warning/30'
+      return 'warning'
     case 'approved':
-      return 'bg-success-soft text-success ring-1 ring-success/30'
+      return 'success'
     case 'sent':
-      return 'bg-primary-soft text-primary ring-1 ring-primary/30'
+      return 'default'
     case 'void':
     default:
-      return 'bg-muted text-muted-foreground ring-1 ring-border'
+      return 'secondary'
   }
 }
 
@@ -97,19 +108,19 @@ function CartasContent() {
           <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mt-2" />
         </header>
         <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
+          <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+            <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
               {Array.from({ length: 6 }, (_, i) => (
-                <tr key={`skel-${i}`}>
+                <TableRow key={`skel-${i}`}>
                   {Array.from({ length: 5 }, (_, j) => (
-                    <td key={j} className="px-3 py-3">
+                    <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </main>
     )
@@ -218,40 +229,40 @@ function CartasContent() {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+            <TableRow>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.kind')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.status')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.generatedAt')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.sentAt')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.sendMethod')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {artifacts.length === 0 && !isLoading && (
-              <tr>
-                <td colSpan={5} className="px-3 py-12 text-center">
+              <TableRow>
+                <TableCell colSpan={5} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {isEs
                       ? 'Sin cartas con los filtros seleccionados.'
                       : 'No letters match the selected filters.'}
                   </p>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
             {artifacts.map((a) => (
-              <tr
+              <TableRow
                 key={a.id}
                 onClick={() => navigateToCarta(a.id)}
                 role="link"
@@ -261,31 +272,26 @@ function CartasContent() {
                 }}
                 className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <td className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
                   {isEs
                     ? (KIND_LABELS[a.kind as LegalArtifactKind]?.es ?? a.kind)
                     : (KIND_LABELS[a.kind as LegalArtifactKind]?.en ?? a.kind)}
-                </td>
-                <td className="px-3 py-2">
-                  <span
-                    className={
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                      statusBadgeClasses(a.status)
-                    }
-                  >
+                </TableCell>
+                <TableCell className="px-3 py-2">
+                  <Badge variant={statusBadgeVariant(a.status)}>
                     {isEs
                       ? (STATUS_LABELS[a.status as LegalArtifactStatus]?.es ?? a.status)
                       : (STATUS_LABELS[a.status as LegalArtifactStatus]?.en ?? a.status)}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                  </Badge>
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
                   {new Date(a.generatedAt).toLocaleDateString(locale, {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
                   })}
-                </td>
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
                   {a.sentAt
                     ? new Date(a.sentAt).toLocaleDateString(locale, {
                         year: 'numeric',
@@ -293,14 +299,14 @@ function CartasContent() {
                         day: 'numeric',
                       })
                     : '—'}
-                </td>
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400">
                   {a.physicalSendMethod ?? '—'}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </main>
   )

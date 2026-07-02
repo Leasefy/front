@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { X, Check, CheckCircle, Buildings, Users, Lightning, Cpu, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -103,26 +104,26 @@ export function AgencyPricingModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="bg-white dark:bg-neutral-900 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="bg-surface dark:bg-ink rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-white/10">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-faint dark:border-white/10">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-fg dark:text-white">
                 Planes para inmobiliarias
               </h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+              <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
                 Empieza gratis, escala sin limites
               </p>
             </div>
-            <button
+            <IconButton
+              variant="ghost"
+              size="lg"
               onClick={onClose}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
               aria-label="Cerrar"
-            >
-              <X className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
-            </button>
+              icon={<X className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />}
+            />
           </div>
 
           {/* Plans Grid */}
@@ -136,15 +137,15 @@ export function AgencyPricingModal({
                     selectedPlan === plan.id
                       ? 'ring-2 ring-primary bg-primary-soft/50 dark:bg-primary/20'
                       : plan.isFlex
-                        ? 'bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                        : 'bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                        ? 'bg-surface-muted dark:bg-ink/50 hover:bg-surface-muted dark:hover:bg-ink'
+                        : 'bg-surface-muted dark:bg-ink/50 hover:bg-surface-muted dark:hover:bg-ink',
                     'border',
-                    plan.isFlex ? 'border-warning/30' : 'border-neutral-200 dark:border-neutral-700'
+                    plan.isFlex ? 'border-warning/30' : 'border-border dark:border-strong'
                   )}
                   onClick={() => setSelectedPlan(plan.id)}
                 >
                   {plan.popular && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-white uppercase tracking-wide font-mono text-[10px] font-semibold px-3 py-1 rounded-full">
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-fg uppercase tracking-wide font-mono text-[10px] font-semibold px-3 py-1 rounded-full">
                       Mas popular
                     </span>
                   )}
@@ -154,19 +155,19 @@ export function AgencyPricingModal({
                     </span>
                   )}
 
-                  <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white mt-1">{plan.name}</h3>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-3">{plan.description}</p>
+                  <h3 className="text-[15px] font-semibold text-fg dark:text-white mt-1">{plan.name}</h3>
+                  <p className="text-[11px] text-fg-muted dark:text-fg-subtle mb-3">{plan.description}</p>
 
                   <div className="mb-3">
-                    <span className="text-[22px] font-bold text-neutral-900 dark:text-white">{plan.price}</span>
+                    <span className="text-[22px] font-bold text-fg dark:text-white">{plan.price}</span>
                     {plan.priceDetail && (
-                      <span className="text-[12px] text-neutral-500 dark:text-neutral-400 ml-1">{plan.priceDetail}</span>
+                      <span className="text-[12px] text-fg-muted dark:text-fg-subtle ml-1">{plan.priceDetail}</span>
                     )}
                   </div>
 
-                  <div className="px-2.5 py-1.5 bg-white dark:bg-neutral-800 rounded-md mb-3 text-center" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
-                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">Eval AI: </span>
-                    <span className={cn("text-[11px] font-semibold", plan.isFlex ? 'text-success' : 'text-neutral-900 dark:text-white')}>
+                  <div className="px-2.5 py-1.5 bg-surface dark:bg-ink rounded-md mb-3 text-center" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <span className="text-[11px] text-fg-muted dark:text-fg-subtle">Eval AI: </span>
+                    <span className={cn("text-[11px] font-semibold", plan.isFlex ? 'text-success' : 'text-fg dark:text-white')}>
                       {plan.evalPrice}
                     </span>
                   </div>
@@ -175,7 +176,7 @@ export function AgencyPricingModal({
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <CheckCircle className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
-                        <span className="text-[11px] text-neutral-600 dark:text-neutral-300">{feature}</span>
+                        <span className="text-[11px] text-fg-muted dark:text-fg-subtle">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -209,7 +210,7 @@ export function AgencyPricingModal({
             <div className="mt-6 text-center">
               <Link
                 href="/pricing"
-                className="inline-flex items-center gap-1.5 text-[13px] text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
+                className="inline-flex items-center gap-1.5 text-[13px] text-fg-muted hover:text-fg dark:text-fg-subtle dark:hover:text-white transition-colors"
               >
                 Ver detalles completos de cada plan
                 <ArrowRight className="w-3.5 h-3.5" />

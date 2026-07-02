@@ -18,9 +18,6 @@ import {
   List,
   CaretRight,
   Users,
-  CaretLeft,
-  CaretDoubleLeft,
-  CaretDoubleRight,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -36,7 +33,8 @@ import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl, KpiCard } from '@leasefy/ui';
+import { TablePagination } from '@/components/ui/pagination';
+import { SegmentedControl, KpiCard, IconButton } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
@@ -132,13 +130,14 @@ function Modal({
             <h3 className="text-base font-semibold text-foreground">
               {title}
             </h3>
-            <button
+            <IconButton
               onClick={onClose}
               aria-label="Cerrar"
-              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+              variant="ghost"
+              size="md"
+              className="bg-muted hover:bg-muted/70"
+              icon={<X className="w-4 h-4" />}
+            />
           </div>
           {/* Content - scrollable */}
           <div
@@ -432,85 +431,18 @@ function PropietariosContent() {
 
         {/* Pagination Footer */}
         {paginationData.totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{t('inmobiliaria.propietarios.showing')}</span>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="px-2 py-1 rounded-sm border border-border bg-background text-foreground text-sm"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-              <span>{t('inmobiliaria.propietarios.ofTotal', { total: paginationData.totalItems })}</span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <CaretDoubleLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <CaretLeft className="w-4 h-4" />
-              </button>
-
-              <div className="flex items-center gap-1 px-2">
-                {Array.from({ length: Math.min(5, paginationData.totalPages) }, (_, i) => {
-                  let pageNum: number;
-                  if (paginationData.totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= paginationData.totalPages - 2) {
-                    pageNum = paginationData.totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={cn(
-                        'w-8 h-8 rounded-sm text-sm font-medium transition-colors',
-                        currentPage === pageNum
-                          ? 'bg-foreground text-background'
-                          : 'text-muted-foreground hover:bg-muted'
-                      )}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === paginationData.totalPages}
-                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <CaretRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handlePageChange(paginationData.totalPages)}
-                disabled={currentPage === paginationData.totalPages}
-                className="p-2 rounded-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <CaretDoubleRight className="w-4 h-4" />
-              </button>
-            </div>
+          <div className="px-4 py-3 border-t border-border bg-muted/10">
+            <TablePagination
+              total={paginationData.totalItems}
+              page={currentPage}
+              pageSize={itemsPerPage}
+              pageSizeOptions={[5, 10, 20, 50]}
+              onPageChange={handlePageChange}
+              onPageSizeChange={(size) => {
+                setItemsPerPage(size);
+                setCurrentPage(1);
+              }}
+            />
           </div>
         )}
       </motion.div>

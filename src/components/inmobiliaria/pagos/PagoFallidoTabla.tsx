@@ -21,7 +21,16 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui'
+import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui'
 import type { WorkItem, WorkItemAction } from '@/lib/api/work-item'
 
 // ── Clasificación de motivo ──────────────────────────────────────────────────
@@ -35,39 +44,30 @@ interface MotivoMeta {
   label: string
   /** Qué hace el agente para recuperar este fallo (columna "acción sugerida"). */
   accionSugerida: string
-  text: string
-  bg: string
-  border: string
+  /** Variant del Badge de Cadence para el pill de motivo. */
+  variant: 'warning' | 'destructive' | 'secondary'
 }
 
 const MOTIVO_META: Record<MotivoFallo, MotivoMeta> = {
   abandonada: {
     label: 'Transacción abandonada',
     accionSugerida: 'Reenviar el link de pago',
-    text: 'text-warning',
-    bg: 'bg-warning-soft',
-    border: 'border-warning/30',
+    variant: 'warning',
   },
   banco: {
     label: 'Banco rechazó',
     accionSugerida: 'Ofrecer otro método de pago',
-    text: 'text-danger',
-    bg: 'bg-danger-soft',
-    border: 'border-danger/30',
+    variant: 'destructive',
   },
   link_vencido: {
     label: 'Link vencido',
     accionSugerida: 'Generar un link nuevo',
-    text: 'text-warning',
-    bg: 'bg-warning-soft',
-    border: 'border-warning/30',
+    variant: 'warning',
   },
   pasarela: {
     label: 'Error de pasarela',
     accionSugerida: 'Esperar y reintentar con la pasarela',
-    text: 'text-fg-muted',
-    bg: 'bg-surface-muted',
-    border: 'border-border',
+    variant: 'secondary',
   },
 }
 
@@ -162,51 +162,49 @@ function FilaFallido({
   }
 
   return (
-    <tr className="border-t border-border align-top">
+    <TableRow className="border-t border-border align-top">
       {/* Inquilino */}
-      <td className="py-3 pr-4">
+      <TableCell className="py-3 pr-4">
         {onOpen ? (
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={() => onOpen(item)}
-            className="text-left text-sm font-medium text-fg leading-snug rounded-md hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="h-auto p-0 text-left text-sm font-medium text-fg leading-snug underline-offset-4 hover:underline"
           >
             {inquilino}
-          </button>
+          </Button>
         ) : (
           <p className="text-sm font-medium text-fg leading-snug">{inquilino}</p>
         )}
         {item.titulo && item.titulo !== inquilino && (
           <p className="text-xs text-fg-muted mt-0.5 leading-snug">{item.titulo}</p>
         )}
-      </td>
+      </TableCell>
 
       {/* Valor */}
-      <td className="py-3 pr-4 whitespace-nowrap">
+      <TableCell className="py-3 pr-4 whitespace-nowrap">
         <span className="text-sm text-fg tabular-nums">
           {typeof item.amountCop === 'number' ? copFormatter.format(item.amountCop) : '—'}
         </span>
-      </td>
+      </TableCell>
 
       {/* Motivo */}
-      <td className="py-3 pr-4">
-        <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${motivo.text} ${motivo.bg} ${motivo.border}`}
-        >
-          {motivo.label}
-        </span>
-      </td>
+      <TableCell className="py-3 pr-4">
+        <Badge variant={motivo.variant}>{motivo.label}</Badge>
+      </TableCell>
 
       {/* Acción sugerida */}
-      <td className="py-3 pr-4">
+      <TableCell className="py-3 pr-4">
         <p className="text-sm text-fg leading-snug">{motivo.accionSugerida}</p>
         {item.accionSugerida?.razon && (
           <p className="text-xs text-fg-muted mt-0.5 leading-snug">{item.accionSugerida.razon}</p>
         )}
-      </td>
+      </TableCell>
 
       {/* Acción */}
-      <td className="py-3 text-right whitespace-nowrap">
+      <TableCell className="py-3 text-right whitespace-nowrap">
         {ejecutable ? (
           <Button size="sm" variant="secondary" hideArrow isLoading={busy} onClick={run}>
             {accionReal!.label}
@@ -217,8 +215,8 @@ function FilaFallido({
             Próximamente
           </Button>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -227,22 +225,22 @@ function FilaFallido({
 export function PagoFallidoTabla({ items, onAction, onOpen }: PagoFallidoTablaProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <table className="w-full min-w-[720px] text-left">
-        <thead>
-          <tr className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-            <th scope="col" className="py-2.5 px-4 font-medium">Inquilino</th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">Valor</th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">Motivo</th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">Acción sugerida</th>
-            <th scope="col" className="py-2.5 px-4 font-medium text-right">Acción</th>
-          </tr>
-        </thead>
-        <tbody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
+      <Table className="min-w-[720px] text-left">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col" className="px-4">Inquilino</TableHead>
+            <TableHead scope="col" className="pr-4">Valor</TableHead>
+            <TableHead scope="col" className="pr-4">Motivo</TableHead>
+            <TableHead scope="col" className="pr-4">Acción sugerida</TableHead>
+            <TableHead scope="col" className="px-4 text-right">Acción</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
           {items.map((item) => (
             <FilaFallido key={item.id} item={item} onAction={onAction} onOpen={onOpen} />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

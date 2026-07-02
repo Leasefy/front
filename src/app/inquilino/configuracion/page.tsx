@@ -5,12 +5,23 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Download, TrashSimple, CaretRight, Check, X, SpinnerGap, Monitor, Warning, Lock, FileText, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Download, TrashSimple, CaretRight, Check, X, Monitor, Warning, Lock, FileText, Tag, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // Modal Component with Leasefy style
 function Modal({
@@ -39,16 +50,17 @@ function Modal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-xl overflow-hidden"
+            className="relative bg-surface dark:bg-[#141416] w-full max-w-md rounded-xl overflow-hidden"
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
-              <button
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint dark:border-[#2a2a2c]">
+              <h3 className="text-lg font-semibold text-fg dark:text-neutral-100">{title}</h3>
+              <IconButton
+                variant="ghost"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+                className="w-8 h-8 rounded-full bg-surface-muted dark:bg-[#1f1f21] text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-neutral-200 hover:bg-surface-muted dark:hover:bg-surface-muted"
+                aria-label="Cerrar"
+                icon={<X className="w-4 h-4" />}
+              />
             </div>
             <div className="p-6">{children}</div>
           </motion.div>
@@ -172,10 +184,10 @@ export default function ConfiguracionPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
             {t('settings.title')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
             {t('settings.subtitle')}
           </p>
         </motion.header>
@@ -186,20 +198,20 @@ export default function ConfiguracionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+            className="rounded-xl bg-surface-muted dark:bg-[#141416] overflow-hidden"
           >
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+            <div className="px-6 py-5 border-b border-border/50 dark:border-[#2a2a2c]/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
                   <Bell className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('settings.notifications.title')}</h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Controla cómo te contactamos' : 'Control how we contact you'}</p>
+                  <h2 className="font-semibold text-fg dark:text-white">{t('settings.notifications.title')}</h2>
+                  <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Controla cómo te contactamos' : 'Control how we contact you'}</p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+            <div className="divide-y divide-border/50 dark:divide-neutral-700/50">
               <SettingToggle
                 icon={Envelope}
                 title={t('settings.notifications.email')}
@@ -245,20 +257,20 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-surface-muted dark:bg-[#141416] overflow-hidden"
             >
-              <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+              <div className="px-6 py-5 border-b border-border/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
                     <Shield className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Seguridad' : 'Security'}</h2>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Protege tu cuenta' : 'Protect your account'}</p>
+                    <h2 className="font-semibold text-fg dark:text-white">{locale === 'es' ? 'Seguridad' : 'Security'}</h2>
+                    <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Protege tu cuenta' : 'Protect your account'}</p>
                   </div>
                 </div>
               </div>
-              <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+              <div className="divide-y divide-border/50 dark:divide-neutral-700/50">
                 <MfaSetupSection />
                 <SettingLink
                   icon={Lock}
@@ -281,20 +293,20 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-surface-muted dark:bg-[#141416] overflow-hidden"
             >
-              <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+              <div className="px-6 py-5 border-b border-border/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Preferencias' : 'Preferences'}</h2>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Personaliza tu experiencia' : 'Customize your experience'}</p>
+                    <h2 className="font-semibold text-fg dark:text-white">{locale === 'es' ? 'Preferencias' : 'Preferences'}</h2>
+                    <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Personaliza tu experiencia' : 'Customize your experience'}</p>
                   </div>
                 </div>
               </div>
-              <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+              <div className="divide-y divide-border/50 dark:divide-neutral-700/50">
                 <SettingToggle
                   icon={Moon}
                   title={locale === 'es' ? 'Modo oscuro' : 'Dark mode'}
@@ -304,26 +316,26 @@ export default function ConfiguracionPage() {
                 />
                 <div className="flex items-center justify-between px-6 py-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
-                      <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('settings.appearance.language')}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Idioma de la interfaz' : 'Interface language'}</p>
+                      <p className="text-sm font-medium text-fg dark:text-white">{t('settings.appearance.language')}</p>
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Idioma de la interfaz' : 'Interface language'}</p>
                     </div>
                   </div>
-                  <div className="relative">
-                    <select
-                      value={locale}
-                      onChange={(e) => handleLanguageChange(e.target.value as Locale)}
+                  <Select value={locale} onValueChange={(v) => handleLanguageChange(v as Locale)}>
+                    <SelectTrigger
+                      className="w-auto gap-2 rounded-xl bg-surface dark:bg-[#1f1f21]"
                       aria-label={locale === 'es' ? 'Idioma de la interfaz' : 'Interface language'}
-                      className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all cursor-pointer"
                     >
-                      <option value="es">{t('settings.appearance.spanish')}</option>
-                      <option value="en">{t('settings.appearance.english')}</option>
-                    </select>
-                    <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
-                  </div>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="es">{t('settings.appearance.spanish')}</SelectItem>
+                      <SelectItem value="en">{t('settings.appearance.english')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </motion.section>
@@ -336,20 +348,20 @@ export default function ConfiguracionPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+              className="rounded-xl bg-surface-muted dark:bg-[#141416] overflow-hidden"
             >
-              <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+              <div className="px-6 py-5 border-b border-border/50 dark:border-[#2a2a2c]/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
                     <Eye className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-neutral-900 dark:text-white">{t('settings.privacy.title')}</h2>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Tu información personal' : 'Your personal information'}</p>
+                    <h2 className="font-semibold text-fg dark:text-white">{t('settings.privacy.title')}</h2>
+                    <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Tu información personal' : 'Your personal information'}</p>
                   </div>
                 </div>
               </div>
-              <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+              <div className="divide-y divide-border/50 dark:divide-neutral-700/50">
                 <SettingLink
                   icon={Download}
                   title={t('settings.privacy.downloadData')}
@@ -398,17 +410,19 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
               <div className="p-6">
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                <p className="text-sm text-fg-muted dark:text-fg-subtle mb-4">
                   {locale === 'es'
                     ? 'Eliminar tu cuenta es permanente. Todos tus datos serán eliminados.'
                     : 'Deleting your account is permanent. All your data will be deleted.'}
                 </p>
-                <button
+                <Button
+                  variant="outline"
+                  hideArrow
                   onClick={() => setShowDeleteModal(true)}
-                  className="px-5 py-2.5 border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] rounded-xl text-sm font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 hover:border-[#C4503B]/30 dark:hover:border-[#C4503B]/30 transition-all"
+                  className="border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 hover:text-[#C4503B] dark:hover:text-[#E0664D]"
                 >
                   {t('settings.account.deleteAccount')}
-                </button>
+                </Button>
               </div>
             </motion.section>
           </div>
@@ -419,50 +433,54 @@ export default function ConfiguracionPage() {
       <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar contraseña">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Contraseña actual</label>
-            <input
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">Contraseña actual</label>
+            <Input
               type="password"
               value={passwordForm.current}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+              className="w-full h-12 rounded-xl bg-surface dark:bg-[#1f1f21]"
               placeholder="••••••••"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Nueva contraseña</label>
-            <input
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">Nueva contraseña</label>
+            <Input
               type="password"
               value={passwordForm.new}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+              className="w-full h-12 rounded-xl bg-surface dark:bg-[#1f1f21]"
               placeholder="Mínimo 8 caracteres"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Confirmar contraseña</label>
-            <input
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">Confirmar contraseña</label>
+            <Input
               type="password"
               value={passwordForm.confirm}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+              className="w-full h-12 rounded-xl bg-surface dark:bg-[#1f1f21]"
               placeholder="Repetir contraseña"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowPasswordModal(false)}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
+              hideArrow
+              isLoading={isLoading}
               onClick={handlePasswordChange}
               disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 bg-ink dark:bg-surface text-white dark:text-fg hover:bg-ink dark:hover:bg-surface-muted"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
               {isLoading ? 'Actualizando...' : 'Cambiar contraseña'}
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>
@@ -471,38 +489,43 @@ export default function ConfiguracionPage() {
       <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title="Sesiones activas">
         <div className="space-y-3">
           {sessions.map((session) => (
-            <div key={session.id} className="flex items-center justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]">
+            <div key={session.id} className="flex items-center justify-between p-4 border border-border dark:border-border-strong rounded-xl bg-surface dark:bg-[#1f1f21]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                  <Monitor className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center">
+                  <Monitor className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white">{session.device}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{session.location} · {session.lastActive}</p>
+                  <p className="text-sm font-medium text-fg dark:text-white">{session.device}</p>
+                  <p className="text-xs text-fg-muted dark:text-fg-subtle">{session.location} · {session.lastActive}</p>
                 </div>
               </div>
               {session.current ? (
                 <span className="px-3 py-1.5 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-xs font-medium rounded-full">Actual</span>
               ) : (
-                <button
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
                   onClick={() => handleCloseSession(session.id)}
-                  className="text-xs text-[#C4503B] dark:text-[#E0664D] font-medium hover:underline"
+                  className="px-0 text-xs text-[#C4503B] dark:text-[#E0664D]"
                 >
                   Cerrar
-                </button>
+                </Button>
               )}
             </div>
           ))}
           {sessions.length > 1 && (
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => {
                 setSessions(prev => prev.filter(s => s.current));
                 toast.success('Todas las otras sesiones han sido cerradas');
               }}
-              className="w-full py-3 border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] text-sm font-medium rounded-xl hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
+              className="w-full border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 hover:text-[#C4503B] dark:hover:text-[#E0664D]"
             >
               Cerrar todas las otras sesiones
-            </button>
+            </Button>
           )}
         </div>
       </Modal>
@@ -510,17 +533,17 @@ export default function ConfiguracionPage() {
       {/* Download Data Modal */}
       <Modal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} title="Descargar mis datos">
         <div className="space-y-4">
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
             Prepararemos un archivo con toda tu información personal, incluyendo:
           </p>
-          <div className="p-4 bg-neutral-50 dark:bg-[#1f1f21] rounded-xl space-y-2">
+          <div className="p-4 bg-surface-muted dark:bg-[#1f1f21] rounded-xl space-y-2">
             {[
               'Información de perfil',
               'Historial de pagos',
               'Documentos subidos',
               'Historial de aplicaciones'
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+              <div key={i} className="flex items-center gap-2 text-sm text-fg dark:text-neutral-200">
                 <div className="w-5 h-5 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
                   <Check className="w-3 h-3 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
@@ -528,24 +551,29 @@ export default function ConfiguracionPage() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle">
             El archivo se enviará a tu correo electrónico registrado en las próximas 24 horas.
           </p>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowDownloadModal(false)}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
+              hideArrow
+              isLoading={isLoading}
               onClick={handleDownloadData}
               disabled={isLoading}
-              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 bg-ink dark:bg-surface text-white dark:text-fg hover:bg-ink dark:hover:bg-surface-muted"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {!isLoading && <Download className="w-4 h-4" />}
               {isLoading ? 'Procesando...' : 'Solicitar datos'}
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>
@@ -565,35 +593,40 @@ export default function ConfiguracionPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
               Escribe <span className="font-bold text-[#C4503B] dark:text-[#E0664D]">ELIMINAR</span> para confirmar
             </label>
-            <input
+            <Input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30 dark:focus:border-[#C4503B]/30 transition-all"
+              className="w-full h-12 rounded-xl bg-surface dark:bg-[#1f1f21] focus-visible:border-[#C4503B]/30 focus-visible:ring-[#C4503B]/20"
               placeholder="ELIMINAR"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => {
                 setShowDeleteModal(false);
                 setDeleteConfirmText('');
               }}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="destructive"
+              hideArrow
+              isLoading={isLoading}
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
-              className="flex-1 py-3 bg-[#C4503B] text-white text-sm font-medium rounded-xl hover:bg-[#C4503B] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
+              {!isLoading && <TrashSimple className="w-4 h-4" />}
               {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>
@@ -618,34 +651,22 @@ function SettingToggle({
   accent?: 'emerald' | 'indigo';
 }) {
   return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+    <div className="flex items-center justify-between px-6 py-4 hover:bg-surface/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
-          <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+        <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
+          <Icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
         </div>
         <div>
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">{title}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+          <p className="text-sm font-medium text-fg dark:text-white">{title}</p>
+          <p className="text-xs text-fg-muted dark:text-fg-subtle">{description}</p>
         </div>
       </div>
-      <button
-        onClick={onToggle}
-        role="switch"
-        aria-checked={enabled}
-        className={cn(
-          'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
-          enabled
-            ? accent === 'emerald' ? 'bg-[#2C7A53]' : 'bg-[#1A40FF]'
-            : 'bg-neutral-200 dark:bg-[#2a2a2c]'
-        )}
-      >
-        <span
-          className={cn(
-            'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white ring-0 transition duration-200 ease-in-out',
-            enabled ? 'translate-x-5' : 'translate-x-0'
-          )}
-        />
-      </button>
+      <Switch
+        checked={enabled}
+        onCheckedChange={onToggle}
+        aria-label={title}
+        className={accent === 'emerald' ? 'data-[state=checked]:bg-[#2C7A53]' : undefined}
+      />
     </div>
   );
 }
@@ -669,15 +690,15 @@ function SettingLink({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors group"
+      className="w-full flex items-center justify-between px-6 py-4 hover:bg-surface/50 dark:hover:bg-[#1f1f21]/50 transition-colors group"
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
-          <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+        <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
+          <Icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
         </div>
         <div className="text-left">
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">{title}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+          <p className="text-sm font-medium text-fg dark:text-white">{title}</p>
+          <p className="text-xs text-fg-muted dark:text-fg-subtle">{description}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -686,7 +707,7 @@ function SettingLink({
             {badge}
           </span>
         )}
-        <CaretRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
+        <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-fg-muted dark:group-hover:text-fg-subtle transition-colors" />
       </div>
     </button>
   );

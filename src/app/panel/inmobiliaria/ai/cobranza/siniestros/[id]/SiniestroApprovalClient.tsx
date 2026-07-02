@@ -25,7 +25,8 @@ import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
-import { Button } from '@/components/ui'
+import { Button, Checkbox } from '@/components/ui'
+import { BackButton } from '@leasefy/cadence'
 import {
   useSiniestroApproval,
   type SiniestroInsurer,
@@ -166,14 +167,12 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     <div className="p-4 lg:p-8 space-y-6">
       {/* Header + Back */}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
+        <BackButton
+          variant="subtle"
           data-testid="siniestro-back"
           onClick={() => router.back()}
-          className="inline-flex items-center text-sm text-fg-muted hover:text-fg"
-        >
-          ← {t('inmobiliaria.ai.cobranza.siniestros.back')}
-        </button>
+          label={t('inmobiliaria.ai.cobranza.siniestros.back')}
+        />
       </div>
       <header>
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
@@ -214,13 +213,14 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
             return (
               <label
                 key={ins}
+                htmlFor={`siniestro-insurer-${ins}`}
                 className="inline-flex items-center gap-2 rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
+                  id={`siniestro-insurer-${ins}`}
                   data-testid={`siniestro-insurer-${ins}`}
                   checked={checked}
-                  onChange={() => toggleInsurer(ins)}
+                  onCheckedChange={() => toggleInsurer(ins)}
                   disabled={isApproving || approveResult !== null}
                 />
                 {t(`inmobiliaria.ai.cobranza.siniestros.insurers.${ins}`)}

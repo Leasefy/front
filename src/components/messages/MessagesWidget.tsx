@@ -25,7 +25,9 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import type { ChatConversation } from '@/lib/api/messages.types';
@@ -264,13 +266,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
               <div className="p-4 border-b border-border bg-card">
                 <div className="relative">
                   <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
+                  <Input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={locale === 'es' ? 'Buscar conversacion...' : 'Search conversation...'}
                     aria-label={locale === 'es' ? 'Buscar conversacion' : 'Search conversation'}
-                    className="w-full h-11 pl-11 pr-4 bg-muted text-foreground rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="h-11 pl-11 rounded-full bg-muted"
                   />
                 </div>
               </div>
@@ -380,13 +382,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   {/* Chat Header */}
                   <div className="flex items-center justify-between px-6 py-4 border-b border-border">
                     <div className="flex items-center gap-3">
-                      <button
+                      <IconButton
+                        variant="ghost"
                         onClick={() => setShowMobileChat(false)}
                         aria-label={locale === 'es' ? 'Volver' : 'Back'}
-                        className="md:hidden p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground"
-                      >
-                        <ArrowLeft className="w-5 h-5" />
-                      </button>
+                        icon={<ArrowLeft className="w-5 h-5" />}
+                        className="md:hidden -ml-2 rounded-full text-muted-foreground"
+                      />
                       <div className="w-11 h-11 rounded-full bg-primary-soft flex items-center justify-center text-primary font-semibold text-sm">
                         {getInitials(selectedConversation.name)}
                       </div>
@@ -401,32 +403,32 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button
+                      <IconButton
+                        variant="ghost"
                         onClick={() => setShowInfoPanel(!showInfoPanel)}
                         className={cn(
-                          'p-2.5 rounded-full transition-colors',
+                          'rounded-full',
                           showInfoPanel
                             ? 'bg-primary-soft text-primary'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                            : 'text-muted-foreground hover:text-foreground',
                         )}
                         aria-label={locale === 'es' ? 'Informacion' : 'Information'}
-                      >
-                        <Info className="w-5 h-5" />
-                      </button>
+                        icon={<Info className="w-5 h-5" />}
+                      />
 
                       <div className="relative" ref={optionsListRef}>
-                        <button
+                        <IconButton
+                          variant="ghost"
                           onClick={() => setShowOptionsList(!showOptionsList)}
                           className={cn(
-                            'p-2.5 rounded-full transition-colors',
+                            'rounded-full',
                             showOptionsList
                               ? 'bg-muted text-foreground'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                              : 'text-muted-foreground hover:text-foreground',
                           )}
                           aria-label={locale === 'es' ? 'Mas opciones' : 'More options'}
-                        >
-                          <DotsThreeVertical className="w-5 h-5" />
-                        </button>
+                          icon={<DotsThreeVertical className="w-5 h-5" />}
+                        />
 
                         <AnimatePresence>
                           {showOptionsList && (
@@ -534,21 +536,21 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                       <div className="px-6 py-4 border-t border-border bg-card">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1">
-                            <button
-                              className="p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            <IconButton
+                              variant="ghost"
+                              className="rounded-full text-muted-foreground hover:text-foreground"
                               aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
-                            >
-                              <Paperclip className="w-5 h-5" />
-                            </button>
-                            <button
-                              className="p-2.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              icon={<Paperclip className="w-5 h-5" />}
+                            />
+                            <IconButton
+                              variant="ghost"
+                              className="rounded-full text-muted-foreground hover:text-foreground"
                               aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
-                            >
-                              <Image className="w-5 h-5" />
-                            </button>
+                              icon={<Image className="w-5 h-5" />}
+                            />
                           </div>
                           <div className="flex-1 relative">
-                            <input
+                            <Input
                               ref={inputRef}
                               type="text"
                               value={messageText}
@@ -556,14 +558,14 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                               placeholder={locale === 'es' ? 'Escribe un mensaje...' : 'Type a message...'}
                               aria-label={locale === 'es' ? 'Escribe un mensaje' : 'Type a message'}
-                              className="w-full h-12 pl-5 pr-12 bg-muted text-foreground rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                              className="h-12 pl-5 pr-12 rounded-full bg-muted"
                             />
-                            <button
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                            <IconButton
+                              variant="ghost"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-muted-foreground hover:text-foreground hover:bg-transparent"
                               aria-label="Emoji"
-                            >
-                              <Smiley className="w-5 h-5" />
-                            </button>
+                              icon={<Smiley className="w-5 h-5" />}
+                            />
                           </div>
                           <Button
                             size="icon"
@@ -594,12 +596,13 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             <h3 className="text-base font-semibold text-foreground">
                               {locale === 'es' ? 'Informacion' : 'Information'}
                             </h3>
-                            <button
+                            <IconButton
+                              variant="ghost"
+                              aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
                               onClick={() => setShowInfoPanel(false)}
-                              className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                              icon={<X className="w-4 h-4" />}
+                              className="rounded-full text-muted-foreground"
+                            />
                           </div>
 
                           <div className="p-6">
@@ -651,9 +654,9 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
 
                             {/* Quick Actions */}
                             <div className="mt-6 pt-6 border-t border-border">
-                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+                              <MonoLabel className="block mb-3 text-muted-foreground">
                                 {locale === 'es' ? 'Acciones rapidas' : 'Quick actions'}
-                              </p>
+                              </MonoLabel>
                               <div className="space-y-2">
                                 <button
                                   onClick={handleMute}

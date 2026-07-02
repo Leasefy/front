@@ -12,12 +12,12 @@ import {
   AlertDialogDescription as DSAlertDialogDescription,
   AlertDialogAction as DSAlertDialogAction,
   AlertDialogCancel as DSAlertDialogCancel,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el AlertDialog de @leasefy/ui (Radix alert-dialog real:
+ * ADAPTER fino sobre el AlertDialog de @leasefy/cadence (Radix alert-dialog real:
  * role="alertdialog", foco atrapado, SIN outside-dismiss — nativo del DS).
  * Preserva la API local del mvp:
  * - Content: contrato de layout legacy (`p-6 grid gap-4 max-w-lg`), z-[300],

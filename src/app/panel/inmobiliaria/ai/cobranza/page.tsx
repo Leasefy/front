@@ -28,7 +28,6 @@ import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOv
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { CARTERA_STAGES, relativeTime } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
 
@@ -192,16 +191,6 @@ export default function CobranzaOverviewPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          {/* ← + miga de pan: volver al hub de agentes (patrón MigaDePan) */}
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai"
-            icon={ChatCircleText}
-            className="mb-2"
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.cobranza.overview.title') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t('inmobiliaria.ai.cobranza.overview.title')}
           </h1>

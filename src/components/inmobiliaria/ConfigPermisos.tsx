@@ -32,6 +32,15 @@ import { useI18n } from '@/lib/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog,
@@ -147,6 +156,9 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
                 isLocked && 'opacity-60 cursor-not-allowed'
               )}
             >
+              {/* allowlist: sr-only native checkbox is the accessible control behind a bespoke
+                  colored action-tile toggle (icon + state color) — Cadence Checkbox/Switch can't
+                  host the tile visual; the input stays hidden purely for a11y/keyboard. */}
               <input
                 type="checkbox"
                 checked={isEnabled}
@@ -168,7 +180,7 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
         <TooltipContent side="top">
           <div className="text-xs">
             <p className="font-medium">{getActionLabel(action)}</p>
-            <p className="text-neutral-400">{actionDescription}</p>
+            <p className="text-fg-subtle">{actionDescription}</p>
             {isDangerous && isEnabled && (
               <p className="text-warning mt-1">{t('inmobiliaria.config.permissions.sensitivePermission')}</p>
             )}
@@ -212,7 +224,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
       className="border-b border-border hover:bg-muted/40 transition-colors"
     >
       {/* Module Name */}
-      <td className="p-4">
+      <TableCell className="p-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center">
             <ModuleIcon className="w-5 h-5 text-fg-muted" />
@@ -221,10 +233,10 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
             {getModuleLabel(module)}
           </span>
         </div>
-      </td>
+      </TableCell>
 
       {/* Select All for Row */}
-      <td className="p-4">
+      <TableCell className="p-4">
         <div className="flex items-center justify-center">
           <Checkbox
             checked={allEnabled ? true : someEnabled ? 'indeterminate' : false}
@@ -233,11 +245,11 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
             className={cn(isAdmin && 'opacity-60 cursor-not-allowed')}
           />
         </div>
-      </td>
+      </TableCell>
 
       {/* Action Columns */}
       {ALL_PERMISSION_ACTIONS.map((action) => (
-        <td key={action} className="p-4">
+        <TableCell key={action} className="p-4">
           <PermissionCell
             module={module}
             action={action}
@@ -245,7 +257,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
             isAdmin={isAdmin}
             onChange={(enabled) => onToggle(module, action, enabled)}
           />
-        </td>
+        </TableCell>
       ))}
     </motion.tr>
   );
@@ -381,7 +393,7 @@ export function ConfigPermisos({
           >
             {isLoading ? (
               <>
-                <ArrowClockwise className="w-4 h-4 mr-2 animate-spin" />
+                <Spinner size="sm" variant="current" className="mr-2" />
                 {t('inmobiliaria.config.permissions.saving')}
               </>
             ) : (
@@ -442,41 +454,44 @@ export function ConfigPermisos({
 
             {/* Permission Matrix Table */}
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
-              <table className="w-full min-w-[700px]">
-                <thead>
-                  <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                    <th className="text-left p-4 w-[200px]">
-                      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <Table className="w-full min-w-[700px]">
+                <TableHeader>
+                  <TableRow className="border-b border-faint dark:border-strong">
+                    <TableHead className="text-left p-4 w-[200px]">
+                      <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                         {t('inmobiliaria.config.permissions.module')}
                       </span>
-                    </th>
-                    <th className="p-4 w-[60px] text-center">
-                      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                    </TableHead>
+                    <TableHead className="p-4 w-[60px] text-center">
+                      <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                         {t('inmobiliaria.config.permissions.all')}
                       </span>
-                    </th>
+                    </TableHead>
                     {ALL_PERMISSION_ACTIONS.map((action) => {
                       const ActionIcon = ACTION_ICONS[action];
                       const allEnabled = isActionFullyEnabled(action);
                       const someEnabled = isActionPartiallyEnabled(action);
 
                       return (
-                        <th key={action} className="p-4 w-[80px]">
+                        <TableHead key={action} className="p-4 w-[80px]">
                           <div className="flex flex-col items-center gap-1">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
+                                  {/* allowlist: table column bulk-toggle trigger (grant/revoke an
+                                      action across all modules) — a clickable column header with
+                                      icon+label+checkbox, no Cadence primitive models it */}
                                   <button
                                     onClick={() => handleToggleAllAction(action, !allEnabled)}
                                     disabled={isAdmin}
                                     className={cn(
                                       'flex flex-col items-center gap-1 p-1 rounded transition-colors',
-                                      !isAdmin && 'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                                      !isAdmin && 'hover:bg-surface-muted dark:hover:bg-ink',
                                       isAdmin && 'opacity-60 cursor-not-allowed'
                                     )}
                                   >
-                                    <ActionIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                                    <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                    <ActionIcon className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
+                                    <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                                       {getActionLabel(action)}
                                     </span>
                                     <Checkbox
@@ -496,12 +511,12 @@ export function ConfigPermisos({
                               </Tooltip>
                             </TooltipProvider>
                           </div>
-                        </th>
+                        </TableHead>
                       );
                     })}
-                  </tr>
-                </thead>
-                <tbody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {ALL_PERMISSION_MODULES.map((module) => (
                     <PermissionRow
                       key={module}
@@ -512,8 +527,8 @@ export function ConfigPermisos({
                       onToggleAll={handleToggleAllModule}
                     />
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             {/* Legend */}

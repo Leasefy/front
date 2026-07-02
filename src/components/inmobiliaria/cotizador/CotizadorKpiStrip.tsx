@@ -13,7 +13,7 @@ import {
   Vault,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
-import { KpiCard } from '@leasefy/ui'
+import { KpiCard } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
 

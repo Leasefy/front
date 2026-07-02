@@ -30,7 +30,10 @@ export type BackendDispatchAgent =
   | 'cobranza'
   | 'cotizador'
   | 'estudio'
-  | 'matching';
+  | 'matching'
+  | 'avaluo'
+  | 'conciliacion'
+  | 'pagos';
 
 // ── Action Proposal contract (backend → front, F5) ────────────────────────────
 
@@ -53,6 +56,7 @@ export type BackendActionTarget =
   | 'matching'
   | 'pagos'
   | 'conciliacion'
+  | 'avaluo'
   | 'cartera';
 
 export interface BackendSuggestedAction {
@@ -116,6 +120,7 @@ export function targetToHref(target: BackendActionTarget): string {
       return `${base}/pagos`;
     case 'cartera':
       return `${base}/cobranza`; // cartera overview lives under cobranza
+    case 'avaluo':
     case 'estudio':
     case 'conciliacion':
     default:
@@ -130,6 +135,7 @@ const TARGET_ICON: Record<BackendActionTarget, string> = {
   matching: 'FunnelSimple',
   pagos: 'Bank',
   conciliacion: 'ArrowsLeftRight',
+  avaluo: 'Scales',
   cartera: 'ChartBar',
 };
 

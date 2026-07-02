@@ -233,7 +233,7 @@ export function PlanTable<T extends object>({
                     className={cn(
                       'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                       allSelected
-                        ? 'bg-primary border-primary text-white'
+                        ? 'bg-primary border-primary text-primary-fg'
                         : someSelected
                           ? 'bg-primary/10 border-primary'
                           : 'border-border hover:border-plan-muted'
@@ -306,7 +306,7 @@ export function PlanTable<T extends object>({
                           className={cn(
                             'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                             isSelected
-                              ? 'bg-primary border-primary text-white'
+                              ? 'bg-primary border-primary text-primary-fg'
                               : 'border-border hover:border-plan-muted'
                           )}
                         >
@@ -355,7 +355,7 @@ export function PlanTable<T extends object>({
                   className={cn(
                     'w-8 h-8 text-sm font-medium rounded-sm transition-colors',
                     currentPage === page
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-primary-fg'
                       : 'bg-muted text-plan-secondary hover:bg-muted hover:text-plan-primary'
                   )}
                 >

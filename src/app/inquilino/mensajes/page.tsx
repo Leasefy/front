@@ -3,6 +3,7 @@
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { MessagesWidget } from '@/components/messages/MessagesWidget';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function MensajesPage() {
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
@@ -10,7 +11,7 @@ export default function MensajesPage() {
   if (isOnboardingLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }

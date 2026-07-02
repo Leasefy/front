@@ -64,7 +64,7 @@ export function PriceSummary({
   const billingLabel = billingCycle === 'monthly' ? 'mes' : 'ano';
 
   return (
-    <div className={cn('bg-muted rounded-sm p-4', className)}>
+    <div className={cn('bg-muted rounded-[18px] p-4', className)}>
       <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
         Resumen
         {appliedCoupon && (
@@ -77,7 +77,7 @@ export function PriceSummary({
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Plan {plan.name}</span>
           <span className={cn(
-            'font-medium',
+            'font-medium font-mono tabular-nums',
             appliedCoupon && savings > 0 && 'line-through text-muted-foreground'
           )}>
             {formatCurrency(originalPrice)}/{billingLabel}
@@ -91,13 +91,13 @@ export function PriceSummary({
               <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
               {appliedCoupon.description}
             </span>
-            <span className="font-medium">-{formatCurrency(savings)}</span>
+            <span className="font-medium font-mono tabular-nums">-{formatCurrency(savings)}</span>
           </div>
         )}
 
         {/* Free period notice */}
         {isTrial && (
-          <div className="bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-sm p-3">
+          <div className="bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-md p-3">
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 text-[#2C7A53] shrink-0 mt-0.5" />
               <div>
@@ -125,7 +125,7 @@ export function PriceSummary({
             {isFree ? 'A pagar hoy' : 'Total'}
           </span>
           <div className="text-right">
-            <span className="text-xl font-bold text-foreground">
+            <span className="text-xl font-bold font-mono tabular-nums text-foreground">
               {isFree ? 'Gratis' : formatCurrency(finalPrice)}
             </span>
             {!isFree && (
@@ -148,7 +148,7 @@ export function PriceSummary({
           <div className="flex items-center justify-center gap-1.5 pt-2 text-[#2C7A53]">
             <Info className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">
-              Ahorras {formatCurrency(savings)} con este cupon
+              Ahorras <span className="font-mono tabular-nums">{formatCurrency(savings)}</span> con este cupon
             </span>
           </div>
         )}

@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { SegmentedControl } from '@leasefy/cadence';
 import type { Agente } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -110,48 +111,50 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             <Trophy className="w-5 h-5 text-warning" weight="fill" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-fg dark:text-white">
               {t('inmobiliaria.agente.agentRanking')}
             </h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.agente.topPerformers')}
             </p>
           </div>
         </div>
 
         {/* Time Range Toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 w-fit">
-          <button
-            onClick={() => setTimeRange('month')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all',
-              timeRange === 'month'
-                ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            <CalendarBlank className="w-4 h-4" />
-            {t('inmobiliaria.agente.thisMonth')}
-          </button>
-          <button
-            onClick={() => setTimeRange('year')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all',
-              timeRange === 'year'
-                ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            <Calendar className="w-4 h-4" />
-            {t('inmobiliaria.agente.thisYear')}
-          </button>
-        </div>
+        <SegmentedControl<TimeRange>
+          aria-label={t('inmobiliaria.agente.thisMonth')}
+          value={timeRange}
+          onChange={setTimeRange}
+          size="sm"
+          options={[
+            {
+              value: 'month',
+              ariaLabel: t('inmobiliaria.agente.thisMonth'),
+              label: (
+                <span className="inline-flex items-center gap-2">
+                  <CalendarBlank className="w-4 h-4" />
+                  {t('inmobiliaria.agente.thisMonth')}
+                </span>
+              ),
+            },
+            {
+              value: 'year',
+              ariaLabel: t('inmobiliaria.agente.thisYear'),
+              label: (
+                <span className="inline-flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  {t('inmobiliaria.agente.thisYear')}
+                </span>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {/* Leaderboard Table */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-700 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted dark:bg-ink/50 border-b border-border dark:border-strong text-xs font-medium text-fg-muted dark:text-fg-subtle uppercase tracking-wide">
           <div className="col-span-1 text-center">#</div>
           <div className="col-span-4">{t('inmobiliaria.agente.agentLabel')}</div>
           <div className="col-span-2 text-center">
@@ -193,9 +196,9 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   variants={rowVariants}
                   onClick={() => handleRowClick(agente.id)}
                   className={cn(
-                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 cursor-pointer transition-all duration-200',
+                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-faint dark:border-strong cursor-pointer transition-all duration-200',
                     isFirst && 'bg-warning-soft/50 dark:bg-warning/10',
-                    !isFirst && 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+                    !isFirst && 'hover:bg-surface-muted dark:hover:bg-ink/50'
                   )}
                 >
                   {/* Rank */}
@@ -205,7 +208,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                         {MEDALS[rank - 1]}
                       </span>
                     ) : (
-                      <span className="text-sm font-medium text-neutral-400 dark:text-neutral-500">
+                      <span className="text-sm font-medium text-fg-subtle dark:text-fg-muted">
                         {rank}
                       </span>
                     )}
@@ -234,11 +237,11 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                         'font-medium truncate text-sm',
                         isFirst
                           ? 'text-warning'
-                          : 'text-neutral-900 dark:text-white'
+                          : 'text-fg dark:text-white'
                       )}>
                         {agente.name}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
                         {agente.zone || t('inmobiliaria.agente.noZone')}
                       </p>
                     </div>
@@ -250,7 +253,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                       'text-lg font-bold',
                       closings > 0
                         ? 'text-success'
-                        : 'text-neutral-400 dark:text-neutral-500'
+                        : 'text-fg-subtle dark:text-fg-muted'
                     )}>
                       {closings}
                     </span>
@@ -259,8 +262,8 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   {/* Commissions */}
                   <div className="col-span-3 flex items-center justify-end">
                     <div className="flex items-center gap-1.5">
-                      <CurrencyDollar className="w-4 h-4 text-neutral-400" />
-                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm font-medium text-fg dark:text-fg-subtle">
                         {formatCurrency(commissions)}
                       </span>
                     </div>
@@ -274,7 +277,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                         ? 'text-success'
                         : agente.metrics.conversionRate >= 0.4
                           ? 'text-warning'
-                          : 'text-neutral-500 dark:text-neutral-400'
+                          : 'text-fg-muted dark:text-fg-subtle'
                     )}>
                       {Math.round(agente.metrics.conversionRate * 100)}%
                     </span>
@@ -293,8 +296,8 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                       </div>
                     )}
                     {trend === 'stable' && (
-                      <div className="w-6 h-6 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                        <Minus className="w-3.5 h-3.5 text-neutral-400" weight="bold" />
+                      <div className="w-6 h-6 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
+                        <Minus className="w-3.5 h-3.5 text-fg-subtle" weight="bold" />
                       </div>
                     )}
                   </div>
@@ -303,8 +306,8 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
             })
           ) : (
             <div className="px-4 py-12 text-center">
-              <Trophy className="w-12 h-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
-              <p className="text-neutral-500 dark:text-neutral-400">
+              <Trophy className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
+              <p className="text-fg-muted dark:text-fg-subtle">
                 {t('inmobiliaria.agente.noActiveAgents')}
               </p>
             </div>
@@ -315,11 +318,11 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       {/* Summary Stats */}
       {rankedAgentes.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.totalClosings')} {timeRange === 'month' ? t('inmobiliaria.agente.monthLabel') : t('inmobiliaria.agente.yearLabel')}
             </p>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+            <p className="text-2xl font-bold text-fg dark:text-white">
               {rankedAgentes.reduce(
                 (sum, a) =>
                   sum + (timeRange === 'month' ? a.metrics.closedThisMonth : a.metrics.closedThisYear),
@@ -327,11 +330,11 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               )}
             </p>
           </div>
-          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.totalCommissions')}
             </p>
-            <p className="text-lg font-bold text-neutral-900 dark:text-white truncate">
+            <p className="text-lg font-bold text-fg dark:text-white truncate">
               {formatCurrency(
                 rankedAgentes.reduce(
                   (sum, a) =>
@@ -341,11 +344,11 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               )}
             </p>
           </div>
-          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
+          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.avgConversion')}
             </p>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+            <p className="text-2xl font-bold text-fg dark:text-white">
               {Math.round(
                 (rankedAgentes.reduce((sum, a) => sum + a.metrics.conversionRate, 0) /
                   rankedAgentes.length) *

@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { Button, Input, Spinner } from '@/components/ui';
+import { IconButton } from '@leasefy/cadence';
 import { permissionsApi } from '@/lib/api/inmobiliaria.service';
 import { settingsApi } from '@/lib/api/settings.service';
 
@@ -248,7 +249,6 @@ export default function InmobiliariaPerfilPage() {
   };
 
   // Shared field shells (DS tokens, rounded-md)
-  const fieldInput = 'w-full px-4 py-3 rounded-md border border-border bg-bg text-sm text-fg focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all';
   const fieldDisplay = 'flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-md';
 
   return (
@@ -387,16 +387,17 @@ export default function InmobiliariaPerfilPage() {
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="relative bg-primary-soft h-28">
                 {editingSection !== 'avatar' && (
-                  <button
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setAvatarPreview(savedAvatar);
                       setEditingSection('avatar');
                     }}
                     aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
-                    className="absolute top-3 right-3 p-2 bg-card/70 hover:bg-card backdrop-blur-sm rounded-md text-fg transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
+                    className="absolute top-3 right-3 bg-card/70 hover:bg-card backdrop-blur-sm text-fg"
+                    icon={<Pencil className="w-4 h-4" />}
+                  />
                 )}
               </div>
               <div className="px-6 pb-6">
@@ -432,13 +433,14 @@ export default function InmobiliariaPerfilPage() {
                     )}
                   </div>
                   {editingSection === 'avatar' && (
-                    <button
+                    <IconButton
+                      variant="solid"
+                      size="sm"
                       onClick={handleAvatarClick}
                       aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
-                      className="absolute bottom-1 right-1 p-2.5 bg-fg rounded-full text-bg hover:opacity-90 transition-opacity"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
+                      className="absolute bottom-1 right-1 bg-fg text-bg hover:opacity-90"
+                      icon={<Camera className="w-4 h-4" />}
+                    />
                   )}
                 </div>
 
@@ -477,16 +479,17 @@ export default function InmobiliariaPerfilPage() {
                             </p>
                           </div>
                         </div>
-                        <button
+                        <IconButton
+                          variant="ghost"
+                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRemoveAvatar();
                           }}
                           aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
-                          className="p-2 text-fg-muted hover:text-danger hover:bg-danger-soft rounded-md transition-colors"
-                        >
-                          <TrashSimple className="w-4 h-4" />
-                        </button>
+                          className="text-fg-muted hover:text-danger hover:bg-danger-soft"
+                          icon={<TrashSimple className="w-4 h-4" />}
+                        />
                       </div>
                     ) : (
                       <>
@@ -520,7 +523,7 @@ export default function InmobiliariaPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow className="flex-1 justify-center" onClick={() => handleSave('avatar')} disabled={isSaving}>
-                      {isSaving ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <FloppyDisk className="w-4 h-4" />}
+                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-4 h-4" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
@@ -608,7 +611,7 @@ export default function InmobiliariaPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow onClick={() => handleSave('personal')} disabled={isSaving}>
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
@@ -621,8 +624,7 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Nombre' : 'First name'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input type="text" value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className={fieldInput} />
+                    <Input type="text" value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} />
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
@@ -637,8 +639,7 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Apellido' : 'Last name'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className={fieldInput} />
+                    <Input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} />
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
@@ -662,8 +663,7 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Teléfono' : 'Phone'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className={fieldInput} />
+                    <Input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
@@ -691,8 +691,7 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Dirección' : 'Address'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)}
-                      className={fieldInput} />
+                    <Input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
                   ) : (
                     <div className={fieldDisplay}>
                       <MapPin className="w-4 h-4 text-fg-muted" />
@@ -720,7 +719,7 @@ export default function InmobiliariaPerfilPage() {
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
                     </Button>
                     <Button size="sm" hideArrow onClick={() => handleSave('emergency')} disabled={isSaving}>
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
                     </Button>
                   </div>
@@ -732,10 +731,9 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Nombre' : 'Name'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <input type="text" value={formData.emergencyContactName}
+                    <Input type="text" value={formData.emergencyContactName}
                       onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
-                      className={fieldInput} />
+                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'} />
                   ) : (
                     <div className={fieldDisplay}>
                       <UserPlus className="w-4 h-4 text-fg-muted" />
@@ -748,10 +746,9 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Teléfono' : 'Phone'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <input type="tel" value={formData.emergencyContactPhone}
+                    <Input type="tel" value={formData.emergencyContactPhone}
                       onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                      placeholder="3001234567"
-                      className={fieldInput} />
+                      placeholder="3001234567" />
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
@@ -851,13 +848,13 @@ export default function InmobiliariaPerfilPage() {
                   <h3 className="text-base font-semibold text-fg">
                     {locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
                   </h3>
-                  <button
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
                     onClick={handleCloseDeleteModal}
                     aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
-                    className="p-2 hover:bg-surface-muted rounded-md transition-colors"
-                  >
-                    <X className="w-5 h-5 text-fg-muted" />
-                  </button>
+                    icon={<X className="w-5 h-5 text-fg-muted" />}
+                  />
                 </div>
 
                 <div className="p-6">
@@ -877,12 +874,12 @@ export default function InmobiliariaPerfilPage() {
                     )}
                   </p>
 
-                  <input
+                  <Input
                     type="text"
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
                     placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
-                    className="w-full px-4 py-3 rounded-md border border-border bg-bg text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-danger/30 focus:border-danger/40 transition-all text-center tracking-widest"
+                    className="text-center tracking-widest focus-visible:ring-danger/30"
                   />
 
                   <div className="flex gap-3 mt-6">
@@ -898,7 +895,7 @@ export default function InmobiliariaPerfilPage() {
                     >
                       {isDeleting ? (
                         <>
-                          <SpinnerGap className="w-4 h-4 animate-spin" />
+                          <Spinner size="sm" variant="current" />
                           {locale === 'es' ? 'Eliminando...' : 'Deleting...'}
                         </>
                       ) : (

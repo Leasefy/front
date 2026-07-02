@@ -1,15 +1,24 @@
 'use client'
 
 import { useI18n } from '@/lib/i18n'
+import {
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui'
 import type { AssumptionRow } from '@/lib/hooks/cotizador/use-insights'
 
 // ---------------------------------------------------------------------------
-// State pill semantic colors (mirrors SLA_COLORS pattern from CotizadorCarriersStatus)
+// State pill semantic → Badge variant
 // ---------------------------------------------------------------------------
-const STATE_COLORS: Record<string, string> = {
-  active: 'bg-success-soft text-success',
-  deprecated: 'bg-danger-soft text-danger',
-  under_review: 'bg-warning-soft text-warning',
+const STATE_VARIANT: Record<string, 'success' | 'destructive' | 'warning'> = {
+  active: 'success',
+  deprecated: 'destructive',
+  under_review: 'warning',
 }
 
 // ---------------------------------------------------------------------------
@@ -56,31 +65,30 @@ export function InsightsAssumptionTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm text-left">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="pr-4">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.name')}
-            </th>
-            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide hidden md:table-cell">
+            </TableHead>
+            <TableHead className="pr-4 hidden md:table-cell">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.description')}
-            </th>
-            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide">
+            </TableHead>
+            <TableHead className="pr-4">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.state')}
-            </th>
-            <th className="pb-2 font-medium text-fg-muted text-xs uppercase tracking-wide hidden sm:table-cell">
+            </TableHead>
+            <TableHead className="hidden sm:table-cell">
               {t('inmobiliaria.ai.cotizador.insights.assumptions.columns.updatedAt')}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((row) => {
             const stateKey = row.status ?? 'active'
             const stateLabel =
               t(`inmobiliaria.ai.cotizador.insights.assumptions.states.${stateKey}`) ||
               stateKey
-            const stateClass =
-              STATE_COLORS[stateKey] ?? STATE_COLORS.active
+            const stateVariant = STATE_VARIANT[stateKey] ?? 'success'
 
             const updatedAt = row.validatedAt ?? row.createdAt
             const formattedDate = updatedAt
@@ -92,35 +100,28 @@ export function InsightsAssumptionTable({
               : '—'
 
             return (
-              <tr
-                key={row.id}
-                className="hover:bg-surface-muted/50 transition-colors"
-              >
+              <TableRow key={row.id}>
                 {/* Name / Statement */}
-                <td className="py-2.5 pr-4 font-medium text-fg max-w-[200px] truncate">
+                <TableCell className="py-2.5 pr-4 font-medium text-fg max-w-[200px] truncate">
                   {row.statement || row.id}
-                </td>
+                </TableCell>
                 {/* Description (hidden on mobile) — use source as description if available */}
-                <td className="py-2.5 pr-4 text-fg-muted max-w-[220px] truncate hidden md:table-cell">
+                <TableCell className="py-2.5 pr-4 text-fg-muted max-w-[220px] truncate hidden md:table-cell">
                   {row.source ?? '—'}
-                </td>
+                </TableCell>
                 {/* State pill */}
-                <td className="py-2.5 pr-4">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${stateClass}`}
-                  >
-                    {stateLabel}
-                  </span>
-                </td>
+                <TableCell className="py-2.5 pr-4">
+                  <Badge variant={stateVariant}>{stateLabel}</Badge>
+                </TableCell>
                 {/* Updated At (hidden on xs) */}
-                <td className="py-2.5 text-xs text-fg-muted whitespace-nowrap hidden sm:table-cell">
+                <TableCell className="py-2.5 text-xs text-fg-muted whitespace-nowrap hidden sm:table-cell">
                   {formattedDate}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

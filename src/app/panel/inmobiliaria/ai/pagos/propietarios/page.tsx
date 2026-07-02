@@ -39,11 +39,9 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { Button, Card, EmptyState } from '@/components/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Button, Card, EmptyState, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui'
 import { PagoEstadoBadge } from '@/components/inmobiliaria/pagos/PagoEstadoBadge'
 import type { PagoEstado } from '@/lib/pagos/estados'
-import { useI18n } from '@/lib/i18n'
 
 // ── Formateador COP ───────────────────────────────────────────────────────────
 
@@ -215,7 +213,6 @@ function ProximamenteButton({
 // ── Página ──────────────────────────────────────────────────────────────────────
 
 function PagosPropietarios() {
-  const { t } = useI18n()
   const filas = BANDEJA_EJEMPLO
   const resumen = calcularResumen(filas)
 
@@ -224,15 +221,6 @@ function PagosPropietarios() {
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/pagos"
-            icon={Wallet}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: 'Pagos IA', href: '/panel/inmobiliaria/ai/pagos' },
-              { label: 'Pagos a propietarios' },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">Pagos a propietarios</h1>
           <p className="text-sm text-fg-muted max-w-2xl">
             La liquidación al dueño del inmueble: canon menos comisión, administración y descuentos.
@@ -280,21 +268,21 @@ function PagosPropietarios() {
           />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full min-w-[720px] text-left">
-              <thead>
-                <tr className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                  <th scope="col" className="py-2.5 px-4 font-medium">Propietario</th>
-                  <th scope="col" className="py-2.5 pr-4 font-medium text-right">Inmuebles</th>
-                  <th scope="col" className="py-2.5 pr-4 font-medium text-right">Valor a pagar</th>
-                  <th scope="col" className="py-2.5 pr-4 font-medium">Estado</th>
-                  <th scope="col" className="py-2.5 px-4 font-medium text-right">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[720px] text-left">
+              <TableHeader>
+                <TableRow>
+                  <TableHead scope="col">Propietario</TableHead>
+                  <TableHead scope="col" className="text-right">Inmuebles</TableHead>
+                  <TableHead scope="col" className="text-right">Valor a pagar</TableHead>
+                  <TableHead scope="col">Estado</TableHead>
+                  <TableHead scope="col" className="text-right">Acción</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filas.map((fila) => (
-                  <tr key={fila.id} className="border-t border-border align-top">
+                  <TableRow key={fila.id} className="border-t border-border align-top">
                     {/* Propietario */}
-                    <td className="py-3 px-4">
+                    <TableCell className="py-3 px-4">
                       <div className="flex items-start gap-2.5">
                         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-muted text-fg-muted">
                           <Buildings className="w-4 h-4" weight="duotone" aria-hidden="true" />
@@ -306,35 +294,35 @@ function PagosPropietarios() {
                           )}
                         </div>
                       </div>
-                    </td>
+                    </TableCell>
 
                     {/* Inmuebles */}
-                    <td className="py-3 pr-4 text-right text-sm text-fg tabular-nums whitespace-nowrap">
+                    <TableCell className="py-3 pr-4 text-right text-sm text-fg tabular-nums whitespace-nowrap">
                       {fila.inmuebles}
-                    </td>
+                    </TableCell>
 
                     {/* Valor a pagar */}
-                    <td className="py-3 pr-4 text-right text-sm font-medium text-fg tabular-nums whitespace-nowrap">
+                    <TableCell className="py-3 pr-4 text-right text-sm font-medium text-fg tabular-nums whitespace-nowrap">
                       {fila.valor > 0 ? cop.format(fila.valor) : '—'}
-                    </td>
+                    </TableCell>
 
                     {/* Estado */}
-                    <td className="py-3 pr-4 whitespace-nowrap">
+                    <TableCell className="py-3 pr-4 whitespace-nowrap">
                       <PagoEstadoBadge
                         estado={ESTADO_BANDEJA_A_PAGO[fila.estado]}
                         className="[&]:!normal-case"
                       />
                       <span className="sr-only">{ESTADO_BANDEJA_LABEL[fila.estado]}</span>
-                    </td>
+                    </TableCell>
 
                     {/* Acción — T-323: sin endpoint real → placeholder honesto. */}
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                    <TableCell className="py-3 px-4 text-right whitespace-nowrap">
                       <ProximamenteButton>Revisar</ProximamenteButton>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </section>

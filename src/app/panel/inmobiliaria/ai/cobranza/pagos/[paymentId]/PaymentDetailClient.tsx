@@ -19,7 +19,7 @@ import Link from 'next/link'
 import { CurrencyCircleDollar } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui'
-import { StatusBadge, type SemanticTone } from '@leasefy/ui'
+import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'

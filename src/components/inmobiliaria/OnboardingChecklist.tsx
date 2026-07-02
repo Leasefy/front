@@ -28,10 +28,10 @@ export function OnboardingChecklist() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <h2 className="text-base font-semibold text-fg dark:text-white">
             Configura tu agencia
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
             Completa estos pasos para aprovechar al máximo Leasefy
           </p>
         </div>
@@ -41,7 +41,7 @@ export function OnboardingChecklist() {
       </div>
 
       {/* Progress Bar */}
-      <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden mb-5">
+      <div className="h-1.5 rounded-full bg-surface-muted dark:bg-ink overflow-hidden mb-5">
         <div
           className="h-full rounded-full bg-primary transition-all duration-500"
           style={{ width: `${completionPercent}%` }}
@@ -62,7 +62,7 @@ export function OnboardingChecklist() {
             ) : (
               <Circle
                 weight="regular"
-                className="h-5 w-5 text-neutral-400 dark:text-neutral-500 shrink-0"
+                className="h-5 w-5 text-fg-subtle dark:text-fg-muted shrink-0"
                 aria-hidden="true"
               />
             )}
@@ -72,8 +72,8 @@ export function OnboardingChecklist() {
               className={cn(
                 'flex-1 text-sm',
                 step.completed
-                  ? 'text-neutral-400 dark:text-neutral-500 line-through'
-                  : 'text-neutral-700 dark:text-neutral-300'
+                  ? 'text-fg-subtle dark:text-fg-muted line-through'
+                  : 'text-fg dark:text-fg-subtle'
               )}
             >
               {step.label}

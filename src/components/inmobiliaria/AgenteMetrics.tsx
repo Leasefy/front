@@ -34,7 +34,7 @@ function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps
     ? 'bg-success-soft border-success/30'
     : performance === 'below'
     ? 'bg-danger-soft border-danger/30'
-    : 'bg-white dark:bg-[#1a1a1c] border-neutral-200 dark:border-neutral-700';
+    : 'bg-surface dark:bg-[#14130F] border-border dark:border-strong';
 
   return (
     <div
@@ -45,10 +45,10 @@ function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1 truncate">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1 truncate">
             {label}
           </p>
-          <p className="text-xl font-bold text-neutral-900 dark:text-white truncate">
+          <p className="text-xl font-bold text-fg dark:text-white truncate">
             {value}
           </p>
         </div>
@@ -93,8 +93,8 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
   return (
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center gap-2">
-        <ChartLineUp className="w-5 h-5 text-neutral-500" />
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+        <ChartLineUp className="w-5 h-5 text-fg-muted" />
+        <h2 className="text-lg font-semibold text-fg dark:text-white">
           {t('inmobiliaria.agente.performanceMetrics')}
         </h2>
       </div>
@@ -110,8 +110,8 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
         <MetricCard
           label={t('inmobiliaria.agente.activeLeases')}
           value={metrics.activeLeases}
-          icon={<Handshake className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />}
-          iconBg="bg-neutral-100 dark:bg-neutral-800"
+          icon={<Handshake className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />}
+          iconBg="bg-surface-muted dark:bg-ink"
         />
         <MetricCard
           label={t('inmobiliaria.agente.closingsThisMonth')}
@@ -123,8 +123,8 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
         <MetricCard
           label={t('inmobiliaria.agente.closingsThisYear')}
           value={metrics.closedThisYear}
-          icon={<Calendar className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />}
-          iconBg="bg-neutral-100 dark:bg-neutral-800"
+          icon={<Calendar className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />}
+          iconBg="bg-surface-muted dark:bg-ink"
         />
 
         {/* Row 2: Financial and Efficiency */}
@@ -157,13 +157,13 @@ export function AgenteMetrics({ metrics, className }: AgenteMetricsProps) {
       </div>
 
       {/* Performance Legend */}
-      <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-neutral-500 dark:text-neutral-400">
+      <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-fg-muted dark:text-fg-subtle">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-success" />
           <span>{t('inmobiliaria.agente.aboveAverage')}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+          <div className="w-2.5 h-2.5 rounded-full bg-muted dark:bg-ink" />
           <span>{t('inmobiliaria.agente.average')}</span>
         </div>
         <div className="flex items-center gap-1.5">

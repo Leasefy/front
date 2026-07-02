@@ -13,7 +13,6 @@ import {
   Sparkle,
   CaretRight,
   Download,
-  SpinnerGap,
   Info,
   ChartLineUp,
   Users,
@@ -34,6 +33,15 @@ import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -441,12 +449,15 @@ export function ConfigFacturacion({
               <CreditCard className="w-5 h-5 text-fg-muted" />
               <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.config.billing.paymentMethod')}</h3>
             </div>
-            <button
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={handleUpdatePaymentMethod}
-              className="text-sm text-primary underline-offset-4 hover:underline font-medium transition-colors"
+              className="h-auto p-0 text-sm font-medium"
             >
               {t('inmobiliaria.config.billing.update')}
-            </button>
+            </Button>
           </div>
 
           {billing.paymentMethod ? (
@@ -549,65 +560,68 @@ export function ConfigFacturacion({
 
         {invoices.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow className="border-b border-border">
+                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceDate')}
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceAmount')}
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceStatus')}
-                  </th>
-                  <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceActions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {invoices.map((invoice) => (
-                  <tr
+                  <TableRow
                     key={invoice.id}
                     className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
                   >
-                    <td className="py-3 px-4">
+                    <TableCell className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-foreground">
                           {formatDate(invoice.date)}
                         </span>
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell className="py-3 px-4">
                       <span className="text-sm font-medium text-foreground">
                         {formatCOP(invoice.amount)}
                       </span>
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell className="py-3 px-4">
                       <Badge
                         variant="secondary"
                         className={getInvoiceStatusColor(invoice.status)}
                       >
                         {getInvoiceStatusLabel(invoice.status)}
                       </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-right">
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-right">
                       {invoice.pdfUrl && invoice.status === 'paid' && (
-                        <button
+                        <Button
+                          variant="link"
+                          size="sm"
+                          hideArrow
                           onClick={() => handleDownloadInvoice(invoice)}
-                          className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline font-medium transition-colors"
+                          className="h-auto p-0 gap-1.5 text-sm font-medium"
                         >
                           <Download className="w-4 h-4" />
                           {t('common.download')}
-                        </button>
+                        </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="py-8 text-center">
@@ -739,7 +753,7 @@ export function ConfigFacturacion({
             >
               {isUpgrading ? (
                 <>
-                  <SpinnerGap className="w-4 h-4 animate-spin" />
+                  <Spinner size="sm" variant="current" />
                   {t('inmobiliaria.config.billing.updating')}
                 </>
               ) : (

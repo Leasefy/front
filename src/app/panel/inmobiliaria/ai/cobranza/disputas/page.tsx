@@ -24,23 +24,36 @@
  * text-2xl, UN solo primary CTA, SegmentedControl, tonos por token, cero hex.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ArrowClockwise,
   CheckCircle,
   Scales,
   ShieldWarning,
-  X,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAuth } from '@/lib/auth'
 import { useI18n } from '@/lib/i18n'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { SegmentedControl } from '@leasefy/ui'
+import { Button, Input } from '@/components/ui'
+import { Textarea } from '@/components/ui/textarea'
+import { Spinner } from '@/components/ui/spinner'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  SegmentedControl,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@leasefy/cadence'
 import {
   useDisputes,
   type CobranzaDispute,
@@ -133,138 +146,113 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
     }
   }, [canSubmit, onSubmit, debtorId, reason, montoNum, onClose])
 
-  if (!isOpen) return null
-
   return (
-    <>
-      <div
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="abrir-disputa-title"
-        className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center md:p-4"
-      >
-        <div className="bg-card text-fg rounded-t-xl md:rounded-xl w-full md:max-w-lg max-h-[90vh] flex flex-col">
-          <div className="flex-none flex items-center justify-between border-b border-border px-5 py-4">
-            <h2 id="abrir-disputa-title" className="text-base font-semibold text-fg">
-              Abrir una controversia
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="rounded-md p-1 hover:bg-surface-muted transition"
+    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="md:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Abrir una controversia</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <p className="text-xs text-fg-muted leading-relaxed">
+            Registrar una controversia deja constancia y la pone en la cola de
+            revisión humana. No pausa la cobranza automáticamente.
+          </p>
+
+          {/* Identificador del deudor */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="disputa-debtor"
+              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
             >
-              <X className="w-5 h-5" aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-            <p className="text-xs text-fg-muted leading-relaxed">
-              Registrar una controversia deja constancia y la pone en la cola de
-              revisión humana. No pausa la cobranza automáticamente.
-            </p>
-
-            {/* Identificador del deudor */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="disputa-debtor"
-                className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
-              >
-                Identificador del deudor <span className="text-danger">*</span>
-              </label>
-              <input
-                id="disputa-debtor"
-                value={debtorId}
-                onChange={(e) => setDebtorId(e.target.value)}
-                placeholder="UUID del deudor"
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              {debtorId.trim() !== '' && !debtorIdOk && (
-                <p className="text-xs text-danger">
-                  El identificador del deudor debe ser un UUID válido.
-                </p>
-              )}
-              <p className="text-xs text-fg-muted">
-                Lo encuentras en el detalle de cada deudor.
+              Identificador del deudor <span className="text-danger">*</span>
+            </label>
+            <Input
+              id="disputa-debtor"
+              value={debtorId}
+              onChange={(e) => setDebtorId(e.target.value)}
+              placeholder="UUID del deudor"
+            />
+            {debtorId.trim() !== '' && !debtorIdOk && (
+              <p className="text-xs text-danger">
+                El identificador del deudor debe ser un UUID válido.
               </p>
-            </div>
-
-            {/* Motivo */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="disputa-reason"
-                className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
-              >
-                Motivo de la controversia <span className="text-danger">*</span>
-              </label>
-              <textarea
-                id="disputa-reason"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={4}
-                maxLength={REASON_MAX + 50}
-                placeholder="Describe qué disputa el deudor (saldo, cargo, etc.)."
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-fg leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <div className="flex items-center justify-end text-xs text-fg-muted tabular-nums">
-                {reasonLen} / {REASON_MAX}
-              </div>
-            </div>
-
-            {/* Monto disputado (opcional) */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="disputa-monto"
-                className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
-              >
-                Monto en disputa (opcional)
-              </label>
-              <input
-                id="disputa-monto"
-                inputMode="numeric"
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-                placeholder="COP"
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-fg tabular-nums focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              {!montoOk && (
-                <p className="text-xs text-danger">
-                  El monto debe ser un número mayor o igual a cero.
-                </p>
-              )}
-            </div>
-
-            {submitError && <p className="text-xs text-danger">{submitError}</p>}
+            )}
+            <p className="text-xs text-fg-muted">
+              Lo encuentras en el detalle de cada deudor.
+            </p>
           </div>
 
-          <div className="flex-none flex items-center justify-end gap-2 border-t border-border px-5 py-3">
-            <Button
-              variant="outline"
-              size="sm"
-              hideArrow
-              onClick={onClose}
-              disabled={submitting}
+          {/* Motivo */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="disputa-reason"
+              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
             >
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              hideArrow
-              onClick={() => void handleSubmit()}
-              disabled={!canSubmit}
-              data-testid="disputa-abrir-submit"
-            >
-              {submitting ? 'Registrando…' : 'Registrar controversia'}
-            </Button>
+              Motivo de la controversia <span className="text-danger">*</span>
+            </label>
+            <Textarea
+              id="disputa-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              maxLength={REASON_MAX + 50}
+              placeholder="Describe qué disputa el deudor (saldo, cargo, etc.)."
+              className="leading-relaxed"
+            />
+            <div className="flex items-center justify-end text-xs text-fg-muted tabular-nums">
+              {reasonLen} / {REASON_MAX}
+            </div>
           </div>
+
+          {/* Monto disputado (opcional) */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="disputa-monto"
+              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+            >
+              Monto en disputa (opcional)
+            </label>
+            <Input
+              id="disputa-monto"
+              inputMode="numeric"
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+              placeholder="COP"
+              className="tabular-nums"
+            />
+            {!montoOk && (
+              <p className="text-xs text-danger">
+                El monto debe ser un número mayor o igual a cero.
+              </p>
+            )}
+          </div>
+
+          {submitError && <p className="text-xs text-danger">{submitError}</p>}
         </div>
-      </div>
-    </>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={onClose}
+            disabled={submitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            size="sm"
+            hideArrow
+            onClick={() => void handleSubmit()}
+            disabled={!canSubmit}
+            data-testid="disputa-abrir-submit"
+          >
+            {submitting ? 'Registrando…' : 'Registrar controversia'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -321,126 +309,99 @@ function ResolverDisputaModal({
     }
   }, [dispute, outcome, note, onResolve, onClose])
 
-  if (!dispute) return null
-
   return (
-    <>
-      <div
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="resolver-disputa-title"
-        className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center md:p-4"
-      >
-        <div className="bg-card text-fg rounded-t-xl md:rounded-xl w-full md:max-w-lg max-h-[90vh] flex flex-col">
-          <div className="flex-none flex items-center justify-between border-b border-border px-5 py-4">
-            <h2
-              id="resolver-disputa-title"
-              className="text-base font-semibold text-fg"
-            >
-              Resolver controversia
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="rounded-md p-1 hover:bg-surface-muted transition"
-            >
-              <X className="w-5 h-5" aria-hidden="true" />
-            </button>
-          </div>
+    <Dialog open={dispute !== null} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="md:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Resolver controversia</DialogTitle>
+        </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-            <p className="text-xs text-fg-muted leading-relaxed">
-              Resolver una controversia es una decisión humana. No reactiva la
-              cobranza automáticamente: el agente solo entregará una recomendación.
-            </p>
+        <div className="space-y-4">
+          <p className="text-xs text-fg-muted leading-relaxed">
+            Resolver una controversia es una decisión humana. No reactiva la
+            cobranza automáticamente: el agente solo entregará una recomendación.
+          </p>
 
-            {/* Resultado (outcome) */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="resolver-outcome"
-                className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
-              >
-                Resultado <span className="text-danger">*</span>
-              </label>
-              <select
-                id="resolver-outcome"
-                value={outcome}
-                onChange={(e) => setOutcome(e.target.value as DisputeOutcome)}
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="" disabled>
-                  Elige un resultado
-                </option>
+          {/* Resultado (outcome) */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="resolver-outcome"
+              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
+            >
+              Resultado <span className="text-danger">*</span>
+            </label>
+            <Select
+              value={outcome || undefined}
+              onValueChange={(v) => setOutcome(v as DisputeOutcome)}
+            >
+              <SelectTrigger id="resolver-outcome">
+                <SelectValue placeholder="Elige un resultado" />
+              </SelectTrigger>
+              <SelectContent>
                 {OUTCOME_OPCIONES.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
-
-            {/* Nota de resolución */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="resolver-note"
-                className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
-              >
-                Nota de resolución <span className="text-danger">*</span>
-              </label>
-              <textarea
-                id="resolver-note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={4}
-                maxLength={NOTE_MAX + 50}
-                placeholder="Justifica la decisión y los próximos pasos."
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-fg leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <div className="flex items-center justify-end text-xs text-fg-muted tabular-nums">
-                {noteLen} / {NOTE_MAX}
-              </div>
-            </div>
-
-            {submitError && <p className="text-xs text-danger">{submitError}</p>}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex-none flex items-center justify-end gap-2 border-t border-border px-5 py-3">
-            <Button
-              variant="outline"
-              size="sm"
-              hideArrow
-              onClick={onClose}
-              disabled={submitting}
+          {/* Nota de resolución */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="resolver-note"
+              className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
             >
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              hideArrow
-              onClick={() => void handleSubmit()}
-              disabled={!canSubmit}
-              data-testid="disputa-resolver-submit"
-            >
-              <CheckCircle className="w-4 h-4" aria-hidden="true" />
-              {submitting ? 'Resolviendo…' : 'Resolver controversia'}
-            </Button>
+              Nota de resolución <span className="text-danger">*</span>
+            </label>
+            <Textarea
+              id="resolver-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={4}
+              maxLength={NOTE_MAX + 50}
+              placeholder="Justifica la decisión y los próximos pasos."
+              className="leading-relaxed"
+            />
+            <div className="flex items-center justify-end text-xs text-fg-muted tabular-nums">
+              {noteLen} / {NOTE_MAX}
+            </div>
           </div>
+
+          {submitError && <p className="text-xs text-danger">{submitError}</p>}
         </div>
-      </div>
-    </>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={onClose}
+            disabled={submitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            size="sm"
+            hideArrow
+            onClick={() => void handleSubmit()}
+            disabled={!canSubmit}
+            data-testid="disputa-resolver-submit"
+          >
+            <CheckCircle className="w-4 h-4" aria-hidden="true" />
+            {submitting ? 'Resolviendo…' : 'Resolver controversia'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 // ── Contenido ────────────────────────────────────────────────────────────────
 
 function DisputasContent() {
-  const { t, locale } = useI18n()
+  const { locale } = useI18n()
   const { user: authUser } = useAuth()
   const isEs = locale.startsWith('es')
 
@@ -451,9 +412,6 @@ function DisputasContent() {
 
   const [abrirOpen, setAbrirOpen] = useState(false)
   const [resolviendo, setResolviendo] = useState<CobranzaDispute | null>(null)
-  // Montaje del portal — los modales usan createPortal a document.body.
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
 
   const counts = useMemo(() => {
     const c = { open: 0, in_review: 0, resolved: 0 }
@@ -505,16 +463,6 @@ function DisputasContent() {
   const header = (
     <header className="flex items-start justify-between gap-4 flex-wrap">
       <div className="space-y-1">
-        <MigaDePan
-          backHref={BASE}
-          icon={Scales}
-          className="mb-2"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-            { label: 'Controversias' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">
           Controversias
         </h1>
@@ -553,7 +501,7 @@ function DisputasContent() {
       <main className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" variant="default" />
         </div>
       </main>
     )
@@ -627,24 +575,16 @@ function DisputasContent() {
       )}
 
       {/* Modales (T-323 — confirmación humana explícita) */}
-      {mounted &&
-        createPortal(
-          <AbrirDisputaModal
-            isOpen={abrirOpen}
-            onClose={() => setAbrirOpen(false)}
-            onSubmit={handleOpenDispute}
-          />,
-          document.body,
-        )}
-      {mounted &&
-        createPortal(
-          <ResolverDisputaModal
-            dispute={resolviendo}
-            onClose={() => setResolviendo(null)}
-            onResolve={handleResolveDispute}
-          />,
-          document.body,
-        )}
+      <AbrirDisputaModal
+        isOpen={abrirOpen}
+        onClose={() => setAbrirOpen(false)}
+        onSubmit={handleOpenDispute}
+      />
+      <ResolverDisputaModal
+        dispute={resolviendo}
+        onClose={() => setResolviendo(null)}
+        onResolve={handleResolveDispute}
+      />
     </main>
   )
 }

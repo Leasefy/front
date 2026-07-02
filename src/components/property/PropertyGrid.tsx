@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { SpinnerGap, MagnifyingGlass } from '@phosphor-icons/react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/propertyMatching';
@@ -138,7 +139,7 @@ export function PropertyGrid({
           >
             {isLoadingMore ? (
               <>
-                <SpinnerGap className="w-4 h-4 mr-2 animate-spin" />
+                <Spinner size="sm" variant="current" className="mr-2" />
                 Cargando...
               </>
             ) : (

@@ -31,7 +31,7 @@ export function CobranzaKpiStrip({
       label: t('inmobiliaria.ai.cobranza.overview.kpis.deudoresActivos'),
       value: String(deudoresActivos),
       Icon: Users,
-      iconColor: 'text-neutral-600 dark:text-neutral-300',
+      iconColor: 'text-fg-muted',
     },
     {
       label: t('inmobiliaria.ai.cobranza.overview.kpis.pagadoHoy'),
@@ -61,18 +61,18 @@ export function CobranzaKpiStrip({
       {cards.map(({ label, value, Icon, iconColor }) => (
         <div
           key={label}
-          className="rounded-xl border border-border bg-card p-4"
+          className="rounded-[20px] border border-border bg-surface p-6"
         >
           <div className="flex items-center gap-2 mb-2">
             <Icon size={18} className={iconColor} weight="duotone" />
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-tight">
+            <p className="text-xs text-fg-subtle leading-tight">
               {label}
             </p>
           </div>
           {isLoading ? (
-            <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+            <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
           ) : (
-            <p className="text-xl font-semibold text-neutral-900 dark:text-white mt-1">
+            <p className="text-xl font-semibold text-fg mt-1 font-mono tabular-nums">
               {value}
             </p>
           )}

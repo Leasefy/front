@@ -23,7 +23,14 @@ import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
-import { Button } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   useCartaApproval,
   type CartaPhysicalSendMethod,
@@ -178,14 +185,16 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     <div className="p-4 lg:p-8 space-y-6">
       {/* Back */}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
+        <Button
+          variant="link"
+          size="sm"
+          hideArrow
           data-testid="carta-back"
           onClick={() => router.back()}
-          className="inline-flex items-center text-sm text-fg-muted hover:text-fg"
+          className="h-auto p-0 font-normal text-fg-muted hover:text-fg"
         >
           ← {t('inmobiliaria.ai.cobranza.cartas.back')}
-        </button>
+        </Button>
       </div>
       <header>
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
@@ -217,33 +226,35 @@ export default function CartaApprovalClient({ artifactId }: Props) {
 
       {/* Pre-approve form */}
       <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
-          {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}
-          <select
-            data-testid="carta-send-method"
-            value={sendMethod}
-            onChange={(e) =>
-              setSendMethod(e.target.value as CartaPhysicalSendMethod | '')
-            }
+        <div className="space-y-1">
+          <span className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+            {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}
+          </span>
+          <Select
+            value={sendMethod || undefined}
+            onValueChange={(v) => setSendMethod(v as CartaPhysicalSendMethod)}
             disabled={approveResult !== null}
-            className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
           >
-            <option value="">
-              {t('inmobiliaria.ai.cobranza.cartas.physicalSend.placeholder')}
-            </option>
-            {SEND_METHODS.map((m) => (
-              <option key={m} value={m}>
-                {t(
-                  `inmobiliaria.ai.cobranza.cartas.physicalSend.${SEND_METHOD_I18N[m]}`,
-                )}
-              </option>
-            ))}
-          </select>
-        </label>
+            <SelectTrigger data-testid="carta-send-method">
+              <SelectValue
+                placeholder={t('inmobiliaria.ai.cobranza.cartas.physicalSend.placeholder')}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {SEND_METHODS.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {t(
+                    `inmobiliaria.ai.cobranza.cartas.physicalSend.${SEND_METHOD_I18N[m]}`,
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
           {t('inmobiliaria.ai.cobranza.cartas.sentToAddress.label')}
-          <input
+          <Input
             type="text"
             data-testid="carta-sent-to-address"
             value={sentToAddress}
@@ -252,7 +263,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               'inmobiliaria.ai.cobranza.cartas.sentToAddress.placeholder',
             )}
             disabled={approveResult !== null}
-            className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+            className="mt-1 block w-full"
           />
         </label>
       </section>

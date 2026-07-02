@@ -8,7 +8,6 @@ import {
   ShoppingCart,
   CheckCircle,
   WarningCircle,
-  Spinner,
   X,
   Info,
   Calendar,
@@ -18,8 +17,15 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { BackButton } from '@/components/ui/back-button';
-import { Button, Badge } from '@/components/ui';
+import { Button, Badge, Input, Spinner } from '@/components/ui';
 import { ErrorState } from '@/components/ui/error-state';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type {
@@ -95,7 +101,7 @@ function CreditosContent() {
         {/* Balance */}
         {isLoading ? (
           <div className="rounded-xl border border-border bg-card p-8 flex items-center justify-center">
-            <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
+            <Spinner size="md" variant="muted" />
           </div>
         ) : error ? (
           <ErrorState
@@ -105,7 +111,7 @@ function CreditosContent() {
             className="mb-8"
           />
         ) : balance ? (
-          <section className="rounded-xl bg-primary p-6 text-white mb-8">
+          <section className="rounded-xl bg-primary p-6 text-primary-fg mb-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-white/70 font-medium mb-2">
@@ -385,26 +391,30 @@ function PurchaseModal({
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Tipo de documento
                 </label>
-                <select
+                <Select
                   value={form.documentType}
-                  onChange={(e) =>
-                    setForm({ ...form, documentType: e.target.value as PSEDocumentType })
+                  onValueChange={(v) =>
+                    setForm({ ...form, documentType: v as PSEDocumentType })
                   }
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
-                  {DOCUMENT_TYPES.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPES.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Número de documento
                 </label>
-                <input
+                <Input
                   type="text"
                   value={form.documentNumber}
                   onChange={(e) =>
@@ -412,7 +422,6 @@ function PurchaseModal({
                   }
                   placeholder="1234567890"
                   required
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
 
@@ -420,13 +429,12 @@ function PurchaseModal({
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Nombre del titular
                 </label>
-                <input
+                <Input
                   type="text"
                   value={form.holderName}
                   onChange={(e) => setForm({ ...form, holderName: e.target.value })}
                   placeholder="Nombre completo"
                   required
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
 
@@ -434,33 +442,34 @@ function PurchaseModal({
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Banco
                 </label>
-                <select
-                  value={form.bankCode}
-                  onChange={(e) => setForm({ ...form, bankCode: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                <Select
+                  value={form.bankCode || undefined}
+                  onValueChange={(v) => setForm({ ...form, bankCode: v })}
                 >
-                  <option value="">Seleccioná un banco</option>
-                  {banks.map((b) => (
-                    <option key={b.code} value={b.code}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccioná un banco" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks.map((b) => (
+                      <SelectItem key={b.code} value={b.code}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Teléfono (opcional)
                 </label>
-                <input
+                <Input
                   type="tel"
                   value={form.phoneNumber ?? ''}
                   onChange={(e) =>
                     setForm({ ...form, phoneNumber: e.target.value })
                   }
                   placeholder="3001234567"
-                  className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
 

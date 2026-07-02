@@ -7,7 +7,6 @@ import {
   UploadSimple,
   FileText,
   X,
-  Spinner,
   WarningCircle,
   CheckCircle,
   Info,
@@ -16,6 +15,16 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { IconButton } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import { contractsApi } from '@/lib/api/contracts.service';
@@ -252,7 +261,7 @@ function NuevoContratoContent() {
   if (isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Spinner size="md" variant="muted" />
       </div>
     );
   }
@@ -336,14 +345,15 @@ function NuevoContratoContent() {
                     {(form.pdfFile.size / 1024).toFixed(0)} KB
                   </p>
                 </div>
-                <button
-                  type="button"
+                <IconButton
+                  variant="ghost"
+                  size="sm"
                   onClick={() => updateForm('pdfFile', null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft/50 transition-colors"
+                  aria-label="Quitar"
                   title="Quitar"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                  className="text-muted-foreground hover:text-danger"
+                  icon={<X className="w-4 h-4" />}
+                />
               </div>
             ) : (
               <label
@@ -391,19 +401,17 @@ function NuevoContratoContent() {
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
-              <input
+              <Input
                 type="date"
                 value={form.startDate}
                 onChange={(e) => updateForm('startDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               />
             </Field>
             <Field label="Fecha de fin" error={validation.endDate}>
-              <input
+              <Input
                 type="date"
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
               />
             </Field>
             <Field
@@ -411,14 +419,14 @@ function NuevoContratoContent() {
               error={validation.monthlyRent}
               hint={form.monthlyRent ? formatCurrency(Number(form.monthlyRent)) : 'Mínimo 100.000 COP'}
             >
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min={100_000}
                 step={1000}
                 value={form.monthlyRent}
                 onChange={(e) => updateForm('monthlyRent', e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
+                className="tabular-nums"
               />
             </Field>
             <Field
@@ -426,37 +434,41 @@ function NuevoContratoContent() {
               error={validation.deposit}
               hint={form.deposit ? formatCurrency(Number(form.deposit)) : undefined}
             >
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min={0}
                 step={1000}
                 value={form.deposit}
                 onChange={(e) => updateForm('deposit', e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
+                className="tabular-nums"
               />
             </Field>
             <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min={1}
                 max={28}
                 value={form.paymentDay}
                 onChange={(e) => updateForm('paymentDay', e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm tabular-nums"
+                className="tabular-nums"
               />
             </Field>
             <Field label="Seguro" hint="Opcional">
-              <select
+              <Select
                 value={form.insuranceTier}
-                onChange={(e) => updateForm('insuranceTier', e.target.value as InsuranceTier)}
-                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+                onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
               >
-                <option value="NONE">Sin seguro</option>
-                <option value="BASIC">Básico</option>
-                <option value="PREMIUM">Premium</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Sin seguro</SelectItem>
+                  <SelectItem value="BASIC">Básico</SelectItem>
+                  <SelectItem value="PREMIUM">Premium</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
           </div>
         </section>
@@ -485,7 +497,7 @@ function NuevoContratoContent() {
             className="gap-2"
           >
             {actions.isSubmitting ? (
-              <Spinner className="w-4 h-4 animate-spin" />
+              <Spinner size="sm" variant="current" />
             ) : (
               <CheckCircle className="w-4 h-4" />
             )}
@@ -519,6 +531,7 @@ function ModeOption({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(

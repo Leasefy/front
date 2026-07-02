@@ -11,6 +11,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
+import { Badge } from '@/components/ui'
 
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
@@ -224,9 +225,9 @@ function CTACard({
           {label}
         </span>
         {badge && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning-soft text-warning">
+          <Badge variant="warning" className="text-[10px]">
             {badge}
-          </span>
+          </Badge>
         )}
       </div>
     </button>

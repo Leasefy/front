@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react';
+import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise } from '@phosphor-icons/react';
+import { Spinner } from '@/components/ui/spinner';
 import { useLeasePayments } from '@/lib/hooks/useLeases';
 import type { Lease, Payment } from '@/lib/types/lease';
 
@@ -22,32 +25,32 @@ function PaymentStatus({ status }: { status: Payment['status'] }) {
     paid: {
       icon: CheckCircle,
       text: 'Pagado',
-      className: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+      variant: 'success' as const,
     },
     pending: {
       icon: Clock,
       text: 'Pendiente',
-      className: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
+      variant: 'warning' as const,
     },
     late: {
       icon: WarningCircle,
       text: 'Atrasado',
-      className: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+      variant: 'destructive' as const,
     },
     failed: {
       icon: WarningCircle,
       text: 'Fallido',
-      className: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+      variant: 'destructive' as const,
     },
   };
 
-  const { icon: Icon, text, className } = config[status];
+  const { icon: Icon, text, variant } = config[status];
 
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md font-medium', className)}>
+    <Badge variant={variant} className="gap-1.5">
       <Icon className="w-3 h-3" />
       {text}
-    </span>
+    </Badge>
   );
 }
 
@@ -92,34 +95,34 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
   return (
     <div className={cn(
-      'border-b border-neutral-100 dark:border-neutral-700 last:border-0',
-      isExpanded && 'bg-neutral-50 dark:bg-neutral-800/30'
+      'border-b border-border-faint last:border-0',
+      isExpanded && 'bg-surface-muted'
     )}>
       {/* Main row - clickable */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left px-6 py-5 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+        className="w-full text-left px-6 py-5 hover:bg-surface-hover transition-colors"
       >
         <div className="flex items-center gap-4">
           {/* Property icon */}
-          <div className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-            <Buildings className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+          <div className="w-11 h-11 rounded-[14px] bg-surface-muted flex items-center justify-center flex-shrink-0">
+            <Buildings className="w-5 h-5 text-fg-muted" />
           </div>
 
           {/* Main info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5">
-              <h3 className="text-base font-medium text-neutral-900 dark:text-white truncate">
+              <h3 className="text-base font-medium text-fg truncate">
                 {lease.propertyTitle}
               </h3>
               {isEndingSoon && (
-                <span className="text-xs px-2 py-0.5 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] rounded-sm flex-shrink-0 font-medium">
+                <span className="text-xs px-2 py-0.5 bg-warning-soft text-warning rounded-full flex-shrink-0 font-medium">
                   Vence pronto
                 </span>
               )}
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-sm text-fg-muted mt-0.5">
               {lease.tenantName} · {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
             </p>
           </div>
@@ -127,12 +130,12 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
           {/* Payment status indicators */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {lateCount > 0 && (
-              <span className="text-xs text-[#C4503B] dark:text-[#E0664D] font-medium">
+              <span className="text-xs text-danger font-medium font-mono tabular-nums">
                 {lateCount} atrasado{lateCount > 1 ? 's' : ''}
               </span>
             )}
             {pendingCount > 0 && lateCount === 0 && (
-              <span className="text-xs text-[#B7791F] dark:text-[#D2992F] font-medium">
+              <span className="text-xs text-warning font-medium font-mono tabular-nums">
                 {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
               </span>
             )}
@@ -140,15 +143,15 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
           {/* Rent amount */}
           <div className="text-right flex-shrink-0 mr-2">
-            <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+            <p className="text-lg font-semibold text-fg font-mono tabular-nums">
               {formatCurrency(lease.monthlyRent)}
             </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">/mes</p>
+            <p className="text-xs text-fg-muted">/mes</p>
           </div>
 
           {/* Expand indicator */}
           <CaretDown className={cn(
-            'w-5 h-5 text-neutral-400 dark:text-neutral-500 transition-transform flex-shrink-0',
+            'w-5 h-5 text-fg-subtle transition-transform flex-shrink-0',
             isExpanded && 'rotate-180'
           )} />
         </div>
@@ -159,54 +162,54 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
         <div className="px-6 pb-6">
           <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Lease Details */}
-            <div className="bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-xl p-5">
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
+            <Card className="rounded-[16px] p-5">
+              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Detalles del arriendo
               </p>
               <div className="space-y-3.5">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Canon mensual</span>
-                  <span className="text-sm text-neutral-900 dark:text-white font-medium">
+                  <span className="text-sm text-fg-muted">Canon mensual</span>
+                  <span className="text-sm text-fg font-medium font-mono tabular-nums">
                     {formatCurrency(lease.monthlyRent)}
                   </span>
                 </div>
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Inicio</span>
-                  <span className="text-sm text-neutral-900 dark:text-white">{formatDate(lease.startDate)}</span>
+                  <span className="text-sm text-fg-muted">Inicio</span>
+                  <span className="text-sm text-fg font-mono tabular-nums">{formatDate(lease.startDate)}</span>
                 </div>
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Vencimiento</span>
-                  <span className="text-sm text-neutral-900 dark:text-white">{formatDate(lease.endDate)}</span>
+                  <span className="text-sm text-fg-muted">Vencimiento</span>
+                  <span className="text-sm text-fg font-mono tabular-nums">{formatDate(lease.endDate)}</span>
                 </div>
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Días restantes</span>
+                  <span className="text-sm text-fg-muted">Días restantes</span>
                   <span className={cn(
-                    'text-sm font-medium',
-                    daysRemaining <= 60 ? 'text-[#B7791F] dark:text-[#D2992F]' : 'text-neutral-900 dark:text-white'
+                    'text-sm font-medium font-mono tabular-nums',
+                    daysRemaining <= 60 ? 'text-warning' : 'text-fg'
                   )}>
                     {daysRemaining} días
                   </span>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Card 2: Tenant Contact */}
-            <div className="bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-xl p-5">
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
+            <Card className="rounded-[16px] p-5">
+              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Arrendatario
               </p>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white mb-3">{lease.tenantName}</p>
+              <p className="text-sm font-medium text-fg mb-3">{lease.tenantName}</p>
               <div className="space-y-2.5 mb-5">
                 <a
                   href={`tel:${lease.tenantPhone}`}
-                  className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                  className="flex items-center gap-2.5 text-sm text-fg-muted hover:text-fg transition-colors"
                 >
                   <Phone className="w-4 h-4" />
-                  {lease.tenantPhone}
+                  <span className="font-mono tabular-nums">{lease.tenantPhone}</span>
                 </a>
                 <a
                   href={`mailto:${lease.tenantEmail}`}
-                  className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                  className="flex items-center gap-2.5 text-sm text-fg-muted hover:text-fg transition-colors"
                 >
                   <Envelope className="w-4 h-4" />
                   {lease.tenantEmail}
@@ -214,11 +217,11 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-700">
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-border-faint">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 gap-2 rounded-xl border-neutral-200 dark:border-neutral-700"
+                  className="flex-1 gap-2"
                   onClick={handleMessage}
                 >
                   <ChatCircle className="w-4 h-4" />
@@ -227,7 +230,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 rounded-xl border-neutral-200 dark:border-neutral-700"
+                  className="gap-2"
                   onClick={handleViewContract}
                 >
                   <FileText className="w-4 h-4" />
@@ -236,7 +239,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 {isEndingSoon && (
                   <Button
                     size="sm"
-                    className="gap-2 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white"
+                    className="gap-2"
                     onClick={handleRenewal}
                   >
                     <ArrowsClockwise className="w-4 h-4" />
@@ -244,73 +247,73 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                   </Button>
                 )}
               </div>
-            </div>
+            </Card>
 
             {/* Card 3: Payment Summary */}
-            <div className="bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 rounded-xl p-5">
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
+            <Card className="rounded-[16px] p-5">
+              <p className="text-xs font-medium text-fg-muted uppercase tracking-wider mb-4">
                 Resumen de pagos
               </p>
               {paymentsLoading ? (
                 <div className="flex items-center justify-center py-6">
-                  <SpinnerGap className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] animate-spin" />
+                  <Spinner size="md" variant="current" className="text-primary" />
                 </div>
               ) : (
                 <div className="space-y-3.5">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Total pagos</span>
-                    <span className="text-sm text-neutral-900 dark:text-white font-medium">{payments.length}</span>
+                    <span className="text-sm text-fg-muted">Total pagos</span>
+                    <span className="text-sm text-fg font-medium font-mono tabular-nums">{payments.length}</span>
                   </div>
                   <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Pagados</span>
-                    <span className="text-sm text-neutral-900 dark:text-white">
+                    <span className="text-sm text-fg-muted">Pagados</span>
+                    <span className="text-sm text-fg font-mono tabular-nums">
                       {payments.filter(p => p.status === 'paid').length}
                     </span>
                   </div>
                   <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Pendientes</span>
+                    <span className="text-sm text-fg-muted">Pendientes</span>
                     <span className={cn(
-                      'text-sm',
-                      pendingCount > 0 ? 'text-[#B7791F] dark:text-[#D2992F] font-medium' : 'text-neutral-900 dark:text-white'
+                      'text-sm font-mono tabular-nums',
+                      pendingCount > 0 ? 'text-warning font-medium' : 'text-fg'
                     )}>
                       {pendingCount}
                     </span>
                   </div>
                   <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">Atrasados</span>
+                    <span className="text-sm text-fg-muted">Atrasados</span>
                     <span className={cn(
-                      'text-sm',
-                      lateCount > 0 ? 'text-[#C4503B] dark:text-[#E0664D] font-medium' : 'text-neutral-900 dark:text-white'
+                      'text-sm font-mono tabular-nums',
+                      lateCount > 0 ? 'text-danger font-medium' : 'text-fg'
                     )}>
                       {lateCount}
                     </span>
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           </div>
 
           {/* Payment history table - Full width below cards */}
           <div className="ml-[60px] mt-4">
-            <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-[#222224]">
-              <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-700">
-                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+            <div className="border border-border rounded-[16px] overflow-hidden bg-surface">
+              <div className="px-5 py-3 bg-surface-muted border-b border-border">
+                <span className="text-xs font-medium text-fg-muted uppercase tracking-wider">
                   Historial de pagos
                 </span>
               </div>
 
               {paymentsLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <SpinnerGap className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] animate-spin" />
+                  <Spinner size="md" variant="current" className="text-primary" />
                 </div>
               ) : payments.length === 0 ? (
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 p-5 text-center">
+                <p className="text-sm text-fg-muted p-5 text-center">
                   No hay pagos registrados
                 </p>
               ) : (
                 <>
                   {/* Table header */}
-                  <div className="grid grid-cols-5 gap-4 px-5 py-3 text-xs text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider border-b border-neutral-100 dark:border-neutral-700">
+                  <div className="grid grid-cols-5 gap-4 px-5 py-3 text-xs text-fg-muted font-medium uppercase tracking-wider border-b border-border-faint">
                     <div>Vencimiento</div>
                     <div>Concepto</div>
                     <div className="text-right">Monto</div>
@@ -319,25 +322,25 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                   </div>
 
                   {/* Table body */}
-                  <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
+                  <div className="divide-y divide-border-faint">
                     {payments.slice(0, 5).map((payment) => (
                       <div
                         key={payment.id}
                         className="grid grid-cols-5 gap-4 px-5 py-4 items-center"
                       >
-                        <div className="text-sm text-neutral-600 dark:text-neutral-300">
+                        <div className="text-sm text-fg-muted font-mono tabular-nums">
                           {formatDate(payment.dueDate)}
                         </div>
-                        <div className="text-sm text-neutral-600 dark:text-neutral-300 capitalize">
+                        <div className="text-sm text-fg-muted capitalize">
                           {payment.concept === 'rent' ? 'Arriendo' : payment.concept === 'deposit' ? 'Depósito' : payment.concept}
                         </div>
-                        <div className="text-sm text-neutral-900 dark:text-white font-medium text-right">
+                        <div className="text-sm text-fg font-medium text-right font-mono tabular-nums">
                           {formatCurrency(payment.amount)}
                         </div>
                         <div className="text-center">
                           <PaymentStatus status={payment.status} />
                         </div>
-                        <div className="text-sm text-neutral-500 dark:text-neutral-400 text-right">
+                        <div className="text-sm text-fg-muted text-right font-mono tabular-nums">
                           {payment.paidDate ? formatDate(payment.paidDate) : '-'}
                         </div>
                       </div>
@@ -345,10 +348,10 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                   </div>
 
                   {payments.length > 5 && (
-                    <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 text-center border-t border-neutral-100 dark:border-neutral-700">
-                      <button className="text-sm text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium">
+                    <div className="px-5 py-3 bg-surface-muted text-center border-t border-border-faint">
+                      <Button variant="link" size="sm" hideArrow className="text-sm">
                         Ver {payments.length - 5} pagos más
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </>

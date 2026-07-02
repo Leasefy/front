@@ -2,6 +2,7 @@
 
 import { Copy, ArrowsClockwise, ThumbsUp, ThumbsDown } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -56,14 +57,14 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
             {message.status === 'complete' && (
               <div className="flex items-center gap-0.5 mt-2">
                 {ACTION_BUTTONS.map(({ icon: ActionIcon, label }) => (
-                  <button
+                  <IconButton
                     key={label}
                     type="button"
-                    className="p-1.5 rounded-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                    icon={<ActionIcon className="w-3.5 h-3.5" />}
+                    variant="ghost"
+                    className="p-1.5 rounded-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                     aria-label={label}
-                  >
-                    <ActionIcon className="w-3.5 h-3.5" />
-                  </button>
+                  />
                 ))}
               </div>
             )}

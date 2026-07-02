@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Sparkle } from '@phosphor-icons/react';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
-import { BackButton } from '@leasefy/ui';
+import { BackButton } from '@leasefy/cadence';
 import { PropertyIACapture } from '@/components/inmobiliaria/PropertyIACapture';
 
 function CapturaContent() {

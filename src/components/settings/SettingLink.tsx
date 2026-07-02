@@ -1,4 +1,5 @@
 import { CaretRight } from '@phosphor-icons/react';
+import { Badge } from '@/components/ui/badge';
 
 export function SettingLink({
   icon: Icon,
@@ -31,9 +32,7 @@ export function SettingLink({
       </div>
       <div className="flex items-center gap-2">
         {badge && (
-          <span className="px-2 py-1 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-full">
-            {badge}
-          </span>
+          <Badge variant="default">{badge}</Badge>
         )}
         <CaretRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
       </div>

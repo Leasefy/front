@@ -3,6 +3,8 @@
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Check, Clock, WarningCircle, X, Receipt } from '@phosphor-icons/react';
 import type { Payment } from '@/lib/types/lease';
 
@@ -70,20 +72,12 @@ export function PaymentHistory({
 }: PaymentHistoryProps) {
   if (payments.length === 0) {
     return (
-      <div
-        className={cn(
-          'flex flex-col items-center justify-center py-12 text-center',
-          className
-        )}
-      >
-        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-          <Receipt className="w-6 h-6 text-muted-foreground" />
-        </div>
-        <p className="text-muted-foreground font-medium">No hay historial de pagos</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Los pagos aparecerán aquí
-        </p>
-      </div>
+      <EmptyState
+        icon={Receipt}
+        title="No hay historial de pagos"
+        description="Los pagos aparecerán aquí"
+        className={className}
+      />
     );
   }
 
@@ -91,75 +85,56 @@ export function PaymentHistory({
     <div className={cn('', className)}>
       {/* Desktop table */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                Fecha vencimiento
-              </th>
-              {showConcept && (
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Concepto
-                </th>
-              )}
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                Monto
-              </th>
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                Estado
-              </th>
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                Fecha pago
-              </th>
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                Método
-              </th>
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                Referencia
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Fecha vencimiento</TableHead>
+              {showConcept && <TableHead>Concepto</TableHead>}
+              <TableHead>Monto</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Fecha pago</TableHead>
+              <TableHead>Método</TableHead>
+              <TableHead>Referencia</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {payments.map((payment) => {
               const status = statusConfig[payment.status];
               const StatusIcon = status.icon;
 
               return (
-                <tr
-                  key={payment.id}
-                  className="border-b border-border hover:bg-muted/50 transition-colors"
-                >
-                  <td className="py-3 px-4 text-foreground">
+                <TableRow key={payment.id}>
+                  <TableCell className="font-mono tabular-nums">
                     {formatDate(payment.dueDate)}
-                  </td>
+                  </TableCell>
                   {showConcept && (
-                    <td className="py-3 px-4 text-muted-foreground">
+                    <TableCell className="text-fg-muted">
                       {conceptLabels[payment.concept]}
-                    </td>
+                    </TableCell>
                   )}
-                  <td className="py-3 px-4 font-medium text-foreground">
+                  <TableCell className="font-medium font-mono tabular-nums">
                     {formatCurrency(payment.amount)}
-                  </td>
-                  <td className="py-3 px-4">
+                  </TableCell>
+                  <TableCell>
                     <Badge variant={status.variant} className="gap-1">
                       <StatusIcon className="w-3 h-3" />
                       {status.label}
                     </Badge>
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground">
+                  </TableCell>
+                  <TableCell className="text-fg-muted font-mono tabular-nums">
                     {payment.paidDate ? formatDate(payment.paidDate) : '-'}
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground">
+                  </TableCell>
+                  <TableCell className="text-fg-muted">
                     {payment.method ? methodLabels[payment.method] : '-'}
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground font-mono text-xs">
+                  </TableCell>
+                  <TableCell className="text-fg-muted font-mono text-xs">
                     {payment.reference || '-'}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Mobile cards */}
@@ -171,18 +146,18 @@ export function PaymentHistory({
           return (
             <div
               key={payment.id}
-              className="bg-muted rounded-sm p-4 space-y-3"
+              className="bg-surface-muted rounded-[16px] p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">
-                    Vence {formatDate(payment.dueDate)}
+                  <p className="text-sm text-fg-muted">
+                    Vence <span className="font-mono tabular-nums">{formatDate(payment.dueDate)}</span>
                   </p>
-                  <p className="font-semibold text-foreground">
+                  <p className="font-semibold text-fg font-mono tabular-nums">
                     {formatCurrency(payment.amount)}
                   </p>
                   {showConcept && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-fg-muted mt-0.5">
                       {conceptLabels[payment.concept]}
                     </p>
                   )}
@@ -194,8 +169,8 @@ export function PaymentHistory({
               </div>
 
               {payment.paidDate && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border">
-                  <span>Pagado: {formatDate(payment.paidDate)}</span>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted pt-2 border-t border-border">
+                  <span>Pagado: <span className="font-mono tabular-nums">{formatDate(payment.paidDate)}</span></span>
                   {payment.method && (
                     <span>Via: {methodLabels[payment.method]}</span>
                   )}

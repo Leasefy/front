@@ -4,11 +4,14 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, ArrowLeft, CheckCircle, Circle, WarningCircle, FileText, Buildings, Briefcase, UserPlus, ArrowUpRight, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Image as ImageIcon } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, ArrowLeft, CheckCircle, Circle, WarningCircle, FileText, Buildings, Briefcase, UserPlus, ArrowUpRight, X, Warning, TrashSimple, Pencil, Upload, Image as ImageIcon } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // Setup steps definition
 interface SetupStep {
@@ -224,10 +227,10 @@ export default function PerfilPage() {
           className="mb-8"
         >
           <div>
-            <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
               {t('profile.title')}
             </h1>
-            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-fg-muted dark:text-fg-subtle">
               {t('profile.subtitle')}
             </p>
           </div>
@@ -245,11 +248,11 @@ export default function PerfilPage() {
               {/* Progress Info */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-surface dark:bg-surface/10 flex items-center justify-center">
                     <Shield className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                    <h2 className="text-lg font-semibold text-fg dark:text-white">
                       {t('profile.completion.title')}
                     </h2>
                     <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
@@ -259,7 +262,7 @@ export default function PerfilPage() {
                     </p>
                   </div>
                 </div>
-                <div className="h-2 bg-white/50 dark:bg-white/10 rounded-full overflow-hidden">
+                <div className="h-2 bg-surface/50 dark:bg-surface/10 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${completionPercentage}%` }}
@@ -267,7 +270,7 @@ export default function PerfilPage() {
                     className="h-full bg-[#1A40FF] rounded-full"
                   />
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+                <p className="text-xs text-fg-muted dark:text-fg-subtle mt-2">
                   {completionPercentage === 100
                     ? (locale === 'es' ? '¡Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
                     : t('profile.completion.completeFor')}
@@ -302,7 +305,7 @@ export default function PerfilPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-neutral-900 dark:text-white">
+                    <span className="text-2xl font-bold text-fg dark:text-white">
                       {completionPercentage}%
                     </span>
                   </div>
@@ -323,8 +326,8 @@ export default function PerfilPage() {
                     className={cn(
                       'rounded-xl p-4 transition-all',
                       step.completed
-                        ? 'bg-white/80 dark:bg-white/10'
-                        : 'bg-white dark:bg-neutral-800/80 border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
+                        ? 'bg-surface/80 dark:bg-surface/10'
+                        : 'bg-surface dark:bg-ink/80 border-2 border-dashed border-[#1A40FF]/30 dark:border-[#B7791F]/30'
                     )}
                   >
                     <div className="flex items-start gap-3">
@@ -343,21 +346,24 @@ export default function PerfilPage() {
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           'text-sm font-medium truncate',
-                          step.completed ? 'text-neutral-900 dark:text-white' : 'text-[#1A40FF] dark:text-white'
+                          step.completed ? 'text-fg dark:text-white' : 'text-[#1A40FF] dark:text-white'
                         )}>
                           {step.label}
                         </p>
                         {step.completed ? (
                           <span className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">{locale === 'es' ? 'Completado' : 'Completed'}</span>
                         ) : step.action ? (
-                          <button
+                          <Button
+                            variant="link"
+                            size="sm"
+                            hideArrow
                             onClick={() => handleVerifyStep(step.id)}
-                            className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                            className="px-0 text-xs text-[#1A40FF] dark:text-[#5570FF]"
                           >
                             {step.action} →
-                          </button>
+                          </Button>
                         ) : (
-                          <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('common.pending')}</span>
+                          <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('common.pending')}</span>
                         )}
                       </div>
                     </div>
@@ -377,19 +383,20 @@ export default function PerfilPage() {
             className="lg:col-span-1 space-y-6"
           >
             {/* Avatar Card */}
-            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+            <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] overflow-hidden">
               <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
                 {/* Edit button for avatar section */}
                 {editingSection !== 'avatar' && (
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => {
                       setAvatarPreview(savedAvatar);
                       setEditingSection('avatar');
                     }}
-                    className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
+                    className="absolute top-3 right-3 p-2 bg-surface/20 hover:bg-surface/30 backdrop-blur-sm rounded-full text-white"
+                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                    icon={<Pencil className="w-4 h-4" />}
+                  />
                 )}
               </div>
               <div className="px-6 pb-6">
@@ -420,18 +427,19 @@ export default function PerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-[#1A40FF] flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
+                      <div className="w-full h-full bg-surface dark:bg-[#1A40FF] flex items-center justify-center text-fg dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
                         {formData.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
                   {editingSection === 'avatar' && (
-                    <button
+                    <IconButton
+                      variant="ghost"
                       onClick={handleAvatarClick}
-                      className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
+                      className="absolute bottom-1 right-1 p-2.5 bg-ink dark:bg-surface rounded-full text-white dark:text-fg hover:bg-ink dark:hover:bg-surface-muted"
+                      aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                      icon={<Camera className="w-4 h-4" />}
+                    />
                   )}
                 </div>
 
@@ -446,7 +454,7 @@ export default function PerfilPage() {
                       "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
                       isDragging
                         ? "border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
-                        : "border-neutral-200 dark:border-white/20 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-neutral-50 dark:hover:bg-white/5"
+                        : "border-border dark:border-white/20 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-surface-muted dark:hover:bg-surface/5"
                     )}
                   >
                     {avatarPreview ? (
@@ -462,35 +470,36 @@ export default function PerfilPage() {
                             />
                           </div>
                           <div className="text-left">
-                            <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                            <p className="text-sm font-medium text-fg dark:text-white">
                               {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
                             </p>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            <p className="text-xs text-fg-muted dark:text-fg-subtle">
                               {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
                             </p>
                           </div>
                         </div>
-                        <button
+                        <IconButton
+                          variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRemoveAvatar();
                           }}
-                          className="p-2 text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 rounded-md transition-colors"
-                        >
-                          <TrashSimple className="w-4 h-4" />
-                        </button>
+                          className="p-2 rounded-md text-fg-subtle hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30"
+                          aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
+                          icon={<TrashSimple className="w-4 h-4" />}
+                        />
                       </div>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-white/10 flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+                        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-surface/10 flex items-center justify-center mx-auto mb-3">
+                          <Upload className="w-6 h-6 text-fg-subtle dark:text-fg-muted" />
                         </div>
-                        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <p className="text-sm font-medium text-fg dark:text-fg-subtle">
                           {isDragging
                             ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
                             : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                        <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
                           {locale === 'es' ? 'Arrastra o haz clic • JPG, PNG (máx. 5MB)' : 'Drag or click • JPG, PNG (max 5MB)'}
                         </p>
                       </>
@@ -499,50 +508,57 @@ export default function PerfilPage() {
                 )}
 
                 {editingSection === 'avatar' ? (
-                  <input
+                  <Input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-3 py-2 text-lg font-semibold rounded-md border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                    className="w-full text-lg font-semibold rounded-md bg-surface dark:bg-surface/5"
                   />
                 ) : (
-                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{formData.name}</h2>
+                  <h2 className="text-xl font-semibold text-fg dark:text-white">{formData.name}</h2>
                 )}
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
                   {locale === 'es' ? 'Inquilino desde Enero 2024' : 'Tenant since January 2024'}
                 </p>
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
                 {editingSection === 'avatar' && (
                   <div className="flex items-center gap-2 mt-4">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={handleCancelEdit}
-                      className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
+                      className="flex-1 rounded-md"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      isLoading={isSaving}
                       onClick={() => handleSave('avatar')}
                       disabled={isSaving}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex-1 rounded-md bg-ink dark:bg-surface text-white dark:text-fg hover:bg-ink dark:hover:bg-surface-muted"
                     >
-                      {isSaving ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <FloppyDisk className="w-4 h-4" />}
+                      {!isSaving && <FloppyDisk className="w-4 h-4" />}
                       {t('common.save')}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
                 {/* Quick Stats */}
-                <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-white/10 space-y-4">
+                <div className="mt-6 pt-6 border-t border-border-faint dark:border-white/10 space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
                       <Buildings className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                      <p className="text-sm font-medium text-fg dark:text-white">
                         {locale === 'es' ? '1 Arriendo activo' : '1 Active rental'}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Departamento Providencia</p>
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle">Departamento Providencia</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -550,10 +566,10 @@ export default function PerfilPage() {
                       <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                      <p className="text-sm font-medium text-fg dark:text-white">
                         {locale === 'es' ? '12 Pagos realizados' : '12 Payments made'}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle">
                         {locale === 'es' ? '100% a tiempo' : '100% on time'}
                       </p>
                     </div>
@@ -563,9 +579,9 @@ export default function PerfilPage() {
             </div>
 
             {/* Verification Status Card */}
-            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
+            <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] p-6">
+              <h3 className="font-semibold text-fg dark:text-white mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
                 {t('profile.verification.title')}
               </h3>
               <div className="space-y-3">
@@ -575,20 +591,23 @@ export default function PerfilPage() {
                   { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
                   { key: 'employment', label: locale === 'es' ? 'Empleo' : 'Employment', verified: false },
                 ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-600">
-                    <span className="text-sm font-medium text-neutral-700 dark:text-white">{item.label}</span>
+                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-muted dark:bg-ink border border-border-faint dark:border-border-strong">
+                    <span className="text-sm font-medium text-fg dark:text-white">{item.label}</span>
                     {item.verified ? (
                       <span className="flex items-center gap-1.5 text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2.5 py-1 rounded-full">
                         <CheckCircle className="w-3.5 h-3.5" />
                         {t('profile.verification.verified')}
                       </span>
                     ) : (
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        hideArrow
                         onClick={() => handleVerifyStep('employment-verify')}
-                        className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-2.5 py-1 rounded-full transition-colors"
+                        className="rounded-full px-2.5 py-1 text-xs text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
                       >
                         {t('profile.verification.verify')}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -604,119 +623,129 @@ export default function PerfilPage() {
             className="lg:col-span-2 space-y-6"
           >
             {/* Personal Information */}
-            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-neutral-900 dark:text-white">{t('profile.personalInfo')}</h3>
+                <h3 className="font-semibold text-fg dark:text-white">{t('profile.personalInfo')}</h3>
                 {editingSection !== 'personal' ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={() => setEditingSection('personal')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
+                    className="gap-1.5 rounded-md text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-md transition-colors"
+                      className="rounded-md"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      isLoading={isSaving}
                       onClick={() => handleSave('personal')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="gap-1.5 rounded-md bg-ink dark:bg-surface text-white dark:text-fg hover:bg-ink dark:hover:bg-surface-muted"
                     >
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                     {t('profile.fullName')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                      className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
-                      <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.name}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
+                      <User className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
+                      <span className="text-sm text-fg dark:text-white">{formData.name}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                     {t('profile.idNumber')}
                   </label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
-                    <Shield className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.rut}</span>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
+                    <Shield className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
+                    <span className="text-sm text-fg dark:text-white">{formData.rut}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                     Email
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                      className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
-                      <Envelope className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.email}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
+                      <Envelope className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
+                      <span className="text-sm text-fg dark:text-white">{formData.email}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                     {t('profile.phone')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                      className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
-                      <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.phone}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
+                      <Phone className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
+                      <span className="text-sm text-fg dark:text-white">{formData.phone}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                     {t('profile.dateOfBirth')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="date"
                       value={formData.birthDate}
                       onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                      className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
-                      <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
+                      <Calendar className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
+                      <span className="text-sm text-fg dark:text-white">
                         {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                           day: 'numeric',
                           month: 'long',
@@ -728,20 +757,20 @@ export default function PerfilPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                     {t('profile.address')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="text"
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                      className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
-                      <MapPin className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.address}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
+                      <MapPin className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
+                      <span className="text-sm text-fg dark:text-white">{formData.address}</span>
                     </div>
                   )}
                 </div>
@@ -749,52 +778,62 @@ export default function PerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-neutral-900 dark:text-white">{t('profile.emergencyContact')}</h3>
+                <h3 className="font-semibold text-fg dark:text-white">{t('profile.emergencyContact')}</h3>
                 {editingSection !== 'emergency' ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={() => setEditingSection('emergency')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
+                    className="gap-1.5 rounded-md text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-md transition-colors"
+                      className="rounded-md"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      isLoading={isSaving}
                       onClick={() => handleSave('emergency')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="gap-1.5 rounded-md bg-ink dark:bg-surface text-white dark:text-fg hover:bg-ink dark:hover:bg-surface-muted"
                     >
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                   {locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}
                 </label>
                 {editingSection === 'emergency' ? (
-                  <input
+                  <Input
                     type="text"
                     value={formData.emergencyContact}
                     onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                    className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'}
                   />
                 ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
-                    <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
+                    <UserPlus className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
+                    <span className="text-sm text-fg dark:text-white">{formData.emergencyContact}</span>
                   </div>
                 )}
               </div>
@@ -806,17 +845,19 @@ export default function PerfilPage() {
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+              <p className="text-sm text-fg-muted dark:text-fg-subtle mb-4">
                 {locale === 'es'
                   ? 'Estas acciones son irreversibles. Por favor, procede con precaución.'
                   : 'These actions are irreversible. Please proceed with caution.'}
               </p>
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={handleOpenDeleteModal}
-                className="px-4 py-2.5 border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] rounded-full text-sm font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-colors"
+                className="rounded-full border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 hover:text-[#C4503B] dark:hover:text-[#E0664D]"
               >
                 {t('settings.account.deleteAccount')}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -829,61 +870,62 @@ export default function PerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1a1a1c] rounded-xl max-w-md w-full p-6"
+            className="bg-surface dark:bg-[#1a1a1c] rounded-xl max-w-md w-full p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <h3 className="text-lg font-semibold text-fg dark:text-white">
                 {locale === 'es' ? 'Verificar empleo' : 'Verify employment'}
               </h3>
-              <button
+              <IconButton
+                variant="ghost"
                 onClick={() => setShowVerifyModal(null)}
-                className="p-2 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-              </button>
+                className="p-2 rounded-full hover:bg-surface-muted dark:hover:bg-surface/10"
+                aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
+                icon={<X className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />}
+              />
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                   {locale === 'es' ? 'Empresa' : 'Company'}
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder={locale === 'es' ? 'Nombre de tu empresa' : 'Your company name'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                  className="w-full rounded-xl bg-surface dark:bg-surface/5"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                   {locale === 'es' ? 'Cargo' : 'Position'}
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder={locale === 'es' ? 'Tu cargo actual' : 'Your current position'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                  className="w-full rounded-xl bg-surface dark:bg-surface/5"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                   {locale === 'es' ? 'Ingreso mensual (CLP)' : 'Monthly income (CLP)'}
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder={locale === 'es' ? 'Ej: $1.500.000' : 'E.g.: $1,500,000'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                  className="w-full rounded-xl bg-surface dark:bg-surface/5"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
                   {locale === 'es' ? 'Comprobante de ingresos' : 'Proof of income'}
                 </label>
-                <div className="border-2 border-dashed border-neutral-200 dark:border-white/20 rounded-xl p-6 text-center hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 transition-colors cursor-pointer">
-                  <FileText className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <div className="border-2 border-dashed border-border dark:border-white/20 rounded-xl p-6 text-center hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 transition-colors cursor-pointer">
+                  <FileText className="w-8 h-8 text-fg-subtle dark:text-fg-muted mx-auto mb-2" />
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
                     {locale === 'es' ? 'Arrastra o haz clic para subir' : 'Drag or click to upload'}
                   </p>
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                  <p className="text-xs text-fg-subtle dark:text-fg-muted mt-1">
                     {locale === 'es' ? 'PDF, JPG o PNG (máx. 5MB)' : 'PDF, JPG or PNG (max. 5MB)'}
                   </p>
                 </div>
@@ -891,21 +933,25 @@ export default function PerfilPage() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={() => setShowVerifyModal(null)}
-                className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                className="flex-1 rounded-full"
               >
                 {t('common.cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                hideArrow
                 onClick={() => {
                   toast.success(locale === 'es' ? 'Verificación enviada. Te notificaremos cuando sea aprobada.' : 'Verification sent. We will notify you when approved.');
                   setShowVerifyModal(null);
                 }}
-                className="flex-1 px-4 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+                className="flex-1 rounded-full bg-ink dark:bg-surface text-white dark:text-fg hover:bg-ink dark:hover:bg-surface-muted"
               >
                 {locale === 'es' ? 'Enviar verificación' : 'Submit verification'}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -918,7 +964,7 @@ export default function PerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1a1a1c] rounded-xl max-w-md w-full overflow-hidden"
+            className="bg-surface dark:bg-[#1a1a1c] rounded-xl max-w-md w-full overflow-hidden"
           >
             {/* Step 1: Warning */}
             {deleteStep === 1 && (
@@ -939,7 +985,7 @@ export default function PerfilPage() {
                 <div className="p-6">
                   {/* What will be deleted */}
                   <div className="mb-6">
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white mb-3">
+                    <p className="text-sm font-medium text-fg dark:text-white mb-3">
                       {locale === 'es' ? 'Se eliminará permanentemente:' : 'Will be permanently deleted:'}
                     </p>
                     <ul className="space-y-2">
@@ -956,7 +1002,7 @@ export default function PerfilPage() {
                         'Access to saved properties',
                         'Conversations and messages',
                       ]).map((item, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+                        <li key={index} className="flex items-start gap-2 text-sm text-fg-muted dark:text-fg-subtle">
                           <TrashSimple className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D] mt-0.5 flex-shrink-0" />
                           {item}
                         </li>
@@ -983,18 +1029,22 @@ export default function PerfilPage() {
 
                   {/* Buttons */}
                   <div className="flex gap-3">
-                    <button
+                    <Button
+                      variant="outline"
+                      hideArrow
                       onClick={handleCloseDeleteModal}
-                      className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                      className="flex-1 rounded-full"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      hideArrow
                       onClick={() => setDeleteStep(2)}
-                      className="flex-1 px-4 py-2.5 bg-[#C4503B] text-white rounded-full text-sm font-medium hover:bg-[#C4503B] transition-colors"
+                      className="flex-1 rounded-full"
                     >
                       {locale === 'es' ? 'Continuar' : 'Continue'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </>
@@ -1003,20 +1053,21 @@ export default function PerfilPage() {
             {/* Step 2: Confirmation */}
             {deleteStep === 2 && (
               <>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/10">
-                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border-faint dark:border-white/10">
+                  <h3 className="text-lg font-semibold text-fg dark:text-white">
                     {locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
                   </h3>
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={handleCloseDeleteModal}
-                    className="p-2 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-                  </button>
+                    className="p-2 rounded-full hover:bg-surface-muted dark:hover:bg-surface/10"
+                    aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
+                    icon={<X className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />}
+                  />
                 </div>
 
                 <div className="p-6">
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle mb-4">
                     {locale === 'es' ? (
                       <>
                         Para confirmar la eliminación de tu cuenta, escribe{' '}
@@ -1032,40 +1083,35 @@ export default function PerfilPage() {
                     )}
                   </p>
 
-                  <input
+                  <Input
                     type="text"
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
                     placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30 transition-all font-mono text-center tracking-widest"
+                    className="w-full rounded-xl bg-surface dark:bg-surface/5 font-mono text-center tracking-widest focus-visible:border-[#C4503B]/30 focus-visible:ring-[#C4503B]/20"
                   />
 
                   <div className="flex gap-3 mt-6">
-                    <button
+                    <Button
+                      variant="outline"
+                      hideArrow
                       onClick={() => setDeleteStep(1)}
-                      className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                      className="flex-1 rounded-full"
                     >
                       {locale === 'es' ? 'Volver' : 'Back'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      hideArrow
+                      isLoading={isDeleting}
                       onClick={handleDeleteAccount}
                       disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
-                      className={cn(
-                        'flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
-                        (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE')
-                          ? 'bg-[#C4503B] text-white hover:bg-[#C4503B]'
-                          : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-                      )}
+                      className="flex-1 rounded-full"
                     >
-                      {isDeleting ? (
-                        <>
-                          <SpinnerGap className="w-4 h-4 animate-spin" />
-                          {locale === 'es' ? 'Eliminando...' : 'Deleting...'}
-                        </>
-                      ) : (
-                        locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'
-                      )}
-                    </button>
+                      {isDeleting
+                        ? (locale === 'es' ? 'Eliminando...' : 'Deleting...')
+                        : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
+                    </Button>
                   </div>
                 </div>
               </>
@@ -1074,13 +1120,13 @@ export default function PerfilPage() {
             {/* Step 3: Goodbye */}
             {deleteStep === 3 && (
               <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-neutral-600 dark:text-neutral-400" />
+                <div className="w-16 h-16 rounded-full bg-surface-muted dark:bg-surface/10 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-fg-muted dark:text-fg-subtle" />
                 </div>
-                <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-fg dark:text-white mb-2">
                   {locale === 'es' ? 'Cuenta eliminada' : 'Account deleted'}
                 </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <p className="text-sm text-fg-muted dark:text-fg-subtle">
                   {locale === 'es'
                     ? 'Tu cuenta ha sido eliminada exitosamente. Gracias por usar Leasefy.'
                     : 'Your account has been successfully deleted. Thank you for using Leasefy.'}

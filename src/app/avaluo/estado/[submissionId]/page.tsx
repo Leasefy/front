@@ -13,6 +13,7 @@
 import { useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
+import { Eyebrow } from '@leasefy/cadence'
 import { useAvaluoStatus } from '@/lib/hooks/use-avaluo-status'
 import { AvaluoEstadoCard } from '@/components/avaluo/AvaluoEstadoCard'
 
@@ -40,16 +41,14 @@ export default function AvaluoEstadoPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <main className="min-h-screen bg-background py-16 px-4">
+    <main className="min-h-screen bg-bg py-16 px-4">
       <div className="mx-auto max-w-xl space-y-8">
         {/* Header */}
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
-            Avalúo comercial
-          </p>
+          <Eyebrow>Avalúo comercial</Eyebrow>
           <h1 className="text-h2">Estado de tu avalúo</h1>
           {submissionId && (
-            <p className="text-sm text-muted-foreground font-mono">
+            <p className="text-sm text-fg-muted font-mono tabular-nums">
               Referencia: {submissionId}
             </p>
           )}

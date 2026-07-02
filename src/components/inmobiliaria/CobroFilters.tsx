@@ -6,14 +6,21 @@ import {
   MagnifyingGlass,
   Funnel,
   X,
-  CaretDown,
   CalendarBlank,
   Buildings,
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { IconButton, Chip } from '@leasefy/cadence';
 import type { Consignacion, Propietario, CobroStatus } from '@/lib/types/inmobiliaria';
 
 export interface CobroFiltersState {
@@ -56,7 +63,6 @@ export function CobroFilters({
 }: CobroFiltersProps) {
   const { t, formatDate } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
   // Debounced search
@@ -114,69 +120,49 @@ export function CobroFilters({
     setSearchInput('');
   }, [recentMonths, filters.month, onFilterChange]);
 
-  // Get labels for current selections
-  const getMonthLabel = () => {
-    const month = recentMonths.find((m) => m.value === filters.month);
-    return month?.label || t('inmobiliaria.cobros.filters.selectMonth');
-  };
-
-  const getConsignacionLabel = () => {
-    if (!filters.consignacionId) return t('inmobiliaria.cobros.filters.allProperties');
-    const consignacion = consignaciones.find((c) => c.id === filters.consignacionId);
-    return consignacion?.propertyTitle || t('inmobiliaria.cobros.filters.allProperties');
-  };
-
-  const getPropietarioLabel = () => {
-    if (!filters.propietarioId) return t('inmobiliaria.cobros.filters.allOwners');
-    const propietario = propietarios.find((p) => p.id === filters.propietarioId);
-    return propietario?.name || t('inmobiliaria.cobros.filters.allOwners');
-  };
-
   return (
     <div className="relative">
       {/* Search and Filters Toggle - Main Row */}
       <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+          <Input
             type="text"
             placeholder={t('inmobiliaria.cobros.filters.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
+            className="w-full pl-10 pr-4"
           />
           {searchInput && (
-            <button
+            <IconButton
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setSearchInput('');
                 updateFilter('search', undefined);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+              icon={<X className="w-4 h-4 text-muted-foreground" />}
+            />
           )}
         </div>
 
         {/* Filters Toggle */}
-        <button
+        <Chip
+          selected={showFilters || activeFiltersCount > 0}
           onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-md border transition-all text-sm font-medium',
-            showFilters || activeFiltersCount > 0
-              ? 'border-primary/30 bg-primary-soft text-primary'
-              : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
-          )}
+          icon={<Funnel className="w-4 h-4" />}
+          aria-expanded={showFilters}
         >
-          <Funnel className="w-4 h-4" />
-          <span>{t('inmobiliaria.cobros.filters.filtersLabel')}</span>
+          {t('inmobiliaria.cobros.filters.filtersLabel')}
           {activeFiltersCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold min-w-[20px] text-center tabular-nums">
               {activeFiltersCount}
             </span>
           )}
-        </button>
+        </Chip>
       </div>
 
       {/* Filters Panel (collapsible) */}
@@ -193,46 +179,26 @@ export function CobroFilters({
               {/* Row 1: Month Selector + Status Tabs */}
               <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
                 {/* Month Selector */}
-                <div className="relative shrink-0">
+                <div className="shrink-0">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.monthLabel')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'month' ? null : 'month')}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background text-foreground hover:border-foreground/30 transition-all text-sm"
+                  <Select
+                    value={filters.month}
+                    onValueChange={(value) => updateFilter('month', value)}
                   >
-                    <CalendarBlank className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium capitalize min-w-[120px]">{getMonthLabel()}</span>
-                    <CaretDown className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'month' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-56 p-2 rounded-xl border border-border bg-card z-50"
-                      >
-                        {recentMonths.map((month) => (
-                          <button
-                            key={month.value}
-                            onClick={() => {
-                              updateFilter('month', month.value);
-                              setOpenDropdown(null);
-                            }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-md text-left text-sm capitalize transition-colors',
-                              filters.month === month.value
-                                ? 'bg-primary-soft text-primary font-medium'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            {month.label}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="gap-2 capitalize">
+                      <CalendarBlank className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <SelectValue placeholder={t('inmobiliaria.cobros.filters.selectMonth')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {recentMonths.map((month) => (
+                        <SelectItem key={month.value} value={month.value} className="capitalize">
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Status Tabs */}
@@ -240,34 +206,30 @@ export function CobroFilters({
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.statusLabel')}
                   </label>
-                  <div className="flex items-center gap-1 p-1 rounded-md bg-muted overflow-x-auto">
+                  <div className="flex items-center gap-1.5 overflow-x-auto">
                     {STATUS_TAB_KEYS.map((tab) => {
                       const count = cobroCountByStatus[tab.value] || 0;
                       const isActive = filters.status === tab.value;
 
                       return (
-                        <button
+                        <Chip
                           key={tab.value}
+                          selected={isActive}
                           onClick={() => updateFilter('status', tab.value)}
-                          className={cn(
-                            'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium whitespace-nowrap transition-all',
-                            isActive
-                              ? 'bg-background text-foreground'
-                              : 'text-muted-foreground hover:text-foreground'
-                          )}
+                          className="whitespace-nowrap"
                         >
                           {t(tab.key)}
                           {count > 0 && (
                             <span className={cn(
                               'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
                               isActive
-                                ? 'bg-primary-soft text-primary'
+                                ? 'bg-primary text-primary-foreground'
                                 : 'bg-muted-foreground/20 text-muted-foreground'
                             )}>
                               {count}
                             </span>
                           )}
-                        </button>
+                        </Chip>
                       );
                     })}
                   </div>
@@ -277,130 +239,59 @@ export function CobroFilters({
               {/* Row 2: Property and Owner Filters */}
               <div className="flex flex-wrap gap-4">
                 {/* Property (Consignacion) Dropdown */}
-                <div className="relative">
+                <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.propertyLabel')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'consignacion' ? null : 'consignacion')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all min-w-[180px] justify-between border',
-                      filters.consignacionId
-                        ? 'border-primary/30 bg-primary-soft text-primary'
-                        : 'border-border bg-background text-foreground hover:border-foreground/30'
-                    )}
+                  <Select
+                    value={filters.consignacionId ?? 'all'}
+                    onValueChange={(value) =>
+                      updateFilter('consignacionId', value === 'all' ? undefined : value)
+                    }
                   >
-                    <Buildings className="w-4 h-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate max-w-[120px]">{getConsignacionLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0 text-muted-foreground" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'consignacion' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-64 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
-                      >
-                        <button
-                          onClick={() => {
-                            updateFilter('consignacionId', undefined);
-                            setOpenDropdown(null);
-                          }}
-                          className={cn(
-                            'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                            !filters.consignacionId
-                              ? 'bg-primary-soft text-primary'
-                              : 'text-foreground hover:bg-muted'
-                          )}
-                        >
-                          {t('inmobiliaria.cobros.filters.allProperties')}
-                        </button>
-                        {consignaciones.map((consignacion) => (
-                          <button
-                            key={consignacion.id}
-                            onClick={() => {
-                              updateFilter('consignacionId', consignacion.id);
-                              setOpenDropdown(null);
-                            }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                              filters.consignacionId === consignacion.id
-                                ? 'bg-primary-soft text-primary'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            <span className="block truncate">{consignacion.propertyTitle}</span>
-                            <span className="block text-xs text-muted-foreground truncate">
-                              {consignacion.propertyZone}
-                            </span>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="gap-2 min-w-[180px]">
+                      <Buildings className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      <SelectItem value="all">
+                        {t('inmobiliaria.cobros.filters.allProperties')}
+                      </SelectItem>
+                      {consignaciones.map((consignacion) => (
+                        <SelectItem key={consignacion.id} value={consignacion.id}>
+                          {consignacion.propertyTitle}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Propietario Dropdown */}
-                <div className="relative">
+                <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.cobros.filters.ownerLabel')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'propietario' ? null : 'propietario')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all min-w-[180px] justify-between border',
-                      filters.propietarioId
-                        ? 'border-primary/30 bg-primary-soft text-primary'
-                        : 'border-border bg-background text-foreground hover:border-foreground/30'
-                    )}
+                  <Select
+                    value={filters.propietarioId ?? 'all'}
+                    onValueChange={(value) =>
+                      updateFilter('propietarioId', value === 'all' ? undefined : value)
+                    }
                   >
-                    <User className="w-4 h-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate max-w-[120px]">{getPropietarioLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0 text-muted-foreground" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'propietario' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-56 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
-                      >
-                        <button
-                          onClick={() => {
-                            updateFilter('propietarioId', undefined);
-                            setOpenDropdown(null);
-                          }}
-                          className={cn(
-                            'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                            !filters.propietarioId
-                              ? 'bg-primary-soft text-primary'
-                              : 'text-foreground hover:bg-muted'
-                          )}
-                        >
-                          {t('inmobiliaria.cobros.filters.allOwners')}
-                        </button>
-                        {propietarios.map((propietario) => (
-                          <button
-                            key={propietario.id}
-                            onClick={() => {
-                              updateFilter('propietarioId', propietario.id);
-                              setOpenDropdown(null);
-                            }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                              filters.propietarioId === propietario.id
-                                ? 'bg-primary-soft text-primary'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            {propietario.name}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="gap-2 min-w-[180px]">
+                      <User className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      <SelectItem value="all">
+                        {t('inmobiliaria.cobros.filters.allOwners')}
+                      </SelectItem>
+                      {propietarios.map((propietario) => (
+                        <SelectItem key={propietario.id} value={propietario.id}>
+                          {propietario.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Clear Filters */}
@@ -416,14 +307,6 @@ export function CobroFilters({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Close dropdown on click outside */}
-      {openDropdown && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setOpenDropdown(null)}
-        />
-      )}
     </div>
   );
 }

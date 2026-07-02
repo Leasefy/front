@@ -9,7 +9,6 @@ import {
   Palette,
   ArrowCounterClockwise,
   Check,
-  SpinnerGap,
   Warning,
   Eye,
   Link,
@@ -17,7 +16,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type { AgencyBranding } from '@/lib/types/inmobiliaria';
@@ -242,14 +241,17 @@ export function ConfigBranding({
             <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
           </div>
           {currentLogo && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={removeLogo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-danger hover:bg-danger-soft transition-colors"
+              className="gap-1.5 text-danger hover:bg-danger-soft hover:text-danger"
             >
               <Trash className="w-4 h-4" />
               {t('inmobiliaria.common.delete')}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -327,14 +329,17 @@ export function ConfigBranding({
             <Palette className="w-5 h-5 text-fg-muted" weight="duotone" />
             <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
             onClick={resetToDefaults}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-muted transition-colors"
+            className="gap-1.5 text-muted-foreground"
           >
             <ArrowCounterClockwise className="w-4 h-4" />
             {t('inmobiliaria.config.brandingSection.restore')}
-          </button>
+          </Button>
         </div>
 
         {/* Color Pickers */}
@@ -364,6 +369,9 @@ export function ConfigBranding({
           <p className="text-sm font-medium text-foreground mb-3">
             {t('inmobiliaria.config.brandingSection.presetPalettes')}
           </p>
+          {/* allowlist: color-palette swatch tiles (3 inline-styled color dots + name) —
+              no Cadence color-swatch/palette-picker primitive; Button can't host the swatch
+              layout. Kept native. */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             {COLOR_PRESETS.map((preset) => (
               <button
@@ -402,6 +410,10 @@ export function ConfigBranding({
           <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.preview')}</h3>
         </div>
 
+        {/* allowlist: the entire Preview block is a live branding MOCKUP that renders the
+            agency's arbitrary chosen colors via inline `style` (buttons/badges/links/alert).
+            Cadence Button/Badge use fixed brand tokens and cannot show per-agency custom
+            colors — that would defeat the preview. Kept native (sample/preview precedent). */}
         <div className="p-6 rounded-xl bg-muted/30 border border-border space-y-6">
           {/* Header Preview */}
           <div className="flex items-center justify-between p-4 rounded-md bg-background border border-border">
@@ -549,12 +561,10 @@ export function ConfigBranding({
               hideArrow
               onClick={handleSave}
               disabled={isSaving}
+              isLoading={isSaving}
             >
               {isSaving ? (
-                <>
-                  <SpinnerGap className="w-4 h-4 animate-spin" />
-                  {t('inmobiliaria.common.saving')}
-                </>
+                t('inmobiliaria.common.saving')
               ) : (
                 <>
                   <Check className="w-4 h-4" />
@@ -610,6 +620,8 @@ function ColorPickerField({
       <label className="block text-sm font-medium text-foreground">{label}</label>
       <div className="flex items-center gap-2">
         <div className="relative">
+          {/* allowlist: native color picker (type="color") — Cadence has no color-input
+              primitive; the OS color dialog can't be replaced by Input. */}
           <input
             type="color"
             value={value}
@@ -618,13 +630,14 @@ function ColorPickerField({
             style={{ padding: 0 }}
           />
         </div>
-        <input
+        <Input
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           placeholder="#000000"
           maxLength={7}
-          className="flex-1 px-3 py-2 rounded-md border border-border bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all uppercase"
+          className="flex-1 font-mono"
+          style={{ textTransform: 'uppercase' }}
         />
       </div>
       {description && (

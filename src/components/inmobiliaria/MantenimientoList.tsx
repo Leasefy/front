@@ -15,7 +15,6 @@ import {
   CheckCircle,
   XCircle,
   Image as ImageIcon,
-  CaretDown,
   Eye,
   CurrencyCircleDollar,
   Check,
@@ -37,6 +36,22 @@ import type {
   MantenimientoStatus,
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, MANTENIMIENTO_TYPES, getMantenimientoTypeInfo } from '@/lib/types/inmobiliaria';
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { IconButton } from '@leasefy/cadence';
 
 // ============================================================================
 // Types
@@ -142,15 +157,15 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
       {cards.map((card) => (
         <div
           key={card.labelKey}
-          className="p-4 rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700"
+          className="p-4 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-strong"
         >
           <div className="flex items-center gap-2 mb-1">
             <div className={cn('w-2 h-2 rounded-full', card.color)} />
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle">
               {t(card.labelKey)}
             </span>
           </div>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-white">{card.value}</p>
+          <p className="text-2xl font-bold text-fg dark:text-white">{card.value}</p>
         </div>
       ))}
     </div>
@@ -196,88 +211,83 @@ function FilterBar({
     <div className="flex flex-col lg:flex-row gap-4">
       {/* Search */}
       <div className="relative flex-1 max-w-sm">
-        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-        <input
+        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+        <Input
           type="text"
           placeholder={t('inmobiliaria.mantenimiento.searchPropertyOrZone')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+          className="w-full pl-10"
         />
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         {/* Type Filter */}
-        <div className="relative">
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as MantenimientoType | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-          >
-            <option value="all">{t('inmobiliaria.mantenimiento.allTypes')}</option>
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as MantenimientoType | 'all')}>
+          <SelectTrigger className="w-auto min-w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('inmobiliaria.mantenimiento.allTypes')}</SelectItem>
             {MANTENIMIENTO_TYPES.map((type) => (
-              <option key={type.type} value={type.type}>
+              <SelectItem key={type.type} value={type.type}>
                 {type.icon} {type.labelEs}
-              </option>
+              </SelectItem>
             ))}
-          </select>
-          <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
+          </SelectContent>
+        </Select>
 
         {/* Priority Filter */}
-        <div className="relative">
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as MantenimientoPriority | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-          >
-            <option value="all">{t('inmobiliaria.mantenimiento.allPriorities')}</option>
-            <option value="emergency">{t('inmobiliaria.mantenimiento.priorityEmergency')}</option>
-            <option value="high">{t('inmobiliaria.mantenimiento.priorityHigh')}</option>
-            <option value="medium">{t('inmobiliaria.mantenimiento.priorityMedium')}</option>
-            <option value="low">{t('inmobiliaria.mantenimiento.priorityLow')}</option>
-          </select>
-          <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
+        <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as MantenimientoPriority | 'all')}>
+          <SelectTrigger className="w-auto min-w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('inmobiliaria.mantenimiento.allPriorities')}</SelectItem>
+            <SelectItem value="emergency">{t('inmobiliaria.mantenimiento.priorityEmergency')}</SelectItem>
+            <SelectItem value="high">{t('inmobiliaria.mantenimiento.priorityHigh')}</SelectItem>
+            <SelectItem value="medium">{t('inmobiliaria.mantenimiento.priorityMedium')}</SelectItem>
+            <SelectItem value="low">{t('inmobiliaria.mantenimiento.priorityLow')}</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Status Filter */}
-        <div className="relative">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as MantenimientoStatus | 'all')}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-          >
-            <option value="all">{t('inmobiliaria.mantenimiento.allStatuses')}</option>
-            <option value="reported">{t('inmobiliaria.mantenimiento.statusReported')}</option>
-            <option value="quoted">{t('inmobiliaria.mantenimiento.statusQuoted')}</option>
-            <option value="approved">{t('inmobiliaria.mantenimiento.statusApproved')}</option>
-            <option value="in_progress">{t('inmobiliaria.mantenimiento.statusInProgress')}</option>
-            <option value="completed">{t('inmobiliaria.mantenimiento.statusCompleted')}</option>
-            <option value="cancelled">{t('inmobiliaria.mantenimiento.statusCancelled')}</option>
-          </select>
-          <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as MantenimientoStatus | 'all')}>
+          <SelectTrigger className="w-auto min-w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('inmobiliaria.mantenimiento.allStatuses')}</SelectItem>
+            <SelectItem value="reported">{t('inmobiliaria.mantenimiento.statusReported')}</SelectItem>
+            <SelectItem value="quoted">{t('inmobiliaria.mantenimiento.statusQuoted')}</SelectItem>
+            <SelectItem value="approved">{t('inmobiliaria.mantenimiento.statusApproved')}</SelectItem>
+            <SelectItem value="in_progress">{t('inmobiliaria.mantenimiento.statusInProgress')}</SelectItem>
+            <SelectItem value="completed">{t('inmobiliaria.mantenimiento.statusCompleted')}</SelectItem>
+            <SelectItem value="cancelled">{t('inmobiliaria.mantenimiento.statusCancelled')}</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Sort */}
-        <div className="relative">
-          <select
-            value={`${sortField}-${sortDirection}`}
-            onChange={(e) => {
-              const [field, dir] = e.target.value.split('-') as [SortField, SortDirection];
-              setSortField(field);
-              setSortDirection(dir);
-            }}
-            className="appearance-none px-4 py-2.5 pr-10 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-          >
-            <option value="priority-asc">{t('inmobiliaria.mantenimiento.sortPriorityHigh')}</option>
-            <option value="priority-desc">{t('inmobiliaria.mantenimiento.sortPriorityLow')}</option>
-            <option value="createdAt-desc">{t('inmobiliaria.mantenimiento.sortNewest')}</option>
-            <option value="createdAt-asc">{t('inmobiliaria.mantenimiento.sortOldest')}</option>
-            <option value="status-asc">{t('inmobiliaria.mantenimiento.sortStatus')}</option>
-          </select>
-          <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-        </div>
+        <Select
+          value={`${sortField}-${sortDirection}`}
+          onValueChange={(v) => {
+            const [field, dir] = v.split('-') as [SortField, SortDirection];
+            setSortField(field);
+            setSortDirection(dir);
+          }}
+        >
+          <SelectTrigger className="w-auto min-w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="priority-asc">{t('inmobiliaria.mantenimiento.sortPriorityHigh')}</SelectItem>
+            <SelectItem value="priority-desc">{t('inmobiliaria.mantenimiento.sortPriorityLow')}</SelectItem>
+            <SelectItem value="createdAt-desc">{t('inmobiliaria.mantenimiento.sortNewest')}</SelectItem>
+            <SelectItem value="createdAt-asc">{t('inmobiliaria.mantenimiento.sortOldest')}</SelectItem>
+            <SelectItem value="status-asc">{t('inmobiliaria.mantenimiento.sortStatus')}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -351,91 +361,50 @@ function MantenimientoCard({
         </div>
 
         {/* Actions Menu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-md hover:bg-muted transition-colors"
-          >
-            <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
-          </button>
+        <DropdownList open={showMenu} onOpenChange={setShowMenu}>
+          <DropdownListTrigger asChild>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              icon={<DotsThree className="w-5 h-5" weight="bold" />}
+              aria-label={t('inmobiliaria.mantenimiento.viewDetail')}
+            />
+          </DropdownListTrigger>
+          <DropdownListContent align="end" className="w-48">
+            <DropdownListItem className="gap-3" onClick={() => onViewDetails?.()}>
+              <Eye className="w-4 h-4" />
+              <span className="text-sm">{t('inmobiliaria.mantenimiento.viewDetail')}</span>
+            </DropdownListItem>
 
-          <AnimatePresence>
-            {showMenu && (
-              <>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card z-20"
-                >
-                  <button
-                    onClick={() => {
-                      onViewDetails?.();
-                      setShowMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    <span className="text-sm">{t('inmobiliaria.mantenimiento.viewDetail')}</span>
-                  </button>
-
-                  {solicitud.status === 'reported' && onAddQuote && (
-                    <button
-                      onClick={() => {
-                        onAddQuote();
-                        setShowMenu(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft transition-colors"
-                    >
-                      <CurrencyCircleDollar className="w-4 h-4" />
-                      <span className="text-sm">{t('inmobiliaria.mantenimiento.addQuote')}</span>
-                    </button>
-                  )}
-
-                  {solicitud.status === 'quoted' && solicitud.quotes.length > 0 && onApproveQuote && (
-                    <button
-                      onClick={() => {
-                        onApproveQuote(solicitud.quotes[0].id);
-                        setShowMenu(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-success hover:bg-success-soft transition-colors"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span className="text-sm">{t('inmobiliaria.mantenimiento.approveQuote')}</span>
-                    </button>
-                  )}
-
-                  {solicitud.status === 'in_progress' && onComplete && (
-                    <button
-                      onClick={() => {
-                        onComplete();
-                        setShowMenu(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-success hover:bg-success-soft transition-colors"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm">{t('inmobiliaria.mantenimiento.markCompleted')}</span>
-                    </button>
-                  )}
-
-                  {!['completed', 'cancelled'].includes(solicitud.status) && onCancel && (
-                    <button
-                      onClick={() => {
-                        onCancel();
-                        setShowMenu(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-danger hover:bg-danger-soft transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                      <span className="text-sm">{t('inmobiliaria.mantenimiento.cancelRequest')}</span>
-                    </button>
-                  )}
-                </motion.div>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              </>
+            {solicitud.status === 'reported' && onAddQuote && (
+              <DropdownListItem className="gap-3 text-primary" onClick={() => onAddQuote()}>
+                <CurrencyCircleDollar className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.mantenimiento.addQuote')}</span>
+              </DropdownListItem>
             )}
-          </AnimatePresence>
-        </div>
+
+            {solicitud.status === 'quoted' && solicitud.quotes.length > 0 && onApproveQuote && (
+              <DropdownListItem className="gap-3 text-success" onClick={() => onApproveQuote(solicitud.quotes[0].id)}>
+                <Check className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.mantenimiento.approveQuote')}</span>
+              </DropdownListItem>
+            )}
+
+            {solicitud.status === 'in_progress' && onComplete && (
+              <DropdownListItem className="gap-3 text-success" onClick={() => onComplete()}>
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.mantenimiento.markCompleted')}</span>
+              </DropdownListItem>
+            )}
+
+            {!['completed', 'cancelled'].includes(solicitud.status) && onCancel && (
+              <DropdownListItem className="gap-3 text-danger" onClick={() => onCancel()}>
+                <X className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.mantenimiento.cancelRequest')}</span>
+              </DropdownListItem>
+            )}
+          </DropdownListContent>
+        </DropdownList>
       </div>
 
       {/* Property Info */}
@@ -622,23 +591,26 @@ export function MantenimientoList({
       {/* Results count - only show in full mode */}
       {!minimal && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.mantenimiento.countOf', { filtered: filteredData.length, total: data.length })}
             {hasFilters && ` (${t('inmobiliaria.mantenimiento.filtered')})`}
           </p>
 
           {hasFilters && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={() => {
                 setTypeFilter('all');
                 setPriorityFilter('all');
                 setStatusFilter('all');
                 setSearchQuery('');
               }}
-              className="text-sm text-primary hover:underline"
+              className="h-auto p-0 text-sm"
             >
               {t('inmobiliaria.mantenimiento.clearFilters')}
-            </button>
+            </Button>
           )}
         </div>
       )}

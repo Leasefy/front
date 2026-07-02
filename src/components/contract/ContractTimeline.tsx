@@ -45,8 +45,8 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
                 className={cn(
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
                   step.status === 'completed' && 'bg-success text-white',
-                  step.status === 'current' && 'bg-primary text-white uppercase tracking-wide font-mono ring-4 ring-primary/20',
-                  step.status === 'pending' && 'bg-muted text-muted-foreground'
+                  step.status === 'current' && 'bg-primary text-primary-fg ring-4 ring-primary/20',
+                  step.status === 'pending' && 'bg-surface-muted text-fg-muted'
                 )}
               >
                 {step.status === 'completed' ? (
@@ -63,7 +63,7 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
                 <div
                   className={cn(
                     'mt-2 h-12 w-0.5 transition-colors',
-                    step.status === 'completed' ? 'bg-success' : 'bg-muted'
+                    step.status === 'completed' ? 'bg-success' : 'bg-surface-muted'
                   )}
                   aria-hidden="true"
                 />
@@ -76,8 +76,8 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
                 className={cn(
                   'text-sm font-medium transition-colors',
                   step.status === 'completed' && 'text-success',
-                  step.status === 'current' && 'text-foreground',
-                  step.status === 'pending' && 'text-muted-foreground'
+                  step.status === 'current' && 'text-fg',
+                  step.status === 'pending' && 'text-fg-muted'
                 )}
               >
                 {step.title}
@@ -85,13 +85,13 @@ export function ContractTimeline({ steps, className }: ContractTimelineProps) {
               <p
                 className={cn(
                   'mt-1 text-xs',
-                  step.status === 'pending' ? 'text-muted-foreground' : 'text-muted-foreground'
+                  step.status === 'pending' ? 'text-fg-muted' : 'text-fg-muted'
                 )}
               >
                 {step.description}
               </p>
               {step.completedAt && (
-                <p className="mt-1 text-xs text-muted-foreground">{formatDate(step.completedAt)}</p>
+                <p className="mt-1 text-xs text-fg-muted">{formatDate(step.completedAt)}</p>
               )}
             </div>
           </div>

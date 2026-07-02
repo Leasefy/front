@@ -25,6 +25,7 @@ import { usePathname } from 'next/navigation'
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext'
 import { PanelTour } from '@/components/tour/PanelTour'
 import { AgentIntroModal } from '@/components/tour/AgentIntroModal'
+import { WorkspaceNav } from '@/components/inmobiliaria/ai/WorkspaceNav'
 
 const HUB_PATHNAME = '/panel/inmobiliaria/ai'
 
@@ -56,6 +57,9 @@ export default function AiLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* In-workspace tabs — the agent's functions live here now, not in the
+          global sidebar. Self-hides on the AI hub and outside known agents. */}
+      <WorkspaceNav />
       {children}
       <PanelTour
         isOpen={showTour}

@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
   DotsThree,
   Eye,
   PaperPlaneTilt,
-  SpinnerGap,
   CheckCircle,
   Warning,
   User,
@@ -17,11 +16,26 @@ import {
   DownloadSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+} from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
-import {
-  getDispersionStatusColor,
-} from '@/lib/types/inmobiliaria';
 
 type SortField =
   | 'propietarioName'
@@ -33,6 +47,14 @@ type SortField =
   | 'status'
   | 'processedAt';
 type SortDirection = 'asc' | 'desc';
+
+// Mapeo status → variant del Badge de Cadence (reemplaza getDispersionStatusColor).
+const STATUS_BADGE_VARIANT = {
+  pending: 'warning',
+  processing: 'default',
+  completed: 'success',
+  failed: 'destructive',
+} as const;
 
 interface DispersionTableProps {
   dispersiones: Dispersion[];
@@ -61,7 +83,6 @@ export function DispersionTable({
   const { t, formatDate, formatCurrency } = useI18n();
   const [sortField, setSortField] = useState<SortField>('month');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Sort dispersiones
   const sortedDispersiones = useMemo(() => {
@@ -167,7 +188,8 @@ export function DispersionTable({
     children: React.ReactNode;
     className?: string;
   }) => (
-    <th className={cn('text-left p-4', className)}>
+    <TableHead className={cn('text-left p-4', className)}>
+      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
       <button
         onClick={() => handleSort(field)}
         className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
@@ -175,14 +197,14 @@ export function DispersionTable({
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
       </button>
-    </th>
+    </TableHead>
   );
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1000px]">
-        <thead>
-          <tr className="border-b border-border">
+      <Table className="min-w-[1000px]">
+        <TableHeader>
+          <TableRow className="border-b border-border">
             <SortableHeader field="propietarioName">{t('inmobiliaria.dispersiones.tableView.propietario')}</SortableHeader>
             <SortableHeader field="month">{t('inmobiliaria.dispersiones.tableView.month')}</SortableHeader>
             <SortableHeader field="properties">{t('inmobiliaria.dispersiones.tableView.properties')}</SortableHeader>
@@ -191,12 +213,11 @@ export function DispersionTable({
             <SortableHeader field="netToPropietario">{t('inmobiliaria.dispersiones.tableView.net')}</SortableHeader>
             <SortableHeader field="status">{t('inmobiliaria.dispersiones.tableView.status')}</SortableHeader>
             <SortableHeader field="processedAt">{t('inmobiliaria.dispersiones.tableView.paymentDate')}</SortableHeader>
-            <th className="w-12 p-4"></th>
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead className="w-12 p-4" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {sortedDispersiones.map((dispersion, index) => {
-            const statusColor = getDispersionStatusColor(dispersion.status);
             const statusLabel = t(`inmobiliaria.dispersiones.statusLabels.${dispersion.status}`);
 
             return (
@@ -212,9 +233,9 @@ export function DispersionTable({
                 )}
               >
                 {/* Propietario */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-surface-brand flex items-center justify-center shrink-0">
                       <User className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">
@@ -229,60 +250,55 @@ export function DispersionTable({
                       </div>
                     </div>
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Month */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className="text-foreground capitalize">
                     {formatDate(dispersion.month + '-01', { month: 'short', year: 'numeric' })}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Properties Count */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-foreground text-sm font-medium tabular-nums">
                     {dispersion.items.length}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Total Collected */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className="font-semibold text-foreground tabular-nums">
                     {formatCurrency(dispersion.totalCollected)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Commission */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className="font-medium text-primary tabular-nums">
                     {formatCurrency(dispersion.totalCommission)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Net Amount */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className="font-bold text-foreground tabular-nums">
                     {formatCurrency(dispersion.netToPropietario)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Status */}
-                <td className="p-4">
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
-                      statusColor
-                    )}
-                  >
+                <TableCell className="p-4">
+                  <Badge variant={STATUS_BADGE_VARIANT[dispersion.status]} className="gap-1.5">
                     {dispersion.status === 'processing' && (
-                      <SpinnerGap className="w-3 h-3 animate-spin" />
+                      <Spinner size="xs" variant="current" />
                     )}
                     {statusLabel}
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
 
                 {/* Payment Date */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   {dispersion.status === 'completed' && dispersion.processedAt ? (
                     <div className="flex items-center gap-1.5 text-foreground">
                       <CheckCircle className="w-4 h-4" weight="fill" />
@@ -303,151 +319,107 @@ export function DispersionTable({
                       —
                     </span>
                   )}
-                </td>
+                </TableCell>
 
                 {/* Actions */}
-                <td className="p-4">
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(
-                          openMenuId === dispersion.id ? null : dispersion.id
-                        );
-                      }}
-                      className="p-2 rounded-md hover:bg-muted transition-colors"
-                    >
-                      <DotsThree
-                        className="w-5 h-5 text-muted-foreground"
-                        weight="bold"
+                <TableCell className="p-4">
+                  <DropdownList>
+                    <DropdownListTrigger asChild>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Acciones"
                       />
-                    </button>
+                    </DropdownListTrigger>
+                    <DropdownListContent align="end" className="w-48">
+                      <DropdownListItem onSelect={() => onViewDetail?.(dispersion)}>
+                        <Eye className="w-4 h-4" />
+                        <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.viewDetail')}</span>
+                      </DropdownListItem>
 
-                    <AnimatePresence>
-                      {openMenuId === dispersion.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card z-10"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewDetail?.(dispersion);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.viewDetail')}</span>
-                          </button>
-
-                          {dispersion.status === 'pending' && onProcess && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onProcess(dispersion);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft dark:hover:bg-primary/20 transition-colors"
-                            >
-                              <PaperPlaneTilt className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.process')}</span>
-                            </button>
-                          )}
-
-                          {dispersion.status === 'failed' && onProcess && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onProcess(dispersion);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-warning hover:bg-warning-soft dark:hover:bg-warning/20 transition-colors"
-                            >
-                              <ArrowsClockwise className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.retry')}</span>
-                            </button>
-                          )}
-
-                          {dispersion.status === 'completed' &&
-                            onDownloadExtracto && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDownloadExtracto(dispersion);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                              >
-                                <DownloadSimple className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.downloadExtracto')}</span>
-                              </button>
-                            )}
-                        </motion.div>
+                      {dispersion.status === 'pending' && onProcess && (
+                        <DropdownListItem onSelect={() => onProcess(dispersion)} className="text-primary">
+                          <PaperPlaneTilt className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.process')}</span>
+                        </DropdownListItem>
                       )}
-                    </AnimatePresence>
-                  </div>
-                </td>
+
+                      {dispersion.status === 'failed' && onProcess && (
+                        <DropdownListItem onSelect={() => onProcess(dispersion)} className="text-warning">
+                          <ArrowsClockwise className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.retry')}</span>
+                        </DropdownListItem>
+                      )}
+
+                      {dispersion.status === 'completed' && onDownloadExtracto && (
+                        <DropdownListItem onSelect={() => onDownloadExtracto(dispersion)}>
+                          <DownloadSimple className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.downloadExtracto')}</span>
+                        </DropdownListItem>
+                      )}
+                    </DropdownListContent>
+                  </DropdownList>
+                </TableCell>
               </motion.tr>
             );
           })}
-        </tbody>
+        </TableBody>
 
         {/* Summary Row */}
         {showSummary && dispersiones.length > 0 && (
-          <tfoot>
-            <tr className="bg-muted/30 border-t-2 border-border">
-              <td colSpan={3} className="p-4">
+          <TableFooter>
+            <TableRow className="bg-muted/30 border-t-2 border-border">
+              <TableCell colSpan={3} className="p-4">
                 <div className="flex items-center gap-4">
                   <span className="font-semibold text-foreground">
                     {t('inmobiliaria.dispersiones.tableView.totalCount', { count: dispersiones.length })}
                   </span>
                   <div className="flex items-center gap-3 text-xs">
                     {summary.pending > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-warning-soft text-warning dark:bg-warning/15 dark:text-warning tabular-nums">
+                      <Badge variant="warning" className="tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.pendingAbbr', { count: summary.pending })}
-                      </span>
+                      </Badge>
                     )}
                     {summary.processing > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-primary-soft text-primary dark:bg-primary/15 dark:text-primary tabular-nums">
+                      <Badge variant="default" className="tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.processingAbbr', { count: summary.processing })}
-                      </span>
+                      </Badge>
                     )}
                     {summary.completed > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-muted text-foreground tabular-nums">
+                      <Badge variant="secondary" className="tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.completedAbbr', { count: summary.completed })}
-                      </span>
+                      </Badge>
                     )}
                     {summary.failed > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-danger-soft text-danger dark:bg-danger/15 dark:text-danger tabular-nums">
+                      <Badge variant="destructive" className="tabular-nums">
                         {t('inmobiliaria.dispersiones.tableView.failedAbbr', { count: summary.failed })}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                 </div>
-              </td>
-              <td className="p-4">
+              </TableCell>
+              <TableCell className="p-4">
                 <span className="font-bold text-foreground tabular-nums">
                   {formatCurrency(summary.totalCollected)}
                 </span>
-              </td>
-              <td className="p-4">
+              </TableCell>
+              <TableCell className="p-4">
                 <span className="font-bold text-primary tabular-nums">
                   {formatCurrency(summary.totalCommissions)}
                 </span>
-              </td>
-              <td className="p-4">
+              </TableCell>
+              <TableCell className="p-4">
                 <span className="font-bold text-foreground tabular-nums">
                   {formatCurrency(summary.totalToDisburse)}
                 </span>
-              </td>
-              <td colSpan={3}></td>
-            </tr>
-          </tfoot>
+              </TableCell>
+              <TableCell colSpan={3} />
+            </TableRow>
+          </TableFooter>
         )}
-      </table>
+      </Table>
 
       {/* Empty State */}
       {sortedDispersiones.length === 0 && (
@@ -462,14 +434,6 @@ export function DispersionTable({
             {t('inmobiliaria.dispersiones.tableView.emptyDescription')}
           </p>
         </div>
-      )}
-
-      {/* Close dropdown on click outside */}
-      {openMenuId && (
-        <div
-          className="fixed inset-0 z-[5]"
-          onClick={() => setOpenMenuId(null)}
-        />
       )}
     </div>
   );

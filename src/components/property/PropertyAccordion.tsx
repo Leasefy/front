@@ -122,28 +122,28 @@ export function PropertyAccordion({
           <div className="bg-neutral-50 rounded-xl p-4 space-y-3">
             <div className="flex justify-between text-[14px]">
               <span className="text-muted-foreground">Arriendo</span>
-              <span className="text-foreground font-semibold">
+              <span className="text-foreground font-semibold font-mono tabular-nums">
                 {formatCurrency(property.monthlyRent)}
               </span>
             </div>
             {property.adminFee > 0 && (
               <div className="flex justify-between text-[14px]">
                 <span className="text-muted-foreground">Administración</span>
-                <span className="text-foreground font-semibold">
+                <span className="text-foreground font-semibold font-mono tabular-nums">
                   {formatCurrency(property.adminFee)}
                 </span>
               </div>
             )}
             <div className="flex justify-between text-[14px]">
               <span className="text-muted-foreground">Depósito (único)</span>
-              <span className="text-foreground font-semibold">
+              <span className="text-foreground font-semibold font-mono tabular-nums">
                 {formatCurrency(property.deposit)}
               </span>
             </div>
             <div className="pt-3 border-t border-border">
               <div className="flex justify-between text-[14px]">
                 <span className="text-foreground font-semibold">Total mensual</span>
-                <span className="text-primary font-bold">
+                <span className="text-primary font-bold font-mono tabular-nums">
                   {formatCurrency(property.monthlyRent + property.adminFee)}
                 </span>
               </div>

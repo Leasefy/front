@@ -5,9 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, ArrowsClockwise, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Button, Textarea, EmptyState } from '@/components/ui';
+import { Button, Textarea, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
 import { ErrorState } from '@/components/ui/error-state';
-import { BackButton } from '@leasefy/ui';
+import { BackButton } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -35,6 +35,22 @@ const STATUS_CONFIG: Record<
 };
 
 const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-surface-muted', text: 'text-fg-muted' };
+
+// Status → Cadence Badge variant (mirrors STATUS_CONFIG tints).
+const STATUS_VARIANT: Record<
+  LandlordApplicationStatus,
+  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
+> = {
+  DRAFT: 'secondary',
+  SUBMITTED: 'default',
+  UNDER_REVIEW: 'default',
+  PREAPPROVED: 'secondary',
+  APPROVED: 'success',
+  REJECTED: 'destructive',
+  NEEDS_INFO: 'warning',
+  WITHDRAWN: 'secondary',
+  CONTRACT_FAILED: 'destructive',
+};
 
 const SCORE_COLORS: Record<string, string> = {
   A: 'text-success bg-success-soft',
@@ -190,24 +206,33 @@ function CandidateActions({
   if (status === 'SUBMITTED' || status === 'UNDER_REVIEW') {
     return (
       <div className="flex items-center gap-1 flex-wrap">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('preapprove', candidate)}
-          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-md bg-primary-soft text-primary text-xs font-medium hover:opacity-80 transition-opacity whitespace-nowrap')}
+          className={cn(COARSE_HIT_AREA, 'bg-primary-soft text-primary hover:bg-primary-soft/80 whitespace-nowrap')}
         >
           Pre-aprobar
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('request-info', candidate)}
-          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-md bg-warning-soft text-warning text-xs font-medium hover:opacity-80 transition-opacity whitespace-nowrap')}
+          className={cn(COARSE_HIT_AREA, 'bg-warning-soft text-warning hover:bg-warning-soft/80 whitespace-nowrap')}
         >
           Pedir info
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('reject', candidate)}
-          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-md bg-danger-soft text-danger text-xs font-medium hover:opacity-80 transition-opacity whitespace-nowrap')}
+          className={cn(COARSE_HIT_AREA, 'bg-danger-soft text-danger hover:bg-danger-soft/80 whitespace-nowrap')}
         >
           Rechazar
-        </button>
+        </Button>
       </div>
     );
   }
@@ -215,18 +240,24 @@ function CandidateActions({
   if (status === 'PREAPPROVED') {
     return (
       <div className="flex items-center gap-1">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('approve', candidate)}
-          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-md bg-success-soft text-success text-xs font-medium hover:opacity-80 transition-opacity whitespace-nowrap')}
+          className={cn(COARSE_HIT_AREA, 'bg-success-soft text-success hover:bg-success-soft/80 whitespace-nowrap')}
         >
           Aprobar
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('reject', candidate)}
-          className={cn(COARSE_HIT_AREA, 'px-2.5 py-1 rounded-md bg-danger-soft text-danger text-xs font-medium hover:opacity-80 transition-opacity whitespace-nowrap')}
+          className={cn(COARSE_HIT_AREA, 'bg-danger-soft text-danger hover:bg-danger-soft/80 whitespace-nowrap')}
         >
           Rechazar
-        </button>
+        </Button>
       </div>
     );
   }
@@ -236,23 +267,32 @@ function CandidateActions({
     // Si no, al formulario de creación.
     if (existingContract) {
       return (
-        <Link
-          href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-          className={cn(COARSE_HIT_AREA, 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-success/30 bg-card text-success hover:bg-success-soft text-xs font-semibold transition-colors whitespace-nowrap')}
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          hideArrow
+          className={cn(COARSE_HIT_AREA, 'border-success/30 text-success hover:bg-success-soft whitespace-nowrap')}
         >
-          Ver contrato
-          <ArrowUpRight className="w-3 h-3" />
-        </Link>
+          <Link href={`/panel/inmobiliaria/contratos/${existingContract.id}`}>
+            Ver contrato
+            <ArrowUpRight className="w-3 h-3" />
+          </Link>
+        </Button>
       );
     }
     return (
-      <Link
-        href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
-        className={cn(COARSE_HIT_AREA, 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-success text-white hover:opacity-90 text-xs font-semibold transition-opacity whitespace-nowrap')}
+      <Button
+        asChild
+        size="sm"
+        hideArrow
+        className={cn(COARSE_HIT_AREA, 'bg-success text-white hover:opacity-90 whitespace-nowrap')}
       >
-        Crear contrato
-        <ArrowUpRight className="w-3 h-3" />
-      </Link>
+        <Link href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}>
+          Crear contrato
+          <ArrowUpRight className="w-3 h-3" />
+        </Link>
+      </Button>
     );
   }
 
@@ -342,7 +382,7 @@ function CandidatosContent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-primary/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     );
   }
@@ -399,25 +439,17 @@ function CandidatosContent() {
           />
         ) : (
           <div className="overflow-x-auto overscroll-contain">
-            <table className="w-full min-w-[580px] [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-card">
-              <thead>
-                <tr className="border-b border-border bg-surface-muted">
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Candidato
-                  </th>
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Score
-                  </th>
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Estado
-                  </th>
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Fecha
-                  </th>
-                  <th className="p-4" />
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[580px] [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-card">
+              <TableHeader>
+                <TableRow className="border-b border-border bg-surface-muted">
+                  <TableHead>Candidato</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="p-4" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {candidates.map((candidate) => {
                   const statusCfg = STATUS_CONFIG[candidate.status] ?? FALLBACK_STATUS;
                   const initials = candidate.tenantName
@@ -425,15 +457,15 @@ function CandidatosContent() {
                     : '?';
 
                   return (
-                    <tr
+                    <TableRow
                       key={candidate.id}
                       onClick={() => setSelectedCandidate(candidate)}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                     >
                       {/* Tenant */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
                             <span className="text-sm font-medium text-primary">
                               {initials}
                             </span>
@@ -448,10 +480,10 @@ function CandidatosContent() {
                             </p>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Score */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         {candidate.riskScore ? (
                           <div className="flex items-center gap-2">
                             <span
@@ -472,38 +504,38 @@ function CandidatosContent() {
                             Ver resultado
                           </span>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Status */}
-                      <td className="p-4">
-                        <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusCfg.bg, statusCfg.text)}>
+                      <TableCell className="p-4">
+                        <Badge variant={STATUS_VARIANT[candidate.status] ?? 'secondary'}>
                           {statusCfg.label}
-                        </span>
-                      </td>
+                        </Badge>
+                      </TableCell>
 
                       {/* Date */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         <span className="text-sm text-fg-muted">
                           {new Date(candidate.submittedAt).toLocaleDateString('es-CO', {
                             day: '2-digit',
                             month: 'short',
                           })}
                         </span>
-                      </td>
+                      </TableCell>
 
                       {/* Actions */}
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
                         <CandidateActions
                           candidate={candidate}
                           existingContract={getContractByApplicationId(candidate.id)}
                           onAction={handleAction}
                         />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

@@ -19,6 +19,7 @@ import * as React from 'react'
 import { useEffect, useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
+import { MonoLabel } from '@leasefy/cadence'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import type { DebtorDetailResponse } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { usePIIRevealContext, type PIIFieldKey } from '@/lib/context/PIIRevealContext'
@@ -100,9 +101,9 @@ export function DebtorSidebar({
           aria-hidden="true"
           className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
         />
-        <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500">
+        <MonoLabel className="text-neutral-400 dark:text-neutral-500">
           {t(`${NS}.detalle.contexto`)}
-        </span>
+        </MonoLabel>
       </h2>
 
       {/* Human case state — the headline of the context */}

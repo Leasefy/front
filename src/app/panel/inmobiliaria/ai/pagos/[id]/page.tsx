@@ -16,7 +16,7 @@
  *
  * El cuerpo de 3 columnas vive en <PagoCasoDetalle> (componente propio de la
  * superficie de pagos); esta page solo orquesta el data-wiring, los estados de
- * carga/error/no-disponible/no-encontrado y el encabezado con <MigaDePan>.
+ * carga/error/no-disponible/no-encontrado y el encabezado.
  *
  * Cross-link: el id del WorkItem de pagos ES el id del VendorBill (mapeo 1:1),
  * así que "Tesorería · AP" deep-linkea al detalle real de la factura en
@@ -33,7 +33,6 @@ import { Button, Card } from '@/components/ui'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { PagoCasoDetalle } from '@/components/inmobiliaria/pagos/PagoCasoDetalle'
 import { useI18n } from '@/lib/i18n'
 
@@ -59,18 +58,9 @@ function PagosCaso() {
     return res
   }
 
-  // ── Encabezado común (miga + título + descripción) ─────────────────────────
+  // ── Encabezado común (título + descripción) ────────────────────────────────
   const header = (
     <header className="space-y-2">
-      <MigaDePan
-        backHref={COLA_HREF}
-        icon={CurrencyDollar}
-        crumbs={[
-          { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-          { label: t('inmobiliaria.ai.workspace.agente.pagos'), href: SALA_HREF },
-          { label: 'Caso' },
-        ]}
-      />
       <h1 className="text-2xl font-semibold tracking-tight text-fg">
         {data ? data.item.titulo : 'Detalle del pago'}
       </h1>

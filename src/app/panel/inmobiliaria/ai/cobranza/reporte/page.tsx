@@ -36,6 +36,10 @@ import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { CobranzaReporteSkeleton } from '@/components/skeleton/panel/CobranzaReporteSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { MonoLabel } from '@leasefy/cadence'
 
 const COP_FORMATTER = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -148,28 +152,27 @@ function ReporteViewerContent() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/reporte/suscripcion"
-            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted transition font-medium"
-          >
-            <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
-            {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
-          </Link>
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/reporte/thresholds"
-            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted transition font-medium"
-          >
-            <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
-            {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
-          </Link>
-          <button
-            type="button"
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte/suscripcion">
+              <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
+              {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte/thresholds">
+              <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
+              {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
             aria-label="refresh"
           >
             {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -247,141 +250,139 @@ function ReporteViewerContent() {
           {/* 3. Top-N debtors */}
           <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')} · Top {topN}
-              </h2>
+              </MonoLabel>
             </div>
             {data.top_debtors.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.empty')}
               </p>
             ) : (
-              <div className="overflow-x-auto overscroll-contain">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/10 border-b border-border">
-                  <tr>
-                    <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <Table>
+                <TableHeader className="bg-muted/10 border-b border-border">
+                  <TableRow>
+                    <TableHead>
                       {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
-                    </th>
-                    <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                    </TableHead>
+                    <TableHead className="text-right">
                       DPD
-                    </th>
-                    <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                    </TableHead>
+                    <TableHead className="text-right">
                       {locale.startsWith('es') ? 'Saldo' : 'Balance'}
-                    </th>
-                    <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                    </TableHead>
+                    <TableHead>
                       {locale.startsWith('es') ? 'Último contacto' : 'Last contact'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.top_debtors.slice(0, topN).map((d) => (
-                    <tr key={d.debtor_id} className="border-b border-border last:border-0">
-                      <td className="px-3 py-2">
+                    <TableRow key={d.debtor_id} className="border-b border-border last:border-0">
+                      <TableCell className="px-3 py-2">
                         <Mask
                           field="cedula"
                           value={d.debtor_id_masked ?? d.debtor_id}
                           onReveal={undefined}
                         />
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                         {d.dpd}
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                         {COP_FORMATTER.format(d.balance_cop)}
-                      </td>
-                      <td className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
                         {d.last_contact_at
                           ? new Date(d.last_contact_at).toLocaleDateString(locale)
                           : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-              </div>
+                </TableBody>
+              </Table>
             )}
           </section>
 
           {/* 4. 30-day history + CSV export */}
           <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.reporte.history.heading')}
-              </h2>
-              <button
-                type="button"
+              </MonoLabel>
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={() => void onExportCsv()}
                 disabled={!agencyId}
-                className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-sm border border-border text-foreground hover:bg-muted disabled:opacity-50 transition font-medium"
               >
                 <Download className="w-3.5 h-3.5" aria-hidden="true" />
                 {t('inmobiliaria.ai.cobranza.reporte.history.exportCsv')}
-              </button>
+              </Button>
             </div>
             {historyLoading && history.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <Spinner />
               </div>
             ) : history.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">—</p>
             ) : (
               <>
-                <div className="overflow-x-auto overscroll-contain">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/10 border-b border-border">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                <Table>
+                  <TableHeader className="bg-muted/10 border-b border-border">
+                    <TableRow>
+                      <TableHead>
                         {locale.startsWith('es') ? 'Fecha' : 'Date'}
-                      </th>
-                      <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                      </TableHead>
+                      <TableHead className="text-right">
                         PKR
-                      </th>
-                      <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                      </TableHead>
+                      <TableHead className="text-right">
                         {locale.startsWith('es') ? 'Morosidad' : 'Delinquency'}
-                      </th>
-                      <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                      </TableHead>
+                      <TableHead className="text-right">
                         {locale.startsWith('es') ? 'Fuera horario' : 'Outside hours'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {history.map((entry) => {
                       const pkr = entry.summary.pkr_pct ?? entry.summary.pkr_7d_pct
                       return (
-                        <tr key={entry.report_date} className="border-b border-border last:border-0">
-                          <td className="px-3 py-2 font-mono tabular-nums text-foreground">
+                        <TableRow key={entry.report_date} className="border-b border-border last:border-0">
+                          <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
                             {entry.report_date}
-                          </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {pkr != null ? `${pkr.toFixed(1)}%` : '—'}
-                          </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {entry.summary.indice_morosidad_pct != null
                               ? `${entry.summary.indice_morosidad_pct.toFixed(1)}%`
                               : '—'}
-                          </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {entry.summary.calls_outside_window_count ?? '—'}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )
                     })}
-                  </tbody>
-                </table>
-                </div>
+                  </TableBody>
+                </Table>
                 {historyHasMore && (
                   <div className="p-3 border-t border-border bg-muted/20 text-center">
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hideArrow
                       onClick={() => void historyLoadMore()}
                       disabled={historyLoadingMore}
-                      className="text-xs px-4 py-2 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
                     >
                       {historyLoadingMore
                         ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
                         : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </>
@@ -411,9 +412,9 @@ function KpiTile({
           : 'border-border',
       ].join(' ')}
     >
-      <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+      <MonoLabel>
         {label}
-      </p>
+      </MonoLabel>
       <p
         className={[
           'mt-2 text-3xl font-mono tabular-nums',

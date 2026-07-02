@@ -45,17 +45,17 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
 
   return (
     <div className={cn(
-      'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]',
+      'rounded-xl border border-border bg-surface',
       'overflow-hidden',
       className,
     )}>
       {/* Header — same pattern as Pipeline Activo / Equipo */}
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-fg">
             {locale === 'es' ? 'Actividad Reciente' : 'Recent Activity'}
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-fg-subtle">
             {locale === 'es' ? 'Ejecuciones y eventos de agentes' : 'Agent executions and events'}
           </p>
         </div>
@@ -71,18 +71,18 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
       {/* Content */}
       {items.length === 0 ? (
         <div className="px-6 pb-6">
-          <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-10 px-6 text-center">
-            <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4">
-              <Lightning className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+          <div className="rounded-xl bg-surface-muted py-10 px-6 text-center">
+            <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mx-auto mb-4">
+              <Lightning className="h-5 w-5 text-fg-subtle" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-fg-subtle">
               {locale === 'es' ? 'Sin actividad reciente' : 'No recent activity'}
             </p>
           </div>
         </div>
       ) : (
         <div className="px-6 pb-5">
-          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <div className="divide-y divide-border-faint">
             {items.map((activity) => {
               const AgentIcon = AGENT_ICONS[activity.agentId] || ShieldCheck;
               const levelCfg = activity.metadata?.level ? {
@@ -100,8 +100,8 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   onClick={() => setSelectedActivity(activity)}
                   className={cn(
                     'flex items-start gap-3 py-3.5 first:pt-1 -mx-2 px-2 rounded-md transition-colors',
-                    'hover:bg-neutral-50 dark:hover:bg-white/[0.03] cursor-pointer',
-                    isEscalation && 'bg-warning-soft/50 dark:bg-warning/10 hover:bg-warning-soft',
+                    'hover:bg-surface-muted cursor-pointer',
+                    isEscalation && 'bg-warning-soft/50 hover:bg-warning-soft',
                   )}
                 >
                   {/* Agent icon with status dot */}
@@ -110,17 +110,17 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                       'rounded-full p-2',
                       activity.agentId === 'tenant-scoring'
                         ? 'bg-primary-soft'
-                        : 'bg-neutral-100 dark:bg-neutral-800',
+                        : 'bg-surface-muted',
                     )}>
                       <AgentIcon weight="duotone" className={cn(
                         'h-4 w-4',
                         activity.agentId === 'tenant-scoring'
                           ? 'text-primary'
-                          : 'text-neutral-600 dark:text-neutral-300',
+                          : 'text-fg-muted',
                       )} />
                     </div>
                     <div className={cn(
-                      'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#1a1a1c]',
+                      'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white',
                       activity.status === 'success' && 'bg-success',
                       activity.status === 'pending' && 'bg-warning',
                       activity.status === 'failed' && 'bg-danger',
@@ -130,7 +130,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                      <p className="text-sm font-medium text-fg truncate">
                         {activity.title}
                       </p>
                       {isEscalation && (
@@ -140,7 +140,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                       )}
                     </div>
                     {activity.description && (
-                      <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+                      <p className="text-[13px] text-fg-subtle mt-0.5 truncate">
                         {activity.description}
                       </p>
                     )}
@@ -157,7 +157,7 @@ export function AIAgentActivityFeed({ activities, maxItems = 6, className }: AIA
                   )}
 
                   {/* Timestamp */}
-                  <span className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500 tabular-nums whitespace-nowrap pt-0.5">
+                  <span className="flex-shrink-0 text-xs text-fg-subtle tabular-nums whitespace-nowrap pt-0.5">
                     {timeAgo(activity.timestamp, locale)}
                   </span>
                 </div>

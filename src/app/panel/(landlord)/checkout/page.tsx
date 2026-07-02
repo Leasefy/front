@@ -5,13 +5,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { CreditCard, Lock, Check, Buildings, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui';
+import { RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { CouponInput, PriceSummary } from '@/components/pricing';
 import { getPlanById } from '@/lib/constants/subscription-plans';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import { formatCurrency } from '@/lib/format';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 
 /**
@@ -112,7 +113,7 @@ function CheckoutContent() {
                         key={feature.id}
                         className="flex items-center gap-2 text-sm text-muted-foreground"
                       >
-                        <Check className="w-3.5 h-3.5 text-[#2C7A53] shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-success shrink-0" />
                         <span>{feature.name}</span>
                         {feature.limit && feature.limit !== 'unlimited' && (
                           <span className="text-muted-foreground">
@@ -131,47 +132,43 @@ function CheckoutContent() {
               <label className="text-sm font-medium text-foreground mb-3 block">
                 {t('landlord.checkout.billingCycle')}
               </label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setBillingCycle('monthly')}
-                  className={cn(
-                    'flex-1 p-4 rounded-sm border text-sm font-medium transition-colors text-left',
-                    billingCycle === 'monthly'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border text-muted-foreground hover:border-border'
-                  )}
-                >
-                  <span className="block">{t('landlord.checkout.monthly')}</span>
-                  <span className={cn(
-                    'block mt-1 text-lg font-bold',
-                    billingCycle === 'monthly' ? 'text-primary' : 'text-foreground'
-                  )}>
-                    {formatCurrency(plan.price.monthly)}
-                    <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perMonth')}</span>
-                  </span>
-                </button>
-                <button
-                  onClick={() => setBillingCycle('yearly')}
-                  className={cn(
-                    'flex-1 p-4 rounded-sm border text-sm font-medium transition-colors text-left relative',
-                    billingCycle === 'yearly'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border text-muted-foreground hover:border-border'
-                  )}
-                >
-                  <span className="absolute -top-2.5 right-3 px-2 py-0.5 text-xs font-medium bg-[#2C7A53] text-white rounded-sm">
-                    -20%
-                  </span>
-                  <span className="block">{t('landlord.checkout.yearly')}</span>
-                  <span className={cn(
-                    'block mt-1 text-lg font-bold',
-                    billingCycle === 'yearly' ? 'text-primary' : 'text-foreground'
-                  )}>
-                    {formatCurrency(plan.price.yearly)}
-                    <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perYear')}</span>
-                  </span>
-                </button>
-              </div>
+              <RadioCardGroup
+                value={billingCycle}
+                onValueChange={(value) => setBillingCycle(value as BillingCycle)}
+                aria-label={t('landlord.checkout.billingCycle')}
+              >
+                <RadioCard
+                  value="monthly"
+                  className="flex-1"
+                  label={
+                    <span className="block">
+                      <span className="block">{t('landlord.checkout.monthly')}</span>
+                      <span className="block mt-1 text-lg font-bold text-foreground">
+                        {formatCurrency(plan.price.monthly)}
+                        <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perMonth')}</span>
+                      </span>
+                    </span>
+                  }
+                />
+                <RadioCard
+                  value="yearly"
+                  className="flex-1"
+                  badge={
+                    <span className="px-2 py-0.5 text-xs font-medium bg-success text-white rounded-sm">
+                      -20%
+                    </span>
+                  }
+                  label={
+                    <span className="block">
+                      <span className="block">{t('landlord.checkout.yearly')}</span>
+                      <span className="block mt-1 text-lg font-bold text-foreground">
+                        {formatCurrency(plan.price.yearly)}
+                        <span className="text-sm font-normal text-muted-foreground">{t('landlord.checkout.perYear')}</span>
+                      </span>
+                    </span>
+                  }
+                />
+              </RadioCardGroup>
             </div>
 
             {/* Coupon input */}
@@ -213,7 +210,7 @@ function CheckoutContent() {
               >
                 {isProcessing ? (
                   <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <Spinner size="sm" variant="white" className="mr-2" />
                     {t('landlord.checkout.processing')}
                   </>
                 ) : (
@@ -259,7 +256,7 @@ export default function CheckoutPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     }>
       <CheckoutContent />

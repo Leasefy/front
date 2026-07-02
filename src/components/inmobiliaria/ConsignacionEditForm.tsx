@@ -14,11 +14,20 @@ import {
   Timer,
   User,
   Info,
-  SpinnerGap,
   FloppyDisk,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
+import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import type { Consignacion, ConsignacionFormData } from '@/lib/types/inmobiliaria';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 
@@ -73,13 +82,13 @@ function InputWrapper({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+      <label className="text-sm font-medium text-fg dark:text-fg-subtle">
         {label}
         {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
       {helper && !error && (
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">{helper}</p>
+        <p className="text-xs text-fg-muted dark:text-fg-subtle">{helper}</p>
       )}
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>
@@ -203,86 +212,59 @@ export function ConsignacionEditForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Property Info Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
+        <div className="flex items-center gap-2 text-fg dark:text-white">
           <Buildings className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.propertyInfo')}</h3>
         </div>
 
         {/* Property Type */}
         <InputWrapper label={t('inmobiliaria.consignaciones.editForm.propertyTypeLabel')} required error={errors.propertyType}>
-          <div className="grid grid-cols-3 gap-2">
+          <RadioCardGroup
+            className="grid grid-cols-3 gap-2"
+            value={formData.propertyType}
+            onValueChange={(v) => setFormData((prev) => ({ ...prev, propertyType: v as Consignacion['propertyType'] }))}
+          >
             {PROPERTY_TYPES.map((type) => {
               const Icon = type.icon;
-              const isSelected = formData.propertyType === type.value;
               return (
-                <button
+                <RadioCard
                   key={type.value}
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, propertyType: type.value }))}
-                  className={cn(
-                    'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all',
-                    isSelected
-                      ? 'border-primary/30 bg-primary-soft'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      'w-5 h-5',
-                      isSelected
-                        ? 'text-primary'
-                        : 'text-neutral-500 dark:text-neutral-400'
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      'text-xs font-medium',
-                      isSelected
-                        ? 'text-primary'
-                        : 'text-neutral-600 dark:text-neutral-400'
-                    )}
-                  >
-                    {t(type.labelKey)}
-                  </span>
-                </button>
+                  value={type.value}
+                  label={
+                    <span className="inline-flex flex-col items-center gap-1.5 text-center text-xs font-medium">
+                      <Icon className="w-5 h-5" />
+                      {t(type.labelKey)}
+                    </span>
+                  }
+                />
               );
             })}
-          </div>
+          </RadioCardGroup>
         </InputWrapper>
 
         {/* Title */}
         <InputWrapper label={t('inmobiliaria.consignaciones.editForm.propertyTitle')} required error={errors.propertyTitle}>
-          <input
+          <Input
             type="text"
             name="propertyTitle"
             value={formData.propertyTitle}
             onChange={handleChange}
             placeholder={t('inmobiliaria.consignaciones.editForm.propertyTitlePlaceholder')}
-            className={cn(
-              'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
-              errors.propertyTitle
-                ? 'border-danger/30'
-                : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-            )}
+            className={cn('w-full', errors.propertyTitle && 'border-danger/30')}
           />
         </InputWrapper>
 
         {/* Address */}
         <InputWrapper label={t('inmobiliaria.consignaciones.editForm.address')} required error={errors.propertyAddress}>
           <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-            <input
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+            <Input
               type="text"
               name="propertyAddress"
               value={formData.propertyAddress}
               onChange={handleChange}
               placeholder={t('inmobiliaria.consignaciones.editForm.addressPlaceholder')}
-              className={cn(
-                'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                errors.propertyAddress
-                  ? 'border-danger/30'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-              )}
+              className={cn('w-full pl-10', errors.propertyAddress && 'border-danger/30')}
             />
           </div>
         </InputWrapper>
@@ -290,47 +272,42 @@ export function ConsignacionEditForm({
         {/* City & Zone */}
         <div className="grid grid-cols-2 gap-4">
           <InputWrapper label={t('inmobiliaria.consignaciones.editForm.city')} required error={errors.propertyCity}>
-            <input
+            <Input
               type="text"
               name="propertyCity"
               value={formData.propertyCity}
               onChange={handleChange}
               placeholder={t('inmobiliaria.consignaciones.editForm.cityPlaceholder')}
-              className={cn(
-                'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                errors.propertyCity
-                  ? 'border-danger/30'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-              )}
+              className={cn('w-full', errors.propertyCity && 'border-danger/30')}
             />
           </InputWrapper>
 
           <InputWrapper label={t('inmobiliaria.consignaciones.editForm.zone')} required error={errors.propertyZone}>
-            <select
-              name="propertyZone"
-              value={formData.propertyZone}
-              onChange={handleChange}
-              className={cn(
-                'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white',
-                errors.propertyZone
-                  ? 'border-danger/30'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-              )}
+            <Select
+              value={formData.propertyZone || undefined}
+              onValueChange={(v) => {
+                setFormData((prev) => ({ ...prev, propertyZone: v }));
+                if (errors.propertyZone) setErrors((prev) => ({ ...prev, propertyZone: '' }));
+              }}
             >
-              <option value="">{t('inmobiliaria.consignaciones.editForm.selectZone')}</option>
-              {ZONES.map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className={cn('w-full', errors.propertyZone && 'border-danger/30')}>
+                <SelectValue placeholder={t('inmobiliaria.consignaciones.editForm.selectZone')} />
+              </SelectTrigger>
+              <SelectContent>
+                {ZONES.map((zone) => (
+                  <SelectItem key={zone} value={zone}>
+                    {zone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </InputWrapper>
         </div>
       </div>
 
       {/* Financial Info Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
+        <div className="flex items-center gap-2 text-fg dark:text-white">
           <CurrencyDollar className="w-5 h-5 text-success" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.financialInfo')}</h3>
         </div>
@@ -339,8 +316,8 @@ export function ConsignacionEditForm({
         <div className="grid grid-cols-2 gap-4">
           <InputWrapper label={t('inmobiliaria.consignaciones.editForm.monthlyRent')} required error={errors.monthlyRent}>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">$</span>
-              <input
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
+              <Input
                 type="number"
                 name="monthlyRent"
                 value={formData.monthlyRent}
@@ -348,20 +325,15 @@ export function ConsignacionEditForm({
                 placeholder="3200000"
                 min="0"
                 step="50000"
-                className={cn(
-                  'w-full pl-8 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  errors.monthlyRent
-                    ? 'border-danger/30'
-                    : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-                )}
+                className={cn('w-full pl-8', errors.monthlyRent && 'border-danger/30')}
               />
             </div>
           </InputWrapper>
 
           <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administration')} helper={t('common.optional')}>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">$</span>
-              <input
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
+              <Input
                 type="number"
                 name="adminFee"
                 value={formData.adminFee}
@@ -369,7 +341,7 @@ export function ConsignacionEditForm({
                 placeholder="250000"
                 min="0"
                 step="10000"
-                className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:border-primary/30 dark:focus:border-primary/30"
+                className="w-full pl-8"
               />
             </div>
           </InputWrapper>
@@ -379,7 +351,7 @@ export function ConsignacionEditForm({
         <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administrationCommission')} required error={errors.commissionPercent}>
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <input
+              <Input
                 type="number"
                 name="commissionPercent"
                 value={formData.commissionPercent}
@@ -388,14 +360,9 @@ export function ConsignacionEditForm({
                 min="1"
                 max="20"
                 step="0.5"
-                className={cn(
-                  'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  errors.commissionPercent
-                    ? 'border-danger/30'
-                    : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-                )}
+                className={cn('w-full pr-10', errors.commissionPercent && 'border-danger/30')}
               />
-              <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
             </div>
             {estimatedCommission > 0 && (
               <div className="px-3 py-2 rounded-md bg-success-soft text-success text-sm">
@@ -408,60 +375,53 @@ export function ConsignacionEditForm({
 
       {/* Contract Info Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
+        <div className="flex items-center gap-2 text-fg dark:text-white">
           <CalendarBlank className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.contractTerms')}</h3>
         </div>
 
         {/* Agent Selection */}
         <InputWrapper label={t('inmobiliaria.consignaciones.editForm.assignedAgent')} required error={errors.agenteId}>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-            <select
-              name="agenteId"
-              value={formData.agenteId}
-              onChange={handleChange}
-              className={cn(
-                'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white',
-                errors.agenteId
-                  ? 'border-danger/30'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-              )}
-            >
-              <option value="">{t('inmobiliaria.consignaciones.editForm.selectAgent')}</option>
+          <Select
+            value={formData.agenteId || undefined}
+            onValueChange={(v) => {
+              setFormData((prev) => ({ ...prev, agenteId: v }));
+              if (errors.agenteId) setErrors((prev) => ({ ...prev, agenteId: '' }));
+            }}
+          >
+            <SelectTrigger className={cn('w-full', errors.agenteId && 'border-danger/30')}>
+              <User className="w-5 h-5 text-fg-subtle shrink-0" />
+              <SelectValue placeholder={t('inmobiliaria.consignaciones.editForm.selectAgent')} />
+            </SelectTrigger>
+            <SelectContent>
               {agentes.map((agente) => (
-                <option key={agente.id} value={agente.id}>
+                <SelectItem key={agente.id} value={agente.id}>
                   {agente.name} - {agente.zone || t('inmobiliaria.consignaciones.editForm.noZone')}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-          </div>
+            </SelectContent>
+          </Select>
         </InputWrapper>
 
         {/* Contract Dates */}
         <div className="grid grid-cols-2 gap-4">
           <InputWrapper label={t('inmobiliaria.consignaciones.editForm.contractStartDate')} required error={errors.contractDate}>
-            <input
+            <Input
               type="date"
               name="contractDate"
               value={formData.contractDate}
               onChange={handleChange}
-              className={cn(
-                'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#141416] text-neutral-900 dark:text-white',
-                errors.contractDate
-                  ? 'border-danger/30'
-                  : 'border-neutral-200 dark:border-neutral-700 focus:border-primary/30 dark:focus:border-primary/30'
-              )}
+              className={cn('w-full', errors.contractDate && 'border-danger/30')}
             />
           </InputWrapper>
 
           <InputWrapper label={t('inmobiliaria.consignaciones.editForm.contractEndDate')} helper={t('common.optional')}>
-            <input
+            <Input
               type="date"
               name="contractEndDate"
               value={formData.contractEndDate}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white focus:border-primary/30 dark:focus:border-primary/30"
+              className="w-full"
             />
           </InputWrapper>
         </div>
@@ -469,8 +429,8 @@ export function ConsignacionEditForm({
         {/* Minimum Term */}
         <InputWrapper label={t('inmobiliaria.consignaciones.editForm.minimumLeaseTerm')} helper={t('inmobiliaria.consignaciones.editForm.inMonths')}>
           <div className="relative">
-            <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-            <input
+            <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+            <Input
               type="number"
               name="minimumTerm"
               value={formData.minimumTerm}
@@ -478,7 +438,7 @@ export function ConsignacionEditForm({
               placeholder="12"
               min="1"
               max="36"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:border-primary/30 dark:focus:border-primary/30"
+              className="w-full pl-10"
             />
           </div>
         </InputWrapper>
@@ -493,32 +453,33 @@ export function ConsignacionEditForm({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-        <button
+      <div className="flex items-center gap-3 pt-4 border-t border-faint dark:border-strong">
+        <Button
           type="button"
+          variant="secondary"
+          hideArrow
           onClick={onCancel}
           disabled={isSubmitting}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+          className="flex-1"
         >
           {t('inmobiliaria.consignaciones.editForm.cancel')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
+          hideArrow
           disabled={isSubmitting}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-medium hover:opacity-90 transition-colors disabled:opacity-70"
+          isLoading={isSubmitting}
+          className="flex-1"
         >
           {isSubmitting ? (
-            <>
-              <SpinnerGap className="w-4 h-4 animate-spin" />
-              {t('inmobiliaria.consignaciones.editForm.saving')}
-            </>
+            t('inmobiliaria.consignaciones.editForm.saving')
           ) : (
             <>
               <FloppyDisk className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.editForm.saveChanges')}
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

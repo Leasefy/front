@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,20 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+// Real Cadence Sidebar building blocks. The collapse/expand rail, nested-group
+// disclosure, disabled rows, `tag` pills and the collapse-aware brand are
+// composed AROUND these (the primitive does not model them — see ## Gaps in
+// CADENCE-COMPONENTS.md). Expanded leaf rows + group labels ARE the real
+// components so they inherit the DS hover/active/focus states.
+import {
+  SidebarSection,
+  SidebarItem,
+  SidebarWorkspaceSwitcher,
+  SidebarSearch,
+  SidebarInviteCard,
+  SidebarUpgradeButton,
+  type SidebarWorkspace,
+} from '@leasefy/cadence';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobile sidebar opener — module-level pub-sub.
@@ -78,11 +92,28 @@ export interface PlanSidebarProps {
   upgradeHref?: string;
   upgradeLabel?: string;
   profileCompletion?: ProfileCompletionConfig;
-  /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger). */
+  /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger).
+   *  Used as the search-slot fallback when `onSearchClick` is not provided. */
   aboveNav?: React.ReactNode;
   /** When true, the nav list is replaced by a skeleton placeholder (e.g. while
    *  permissions load) so permission-gated items never flash in then disappear. */
   loading?: boolean;
+  // ── cadence §Navigation composition (workspace switcher + search + footer) ──
+  /** Opens the command palette when the cadence SidebarSearch is clicked. When
+   *  set, SidebarSearch replaces the `aboveNav` slot. */
+  onSearchClick?: () => void;
+  /** Placeholder for the cadence SidebarSearch field. */
+  searchPlaceholder?: string;
+  /** Workspace name shown in the header switcher (defaults to `logo.title`). */
+  workspaceName?: string;
+  /** Workspaces listed in the header switcher dropdown. */
+  workspaces?: SidebarWorkspace[];
+  /** Fired when a workspace row is chosen. */
+  onWorkspaceSelect?: (id: string) => void;
+  /** Show the "Invita a tu equipo" footer card (cadence §Navigation). */
+  showInvite?: boolean;
+  /** Handler for the invite-card button. */
+  onInvite?: () => void;
 }
 
 interface NavItemComponentProps {
@@ -108,16 +139,14 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
 
   const isChildActive = hasChildren && checkChildActive(item.children!);
 
-  // Group label (desktop sidebar only). Collapsed → thin divider.
+  // Group label. Collapsed → thin divider (the DS SidebarSection always shows
+  // its label, so the icon-rail divider stays composed — see ## Gaps).
+  // Expanded → the real Cadence SidebarSection (uppercase mono label).
   if (item.kind === 'section') {
     if (isCollapsed) {
       return <div className="mx-2 my-2 border-t border-plan-border/60" aria-hidden="true" />;
     }
-    return (
-      <p className="px-4 pt-4 pb-1.5 text-[11px] font-mono font-medium uppercase tracking-wider text-plan-muted select-none">
-        {item.label}
-      </p>
-    );
+    return <SidebarSection label={item.label} />;
   }
 
   if (item.disabled) {
@@ -152,15 +181,18 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
             'w-full flex items-center gap-3 px-4 py-2 text-[13px]',
             'transition-colors duration-100',
             (isActive || isChildActive)
-              ? 'text-plan-primary font-medium'
+              ? 'text-primary font-medium'
               : 'text-plan-secondary hover:text-plan-primary',
             isCollapsed && 'justify-center px-2'
           )}
         >
-          <Icon className={cn(
-            'w-[18px] h-[18px] stroke-[1.5px]',
-            (isActive || isChildActive) ? 'text-plan-primary' : 'text-plan-muted'
-          )} />
+          <Icon
+            weight={(isActive || isChildActive) ? 'duotone' : 'regular'}
+            className={cn(
+              'w-[18px] h-[18px] stroke-[1.5px]',
+              (isActive || isChildActive) ? 'text-primary' : 'text-plan-muted'
+            )}
+          />
           {!isCollapsed && (
             <>
               <span className="flex-1 text-left">{item.label}</span>
@@ -191,39 +223,49 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
     );
   }
 
-  return (
-    <Link
-      href={item.href}
-      onClick={onClick}
-      aria-current={isActive ? 'page' : undefined}
-      data-tour-target={item.dataTourTarget}
-      className={cn(
-        'flex items-center gap-3 px-3 py-2.5 text-[14px] rounded-full',
-        'transition-colors',
-        isActive
-          ? 'text-foreground font-medium bg-neutral-100 dark:bg-[#1f1f21]'
-          : 'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-[#1a1a1c]',
-        isCollapsed && 'justify-center px-2.5',
-        depth > 0 && 'pl-4'
-      )}
-      title={isCollapsed ? item.label : undefined}
-    >
-      <Icon className={cn(
-        'w-[18px] h-[18px]',
-        isActive ? 'text-foreground' : 'text-muted-foreground'
-      )} />
-      {!isCollapsed && (
-        <>
-          <span className="flex-1">{item.label}</span>
-          {item.badge !== undefined && item.badge > 0 && (
-            <span className="min-w-[20px] h-5 px-1.5 bg-primary text-white uppercase tracking-wide font-mono text-[11px] font-medium flex items-center justify-center rounded-full">
-              {item.badge}
-            </span>
-          )}
-        </>
-      )}
+  // Collapsed icon-rail row: SidebarItem has no icon-only/collapsed mode, so the
+  // rail row stays composed (see ## Gaps). title + data-tour-target preserved.
+  if (isCollapsed) {
+    return (
+      <Link
+        href={item.href}
+        onClick={onClick}
+        aria-current={isActive ? 'page' : undefined}
+        data-tour-target={item.dataTourTarget}
+        title={item.label}
+        className={cn(
+          'flex items-center justify-center px-2.5 py-2.5 rounded-full transition-colors',
+          isActive
+            ? 'text-primary bg-accent-soft'
+            : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
+        )}
+      >
+        <Icon
+          weight={isActive ? 'duotone' : 'regular'}
+          className={cn('w-[18px] h-[18px]', isActive ? 'text-primary' : 'text-fg-muted')}
+        />
+      </Link>
+    );
+  }
+
+  // Expanded leaf row — the REAL Cadence SidebarItem (owns hover/active/focus).
+  // legacyBehavior + passHref bridges Next client routing onto the DS anchor.
+  // SidebarItemProps (HTMLAttributes) can't type data-*, so the PanelTour hook
+  // rides on a minimal wrapper only when present.
+  const row = (
+    <Link href={item.href} legacyBehavior passHref>
+      <SidebarItem
+        icon={<Icon weight={isActive ? 'duotone' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-primary')} />}
+        label={item.label}
+        active={isActive}
+        count={item.badge !== undefined && item.badge > 0 ? item.badge : undefined}
+        depth={depth}
+        onClick={onClick}
+      />
     </Link>
   );
+
+  return item.dataTourTarget ? <div data-tour-target={item.dataTourTarget}>{row}</div> : row;
 }
 
 /**
@@ -239,7 +281,7 @@ function NavSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
       {groups.map((rows, gi) => (
         <div key={gi} className="space-y-1.5">
           {!isCollapsed && (
-            <div className="ml-4 h-2 w-16 rounded bg-neutral-200/80 dark:bg-neutral-700/50 animate-pulse" />
+            <div className="ml-4 h-2 w-16 rounded bg-surface-muted animate-pulse" />
           )}
           {rows.map((w, ri) => (
             <div
@@ -249,10 +291,10 @@ function NavSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               )}
             >
-              <div className="h-[18px] w-[18px] flex-shrink-0 rounded-md bg-neutral-200/80 dark:bg-neutral-700/50 animate-pulse" />
+              <div className="h-[18px] w-[18px] flex-shrink-0 rounded-lg bg-surface-muted animate-pulse" />
               {!isCollapsed && (
                 <div
-                  className="h-3 rounded bg-neutral-200/70 dark:bg-neutral-700/40 animate-pulse"
+                  className="h-3 rounded bg-surface-muted animate-pulse"
                   style={{ width: `${w}%` }}
                 />
               )}
@@ -277,6 +319,13 @@ interface SidebarContentProps {
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
   loading?: boolean;
+  onSearchClick?: () => void;
+  searchPlaceholder?: string;
+  workspaceName?: string;
+  workspaces?: SidebarWorkspace[];
+  onWorkspaceSelect?: (id: string) => void;
+  showInvite?: boolean;
+  onInvite?: () => void;
 }
 
 function SidebarContent({
@@ -286,11 +335,22 @@ function SidebarContent({
   onCollapse,
   onItemClick,
   showCollapseButton = true,
+  showUpgrade = false,
+  upgradeHref,
+  upgradeLabel,
   profileCompletion,
   aboveNav,
   loading = false,
+  onSearchClick,
+  searchPlaceholder,
+  workspaceName,
+  workspaces,
+  onWorkspaceSelect,
+  showInvite = false,
+  onInvite,
 }: SidebarContentProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
 
   const isActive = (item: NavItem) => {
@@ -299,7 +359,7 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-card relative">
+    <div className="flex flex-col h-full bg-bg relative">
       {/* Collapse Button */}
       {showCollapseButton && (
         <button
@@ -308,11 +368,11 @@ function SidebarContent({
           aria-expanded={!isCollapsed}
           className={cn(
             'absolute top-6 -right-3 z-50',
-            'w-6 h-6 rounded-full bg-white dark:bg-card',
-            'border border-neutral-200 dark:border-border',
+            'w-6 h-6 rounded-full bg-surface',
+            'border border-border',
             'flex items-center justify-center',
-            'text-neutral-400 hover:text-neutral-600',
-            'shadow-sm transition-colors',
+            'text-fg-subtle hover:text-fg-muted',
+            'shadow-xs transition-colors',
             // ≥44px hit target without changing the 24px visual (24 + 2×10 = 44)
             "before:absolute before:-inset-2.5 before:rounded-full before:content-['']",
             'outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1'
@@ -326,24 +386,48 @@ function SidebarContent({
         </button>
       )}
 
-      {/* Logo */}
-      <div className={cn(
-        'h-[60px] flex items-center',
-        isCollapsed ? 'justify-center px-2' : 'px-5'
-      )}>
-        <Link href="/" className="flex items-center" onClick={onItemClick}>
-          {isCollapsed ? (
+      {/* Header — cadence §Navigation workspace switcher (expanded) or the
+          brand mark on the collapsed rail. */}
+      {isCollapsed ? (
+        <div className="h-[60px] flex items-center justify-center px-2">
+          <Link href={logo?.href ?? '/'} className="flex items-center" onClick={onItemClick}>
             <LeasefyMark variant="tile" size={32} />
-          ) : (
+          </Link>
+        </div>
+      ) : workspaceName || (workspaces && workspaces.length > 0) ? (
+        <div className="px-3 pt-3">
+          <SidebarWorkspaceSwitcher
+            name={workspaceName ?? logo?.title ?? 'Leasefy'}
+            workspaces={workspaces}
+            onSelect={onWorkspaceSelect}
+          />
+        </div>
+      ) : (
+        // Fallback for layouts that don't opt into the switcher — original brand logo.
+        <div className="h-[60px] flex items-center px-5">
+          <Link href={logo?.href ?? '/'} className="flex items-center" onClick={onItemClick}>
             <LeasefyLogo orientation="horizontal" size={30} tone="auto" />
-          )}
-        </Link>
-      </div>
+          </Link>
+        </div>
+      )}
 
-      {/* ⌘K / above-nav slot */}
-      {aboveNav && !isCollapsed && (
+      {/* Search — cadence SidebarSearch opens the command palette (⌘K).
+          Falls back to the aboveNav slot for layouts that don't wire it. */}
+      {!isCollapsed && (onSearchClick || aboveNav) && (
         <div className="px-3 pb-1">
-          {aboveNav}
+          {onSearchClick ? (
+            <SidebarSearch
+              readOnly
+              placeholder={searchPlaceholder ?? 'Buscar'}
+              className="cursor-pointer"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSearchClick();
+              }}
+            />
+          ) : (
+            aboveNav
+          )}
         </div>
       )}
 
@@ -394,23 +478,23 @@ function SidebarContent({
             <Link
               href={profileCompletion.href}
               onClick={onItemClick}
-              className="block p-3 rounded-xl bg-neutral-100 dark:bg-[#2a2a2e] border border-transparent dark:border-[#3a3a3e] hover:bg-neutral-200/70 dark:hover:bg-[#323236] transition-colors group"
+              className="block p-3 rounded-xl bg-surface-muted border border-border-faint hover:bg-surface-hover transition-colors group"
             >
               {/* Header with progress */}
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[13px] font-medium text-neutral-900 dark:text-white">
+                <p className="text-[13px] font-medium text-fg">
                   {profileCompletion.label || (locale === 'es' ? 'Completa tu perfil' : 'Complete your profile')}
                 </p>
-                <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+                <span className="text-[11px] font-medium font-mono tabular-nums text-fg-subtle">
                   {completedCount}/{totalSteps}
                 </span>
               </div>
 
               {/* Progress bar */}
-              <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mb-3">
+              <div className="h-1.5 bg-border rounded-full overflow-hidden mb-3">
                 <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${profileCompletion.percentage}%`, backgroundColor: '#1A40FF' }}
+                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  style={{ width: `${profileCompletion.percentage}%` }}
                 />
               </div>
 
@@ -418,8 +502,8 @@ function SidebarContent({
               {completedSteps.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {completedSteps.map((step) => (
-                    <span key={step.id} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#E8F3EC] text-[#2C7A53] text-[10px] font-medium rounded">
-                      <CheckCircle className="w-2.5 h-2.5" />
+                    <span key={step.id} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success-soft text-success text-[10px] font-medium rounded-md">
+                      <CheckCircle className="w-2.5 h-2.5" weight="fill" />
                       {locale === 'es' ? step.labelEs : step.labelEn}
                     </span>
                   ))}
@@ -428,26 +512,26 @@ function SidebarContent({
 
               {/* Next step - highlighted */}
               {nextStep && (
-                <div className="flex items-center gap-2 p-2 bg-white dark:bg-[#141416] rounded-md border border-neutral-200 dark:border-neutral-700 group-hover:border-neutral-300 dark:group-hover:border-neutral-600 transition-colors">
-                  <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: '#1A40FF', backgroundColor: '#EEF1FF' }}>
+                <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border group-hover:border-border-strong transition-colors">
+                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-accent-soft flex items-center justify-center flex-shrink-0">
                     <span className="font-mono text-[9px] font-bold text-primary">{completedCount + 1}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium text-neutral-900 dark:text-white truncate">
+                    <p className="text-[11px] font-medium text-fg truncate">
                       {locale === 'es' ? nextStep.labelEs : nextStep.labelEn}
                     </p>
-                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                    <p className="text-[10px] text-fg-subtle">
                       {locale === 'es' ? 'Siguiente paso' : 'Next step'}
                     </p>
                   </div>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors flex-shrink-0" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-fg-subtle group-hover:text-fg-muted transition-colors flex-shrink-0" />
                 </div>
               )}
 
               {/* If no completed steps and no next step, show a start message */}
               {completedSteps.length === 0 && !nextStep && (
-                <div className="flex items-center gap-2 p-2 bg-white dark:bg-[#141416] rounded-md border border-neutral-200 dark:border-neutral-700">
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border">
+                  <p className="text-[11px] text-fg-subtle">
                     {locale === 'es' ? 'Comienza configurando tu perfil' : 'Start by setting up your profile'}
                   </p>
                 </div>
@@ -457,20 +541,41 @@ function SidebarContent({
         );
       })()}
 
-      {/* Help Link */}
-      <div className="px-3 pb-3">
-        <Link
-          href="/ayuda"
-          onClick={onItemClick}
-          className={cn(
-            'flex items-center gap-3 px-3 py-2 rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-neutral-100 dark:hover:bg-[#1a1a1c] transition-colors',
-            isCollapsed && 'justify-center px-2'
+      {/* Footer — cadence §Navigation: invite card + upgrade CTA, then Help.
+          Collapsed rail shows only the Help icon. */}
+      {isCollapsed ? (
+        <div className="px-2 pb-3">
+          <Link
+            href="/ayuda"
+            onClick={onItemClick}
+            title="Ayuda"
+            className="flex items-center justify-center px-2.5 py-2.5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+          >
+            <Question className="w-[18px] h-[18px]" />
+          </Link>
+        </div>
+      ) : (
+        <div className="px-3 pb-3 space-y-2.5">
+          {showInvite && <SidebarInviteCard onInvite={onInvite} />}
+          {showUpgrade && (
+            <SidebarUpgradeButton
+              label={upgradeLabel ?? 'Upgrade'}
+              onClick={() => {
+                if (upgradeHref) router.push(upgradeHref);
+                onItemClick?.();
+              }}
+            />
           )}
-        >
-          <Question className="w-[18px] h-[18px]" />
-          {!isCollapsed && <span>Ayuda</span>}
-        </Link>
-      </div>
+          <Link
+            href="/ayuda"
+            onClick={onItemClick}
+            className="flex items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+          >
+            <Question className="w-[18px] h-[18px]" />
+            <span>Ayuda</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -486,6 +591,13 @@ export function PlanSidebar({
   profileCompletion,
   aboveNav,
   loading = false,
+  onSearchClick,
+  searchPlaceholder,
+  workspaceName,
+  workspaces,
+  onWorkspaceSelect,
+  showInvite = false,
+  onInvite,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -506,7 +618,7 @@ export function PlanSidebar({
       <aside
         className={cn(
           'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0',
-          'bg-white dark:bg-card border-r border-neutral-200 dark:border-border',
+          'bg-bg border-r border-border',
           'transition-all duration-200',
           isCollapsed ? 'lg:w-16' : 'lg:w-[240px]',
           className
@@ -523,6 +635,13 @@ export function PlanSidebar({
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
           loading={loading}
+          onSearchClick={onSearchClick}
+          searchPlaceholder={searchPlaceholder}
+          workspaceName={workspaceName}
+          workspaces={workspaces}
+          onWorkspaceSelect={onWorkspaceSelect}
+          showInvite={showInvite}
+          onInvite={onInvite}
         />
       </aside>
 
@@ -530,7 +649,7 @@ export function PlanSidebar({
           openPlanMobileSidebar() (the old floating hamburger overlapped the
           header search input and was removed). */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[280px] p-0 bg-white dark:bg-card border-r-0">
+        <SheetContent side="left" className="w-[280px] p-0 bg-bg border-r-0">
           <SheetHeader className="sr-only">
             <SheetTitle>List de navegacion</SheetTitle>
           </SheetHeader>
@@ -547,6 +666,27 @@ export function PlanSidebar({
             profileCompletion={profileCompletion}
             aboveNav={aboveNav}
             loading={loading}
+            onSearchClick={
+              onSearchClick
+                ? () => {
+                    setMobileOpen(false);
+                    onSearchClick();
+                  }
+                : undefined
+            }
+            searchPlaceholder={searchPlaceholder}
+            workspaceName={workspaceName}
+            workspaces={workspaces}
+            onWorkspaceSelect={onWorkspaceSelect}
+            showInvite={showInvite}
+            onInvite={
+              onInvite
+                ? () => {
+                    setMobileOpen(false);
+                    onInvite();
+                  }
+                : undefined
+            }
           />
         </SheetContent>
       </Sheet>

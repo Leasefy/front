@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Button as DSButton, buttonVariants as dsButtonVariants } from "@leasefy/ui"
+import { Button as DSButton, buttonVariants as dsButtonVariants } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Button de @leasefy/ui que preserva la API local del mvp:
+ * ADAPTER fino sobre el Button de @leasefy/cadence que preserva la API local del mvp:
  * - variant: default/white/destructive/outline/secondary/glass/ghost/link
  *   (default → primary del DS; white/glass viven ahora en el DS).
  * - size: default/sm/lg/icon (default → md del DS + h-10 por fidelidad).

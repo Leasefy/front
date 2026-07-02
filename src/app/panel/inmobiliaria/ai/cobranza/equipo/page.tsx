@@ -21,8 +21,14 @@ import {
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { useI18n } from '@/lib/i18n'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import {
   EquipoCobranzaPersona,
   type EquipoCobranzaPersonaData,
@@ -182,21 +188,10 @@ const LOTE_EJEMPLO: { agente: string; trabajo: string; estado: string; resultado
 ]
 
 function EquipoCobranzaContent() {
-  const { t } = useI18n()
-
   return (
     <main className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/cobranza"
-          icon={Robot}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.cobranza.overview.title'), href: '/panel/inmobiliaria/ai/cobranza' },
-            { label: 'Equipo IA' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">Equipo IA de cobranza</h1>
         <p className="text-sm text-fg-muted max-w-2xl">
           Un equipo de IA coordina la recuperación de cartera de punta a punta: contacta, registra
@@ -260,26 +255,26 @@ function EquipoCobranzaContent() {
           <p className="text-xs uppercase tracking-wide text-fg-muted">Ejemplo ilustrativo</p>
         </div>
         <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-fg-muted">
-                <th className="px-4 py-2.5 font-medium">Agente</th>
-                <th className="px-4 py-2.5 font-medium">Trabajo</th>
-                <th className="px-4 py-2.5 font-medium">Estado</th>
-                <th className="px-4 py-2.5 font-medium">Resultado</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Agente</TableHead>
+                <TableHead>Trabajo</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Resultado</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {LOTE_EJEMPLO.map((row) => (
-                <tr key={row.agente} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2.5 font-medium text-fg">{row.agente}</td>
-                  <td className="px-4 py-2.5 text-fg-muted">{row.trabajo}</td>
-                  <td className="px-4 py-2.5 text-fg-muted">{row.estado}</td>
-                  <td className="px-4 py-2.5 text-fg-muted">{row.resultado}</td>
-                </tr>
+                <TableRow key={row.agente} className="border-b border-border last:border-0">
+                  <TableCell className="px-4 py-2.5 font-medium text-fg">{row.agente}</TableCell>
+                  <TableCell className="px-4 py-2.5 text-fg-muted">{row.trabajo}</TableCell>
+                  <TableCell className="px-4 py-2.5 text-fg-muted">{row.estado}</TableCell>
+                  <TableCell className="px-4 py-2.5 text-fg-muted">{row.resultado}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
     </main>

@@ -3,7 +3,7 @@
 /**
  * /preview-ds — Public, self-contained design-system preview
  *
- * The inmobiliaria dashboard rendered with REAL @leasefy/ui components
+ * The inmobiliaria dashboard rendered with REAL @leasefy/cadence components
  * (KpiCard, Eyebrow, StatusBadge, BrandMark, Table, Card, Button,
  * QuickActionChips) instead of hand-rolled replicas. No auth, providers,
  * i18n or data hooks. All data is Colombian demo fixtures.
@@ -35,7 +35,7 @@ import {
   TD,
   QuickActionChips,
   cn,
-} from '@leasefy/ui';
+} from '@leasefy/cadence';
 import {
   Buildings,
   House,
@@ -152,7 +152,7 @@ function SectionHeader({ title, sub, link, dot }: { title: string; sub?: string;
 function Sidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-[188px] flex-shrink-0 flex-col overflow-y-auto border-r border-border-faint bg-surface">
-      {/* Brand header — official monogram tile from @leasefy/ui */}
+      {/* Brand header — official monogram tile from @leasefy/cadence */}
       <div className="flex items-center gap-2.5 border-b border-border-faint px-3.5 py-3.5">
         <BrandMark size={22} />
         <span className="font-display text-[13.5px] font-medium tracking-[-0.01em] text-fg">
@@ -536,7 +536,7 @@ export default function PreviewDSPage() {
           {/* ── Page header — premium opening ── */}
           <div className="flex items-end justify-between">
             <div>
-              {/* Eyebrow from @leasefy/ui — BrandDot + mono label, accent blue */}
+              {/* Eyebrow from @leasefy/cadence — BrandDot + mono label, accent blue */}
               <Eyebrow accent className="mb-2">
                 Inmobiliaria · Junio 2026
               </Eyebrow>
@@ -766,7 +766,7 @@ export default function PreviewDSPage() {
 
           {/* ── Footer ── */}
           <p className="mt-14 text-center font-mono text-[10.5px] uppercase tracking-[0.07em] text-fg-subtle">
-            Datos actualizados hace 4 minutos · Leasefy DS Preview · @leasefy/ui
+            Datos actualizados hace 4 minutos · Leasefy DS Preview · @leasefy/cadence
           </p>
         </div>
       </div>

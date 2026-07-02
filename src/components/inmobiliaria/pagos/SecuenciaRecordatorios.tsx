@@ -17,6 +17,7 @@
 import type { Icon } from '@phosphor-icons/react'
 
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 
 // ── Tono del nodo (familias del vocabulario de pagos) ────────────────────────
 
@@ -88,9 +89,7 @@ export function SecuenciaRecordatorios({ pasos, className }: SecuenciaRecordator
                   {paso.cuando}
                 </span>
                 {paso.esEscalacion && (
-                  <span className="inline-flex items-center rounded-full border border-danger/30 bg-danger-soft px-2 py-0.5 text-[11px] font-medium text-danger">
-                    Pasa a cobranza
-                  </span>
+                  <Badge variant="destructive">Pasa a cobranza</Badge>
                 )}
               </div>
               <h3 className="mt-0.5 text-base font-semibold text-fg">{paso.titulo}</h3>

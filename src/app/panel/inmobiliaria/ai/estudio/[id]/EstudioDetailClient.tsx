@@ -16,11 +16,12 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { ShieldCheck, FileMagnifyingGlass, Spinner, ArrowClockwise } from '@phosphor-icons/react'
+import { FileMagnifyingGlass, ArrowClockwise } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Spinner } from '@/components/ui'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { useEstudioRun } from '@/lib/hooks/estudio/use-estudio-run'
 import type { EstudioActionCode } from '@/lib/estudio/decision'
@@ -88,13 +89,13 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
   }
 
   const queryTab = searchParams.get('tab')
-  const [activeTab, setActiveTab] = useState<TabKey>(
+  const [activeTab, setTab] = useState<TabKey>(
     (TAB_KEYS as string[]).includes(queryTab ?? '') ? (queryTab as TabKey) : 'decision',
   )
 
   const onTabChange = useCallback(
     (k: TabKey) => {
-      setActiveTab(k)
+      setTab(k)
       const params = new URLSearchParams(searchParams.toString())
       params.set('tab', k)
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
@@ -125,15 +126,6 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
   if (notAvailable) {
     return (
       <main className="p-4 lg:p-8 max-w-7xl mx-auto">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/estudio/estudios"
-          icon={ShieldCheck}
-          className="mb-4"
-          crumbs={[
-            { label: tf(`${NS}.list.title`, 'Estudios'), href: '/panel/inmobiliaria/ai/estudio/estudios' },
-            { label: tf(`${NS}.detalle.noDisponible`, 'No disponible') },
-          ]}
-        />
         <EmptyState
           icon={FileMagnifyingGlass}
           title={tf(`${NS}.detalle.noDisponibleTitulo`, 'Estudio no disponible')}
@@ -156,16 +148,6 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
     <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-8">
       {/* Header */}
       <header className="mb-5">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/estudio/estudios"
-          icon={ShieldCheck}
-          className="mb-2"
-          crumbs={[
-            { label: tf('inmobiliaria.ai.nav.estudio', 'Estudio del inquilino'), href: '/panel/inmobiliaria/ai/estudio' },
-            { label: tf(`${NS}.list.title`, 'Estudios'), href: '/panel/inmobiliaria/ai/estudio/estudios' },
-            { label: tf(`${NS}.detalle.titulo`, 'Detalle del estudio') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {tf(`${NS}.detalle.titulo`, 'Detalle del estudio')}
         </h1>
@@ -208,7 +190,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
             <div className="rounded-xl border border-border bg-card p-8 text-center">
               {inProgress ? (
                 <>
-                  <Spinner className="w-6 h-6 mx-auto animate-spin text-primary" weight="bold" aria-hidden="true" />
+                  <Spinner size="md" className="mx-auto" aria-hidden="true" />
                   <p className="mt-3 text-sm text-fg-muted">
                     {tf(`${NS}.detalle.enProceso`, 'El estudio está en proceso. Te mostraremos la decisión apenas termine.')}
                   </p>
@@ -220,32 +202,24 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
               )}
             </div>
           ) : (
-            <>
-              <nav
-                role="tablist"
+            <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as TabKey)}>
+              <TabsList
+                variant="underline"
                 aria-label={tf(`${NS}.detalle.expediente`, 'Expediente')}
-                className="flex items-center gap-1 border-b border-border overflow-x-auto"
               >
                 {TAB_KEYS.map((k) => (
-                  <button
+                  <TabsTrigger
                     key={k}
-                    role="tab"
-                    aria-selected={activeTab === k}
-                    onClick={() => onTabChange(k)}
+                    value={k}
                     data-testid={`tab-${k}`}
-                    className={
-                      'px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ' +
-                      (activeTab === k
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-fg-muted hover:text-fg')
-                    }
+                    className="whitespace-nowrap"
                   >
                     {tf(`${NS}.detalle.tabs.${k}`, TAB_LABELS_ES[k])}
-                  </button>
+                  </TabsTrigger>
                 ))}
-              </nav>
+              </TabsList>
 
-              <div>
+              <TabsContent value={activeTab}>
                 {activeTab === 'decision' && <DecisionTab decision={decision} onAction={onAction} />}
                 {activeTab === 'indicadores' && <IndicadoresTab decision={decision} />}
                 {activeTab === 'documentos' && <DocumentosTab result={result} />}
@@ -257,8 +231,8 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
                 )}
                 {activeTab === 'codeudores' && <CodeudoresTab decision={decision} result={result} />}
                 {activeTab === 'reporte' && <ReporteTab decision={decision} result={result} />}
-              </div>
-            </>
+              </TabsContent>
+            </Tabs>
           )}
         </section>
 

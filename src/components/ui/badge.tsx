@@ -1,10 +1,10 @@
 import * as React from "react"
-import { Badge as DSBadge } from "@leasefy/ui"
+import { Badge as DSBadge } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Badge de @leasefy/ui que preserva la API local del mvp:
+ * ADAPTER fino sobre el Badge de @leasefy/cadence que preserva la API local del mvp:
  * - variant: default/secondary/destructive/outline/success/warning/risk-a..d
  *   (default → primary del DS, secondary → neutral, destructive → danger).
  * - Los variants risk-* (scoring de inquilinos) no existen en el DS: se

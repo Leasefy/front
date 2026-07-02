@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 import { LeasefyLogo, LeasefyWordmark } from '@/components/brand';
 import Link from 'next/link';
-import Image from 'next/image';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { motion } from 'framer-motion';
 import { ArrowRight } from '@phosphor-icons/react';
@@ -48,25 +47,32 @@ export default function AuthPage() {
   return (
     <ForceLightMode>
     <div className="min-h-screen flex flex-col lg:flex-row bg-background" data-lenis-prevent>
-      {/* Left Panel — brand hero: the neon-lobby photograph (official mark in
-          neon over the navy wall) as full-bleed field. Copy sits small and
-          bottom-anchored so it never fights the image; labels in Ubuntu Mono. */}
-      <div className="hidden lg:flex lg:w-[55%] lg:fixed lg:inset-y-0 lg:left-0 relative overflow-hidden bg-[#04081a]">
-        <Image
-          src="/images/auth-hero.jpg"
-          alt=""
-          fill
-          priority
-          sizes="55vw"
-          className="object-cover"
-        />
-        {/* Legibility veils — bottom grounding + faint top-left for the wordmark.
-            Kept low so the neon glow stays intact. */}
+      {/* Left Panel — brand hero: Cadence grainy gradient (Aurora — cobalt·cyan·lime)
+          as a full-bleed field. Copy sits small and bottom-anchored; labels in
+          JetBrains Mono. Replaces the legacy navy photo. */}
+      <div className="hidden lg:flex lg:w-[55%] lg:fixed lg:inset-y-0 lg:left-0 relative overflow-hidden bg-[#0C1F80]">
+        {/* Cadence signature: layered radial blobs + linear base */}
         <div
-          className="absolute inset-0 z-[1]"
+          className="absolute inset-0 z-0"
           style={{
             background:
-              'linear-gradient(to top, rgba(2,5,16,0.88) 0%, rgba(2,5,16,0.55) 18%, rgba(2,5,16,0) 46%), linear-gradient(135deg, rgba(2,5,16,0.45) 0%, rgba(2,5,16,0) 26%)',
+              'radial-gradient(120% 130% at 10% 14%, rgba(26,64,255,0.95) 0%, rgba(26,64,255,0) 56%), radial-gradient(110% 120% at 90% 24%, rgba(43,181,232,0.55) 0%, rgba(43,181,232,0) 52%), radial-gradient(120% 120% at 74% 96%, rgba(125,224,138,0.40) 0%, rgba(125,224,138,0) 56%), linear-gradient(140deg, #1A40FF 0%, #0C1F80 58%, #081555 100%)',
+          }}
+        />
+        {/* Cadence signature: grain overlay (feTurbulence fractal noise) */}
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none mix-blend-overlay opacity-[0.45]"
+          style={{
+            backgroundImage:
+              `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          }}
+        />
+        {/* Bottom grounding veil for copy legibility */}
+        <div
+          className="absolute inset-0 z-[2]"
+          style={{
+            background:
+              'linear-gradient(to top, rgba(8,21,85,0.60) 0%, rgba(8,21,85,0) 42%)',
           }}
         />
 
@@ -102,7 +108,7 @@ export default function AuthPage() {
             >
               {FEATURES.map((feature, i) => (
                 <div key={i} className="flex items-baseline gap-3">
-                  <span className="w-1 h-1 rounded-[1px] bg-[#5C7CFF] flex-shrink-0 translate-y-[-2px]" />
+                  <span className="w-1 h-1 rounded-[1px] bg-[#7DE08A] flex-shrink-0 translate-y-[-2px]" />
                   <div>
                     <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-white/90 leading-none">
                       {feature.label}
@@ -140,7 +146,7 @@ export default function AuthPage() {
           <div className="w-full max-w-[400px] mx-auto flex items-center justify-between">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#0B1220] transition-colors group"
+              className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors group"
             >
               <ArrowRight className="w-4 h-4 rotate-180 group-hover:-translate-x-0.5 transition-transform" />
               Inicio
@@ -163,11 +169,11 @@ export default function AuthPage() {
             {/* Footer */}
             <p className="mt-10 text-[11.5px] text-neutral-400 leading-relaxed">
               Al continuar, aceptas nuestros{' '}
-              <Link href="/terminos" className="text-neutral-600 hover:text-[#0B1220] underline-offset-2 hover:underline">
+              <Link href="/terminos" className="text-neutral-600 hover:text-[#14130f] underline-offset-2 hover:underline">
                 Términos
               </Link>{' '}
               y{' '}
-              <Link href="/privacidad" className="text-neutral-600 hover:text-[#0B1220] underline-offset-2 hover:underline">
+              <Link href="/privacidad" className="text-neutral-600 hover:text-[#14130f] underline-offset-2 hover:underline">
                 Política de Privacidad
               </Link>
             </p>

@@ -11,12 +11,10 @@ import {
   IdentificationCard,
   User,
   Certificate,
-  CaretDown,
   Percent,
   Calendar,
   Bell,
   Check,
-  SpinnerGap,
   Warning,
   Info,
   X,
@@ -24,7 +22,17 @@ import {
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
+import {
+  Button,
+  Input,
+  Textarea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
+import { Chip } from '@leasefy/cadence';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type {
@@ -353,19 +361,14 @@ export function ConfigPerfilAgencia({
           >
             <div className="relative">
               <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 value={formData.name}
                 onChange={(e) => {
                   setFormData((prev) => ({ ...prev, name: e.target.value }));
                   setTouched((prev) => ({ ...prev, name: true }));
                 }}
-                className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                  touched.name && errors.name
-                    ? 'border-danger/30'
-                    : 'border-border'
-                )}
+                className={cn('w-full pl-10', touched.name && errors.name && 'border-danger/30')}
               />
             </div>
           </InputWrapper>
@@ -389,17 +392,12 @@ export function ConfigPerfilAgencia({
             >
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="tel"
                   value={formData.contact.phone}
                   onChange={(e) => updateContact('phone', e.target.value)}
                   placeholder="+57 601 345 6789"
-                  className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                    touched['contact.phone'] && errors['contact.phone']
-                      ? 'border-danger/30'
-                      : 'border-border'
-                  )}
+                  className={cn('w-full pl-10', touched['contact.phone'] && errors['contact.phone'] && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
@@ -407,12 +405,12 @@ export function ConfigPerfilAgencia({
             <InputWrapper label={t('inmobiliaria.config.profile.alternatePhone')} hint={t('common.optional')}>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="tel"
                   value={formData.contact.alternatePhone || ''}
                   onChange={(e) => updateContact('alternatePhone', e.target.value)}
                   placeholder="+57 601 000 0000"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                  className="w-full pl-10"
                 />
               </div>
             </InputWrapper>
@@ -424,17 +422,12 @@ export function ConfigPerfilAgencia({
             >
               <div className="relative">
                 <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="email"
                   value={formData.contact.email}
                   onChange={(e) => updateContact('email', e.target.value)}
                   placeholder="contacto@agencia.co"
-                  className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                    touched['contact.email'] && errors['contact.email']
-                      ? 'border-danger/30'
-                      : 'border-border'
-                  )}
+                  className={cn('w-full pl-10', touched['contact.email'] && errors['contact.email'] && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
@@ -442,12 +435,12 @@ export function ConfigPerfilAgencia({
             <InputWrapper label={t('inmobiliaria.config.profile.supportEmail')} hint={t('common.optional')}>
               <div className="relative">
                 <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="email"
                   value={formData.contact.supportEmail || ''}
                   onChange={(e) => updateContact('supportEmail', e.target.value)}
                   placeholder="soporte@agencia.co"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                  className="w-full pl-10"
                 />
               </div>
             </InputWrapper>
@@ -455,12 +448,12 @@ export function ConfigPerfilAgencia({
             <InputWrapper label="WhatsApp" hint={t('common.optional')}>
               <div className="relative">
                 <WhatsappLogo className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="tel"
                   value={formData.contact.whatsapp || ''}
                   onChange={(e) => updateContact('whatsapp', e.target.value)}
                   placeholder="+57 310 555 1234"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                  className="w-full pl-10"
                 />
               </div>
             </InputWrapper>
@@ -468,12 +461,12 @@ export function ConfigPerfilAgencia({
             <InputWrapper label={t('inmobiliaria.config.profile.website')} hint={t('common.optional')}>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="url"
                   value={formData.contact.website || ''}
                   onChange={(e) => updateContact('website', e.target.value)}
                   placeholder="https://agencia.co"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                  className="w-full pl-10"
                 />
               </div>
             </InputWrapper>
@@ -486,17 +479,12 @@ export function ConfigPerfilAgencia({
               >
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                  <textarea
+                  <Textarea
                     value={formData.contact.address}
                     onChange={(e) => updateContact('address', e.target.value)}
                     placeholder="Cra 11 #82-76, Oficina 501"
                     rows={2}
-                    className={cn(
-                      'w-full pl-10 pr-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all resize-none',
-                      touched['contact.address'] && errors['contact.address']
-                        ? 'border-danger/30'
-                        : 'border-border'
-                    )}
+                    className={cn('w-full pl-10 resize-none', touched['contact.address'] && errors['contact.address'] && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
@@ -507,17 +495,12 @@ export function ConfigPerfilAgencia({
               required
               error={touched['contact.city'] ? errors['contact.city'] : undefined}
             >
-              <input
+              <Input
                 type="text"
                 value={formData.contact.city}
                 onChange={(e) => updateContact('city', e.target.value)}
                 placeholder="Bogota"
-                className={cn(
-                  'w-full px-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                  touched['contact.city'] && errors['contact.city']
-                    ? 'border-danger/30'
-                    : 'border-border'
-                )}
+                className={cn('w-full', touched['contact.city'] && errors['contact.city'] && 'border-danger/30')}
               />
             </InputWrapper>
 
@@ -526,35 +509,32 @@ export function ConfigPerfilAgencia({
               required
               error={touched['contact.department'] ? errors['contact.department'] : undefined}
             >
-              <div className="relative">
-                <select
-                  value={formData.contact.department}
-                  onChange={(e) => updateContact('department', e.target.value)}
-                  className={cn(
-                    'w-full px-4 py-2.5 rounded-md border bg-background text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                    touched['contact.department'] && errors['contact.department']
-                      ? 'border-danger/30'
-                      : 'border-border'
-                  )}
+              <Select
+                value={formData.contact.department || undefined}
+                onValueChange={(v) => updateContact('department', v)}
+              >
+                <SelectTrigger
+                  className={cn('w-full', touched['contact.department'] && errors['contact.department'] && 'border-danger/30')}
                 >
-                  <option value="">{t('inmobiliaria.config.profile.selectPlaceholder')}</option>
+                  <SelectValue placeholder={t('inmobiliaria.config.profile.selectPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
                   {COLOMBIAN_DEPARTMENTS.map((dept) => (
-                    <option key={dept} value={dept}>
+                    <SelectItem key={dept} value={dept}>
                       {dept}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              </div>
+                </SelectContent>
+              </Select>
             </InputWrapper>
 
             <InputWrapper label={t('inmobiliaria.config.profile.postalCode')} hint={t('common.optional')}>
-              <input
+              <Input
                 type="text"
                 value={formData.contact.postalCode || ''}
                 onChange={(e) => updateContact('postalCode', e.target.value)}
                 placeholder="110221"
-                className="w-full px-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                className="w-full"
               />
             </InputWrapper>
           </div>
@@ -604,17 +584,12 @@ export function ConfigPerfilAgencia({
             >
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="text"
                   value={formData.legal.nit}
                   onChange={(e) => updateLegal('nit', e.target.value)}
                   placeholder="901.234.567-8"
-                  className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                    touched['legal.nit'] && errors['legal.nit']
-                      ? 'border-danger/30'
-                      : 'border-border'
-                  )}
+                  className={cn('w-full pl-10', touched['legal.nit'] && errors['legal.nit'] && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
@@ -624,17 +599,12 @@ export function ConfigPerfilAgencia({
               required
               error={touched['legal.razonSocial'] ? errors['legal.razonSocial'] : undefined}
             >
-              <input
+              <Input
                 type="text"
                 value={formData.legal.razonSocial}
                 onChange={(e) => updateLegal('razonSocial', e.target.value)}
                 placeholder="Nombre S.A.S."
-                className={cn(
-                  'w-full px-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                  touched['legal.razonSocial'] && errors['legal.razonSocial']
-                    ? 'border-danger/30'
-                    : 'border-border'
-                )}
+                className={cn('w-full', touched['legal.razonSocial'] && errors['legal.razonSocial'] && 'border-danger/30')}
               />
             </InputWrapper>
 
@@ -645,17 +615,12 @@ export function ConfigPerfilAgencia({
             >
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="text"
                   value={formData.legal.representanteLegal}
                   onChange={(e) => updateLegal('representanteLegal', e.target.value)}
                   placeholder="Juan Perez Garcia"
-                  className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                    touched['legal.representanteLegal'] && errors['legal.representanteLegal']
-                      ? 'border-danger/30'
-                      : 'border-border'
-                  )}
+                  className={cn('w-full pl-10', touched['legal.representanteLegal'] && errors['legal.representanteLegal'] && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
@@ -667,38 +632,33 @@ export function ConfigPerfilAgencia({
             >
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
+                <Input
                   type="text"
                   value={formData.legal.representanteCedula}
                   onChange={(e) => updateLegal('representanteCedula', e.target.value)}
                   placeholder="80.123.456"
-                  className={cn(
-                    'w-full pl-10 pr-4 py-2.5 rounded-md border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all',
-                    touched['legal.representanteCedula'] && errors['legal.representanteCedula']
-                      ? 'border-danger/30'
-                      : 'border-border'
-                  )}
+                  className={cn('w-full pl-10', touched['legal.representanteCedula'] && errors['legal.representanteCedula'] && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
 
             <InputWrapper label={t('inmobiliaria.config.profile.realEstateRegistration')} hint={t('common.optional')}>
-              <input
+              <Input
                 type="text"
                 value={formData.legal.matriculaInmobiliaria || ''}
                 onChange={(e) => updateLegal('matriculaInmobiliaria', e.target.value)}
                 placeholder="INM-2024-001234"
-                className="w-full px-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                className="w-full"
               />
             </InputWrapper>
 
             <InputWrapper label={t('inmobiliaria.config.profile.chamberRegistration')} hint={t('common.optional')}>
-              <input
+              <Input
                 type="text"
                 value={formData.legal.registroCamara || ''}
                 onChange={(e) => updateLegal('registroCamara', e.target.value)}
                 placeholder="S0012345"
-                className="w-full px-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                className="w-full"
               />
             </InputWrapper>
           </div>
@@ -759,7 +719,7 @@ export function ConfigPerfilAgencia({
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <input
+                  <Input
                     type="number"
                     min={0}
                     max={100}
@@ -768,7 +728,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('defaultCommissionPercent', parseFloat(e.target.value) || 0)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                    className={cn('w-full pl-10', errors['defaults.commission'] && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
@@ -780,7 +740,7 @@ export function ConfigPerfilAgencia({
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <input
+                  <Input
                     type="number"
                     min={0}
                     max={100}
@@ -789,7 +749,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('defaultAdminFeePercent', parseFloat(e.target.value) || 0)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                    className={cn('w-full pl-10', errors['defaults.adminFee'] && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
@@ -800,7 +760,7 @@ export function ConfigPerfilAgencia({
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <input
+                  <Input
                     type="number"
                     min={0}
                     max={100}
@@ -809,7 +769,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('defaultLateFeePercent', parseFloat(e.target.value) || 0)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                    className="w-full pl-10"
                   />
                 </div>
               </InputWrapper>
@@ -823,7 +783,7 @@ export function ConfigPerfilAgencia({
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     max={28}
@@ -831,7 +791,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('paymentDueDay', parseInt(e.target.value) || 1)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                    className={cn('w-full pl-10', errors['defaults.paymentDueDay'] && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
@@ -843,7 +803,7 @@ export function ConfigPerfilAgencia({
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     max={28}
@@ -851,7 +811,7 @@ export function ConfigPerfilAgencia({
                     onChange={(e) =>
                       updateDefaults('disbursementDay', parseInt(e.target.value) || 15)
                     }
-                    className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                    className={cn('w-full pl-10', errors['defaults.disbursementDay'] && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
@@ -860,7 +820,7 @@ export function ConfigPerfilAgencia({
                 label={t('inmobiliaria.config.profile.gracePeriodDays')}
                 required
               >
-                <input
+                <Input
                   type="number"
                   min={0}
                   max={30}
@@ -868,7 +828,7 @@ export function ConfigPerfilAgencia({
                   onChange={(e) =>
                     updateDefaults('gracePeriodDays', parseInt(e.target.value) || 0)
                   }
-                  className="w-full px-4 py-2.5 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                  className="w-full"
                 />
               </InputWrapper>
             </div>
@@ -884,19 +844,14 @@ export function ConfigPerfilAgencia({
                 <InputWrapper label={t('inmobiliaria.config.profile.daysBeforeDue')}>
                   <div className="flex flex-wrap gap-2">
                     {REMINDER_DAYS_OPTIONS.map((day) => (
-                      <button
+                      <Chip
                         key={`before-${day}`}
                         type="button"
+                        selected={formData.defaults.reminderDaysBefore.includes(day)}
                         onClick={() => toggleReminderDay('reminderDaysBefore', day)}
-                        className={cn(
-                          'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                          formData.defaults.reminderDaysBefore.includes(day)
-                            ? 'bg-primary-soft text-primary'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        )}
                       >
                         {day}d
-                      </button>
+                      </Chip>
                     ))}
                   </div>
                 </InputWrapper>
@@ -904,19 +859,14 @@ export function ConfigPerfilAgencia({
                 <InputWrapper label={t('inmobiliaria.config.profile.daysAfterDue')}>
                   <div className="flex flex-wrap gap-2">
                     {REMINDER_DAYS_OPTIONS.map((day) => (
-                      <button
+                      <Chip
                         key={`after-${day}`}
                         type="button"
+                        selected={formData.defaults.reminderDaysAfter.includes(day)}
                         onClick={() => toggleReminderDay('reminderDaysAfter', day)}
-                        className={cn(
-                          'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                          formData.defaults.reminderDaysAfter.includes(day)
-                            ? 'bg-warning-soft text-warning'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        )}
                       >
                         {day}d
-                      </button>
+                      </Chip>
                     ))}
                   </div>
                 </InputWrapper>
@@ -999,12 +949,10 @@ export function ConfigPerfilAgencia({
             hideArrow
             onClick={handleSave}
             disabled={isSaving}
+            isLoading={isSaving}
           >
             {isSaving ? (
-              <>
-                <SpinnerGap className="w-4 h-4 animate-spin" />
-                {t('inmobiliaria.common.saving')}
-              </>
+              t('inmobiliaria.common.saving')
             ) : (
               <>
                 <Check className="w-4 h-4" />

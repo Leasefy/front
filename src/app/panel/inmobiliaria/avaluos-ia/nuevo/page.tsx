@@ -17,26 +17,24 @@ import * as React from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
-  ArrowRight,
   Check,
   CheckCircle,
-  CircleNotch,
   Sparkle,
   House,
   Storefront,
   ArrowsLeftRight,
-  MagnifyingGlass,
   MapPin,
   Plus,
   Info,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { BrandContour } from '@leasefy/ui'
+import { BrandContour, SearchInput, StatusBadge, MonoLabel } from '@leasefy/cadence'
+import { Button, Card, Input, Label, Spinner } from '@/components/ui'
 
 // ── Brand constants ───────────────────────────────────────────────────────────
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #0B1220 56%, #122457 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
 
 type Phase = 'tipo' | 'inmueble' | 'datos' | 'procesando'
 type Tipo = 'arriendo' | 'venta' | 'mixto'
@@ -91,7 +89,7 @@ function Stepper({ phase }: { phase: Phase }) {
               <span
                 className="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-semibold transition-colors"
                 style={{
-                  background: done ? BLUE : active ? '#0B1220' : '#F1F3F6',
+                  background: done ? BLUE : active ? '#14130f' : '#F1F3F6',
                   color: done || active ? '#fff' : '#9AA3B2',
                 }}
               >
@@ -99,12 +97,12 @@ function Stepper({ phase }: { phase: Phase }) {
               </span>
               <span
                 className="text-[13px] font-medium"
-                style={{ color: active ? '#0B1220' : done ? '#525B6B' : '#9AA3B2' }}
+                style={{ color: active ? '#14130f' : done ? '#525B6B' : '#9AA3B2' }}
               >
                 {s.label}
               </span>
             </div>
-            {i < STEPS.length - 1 && <span className="w-8 h-px bg-neutral-200" />}
+            {i < STEPS.length - 1 && <span className="w-8 h-px bg-border" />}
           </React.Fragment>
         )
       })}
@@ -145,7 +143,7 @@ export default function NuevoAvaluoPage() {
         <div className="flex items-center justify-between gap-4">
           <Link
             href="/panel/inmobiliaria/avaluos-ia"
-            className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#0B1220] transition-colors"
+            className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-fg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Avalúos IA
@@ -157,10 +155,10 @@ export default function NuevoAvaluoPage() {
         {phase === 'tipo' && (
           <section className="space-y-5">
             <div className="space-y-1.5">
-              <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#0B1220]">
+              <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-fg">
                 ¿Qué quieres avaluar?
               </h1>
-              <p className="text-[14px] text-neutral-500">
+              <p className="text-[14px] text-fg-muted">
                 Gabriela ajusta el análisis según lo que necesites decidir.
               </p>
             </div>
@@ -174,7 +172,7 @@ export default function NuevoAvaluoPage() {
                     type="button"
                     onClick={() => setTipo(tp.key)}
                     aria-pressed={isSel}
-                    className="relative rounded-xl border bg-white p-5 text-left transition-all active:scale-[0.99]"
+                    className="relative rounded-xl border bg-surface p-5 text-left transition-all active:scale-[0.99]"
                     style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                   >
                     <span
@@ -183,8 +181,8 @@ export default function NuevoAvaluoPage() {
                     >
                       <TIcon className="w-5 h-5" weight="duotone" />
                     </span>
-                    <p className="text-[15px] font-semibold text-[#0B1220]">{tp.title}</p>
-                    <p className="mt-1 text-[12.5px] text-neutral-500 leading-snug">{tp.desc}</p>
+                    <p className="text-[15px] font-semibold text-fg">{tp.title}</p>
+                    <p className="mt-1 text-[12.5px] text-fg-muted leading-snug">{tp.desc}</p>
                     {isSel && (
                       <span className="absolute top-3.5 right-3.5 inline-flex items-center justify-center w-5 h-5 rounded-full" style={{ background: BLUE }}>
                         <Check className="w-3 h-3 text-white" weight="bold" />
@@ -201,23 +199,16 @@ export default function NuevoAvaluoPage() {
         {phase === 'inmueble' && (
           <section className="space-y-5">
             <div className="space-y-1.5">
-              <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#0B1220]">
+              <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-fg">
                 Selecciona el inmueble
               </h1>
-              <p className="text-[14px] text-neutral-500">
+              <p className="text-[14px] text-fg-muted">
                 Desde tu portafolio — Nicolás trae sus datos automáticamente.
               </p>
             </div>
 
             {/* Search */}
-            <div className="relative">
-              <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                placeholder="Buscar por dirección o zona…"
-                className="w-full h-11 pl-10 pr-4 rounded-lg border border-neutral-200 bg-white text-[14px] text-[#0B1220] placeholder:text-neutral-400 focus:outline-none focus:border-[#1A40FF] focus:ring-1 focus:ring-[#1A40FF]"
-              />
-            </div>
+            <SearchInput placeholder="Buscar por dirección o zona…" inputSize="md" />
 
             <ul className="space-y-2">
               {PROPIEDADES.map((p) => {
@@ -228,27 +219,22 @@ export default function NuevoAvaluoPage() {
                       type="button"
                       onClick={() => setInmueble(p.id)}
                       aria-pressed={isSel}
-                      className="w-full flex items-center gap-4 rounded-xl border bg-white p-3.5 text-left transition-all"
+                      className="w-full flex items-center gap-4 rounded-xl border bg-surface p-3.5 text-left transition-all"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
-                      <span className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-neutral-100 to-neutral-200/70 shrink-0">
-                        <House className="w-5 h-5 text-neutral-400" weight="duotone" />
+                      <span className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-surface-muted shrink-0">
+                        <House className="w-5 h-5 text-fg-subtle" weight="duotone" />
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="flex items-center gap-2">
-                          <span className="text-[14px] font-medium text-[#0B1220] truncate">{p.dir}</span>
-                          <span className="text-[12px] text-neutral-400">· {p.zona}</span>
+                          <span className="text-[14px] font-medium text-fg truncate">{p.dir}</span>
+                          <span className="text-[12px] text-fg-subtle">· {p.zona}</span>
                         </span>
-                        <span className="block text-[12.5px] text-neutral-500 mt-0.5">{p.specs} · Estrato {p.estrato}</span>
+                        <span className="block text-[12.5px] text-fg-muted mt-0.5">{p.specs} · Estrato {p.estrato}</span>
                       </span>
-                      <span
-                        className="inline-flex items-center h-6 px-2 rounded-md text-[11.5px] font-medium shrink-0"
-                        style={p.estado === 'Disponible'
-                          ? { background: '#E9F3EE', color: '#22663F' }
-                          : { background: '#F1F3F6', color: '#525B6B' }}
-                      >
+                      <StatusBadge tone={p.estado === 'Disponible' ? 'success' : 'neutral'} dot={false} className="shrink-0">
                         {p.estado}
-                      </span>
+                      </StatusBadge>
                       <span
                         className="inline-flex items-center justify-center w-5 h-5 rounded-full shrink-0"
                         style={{ border: isSel ? `none` : '1.5px solid #D4D8DF', background: isSel ? BLUE : 'transparent' }}
@@ -261,13 +247,15 @@ export default function NuevoAvaluoPage() {
               })}
             </ul>
 
-            <button
+            <Button
               type="button"
-              className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg border border-dashed border-neutral-300 text-[13.5px] font-medium text-neutral-500 hover:text-[#0B1220] hover:border-neutral-400 transition-colors"
+              variant="outline"
+              hideArrow
+              className="w-full justify-center gap-2 h-11 rounded-xl border-dashed text-[13.5px] text-fg-muted"
             >
               <Plus className="w-4 h-4" weight="bold" />
               Avaluar un inmueble que no está en mi portafolio
-            </button>
+            </Button>
           </section>
         )}
 
@@ -275,58 +263,58 @@ export default function NuevoAvaluoPage() {
         {phase === 'datos' && selProp && (
           <section className="space-y-5">
             <div className="space-y-1.5">
-              <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#0B1220]">
+              <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-fg">
                 Confirma los datos
               </h1>
-              <p className="text-[14px] text-neutral-500">
+              <p className="text-[14px] text-fg-muted">
                 Mientras más completos, más preciso es el avalúo.
               </p>
             </div>
 
             {/* Selected property summary */}
-            <div className="flex items-center gap-3 rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-3.5">
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white border border-neutral-200 shrink-0">
-                <MapPin className="w-4 h-4 text-neutral-400" weight="fill" />
+            <Card className="flex items-center gap-3 p-3.5 bg-surface-muted">
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-surface border border-border shrink-0">
+                <MapPin className="w-4 h-4 text-fg-subtle" weight="fill" />
               </span>
               <div className="min-w-0">
-                <p className="text-[14px] font-medium text-[#0B1220] truncate">{selProp.dir} · {selProp.zona}</p>
-                <p className="text-[12.5px] text-neutral-500">{selProp.specs} · Estrato {selProp.estrato}</p>
+                <p className="text-[14px] font-medium text-fg truncate">{selProp.dir} · {selProp.zona}</p>
+                <p className="text-[12.5px] text-fg-muted">{selProp.specs} · Estrato {selProp.estrato}</p>
               </div>
-            </div>
+            </Card>
 
             {/* Data quality meter */}
-            <div className="rounded-xl border border-neutral-200/80 bg-white p-4">
+            <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+                <MonoLabel className="text-[10.5px] tracking-[0.08em]">
                   Calidad de datos
-                </span>
-                <span className="text-[13px] font-semibold tabular-nums" style={{ color: '#8A5A12' }}>85%</span>
+                </MonoLabel>
+                <span className="text-[13px] font-semibold tabular-nums font-mono text-warning">85%</span>
               </div>
-              <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: '85%', background: '#B7791F' }} />
+              <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
+                <div className="h-full rounded-full bg-warning" style={{ width: '85%' }} />
               </div>
-              <p className="mt-2.5 flex items-start gap-1.5 text-[12.5px] text-neutral-500 leading-snug">
-                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-neutral-400" weight="fill" />
-                Agrega la <span className="font-medium text-[#0B1220]">antigüedad</span> del inmueble para subir la precisión a ~95%.
+              <p className="mt-2.5 flex items-start gap-1.5 text-[12.5px] text-fg-muted leading-snug">
+                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-fg-subtle" weight="fill" />
+                Agrega la <span className="font-medium text-fg">antigüedad</span> del inmueble para subir la precisión a ~95%.
               </p>
-            </div>
+            </Card>
 
             {/* Optional: owner expectation */}
             <div>
-              <label className="block text-[13px] font-medium text-[#0B1220] mb-1.5">
-                Expectativa del propietario <span className="text-neutral-400 font-normal">(opcional)</span>
-              </label>
+              <Label className="block mb-1.5">
+                Expectativa del propietario <span className="text-fg-subtle font-normal">(opcional)</span>
+              </Label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[14px] text-neutral-400">$</span>
-                <input
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10 text-[14px] text-fg-subtle">$</span>
+                <Input
                   value={expectativa}
                   onChange={(e) => setExpectativa(e.target.value)}
                   inputMode="numeric"
                   placeholder="4.200.000"
-                  className="w-full h-11 pl-7 pr-4 rounded-lg border border-neutral-200 bg-white text-[14px] text-[#0B1220] placeholder:text-neutral-300 focus:outline-none focus:border-[#1A40FF] focus:ring-1 focus:ring-[#1A40FF] tabular-nums"
+                  className="pl-7 tabular-nums font-mono"
                 />
               </div>
-              <p className="mt-1.5 text-[12px] text-neutral-400">
+              <p className="mt-1.5 text-[12px] text-fg-subtle">
                 Gabriela compara su recomendación con lo que espera el propietario.
               </p>
             </div>
@@ -336,24 +324,19 @@ export default function NuevoAvaluoPage() {
         {/* ── Footer nav ────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-3 pt-2">
           {phase !== 'tipo' ? (
-            <button
-              type="button"
-              onClick={back}
-              className="inline-flex items-center gap-2 h-11 px-4 rounded-lg text-[14px] font-medium text-neutral-600 hover:text-[#0B1220] hover:bg-neutral-50 transition-colors"
-            >
+            <Button variant="ghost" hideArrow onClick={back}>
               <ArrowLeft className="w-4 h-4" />
               Atrás
-            </button>
+            </Button>
           ) : (
             <span />
           )}
 
-          <button
-            type="button"
+          <Button
+            variant="default"
+            hideArrow={phase === 'datos'}
             onClick={next}
             disabled={!canContinue}
-            className="group inline-flex items-center gap-2 h-11 px-5 rounded-lg text-white text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: BLUE }}
           >
             {phase === 'datos' ? (
               <>
@@ -361,12 +344,9 @@ export default function NuevoAvaluoPage() {
                 Generar avalúo
               </>
             ) : (
-              <>
-                Continuar
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-              </>
+              'Continuar'
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -385,7 +365,7 @@ function Procesando() {
         {/* Gabriela hero */}
         <section
           className="relative overflow-hidden rounded-2xl px-7 py-8 text-center"
-          style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(11,18,32,0.55)' }}
+          style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           <div className="pointer-events-none absolute -inset-x-2 top-[58%] h-[40%] text-white/[0.10]">
             <BrandContour />
@@ -426,7 +406,7 @@ function Procesando() {
         </section>
 
         {/* Team checklist */}
-        <ul className="mt-6 rounded-2xl border border-neutral-200/80 bg-white divide-y divide-neutral-100 overflow-hidden">
+        <ul className="mt-6 rounded-2xl border border-border bg-surface divide-y divide-border-faint overflow-hidden">
           {TEAM_STEPS.map((m, i) => {
             const done = i < ACTIVE
             const active = i === ACTIVE
@@ -442,15 +422,15 @@ function Procesando() {
                   {m.inicial}
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[13.5px] font-medium text-[#0B1220]">{m.nombre}</span>
-                  <span className="block text-[12.5px] text-neutral-500 truncate">{m.tarea}</span>
+                  <span className="block text-[13.5px] font-medium text-fg">{m.nombre}</span>
+                  <span className="block text-[12.5px] text-fg-muted truncate">{m.tarea}</span>
                 </span>
                 {done ? (
                   <CheckCircle className="w-5 h-5 shrink-0" weight="fill" style={{ color: '#2C7A53' }} />
                 ) : active ? (
-                  <CircleNotch className="w-5 h-5 shrink-0 animate-spin" style={{ color: BLUE }} weight="bold" />
+                  <Spinner size="default" className="shrink-0" />
                 ) : (
-                  <span className="w-5 h-5 shrink-0 rounded-full border-2 border-neutral-200" />
+                  <span className="w-5 h-5 shrink-0 rounded-full border-2 border-border" />
                 )}
               </li>
             )
@@ -458,14 +438,9 @@ function Procesando() {
         </ul>
 
         {/* Result CTA (prototype: always available) */}
-        <Link
-          href="/panel/inmobiliaria/avaluos-ia/r1"
-          className="group mt-6 w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg text-white text-sm font-medium transition-colors"
-          style={{ background: BLUE }}
-        >
-          Ver resultado
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-        </Link>
+        <Button variant="default" asChild className="mt-6 w-full">
+          <Link href="/panel/inmobiliaria/avaluos-ia/r1">Ver resultado</Link>
+        </Button>
       </div>
     </div>
   )

@@ -70,8 +70,8 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
                   className={cn(
                     'flex items-center gap-4 px-4 py-3 min-h-[52px] rounded-xl',
                     rowActive
-                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF]'
-                      : 'text-foreground hover:bg-muted/50'
+                      ? 'bg-primary-soft text-primary'
+                      : 'text-fg hover:bg-surface-muted'
                   )}
                 >
                   <RowIcon
@@ -80,7 +80,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
                   />
                   <span className="text-[14px] flex-1">{rowItem.label}</span>
                   {rowItem.badge != null && rowItem.badge > 0 && (
-                    <span className="ml-auto text-[11px] font-mono bg-[#1A40FF] text-white rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                    <span className="ml-auto text-[11px] font-mono tabular-nums bg-primary text-primary-fg rounded-full px-2 py-0.5 min-w-[20px] text-center">
                       {rowItem.badge}
                     </span>
                   )}
@@ -93,7 +93,7 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
         <div className="pt-2 border-t border-border mt-2">
           <button
             onClick={onClose}
-            className="flex items-center gap-3 w-full px-4 py-3 min-h-[52px] text-muted-foreground hover:bg-muted/50 rounded-xl"
+            className="flex items-center gap-3 w-full px-4 py-3 min-h-[52px] text-fg-muted hover:bg-surface-muted rounded-xl"
             aria-label={t('inmobiliaria.mobileNav.closeButton')}
           >
             <X className="w-5 h-5" />

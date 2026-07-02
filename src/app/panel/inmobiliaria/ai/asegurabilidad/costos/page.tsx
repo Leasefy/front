@@ -22,6 +22,7 @@ import { CostSourcePieChart } from '@/components/inmobiliaria/cotizador/CostSour
 import { MonthlyCostTrendChart } from '@/components/inmobiliaria/cotizador/MonthlyCostTrendChart'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 export default function CostosPage() {
@@ -38,8 +39,8 @@ export default function CostosPage() {
   } = useCostos()
 
   // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
-  // per-section table skeleton + inline empty prose preserved below; no full-page EmptyState
-  // because costos always has section structure — empty sections show honest inline prose).
+  // per-section table skeleton + inline empty prose preserved below; no EmptyState since
+  // costos uses Phase 35 SampleDataWatermark semantics — no "truly nothing" zero state).
   if (isLoadingSummary && !summaryData) return <PageSkeleton variant="dashboard" />
 
   // Derive table rows by joining costSources registry labels with source totals
@@ -108,30 +109,30 @@ export default function CostosPage() {
           </h2>
         </div>
         <div className="overflow-x-auto overscroll-contain">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-surface-muted/60">
-            <tr>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+        <Table className="min-w-full divide-y divide-border">
+          <TableHeader className="bg-surface-muted/60">
+            <TableRow>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colSource')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colTotal')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colStatus')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-border">
             {tableRows.map(row => (
-              <tr key={row.key} className="hover:bg-surface-muted/50">
-                <td className="px-4 py-3 text-sm text-fg">
+              <TableRow key={row.key} className="hover:bg-surface-muted/50">
+                <TableCell className="px-4 py-3 text-sm text-fg">
                   {row.label}
-                </td>
-                <td className="px-4 py-3 text-sm font-mono tabular-nums text-right text-fg">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-sm font-mono tabular-nums text-right text-fg">
                   {row.total > 0 ? `$${row.total.toFixed(4)}` : '—'}
-                </td>
-                <td className="px-4 py-3 text-sm">
+                </TableCell>
+                <TableCell className="px-4 py-3 text-sm">
                   {row.populated ? (
                     <Badge variant="outline" className="text-success border-success/30">
                       {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.statusPopulated')}
@@ -141,11 +142,11 @@ export default function CostosPage() {
                       {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.statusEmpty')}
                     </Badge>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         </div>
 
         {/* Loading skeleton for table when no data yet */}

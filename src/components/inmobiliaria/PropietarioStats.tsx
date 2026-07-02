@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Badge } from '@/components/ui/badge';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -74,9 +75,9 @@ function StatCard({ icon: Icon, label, value, subValue, trend, color, warning }:
           <Icon className={cn('w-5 h-5', colors.icon)} />
         </div>
         {warning && (
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-warning-soft">
-            <Warning className="w-3.5 h-3.5 text-warning" />
-          </div>
+          <Badge variant="warning" aria-label="Atención requerida">
+            <Warning className="w-3.5 h-3.5" />
+          </Badge>
         )}
       </div>
 
@@ -143,12 +144,10 @@ export function PropietarioStats({
           </span>
         </div>
         {hasPendingBalance && (
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft">
-            <Warning className="w-3 h-3 text-warning" />
-            <span className="text-xs text-warning">
-              {formatCurrency(propietario.pendingBalance)}
-            </span>
-          </div>
+          <Badge variant="warning" className="gap-1">
+            <Warning className="w-3 h-3" />
+            {formatCurrency(propietario.pendingBalance)}
+          </Badge>
         )}
       </div>
     );

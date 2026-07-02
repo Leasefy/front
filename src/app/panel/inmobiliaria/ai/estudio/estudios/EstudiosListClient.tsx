@@ -25,7 +25,8 @@ import { useRouter } from 'next/navigation'
 import { Clock, ShieldCheck } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Chip } from '@leasefy/ui'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Chip, SearchInput } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useEstudiosList } from '@/lib/hooks/estudio/use-estudios-list'
 import type {
@@ -242,13 +243,14 @@ export default function EstudiosListClient() {
               <label htmlFor="estudio-search" className="sr-only">
                 {t('inmobiliaria.ai.estudio.list.filters.search.label')}
               </label>
-              <input
+              <SearchInput
                 id="estudio-search"
-                type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
+                onClear={() => setSearchInput('')}
                 placeholder={t('inmobiliaria.ai.estudio.list.filters.search.placeholder')}
-                className="w-full px-3 py-2 text-sm rounded-md border border-border bg-surface text-fg placeholder:text-fg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
+                inputSize="sm"
+                className="w-full"
               />
             </div>
             <span className="hidden md:inline text-xs font-medium text-fg-muted whitespace-nowrap tabular-nums">
@@ -270,43 +272,43 @@ export default function EstudiosListClient() {
 
           {/* md+ table */}
           <div className="hidden md:block overflow-x-auto overscroll-contain rounded-xl border border-border bg-card">
-            <table className="min-w-full divide-y divide-border text-sm [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-surface-muted">
-              <thead className="bg-surface-muted">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-fg-muted uppercase tracking-wide">
+            <Table className="min-w-full divide-y divide-border text-sm [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-surface-muted">
+              <TableHeader className="bg-surface-muted">
+                <TableRow>
+                  <TableHead>
                     {t('inmobiliaria.ai.estudio.list.columns.estudio')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-fg-muted uppercase tracking-wide">
+                  </TableHead>
+                  <TableHead>
                     {t('inmobiliaria.ai.estudio.list.columns.severidad')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-fg-muted uppercase tracking-wide">
+                  </TableHead>
+                  <TableHead>
                     {t('inmobiliaria.ai.estudio.list.columns.estado')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-fg-muted uppercase tracking-wide">
+                  </TableHead>
+                  <TableHead>
                     {t('inmobiliaria.ai.estudio.list.columns.accionSugerida')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-fg-muted uppercase tracking-wide">
+                  </TableHead>
+                  <TableHead>
                     {t('inmobiliaria.ai.estudio.list.columns.tiempo')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-border">
                 {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-12 text-center">
+                  <TableRow>
+                    <TableCell colSpan={5} className="px-3 py-12 text-center">
                       <p className="text-sm text-fg-muted mb-3">
                         {t('inmobiliaria.ai.estudio.list.emptyFiltered')}
                       </p>
                       <Button variant="outline" size="sm" hideArrow onClick={clearFilters}>
                         {t('inmobiliaria.ai.estudio.list.filters.clear')}
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
                 {filtered.map((it) => {
                   const sev = SEVERIDAD_TOKEN[it.severidad] ?? SEVERIDAD_TOKEN.media
                   return (
-                    <tr
+                    <TableRow
                       key={it.id}
                       onClick={() => navigateToEstudio(it.id)}
                       role="link"
@@ -317,7 +319,7 @@ export default function EstudiosListClient() {
                       data-testid={`estudio-row-${it.id}`}
                       className="hover:bg-surface-hover cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <td className="px-3 py-2.5 align-top">
+                      <TableCell className="px-3 py-2.5 align-top">
                         <p className="text-fg font-medium">{it.titulo}</p>
                         {/* Flag chips inline (t323 surfaced — never auto-rejected here) */}
                         {it.flags.length > 0 && (
@@ -338,35 +340,35 @@ export default function EstudiosListClient() {
                             })}
                           </div>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5 align-top">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 align-top">
                         <span
                           className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
                         >
                           {severidadLabel(t, it.severidad)}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 align-top">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 align-top">
                         <span className="inline-flex items-center text-xs text-fg-muted px-2 py-0.5 rounded-full ring-1 ring-border bg-surface-muted">
                           {estadoLabel(t, it.estado, 'estudio')}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 align-top max-w-xs">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 align-top max-w-xs">
                         <p className="text-xs text-fg-muted truncate">
                           {it.accionSugerida.label}
                         </p>
-                      </td>
-                      <td className="px-3 py-2.5 align-top">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 align-top">
                         <span className="inline-flex items-center gap-1 text-xs text-fg-muted tabular-nums whitespace-nowrap">
                           <Clock className="w-3 h-3" aria-hidden="true" />
                           {relativeTime(it.createdAt, t)}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* sm cards fallback */}

@@ -15,11 +15,11 @@
  */
 
 import { useState } from 'react'
-import { CircleNotch } from '@phosphor-icons/react'
 
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
 import {
   Select,
   SelectContent,
@@ -111,17 +111,17 @@ export function CarrierOverridePopover({
     <div className="w-72 p-4 space-y-4">
       {/* Header */}
       <div>
-        <p className="text-sm font-semibold text-neutral-900 dark:text-white capitalize">
+        <p className="text-sm font-semibold text-fg dark:text-white capitalize">
           {row.global.name}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+        <p className="text-xs text-fg-muted dark:text-fg-subtle font-mono">
           {row.global.route}
         </p>
       </div>
 
       {/* Enabled toggle */}
       <div className="flex items-center justify-between gap-3">
-        <label className="text-xs text-neutral-700 dark:text-neutral-300">
+        <label className="text-xs text-fg dark:text-fg-subtle">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.enabledLabel')}
         </label>
         <Switch
@@ -134,7 +134,7 @@ export function CarrierOverridePopover({
 
       {/* Priority */}
       <div className="space-y-1">
-        <label className="text-xs text-neutral-700 dark:text-neutral-300">
+        <label className="text-xs text-fg dark:text-fg-subtle">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.priorityLabel')}
         </label>
         <Input
@@ -156,7 +156,7 @@ export function CarrierOverridePopover({
 
       {/* Mode */}
       <div className="space-y-1">
-        <label className="text-xs text-neutral-700 dark:text-neutral-300">
+        <label className="text-xs text-fg dark:text-fg-subtle">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.modeLabel')}
         </label>
         <Select
@@ -176,7 +176,7 @@ export function CarrierOverridePopover({
 
       {/* Max Canon COP */}
       <div className="space-y-1">
-        <label className="text-xs text-neutral-700 dark:text-neutral-300">
+        <label className="text-xs text-fg dark:text-fg-subtle">
           {t('inmobiliaria.ai.cotizador.aseguradoras.popover.maxCanonLabel')}
         </label>
         <Input
@@ -202,7 +202,7 @@ export function CarrierOverridePopover({
         >
           {isSaving ? (
             <>
-              <CircleNotch className="h-4 w-4 animate-spin mr-1" aria-hidden="true" />
+              <Spinner size="sm" variant="current" className="mr-1" />
               {t('inmobiliaria.ai.cotizador.aseguradoras.popover.saving')}
             </>
           ) : (

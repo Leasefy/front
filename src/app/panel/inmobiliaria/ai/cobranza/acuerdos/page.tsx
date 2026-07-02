@@ -45,7 +45,6 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
@@ -57,6 +56,8 @@ import {
   SelectTrigger,
   SelectValue,
   Switch,
+  Spinner,
+  Badge,
 } from '@/components/ui'
 import {
   usePaymentsFunnel,
@@ -118,10 +119,10 @@ function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
           </p>
         </div>
         {/* Estado — etiqueta no interactiva (contrato §3) */}
-        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning ring-1 ring-warning/30">
+        <Badge variant="warning" className="shrink-0">
           <Clock className="w-3 h-3" aria-hidden="true" />
           Pendiente aprobación
-        </span>
+        </Badge>
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
@@ -186,10 +187,10 @@ function AcuerdoPropuestoCard({
             <p className="text-xs text-fg-muted">Vista previa — ejemplo</p>
           </div>
         </div>
-        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning ring-1 ring-warning/30">
+        <Badge variant="warning" className="shrink-0">
           <Clock className="w-3 h-3" aria-hidden="true" />
           Pendiente aprobación
-        </span>
+        </Badge>
       </div>
 
       {/* Desglose de condiciones */}
@@ -658,10 +659,10 @@ function DraftGuardadoCard({ draft }: { draft: AgreementProposalDraft }) {
             <p className="text-xs text-fg-muted">Pendiente de aprobación humana</p>
           </div>
         </div>
-        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning ring-1 ring-warning/30">
+        <Badge variant="warning" className="shrink-0">
           <Clock className="w-3 h-3" aria-hidden="true" />
           Pendiente aprobación
-        </span>
+        </Badge>
       </div>
 
       {/* Desglose calculado por el motor */}
@@ -764,7 +765,7 @@ function AcuerdosLista() {
   if (isLoading && rows.length === 0 && !error) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     )
   }
@@ -856,25 +857,13 @@ function AcuerdosLista() {
 // ── Página ───────────────────────────────────────────────────────────────────
 
 function AcuerdosContent() {
-  const { t } = useI18n()
   // Disponibilidad del flujo de aprobación real (gate de cobranza por permiso).
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
 
   return (
     <main className="p-6 lg:p-8 space-y-8">
-      {/* Header — patrón MigaDePan (cobranza overview / pendientes) */}
       <header>
-        <MigaDePan
-          backHref={BASE}
-          icon={Handshake}
-          className="mb-2"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-            { label: 'Acuerdos de pago' },
-          ]}
-        />
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight text-fg">

@@ -30,8 +30,7 @@ import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Chip } from '@leasefy/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Chip } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import {
   useConciliacionQueue,
@@ -257,15 +256,6 @@ function ConciliacionCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/conciliacion"
-            icon={Bank}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.conciliacion'), href: '/panel/inmobiliaria/ai/conciliacion' },
-              { label: t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
           </h1>

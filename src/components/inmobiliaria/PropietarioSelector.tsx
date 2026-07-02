@@ -12,6 +12,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui';
+import { IconButton } from '@leasefy/cadence';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { PropietarioCard } from './PropietarioCard';
 import { PropietarioForm } from './PropietarioForm';
@@ -93,20 +95,22 @@ export function PropietarioSelector({
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('inmobiliaria.propietario.selector.searchPlaceholder')}
-            className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-card text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+            className="w-full pl-10 pr-4"
           />
           {search && (
-            <button
+            <IconButton
+              variant="ghost"
+              size="sm"
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-4 h-4" />
-            </button>
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+              icon={<X className="w-4 h-4" />}
+            />
           )}
         </div>
 
@@ -192,12 +196,13 @@ export function PropietarioSelector({
                 <h3 className="text-base font-semibold text-foreground">
                   {t('inmobiliaria.propietario.selector.newOwner')}
                 </h3>
-                <button
+                <IconButton
+                  variant="ghost"
+                  size="sm"
                   onClick={handleCancelNewPropietario}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                  aria-label="Cerrar"
+                  icon={<X className="w-5 h-5" />}
+                />
               </div>
               <PropietarioForm
                 mode="create"

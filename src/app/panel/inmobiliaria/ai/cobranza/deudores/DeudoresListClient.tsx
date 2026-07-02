@@ -28,7 +28,23 @@ import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaI
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Input } from '@/components/ui'
-import { Chip } from '@leasefy/ui'
+import {
+  Chip,
+  Badge,
+  RangeSlider,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@leasefy/cadence'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 
 void React
 
@@ -40,14 +56,10 @@ const DAYS_MAX_DEFAULT = 90
 
 // Tailwind tokens for days-in-stage badge — D-31 spec: green ≤3, amber 4-7, red ≥8
 // (semantic status tints vía tokens del DS — contrato §8)
-function daysBadgeClasses(days: number): string {
-  if (days <= 3) {
-    return 'bg-success-soft text-success ring-1 ring-success/30'
-  }
-  if (days <= 7) {
-    return 'bg-warning-soft text-warning ring-1 ring-warning/30'
-  }
-  return 'bg-danger-soft text-danger ring-1 ring-danger/30'
+function daysBadgeVariant(days: number): 'success' | 'warning' | 'danger' {
+  if (days <= 3) return 'success'
+  if (days <= 7) return 'warning'
+  return 'danger'
 }
 
 export default function DeudoresListClient() {
@@ -253,26 +265,17 @@ export default function DeudoresListClient() {
             <span>—</span>
             <span>{daysMax}</span>
           </div>
-          <div className="flex gap-2">
-            <input
-              type="range"
-              min={DAYS_MIN_DEFAULT}
-              max={DAYS_MAX_DEFAULT}
-              value={daysMin}
-              onChange={(e) => setDaysMin(Math.min(Number(e.target.value), daysMax))}
-              className="flex-1"
-              aria-label="days-min"
-            />
-            <input
-              type="range"
-              min={DAYS_MIN_DEFAULT}
-              max={DAYS_MAX_DEFAULT}
-              value={daysMax}
-              onChange={(e) => setDaysMax(Math.max(Number(e.target.value), daysMin))}
-              className="flex-1"
-              aria-label="days-max"
-            />
-          </div>
+          <RangeSlider
+            min={DAYS_MIN_DEFAULT}
+            max={DAYS_MAX_DEFAULT}
+            value={[daysMin, daysMax]}
+            onValueChange={([lo, hi]) => {
+              setDaysMin(lo)
+              setDaysMax(hi)
+            }}
+            showLabels={false}
+            aria-label="days-in-stage"
+          />
         </div>
       </fieldset>
 
@@ -324,34 +327,20 @@ export default function DeudoresListClient() {
           </Button>
         </div>
 
-        {/* Mobile drawer */}
-        {filtersDrawerOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex items-end" role="dialog" aria-modal="true">
-            <button
-              type="button"
-              aria-label={t('inmobiliaria.ai.cobranza.deudores.closeFilters')}
-              onClick={() => setFiltersDrawerOpen(false)}
-              className="absolute inset-0 bg-black/40"
-            />
-            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-xl p-5 max-h-[80vh] overflow-y-auto overscroll-contain">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
-                  {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
-                </h2>
-                <Button
-                  variant="link"
-                  size="sm"
-                  hideArrow
-                  onClick={() => setFiltersDrawerOpen(false)}
-                  className="px-0 h-auto text-muted-foreground"
-                >
-                  {t('inmobiliaria.ai.cobranza.deudores.closeFilters')}
-                </Button>
-              </div>
+        {/* Mobile drawer → Cadence Sheet (bottom) */}
+        <Sheet open={filtersDrawerOpen} onOpenChange={setFiltersDrawerOpen}>
+          <SheetContent
+            side="bottom"
+            className="md:hidden max-h-[80vh] overflow-y-auto overscroll-contain rounded-t-xl"
+          >
+            <SheetHeader>
+              <SheetTitle>{t('inmobiliaria.ai.cobranza.deudores.filters.title')}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
               <FiltersPanel />
             </div>
-          </div>
-        )}
+          </SheetContent>
+        </Sheet>
 
         {/* Main content */}
         <section className="flex-1 min-w-0">
@@ -400,47 +389,33 @@ export default function DeudoresListClient() {
 
           {/* md+ table */}
           <div className="hidden md:block overflow-x-auto overscroll-contain rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-neutral-50 dark:[&_th]:bg-neutral-950">
-              <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.name')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.stage')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.phone')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.email')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.channel')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <Table stickyHeader className="min-w-full text-sm">
+              <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+                <TableRow>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.name')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.stage')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.phone')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.email')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.channel')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading && pages.length === 0 && (
                   Array.from({ length: 5 }, (_, i) => (
-                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                    <TableRow key={`skeleton-${i}`} className="animate-pulse">
                       {Array.from({ length: 7 }, (_, j) => (
-                        <td key={j} className="px-3 py-3">
+                        <TableCell key={j} className="px-3 py-3">
                           <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   ))
                 )}
                 {!isLoading && pages.length === 0 && !error && (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-12 text-center">
+                  <TableRow>
+                    <TableCell colSpan={7} className="px-3 py-12 text-center">
                       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
                         {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                       </p>
@@ -452,11 +427,11 @@ export default function DeudoresListClient() {
                       >
                         {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
                 {pages.map((d) => (
-                  <tr
+                  <TableRow
                     key={d.id}
                     onClick={() => navigateToDebtor(d.id)}
                     role="link"
@@ -466,40 +441,35 @@ export default function DeudoresListClient() {
                     }}
                     className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <td className="px-3 py-2.5 text-neutral-900 dark:text-white whitespace-nowrap">
+                    <TableCell className="px-3 py-2.5 text-neutral-900 dark:text-white whitespace-nowrap">
                       {d.fullName}
-                    </td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <span className="text-xs font-semibold text-foreground">
                         {d.currentStage}
                       </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                          daysBadgeClasses(d.daysInStage)
-                        }
-                      >
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
+                      <Badge variant={daysBadgeVariant(d.daysInStage)}>
                         {d.daysInStage}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <Mask field="cedula" value={d.cedulaMasked} />
-                    </td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <Mask field="phone" value={d.phoneMasked} />
-                    </td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <Mask field="email" value={d.emailMasked} />
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-neutral-500 dark:text-neutral-400">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-xs text-neutral-500 dark:text-neutral-400">
                       {d.channel}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* sm cards (mirrors LlamadasTab md+/sm pattern) */}
@@ -536,14 +506,9 @@ export default function DeudoresListClient() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span
-                          className={
-                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                            daysBadgeClasses(d.daysInStage)
-                          }
-                        >
+                        <Badge variant={daysBadgeVariant(d.daysInStage)}>
                           {d.daysInStage} {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
-                        </span>
+                        </Badge>
                         <Mask field="cedula" value={d.cedulaMasked} />
                       </div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5">

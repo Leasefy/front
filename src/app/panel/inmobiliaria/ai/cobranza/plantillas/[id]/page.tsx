@@ -32,7 +32,6 @@ import {
   Clock,
   CheckCircle,
   WarningCircle,
-  CircleNotch,
 } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
@@ -41,6 +40,7 @@ import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templates'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { Spinner, Badge } from '@/components/ui'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -175,23 +175,23 @@ function StatusPill({
 }) {
   if (status === 'published') {
     return (
-      <span className="inline-flex items-center text-xs rounded-full bg-success-soft text-success px-2 py-0.5">
+      <Badge variant="success">
         {t('inmobiliaria.ai.templates.status.published')}
-      </span>
+      </Badge>
     )
   }
   if (status === 'wa_pending') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-warning-soft text-warning px-2 py-0.5">
+      <Badge variant="warning">
         <Clock className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.pending')}
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex items-center text-xs rounded-full border border-border text-fg-muted px-2 py-0.5">
+    <Badge variant="outline">
       {t('inmobiliaria.ai.templates.status.draft')}
-    </span>
+    </Badge>
   )
 }
 
@@ -208,25 +208,25 @@ function WaStatusPill({
 }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-success-soft text-success px-2 py-0.5">
+      <Badge variant="success">
         <CheckCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.approved')}
-      </span>
+      </Badge>
     )
   }
   if (status === 'rejected') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-danger-soft text-danger px-2 py-0.5">
+      <Badge variant="destructive">
         <WarningCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.rejected')}
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-warning-soft text-warning px-2 py-0.5">
+    <Badge variant="warning">
       <Clock className="h-3 w-3" weight="fill" />
       {t('inmobiliaria.ai.templates.waStatus.pending')}
-    </span>
+    </Badge>
   )
 }
 
@@ -472,7 +472,7 @@ function TemplateEditorContent({
             className="min-h-[44px]"
           >
             {isSaving ? (
-              <CircleNotch className="h-4 w-4 animate-spin mr-1" />
+              <Spinner size="sm" variant="current" className="mr-1" />
             ) : null}
             {t('inmobiliaria.ai.templates.saveDraft')}
           </Button>
@@ -488,7 +488,7 @@ function TemplateEditorContent({
                 className="min-h-[44px]"
               >
                 {isPublishing ? (
-                  <CircleNotch className="h-4 w-4 animate-spin mr-1" />
+                  <Spinner size="sm" variant="current" className="mr-1" />
                 ) : null}
                 {t('inmobiliaria.ai.templates.publish')}
               </Button>
@@ -613,7 +613,7 @@ function TemplateEditorContent({
               className="min-h-[44px]"
             >
               {isRefreshingWa ? (
-                <CircleNotch className="h-4 w-4 animate-spin mr-1" />
+                <Spinner size="sm" variant="current" className="mr-1" />
               ) : null}
               {t('inmobiliaria.ai.templates.updateWaStatus')}
             </Button>

@@ -105,7 +105,7 @@ export function FeatureAnnouncementCard({
           type="button"
           onClick={onDismiss}
           aria-label={dismissLabel}
-          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-md bg-white/95 dark:bg-neutral-900/90 backdrop-blur border border-black/[0.06] dark:border-white/10 flex items-center justify-center text-neutral-500 hover:text-[#0B1220] dark:text-neutral-400 dark:hover:text-white transition-colors"
+          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-md bg-white/95 dark:bg-neutral-900/90 backdrop-blur border border-black/[0.06] dark:border-white/10 flex items-center justify-center text-neutral-500 hover:text-[#14130f] dark:text-neutral-400 dark:hover:text-white transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -129,7 +129,7 @@ export function FeatureAnnouncementCard({
 
         <h2
           id={titleId}
-          className={`mt-3.5 font-medium tracking-[-0.02em] text-[#0B1220] dark:text-white leading-tight ${centered ? 'text-[26px]' : 'text-[20px]'}`}
+          className={`mt-3.5 font-medium tracking-[-0.02em] text-[#14130f] dark:text-white leading-tight ${centered ? 'text-[26px]' : 'text-[20px]'}`}
         >
           {title}
         </h2>
@@ -153,7 +153,7 @@ export function FeatureAnnouncementCard({
             <button
               type="button"
               onClick={onDismiss}
-              className="text-[13px] text-neutral-400 hover:text-[#0B1220] dark:text-neutral-500 dark:hover:text-neutral-200 transition-colors"
+              className="text-[13px] text-neutral-400 hover:text-[#14130f] dark:text-neutral-500 dark:hover:text-neutral-200 transition-colors"
             >
               {dismissLinkLabel}
             </button>

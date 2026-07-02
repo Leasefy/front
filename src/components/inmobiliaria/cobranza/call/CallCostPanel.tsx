@@ -33,46 +33,46 @@ export default function CallCostPanel({ cost }: CallCostPanelProps) {
   return (
     <section
       aria-label={t('inmobiliaria.ai.cobranza.call.cost.title')}
-      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
+      className="rounded-[22px] border border-border bg-surface p-4"
     >
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
+      <h2 className="text-sm font-semibold text-fg mb-3">
         {t('inmobiliaria.ai.cobranza.call.cost.title')}
       </h2>
       {allZero ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.call.cost.empty')}
         </p>
       ) : (
         <dl className="space-y-1.5 text-xs">
           <div className="flex justify-between">
-            <dt className="text-neutral-600 dark:text-neutral-400">
+            <dt className="text-fg-muted">
               {t('inmobiliaria.ai.cobranza.call.cost.llm')}
             </dt>
-            <dd className="font-mono tabular-nums text-neutral-800 dark:text-neutral-200">
+            <dd className="font-mono tabular-nums text-fg">
               {formatUsd(cost.llmUsd ?? 0, locale)}
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-neutral-600 dark:text-neutral-400">
+            <dt className="text-fg-muted">
               {t('inmobiliaria.ai.cobranza.call.cost.voice')}
             </dt>
-            <dd className="font-mono tabular-nums text-neutral-800 dark:text-neutral-200">
+            <dd className="font-mono tabular-nums text-fg">
               {formatUsd(cost.voiceUsd ?? 0, locale)}
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-neutral-600 dark:text-neutral-400">
+            <dt className="text-fg-muted">
               {t('inmobiliaria.ai.cobranza.call.cost.whatsapp')}
             </dt>
-            <dd className="font-mono tabular-nums text-neutral-800 dark:text-neutral-200">
+            <dd className="font-mono tabular-nums text-fg">
               {formatUsd(cost.whatsappUsd ?? 0, locale)}
             </dd>
           </div>
-          <div className="flex justify-between pt-2 mt-1 border-t border-neutral-200 dark:border-neutral-800">
-            <dt className="font-semibold text-neutral-800 dark:text-neutral-200">
+          <div className="flex justify-between pt-2 mt-1 border-t border-border">
+            <dt className="font-semibold text-fg">
               {t('inmobiliaria.ai.cobranza.call.cost.total')}
             </dt>
-            <dd className="font-mono tabular-nums font-semibold text-neutral-900 dark:text-white">
+            <dd className="font-mono tabular-nums font-semibold text-fg">
               {formatUsd(cost.totalUsd ?? 0, locale)}
             </dd>
           </div>

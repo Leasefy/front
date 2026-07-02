@@ -35,7 +35,7 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
+import { Button, Spinner } from '@/components/ui'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -221,7 +221,7 @@ function EscalacionesContent() {
       {/* Loading state — DESIGN.md §11 */}
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" />
         </div>
       )}
 

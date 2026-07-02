@@ -40,6 +40,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui'
+import { Badge, type BadgeProps } from '@/components/ui/badge'
 
 // ── Grupos del inbox ──────────────────────────────────────────────────────────
 
@@ -146,6 +147,17 @@ export interface InboxItem {
 
 // ── Card de fila ──────────────────────────────────────────────────────────────
 
+/** Tono del Badge de grupo (pill de estado) por grupo del inbox. */
+const GRUPO_BADGE_VARIANT: Record<InboxGrupo, BadgeProps['variant']> = {
+  nuevas: 'default',
+  promesas: 'default',
+  pagos: 'success',
+  acuerdos: 'warning',
+  disputas: 'destructive',
+  sin_entender: 'secondary',
+  requiere_humano: 'destructive',
+}
+
 const VACIO = '—'
 
 function truncate(s: string, n: number): string {
@@ -190,7 +202,7 @@ export function InboxItemCard({
 
   return (
     <li
-      className={`rounded-xl border bg-card p-4 space-y-2.5 transition-colors ${
+      className={`rounded-xl border bg-surface p-4 space-y-2.5 transition-colors ${
         isOpen ? 'border-primary ring-1 ring-primary/30' : 'border-border'
       }`}
       data-testid={`inbox-item-${item.key}`}
@@ -202,16 +214,14 @@ export function InboxItemCard({
             {item.inquilino || VACIO}
           </span>
           {unread && (
-            <span className="inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary shrink-0">
+            <Badge variant="default" className="shrink-0">
               Nuevo
-            </span>
+            </Badge>
           )}
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 shrink-0 ${meta.badge.bg} ${meta.badge.text} ${meta.badge.ring}`}
-          >
+          <Badge variant={GRUPO_BADGE_VARIANT[item.grupo]} className="gap-1 shrink-0">
             <GrupoIcon className="w-3 h-3" weight="duotone" aria-hidden="true" />
             {meta.label}
-          </span>
+          </Badge>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {item.canal && (
@@ -348,7 +358,7 @@ export function InboxThreadPanel({
               <div
                 className={`max-w-[80%] rounded-xl px-3 py-2 ${
                   inbound
-                    ? 'bg-card border border-border'
+                    ? 'bg-surface border border-border'
                     : 'bg-primary-soft'
                 }`}
               >

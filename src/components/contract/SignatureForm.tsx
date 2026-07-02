@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Check, SpinnerGap, ArrowRight, SealCheck, FileText } from '@phosphor-icons/react';
+import { Check, ArrowRight, SealCheck, FileText } from '@phosphor-icons/react';
+import { Spinner } from '@/components/ui/spinner';
 import { OTPVerification } from './OTPVerification';
 import { SignaturePad } from './SignaturePad';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TextTs
@@ -124,8 +126,8 @@ export function SignatureForm({
             <SealCheck className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Firma electrónica</h3>
-            <p className="text-xs text-muted-foreground">Como {role}</p>
+            <h3 className="font-semibold text-fg">Firma electrónica</h3>
+            <p className="text-xs text-fg-muted">Como {role}</p>
           </div>
         </div>
         <div className="rounded-xl border border-success/30 bg-success-soft p-4">
@@ -150,7 +152,7 @@ export function SignatureForm({
       <div className={cn('space-y-4', className)}>
         {/* Header - Simplified */}
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-foreground">Firma electrónica</h3>
+          <h3 className="font-semibold text-fg">Firma electrónica</h3>
           <span className="px-2.5 py-1 rounded-md bg-primary-soft text-xs font-medium text-primary">
             {role}
           </span>
@@ -164,19 +166,19 @@ export function SignatureForm({
         />
 
         {/* Checkboxes - Single card with dividers */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-surface overflow-hidden">
           {/* Terms checkbox */}
           <label className={cn(
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedTerms
               ? 'bg-primary-soft/50'
-              : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+              : 'hover:bg-surface-muted dark:hover:bg-ink/50'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedTerms
                 ? 'bg-primary border-primary/30'
-                : 'border-neutral-300 dark:border-neutral-600'
+                : 'border-border dark:border-border-strong'
             )}>
               {acceptedTerms && <Check className="w-3 h-3 text-white" />}
             </div>
@@ -190,8 +192,8 @@ export function SignatureForm({
             <span className={cn(
               'text-sm transition-colors',
               acceptedTerms
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+                ? 'text-fg'
+                : 'text-fg-muted'
             )}>
               Acepto los terminos del contrato incluyendo obligaciones, pagos y terminacion.
             </span>
@@ -205,13 +207,13 @@ export function SignatureForm({
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedLegal
               ? 'bg-primary-soft/50'
-              : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+              : 'hover:bg-surface-muted dark:hover:bg-ink/50'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedLegal
                 ? 'bg-primary border-primary/30'
-                : 'border-neutral-300 dark:border-neutral-600'
+                : 'border-border dark:border-border-strong'
             )}>
               {acceptedLegal && <Check className="w-3 h-3 text-white" />}
             </div>
@@ -225,8 +227,8 @@ export function SignatureForm({
             <span className={cn(
               'text-sm transition-colors',
               acceptedLegal
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+                ? 'text-fg'
+                : 'text-fg-muted'
             )}>
               Entiendo que esta firma es legalmente vinculante.
             </span>
@@ -240,13 +242,13 @@ export function SignatureForm({
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedData
               ? 'bg-primary-soft/50'
-              : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+              : 'hover:bg-surface-muted dark:hover:bg-ink/50'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
               acceptedData
                 ? 'bg-primary border-primary/30'
-                : 'border-neutral-300 dark:border-neutral-600'
+                : 'border-border dark:border-border-strong'
             )}>
               {acceptedData && <Check className="w-3 h-3 text-white" />}
             </div>
@@ -260,8 +262,8 @@ export function SignatureForm({
             <span className={cn(
               'text-sm transition-colors',
               acceptedData
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+                ? 'text-fg'
+                : 'text-fg-muted'
             )}>
               Autorizo el tratamiento de datos personales (Ley 1581/2012).
             </span>
@@ -269,19 +271,15 @@ export function SignatureForm({
         </div>
 
         {/* Sign Button */}
-        <button
+        <Button
           onClick={handleSignClick}
           disabled={!canSign || isLoading}
-          className={cn(
-            'w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm transition-all',
-            canSign && !isLoading
-              ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
-              : 'bg-muted text-muted-foreground cursor-not-allowed'
-          )}
+          hideArrow
+          className="w-full gap-2"
         >
           {isLoading ? (
             <>
-              <SpinnerGap className="w-4 h-4 animate-spin" />
+              <Spinner size="sm" variant="current" />
               Procesando...
             </>
           ) : !signatureData ? (
@@ -296,10 +294,10 @@ export function SignatureForm({
               <ArrowRight className="w-4 h-4" />
             </>
           )}
-        </button>
+        </Button>
 
         {/* Legal footnote */}
-        <p className="text-center text-[11px] text-muted-foreground">
+        <p className="text-center text-[11px] text-fg-muted">
           Firma válida según Ley 527/1999 · Verificación por correo requerida
         </p>
       </div>

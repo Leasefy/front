@@ -798,7 +798,7 @@ export default function PropietariosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6">
                       Comenzar gratis
                     </Button>
                   </Link>
@@ -806,7 +806,7 @@ export default function PropietariosPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6 rounded-xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6"
                     >
                       Ver precios
                     </Button>
@@ -826,7 +826,7 @@ export default function PropietariosPage() {
                     { value: '4.9', label: 'Satisfacción' },
                   ].map((stat) => (
                     <div key={stat.label}>
-                      <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-2xl md:text-3xl font-bold text-white font-mono tabular-nums">{stat.value}</p>
                       <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
                     </div>
                   ))}

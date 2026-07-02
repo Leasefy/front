@@ -14,6 +14,14 @@ import { ArrowSquareOut } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
 import type { RecentQuote } from '@/lib/hooks/cotizador/use-carrier-recent-quotes'
 
 // =============================================================================
@@ -58,35 +66,35 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
     return (
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <tbody className="divide-y divide-border">
+          <Table className="min-w-full divide-y divide-border">
+            <TableBody className="divide-y divide-border">
               {[1, 2, 3, 4, 5].map((i) => (
-                <tr key={i}>
-                  <td className="px-4 py-3">
+                <TableRow key={i}>
+                  <TableCell className="px-4 py-3">
                     <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="h-4 w-24 rounded bg-surface-muted animate-pulse" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="h-4 w-20 rounded bg-surface-muted animate-pulse" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="h-4 w-16 rounded bg-surface-muted animate-pulse" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="h-4 w-20 rounded bg-surface-muted animate-pulse" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="h-4 w-16 rounded bg-surface-muted animate-pulse" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="h-4 w-8 rounded bg-surface-muted animate-pulse" />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     )
@@ -105,75 +113,75 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-surface-muted/60">
-            <tr>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+        <Table className="min-w-full divide-y divide-border">
+          <TableHeader className="bg-surface-muted/60">
+            <TableRow>
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.date')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.cedula')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-right">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.canon')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.verdict')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-right">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.prima')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-right">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.latency')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-center">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-center">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.recentQuotes.cols.view')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-border">
             {quotes.map((quote) => (
-              <tr
+              <TableRow
                 key={quote.id}
                 className="hover:bg-surface-muted/50 transition-colors"
               >
                 {/* Fecha/hora */}
-                <td className="px-4 py-3 text-sm text-fg-muted whitespace-nowrap">
+                <TableCell className="px-4 py-3 text-sm text-fg-muted whitespace-nowrap">
                   {new Date(quote.createdAt).toLocaleString('es-CO', {
                     day: '2-digit',
                     month: '2-digit',
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
-                </td>
+                </TableCell>
 
                 {/* Cédula — T-35-11: MUST use <Mask> — never render cedulaHashPrefix8 as raw text */}
-                <td className="px-4 py-3">
+                <TableCell className="px-4 py-3">
                   <Mask field="cedula" value={quote.cedulaHashPrefix8} />
-                </td>
+                </TableCell>
 
                 {/* Canon */}
-                <td className="px-4 py-3 text-sm text-fg-muted text-right whitespace-nowrap">
+                <TableCell className="px-4 py-3 text-sm text-fg-muted text-right whitespace-nowrap">
                   {formatCOP(quote.canonMensualCop)}
-                </td>
+                </TableCell>
 
                 {/* Veredicto */}
-                <td className="px-4 py-3">
+                <TableCell className="px-4 py-3">
                   <VerdictBadge verdict={quote.verdict} t={t} />
-                </td>
+                </TableCell>
 
                 {/* Prima mensual */}
-                <td className="px-4 py-3 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
+                <TableCell className="px-4 py-3 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                   {quote.primaMensualCop != null ? formatCOP(quote.primaMensualCop) : '—'}
-                </td>
+                </TableCell>
 
                 {/* Latencia */}
-                <td className="px-4 py-3 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
+                <TableCell className="px-4 py-3 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                   {quote.latencyMs != null ? `${quote.latencyMs}ms` : '—'}
-                </td>
+                </TableCell>
 
                 {/* Ver link */}
-                <td className="px-4 py-3 text-center">
+                <TableCell className="px-4 py-3 text-center">
                   <Link
                     href={`/panel/inmobiliaria/ai/asegurabilidad/${quote.id}`}
                     className="text-fg-muted hover:text-primary transition-colors inline-flex items-center justify-center"
@@ -181,11 +189,11 @@ export function CarrierRecentQuotesTable({ quotes, isLoading = false }: CarrierR
                   >
                     <ArrowSquareOut className="h-4 w-4" />
                   </Link>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )

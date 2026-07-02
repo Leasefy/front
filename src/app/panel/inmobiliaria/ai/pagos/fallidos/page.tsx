@@ -23,7 +23,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   XCircle,
-  CurrencyDollar,
   Robot,
   ArrowsClockwise,
   LinkSimple,
@@ -37,14 +36,12 @@ import type { Icon } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Button, Card, EmptyState } from '@/components/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import {
   PagoFallidoTabla,
   esPagoFallido,
   clasificarMotivo,
 } from '@/components/inmobiliaria/pagos/PagoFallidoTabla'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
-import { useI18n } from '@/lib/i18n'
 
 // ── Acciones masivas (visión §7) ──────────────────────────────────────────────
 // No hay endpoint de operación en lote → todas son placeholders honestos
@@ -60,7 +57,6 @@ const ACCIONES_MASIVAS: { label: string; icon: Icon }[] = [
 
 function PagosFallidos() {
   const router = useRouter()
-  const { t } = useI18n()
   const { items, isLoading, error, runAction } = useAgentWorkItems('pagos')
 
   // Deriva los fallidos de la cola real + cuenta por motivo para el banner.
@@ -82,15 +78,6 @@ function PagosFallidos() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/pagos"
-            icon={CurrencyDollar}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.pagos'), href: '/panel/inmobiliaria/ai/pagos' },
-              { label: 'Pagos fallidos' },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">Pagos fallidos</h1>
           <p className="text-sm text-fg-muted max-w-2xl">
             Los cobros que no se completaron, agrupados por motivo, para que recuperes el

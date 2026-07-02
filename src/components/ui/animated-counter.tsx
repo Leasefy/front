@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 interface AnimatedCounterProps {
   end: number;
@@ -64,8 +65,9 @@ export function AnimatedCounter({
     };
   }, [isVisible, end, duration]);
 
+  // Cadence numeral: JetBrains Mono tabular, ink — overridable via className.
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} className={cn("font-mono tabular-nums text-fg", className)}>
       {count}{suffix}
     </span>
   );

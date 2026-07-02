@@ -33,17 +33,17 @@ export function CommandPaletteTrigger({ className }: CommandPaletteTriggerProps)
         'group flex items-center gap-2 h-9 pl-3 pr-2.5',
         // ≥44px touch target on coarse pointers (visual height unchanged on desktop)
         '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 [@media(pointer:coarse)]:justify-center',
-        'bg-neutral-50 hover:bg-white border border-neutral-200 hover:border-neutral-300',
+        'bg-surface-muted hover:bg-surface border border-border hover:border-border',
         'rounded-full transition-colors',
-        'text-neutral-400 hover:text-neutral-600',
+        'text-fg-subtle hover:text-fg-muted',
         className,
       )}
     >
       <MagnifyingGlass className="w-3.5 h-3.5 flex-shrink-0" />
-      <span className="text-[13px] text-neutral-400 group-hover:text-neutral-500 transition-colors whitespace-nowrap hidden sm:inline">
+      <span className="text-[13px] text-fg-subtle group-hover:text-fg-muted transition-colors whitespace-nowrap hidden sm:inline">
         {t('inmobiliaria.commandPalette.placeholder')}
       </span>
-      <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 bg-neutral-100 group-hover:bg-neutral-200 rounded-sm border border-neutral-200 transition-colors flex-shrink-0">
+      <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-fg-subtle bg-surface-muted group-hover:bg-surface-muted rounded-sm border border-border transition-colors flex-shrink-0">
         {shortcut}
       </kbd>
     </button>

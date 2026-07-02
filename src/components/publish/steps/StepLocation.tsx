@@ -15,8 +15,8 @@ export function StepLocation() {
       {/* City Selection - Visual Cards */}
       <div className="space-y-4">
         <div>
-          <Label className="text-base font-medium text-neutral-900 dark:text-white">Ciudad</Label>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <Label className="text-base font-medium text-fg">Ciudad</Label>
+          <p className="text-sm text-fg-muted mt-1">
             Selecciona la ciudad donde está ubicado tu inmueble
           </p>
         </div>
@@ -28,28 +28,29 @@ export function StepLocation() {
                 key={city}
                 type="button"
                 onClick={() => updateDraft({ city })}
+                style={isSelected ? { boxShadow: '0 0 0 3px rgba(26,64,255,0.12)' } : undefined}
                 className={cn(
-                  'relative p-4 rounded-xl border text-left transition-all duration-200',
+                  'relative p-4 rounded-[18px] text-left transition-all duration-200',
                   isSelected
-                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:'
+                    ? 'border-2 border-primary bg-primary-soft'
+                    : 'border border-border hover:border-border-strong bg-surface'
                 )}
               >
                 <div className={cn(
                   'absolute top-2.5 right-2.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200',
                   isSelected
-                    ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
-                    : 'border-neutral-300 dark:border-neutral-600'
+                    ? 'border-primary bg-primary'
+                    : 'border-border-strong'
                 )}>
-                  {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                  {isSelected && <Check className="w-3 h-3 text-primary-fg" weight="bold" />}
                 </div>
                 <Buildings className={cn(
                   'w-5 h-5 mb-2 transition-colors',
-                  isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-400 dark:text-neutral-500'
+                  isSelected ? 'text-primary' : 'text-fg-subtle'
                 )} />
                 <span className={cn(
                   'text-sm font-medium',
-                  isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
+                  isSelected ? 'text-fg' : 'text-fg-muted'
                 )}>
                   {city}
                 </span>
@@ -57,30 +58,30 @@ export function StepLocation() {
             );
           })}
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 italic">
+        <p className="text-xs text-fg-subtle italic">
           Pronto estaremos en más ciudades de Colombia.
         </p>
       </div>
 
       {/* Neighborhood - Free text input */}
       <div className="space-y-2">
-        <Label htmlFor="neighborhood" className="text-base font-medium text-neutral-900 dark:text-white">
+        <Label htmlFor="neighborhood" className="text-base font-medium text-fg">
           Barrio
         </Label>
         <div className="relative">
-          <Compass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+          <Compass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle z-10" />
           <Input
             id="neighborhood"
             type="text"
             placeholder="Ej: Chapinero, El Poblado, Granada..."
             value={draft.neighborhood}
             onChange={(e) => updateDraft({ neighborhood: e.target.value })}
-            className="pl-10 h-12 text-base rounded-xl border-neutral-200 dark:border-neutral-700"
+            className="pl-10 h-12 text-base"
             disabled={!draft.city}
           />
         </div>
         {!draft.city && (
-          <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
+          <p className="text-xs text-warning">
             Primero selecciona una ciudad
           </p>
         )}
@@ -88,22 +89,22 @@ export function StepLocation() {
 
       {/* Address */}
       <div className="space-y-2">
-        <Label htmlFor="address" className="text-base font-medium text-neutral-900 dark:text-white">
+        <Label htmlFor="address" className="text-base font-medium text-fg">
           Dirección completa
         </Label>
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle z-10" />
           <Input
             id="address"
             type="text"
             placeholder="Calle 123 #45-67, Apto 101"
             value={draft.address}
             onChange={(e) => updateDraft({ address: e.target.value })}
-            className="pl-10 h-12 text-base rounded-xl border-neutral-200 dark:border-neutral-700"
+            className="pl-10 h-12 text-base"
           />
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
+        <p className="text-xs text-fg-muted flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-success" />
           La dirección exacta solo será visible para inquilinos confirmados
         </p>
       </div>

@@ -68,7 +68,7 @@ export function WorkflowStepper({
       {/* Progress line */}
       <div className="absolute top-5 left-0 right-0 h-0.5 bg-border" />
       <div
-        className="absolute top-5 left-0 h-0.5 bg-emerald-600 transition-all duration-300"
+        className="absolute top-5 left-0 h-0.5 bg-success transition-all duration-300"
         style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
       />
 
@@ -80,6 +80,9 @@ export function WorkflowStepper({
           const isClickable = index <= currentIndex;
 
           return (
+            // allowlist: clickable wizard step-navigator (icon-per-step circle + label-below,
+            // done/active/upcoming state). Cadence Stepper is display-only (non-clickable nav,
+            // numbered, side labels) — can't model this. Native kept, tokens cleaned (emerald→success).
             <button
               key={step.status}
               onClick={() => isClickable && onStepClick(step.status)}
@@ -91,9 +94,9 @@ export function WorkflowStepper({
               <div
                 className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                   isCompleted
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-success text-white'
                     : isCurrent
-                    ? 'bg-emerald-600 text-white ring-4 ring-emerald-600/30'
+                    ? 'bg-success text-white ring-4 ring-success/30'
                     : 'bg-surface-muted text-fg-muted'
                 }`}
               >
@@ -103,7 +106,7 @@ export function WorkflowStepper({
                 <p
                   className={`text-xs font-medium ${
                     isCurrent
-                      ? 'text-emerald-700 dark:text-emerald-400'
+                      ? 'text-success'
                       : 'text-muted-foreground'
                   }`}
                 >
@@ -181,7 +184,7 @@ export function StepRevision({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.expiryDate')}</span>
-              <span className="font-medium text-amber-700 dark:text-amber-400">
+              <span className="font-medium text-warning">
                 {new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}
               </span>
             </div>
@@ -581,6 +584,7 @@ export function StepSignature({
               <p className="text-sm text-muted-foreground">
                 {t('inmobiliaria.operaciones.renovacion.signature.dragOrClick')}
               </p>
+              {/* allowlist: hidden type=file behind a custom drag/click dropzone (playbook file-input allowlist) */}
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"

@@ -12,6 +12,7 @@ import {
   PencilSimple,
   MapPin,
 } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
@@ -236,7 +237,7 @@ export function AgenteCard({
               <Buildings className="w-4 h-4 text-fg-muted" />
               <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.properties')}</span>
             </div>
-            <p className="text-lg font-semibold tabular-nums text-fg">
+            <p className="text-lg font-semibold font-mono tabular-nums text-fg">
               {agente.metrics.assignedProperties}
             </p>
           </div>
@@ -247,7 +248,7 @@ export function AgenteCard({
               <Handshake className="w-4 h-4 text-fg-muted" />
               <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.leases')}</span>
             </div>
-            <p className="text-lg font-semibold tabular-nums text-fg">
+            <p className="text-lg font-semibold font-mono tabular-nums text-fg">
               {agente.metrics.activeLeases}
             </p>
           </div>
@@ -258,7 +259,7 @@ export function AgenteCard({
               <ChartLineUp className="w-4 h-4 text-fg-muted" />
               <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.closingsMonth')}</span>
             </div>
-            <p className="text-lg font-semibold tabular-nums text-fg">
+            <p className="text-lg font-semibold font-mono tabular-nums text-fg">
               {agente.metrics.closedThisMonth}
             </p>
           </div>
@@ -269,7 +270,7 @@ export function AgenteCard({
               <CurrencyDollar className="w-4 h-4 text-fg-muted" />
               <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.commissions')}</span>
             </div>
-            <p className="text-base font-semibold tabular-nums text-fg truncate">
+            <p className="text-base font-semibold font-mono tabular-nums text-fg truncate">
               {formatCurrency(agente.metrics.commissionsThisMonth)}
             </p>
           </div>
@@ -280,7 +281,7 @@ export function AgenteCard({
       <div className="px-5 pb-4">
         <div className="flex items-center justify-between p-3 rounded-lg bg-primary-soft">
           <span className="text-sm text-primary">{t('inmobiliaria.agentes.card.commissionSplit')}</span>
-          <span className="text-lg font-semibold tabular-nums text-primary">
+          <span className="text-lg font-semibold font-mono tabular-nums text-primary">
             {agente.commissionSplit}%
           </span>
         </div>
@@ -291,22 +292,24 @@ export function AgenteCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {onView && (
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={<Eye className="w-4 h-4" />}
                 onClick={(e) => { e.stopPropagation(); onView(); }}
-                className="p-2 rounded-md bg-surface-muted text-fg-muted hover:bg-muted hover:text-fg transition-colors"
                 title={t('inmobiliaria.agentes.card.viewDetailTitle')}
-              >
-                <Eye className="w-4 h-4" />
-              </button>
+                aria-label={t('inmobiliaria.agentes.card.viewDetailTitle')}
+              />
             )}
             {onEdit && (
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={<PencilSimple className="w-4 h-4" />}
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="p-2 rounded-md bg-surface-muted text-fg-muted hover:bg-muted hover:text-fg transition-colors"
                 title={t('inmobiliaria.agentes.card.editTitle')}
-              >
-                <PencilSimple className="w-4 h-4" />
-              </button>
+                aria-label={t('inmobiliaria.agentes.card.editTitle')}
+              />
             )}
           </div>
           {onClick && (

@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, WarningCircle, XCircle, PencilSimple, SpinnerGap } from '@phosphor-icons/react';
+import { X, WarningCircle, XCircle, PencilSimple } from '@phosphor-icons/react';
+import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import type { RejectionType } from '@/lib/types/contract';
 
 const REASON_MIN = 5;
@@ -71,7 +73,7 @@ export function RejectContractModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-xl w-full max-w-lg border border-border"
+            className="bg-surface rounded-xl w-full max-w-lg border border-border"
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
@@ -90,14 +92,14 @@ export function RejectContractModal({
                   )} />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-foreground">
+                  <h2 className="text-base font-semibold text-fg">
                     {lockToType === 'MODIFICATIONS'
                       ? 'Pedir cambios al propietario'
                       : lockToType === 'DEFINITIVE'
                         ? 'Rechazar contrato definitivamente'
                         : 'Rechazar contrato'}
                   </h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-fg-muted mt-0.5">
                     {lockToType === 'MODIFICATIONS'
                       ? 'El propietario recibirá tu pedido y podrá corregir el contrato.'
                       : lockToType === 'DEFINITIVE'
@@ -106,15 +108,15 @@ export function RejectContractModal({
                   </p>
                 </div>
               </div>
-              <button
+              <IconButton
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
                 aria-label="Cerrar"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                icon={<X className="w-5 h-5" />}
+              />
             </div>
 
             {/* Body */}
@@ -123,31 +125,39 @@ export function RejectContractModal({
                   Cuando se abre desde un botón específico ("Pedir cambios" / "Rechazar definitivamente"),
                   mostramos solo un banner explicativo en vez del radio. */}
               {!lockToType && (
-                <div className="space-y-2">
-                  <RejectOption
-                    selected={type === 'MODIFICATIONS'}
-                    onClick={() => setType('MODIFICATIONS')}
-                    icon={PencilSimple}
-                    title="Pedir modificaciones"
+                <RadioCardGroup
+                  className="space-y-2"
+                  value={type}
+                  onValueChange={(v) => setType(v as RejectionType)}
+                >
+                  <RadioCard
+                    value="MODIFICATIONS"
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <PencilSimple className="w-4 h-4 text-warning" />
+                        Pedir modificaciones
+                      </span>
+                    }
                     description="El propietario puede editar los términos y volver a enviarlo. El proceso continúa."
-                    accent="amber"
                   />
-                  <RejectOption
-                    selected={type === 'DEFINITIVE'}
-                    onClick={() => setType('DEFINITIVE')}
-                    icon={XCircle}
-                    title="Rechazo definitivo"
+                  <RadioCard
+                    value="DEFINITIVE"
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <XCircle className="w-4 h-4 text-danger" />
+                        Rechazo definitivo
+                      </span>
+                    }
                     description="El contrato se cancela y el proceso termina. Para retomarlo habría que crear una nueva aplicación."
-                    accent="rose"
                   />
-                </div>
+                </RadioCardGroup>
               )}
 
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-foreground">
+                <label className="block text-xs font-medium text-fg">
                   Motivo <span className="text-danger">*</span>
                 </label>
-                <textarea
+                <Textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   onBlur={() => setTouched(true)}
@@ -160,23 +170,21 @@ export function RejectContractModal({
                   maxLength={REASON_MAX}
                   disabled={isSubmitting}
                   className={cn(
-                    'w-full px-3 py-2 rounded-md border bg-background text-sm resize-none',
-                    reasonError
-                      ? 'border-danger/30 focus:ring-danger'
-                      : 'border-border focus:ring-2 focus:ring-primary'
+                    'resize-none',
+                    reasonError && 'border-danger focus-visible:ring-danger/30'
                   )}
                 />
                 <div className="flex items-center justify-between">
                   {reasonError ? (
                     <p className="text-xs text-danger">{reasonError}</p>
                   ) : (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-fg-muted">
                       Mínimo {REASON_MIN} caracteres. El propietario va a verlo.
                     </p>
                   )}
                   <p className={cn(
                     'text-xs tabular-nums',
-                    reasonTrimmed.length > REASON_MAX ? 'text-danger' : 'text-muted-foreground'
+                    reasonTrimmed.length > REASON_MAX ? 'text-danger' : 'text-fg-muted'
                   )}>
                     {reasonTrimmed.length}/{REASON_MAX}
                   </p>
@@ -200,6 +208,7 @@ export function RejectContractModal({
                 hideArrow
                 onClick={handleSubmit}
                 disabled={!canSubmit}
+                isLoading={isSubmitting}
                 className={cn(
                   'gap-2 text-white',
                   type === 'DEFINITIVE'
@@ -207,7 +216,6 @@ export function RejectContractModal({
                     : 'bg-warning hover:bg-warning/90'
                 )}
               >
-                {isSubmitting && <SpinnerGap className="w-4 h-4 animate-spin" />}
                 {type === 'DEFINITIVE' ? 'Rechazar definitivamente' : 'Enviar cambios solicitados'}
               </Button>
             </div>
@@ -218,62 +226,3 @@ export function RejectContractModal({
   );
 }
 
-// ─── Subcomponent ──────────────────────────────────────────────────────────
-
-function RejectOption({
-  selected,
-  onClick,
-  icon: Icon,
-  title,
-  description,
-  accent,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  accent: 'amber' | 'rose';
-}) {
-  const accentClasses = selected
-    ? accent === 'amber'
-      ? 'border-warning/30 bg-warning-soft'
-      : 'border-danger/30 bg-danger-soft'
-    : 'border-border hover:border-border-strong';
-
-  const iconClasses = accent === 'amber'
-    ? 'text-warning'
-    : 'text-danger';
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'w-full text-left p-3 rounded-xl border transition-colors flex items-start gap-3',
-        accentClasses
-      )}
-    >
-      <div className={cn(
-        'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
-        selected
-          ? accent === 'amber' ? 'border-warning/30' : 'border-danger/30'
-          : 'border-neutral-300 dark:border-neutral-600'
-      )}>
-        {selected && (
-          <div className={cn(
-            'w-2.5 h-2.5 rounded-full',
-            accent === 'amber' ? 'bg-warning' : 'bg-danger'
-          )} />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <Icon className={cn('w-4 h-4', iconClasses)} />
-          <p className="text-sm font-semibold text-foreground">{title}</p>
-        </div>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-    </button>
-  );
-}

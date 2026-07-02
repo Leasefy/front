@@ -28,7 +28,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Bank, Receipt, ShieldCheck } from '@phosphor-icons/react'
+import { Receipt, ShieldCheck } from '@phosphor-icons/react'
 
 import {
   Button,
@@ -52,8 +52,7 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Chip } from '@leasefy/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Chip } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import {
   useConciliacionSettlements,
@@ -294,18 +293,6 @@ function ConciliacionLiquidaciones() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/conciliacion"
-            icon={Bank}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              {
-                label: t('inmobiliaria.ai.workspace.agente.conciliacion'),
-                href: '/panel/inmobiliaria/ai/conciliacion',
-              },
-              { label: 'Liquidaciones a propietario' },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
             Liquidaciones a propietario
           </h1>

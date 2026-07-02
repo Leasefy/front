@@ -19,7 +19,6 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowClockwise,
-  ChatCircleText,
   CheckCircle,
   Clock,
   Warning,
@@ -27,10 +26,9 @@ import {
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { Chip } from '@leasefy/ui'
+import { Button, Spinner } from '@/components/ui'
+import { Chip } from '@leasefy/cadence'
 import {
   usePendientes,
   type PendienteCta,
@@ -232,7 +230,7 @@ function PendientesContent() {
     return (
       <main className="p-6 lg:p-8">
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" />
         </div>
       </main>
     )
@@ -243,16 +241,6 @@ function PendientesContent() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <MigaDePan
-            backHref={BASE}
-            icon={ChatCircleText}
-            className="mb-2"
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-              { label: t(`${NS}.pageTitle`) },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t(`${NS}.pageTitle`)}
           </h1>
@@ -271,19 +259,8 @@ function PendientesContent() {
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
-      {/* Header — patrón MigaDePan (cobranza overview) */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <MigaDePan
-            backHref={BASE}
-            icon={ChatCircleText}
-            className="mb-2"
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-              { label: t(`${NS}.pageTitle`) },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t(`${NS}.pageTitle`)}
           </h1>

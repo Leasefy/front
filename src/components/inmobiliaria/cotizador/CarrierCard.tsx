@@ -2,8 +2,9 @@
 // Phase 30 plan 30-06 | COTI-UI-03 | XR-05
 // Single carrier state card with entrance animation.
 
-import { Warning, CheckCircle, XCircle, Question, Spinner } from '@phosphor-icons/react'
+import { Warning, CheckCircle, XCircle, Question } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
+import { Spinner } from '@/components/ui/spinner'
 import { useI18n } from '@/lib/i18n'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 
@@ -77,7 +78,7 @@ function StatusIcon({ status }: { status: CarrierState['status'] }) {
     case 'stub':
       return <Question weight="fill" className="w-4 h-4 text-fg-muted" />
     case 'pending':
-      return <Spinner weight="bold" className="w-4 h-4 text-primary animate-spin" />
+      return <Spinner size="sm" />
     default:
       return null
   }

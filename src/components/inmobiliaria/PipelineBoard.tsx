@@ -26,6 +26,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
+import { Button } from '@/components/ui';
+import { IconButton } from '@leasefy/cadence';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
@@ -157,8 +159,8 @@ function DroppableColumn({
   }, [isSidebarOpen, stopLenis, startLenis]);
 
   // Extract background and text color classes from stageInfo
-  const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-neutral-100';
-  const textColorClass = stageInfo?.color?.split(' ')[1] || 'text-neutral-700';
+  const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-surface-muted';
+  const textColorClass = stageInfo?.color?.split(' ')[1] || 'text-fg';
 
   // Calculate if we need to show "Ver todo" button (show when 3+ items)
   const showExpandButton = items.length >= maxVisibleCards;
@@ -210,17 +212,13 @@ function DroppableColumn({
 
         {/* Right side: collapse toggle */}
         {collapsible && (
-          <button
+          <IconButton
+            variant="ghost"
+            size="sm"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label={isCollapsed ? t('inmobiliaria.pipeline.expandColumn') : t('inmobiliaria.pipeline.collapseColumn')}
-          >
-            {isCollapsed ? (
-              <CaretDown className="w-4 h-4" />
-            ) : (
-              <CaretUp className="w-4 h-4" />
-            )}
-          </button>
+            icon={isCollapsed ? <CaretDown className="w-4 h-4" /> : <CaretUp className="w-4 h-4" />}
+          />
         )}
       </div>
 
@@ -291,18 +289,16 @@ function DroppableColumn({
             {/* Ver todo button */}
             {showExpandButton && (
               <div className="px-2.5 pb-2.5">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
                   onClick={() => setIsSidebarOpen(true)}
-                  className={cn(
-                    'w-full flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-all',
-                    'border border-border',
-                    'text-muted-foreground',
-                    'hover:bg-muted hover:text-foreground'
-                  )}
+                  className="w-full"
                 >
                   <ArrowsOutSimple className="w-4 h-4" />
                   {t('inmobiliaria.pipeline.viewAll')} ({items.length})
-                </button>
+                </Button>
               </div>
             )}
           </motion.div>
@@ -358,13 +354,13 @@ function DroppableColumn({
                   </p>
                 </div>
               </div>
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsSidebarOpen(false)}
-                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label={t('inmobiliaria.pipeline.close')}
-              >
-                <X className="w-5 h-5" />
-              </button>
+                icon={<X className="w-5 h-5" />}
+              />
             </div>
 
             {/* Scrollable Content - Absolute positioned */}

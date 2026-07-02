@@ -20,7 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
-import { SegmentedControl } from '@leasefy/ui';
+import { SegmentedControl } from '@leasefy/cadence';
 import { useConsignaciones, usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';

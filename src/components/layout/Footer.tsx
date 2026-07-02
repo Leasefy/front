@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 const menuLinks = [
   { href: "/", label: "Inicio" },
@@ -154,12 +155,14 @@ export function Footer() {
                 aria-label="Correo electrónico para suscripción"
                 className="flex-1 h-[44px] px-4 bg-white/5 border border-white/10 rounded-l-xl text-[16px] text-white placeholder:text-white/40 focus:outline-none focus:border-white/20 tracking-[-0.32px]"
               />
-              <button
+              <Button
                 type="submit"
-                className="h-[44px] px-[20px] bg-white text-primary rounded-r-xl text-[15px] tracking-[-0.15px] hover:bg-white/90 transition-colors"
+                variant="white"
+                hideArrow
+                className="h-[44px] px-[20px] rounded-l-none rounded-r-xl text-[15px] tracking-[-0.15px]"
               >
                 Suscribir
-              </button>
+              </Button>
             </form>
           </motion.div>
 

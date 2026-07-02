@@ -12,7 +12,11 @@ import {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 } from '@phosphor-icons/react';
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AgentType, AgentExecutionStatus } from '@/lib/types/beta-chat';
@@ -30,6 +34,9 @@ const ICON_MAP: Record<string, Icon> = {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 };
 
 // ============================================================================
@@ -63,6 +70,9 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   cotizador: 'Cotización de seguro lista para revisar.',
   estudio: 'Estudio del inquilino completado.',
   matching: 'Propiedades sugeridas según el perfil.',
+  avaluo: 'Avalúo del inmueble listo para revisar.',
+  conciliacion: 'Conciliación de pagos completada.',
+  pagos: 'Pagos a propietarios procesados.',
   pipeline: '5 propiedades en portafolio. 1 vacante con 3 candidatos.',
   mantenimiento: '3 solicitudes activas. 1 urgente (fuga Apt 502).',
   documentos: '5 contratos vigentes. 1 vence en 18 dias.',
@@ -75,6 +85,9 @@ const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   cotizador: 'No se pudo cotizar en este momento. Reintente.',
   estudio: 'No se pudo completar el estudio del inquilino.',
   matching: 'No se pudo generar el matching de propiedades.',
+  avaluo: 'No se pudo completar el avalúo del inmueble.',
+  conciliacion: 'No se pudo conciliar los pagos en este momento.',
+  pagos: 'No se pudieron procesar los pagos. Reintente.',
   pipeline: 'Error al consultar el pipeline de propiedades.',
   mantenimiento: 'Tiempo de espera agotado al consultar mantenimientos.',
   documentos: 'Error al acceder repositorio de documentos.',
@@ -210,26 +223,25 @@ export function AgentResultCard({
 
             {/* Retry button for failed agents */}
             {isFailed && onRetry && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onRetry();
                 }}
                 className={cn(
-                  'mt-2 inline-flex items-center gap-1.5',
-                  'px-2.5 py-1 rounded-sm',
+                  'mt-2 gap-1.5 px-2.5 py-1 h-auto rounded-sm',
                   'text-xs font-medium',
-                  'bg-danger-soft',
-                  'text-danger',
-                  'border border-danger/30 border-danger/40',
-                  'hover:bg-danger-soft',
-                  'transition-colors duration-150'
+                  'bg-danger-soft text-danger',
+                  'border border-danger/30',
+                  'hover:bg-danger-soft'
                 )}
               >
                 <ArrowClockwise className="w-3 h-3" weight="bold" />
                 {t('beta.agents.retry')}
-              </button>
+              </Button>
             )}
           </div>
         </div>

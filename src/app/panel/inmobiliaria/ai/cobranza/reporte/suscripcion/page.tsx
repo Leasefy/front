@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { MonoLabel } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -26,7 +27,6 @@ import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useSubscription } from '@/lib/hooks/cobranza/use-subscription'
 import { SubscriptionToggles } from '@/components/inmobiliaria/cobranza/SubscriptionToggles'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 interface SubscriptionStats {
@@ -84,15 +84,6 @@ function SuscripcionContent() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl">
       <div>
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/cobranza/reporte"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.cobranza'), href: '/panel/inmobiliaria/ai/cobranza' },
-            { label: t('inmobiliaria.ai.cobranza.reporte.pageTitle'), href: '/panel/inmobiliaria/ai/cobranza/reporte' },
-            { label: t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle') },
-          ]}
-        />
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle')}
         </h1>
@@ -123,9 +114,9 @@ function SuscripcionContent() {
           {/* Admin aggregate — read only */}
           {isAdmin && (
             <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel>
                 {locale.startsWith('es') ? 'Vista agregada (admin)' : 'Aggregate view (admin)'}
-              </h2>
+              </MonoLabel>
               {!statsSupported ? (
                 <p className="text-xs font-mono text-muted-foreground">
                   {locale.startsWith('es')

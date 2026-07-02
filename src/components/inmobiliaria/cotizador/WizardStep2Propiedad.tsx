@@ -2,7 +2,7 @@
 // Phase 30 plan 30-05 (COTI-UI-02)
 
 import { Minus, Plus } from '@phosphor-icons/react'
-import { SegmentedControl } from '@leasefy/ui'
+import { SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'

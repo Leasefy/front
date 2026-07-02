@@ -6,7 +6,7 @@
  * The shared "Detalle de caso" body, extracted from the F6 conciliación [id]
  * page once Estudio and Matching needed the same surface (3rd copy → extract).
  *
- * Renders: breadcrumb to the cola · header with the ColaHumana
+ * Renders: header with the ColaHumana
  * estado/severidad/flag vocabulary (t323 included) · left = <AccionSugerida>
  * + contexto blocks (+ optional cross-workspace link card) · right =
  * <TrazaCaso>. Handles loading, error, not-available (the agent doesn't
@@ -28,7 +28,8 @@ import {
   XCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
-import { MigaDePan } from './MigaDePan'
+
+import { MonoLabel } from '@leasefy/cadence'
 
 import type { WorkItemAction, WorkItemEstado } from '@/lib/api/work-item'
 import type { WorkItemDetailResponse } from '@/lib/api/agent-workspace'
@@ -101,7 +102,6 @@ export function WorkItemDetalle({
   error,
   notAvailable,
   colaHref,
-  colaLabel,
   icon,
   onAction,
   crossLink,
@@ -110,20 +110,6 @@ export function WorkItemDetalle({
   const { t } = useI18n()
   // Finite icon maps crash when a key is missing — ALWAYS fall back here.
   const BreadcrumbIcon = icon ?? Robot
-
-  // ← + miga de pan: el botón vuelve a la cola; la miga también permite
-  // saltar al hub de agentes (patrón MigaDePan, pedido UX 2026-06-11).
-  const backToCola = (
-    <MigaDePan
-      backHref={colaHref}
-      icon={BreadcrumbIcon}
-      crumbs={[
-        { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-        { label: colaLabel, href: colaHref },
-        { label: t(`${NS}.migaCaso`) },
-      ]}
-    />
-  )
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (isLoading) {
@@ -146,7 +132,6 @@ export function WorkItemDetalle({
   if (error) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
-        {backToCola}
         <div
           className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
           data-testid="caso-error"
@@ -161,7 +146,7 @@ export function WorkItemDetalle({
   // elemento con énfasis): el notFoundAction de la página o, si no llega, el
   // clásico "Volver a la cola". Ambos comparten el mismo pill mudo.
   const EMPTY_CTA_CLS =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150'
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150'
   const emptyStateCta = notFoundAction ? (
     <Link href={notFoundAction.href} className={EMPTY_CTA_CLS} data-testid="caso-not-found-action">
       {notFoundAction.label}
@@ -178,25 +163,24 @@ export function WorkItemDetalle({
   if (notAvailable) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
-        {backToCola}
         <div
           role="status"
           aria-label={t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
           className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-no-disponible"
         >
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
             <BreadcrumbIcon
               weight="duotone"
-              className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+              className="h-6 w-6 text-fg-subtle"
               aria-hidden="true"
             />
           </div>
           <div className="space-y-1.5">
-            <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+            <p className="text-[15px] font-semibold text-fg">
               {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleTitle')}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+            <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
               {t('inmobiliaria.ai.workspace.pages.comun.detalleNoDisponibleBody')}
             </p>
           </div>
@@ -210,25 +194,24 @@ export function WorkItemDetalle({
   if (!data) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
-        {backToCola}
         <div
           role="status"
           aria-label={t(`${NS}.notFoundTitle`)}
           className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
           data-testid="caso-not-found"
         >
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
             <MagnifyingGlass
               weight="duotone"
-              className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+              className="h-6 w-6 text-fg-subtle"
               aria-hidden="true"
             />
           </div>
           <div className="space-y-1.5">
-            <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+            <p className="text-[15px] font-semibold text-fg">
               {t(`${NS}.notFoundTitle`)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+            <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
               {t(`${NS}.notFoundBody`)}
             </p>
           </div>
@@ -245,16 +228,15 @@ export function WorkItemDetalle({
 
   return (
     <div className="p-6 lg:p-8 space-y-6" data-testid={`caso-${item.id}`}>
-      {/* Breadcrumb + header */}
+      {/* Header */}
       <header className="space-y-2">
-        {backToCola}
         <h1 className="text-2xl font-semibold text-foreground">{item.titulo}</h1>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span
-            className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
+          <MonoLabel
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
           >
             {severidadLabel(t, item.severidad)}
-          </span>
+          </MonoLabel>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
             {estadoLabel(t, item.estado, item.agente)}
           </span>
@@ -289,9 +271,9 @@ export function WorkItemDetalle({
               className="rounded-xl border border-border bg-card p-4 space-y-2"
               data-testid="caso-decision"
             >
-              <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel className="text-muted-foreground">
                 {t(`${NS}.decision`)}
-              </p>
+              </MonoLabel>
               <div className="flex items-center gap-2">
                 {item.estado === 'rechazado' || item.estado === 'fallo' ? (
                   <XCircle className="w-5 h-5 text-danger" weight="duotone" aria-hidden="true" />

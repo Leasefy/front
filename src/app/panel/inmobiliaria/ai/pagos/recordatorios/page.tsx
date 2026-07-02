@@ -17,7 +17,6 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  CurrencyDollar,
   BellRinging,
   CalendarCheck,
   ClockClockwise,
@@ -31,12 +30,10 @@ import {
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { useI18n } from '@/lib/i18n'
 
 import { Button, Card, CardContent, Switch } from '@/components/ui'
-import { Chip, SegmentedControl, Eyebrow } from '@leasefy/ui'
+import { Chip, SegmentedControl, Eyebrow } from '@leasefy/cadence'
 
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import {
   SecuenciaRecordatorios,
   type PasoRecordatorio,
@@ -119,8 +116,6 @@ const CUANDO_COBRANZA: { value: string; label: string }[] = [
 ]
 
 function PagosRecordatorios() {
-  const { t } = useI18n()
-
   // Estado local (no persiste: sin endpoint → "Próximamente").
   const [automatico, setAutomatico] = useState(true)
   const [canales, setCanales] = useState<Set<CanalId>>(new Set<CanalId>(['whatsapp', 'correo']))
@@ -145,15 +140,6 @@ function PagosRecordatorios() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/pagos"
-          icon={CurrencyDollar}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.pagos'), href: '/panel/inmobiliaria/ai/pagos' },
-            { label: 'Recordatorios' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">Recordatorios</h1>
         <p className="text-sm text-fg-muted max-w-2xl">
           La secuencia de avisos que enviamos <span className="font-medium text-fg">antes</span> de

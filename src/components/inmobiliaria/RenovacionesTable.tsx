@@ -22,6 +22,22 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import {
   DropdownList,
   DropdownListTrigger,
@@ -29,6 +45,7 @@ import {
   DropdownListItem,
   DropdownListSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Chip } from '@leasefy/cadence';
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import {
   getRenovacionStatusColor,
@@ -205,7 +222,8 @@ export function RenovacionesTable({
     children: React.ReactNode;
     className?: string;
   }) => (
-    <th className={cn('text-left p-4', className)}>
+    <TableHead className={cn('text-left p-4', className)}>
+      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
       <button
         onClick={() => handleSort(field)}
         className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
@@ -213,7 +231,7 @@ export function RenovacionesTable({
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
       </button>
-    </th>
+    </TableHead>
   );
 
   const hasSelection = selectedItems.size > 0;
@@ -224,92 +242,61 @@ export function RenovacionesTable({
       {/* Filter Tabs and Status Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Bucket Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-md bg-muted/50">
-          <button
-            onClick={() => setBucketFilter('all')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-              bucketFilter === 'all'
-                ? 'bg-background text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip selected={bucketFilter === 'all'} onClick={() => setBucketFilter('all')}>
             {t('inmobiliaria.finance.renewals.all')}
-            <span className="px-1.5 py-0.5 rounded text-xs tabular-nums bg-muted">
+            <span className="ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums bg-muted">
               {bucketCounts.all}
             </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('0-30')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-              bucketFilter === '0-30'
-                ? 'bg-background text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
+          </Chip>
+          <Chip selected={bucketFilter === '0-30'} onClick={() => setBucketFilter('0-30')}>
             {t('inmobiliaria.finance.renewals.critical')}
             <span className={cn(
-              'px-1.5 py-0.5 rounded text-xs tabular-nums',
+              'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
               bucketFilter === '0-30' ? 'bg-danger-soft text-danger' : 'bg-muted'
             )}>
               {bucketCounts['0-30']}
             </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('31-60')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-              bucketFilter === '31-60'
-                ? 'bg-background text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
+          </Chip>
+          <Chip selected={bucketFilter === '31-60'} onClick={() => setBucketFilter('31-60')}>
             {t('inmobiliaria.finance.renewals.urgent')}
             <span className={cn(
-              'px-1.5 py-0.5 rounded text-xs tabular-nums',
+              'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
               bucketFilter === '31-60' ? 'bg-warning-soft text-warning' : 'bg-muted'
             )}>
               {bucketCounts['31-60']}
             </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('61-90')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-              bucketFilter === '61-90'
-                ? 'bg-background text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
+          </Chip>
+          <Chip selected={bucketFilter === '61-90'} onClick={() => setBucketFilter('61-90')}>
             {t('inmobiliaria.finance.renewals.upcoming')}
             <span className={cn(
-              'px-1.5 py-0.5 rounded text-xs tabular-nums',
+              'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
               bucketFilter === '61-90' ? 'bg-primary-soft text-primary' : 'bg-muted'
             )}>
               {bucketCounts['61-90']}
             </span>
-          </button>
+          </Chip>
         </div>
 
         {/* Status Filter Dropdown */}
         <div className="flex items-center gap-2">
           <Funnel className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">{t('inmobiliaria.finance.renewals.statusLabel')}:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="pl-3 pr-8 py-1.5 rounded-md border border-border bg-background text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
-          >
-            <option value="all">{t('inmobiliaria.finance.renewals.allStatuses')}</option>
-            <option value="pending">{t('inmobiliaria.finance.renewals.statusPending')}</option>
-            <option value="notified">{t('inmobiliaria.finance.renewals.statusNotified')}</option>
-            <option value="negotiating">{t('inmobiliaria.finance.renewals.statusNegotiating')}</option>
-            <option value="approved">{t('inmobiliaria.finance.renewals.statusApproved')}</option>
-            <option value="signed">{t('inmobiliaria.finance.renewals.statusSigned')}</option>
-            <option value="completed">{t('inmobiliaria.finance.renewals.statusCompleted')}</option>
-            <option value="terminated">{t('inmobiliaria.finance.renewals.statusTerminated')}</option>
-          </select>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="h-9 w-auto gap-2 text-sm font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('inmobiliaria.finance.renewals.allStatuses')}</SelectItem>
+              <SelectItem value="pending">{t('inmobiliaria.finance.renewals.statusPending')}</SelectItem>
+              <SelectItem value="notified">{t('inmobiliaria.finance.renewals.statusNotified')}</SelectItem>
+              <SelectItem value="negotiating">{t('inmobiliaria.finance.renewals.statusNegotiating')}</SelectItem>
+              <SelectItem value="approved">{t('inmobiliaria.finance.renewals.statusApproved')}</SelectItem>
+              <SelectItem value="signed">{t('inmobiliaria.finance.renewals.statusSigned')}</SelectItem>
+              <SelectItem value="completed">{t('inmobiliaria.finance.renewals.statusCompleted')}</SelectItem>
+              <SelectItem value="terminated">{t('inmobiliaria.finance.renewals.statusTerminated')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -368,36 +355,35 @@ export function RenovacionesTable({
 
       {/* Data Table */}
       <div className="overflow-x-auto -mx-5 mt-5 border-t border-border">
-        <table className="w-full min-w-[1100px]">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="w-12 p-4">
-                <input
-                  type="checkbox"
+        <Table className="w-full min-w-[1100px]">
+          <TableHeader>
+            <TableRow className="border-b border-border">
+              <TableHead className="w-12 p-4">
+                <Checkbox
                   checked={
                     selectedItems.size === filteredAndSortedItems.length &&
                     filteredAndSortedItems.length > 0
                   }
-                  onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-border accent-primary"
+                  onCheckedChange={() => toggleSelectAll()}
+                  aria-label="Seleccionar todo"
                 />
-              </th>
+              </TableHead>
               <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
               <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
               <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
-              <th className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {t('inmobiliaria.finance.renewals.expiration')}
-              </th>
+              </TableHead>
               <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.days')}</SortableHeader>
               <SortableHeader field="currentRent">{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
-              <th className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {t('inmobiliaria.finance.renewals.proposed')}
-              </th>
+              </TableHead>
               <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
-              <th className="w-12 p-4"></th>
-            </tr>
-          </thead>
-          <tbody>
+              <TableHead className="w-12 p-4"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredAndSortedItems.map((item, index) => {
               const isUrgent = item.urgencyBucket === '0-30';
               const isSelected = selectedItems.has(item.id);
@@ -418,17 +404,16 @@ export function RenovacionesTable({
                   )}
                 >
                   {/* Checkbox */}
-                  <td className="p-4">
-                    <input
-                      type="checkbox"
+                  <TableCell className="p-4">
+                    <Checkbox
                       checked={isSelected}
-                      onChange={() => toggleSelectItem(item.id)}
-                      className="w-4 h-4 rounded border-border accent-primary"
+                      onCheckedChange={() => toggleSelectItem(item.id)}
+                      aria-label="Seleccionar fila"
                     />
-                  </td>
+                  </TableCell>
 
                   {/* Property */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
@@ -456,10 +441,10 @@ export function RenovacionesTable({
                         </p>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Tenant */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <User className="w-4 h-4 text-muted-foreground" />
@@ -473,24 +458,24 @@ export function RenovacionesTable({
                         </p>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Propietario */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span className="text-sm text-foreground truncate block max-w-[100px]">
                       {item.propietarioName}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* End Date */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span className="text-sm text-foreground">
                       {formatDate(item.leaseEndDate, locale)}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Days Until Expiry */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span
                       className={cn(
                         'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
@@ -500,17 +485,17 @@ export function RenovacionesTable({
                       {isUrgent && <Warning className="w-3.5 h-3.5" weight="fill" />}
                       {item.daysUntilExpiry}d
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Current Rent */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span className="text-sm font-medium text-foreground">
                       {formatCurrencyLocal(item.currentRent, locale)}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Proposed Rent */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     {item.proposedRent && (
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-foreground">
@@ -524,10 +509,10 @@ export function RenovacionesTable({
                         )}
                       </div>
                     )}
-                  </td>
+                  </TableCell>
 
                   {/* Status */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <span
                       className={cn(
                         'inline-flex px-2.5 py-1 rounded-full text-xs font-medium',
@@ -536,10 +521,10 @@ export function RenovacionesTable({
                     >
                       {getRenovacionStatusLabel(item.status)}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Actions */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <DropdownList>
                       <DropdownListTrigger asChild>
                         <Button
@@ -603,12 +588,12 @@ export function RenovacionesTable({
                         )}
                       </DropdownListContent>
                     </DropdownList>
-                  </td>
+                  </TableCell>
                 </motion.tr>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         {/* Empty State */}
         {filteredAndSortedItems.length === 0 && (

@@ -18,6 +18,7 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { CaretRight, Tray, Clock } from '@phosphor-icons/react'
 
+import { MonoLabel } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import type { Severidad, WorkItem } from '@/lib/api/work-item'
@@ -59,11 +60,11 @@ function InboxRow({ item, tf }: { item: WorkItem; tf: (k: string, fb: string) =>
       <div className="min-w-0 flex-1 space-y-1.5">
         {/* Chips row: severidad + estado + relative time */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span
-            className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
+          <MonoLabel
+            className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
           >
             {severidadLabel(t, item.severidad)}
-          </span>
+          </MonoLabel>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
             {estadoLabel(t, item.estado, 'cotizador')}
           </span>

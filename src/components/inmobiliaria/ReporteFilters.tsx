@@ -1,20 +1,26 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
   Funnel,
   X,
-  CaretDown,
   CalendarBlank,
   Star,
   MapPin,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { Chip, SegmentedControl } from '@leasefy/ui';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Chip, SegmentedControl, IconButton } from '@leasefy/cadence';
 import type { ReportCategory } from '@/lib/types/inmobiliaria';
 
 export interface ReporteFiltersState {
@@ -125,7 +131,6 @@ export function ReporteFilters({
   minimal = false,
 }: ReporteFiltersProps) {
   const { t, formatDate: fmtDate } = useI18n();
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
   const [selectedPeriodOption, setSelectedPeriodOption] = useState('this-month');
 
@@ -165,7 +170,6 @@ export function ReporteFilters({
         const newPeriod = getPeriodDates(option);
         onFiltersChange({ ...filters, period: newPeriod });
       }
-      setOpenDropdown(null);
     },
     [filters, onFiltersChange]
   );
@@ -186,24 +190,26 @@ export function ReporteFilters({
     <div className="space-y-4">
       {/* Row 1: Search */}
       <div className="relative">
-        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
+        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+        <Input
           type="text"
           placeholder={t('inmobiliaria.reporte.searchReports')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary/30 transition-all"
+          className="w-full pl-10 pr-4"
         />
         {searchInput && (
-          <button
+          <IconButton
+            variant="ghost"
+            size="sm"
             onClick={() => {
               setSearchInput('');
               updateFilter('search', '');
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-          >
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
+            aria-label="Limpiar búsqueda"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+            icon={<X className="w-4 h-4" />}
+          />
         )}
       </div>
 
@@ -223,14 +229,12 @@ export function ReporteFilters({
                 <span className="flex items-center gap-2 whitespace-nowrap">
                   {t(tab.labelKey)}
                   {count > 0 && (
-                    <span
-                      className={cn(
-                        'px-1.5 py-0.5 rounded-full text-xs min-w-[18px] text-center',
-                        isActive ? 'bg-primary-soft text-primary' : 'bg-muted-foreground/20'
-                      )}
+                    <Badge
+                      variant={isActive ? 'default' : 'secondary'}
+                      className="min-w-[18px] justify-center px-1.5 py-0 text-xs"
                     >
                       {count}
-                    </span>
+                    </Badge>
                   )}
                 </span>
               ),
@@ -242,105 +246,38 @@ export function ReporteFilters({
         <div className="hidden sm:block w-px h-6 bg-border" />
 
         {/* Period Selector */}
-        <div className="relative">
-          <button
-            onClick={() =>
-              setOpenDropdown(openDropdown === 'period' ? null : 'period')
-            }
-            className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background text-sm font-medium hover:bg-muted transition-all"
-          >
-            <CalendarBlank className="w-4 h-4 text-muted-foreground" />
+        <Select value={selectedPeriodOption} onValueChange={handlePeriodSelect}>
+          <SelectTrigger className="w-auto gap-2">
+            <CalendarBlank className="w-4 h-4 text-muted-foreground shrink-0" />
             <span className="text-foreground">
               {formatPeriodDisplayFn(filters.period, fmtDate)}
             </span>
-            <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
-          <AnimatePresence>
-            {openDropdown === 'period' && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-1 w-52 p-2 rounded-xl border border-border bg-card z-20"
-              >
-                {PERIOD_OPTION_KEYS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handlePeriodSelect(option.value)}
-                    className={cn(
-                      'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                      selectedPeriodOption === option.value
-                        ? 'bg-primary-soft text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    )}
-                  >
-                    {t(option.labelKey)}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+          </SelectTrigger>
+          <SelectContent>
+            {PERIOD_OPTION_KEYS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {t(option.labelKey)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Zone Dropdown */}
-        <div className="relative">
-          <Chip
-            selected={!!filters.zone}
-            onClick={() =>
-              setOpenDropdown(openDropdown === 'zone' ? null : 'zone')
-            }
-            icon={<MapPin className="w-3.5 h-3.5" />}
-          >
-            <span className="flex items-center gap-1.5">
-              <span className="max-w-[100px] truncate">
-                {filters.zone || t('inmobiliaria.reporte.zone')}
-              </span>
-              <CaretDown className="w-3.5 h-3.5" />
-            </span>
-          </Chip>
-          <AnimatePresence>
-            {openDropdown === 'zone' && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                className="absolute left-0 top-full mt-1 w-52 p-2 rounded-xl border border-border bg-card z-20 max-h-64 overflow-y-auto"
-              >
-                <button
-                  onClick={() => {
-                    updateFilter('zone', null);
-                    setOpenDropdown(null);
-                  }}
-                  className={cn(
-                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                    !filters.zone
-                      ? 'bg-primary-soft text-primary font-medium'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                >
-                  {t('inmobiliaria.reporte.allZones')}
-                </button>
-                {zones.map((zone) => (
-                  <button
-                    key={zone}
-                    onClick={() => {
-                      updateFilter('zone', zone);
-                      setOpenDropdown(null);
-                    }}
-                    className={cn(
-                      'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                      filters.zone === zone
-                        ? 'bg-primary-soft text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    )}
-                  >
-                    {zone}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <Select
+          value={filters.zone ?? 'all'}
+          onValueChange={(v) => updateFilter('zone', v === 'all' ? null : v)}
+        >
+          <SelectTrigger className="w-auto min-w-[140px] gap-2">
+            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-64">
+            <SelectItem value="all">{t('inmobiliaria.reporte.allZones')}</SelectItem>
+            {zones.map((zone) => (
+              <SelectItem key={zone} value={zone}>{zone}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Favorites Toggle */}
         <Chip
@@ -371,14 +308,6 @@ export function ReporteFilters({
           </Button>
         )}
       </div>
-
-      {/* Close dropdowns on click outside */}
-      {openDropdown && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setOpenDropdown(null)}
-        />
-      )}
     </div>
   );
 }

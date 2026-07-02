@@ -16,7 +16,14 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
 import { Button, Input, Textarea } from '@/components/ui';
-import { SegmentedControl } from '@leasefy/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
 import { propertiesApi } from '@/lib/api/properties.service';
@@ -36,10 +43,6 @@ const PROPERTY_TYPES: { value: PropertyType; labelKey: string }[] = [
   { value: 'studio', labelKey: 'typeStudio' },
   { value: 'room', labelKey: 'typeRoom' },
 ];
-
-// Native <select> styled to match the DS Input skin (tokens only, no brand hex).
-const selectClass =
-  'w-full px-3 py-2.5 rounded-md border border-border bg-bg text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary text-sm transition-all';
 
 const MAX_PHOTOS = 4;
 // ~4 min cap so a forgotten recorder can't produce an oversized upload, and a
@@ -352,12 +355,16 @@ export function PropertyIACapture() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg">{t(k('fCity'))} *</label>
-              <select value={form.city} onChange={(e) => updateForm('city', e.target.value)} className={selectClass}>
-                <option value="">{t(k('selectCity'))}</option>
-                {COLOMBIAN_CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <Select value={form.city || undefined} onValueChange={(v) => updateForm('city', v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t(k('selectCity'))} />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOMBIAN_CITIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg">{t(k('fNeighborhood'))} *</label>
@@ -480,6 +487,9 @@ export function PropertyIACapture() {
         </div>
 
         {!audioBlob ? (
+          // allowlist: custom audio-recorder control (full-width dashed zone with a
+          // mic/stop icon-tile + animate-pulse recording state) — no Cadence recorder
+          // primitive; Button can't host the recorder layout. Kept native.
           <button
             type="button"
             onClick={isRecording ? stopRecording : startRecording}
@@ -510,14 +520,17 @@ export function PropertyIACapture() {
         ) : (
           <div className="space-y-3">
             {audioUrl && <audio controls src={audioUrl} className="w-full" aria-label={t(k('recordTitle'))} />}
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={reRecord}
-              className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg transition-colors"
+              className="gap-2 text-fg-muted"
             >
               <ArrowClockwise className="w-4 h-4" />
               {t(k('reRecord'))}
-            </button>
+            </Button>
           </div>
         )}
       </section>
@@ -539,17 +552,20 @@ export function PropertyIACapture() {
         <div className="flex flex-wrap gap-3">
           {photoUrls.map((url, i) => (
             <div key={url} className="relative w-20 h-20 rounded-xl border border-border bg-center bg-cover" style={{ backgroundImage: `url(${url})` }}>
-              <button
+              <IconButton
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => removePhoto(i)}
                 aria-label={t(k('removePhoto'))}
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center hover:bg-surface-muted"
-              >
-                <X className="w-3.5 h-3.5 text-fg-muted" />
-              </button>
+                className="absolute -top-2 -right-2 h-6 w-6 min-h-0 min-w-0 rounded-full bg-card text-fg-muted"
+                icon={<X className="w-3.5 h-3.5" />}
+              />
             </div>
           ))}
           {photos.length < MAX_PHOTOS && (
+            // allowlist: custom photo-add tile (square dashed dropzone opening the hidden
+            // file input) — image-tile/dropzone precedent; Button can't host the tile. Native.
             <button
               type="button"
               onClick={() => photoInputRef.current?.click()}

@@ -39,7 +39,7 @@ import {
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { Button, Card, CardContent, Input, Textarea, EmptyState, Label } from '@/components/ui'
+import { Button, Card, CardContent, Input, Textarea, EmptyState, Label, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui'
 import {
   Select,
   SelectContent,
@@ -47,10 +47,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Chip, SegmentedControl } from '@leasefy/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Chip, SegmentedControl } from '@leasefy/cadence'
 import { PagoEstadoBadge } from '@/components/inmobiliaria/pagos/PagoEstadoBadge'
-import { useI18n } from '@/lib/i18n'
 
 /* ---------------------------------------------------------------------------
  * Vocabulario de opciones (estado controlado en React)
@@ -487,20 +485,20 @@ function ModoMasivo() {
             </span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-left">
-              <thead>
-                <tr className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-                  <th scope="col" className="py-2.5 px-5 font-medium">Resultado</th>
-                  <th scope="col" className="py-2.5 pr-5 font-medium">Detalle</th>
-                  <th scope="col" className="py-2.5 px-5 font-medium text-right">Cobros</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[560px] text-left">
+              <TableHeader>
+                <TableRow>
+                  <TableHead scope="col">Resultado</TableHead>
+                  <TableHead scope="col">Detalle</TableHead>
+                  <TableHead scope="col" className="text-right">Cobros</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {RESULTADO_EJEMPLO.map((row) => {
                   const RowIcon = row.icon
                   return (
-                    <tr key={row.key} className="border-t border-border align-top">
-                      <td className="py-3 px-5 whitespace-nowrap">
+                    <TableRow key={row.key} className="border-t border-border align-top">
+                      <TableCell className="py-3 px-5 whitespace-nowrap">
                         <span className="inline-flex items-center gap-2">
                           <span
                             className={`flex h-7 w-7 items-center justify-center rounded-md ${row.tone.bg}`}
@@ -509,20 +507,20 @@ function ModoMasivo() {
                           </span>
                           <span className="text-sm font-medium text-fg">{row.label}</span>
                         </span>
-                      </td>
-                      <td className="py-3 pr-5">
+                      </TableCell>
+                      <TableCell className="py-3 pr-5">
                         <p className="text-sm text-fg-muted leading-snug">{row.detalle}</p>
-                      </td>
-                      <td className="py-3 px-5 text-right">
+                      </TableCell>
+                      <TableCell className="py-3 px-5 text-right">
                         <span className={`text-sm font-semibold tabular-nums ${row.tone.text}`}>
                           {row.valor}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -553,22 +551,12 @@ function ModoMasivo() {
  * ------------------------------------------------------------------------- */
 
 function GenerarCobros() {
-  const { t } = useI18n()
   const [modo, setModo] = useState<Modo>('individual')
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/pagos"
-          icon={CurrencyDollar}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.pagos'), href: '/panel/inmobiliaria/ai/pagos' },
-            { label: 'Generar cobros' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">Generar cobros</h1>
         <p className="text-sm text-fg-muted max-w-2xl">
           Crea un cobro y envía el link de pago a tus inquilinos, de a uno o por toda la cartera.

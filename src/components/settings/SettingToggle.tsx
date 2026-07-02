@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 export function SettingToggle({
   icon: Icon,
@@ -26,24 +26,12 @@ export function SettingToggle({
           <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
         </div>
       </div>
-      <button
-        onClick={onToggle}
-        role="switch"
-        aria-checked={enabled}
-        className={cn(
-          'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0b]',
-          enabled
-            ? accent === 'emerald' ? 'bg-[#2C7A53]' : 'bg-[#1A40FF]'
-            : 'bg-neutral-200 dark:bg-[#2a2a2c]'
-        )}
-      >
-        <span
-          className={cn(
-            'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white ring-0 transition duration-200 ease-in-out',
-            enabled ? 'translate-x-5' : 'translate-x-0'
-          )}
-        />
-      </button>
+      <Switch
+        checked={enabled}
+        onCheckedChange={onToggle}
+        aria-label={title}
+        className={accent === 'emerald' ? 'data-[state=checked]:bg-[#2C7A53]' : undefined}
+      />
     </div>
   );
 }

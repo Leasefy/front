@@ -11,7 +11,6 @@ import {
   FilePlus,
   ClipboardText,
   Plus,
-  MagnifyingGlass,
   Funnel,
   GridFour,
   List,
@@ -19,7 +18,9 @@ import {
   Buildings,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
+import { SearchInput, StatusBadge } from '@leasefy/cadence';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { EmptyState as DSEmptyState } from '@/components/ui/empty-state';
 import {
   DocumentoTemplates,
@@ -151,9 +152,12 @@ function ActaCard({ acta, onClick }: ActaCardProps) {
             <span>{new Date(acta.deliveryDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}</span>
           </div>
         </div>
-        <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium', config.className)}>
+        <StatusBadge
+          tone={acta.status === 'completed' ? 'success' : acta.status === 'pending_signatures' ? 'warning' : acta.status === 'in_progress' ? 'info' : 'neutral'}
+          dot={false}
+        >
           {config.label}
-        </span>
+        </StatusBadge>
       </div>
     </motion.button>
   );
@@ -177,7 +181,7 @@ function DocumentosContent() {
   const { consignaciones, isLoading: isLoadingConsignaciones } = useConsignaciones({ status: 'active' });
 
   // State
-  const [activeTab, setActiveTab] = useState<DocTab>('documentos');
+  const [activeTab, setTab] = useState<DocTab>('documentos');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedActa, setSelectedActa] = useState<ActaEntrega | null>(null);
   const [isActaFormOpen, setIsActaFormOpen] = useState(false);
@@ -407,58 +411,41 @@ function DocumentosContent() {
         transition={{ delay: 0.1 }}
         className="rounded-xl border border-border bg-card overflow-hidden"
       >
+        <Tabs value={activeTab} onValueChange={(v) => setTab(v as DocTab)}>
         {/* Tabs Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-muted">
+          <TabsList variant="segmented">
             {TABS.map((tab) => {
               const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
-                    isActive
-                      ? 'bg-background text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
+                <TabsTrigger key={tab.id} value={tab.id} className="group inline-flex items-center gap-2 whitespace-nowrap">
+                  <Icon className="w-4 h-4 shrink-0" />
                   {tab.label}
                   {tab.count !== undefined && (
-                    <span
-                      className={cn(
-                        'px-1.5 py-0.5 text-xs rounded-full tabular-nums',
-                        isActive
-                          ? 'bg-primary-soft text-primary'
-                          : 'bg-muted-foreground/20'
-                      )}
-                    >
+                    <span className="px-1.5 py-0.5 text-xs rounded-full tabular-nums bg-muted-foreground/20 group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
                       {tab.count}
                     </span>
                   )}
-                </button>
+                </TabsTrigger>
               );
             })}
-          </div>
+          </TabsList>
 
           {/* Search (for actas tab) */}
           {activeTab === 'actas' && (
-            <div className="relative">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('inmobiliaria.documentos.searchActas')}
-                className="pl-9 pr-4 py-2 w-full sm:w-64 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-              />
-            </div>
+            <SearchInput
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery('')}
+              placeholder={t('inmobiliaria.documentos.searchActas')}
+              inputSize="md"
+              className="w-full sm:w-64"
+            />
           )}
         </div>
 
         {/* Tab Content */}
+        <TabsContent value={activeTab} className="mt-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -473,7 +460,7 @@ function DocumentosContent() {
               <>
                 {isLoadingDocuments ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30"></div>
+                    <Spinner size="lg" />
                   </div>
                 ) : (
                   <DocumentoManager
@@ -495,7 +482,7 @@ function DocumentosContent() {
               <>
                 {isLoadingTemplates ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30"></div>
+                    <Spinner size="lg" />
                   </div>
                 ) : (
                   <DocumentoTemplates
@@ -512,7 +499,7 @@ function DocumentosContent() {
               <>
                 {isLoadingActas ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30"></div>
+                    <Spinner size="lg" />
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -550,6 +537,8 @@ function DocumentosContent() {
             )}
           </motion.div>
         </AnimatePresence>
+        </TabsContent>
+        </Tabs>
       </motion.div>
 
       {/* Acta Form Sheet */}

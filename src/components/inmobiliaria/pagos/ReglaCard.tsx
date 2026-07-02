@@ -18,7 +18,7 @@ import * as React from 'react'
 
 import { Switch } from '@/components/ui'
 import { Input } from '@/components/ui'
-import { SegmentedControl, type SegmentedOption } from '@leasefy/ui'
+import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 
 // ── Tipos del control de parametrización ─────────────────────────────────────

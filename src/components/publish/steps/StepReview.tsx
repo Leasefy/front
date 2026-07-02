@@ -16,6 +16,7 @@ import {
 import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const PLAN_ICONS = { free: Lightning, pro: Sparkle, business: Buildings, starter: Lightning, flex: Buildings, enterprise: Buildings } as const;
 
@@ -26,7 +27,7 @@ const PLAN_INFO = Object.fromEntries([
       name: `Plan ${plan.name}`,
       icon: PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS] ?? Lightning,
       price: plan.price.monthly === 0 ? '$0' : `${formatCurrency(plan.price.monthly)}/mes`,
-      color: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+      color: 'bg-primary-soft text-primary',
     },
   ]),
   ...AGENCY_PLANS.map((plan) => [
@@ -35,7 +36,7 @@ const PLAN_INFO = Object.fromEntries([
       name: `Plan ${plan.name}`,
       icon: PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS] ?? Lightning,
       price: plan.price.monthly != null ? `${formatCurrency(plan.price.monthly)}/mes` : 'Personalizado',
-      color: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+      color: 'bg-primary-soft text-primary',
     },
   ]),
 ]) as Record<string, { name: string; icon: typeof Lightning; price: string; color: string }>;
@@ -48,17 +49,20 @@ interface SectionProps {
 
 function Section({ title, onEdit, children }: SectionProps) {
   return (
-    <div className="py-5 border-b border-neutral-200 dark:border-neutral-700 last:border-0">
+    <div className="py-5 border-b border-border last:border-0">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium text-neutral-900 dark:text-white">{title}</h4>
-        <button
+        <h4 className="text-sm font-medium text-fg">{title}</h4>
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={onEdit}
-          className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+          className="h-auto gap-1.5 px-2 py-1 text-xs text-fg-muted hover:text-fg"
         >
           <PencilSimple className="w-3 h-3" />
           Editar
-        </button>
+        </Button>
       </div>
       {children}
     </div>
@@ -74,17 +78,17 @@ export function StepReview() {
   return (
     <div className="space-y-2">
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">
+        <h3 className="text-sm font-medium text-fg mb-1">
           Revisa tu publicación
         </h3>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           Verifica que toda la información sea correcta antes de publicar
         </p>
       </div>
 
       {/* Preview Image */}
       {draft.photos.length > 0 && (
-        <div className="aspect-video rounded-xl overflow-hidden mb-6">
+        <div className="aspect-video rounded-[20px] overflow-hidden mb-6">
           <img
             src={draft.photos[0]}
             alt="Vista previa"
@@ -95,15 +99,15 @@ export function StepReview() {
 
       {/* Title and Description */}
       <Section title="Título y descripción" onEdit={() => goToStep(7)}>
-        <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">{draft.title || 'Sin título'}</h3>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 line-clamp-3">{draft.description || 'Sin descripción'}</p>
+        <h3 className="text-lg font-medium text-fg mb-2">{draft.title || 'Sin título'}</h3>
+        <p className="text-sm text-fg-muted line-clamp-3">{draft.description || 'Sin descripción'}</p>
       </Section>
 
       {/* Property TextT and Location */}
       <Section title="Tipo y ubicación" onEdit={() => goToStep(1)}>
         <div className="flex items-center gap-4 text-sm">
-          <span className="px-3 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md text-neutral-700 dark:text-neutral-300">{typeLabel}</span>
-          <span className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+          <span className="px-3 py-1 bg-surface-muted rounded-full text-fg-muted">{typeLabel}</span>
+          <span className="flex items-center gap-1.5 text-fg-muted">
             <MapPin className="w-4 h-4" />
             {draft.neighborhood}, {draft.city}
           </span>
@@ -114,24 +118,24 @@ export function StepReview() {
       <Section title="Características" onEdit={() => goToStep(3)}>
         <div className="grid grid-cols-4 gap-4">
           <div className="text-center">
-            <Bed className="w-5 h-5 mx-auto text-neutral-400 dark:text-neutral-500 mb-1" />
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">{draft.bedrooms}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Habitaciones</p>
+            <Bed className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
+            <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.bedrooms}</p>
+            <p className="text-xs text-fg-muted">Habitaciones</p>
           </div>
           <div className="text-center">
-            <Bathtub className="w-5 h-5 mx-auto text-neutral-400 dark:text-neutral-500 mb-1" />
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">{draft.bathrooms}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Baños</p>
+            <Bathtub className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
+            <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.bathrooms}</p>
+            <p className="text-xs text-fg-muted">Baños</p>
           </div>
           <div className="text-center">
-            <ArrowsOut className="w-5 h-5 mx-auto text-neutral-400 dark:text-neutral-500 mb-1" />
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">{draft.area}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">m²</p>
+            <ArrowsOut className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
+            <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.area}</p>
+            <p className="text-xs text-fg-muted">m²</p>
           </div>
           <div className="text-center">
-            <Car className="w-5 h-5 mx-auto text-neutral-400 dark:text-neutral-500 mb-1" />
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">{draft.parkingSpaces}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Parqueaderos</p>
+            <Car className="w-5 h-5 mx-auto text-fg-subtle mb-1" />
+            <p className="text-sm font-medium text-fg font-mono tabular-nums">{draft.parkingSpaces}</p>
+            <p className="text-xs text-fg-muted">Parqueaderos</p>
           </div>
         </div>
       </Section>
@@ -143,7 +147,7 @@ export function StepReview() {
             {selectedAmenities.map((amenity) => (
               <span
                 key={amenity.value}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-md text-sm text-neutral-700 dark:text-neutral-300"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-muted rounded-full text-sm text-fg-muted"
               >
                 <Check className="w-3 h-3" />
                 {amenity.label}
@@ -151,7 +155,7 @@ export function StepReview() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Sin amenidades seleccionadas</p>
+          <p className="text-sm text-fg-muted">Sin amenidades seleccionadas</p>
         )}
       </Section>
 
@@ -161,7 +165,7 @@ export function StepReview() {
           {draft.photos.map((photo, index) => (
             <div
               key={photo}
-              className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden"
+              className="relative w-20 h-20 flex-shrink-0 rounded-[14px] overflow-hidden"
             >
               <img
                 src={photo}
@@ -169,38 +173,38 @@ export function StepReview() {
                 className="w-full h-full object-cover"
               />
               {index === 0 && (
-                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-sm">
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-primary text-primary-fg uppercase tracking-wide font-mono text-[10px] rounded-full">
                   Principal
                 </span>
               )}
             </div>
           ))}
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">{draft.photos.length} foto{draft.photos.length !== 1 ? 's' : ''}</p>
+        <p className="text-xs text-fg-muted mt-2"><span className="font-mono tabular-nums">{draft.photos.length}</span> foto{draft.photos.length !== 1 ? 's' : ''}</p>
       </Section>
 
       {/* Pricing */}
       <Section title="Precios" onEdit={() => goToStep(6)}>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-neutral-500 dark:text-neutral-400">Canon mensual</span>
-            <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(draft.monthlyRent)}</span>
+            <span className="text-fg-muted">Canon mensual</span>
+            <span className="font-medium text-fg font-mono tabular-nums">{formatCurrency(draft.monthlyRent)}</span>
           </div>
           {draft.adminFee > 0 && (
             <div className="flex justify-between">
-              <span className="text-neutral-500 dark:text-neutral-400">Administración</span>
-              <span className="text-neutral-900 dark:text-white">{formatCurrency(draft.adminFee)}</span>
+              <span className="text-fg-muted">Administración</span>
+              <span className="text-fg font-mono tabular-nums">{formatCurrency(draft.adminFee)}</span>
             </div>
           )}
           {draft.deposit > 0 && (
             <div className="flex justify-between">
-              <span className="text-neutral-500 dark:text-neutral-400">Depósito</span>
-              <span className="text-neutral-900 dark:text-white">{formatCurrency(draft.deposit)}</span>
+              <span className="text-fg-muted">Depósito</span>
+              <span className="text-fg font-mono tabular-nums">{formatCurrency(draft.deposit)}</span>
             </div>
           )}
-          <div className="flex justify-between pt-2 border-t border-neutral-200 dark:border-neutral-700">
-            <span className="font-medium text-neutral-900 dark:text-white">Total mensual</span>
-            <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(draft.monthlyRent + draft.adminFee)}</span>
+          <div className="flex justify-between pt-2 border-t border-border">
+            <span className="font-medium text-fg">Total mensual</span>
+            <span className="font-medium text-fg font-mono tabular-nums">{formatCurrency(draft.monthlyRent + draft.adminFee)}</span>
           </div>
         </div>
       </Section>
@@ -220,7 +224,7 @@ export function StepReview() {
 
           if (!hasRequirements) {
             return (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-fg-muted">
                 Sin requisitos especificos definidos
               </p>
             );
@@ -314,10 +318,10 @@ export function StepReview() {
             <div className="space-y-2">
               {requirements.map((r, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400 min-w-[100px]">{r.label}:</span>
-                  <span className="text-neutral-900 dark:text-white flex-1">{r.value}</span>
+                  <span className="text-fg-muted min-w-[100px]">{r.label}:</span>
+                  <span className="text-fg flex-1">{r.value}</span>
                   {r.isNonNegotiable && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded text-xs font-medium">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary-soft text-primary rounded-full text-xs font-medium">
                       <Lock className="w-2.5 h-2.5" />
                       Innegociable
                     </span>
@@ -337,13 +341,13 @@ export function StepReview() {
             const Icon = plan.icon;
             return (
               <div className={cn(
-                'inline-flex items-center gap-3 px-4 py-3 rounded-xl',
+                'inline-flex items-center gap-3 px-4 py-3 rounded-[18px]',
                 plan.color
               )}>
                 <Icon className="w-5 h-5" />
                 <div>
                   <p className="font-semibold">{plan.name}</p>
-                  <p className="text-xs opacity-70">{plan.price}</p>
+                  <p className="text-xs opacity-70 font-mono tabular-nums">{plan.price}</p>
                 </div>
               </div>
             );
@@ -352,14 +356,14 @@ export function StepReview() {
       )}
 
       {/* Confirmation notice */}
-      <div className="mt-6 p-4 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 rounded-xl">
+      <div className="mt-6 p-4 bg-success-soft border border-success/30 rounded-[18px]">
         <div className="flex items-start gap-3">
-          <Check className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70] flex-shrink-0 mt-0.5" />
+          <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" weight="bold" />
           <div>
-            <p className="text-sm font-medium text-[#2C7A53] dark:text-[#3EAE70]">
+            <p className="text-sm font-medium text-success">
               Todo listo para publicar
             </p>
-            <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] mt-1">
+            <p className="text-sm text-success mt-1">
               Al publicar, tu inmueble será visible para miles de inquilinos potenciales.
             </p>
           </div>

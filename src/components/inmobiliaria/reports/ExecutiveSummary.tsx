@@ -94,12 +94,12 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
         {/* Health Score Hero */}
         <div
           className={cn(
-            'rounded-xl border border-neutral-200 dark:border-neutral-800 p-6 flex flex-col items-center justify-center',
-            'bg-white dark:bg-[#1a1a1c]'
+            'rounded-xl border border-border dark:border-strong p-6 flex flex-col items-center justify-center',
+            'bg-surface dark:bg-[#14130F]'
           )}
         >
           <div className="flex items-center gap-2 mb-4">
-            <Heartbeat className="w-4 h-4 text-neutral-500" />
+            <Heartbeat className="w-4 h-4 text-fg-muted" />
             <h3 className="text-sm font-semibold text-foreground">
               {isEs ? 'Salud del Portafolio' : 'Portfolio Health'}
             </h3>
@@ -154,19 +154,19 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
         </div>
 
         {/* Revenue Trend Chart */}
-        <div className="lg:col-span-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-5">
+        <div className="lg:col-span-2 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ChartLineUp className="w-4 h-4 text-neutral-500" />
+              <ChartLineUp className="w-4 h-4 text-fg-muted" />
               {isEs ? 'Ingresos vs Gastos (6 meses)' : 'Revenue vs Expenses (6 months)'}
             </h3>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-neutral-600 dark:bg-neutral-400" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-ink dark:bg-muted" />
                 {isEs ? 'Ingresos' : 'Revenue'}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-muted dark:bg-ink" />
                 {isEs ? 'Gastos' : 'Expenses'}
               </span>
             </div>
@@ -176,7 +176,7 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
             height={180}
           />
           {/* Net Income Row */}
-          <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="mt-3 pt-3 border-t border-faint dark:border-strong">
             <div className="flex items-center gap-4 overflow-x-auto">
               {data.monthlySummary.map((m) => (
                 <div key={m.month} className="flex-1 min-w-0 text-center">
@@ -247,10 +247,10 @@ function MetricCard({
   const formattedValue = formatMetricValue(metric.currentValue, metric.format, formatCurrency);
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-4">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-9 h-9 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-          <Icon className="w-4.5 h-4.5 text-neutral-500" />
+        <div className="w-9 h-9 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+          <Icon className="w-4.5 h-4.5 text-fg-muted" />
         </div>
         {/* Delta indicator */}
         {deltaRaw !== 0 && (

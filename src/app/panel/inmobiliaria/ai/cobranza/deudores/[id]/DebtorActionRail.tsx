@@ -23,7 +23,7 @@ import Link from 'next/link'
 import { ArrowRight } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
-import { Button } from '@/components/ui'
+import { Button, Badge } from '@/components/ui'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { stageDisplayName } from '@/lib/cartera'
 import type { DebtorDetailResponse } from '@/lib/hooks/cobranza/use-debtor-detail'
@@ -301,9 +301,9 @@ function RailAction({
         {label}
       </span>
       {badge && (
-        <span className="shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-warning-soft text-warning">
+        <Badge variant="warning" className="shrink-0 text-xs">
           {badge}
-        </span>
+        </Badge>
       )}
     </button>
   )

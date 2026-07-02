@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { MonoLabel } from "@leasefy/cadence";
 import { SectionLabel } from "@/components/ui/section-label";
 import { ArrowUpRight } from '@phosphor-icons/react';
 
@@ -95,9 +96,9 @@ export function CitiesSection() {
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   {/* Property count badge */}
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 backdrop-blur-md rounded-full mb-3 border border-white/10">
-                    <span className="text-[11px] font-mono font-normal text-white/90 tracking-wide uppercase">
+                    <MonoLabel className="text-[11px] font-normal text-white/90 tracking-wide">
                       {city.properties} propiedades
-                    </span>
+                    </MonoLabel>
                   </div>
 
                   {/* City name */}

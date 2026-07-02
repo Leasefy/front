@@ -6,9 +6,10 @@
 import { PhoneCall } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { EmptyState } from '@/components/data-display/EmptyState'
-// Widgets render an honest EmptyState when the agent has no real data — never sample data.
+// SampleDataWatermark is used inside widget components (37-08, 37-09, 37-10).
 import { useCobranzaAnalytics } from '@/lib/hooks/cobranza/use-cobranza-analytics'
 import { RecoveryRateChart }      from '@/components/inmobiliaria/cobranza/RecoveryRateChart'
 import { TopObjectionsTable }     from '@/components/inmobiliaria/cobranza/TopObjectionsTable'
@@ -62,13 +63,15 @@ export default function CobranzaAnaliticaPage() {
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.analitica.errors.loading')}: {error}
           </p>
-          <button
+          <Button
             type="button"
+            variant="link"
+            size="sm"
             onClick={() => void refetch()}
-            className="shrink-0 text-xs font-medium text-danger underline hover:no-underline"
+            className="shrink-0 text-danger"
           >
             {t('inmobiliaria.ai.cobranza.analitica.errors.retry')}
-          </button>
+          </Button>
         </div>
       </main>
     )

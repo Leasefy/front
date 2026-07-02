@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Label as DSLabel } from "@leasefy/ui"
+import { Label as DSLabel } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Label de @leasefy/ui (API superset: añade `required`).
+ * ADAPTER fino sobre el Label de @leasefy/cadence (API superset: añade `required`).
  * Fidelidad mvp para cero cambio visible en ~50 call sites:
  * - text-sm leading-none (el DS usa text-caption 12px — encogería todo form)
  * - inline + text-inherit + select-auto (el mvp heredaba display/color y

@@ -19,8 +19,9 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Bank, FloppyDisk, CircleNotch, Warning } from '@phosphor-icons/react'
+import { FloppyDisk, Warning } from '@phosphor-icons/react'
 
+import { Spinner } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
@@ -33,7 +34,6 @@ import {
   type ConfidenceThresholds,
 } from '@/lib/hooks/conciliacion/use-conciliacion-policy'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 import { Button } from '@/components/ui/button'
@@ -286,7 +286,7 @@ function PoliticaAutoMatch() {
         <p className="text-xs">
           Activar el auto-match es una decisión humana explícita: autoriza al sistema a confirmar
           movimientos de dinero sin revisión. Los cambios no se aplican hasta que hagas clic en
-          &ldquo;Guardar política&rdquo; y confirmes.
+          &quot;Guardar política&quot; y confirmes.
         </p>
       </div>
 
@@ -368,7 +368,7 @@ function PoliticaAutoMatch() {
               disabled={isSaving}
             >
               {isSaving ? (
-                <CircleNotch className="h-4 w-4 mr-1.5 animate-spin" />
+                <Spinner size="sm" variant="current" className="mr-1.5" />
               ) : (
                 <FloppyDisk className="h-4 w-4 mr-1.5" />
               )}
@@ -391,15 +391,6 @@ function ConciliacionConfiguracion() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/conciliacion"
-          icon={Bank}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.conciliacion'), href: '/panel/inmobiliaria/ai/conciliacion' },
-            { label: t('inmobiliaria.ai.workspace.pages.comun.configTitle') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
         <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}

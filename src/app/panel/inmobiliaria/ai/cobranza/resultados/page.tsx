@@ -45,10 +45,9 @@ import type { Icon } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { KpiCard } from '@leasefy/ui'
+import { Button, Spinner } from '@/components/ui'
+import { KpiCard } from '@leasefy/cadence'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
@@ -301,16 +300,6 @@ function ResultadosContent() {
   const header = (
     <header className="flex items-start justify-between gap-4 flex-wrap">
       <div>
-        <MigaDePan
-          backHref={BASE}
-          icon={ChatCircleText}
-          className="mb-2"
-          crumbs={[
-            { label: 'Agentes IA', href: '/panel/inmobiliaria/ai' },
-            { label: 'Cobranza', href: BASE },
-            { label: 'Resultados del agente' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">
           Resultados del agente
         </h1>
@@ -370,7 +359,7 @@ function ResultadosContent() {
       <main className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" />
         </div>
       </main>
     )

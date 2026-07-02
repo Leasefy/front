@@ -1,9 +1,9 @@
 'use client'
 // Phase 30 plan 30-05 (COTI-UI-02)
 
-import { SpinnerGap } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { formatCurrency } from '@/lib/format'
 
 interface Step3Candidato {
@@ -115,7 +115,7 @@ export function WizardStep3Review({
             size="lg"
           >
             {isLoading ? (
-              <SpinnerGap size={18} weight="fill" className="animate-spin" />
+              <Spinner size="sm" variant="current" />
             ) : (
               submitLabel
             )}

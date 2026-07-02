@@ -41,10 +41,10 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { BadgeFuente } from '@/components/inmobiliaria/cotizador/BadgeFuente'
 import type { FuenteVariant } from '@/components/inmobiliaria/cotizador/BadgeFuente'
 import { Button } from '@/components/ui/button'
+import { MonoLabel } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.asegurabilidad.integraciones'
@@ -117,9 +117,9 @@ function IntegracionCard({
           <h3 className="text-base font-semibold text-foreground leading-tight">
             {tf(`${NS}.integraciones.${integ.id}.title`, integ.titleFb)}
           </h3>
-          <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mt-0.5">
+          <MonoLabel className="mt-0.5">
             {tf(`${NS}.estado.desconectado`, 'Sin conectar')}
-          </p>
+          </MonoLabel>
         </div>
       </div>
 
@@ -260,19 +260,6 @@ function IntegracionesAsegurabilidad() {
     <main className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <header className="min-w-0">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/asegurabilidad"
-          icon={GitMerge}
-          className="mb-2"
-          crumbs={[
-            { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-            {
-              label: tf('inmobiliaria.ai.workspace.agente.cotizador', 'Asegurabilidad'),
-              href: '/panel/inmobiliaria/ai/asegurabilidad',
-            },
-            { label: tf(`${NS}.title`, 'Integraciones') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
           {tf(`${NS}.title`, 'Integraciones')}
         </h1>

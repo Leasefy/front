@@ -9,6 +9,7 @@
  */
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 interface RailActionProps {
   label: string
@@ -40,9 +41,9 @@ export function RailAction({
     >
       <span className="truncate">{label}</span>
       {badge && (
-        <span className="shrink-0 rounded-full bg-warning-soft px-1.5 py-0.5 text-[10px] font-medium text-warning">
+        <Badge variant="warning" className="shrink-0">
           {badge}
-        </span>
+        </Badge>
       )}
     </Button>
   )

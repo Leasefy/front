@@ -13,6 +13,17 @@ import { useEffect, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 void React
 
@@ -47,8 +58,6 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
       setError(null)
     }
   }, [open])
-
-  if (!open) return null
 
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   const envMissing = !agentUrl || !agencyId
@@ -94,48 +103,39 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="pause-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
-      <button
-        type="button"
-        aria-label="close"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/50"
-      />
-      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl p-6">
-        <h2 id="pause-title" className="text-base font-semibold text-neutral-900 dark:text-white">
-          {t('inmobiliaria.ai.cobranza.detail.acciones.pause.modalTitle')}
-        </h2>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-          {t('inmobiliaria.ai.cobranza.detail.acciones.pause.modalDescription')}
-        </p>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {t('inmobiliaria.ai.cobranza.detail.acciones.pause.modalTitle')}
+          </DialogTitle>
+          <DialogDescription>
+            {t('inmobiliaria.ai.cobranza.detail.acciones.pause.modalDescription')}
+          </DialogDescription>
+        </DialogHeader>
 
         {envMissing ? (
-          <p className="mt-3 text-sm text-warning">
+          <p className="text-sm text-warning">
             {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
           </p>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="space-y-3">
             <label className="block">
-              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <span className="text-xs font-medium text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.pause.untilLabel')}
               </span>
-              <input
+              <Input
                 type="date"
                 value={pausedUntil}
                 onChange={(e) => setPausedUntil(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
+                className="mt-1 w-full"
               />
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <span className="text-xs font-medium text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.pause.reasonLabel')}
               </span>
-              <textarea
+              <Textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
@@ -143,37 +143,35 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
                 placeholder={t(
                   'inmobiliaria.ai.cobranza.detail.acciones.pause.reasonPlaceholder',
                 )}
-                className="mt-1 w-full px-3 py-2 text-sm rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
+                className="mt-1 w-full"
               />
             </label>
           </div>
         )}
 
-        {error && (
-          <p className="mt-3 text-xs text-danger">{error}</p>
-        )}
+        {error && <p className="text-xs text-danger">{error}</p>}
 
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            type="button"
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onClose}
             disabled={submitting}
-            className="px-3 py-1.5 text-sm font-medium rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="sm"
+            hideArrow
             onClick={() => void handleSubmit()}
             disabled={submitting || envMissing}
-            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-neutral-500 text-white hover:bg-fg-muted disabled:opacity-50"
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.pause.confirming')
               : t('inmobiliaria.ai.cobranza.detail.acciones.pause.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

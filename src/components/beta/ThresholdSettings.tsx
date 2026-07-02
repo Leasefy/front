@@ -6,6 +6,8 @@ import {
   Minus,
   Plus,
 } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
+import { Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -50,21 +52,21 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
 
   return (
     <div className="flex items-center gap-2">
-      <button
+      <IconButton
+        type="button"
+        icon={<Minus className="w-3.5 h-3.5" weight="bold" />}
         onClick={handleDecrement}
         disabled={value <= min}
+        variant="ghost"
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-md',
+          'w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
-          'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={decreaseLabel}
-      >
-        <Minus className="w-3.5 h-3.5" weight="bold" />
-      </button>
+      />
 
       <div
         className={cn(
@@ -77,21 +79,21 @@ function NumberStepper({ value, min, max, step, suffix, onChange, decreaseLabel,
         {value} {suffix}
       </div>
 
-      <button
+      <IconButton
+        type="button"
+        icon={<Plus className="w-3.5 h-3.5" weight="bold" />}
         onClick={handleIncrement}
         disabled={value >= max}
+        variant="ghost"
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-md',
+          'w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
-          'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={increaseLabel}
-      >
-        <Plus className="w-3.5 h-3.5" weight="bold" />
-      </button>
+      />
     </div>
   );
 }
@@ -117,21 +119,21 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
 
   return (
     <div className="flex items-center gap-2">
-      <button
+      <IconButton
+        type="button"
+        icon={<Minus className="w-3.5 h-3.5" weight="bold" />}
         onClick={handleDecrement}
         disabled={value <= min}
+        variant="ghost"
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-md',
+          'w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
-          'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={decreaseLabel}
-      >
-        <Minus className="w-3.5 h-3.5" weight="bold" />
-      </button>
+      />
 
       <div
         className={cn(
@@ -144,21 +146,21 @@ function CurrencyStepper({ value, min, max, step, onChange, decreaseLabel, incre
         {formatCOP(value)}
       </div>
 
-      <button
+      <IconButton
+        type="button"
+        icon={<Plus className="w-3.5 h-3.5" weight="bold" />}
         onClick={handleIncrement}
         disabled={value >= max}
+        variant="ghost"
         className={cn(
-          'flex items-center justify-center w-7 h-7 rounded-md',
+          'w-7 h-7 rounded-md',
           'border border-neutral-200 dark:border-border',
           'bg-white dark:bg-card',
           'text-muted-foreground hover:text-foreground hover:bg-neutral-50 dark:hover:bg-neutral-800',
-          'transition-colors duration-150',
           'disabled:opacity-40 disabled:cursor-not-allowed'
         )}
         aria-label={increaseLabel}
-      >
-        <Plus className="w-3.5 h-3.5" weight="bold" />
-      </button>
+      />
     </div>
   );
 }
@@ -197,27 +199,23 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
 
   /** Determine candidate score color */
   const getScoreColor = (score: number): {
-    bg: string;
-    text: string;
+    variant: 'destructive' | 'warning' | 'success';
     label: string;
   } => {
     if (score < 50) {
       return {
-        bg: 'bg-danger-soft',
-        text: 'text-danger',
+        variant: 'destructive',
         label: t('beta.preferences.thresholds.scoreRisky'),
       };
     }
     if (score < 70) {
       return {
-        bg: 'bg-warning-soft',
-        text: 'text-warning',
+        variant: 'warning',
         label: t('beta.preferences.thresholds.scoreModerate'),
       };
     }
     return {
-      bg: 'bg-success-soft',
-      text: 'text-success',
+      variant: 'success',
       label: t('beta.preferences.thresholds.scoreSafe'),
     };
   };
@@ -328,16 +326,9 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
                 decreaseLabel={t('beta.preferences.thresholds.decrease')}
                 increaseLabel={t('beta.preferences.thresholds.increase')}
               />
-              <span
-                className={cn(
-                  'inline-flex items-center px-2 py-0.5 rounded-sm',
-                  'text-[11px] font-medium',
-                  scoreColor.bg,
-                  scoreColor.text
-                )}
-              >
+              <Badge variant={scoreColor.variant} className="px-2 py-0.5 text-[11px] font-medium">
                 {scoreColor.label}
-              </span>
+              </Badge>
             </div>
           </div>
         </div>

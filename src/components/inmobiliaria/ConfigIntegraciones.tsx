@@ -17,7 +17,6 @@ import {
   Warning,
   ArrowsClockwise,
   Gear,
-  SpinnerGap,
   Info,
   Key,
   CaretRight,
@@ -30,6 +29,9 @@ import { formatRelativeTime } from '@/lib/format';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { Chip } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -249,13 +251,13 @@ export function ConfigIntegraciones({
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('inmobiliaria.config.integrations.searchPlaceholder')}
-            className="w-full pl-9 pr-4 py-2 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+            className="w-full pl-9 pr-4"
           />
         </div>
       </div>
@@ -267,20 +269,15 @@ export function ConfigIntegraciones({
           const count = tab.value === 'all' ? integrations.length : categoryCounts[tab.value];
 
           return (
-            <button
+            <Chip
               key={tab.value}
+              selected={selectedCategory === tab.value}
               onClick={() => setSelectedCategory(tab.value)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
-                selectedCategory === tab.value
-                  ? 'bg-primary-soft text-primary'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
+              icon={<Icon className="w-4 h-4" />}
             >
-              <Icon className="w-4 h-4" />
               {tab.label}
               <span className="text-xs opacity-70">({count})</span>
-            </button>
+            </Chip>
           );
         })}
       </div>
@@ -334,7 +331,7 @@ export function ConfigIntegraciones({
                       {/* Toggle Switch */}
                       <div className="flex items-center gap-2">
                         {isToggling && (
-                          <SpinnerGap className="w-4 h-4 text-primary animate-spin" />
+                          <Spinner size="sm" variant="default" className="shrink-0" />
                         )}
                         <Switch
                           checked={integration.isEnabled}
@@ -400,14 +397,16 @@ export function ConfigIntegraciones({
 
                     {/* Configure Button */}
                     {integration.isEnabled && (
-                      <button
+                      <Button
+                        variant="link"
+                        hideArrow
                         onClick={() => handleConfigure(integration)}
-                        className="mt-3 flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline font-medium transition-colors"
+                        className="mt-3 h-auto p-0"
                       >
                         <Gear className="w-4 h-4" />
                         {t('inmobiliaria.config.integrations.configure')}
                         <CaretRight className="w-3 h-3" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -461,13 +460,13 @@ export function ConfigIntegraciones({
                 API Key <span className="text-danger">*</span>
               </label>
               <div className="relative">
-                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                <Input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="sk_live_xxxxxxxxxxxxx"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all"
+                  className="w-full pl-10 pr-4"
                 />
               </div>
             </div>
@@ -479,12 +478,9 @@ export function ConfigIntegraciones({
               className="w-full justify-center"
               onClick={handleTestConnection}
               disabled={!apiKey || isSaving}
+              isLoading={isSaving}
             >
-              {isSaving ? (
-                <SpinnerGap className="w-4 h-4 animate-spin" />
-              ) : (
-                <ArrowsClockwise className="w-4 h-4" />
-              )}
+              {!isSaving && <ArrowsClockwise className="w-4 h-4" />}
               {t('inmobiliaria.config.integrations.testConnection')}
             </Button>
           </div>
@@ -502,12 +498,10 @@ export function ConfigIntegraciones({
               hideArrow
               onClick={handleSaveConfig}
               disabled={!apiKey || isSaving}
+              isLoading={isSaving}
             >
               {isSaving ? (
-                <>
-                  <SpinnerGap className="w-4 h-4 animate-spin" />
-                  {t('inmobiliaria.config.integrations.saving')}
-                </>
+                t('inmobiliaria.config.integrations.saving')
               ) : (
                 <>
                   <Check className="w-4 h-4" />

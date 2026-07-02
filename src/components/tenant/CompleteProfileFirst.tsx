@@ -62,26 +62,26 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
           {locale === 'es' ? 'Completa tu perfil' : 'Complete your profile'}
         </h2>
 
         {/* Context-specific message */}
-        <p className="text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
+        <p className="text-fg-muted dark:text-fg-subtle mb-6 leading-relaxed">
           {locale === 'es' ? contextMessage.es : contextMessage.en}
         </p>
 
         {/* Progress indicator */}
         <div className="mb-8 px-4">
-          <div className="flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+          <div className="flex items-center justify-between text-sm text-fg-muted dark:text-fg-subtle mb-2">
             <span>
               {locale === 'es' ? 'Progreso del perfil' : 'Profile progress'}
             </span>
-            <span className="font-medium text-neutral-700 dark:text-neutral-300">
+            <span className="font-medium text-fg dark:text-fg-subtle">
               {completedSteps.length}/{totalSteps}
             </span>
           </div>
-          <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progressPercentage}%` }}
@@ -103,7 +103,7 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
                   'w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
                   isCompleted
                     ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500'
+                    : 'bg-surface-muted dark:bg-ink text-fg-subtle dark:text-fg-muted'
                 )}
               >
                 {isCompleted ? (
@@ -128,7 +128,7 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         </Link>
 
         {/* Secondary link */}
-        <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="mt-4 text-sm text-fg-muted dark:text-fg-subtle">
           {locale === 'es' ? '¿Prefieres explorar primero?' : 'Prefer to explore first?'}{' '}
           <Link
             href="/inquilino/explorar"

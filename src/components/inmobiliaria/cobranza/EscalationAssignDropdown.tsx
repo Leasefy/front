@@ -16,11 +16,16 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { X } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { useLenis } from '@/components/providers/SmoothScroll'
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from '@/components/ui/responsive-dialog'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 
 interface EscalationAssignDropdownProps {
@@ -44,11 +49,9 @@ export function EscalationAssignDropdown({
 }: EscalationAssignDropdownProps) {
   const { t } = useI18n()
   const lenis = useLenis()
-  const [mounted, setMounted] = useState(false)
   const [submitting, setSubmitting] = useState<string | null>(null)
 
-  useEffect(() => setMounted(true), [])
-
+  // Lenis stop/start — Phase 31 invariant (DESIGN.md §8)
   useEffect(() => {
     if (!isOpen) return
     lenis?.stop()
@@ -57,15 +60,6 @@ export function EscalationAssignDropdown({
     }
   }, [isOpen, lenis])
 
-  useEffect(() => {
-    if (!isOpen) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [isOpen, onClose])
-
   const eligible = useMemo(
     () =>
       agencyMembers.filter(
@@ -73,8 +67,6 @@ export function EscalationAssignDropdown({
       ),
     [agencyMembers],
   )
-
-  if (!isOpen || !mounted) return null
 
   const handleSelect = async (memberUserId: string, memberEmail: string) => {
     if (!escalationId) return
@@ -85,77 +77,59 @@ export function EscalationAssignDropdown({
     onClose()
   }
 
-  return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="assign-dropdown-title"
-        className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center md:p-4 animate-in slide-in-from-bottom md:fade-in duration-300"
+  return (
+    <ResponsiveDialog
+      open={isOpen}
+      onOpenChange={(o) => {
+        if (!o) onClose()
+      }}
+    >
+      <ResponsiveDialogContent
+        className="max-w-md max-h-[80dvh] overflow-y-auto gap-0 p-0"
+        data-lenis-prevent
+        style={{ overscrollBehavior: 'contain' }}
       >
-        <div className="bg-card text-foreground rounded-t-xl md:rounded-xl w-full md:max-w-md max-h-[80vh] flex flex-col">
-          <div className="flex-none flex items-center justify-between border-b border-border px-5 py-4">
-            <h2
-              id="assign-dropdown-title"
-              className="text-base font-semibold text-foreground"
-            >
-              {t('inmobiliaria.ai.cobranza.escalaciones.assignDialog.title')}
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={t('inmobiliaria.ai.cobranza.escalaciones.actions.cancel')}
-              className="rounded-sm p-1 hover:bg-muted transition"
-            >
-              <X className="w-5 h-5" aria-hidden="true" />
-            </button>
-          </div>
-          <div
-            className="flex-1 overflow-y-auto py-2"
-            data-lenis-prevent
-            style={{ overscrollBehavior: 'contain' }}
-          >
-            {eligible.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-muted-foreground text-center">
-                {t('inmobiliaria.ai.cobranza.escalaciones.assignDialog.placeholder')}
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {eligible.map((m) => {
-                  const isCurrent = currentAssigneeUserId === m.email
-                  const isSubmitting = submitting === m.email
-                  return (
-                    <li key={m.id}>
-                      <button
-                        type="button"
-                        onClick={() => void handleSelect(m.id, m.email)}
-                        disabled={isSubmitting || submitting !== null}
-                        className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-muted transition disabled:opacity-50"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{m.name}</p>
-                          <p className="text-xs text-muted-foreground">{m.email}</p>
-                        </div>
-                        {isCurrent && (
-                          <span className="text-[11px] font-mono uppercase tracking-wide text-primary">
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </div>
+        <ResponsiveDialogHeader className="border-b border-border px-5 py-4">
+          <ResponsiveDialogTitle>
+            {t('inmobiliaria.ai.cobranza.escalaciones.assignDialog.title')}
+          </ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
+        <div className="py-2">
+          {eligible.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-muted-foreground text-center">
+              {t('inmobiliaria.ai.cobranza.escalaciones.assignDialog.placeholder')}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {eligible.map((m) => {
+                const isCurrent = currentAssigneeUserId === m.email
+                const isSubmitting = submitting === m.email
+                return (
+                  <li key={m.id}>
+                    {/* ALLOWLIST: whole-row member selector (two-line name+email +
+                        check). List-row precedent — Button/IconButton can't host
+                        the multiline row layout; accessible name = visible content. */}
+                    <button
+                      type="button"
+                      onClick={() => void handleSelect(m.id, m.email)}
+                      disabled={isSubmitting || submitting !== null}
+                      className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-muted transition disabled:opacity-50"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{m.name}</p>
+                        <p className="text-xs text-muted-foreground">{m.email}</p>
+                      </div>
+                      {isCurrent && (
+                        <MonoLabel className="tracking-wide text-primary">✓</MonoLabel>
+                      )}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
-      </div>
-    </>,
-    document.body,
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

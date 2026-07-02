@@ -15,8 +15,8 @@
  * byte-identical).
  *
  * Styling vocabulary harvested from EscalationCard (mvp:docs/COLOR_SYSTEM.md),
- * mapped to the brand contract tones: danger #C4503B = error/critical,
- * warning #B7791F = attention, success #2C7A53 = ok; theme tokens for chrome.
+ * mapped to the brand contract tones: danger #C0392B = error/critical,
+ * warning #A8730F = attention, success #3F8A53 = ok; theme tokens for chrome.
  */
 
 import { useMemo, useState } from 'react'
@@ -32,6 +32,8 @@ import {
   CaretRight,
 } from '@phosphor-icons/react'
 
+import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
+
 import type {
   Severidad,
   WorkItem,
@@ -40,6 +42,8 @@ import type {
 } from '@/lib/api/work-item'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationParams } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 // Exported (F6): the workspace primitives (SalaAgente, AccionSugerida, the
@@ -135,11 +139,22 @@ export function relativeTime(iso: string, t: TranslateFn): string {
   return t(`${WORKSPACE_NS}.tiempo.d`, { n: Math.round(deltaHr / 24) })
 }
 
-export const ACTION_KIND_CLS: Record<WorkItemAction['kind'], string> = {
-  primary: 'bg-primary text-primary-foreground hover:opacity-90',
-  // Destructive confirm keeps the danger fill + white text (brand exception).
-  danger: 'bg-danger text-white hover:opacity-90',
-  neutral: 'border border-border text-foreground hover:bg-muted',
+/** Maps a work-item action kind to the Cadence Button variant. */
+export const ACTION_KIND_VARIANT: Record<
+  WorkItemAction['kind'],
+  'default' | 'destructive' | 'outline'
+> = {
+  primary: 'default',
+  danger: 'destructive',
+  neutral: 'outline',
+}
+
+/** Maps a severidad to a Cadence StatusBadge tone (BRAND-CONTRACT §2). */
+export const SEVERIDAD_TONE: Record<Severidad, SemanticTone> = {
+  critica: 'critical',
+  alta: 'critical',
+  media: 'warning',
+  baja: 'success',
 }
 
 // ── Props ───────────────────────────────────────────────────────────────────
@@ -183,8 +198,6 @@ function WorkItemCard({
   onOpen?: (item: WorkItem) => void
 }) {
   const { t } = useI18n()
-  // Finite maps crash on unknown keys — ALWAYS fall back (SalaAgente invariant).
-  const sev = SEVERIDAD_TOKEN[item.severidad] ?? SEVERIDAD_TOKEN.media
   const [reasonForActionId, setReasonForActionId] = useState<string | null>(null)
   const [reasonText, setReasonText] = useState('')
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
@@ -221,11 +234,12 @@ function WorkItemCard({
       {/* Header: severidad + estado + flags + relative time */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span
-            className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
+          <StatusBadge
+            tone={SEVERIDAD_TONE[item.severidad] ?? 'warning'}
+            pulse={item.severidad === 'critica'}
           >
             {severidadLabel(t, item.severidad)}
-          </span>
+          </StatusBadge>
           <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
             {estadoLabel(t, item.estado, agente)}
           </span>
@@ -251,7 +265,10 @@ function WorkItemCard({
         </span>
       </div>
 
-      {/* Body: title + suggested action + evidence */}
+      {/* Body: title + suggested action + evidence.
+          ALLOWLIST: whole-card clickable region (multiline title + suggested-action
+          panel + evidence). List-row/whole-card precedent — Button can't host the
+          rich multiline body; accessible name supplied via aria-label. */}
       <button
         type="button"
         onClick={() => onOpen?.(item)}
@@ -300,34 +317,38 @@ function WorkItemCard({
               accion: pendingReasonAction.label.toLowerCase(),
             })}
           </label>
-          <textarea
+          <Textarea
             id={`reason-${item.id}`}
             value={reasonText}
             onChange={(e) => setReasonText(e.target.value)}
             rows={2}
-            className="w-full text-xs rounded-md border border-border bg-background px-2 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            className="w-full text-xs resize-none"
             placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
           />
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="destructive"
+              size="sm"
+              hideArrow
               disabled={reasonText.trim().length === 0 || busyActionId !== null}
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-danger text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t(`${WORKSPACE_NS}.acciones.confirmar`)}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={() => {
                 setReasonForActionId(null)
                 setReasonText('')
               }}
-              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
             >
               {t(`${WORKSPACE_NS}.acciones.cancelar`)}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -336,18 +357,20 @@ function WorkItemCard({
       {item.actions.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {item.actions.map((action) => (
-            <button
+            <Button
               key={action.id}
               type="button"
+              variant={ACTION_KIND_VARIANT[action.kind]}
+              size="sm"
+              hideArrow
               disabled={busyActionId !== null}
               aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
-              className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
             >
               {action.kind === 'primary' && <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />}
               {action.kind === 'danger' && <XCircle className="w-3.5 h-3.5" aria-hidden="true" />}
               {action.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -411,18 +434,18 @@ export function ColaHumana({
         className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="cola-humana-empty"
       >
-        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
           <CheckCircle
             weight="duotone"
-            className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+            className="h-6 w-6 text-fg-subtle"
             aria-hidden="true"
           />
         </div>
         <div className="space-y-1.5">
-          <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+          <p className="text-[15px] font-semibold text-fg">
             {emptyTitleText}
           </p>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+          <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
             {emptyHint ?? t(`${WORKSPACE_NS}.cola.vaciaHint`)}
           </p>
         </div>
@@ -430,7 +453,7 @@ export function ColaHumana({
           <div className="mt-1">
             <Link
               href={emptyAction.href}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
               data-testid="cola-humana-empty-action"
             >
               {emptyAction.label}

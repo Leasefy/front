@@ -15,15 +15,32 @@ import {
   XCircle,
   ArrowCounterClockwise,
   Warning,
-  Spinner,
 } from '@phosphor-icons/react';
-import { SegmentedControl } from '@leasefy/ui';
+import {
+  SegmentedControl,
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import {
@@ -45,15 +62,16 @@ const RESUMEN_ITEMS = [
 
 // ── Caso badge ──────────────────────────────────────────────────────────────
 
-const CASO_STYLES: Record<string, string> = {
-  conciliado:       'bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500',
-  parcial:          'bg-warning-50 text-warning-700 dark:bg-warning-500/15 dark:text-warning-500',
-  duplicado:        'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-  no_identificado:  'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-  diferencia_valor: 'bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-500',
-  fuera_de_fecha:   'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-  confirmado:       'bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500',
-  rechazado:        'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
+type CasoBadgeVariant = 'success' | 'warning' | 'neutral' | 'danger';
+const CASO_VARIANT: Record<string, CasoBadgeVariant> = {
+  conciliado:       'success',
+  parcial:          'warning',
+  duplicado:        'neutral',
+  no_identificado:  'neutral',
+  diferencia_valor: 'danger',
+  fuera_de_fecha:   'neutral',
+  confirmado:       'success',
+  rechazado:        'neutral',
 };
 
 /** Derive display caso from queue item fields */
@@ -106,18 +124,20 @@ function RejectDialog({ matchId: _matchId, onConfirm, onCancel, t, busy }: Rejec
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl p-6 space-y-4">
-        <h3 className="text-base font-semibold text-foreground">{t(k('rejectDialogTitle'))}</h3>
-        <p className="text-sm text-muted-foreground">{t(k('rejectDialogDesc'))}</p>
-        <textarea
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/40"
+    <Dialog open onOpenChange={(o) => { if (!o && !busy) onCancel(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t(k('rejectDialogTitle'))}</DialogTitle>
+          <DialogDescription>{t(k('rejectDialogDesc'))}</DialogDescription>
+        </DialogHeader>
+        <Textarea
+          className="h-24 resize-none"
           placeholder={t(k('rejectReasonPlaceholder'))}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           aria-label={t(k('rejectReasonPlaceholder'))}
         />
-        <div className="flex justify-end gap-2">
+        <DialogFooter>
           <Button variant="ghost" onClick={onCancel} disabled={busy} hideArrow>
             {t(k('cancel'))}
           </Button>
@@ -131,9 +151,9 @@ function RejectDialog({ matchId: _matchId, onConfirm, onCancel, t, busy }: Rejec
           >
             {t(k('rejectConfirm'))}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -172,7 +192,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
             hideArrow
             className="gap-1 text-success-700 hover:bg-success-50 hover:text-success-700 dark:text-success-500 dark:hover:bg-success-500/15"
           >
-            {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" weight="fill" />}
+            {busy ? <Spinner size="xs" variant="current" /> : <CheckCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionConfirm'))}
           </Button>
           <Button
@@ -185,7 +205,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
             hideArrow
             className="gap-1 text-error-700 hover:bg-error-50 hover:text-error-700 dark:text-error-500 dark:hover:bg-error-500/15"
           >
-            {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" weight="fill" />}
+            {busy ? <Spinner size="xs" variant="current" /> : <XCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionReject'))}
           </Button>
         </>
@@ -201,7 +221,7 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
           hideArrow
           className="gap-1 text-muted-foreground"
         >
-          {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <ArrowCounterClockwise className="w-3.5 h-3.5" />}
+          {busy ? <Spinner size="xs" variant="current" /> : <ArrowCounterClockwise className="w-3.5 h-3.5" />}
           {t(k('actionReverse'))}
         </Button>
       )}
@@ -215,13 +235,13 @@ function TableSkeleton() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
-        <tr key={i} className="border-b border-border last:border-0 animate-pulse">
+        <TableRow key={i} className="animate-pulse">
           {Array.from({ length: 8 }).map((_, j) => (
-            <td key={j} className="px-5 py-3.5">
+            <TableCell key={j} className="px-5 py-3.5">
               <div className="h-4 rounded bg-muted w-16" />
-            </td>
+            </TableCell>
           ))}
-        </tr>
+        </TableRow>
       ))}
     </>
   );
@@ -317,15 +337,6 @@ function ConciliacionContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header — subir extracto (abajo) ES la acción principal; sin CTA extra */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/conciliacion"
-          icon={Bank}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.conciliacion'), href: '/panel/inmobiliaria/ai/conciliacion' },
-            { label: t(k('movimientosTitle')) },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t(k('title'))}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
       </header>
@@ -371,7 +382,7 @@ function ConciliacionContent() {
         >
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-1">
             {uploading ? (
-              <Spinner className="w-6 h-6 text-primary animate-spin" />
+              <Spinner size="md" variant="default" />
             ) : (
               <UploadSimple className="w-6 h-6 text-primary" weight="duotone" />
             )}
@@ -467,32 +478,29 @@ function ConciliacionContent() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow>
                 {COLUMNS.map((col) => (
-                  <th
-                    key={col}
-                    className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap"
-                  >
+                  <TableHead key={col} className="whitespace-nowrap">
                     {t(k(col))}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {isLoading && <TableSkeleton />}
 
               {!isLoading && !error && items.length === 0 && (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="p-0">
+                <TableRow>
+                  <TableCell colSpan={COLUMNS.length} className="p-0">
                     <EmptyState
                       icon={Bank}
                       title={t(k('emptyQueueTitle'))}
                       description={t(k('emptyQueueDesc'))}
                     />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
 
               {!isLoading && items.map((item) => {
@@ -505,42 +513,37 @@ function ConciliacionContent() {
                 const valorEsperado = item.matchedAmountCop ? fmtCop(item.matchedAmountCop) : '—';
 
                 return (
-                  <tr
+                  <TableRow
                     key={item.id}
                     className={cn(
-                      'border-b border-border last:border-0 transition-colors',
+                      'transition-colors',
                       isBusy ? 'opacity-60' : 'hover:bg-muted/30',
                     )}
                   >
-                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
+                    <TableCell className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
                       {dateStr}
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-xs max-w-[140px] truncate" title={ref}>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 font-mono text-xs max-w-[140px] truncate" title={ref}>
                       {ref}
-                    </td>
-                    <td className="px-5 py-3.5 text-xs max-w-[200px] truncate" title={tercero}>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 text-xs max-w-[200px] truncate" title={tercero}>
                       {tercero}
-                    </td>
-                    <td className="px-5 py-3.5 max-w-[160px] truncate text-muted-foreground" title={item.domain}>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 max-w-[160px] truncate text-muted-foreground" title={item.domain}>
                       {item.domain}
-                    </td>
-                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 tabular-nums whitespace-nowrap">
                       {valorBanco}
-                    </td>
-                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
                       {valorEsperado}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
-                          CASO_STYLES[caso] ?? 'bg-muted text-muted-foreground',
-                        )}
-                      >
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5">
+                      <Badge variant={CASO_VARIANT[caso] ?? 'neutral'}>
                         {t(k(`caso_badge_${caso}`))}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5">
                       <RowActions
                         item={item}
                         onConfirm={() => void handleConfirm(item.id)}
@@ -549,12 +552,12 @@ function ConciliacionContent() {
                         busy={isBusy}
                         t={t}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
 

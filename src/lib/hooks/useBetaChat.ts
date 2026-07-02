@@ -14,6 +14,7 @@ import type {
   ResponseMeta,
   BetaPreferences,
   ActionProposal,
+  ChatSnapshot,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
@@ -29,7 +30,23 @@ import {
   type BackendDispatch,
   type BackendSuggestedAction,
   type BackendActionProposal,
+  type BackendSnapshot,
 } from '@/lib/api/ai-hub-chat';
+
+/**
+ * Backend snapshot (has `generatedAt`) → the front `ChatSnapshot` (numeric KPIs
+ * only). Returns `null` when the backend didn't emit one for this turn.
+ */
+function backendSnapshotToChat(s: BackendSnapshot | null): ChatSnapshot | null {
+  if (!s) return null;
+  return {
+    deudoresActivos: s.deudoresActivos,
+    pagadoHoyCop: s.pagadoHoyCop,
+    llamadasHoy: s.llamadasHoy,
+    escalacionesPendientes: s.escalacionesPendientes,
+    enPrejuridico: s.enPrejuridico,
+  };
+}
 
 // ============================================================================
 // Constants
@@ -45,6 +62,17 @@ const STORAGE_KEY = 'leasefy-beta-conversations';
 const STORAGE_VERSION_KEY = 'leasefy-beta-storage-version';
 const CURRENT_STORAGE_VERSION = 3; // v3 = Clean minimal Synapse-inspired redesign
 const PREFERENCES_STORAGE_KEY = 'leasefy-beta-preferences';
+// Daily reset: the chat starts fresh each calendar day. We stamp the local
+// day (YYYY-MM-DD) and wipe conversations on the first load of a new day.
+const DAILY_RESET_KEY = 'leasefy-beta-last-day';
+
+/** Local calendar day key, e.g. "2026-07-01". */
+function todayKey(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 const TITLE_MAX_LENGTH = 50;
 const PREVIEW_MAX_LENGTH = 80;
 
@@ -125,11 +153,16 @@ function deserializeConversations(json: string): Conversation[] {
 function loadFromStorage(): Conversation[] {
   if (typeof window === 'undefined') return [];
   try {
-    // Auto-migrate: clear old-format conversations when storage version changes
+    // Clear conversations when the storage version changes (schema migration)
+    // OR when the calendar day rolls over (daily reset). Either way we wipe and
+    // re-stamp both markers, so the chat starts fresh each new day.
     const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
-    if (storedVersion !== String(CURRENT_STORAGE_VERSION)) {
+    const lastDay = localStorage.getItem(DAILY_RESET_KEY);
+    const today = todayKey();
+    if (storedVersion !== String(CURRENT_STORAGE_VERSION) || lastDay !== today) {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.setItem(STORAGE_VERSION_KEY, String(CURRENT_STORAGE_VERSION));
+      localStorage.setItem(DAILY_RESET_KEY, today);
       return [];
     }
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -679,11 +712,31 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         responseText: string;
         suggestedActions: BackendSuggestedAction[];
         dispatches: BackendDispatch[];
+        snapshot?: ChatSnapshot | null;
       },
       assistantId: string,
       conversationId: string,
       liveBlock: AgentActivityBlock | null
     ) => {
+      // Attach the "estado de hoy" snapshot up-front. Every downstream setter
+      // (live-block branch, driveAgentBlock, attachResponseMeta) spreads `...m`,
+      // so this single patch survives regardless of which branch runs next.
+      const snapshot = resp.snapshot ?? null;
+      if (snapshot) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id !== conversationId
+              ? c
+              : {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantId ? { ...m, snapshot } : m
+                  ),
+                }
+          )
+        );
+      }
+
       const actions = resp.suggestedActions.map(suggestedActionToResponseAction);
       const summaries = resp.dispatches
         .map((d) => d.summary)
@@ -764,6 +817,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       responseText: string;
       suggestedActions: BackendSuggestedAction[];
       dispatches: BackendDispatch[];
+      snapshot: ChatSnapshot | null;
       liveBlock: AgentActivityBlock | null;
     }> => {
       const startedAt = new Date();
@@ -780,14 +834,18 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           suggestedActions: BackendSuggestedAction[];
           dispatches: BackendDispatch[];
         } | null;
+        snapshot: ChatSnapshot | null;
         streamError: string | null;
-      } = { final: null, streamError: null };
+      } = { final: null, snapshot: null, streamError: null };
 
       await streamChatTurn({
         agencyId: args.agencyId,
         message: args.message,
         history: args.history,
         handlers: {
+          onSnapshot: (s) => {
+            collected.snapshot = backendSnapshotToChat(s);
+          },
           onMessage: (text, actions) => {
             messageText = text;
             messageActions = actions;
@@ -890,7 +948,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       if (!responseText && dispatches.length === 0) {
         throw new Error('empty stream');
       }
-      return { responseText, suggestedActions, dispatches, liveBlock };
+      return {
+        responseText,
+        suggestedActions,
+        dispatches,
+        snapshot: collected.snapshot,
+        liveBlock,
+      };
     },
     []
   );

@@ -29,7 +29,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/ui';
+import { Badge } from '@/components/ui/badge';
+import { SegmentedControl } from '@leasefy/cadence';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Sheet,
@@ -196,7 +197,7 @@ function OperacionesContent() {
   } = useConsignaciones();
 
   // State
-  const [activeTab, setActiveTab] = useState<TabValue>('renovaciones');
+  const [activeTab, setTab] = useState<TabValue>('renovaciones');
   const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
 
   // Use API data or fallback to empty arrays
@@ -249,7 +250,7 @@ function OperacionesContent() {
   }, []);
 
   const handleCalculateIPC = useCallback((renovacion: Renovacion) => {
-    setActiveTab('ipc');
+    setTab('ipc');
   }, []);
 
   const handleViewRenovacionHistory = useCallback((renovacion: Renovacion) => {
@@ -488,7 +489,7 @@ function OperacionesContent() {
         transition={{ delay: 0.1 }}
         className="rounded-xl border border-border bg-card"
       >
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
+        <Tabs value={activeTab} onValueChange={(v) => setTab(v as TabValue)}>
           {/* Tab Header */}
           <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border">
             <TabsList variant="segmented">
@@ -499,9 +500,9 @@ function OperacionesContent() {
                 <ClockCounterClockwise className="w-4 h-4 mr-2" />
                 {t('inmobiliaria.operaciones.tabs.renovaciones')}
                 {stats.renovaciones.pending > 0 && (
-                  <span className="ml-2 rounded-full bg-warning-soft px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-warning">
+                  <Badge variant="warning" className="ml-2 px-1.5 py-0.5 font-mono text-[11px] tabular-nums">
                     {stats.renovaciones.pending}
-                  </span>
+                  </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger

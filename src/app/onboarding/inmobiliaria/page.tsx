@@ -5,10 +5,15 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, Storefront, User, Phone, Envelope, ChatCircle, MapPin, Buildings, Rocket, Briefcase, ChartLineUp, Users, House, Wrench, Scales, Eye, EyeSlash, Lock } from '@phosphor-icons/react'
+import { ArrowRight, ArrowLeft, Check, Shield, Storefront, User, Phone, Envelope, ChatCircle, MapPin, Buildings, Rocket, Briefcase, ChartLineUp, Users, House, Wrench, Scales, Eye, EyeSlash, Lock } from '@phosphor-icons/react'
 import { cn, sanitizeReturnUrl } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { useI18n } from '@/lib/i18n'
+import { IconButton } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // ============================================================================
 // Types & Constants
@@ -265,29 +270,31 @@ function OnboardingInmobiliariaContent() {
   // Success Screen
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#1A40FF] to-white flex items-center justify-center p-6">
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md w-full text-center"
         >
-          <div className="w-20 h-20 bg-[#EEF1FF] rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-[#1A40FF]" strokeWidth={2.5} />
+          <div className="w-20 h-20 bg-primary-soft rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-10 h-10 text-primary" weight="bold" />
           </div>
-          <h1 className="text-3xl font-bold text-neutral-900 mb-3">
+          <h1 className="text-3xl font-bold text-fg mb-3">
             {t('inmobiliaria.onboarding.register.success.welcome', { agencyName: data.agencyName })}
           </h1>
-          <p className="text-neutral-600 mb-8">
+          <p className="text-fg-muted mb-8">
             {t('inmobiliaria.onboarding.register.success.description')}
           </p>
-          <button
+          <Button
             onClick={goToDashboard}
             disabled={isNavigating}
-            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-[#1A40FF] text-white font-semibold rounded-xl hover:opacity-90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            hideArrow
+            size="lg"
+            className="w-full"
           >
             {isNavigating ? (
               <>
-                <SpinnerGap className="w-4 h-4 animate-spin" />
+                <Spinner size="xs" variant="current" />
                 {t('common.loading')}
               </>
             ) : (
@@ -296,35 +303,35 @@ function OnboardingInmobiliariaContent() {
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
-          </button>
+          </Button>
 
           {/* Quick stats preview */}
-          <div className="mt-8 p-4 bg-white rounded-xl border border-neutral-200">
-            <p className="text-sm font-medium text-neutral-900 mb-3">{t('inmobiliaria.onboarding.register.success.planIncludes')}</p>
+          <div className="mt-8 p-4 bg-surface rounded-[20px] border border-border">
+            <p className="text-sm font-medium text-fg mb-3">{t('inmobiliaria.onboarding.register.success.planIncludes')}</p>
             <div className="grid grid-cols-2 gap-3 text-left">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-[#EEF1FF] rounded-md flex items-center justify-center">
-                  <Users className="w-4 h-4 text-[#1A40FF]" />
+                <div className="w-8 h-8 bg-primary-soft rounded-[10px] flex items-center justify-center">
+                  <Users className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.ownerManagement')}</span>
+                <span className="text-xs text-fg-muted">{t('inmobiliaria.onboarding.register.success.ownerManagement')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-[#E8F3EC] rounded-md flex items-center justify-center">
-                  <Buildings className="w-4 h-4 text-[#2C7A53]" />
+                <div className="w-8 h-8 bg-success-soft rounded-[10px] flex items-center justify-center">
+                  <Buildings className="w-4 h-4 text-success" />
                 </div>
-                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.unlimitedPortfolio')}</span>
+                <span className="text-xs text-fg-muted">{t('inmobiliaria.onboarding.register.success.unlimitedPortfolio')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-[#F8F0E0] rounded-md flex items-center justify-center">
-                  <ChartLineUp className="w-4 h-4 text-[#B7791F]" />
+                <div className="w-8 h-8 bg-warning-soft rounded-[10px] flex items-center justify-center">
+                  <ChartLineUp className="w-4 h-4 text-warning" />
                 </div>
-                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.reportsAnalytics')}</span>
+                <span className="text-xs text-fg-muted">{t('inmobiliaria.onboarding.register.success.reportsAnalytics')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-[#F8EAE7] rounded-md flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-[#C4503B]" />
+                <div className="w-8 h-8 bg-danger-soft rounded-[10px] flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-danger" />
                 </div>
-                <span className="text-xs text-neutral-600">{t('inmobiliaria.onboarding.register.success.tenantVerification')}</span>
+                <span className="text-xs text-fg-muted">{t('inmobiliaria.onboarding.register.success.tenantVerification')}</span>
               </div>
             </div>
           </div>
@@ -334,9 +341,9 @@ function OnboardingInmobiliariaContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-neutral-100">
+      <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-faint">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -348,29 +355,35 @@ function OnboardingInmobiliariaContent() {
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {(fromPublish ? [1, 4] : [1, 2, 3, 4]).map((s, idx, arr) => (
                   <div key={s} className="flex items-center gap-1.5 sm:gap-2">
-                    <div className={cn(
-                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-                      step > s ? "bg-[#1A40FF] text-white uppercase tracking-wide font-mono" :
-                      step === s ? "bg-[#1A40FF] text-white uppercase tracking-wide font-mono" : "bg-neutral-100 text-neutral-400"
-                    )}>
-                      {step > s ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                    <div
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold font-mono tabular-nums transition-colors",
+                        step > s ? "bg-primary border-2 border-primary text-primary-fg" :
+                        step === s ? "bg-surface border-2 border-primary text-primary" : "bg-surface border border-border text-fg-subtle"
+                      )}
+                      style={step === s ? { boxShadow: '0 0 0 4px rgba(26,64,255,0.14)' } : undefined}
+                    >
+                      {step > s ? <Check className="w-3.5 h-3.5" weight="bold" /> : idx + 1}
                     </div>
                     {idx < arr.length - 1 && (
                       <div className={cn(
                         "w-3 sm:w-6 h-0.5 transition-colors",
-                        step > s ? "bg-[#1A40FF]" : "bg-neutral-200"
+                        step > s ? "bg-primary" : "bg-border"
                       )} />
                     )}
                   </div>
                 ))}
               </div>
-              <button
+              <Button
                 type="button"
+                variant="link"
+                size="sm"
                 onClick={handleSkip}
-                className="shrink-0 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
+                hideArrow
+                className="shrink-0 text-fg-subtle hover:text-fg-muted"
               >
                 {t('inmobiliaria.onboarding.register.skip')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -389,14 +402,14 @@ function OnboardingInmobiliariaContent() {
             >
               {/* Step 1: Agency Info */}
               <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#EEF1FF] text-[#1A40FF] rounded-full text-sm font-medium mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-soft text-primary rounded-full text-sm font-medium mb-4">
                   <Storefront className="w-4 h-4" />
                   {t('inmobiliaria.onboarding.register.step1.badge')}
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-fg mb-2">
                   {t('inmobiliaria.onboarding.register.step1.title')}
                 </h1>
-                <p className="text-neutral-500">
+                <p className="text-fg-muted">
                   {t('inmobiliaria.onboarding.register.step1.subtitle')}
                 </p>
               </div>
@@ -411,26 +424,25 @@ function OnboardingInmobiliariaContent() {
               <div className="space-y-5">
                 {/* Agency Name */}
                 <div>
-                  <label htmlFor="agencyName" className="block text-sm font-medium text-neutral-700 mb-2">
-                    {t('inmobiliaria.onboarding.register.step1.agencyName')} <span className="text-[#C4503B]">*</span>
+                  <label htmlFor="agencyName" className="block text-sm font-medium text-fg mb-2">
+                    {t('inmobiliaria.onboarding.register.step1.agencyName')} <span className="text-danger">*</span>
                   </label>
-                  <input
+                  <Input
                     id="agencyName"
                     type="text"
                     autoComplete="organization"
                     value={data.agencyName}
                     onChange={(e) => updateData({ agencyName: e.target.value })}
                     placeholder={t('inmobiliaria.onboarding.register.step1.agencyNamePlaceholder')}
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                   />
                 </div>
 
                 {/* NIT */}
                 <div>
-                  <label htmlFor="nit" className="block text-sm font-medium text-neutral-700 mb-2">
-                    {t('inmobiliaria.onboarding.register.step1.nit')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
+                  <label htmlFor="nit" className="block text-sm font-medium text-fg mb-2">
+                    {t('inmobiliaria.onboarding.register.step1.nit')} <span className="text-fg-subtle font-normal">({t('common.optional')})</span>
                   </label>
-                  <input
+                  <Input
                     id="nit"
                     type="text"
                     inputMode="numeric"
@@ -438,23 +450,22 @@ function OnboardingInmobiliariaContent() {
                     value={data.nit}
                     onChange={(e) => updateData({ nit: e.target.value })}
                     placeholder="900.123.456-7"
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
+                    className="font-mono tabular-nums"
                   />
                 </div>
 
                 {/* Contact Person */}
                 <div>
-                  <label htmlFor="contactPerson" className="block text-sm font-medium text-neutral-700 mb-2">
-                    {t('inmobiliaria.onboarding.register.step1.contactPerson')} <span className="text-[#C4503B]">*</span>
+                  <label htmlFor="contactPerson" className="block text-sm font-medium text-fg mb-2">
+                    {t('inmobiliaria.onboarding.register.step1.contactPerson')} <span className="text-danger">*</span>
                   </label>
-                  <input
+                  <Input
                     id="contactPerson"
                     type="text"
                     autoComplete="name"
                     value={data.contactPerson}
                     onChange={(e) => updateData({ contactPerson: e.target.value })}
                     placeholder={t('inmobiliaria.onboarding.register.step1.contactPersonPlaceholder')}
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                   />
                 </div>
 
@@ -463,7 +474,7 @@ function OnboardingInmobiliariaContent() {
                   <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step1.phone')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
-                  <input
+                  <Input
                     id="phone"
                     type="tel"
                     inputMode="tel"
@@ -488,10 +499,8 @@ function OnboardingInmobiliariaContent() {
                     placeholder="300 123 4567"
                     maxLength={12} // 10 digits + 2 spaces
                     className={cn(
-                      "w-full px-4 py-3.5 text-base rounded-xl border bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 transition-all",
-                      data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10
-                        ? "border-[#B7791F]/30 focus:border-[#B7791F]/30"
-                        : "border-neutral-200 focus:border-neutral-400"
+                      "h-12 rounded-xl",
+                      data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10 && "border-warning/40 focus-visible:border-warning/40"
                     )}
                   />
                   <p className="mt-1.5 text-xs text-neutral-400">
@@ -513,19 +522,16 @@ function OnboardingInmobiliariaContent() {
                   if (!isStep1Valid) setDisabledHint(step1HintMessage)
                 }}
               >
-                <button
+                <Button
                   type="submit"
                   disabled={!isStep1Valid}
-                  className={cn(
-                    "w-full mt-10 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                    isStep1Valid
-                      ? "bg-[#1A40FF] text-white hover:opacity-90"
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed pointer-events-none"
-                  )}
+                  hideArrow
+                  size="lg"
+                  className="w-full mt-10"
                 >
                   {t('inmobiliaria.onboarding.register.continue')}
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </Button>
               </span>
               {disabledHint && !isStep1Valid && (
                 <p role="status" className="mt-3 text-xs text-[#B7791F] text-center">
@@ -571,18 +577,16 @@ function OnboardingInmobiliariaContent() {
                   <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step2.city')} <span className="text-[#C4503B]">*</span>
                   </label>
-                  <select
-                    id="city"
-                    value={data.city}
-                    onChange={(e) => updateData({ city: e.target.value })}
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all appearance-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
-                  >
-                    <option value="">{t('inmobiliaria.onboarding.register.step2.cityPlaceholder')}</option>
-                    {CITIES.map((city) => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
+                  <Select value={data.city} onValueChange={(v) => updateData({ city: v })}>
+                    <SelectTrigger id="city" className="h-12 rounded-xl">
+                      <SelectValue placeholder={t('inmobiliaria.onboarding.register.step2.cityPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CITIES.map((city) => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Portfolio Size */}
@@ -620,7 +624,7 @@ function OnboardingInmobiliariaContent() {
                   <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('inmobiliaria.onboarding.register.step2.yearsInBusiness')} <span className="text-neutral-400 font-normal">({t('common.optional')})</span>
                   </label>
-                  <input
+                  <Input
                     id="yearsInBusiness"
                     type="number"
                     inputMode="numeric"
@@ -629,34 +633,34 @@ function OnboardingInmobiliariaContent() {
                     value={data.yearsInBusiness}
                     onChange={(e) => updateData({ yearsInBusiness: e.target.value })}
                     placeholder="5"
-                    className="w-full px-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
+                    className="h-12 rounded-xl"
                   />
                 </div>
               </div>
 
               {/* Navigation */}
               <div className="flex gap-3 mt-10">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  hideArrow
+                  size="lg"
                   onClick={handleBack}
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-neutral-200 text-neutral-600 font-medium hover:bg-neutral-50 transition-colors"
+                  className="rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   {t('inmobiliaria.onboarding.register.back')}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={!isStep2Valid}
-                  className={cn(
-                    "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                    isStep2Valid
-                      ? "bg-[#1A40FF] text-white hover:opacity-90"
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                  )}
+                  hideArrow
+                  size="lg"
+                  className="flex-1 rounded-xl"
                 >
                   {t('inmobiliaria.onboarding.register.continue')}
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
               </form>
             </motion.div>
@@ -761,27 +765,27 @@ function OnboardingInmobiliariaContent() {
 
               {/* Navigation */}
               <div className="flex gap-3 mt-10">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  hideArrow
+                  size="lg"
                   onClick={handleBack}
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-neutral-200 text-neutral-600 font-medium hover:bg-neutral-50 transition-colors"
+                  className="rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   {t('inmobiliaria.onboarding.register.back')}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={!isStep3Valid}
-                  className={cn(
-                    "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                    isStep3Valid
-                      ? "bg-[#1A40FF] text-white hover:opacity-90"
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                  )}
+                  hideArrow
+                  size="lg"
+                  className="flex-1 rounded-xl"
                 >
                   {t('inmobiliaria.onboarding.register.continue')}
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
               </form>
             </motion.div>
@@ -826,7 +830,7 @@ function OnboardingInmobiliariaContent() {
                   </label>
                   <div className="relative">
                     <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input
+                    <Input
                       id="accountEmail"
                       type="email"
                       inputMode="email"
@@ -835,7 +839,7 @@ function OnboardingInmobiliariaContent() {
                       value={data.email}
                       onChange={(e) => updateData({ email: e.target.value })}
                       placeholder={t('inmobiliaria.onboarding.register.step4.emailPlaceholder')}
-                      className="w-full pl-12 pr-4 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                      className="h-12 pl-12 rounded-xl"
                     />
                   </div>
                 </div>
@@ -847,22 +851,23 @@ function OnboardingInmobiliariaContent() {
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input
+                    <Input
                       id="accountPassword"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
                       value={data.password}
                       onChange={(e) => updateData({ password: e.target.value })}
                       placeholder={t('inmobiliaria.onboarding.register.step4.passwordPlaceholder')}
-                      className="w-full pl-12 pr-12 py-3.5 text-base rounded-xl border border-neutral-200 bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                      className="h-12 pl-12 pr-12 rounded-xl"
                     />
-                    <button
+                    <IconButton
                       type="button"
+                      variant="ghost"
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                    >
-                      {showPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
+                      icon={showPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 hover:bg-transparent"
+                    />
                   </div>
                   {data.password.length > 0 && data.password.length < 8 && (
                     <p className="mt-1.5 text-xs text-[#B7791F]">
@@ -878,7 +883,7 @@ function OnboardingInmobiliariaContent() {
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input
+                    <Input
                       id="accountConfirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       autoComplete="new-password"
@@ -886,19 +891,18 @@ function OnboardingInmobiliariaContent() {
                       onChange={(e) => updateData({ confirmPassword: e.target.value })}
                       placeholder={t('inmobiliaria.onboarding.register.step4.confirmPasswordPlaceholder')}
                       className={cn(
-                        "w-full pl-12 pr-12 py-3.5 text-base rounded-xl border bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 transition-all",
-                        data.confirmPassword.length > 0 && data.password !== data.confirmPassword
-                          ? "border-[#C4503B]/30 focus:border-[#C4503B]/30"
-                          : "border-neutral-200 focus:border-[#1A40FF]/30"
+                        "h-12 pl-12 pr-12 rounded-xl",
+                        data.confirmPassword.length > 0 && data.password !== data.confirmPassword && "border-danger/40 focus-visible:border-danger/40 focus-visible:ring-danger/20"
                       )}
                     />
-                    <button
+                    <IconButton
                       type="button"
+                      variant="ghost"
+                      aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                    >
-                      {showConfirmPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
+                      icon={showConfirmPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 hover:bg-transparent"
+                    />
                   </div>
                   {data.confirmPassword.length > 0 && data.password !== data.confirmPassword && (
                     <p className="mt-1.5 text-xs text-[#C4503B]">
@@ -933,33 +937,33 @@ function OnboardingInmobiliariaContent() {
 
               {/* Navigation */}
               <div className="flex gap-3 mt-10">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  hideArrow
+                  size="lg"
                   onClick={handleBack}
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-neutral-200 text-neutral-600 font-medium hover:bg-neutral-50 transition-colors"
+                  className="rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   {t('inmobiliaria.onboarding.register.back')}
-                </button>
+                </Button>
                 <span
                   className={cn('flex-1 flex', !isStep4Valid && !isSubmitting && 'cursor-not-allowed')}
                   onClick={() => {
                     if (!isStep4Valid && !isSubmitting) setDisabledHint(step4HintMessage)
                   }}
                 >
-                  <button
+                  <Button
                     type="submit"
                     disabled={!isStep4Valid || isSubmitting}
-                    className={cn(
-                      "flex-1 py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all",
-                      isStep4Valid && !isSubmitting
-                        ? "bg-[#1A40FF] text-white hover:opacity-90"
-                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed pointer-events-none"
-                    )}
+                    hideArrow
+                    size="lg"
+                    className="flex-1"
                   >
                     {isSubmitting ? (
                       <>
-                        <SpinnerGap className="w-4 h-4 animate-spin" />
+                        <Spinner size="xs" variant="current" />
                         {step4SubmittingLabel}
                       </>
                     ) : (
@@ -968,7 +972,7 @@ function OnboardingInmobiliariaContent() {
                         <Rocket className="w-4 h-4" />
                       </>
                     )}
-                  </button>
+                  </Button>
                 </span>
               </div>
               {disabledHint && !isStep4Valid && (

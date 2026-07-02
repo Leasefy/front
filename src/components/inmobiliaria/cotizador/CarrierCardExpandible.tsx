@@ -26,13 +26,13 @@ import {
   XCircle,
   Warning,
   Question,
-  Spinner,
   Clock,
   Info,
 } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Spinner as DSSpinner } from '@/components/ui/spinner'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import { formatPrimaCop, formatLatency } from '@/lib/cotizador/verdict-derive'
 import { BadgeFuente } from './BadgeFuente'
@@ -94,7 +94,7 @@ function StatusIcon({ status }: { status: Status }) {
     case 'stub':
       return <Question weight="fill" className={cn(cls, 'text-fg-muted')} />
     case 'pending':
-      return <Spinner weight="bold" className={cn(cls, 'text-primary animate-spin')} />
+      return <DSSpinner size="sm" variant="default" className="shrink-0" />
     default:
       return null
   }
@@ -308,6 +308,9 @@ export function CarrierCardExpandible({
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
+      {/* Collapsible card-header disclosure toggle (rich icon+name+status-chip+price
+          row with AnimatePresence-style reveal) — Cadence Accordion can't host this
+          header; kept native with aria-expanded per playbook disclosure allowlist. */}
       <button
         type="button"
         onClick={() => setOpen(o => !o)}

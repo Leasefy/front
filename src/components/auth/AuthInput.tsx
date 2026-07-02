@@ -54,14 +54,14 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              'h-11 w-full rounded-md border bg-white px-3.5 text-base md:text-[14px] text-[#0B1220]',
+              'h-12 w-full rounded-xl border bg-white px-4 text-base md:text-[14px] text-[#14130f]',
               'transition-colors duration-150 placeholder:text-neutral-400',
-              'focus:outline-none focus:border-[#1A40FF] focus:shadow-[0_0_0_3px_rgba(26,64,255,0.10)]',
+              'focus:outline-none focus:border-[#1A40FF] focus:shadow-[0_0_0_3px_rgba(26,64,255,0.12)]',
               'disabled:cursor-not-allowed disabled:opacity-50',
               isPassword && 'pr-11',
               error
-                ? 'border-[#C4503B] focus:border-[#C4503B] focus:shadow-[0_0_0_3px_rgba(196,80,59,0.10)]'
-                : 'border-neutral-200 hover:border-neutral-300',
+                ? 'border-[#C0392B] focus:border-[#C0392B] focus:shadow-[0_0_0_3px_rgba(192,57,43,0.12)]'
+                : 'border-[#E5E2DC] hover:border-[#C9C4BB]',
               className
             )}
             {...props}

@@ -7,7 +7,6 @@ import {
   House,
   MagnifyingGlass,
   X,
-  Spinner,
   Eye,
   ArrowsClockwise,
   Users,
@@ -20,9 +19,9 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
-import { Button, Input, EmptyState } from '@/components/ui';
+import { Button, Input, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
 import { ErrorState } from '@/components/ui/error-state';
-import { SegmentedControl } from '@leasefy/ui';
+import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import type { AgencyProperty } from '@/lib/types/property';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -45,6 +44,13 @@ const STATUS_CONFIG = {
     text: 'text-warning',
   },
 } as const;
+
+// Status → Cadence Badge variant (mirrors STATUS_CONFIG tints).
+const STATUS_VARIANT: Record<'available' | 'rented' | 'pending', 'default' | 'success' | 'warning'> = {
+  available: 'success',
+  rented: 'default',
+  pending: 'warning',
+};
 
 type FilterStatus = 'all' | 'available' | 'rented' | 'pending';
 
@@ -117,7 +123,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
           {currentAgent && (
             <div className="flex items-center justify-between p-3 rounded-xl bg-surface-muted border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium text-primary">
                     {currentAgent.firstName.charAt(0)}{currentAgent.lastName.charAt(0)}
                   </span>
@@ -263,7 +269,7 @@ function PropiedadesContent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Spinner className="w-6 h-6 animate-spin text-primary" />
+        <Spinner size="md" className="text-primary" />
       </div>
     );
   }
@@ -332,14 +338,14 @@ function PropiedadesContent() {
               className="pl-9 pr-9"
             />
             {search && (
-              <button
-                type="button"
+              <IconButton
+                variant="ghost"
+                size="sm"
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg transition-colors z-10"
                 aria-label="Limpiar búsqueda"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+                icon={<X className="w-3.5 h-3.5" />}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
+              />
             )}
           </div>
 
@@ -370,36 +376,28 @@ function PropiedadesContent() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
-              <thead>
-                <tr className="border-b border-border bg-surface-muted">
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Propiedad
-                  </th>
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Canon
-                  </th>
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Estado
-                  </th>
-                  <th className="text-left p-4 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Agente
-                  </th>
-                  <th className="w-20 p-4" />
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[700px]">
+              <TableHeader>
+                <TableRow className="border-b border-border bg-surface-muted">
+                  <TableHead>Propiedad</TableHead>
+                  <TableHead>Canon</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Agente</TableHead>
+                  <TableHead className="w-20 p-4" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filtered.map((property) => {
                   const statusCfg = STATUS_CONFIG[property.status] ?? STATUS_CONFIG.pending;
                   const agent = property.agents[0] ?? null;
 
                   return (
-                    <tr
+                    <TableRow
                       key={property.id}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors"
                     >
                       {/* Property */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         <div className="flex items-center gap-3">
                           {property.thumbnailUrl ? (
                             <div className="w-12 h-12 rounded-md overflow-hidden shrink-0">
@@ -423,27 +421,27 @@ function PropiedadesContent() {
                             </p>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Canon */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         <p className="text-sm font-semibold text-fg tabular-nums">
                           {formatCurrency(property.monthlyRent)}
                         </p>
-                      </td>
+                      </TableCell>
 
                       {/* Status */}
-                      <td className="p-4">
-                        <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusCfg.bg, statusCfg.text)}>
+                      <TableCell className="p-4">
+                        <Badge variant={STATUS_VARIANT[property.status] ?? 'warning'}>
                           {statusCfg.label}
-                        </span>
-                      </td>
+                        </Badge>
+                      </TableCell>
 
                       {/* Agent */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         {agent ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
                               <span className="text-xs font-medium text-primary">
                                 {agent.firstName.charAt(0)}{agent.lastName.charAt(0)}
                               </span>
@@ -457,10 +455,10 @@ function PropiedadesContent() {
                         ) : (
                           <span className="text-sm text-fg-muted">Sin asignar</span>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Actions */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         <div className="flex items-center gap-1 justify-end">
                           <IconTooltip label="Ver propiedad">
                             <Button
@@ -500,12 +498,12 @@ function PropiedadesContent() {
                             </>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

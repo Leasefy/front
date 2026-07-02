@@ -28,11 +28,10 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Bank, PlugsConnected, Plus, ArrowClockwise } from '@phosphor-icons/react'
+import { PlugsConnected, Plus, ArrowClockwise } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 import { Button } from '@/components/ui/button'
@@ -46,7 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { SegmentedControl, StatusBadge, type SemanticTone } from '@leasefy/ui'
+import { SegmentedControl, StatusBadge, type SemanticTone } from '@leasefy/cadence'
 
 import {
   useConciliacionConnections,
@@ -359,18 +358,6 @@ function ConciliacionConexiones() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/conciliacion"
-            icon={Bank}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              {
-                label: t('inmobiliaria.ai.workspace.agente.conciliacion'),
-                href: '/panel/inmobiliaria/ai/conciliacion',
-              },
-              { label: 'Conexiones' },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">Conexiones</h1>
           <p className="text-sm text-fg-muted max-w-2xl">
             Registrá y administrá las fuentes de movimientos (bancos, pasarelas y extractos) que

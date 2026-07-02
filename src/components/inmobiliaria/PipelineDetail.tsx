@@ -25,6 +25,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import {
   type PipelineItem,
@@ -307,25 +309,31 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
 
               {/* Contact Grid */}
               <div className="grid grid-cols-2 gap-2">
-                <button
+                <Button
+                  variant="secondary"
+                  hideArrow
                   onClick={() => copyToClipboard(item.candidateEmail, 'Email')}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-md border border-border bg-muted/30 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors group"
+                  className="justify-start gap-2 px-3 text-muted-foreground"
                 >
                   <Envelope className="w-4 h-4 shrink-0" />
                   <span className="truncate flex-1 text-left">{item.candidateEmail.split('@')[0]}</span>
                   <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  hideArrow
                   onClick={() => copyToClipboard(item.candidatePhone, 'Teléfono')}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-md border border-border bg-muted/30 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors group"
+                  className="justify-start gap-2 px-3 text-muted-foreground"
                 >
                   <Phone className="w-4 h-4 shrink-0" />
                   <span className="truncate flex-1 text-left tabular-nums">{item.candidatePhone}</span>
                   <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </button>
+                </Button>
               </div>
 
-              {/* WhatsApp Button */}
+              {/* WhatsApp Button — allowlist: green-brand CTA. Cadence Button has NO success/green
+                  variant (logged gap); the WhatsApp-green fill is a recognised brand color that the
+                  primary/secondary variants can't express. Kept native. */}
               <button
                 onClick={() => openWhatsApp(item.candidatePhone)}
                 className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-md bg-success hover:opacity-90 text-white text-sm font-medium transition-colors"
@@ -449,12 +457,12 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 {item.notes}
               </div>
             )}
-            <textarea
+            <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('inmobiliaria.pipeline.addNotePlaceholder')}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none text-sm"
+              className="w-full resize-none"
             />
           </div>
 
@@ -473,48 +481,41 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
         {/* Footer Actions */}
         {!isTerminal && (
           <div className="shrink-0 p-4 border-t border-border bg-card flex items-center gap-3">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={handleMarkAsLost}
               disabled={isMarking || isMoving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-danger/30 text-danger font-medium hover:bg-danger-soft transition-colors disabled:opacity-50"
+              isLoading={isMarking}
+              className="flex-1 border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
             >
               {isMarking ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  {t('inmobiliaria.pipeline.marking')}
-                </span>
+                t('inmobiliaria.pipeline.marking')
               ) : (
                 <>
                   <XCircle className="w-4 h-4" />
                   {t('inmobiliaria.pipeline.markAsLost')}
                 </>
               )}
-            </button>
+            </Button>
 
             {nextStage && (
-              <button
+              <Button
+                hideArrow
                 onClick={handleMoveToNext}
                 disabled={isMoving || isMarking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:opacity-90 text-white font-medium transition-colors disabled:opacity-50"
+                isLoading={isMoving}
+                className="flex-1"
               >
                 {isMoving ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    {t('inmobiliaria.pipeline.moving')}
-                  </span>
+                  t('inmobiliaria.pipeline.moving')
                 ) : (
                   <>
                     {t('inmobiliaria.pipeline.moveTo')} {nextStageInfo?.labelEs}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
-              </button>
+              </Button>
             )}
           </div>
         )}

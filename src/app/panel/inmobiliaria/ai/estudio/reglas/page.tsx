@@ -23,7 +23,6 @@ import {
   ChatsCircle,
   Scales,
   ShieldCheck,
-  SlidersHorizontal,
   UserFocus,
   Users,
   WarningCircle,
@@ -31,9 +30,16 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { Button } from '@/components/ui/button'
-import { Chip, SegmentedControl } from '@leasefy/ui'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Chip, SegmentedControl, Switch } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.estudio'
@@ -106,12 +112,6 @@ const INITIAL_STATE: ReglasState = {
  * Estilos compartidos (idioms de la casa)
  * ------------------------------------------------------------------------- */
 
-const INPUT_CLASSES =
-  'w-full rounded-md border border-border bg-surface ' +
-  'px-3 py-2 text-sm text-fg placeholder:text-fg-subtle ' +
-  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
-  'focus-visible:border-ring'
-
 const LABEL_CLASSES = 'block text-sm font-medium text-fg mb-1.5'
 
 /* ---------------------------------------------------------------------------
@@ -145,26 +145,11 @@ function Toggle({
   label: string
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
+    <Switch
+      checked={checked}
+      onCheckedChange={onChange}
       aria-label={label}
-      onClick={onChange}
-      className={
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ' +
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring ' +
-        (checked ? 'bg-primary' : 'bg-surface-muted border border-border')
-      }
-    >
-      <span
-        aria-hidden="true"
-        className={
-          'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ' +
-          (checked ? 'translate-x-6' : 'translate-x-1')
-        }
-      />
-    </button>
+    />
   )
 }
 
@@ -280,15 +265,6 @@ function EstudioReglas() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/estudio"
-          icon={SlidersHorizontal}
-          crumbs={[
-            { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-            { label: tf(`${NS}.overview.title`, 'Estudios de inquilinos'), href: '/panel/inmobiliaria/ai/estudio' },
-            { label: tf(`${NS}.reglas.title`, 'Reglas') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {tf(`${NS}.reglas.title`, 'Reglas del estudio')}
         </h1>
@@ -316,7 +292,7 @@ function EstudioReglas() {
               <label htmlFor="relacionMinima" className={LABEL_CLASSES}>
                 {tf(`${NS}.reglas.relacion.minima`, 'Veces el canon (mínimo)')}
               </label>
-              <input
+              <Input
                 id="relacionMinima"
                 type="number"
                 inputMode="decimal"
@@ -324,9 +300,7 @@ function EstudioReglas() {
                 max="10"
                 step="0.5"
                 value={reglas.relacionMinima}
-                onChange={(e) => set('relacionMinima', Number.parseFloat(e.target.value) || 0)}
-                className={INPUT_CLASSES}
-              />
+                onChange={(e) => set('relacionMinima', Number.parseFloat(e.target.value) || 0)}              />
               <p className="mt-1 text-xs text-fg-muted">
                 {tf(`${NS}.reglas.relacion.hint`, 'Ejemplo: 3 = el ingreso debe ser al menos 3 veces el canon.')}
               </p>
@@ -349,25 +323,28 @@ function EstudioReglas() {
               <label htmlFor="cuandoCodeudor" className={LABEL_CLASSES}>
                 {tf(`${NS}.reglas.codeudor.regla`, 'Regla')}
               </label>
-              <select
-                id="cuandoCodeudor"
+              <Select
                 value={reglas.cuandoCodeudor}
-                onChange={(e) => set('cuandoCodeudor', e.target.value as CuandoCodeudor)}
-                className={INPUT_CLASSES}
+                onValueChange={(v) => set('cuandoCodeudor', v as CuandoCodeudor)}
               >
-                {cuandoCodeudorOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {tf(opt.labelKey, opt.fallback)}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="cuandoCodeudor">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {cuandoCodeudorOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {tf(opt.labelKey, opt.fallback)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             {reglas.cuandoCodeudor === 'porRelacion' && (
               <div>
                 <label htmlFor="relacionParaCodeudor" className={LABEL_CLASSES}>
                   {tf(`${NS}.reglas.codeudor.umbral`, 'Exigir codeudor si la relación es menor a')}
                 </label>
-                <input
+                <Input
                   id="relacionParaCodeudor"
                   type="number"
                   inputMode="decimal"
@@ -375,9 +352,7 @@ function EstudioReglas() {
                   max="10"
                   step="0.5"
                   value={reglas.relacionParaCodeudor}
-                  onChange={(e) => set('relacionParaCodeudor', Number.parseFloat(e.target.value) || 0)}
-                  className={INPUT_CLASSES}
-                />
+                  onChange={(e) => set('relacionParaCodeudor', Number.parseFloat(e.target.value) || 0)}                />
               </div>
             )}
           </div>
@@ -461,18 +436,21 @@ function EstudioReglas() {
               <label htmlFor="envioAsegurabilidad" className={LABEL_CLASSES}>
                 {tf(`${NS}.reglas.asegurabilidad.regla`, 'Regla de envío')}
               </label>
-              <select
-                id="envioAsegurabilidad"
+              <Select
                 value={reglas.envioAsegurabilidad}
-                onChange={(e) => set('envioAsegurabilidad', e.target.value as EnvioAsegurabilidad)}
-                className={INPUT_CLASSES}
+                onValueChange={(v) => set('envioAsegurabilidad', v as EnvioAsegurabilidad)}
               >
-                {asegurabilidadOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {tf(opt.labelKey, opt.fallback)}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="envioAsegurabilidad">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {asegurabilidadOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {tf(opt.labelKey, opt.fallback)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </section>
@@ -551,7 +529,7 @@ function EstudioReglas() {
               <label htmlFor="recordatorioHoras" className={LABEL_CLASSES}>
                 {tf(`${NS}.reglas.recordatorios.cadaHoras`, 'Recordar cada (horas)')}
               </label>
-              <input
+              <Input
                 id="recordatorioHoras"
                 type="number"
                 inputMode="numeric"
@@ -559,15 +537,13 @@ function EstudioReglas() {
                 max="168"
                 step="1"
                 value={reglas.recordatorioHoras}
-                onChange={(e) => set('recordatorioHoras', Number.parseInt(e.target.value, 10) || 0)}
-                className={INPUT_CLASSES}
-              />
+                onChange={(e) => set('recordatorioHoras', Number.parseInt(e.target.value, 10) || 0)}              />
             </div>
             <div>
               <label htmlFor="maxRecordatorios" className={LABEL_CLASSES}>
                 {tf(`${NS}.reglas.recordatorios.maximo`, 'Máximo de recordatorios')}
               </label>
-              <input
+              <Input
                 id="maxRecordatorios"
                 type="number"
                 inputMode="numeric"
@@ -575,9 +551,7 @@ function EstudioReglas() {
                 max="10"
                 step="1"
                 value={reglas.maxRecordatorios}
-                onChange={(e) => set('maxRecordatorios', Number.parseInt(e.target.value, 10) || 0)}
-                className={INPUT_CLASSES}
-              />
+                onChange={(e) => set('maxRecordatorios', Number.parseInt(e.target.value, 10) || 0)}              />
             </div>
           </div>
         </section>

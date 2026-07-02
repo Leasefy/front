@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { ChatDataCard, type ChatDataTile } from '@leasefy/cadence';
+import type { ChatSnapshot } from '@/lib/types/beta-chat';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -25,6 +27,54 @@ interface ChatContainerProps {
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
+}
+
+/**
+ * Should this response render as a rich ResponseCard, or as plain assistant text?
+ *
+ * A simple/informative answer with nothing to act on reads like ChatGPT/Claude —
+ * just text (AssistantBubble). The framed card (header + type badge + actions) is
+ * reserved for responses that actually carry structure: an actionable result, CTA
+ * actions, or an attached decision. Rich data (tables, entity cards, etc.) rides
+ * inside the content/decision when present, not as default chrome on every reply.
+ */
+function responseNeedsCard(message: {
+  responseMeta?: { type?: string; actions?: unknown[] };
+  decision?: unknown;
+}): boolean {
+  const meta = message.responseMeta;
+  if (!meta) return false;
+  return meta.type === 'actionable' || (meta.actions?.length ?? 0) > 0 || !!message.decision;
+}
+
+/** Compact COP for a narrow mono tile, e.g. 8_420_000 → "$8,4 M". */
+function formatCopCompact(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
+/**
+ * The "estado de hoy" snapshot → ChatDataCard tiles. Always shows the 3 core
+ * KPIs (deudores / pagado hoy / llamadas); appends escalaciones + prejurídico
+ * only when > 0 so the glance stays clean when there's nothing pending.
+ */
+function snapshotTiles(s: ChatSnapshot): ChatDataTile[] {
+  const tiles: ChatDataTile[] = [
+    { label: 'Deudores activos', value: s.deudoresActivos },
+    { label: 'Pagado hoy', value: formatCopCompact(s.pagadoHoyCop) },
+    { label: 'Llamadas hoy', value: s.llamadasHoy },
+  ];
+  if (s.escalacionesPendientes > 0) {
+    tiles.push({ label: 'Escalaciones', value: s.escalacionesPendientes });
+  }
+  if (s.enPrejuridico > 0) {
+    tiles.push({ label: 'Prejurídico', value: s.enPrejuridico });
+  }
+  return tiles;
 }
 
 /**
@@ -145,6 +195,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 // Completed agent activity stored on the message (from previous turns)
                 const storedActivity = message.agentActivity;
 
+                // "Estado de hoy" KPI glance — rendered under the reply when the
+                // backend (or mock) attached a snapshot to this turn.
+                const snapshotCard = message.snapshot ? (
+                  <ChatDataCard tiles={snapshotTiles(message.snapshot)} />
+                ) : null;
+
                 // For the last assistant message, use live activeAgentBlock if agents are running
                 const liveActivity = isLastAssistant ? activeAgentBlock : null;
 
@@ -170,10 +226,15 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 ) {
                   return (
                     <div key={message.id} className="space-y-3">
-                      <ResponseCard
-                        meta={message.responseMeta}
-                        content={message.content}
-                      />
+                      {responseNeedsCard(message) ? (
+                        <ResponseCard
+                          meta={message.responseMeta}
+                          content={message.content}
+                        />
+                      ) : (
+                        <AssistantBubble message={message} />
+                      )}
+                      {snapshotCard}
                       {message.decision && (
                         <DecisionCard
                           decision={message.decision}
@@ -196,10 +257,15 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 ) {
                   return (
                     <div key={message.id} className="space-y-3">
-                      <ResponseCard
-                        meta={message.responseMeta}
-                        content={message.content}
-                      />
+                      {responseNeedsCard(message) ? (
+                        <ResponseCard
+                          meta={message.responseMeta}
+                          content={message.content}
+                        />
+                      ) : (
+                        <AssistantBubble message={message} />
+                      )}
+                      {snapshotCard}
                       {message.decision && (
                         <DecisionCard
                           decision={message.decision}
@@ -214,16 +280,24 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   );
                 }
 
-                // Streaming state — show ResponseCard with streaming content
+                // Streaming state — card only if the response needs it; else plain text
                 if (isLastAssistant && isStreaming && message.responseMeta) {
                   return (
                     <div key={message.id} className="space-y-3">
-                      <ResponseCard
-                        meta={message.responseMeta}
-                        content={message.content}
-                        isStreaming
-                        streamingContent={streamingContent}
-                      />
+                      {responseNeedsCard(message) ? (
+                        <ResponseCard
+                          meta={message.responseMeta}
+                          content={message.content}
+                          isStreaming
+                          streamingContent={streamingContent}
+                        />
+                      ) : (
+                        <AssistantBubble
+                          message={message}
+                          streamingContent={streamingContent}
+                        />
+                      )}
+                      {snapshotCard}
                     </div>
                   );
                 }

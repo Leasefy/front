@@ -27,8 +27,7 @@ import { CurrencyDollar, Receipt, Table, ArrowSquareOut } from '@phosphor-icons/
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Button, Card } from '@/components/ui'
-import { SegmentedControl, Chip } from '@leasefy/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { SegmentedControl, Chip } from '@leasefy/cadence'
 import { TarjetaCobro, type CobroEjemplo } from '@/components/inmobiliaria/pagos/TarjetaCobro'
 import { estadoPagoLabel, type PagoEstado } from '@/lib/pagos/estados'
 import { useI18n } from '@/lib/i18n'
@@ -132,15 +131,6 @@ function PagosCobros() {
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/pagos"
-            icon={CurrencyDollar}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.pagos'), href: '/panel/inmobiliaria/ai/pagos' },
-              { label: 'Cobros a inquilinos' },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">Cobros a inquilinos</h1>
           <p className="text-sm text-fg-muted max-w-2xl">
             El ciclo de vida de cada cobro a inquilinos: canon, administración, servicios, estudios,

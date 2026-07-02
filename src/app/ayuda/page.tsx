@@ -156,7 +156,7 @@ export default function AyudaPage() {
                   <h2 className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide mb-4">
                     {category.title}
                   </h2>
-                  <div className="border border-border rounded-md px-5">
+                  <div className="border border-border rounded-[20px] px-5">
                     {category.items.map((item) => (
                       <FAQItem key={item.question} item={item} />
                     ))}
@@ -166,7 +166,7 @@ export default function AyudaPage() {
             </div>
 
             {/* Contact section */}
-            <div className="mt-16 p-8 border border-border rounded-md bg-muted/30 text-center">
+            <div className="mt-16 p-8 border border-border rounded-[22px] bg-muted/30 text-center">
               <h2 className="text-[18px] font-medium text-foreground mb-2">
                 ¿No encontraste lo que buscabas?
               </h2>

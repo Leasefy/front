@@ -52,6 +52,10 @@ import {
   Eye,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
   SolicitudMantenimiento,
@@ -244,13 +248,16 @@ function PhotoGallery({
         <Camera className="w-8 h-8 mx-auto text-muted-foreground" />
         <p className="text-sm text-muted-foreground">{emptyLabel}</p>
         {onUpload && (
-          <button
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={onUpload}
-            className="inline-flex items-center gap-1 text-sm text-primary font-medium hover:underline"
+            className="h-auto gap-1 p-0 text-sm"
           >
             <Upload className="w-4 h-4" />
             {t('inmobiliaria.mantenimiento.uploadPhotos')}
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -261,6 +268,8 @@ function PhotoGallery({
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <div className="grid grid-cols-3 gap-2">
         {photos.map((url, idx) => (
+          // allowlist: image-tile button (clickable photo thumbnail w/ hover Eye overlay) —
+          // hosts a fill image; Button/IconButton can't (image-tile precedent).
           <button
             key={idx}
             onClick={() => setSelectedPhoto(url)}
@@ -275,6 +284,8 @@ function PhotoGallery({
           </button>
         ))}
         {onUpload && (
+          // allowlist: add-photo dropzone tile (aspect-square dashed grid cell) — custom upload
+          // affordance; FileDropzone's chip UI can't model the in-grid square tile.
           <button
             onClick={onUpload}
             className="aspect-square rounded-md border-2 border-dashed border-border hover:border-primary/30 transition-colors flex items-center justify-center"
@@ -467,12 +478,12 @@ export function MantenimientoViewer({
                     </p>
                   </div>
                 </div>
-                <button
+                <IconButton
+                  variant="ghost"
                   onClick={onClose}
-                  className="p-2 rounded-md hover:bg-muted transition-colors"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
+                  aria-label={t('inmobiliaria.mantenimiento.cancel')}
+                  icon={<X className="w-5 h-5" />}
+                />
               </div>
 
               {/* Status & Priority Badges */}
@@ -628,17 +639,14 @@ export function MantenimientoViewer({
                   <CurrencyDollar className="w-5 h-5 text-muted-foreground" />
                   <span className="text-sm font-medium text-foreground">{t('inmobiliaria.mantenimiento.whoPays')}</span>
                 </div>
-                <span
-                  className={cn(
-                    'px-2.5 py-1 rounded-full text-xs font-medium',
+                <Badge
+                  variant={
                     solicitud.paidBy === 'owner'
-                      ? 'bg-primary-soft text-primary'
+                      ? 'default'
                       : solicitud.paidBy === 'tenant'
-                      ? 'bg-warning-soft text-warning'
-                      : solicitud.paidBy === 'split'
-                      ? 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-                      : 'bg-fg-muted text-fg-muted dark:bg-fg-muted dark:text-fg-muted'
-                  )}
+                      ? 'warning'
+                      : 'secondary'
+                  }
                 >
                   {solicitud.paidBy === 'owner'
                     ? t('inmobiliaria.mantenimiento.paidByOwner')
@@ -647,7 +655,7 @@ export function MantenimientoViewer({
                     : solicitud.paidBy === 'split'
                     ? t('inmobiliaria.mantenimiento.paidBySplit')
                     : t('inmobiliaria.mantenimiento.paidByAgency')}
-                </span>
+                </Badge>
               </div>
             </div>
           </div>
@@ -657,40 +665,47 @@ export function MantenimientoViewer({
             <div className="sticky bottom-0 border-t border-border bg-background p-4 space-y-3">
               {/* Primary Action based on status */}
               {solicitud.status === 'approved' && (
-                <button
+                <Button
+                  hideArrow
                   onClick={handleStartWork}
-                  className="w-full py-3 px-4 rounded-xl bg-primary text-white font-medium hover:opacity-90 transition-colors flex items-center justify-center gap-2"
+                  className="w-full"
                 >
                   <Play className="w-5 h-5" weight="fill" />
                   {t('inmobiliaria.mantenimiento.startWork')}
-                </button>
+                </Button>
               )}
 
               {solicitud.status === 'in_progress' && (
-                <button
+                // success/green: Cadence Button has no success variant (logged gap) — real Button
+                // keeps DS states; only the fill is overridden for the missing tone.
+                <Button
+                  hideArrow
                   onClick={() => setShowCompleteDialog(true)}
-                  className="w-full py-3 px-4 rounded-xl bg-success text-white font-medium hover:bg-success transition-colors shadow-[#2C7A53]/20 flex items-center justify-center gap-2"
+                  className="w-full bg-success text-white hover:bg-success/90"
                 >
                   <CheckCircle className="w-5 h-5" weight="fill" />
                   {t('inmobiliaria.mantenimiento.markCompleted')}
-                </button>
+                </Button>
               )}
 
               {/* Secondary Actions */}
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  hideArrow
                   onClick={() => setShowNoteDialog(true)}
-                  className="flex-1 py-2.5 px-4 rounded-md border border-border hover:bg-muted transition-colors font-medium text-foreground flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   <ChatCircle className="w-4 h-4" />
                   {t('inmobiliaria.mantenimiento.addNote')}
-                </button>
-                <button
+                </Button>
+                <IconButton
+                  variant="outline"
                   onClick={() => setShowCancelDialog(true)}
-                  className="py-2.5 px-4 rounded-md border border-danger/30 text-danger hover:bg-danger-soft transition-colors"
-                >
-                  <Trash className="w-4 h-4" />
-                </button>
+                  aria-label={t('inmobiliaria.mantenimiento.cancelRequest')}
+                  icon={<Trash className="w-4 h-4" />}
+                  className="border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+                />
               </div>
             </div>
           )}
@@ -706,26 +721,27 @@ export function MantenimientoViewer({
               {t('inmobiliaria.mantenimiento.addNoteDesc')}
             </DialogDescription>
           </DialogHeader>
-          <textarea
+          <Textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             placeholder={t('inmobiliaria.mantenimiento.notePlaceholder')}
-            className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full min-h-[100px] resize-none"
           />
           <DialogFooter>
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowNoteDialog(false)}
-              className="px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors font-medium"
             >
               {t('inmobiliaria.mantenimiento.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={handleAddNote}
               disabled={!noteText.trim()}
-              className="px-4 py-2 rounded-md bg-primary text-white font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('inmobiliaria.mantenimiento.saveNote')}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -740,18 +756,20 @@ export function MantenimientoViewer({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowCancelDialog(false)}
-              className="px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors font-medium"
             >
               {t('inmobiliaria.mantenimiento.noKeep')}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="destructive"
+              hideArrow
               onClick={handleCancel}
-              className="px-4 py-2 rounded-md bg-danger text-white font-medium hover:bg-danger transition-colors"
             >
               {t('inmobiliaria.mantenimiento.yesCancel')}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -765,25 +783,28 @@ export function MantenimientoViewer({
               {t('inmobiliaria.mantenimiento.completeConfirm')}
             </DialogDescription>
           </DialogHeader>
-          <textarea
+          <Textarea
             value={completionNotes}
             onChange={(e) => setCompletionNotes(e.target.value)}
             placeholder={t('inmobiliaria.mantenimiento.completionNotesPlaceholder')}
-            className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-success"
+            className="w-full min-h-[100px] resize-none"
           />
           <DialogFooter>
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowCompleteDialog(false)}
-              className="px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors font-medium"
             >
               {t('inmobiliaria.mantenimiento.cancel')}
-            </button>
-            <button
+            </Button>
+            {/* success/green: Cadence Button has no success variant (logged gap) — real Button + bg override. */}
+            <Button
+              hideArrow
               onClick={handleComplete}
-              className="px-4 py-2 rounded-md bg-success text-white font-medium hover:bg-success transition-colors"
+              className="bg-success text-white hover:bg-success/90"
             >
               {t('inmobiliaria.mantenimiento.confirmCompleted')}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -22,7 +22,7 @@ export function IntroSection() {
             Arrienda diferente.
             <br />
             Arrienda{" "}
-            <span className="inline-block bg-primary text-white uppercase tracking-wide font-mono px-4 md:px-6 py-1 md:py-2 rounded-md md:rounded-xl align-middle">
+            <span className="inline-block bg-primary text-primary-fg uppercase tracking-wide font-mono px-4 md:px-6 py-1 md:py-2 rounded-md md:rounded-xl align-middle">
               <span className="block" style={{ transform: 'translateY(-0.06em)' }}>simple</span>
             </span>
           </h2>
@@ -40,7 +40,7 @@ export function IntroSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="group relative rounded-xl overflow-hidden bg-[#EEF1FF]"
+            className="group relative rounded-xl overflow-hidden bg-accent-soft"
           >
             {/* UI Illustration Area */}
             <div className="relative p-8 md:p-12 min-h-[320px] md:min-h-[380px] flex items-center justify-center">
@@ -62,7 +62,7 @@ export function IntroSection() {
                       </svg>
                     </div>
                     {/* Badge */}
-                    <div className="absolute top-2 left-2 bg-primary text-white uppercase tracking-wide font-mono text-[10px] font-medium px-2 py-0.5 rounded-full">
+                    <div className="absolute top-2 left-2 bg-primary text-primary-fg uppercase tracking-wide font-mono text-[10px] font-medium px-2 py-0.5 rounded-full">
                       Disponible
                     </div>
                   </div>
@@ -71,7 +71,7 @@ export function IntroSection() {
                     <div className="text-[11px] text-muted-foreground">Chapinero Alto, Bogotá</div>
                     <div className="text-[13px] font-medium text-foreground">Apartamento moderno</div>
                     <div className="flex items-center justify-between">
-                      <div className="text-[15px] font-semibold text-foreground">$2.500.000<span className="text-[11px] font-normal text-muted-foreground">/mes</span></div>
+                      <div className="text-[15px] font-semibold text-foreground font-mono tabular-nums">$2.500.000<span className="text-[11px] font-normal text-muted-foreground">/mes</span></div>
                       <div className="flex gap-2 text-[10px] text-muted-foreground">
                         <span>2 hab</span>
                         <span>•</span>
@@ -191,7 +191,7 @@ export function IntroSection() {
                   {/* Stats row */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="text-center">
-                      <div className="text-[16px] font-semibold text-foreground">$4.5M</div>
+                      <div className="text-[16px] font-semibold text-foreground font-mono tabular-nums">$4.5M</div>
                       <div className="text-[9px] text-muted-foreground">Ingresos</div>
                     </div>
                     <div className="text-center border-x border-border">
@@ -199,7 +199,7 @@ export function IntroSection() {
                       <div className="text-[9px] text-muted-foreground">Empleo</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[16px] font-semibold text-success-500">92%</div>
+                      <div className="text-[16px] font-semibold text-success-500 font-mono tabular-nums">92%</div>
                       <div className="text-[9px] text-muted-foreground">Prob. pago</div>
                     </div>
                   </div>

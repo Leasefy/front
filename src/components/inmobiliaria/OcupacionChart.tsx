@@ -15,7 +15,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { SegmentedControl } from '@leasefy/ui';
+import { SegmentedControl } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
 import type { OcupacionReport, OcupacionZone } from '@/lib/types/inmobiliaria';
 
 interface OcupacionChartProps {
@@ -53,7 +54,7 @@ function DonutChart({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-neutral-100 dark:text-neutral-800"
+          className="text-white dark:text-fg"
         />
         {/* Progress circle */}
         <motion.circle
@@ -72,16 +73,16 @@ function DonutChart({
         <defs>
           <linearGradient id="occupancy-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#1A40FF" />
-            <stop offset="100%" stopColor="#8A9CFF" />
+            <stop offset="100%" stopColor="#7B95FF" />
           </linearGradient>
         </defs>
       </svg>
       {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-neutral-900 dark:text-white">
+        <span className="text-3xl font-bold text-fg dark:text-white">
           {Math.round(percentage)}%
         </span>
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">{label}</span>
+        <span className="text-sm text-fg-muted dark:text-fg-subtle">{label}</span>
       </div>
     </div>
   );
@@ -98,12 +99,12 @@ function ZoneBar({ zone, t }: { zone: OcupacionZone; t: (key: string) => string 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-neutral-900 dark:text-white">{zone.zone}</span>
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">
+        <span className="text-sm font-medium text-fg dark:text-white">{zone.zone}</span>
+        <span className="text-sm text-fg-muted dark:text-fg-subtle">
           {Math.round(zone.occupancyRate)}% {t('inmobiliaria.finance.occupancy.occupied')}
         </span>
       </div>
-      <div className="h-3 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden flex">
+      <div className="h-3 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex">
         {occupiedPercent > 0 && (
           <motion.div
             initial={{ width: 0 }}
@@ -125,11 +126,11 @@ function ZoneBar({ zone, t }: { zone: OcupacionZone; t: (key: string) => string 
             initial={{ width: 0 }}
             animate={{ width: `${availablePercent}%` }}
             transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
-            className="bg-neutral-300 dark:bg-neutral-600 h-full"
+            className="bg-muted dark:bg-ink h-full"
           />
         )}
       </div>
-      <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+      <div className="flex items-center gap-4 text-xs text-fg-muted dark:text-fg-subtle">
         <span>
           <span className="font-medium text-success">{zone.occupied}</span>{' '}
           {t('inmobiliaria.finance.occupancy.occupiedPlural')}
@@ -139,7 +140,7 @@ function ZoneBar({ zone, t }: { zone: OcupacionZone; t: (key: string) => string 
           {t('inmobiliaria.finance.occupancy.inProcess')}
         </span>
         <span>
-          <span className="font-medium text-neutral-600 dark:text-neutral-300">{zone.available}</span>{' '}
+          <span className="font-medium text-fg-muted dark:text-fg-subtle">{zone.available}</span>{' '}
           {t('inmobiliaria.finance.occupancy.available')}
         </span>
       </div>
@@ -155,10 +156,10 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]"
+      className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]"
     >
       <div className="flex items-center justify-between mb-3">
-        <h4 className="font-semibold text-neutral-900 dark:text-white">{zone.zone}</h4>
+        <h4 className="font-semibold text-fg dark:text-white">{zone.zone}</h4>
         <span
           className={cn(
             'text-lg font-bold',
@@ -174,7 +175,7 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
       </div>
 
       {/* Mini progress bar */}
-      <div className="h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden flex mb-3">
+      <div className="h-2 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex mb-3">
         <div
           className="bg-success dark:bg-success h-full"
           style={{ width: `${(zone.occupied / zone.totalProperties) * 100}%` }}
@@ -189,15 +190,15 @@ function ZoneCard({ zone, t }: { zone: OcupacionZone; t: (key: string) => string
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         <div>
           <p className="font-bold text-success">{zone.occupied}</p>
-          <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
+          <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
         </div>
         <div>
           <p className="font-bold text-primary">{zone.inProcess}</p>
-          <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
+          <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
         </div>
         <div>
-          <p className="font-bold text-neutral-600 dark:text-neutral-300">{zone.available}</p>
-          <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.available')}</p>
+          <p className="font-bold text-fg-muted dark:text-fg-subtle">{zone.available}</p>
+          <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.available')}</p>
         </div>
       </div>
     </motion.div>
@@ -271,18 +272,14 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
       {/* Summary Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Donut Chart */}
-        <div className="lg:col-span-1 flex flex-col items-center justify-center p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+        <div className="lg:col-span-1 flex flex-col items-center justify-center p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
           <DonutChart percentage={data.overallOccupancyRate} label={t('inmobiliaria.finance.occupancy.occupancy')} />
 
           {/* Trend indicator */}
           {trend && (
-            <div
-              className={cn(
-                'flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full text-sm font-medium',
-                trend.type === 'up' && 'bg-success-soft text-success',
-                trend.type === 'down' && 'bg-danger-soft text-danger',
-                trend.type === 'stable' && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-              )}
+            <Badge
+              variant={trend.type === 'up' ? 'success' : trend.type === 'down' ? 'destructive' : 'secondary'}
+              className="mt-4 gap-2 px-3 py-1.5 text-sm"
             >
               {trend.type === 'up' && <TrendUp className="w-4 h-4" weight="bold" />}
               {trend.type === 'down' && <TrendDown className="w-4 h-4" weight="bold" />}
@@ -290,31 +287,31 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
               {trend.type === 'up' && `+${trend.diff}% ${t('inmobiliaria.finance.occupancy.vsPrevMonth')}`}
               {trend.type === 'down' && `-${trend.diff}% ${t('inmobiliaria.finance.occupancy.vsPrevMonth')}`}
               {trend.type === 'stable' && t('inmobiliaria.finance.occupancy.noChange')}
-            </div>
+            </Badge>
           )}
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-6 mt-4 text-sm">
             <div className="text-center">
               <p className="font-bold text-success">{data.totalOccupied}</p>
-              <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
+              <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.occupiedPlural')}</p>
             </div>
-            <div className="w-px h-8 bg-neutral-200 dark:bg-neutral-700" />
+            <div className="w-px h-8 bg-surface-muted dark:bg-ink" />
             <div className="text-center">
-              <p className="font-bold text-neutral-900 dark:text-white">{data.totalProperties}</p>
-              <p className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.total')}</p>
+              <p className="font-bold text-fg dark:text-white">{data.totalProperties}</p>
+              <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.total')}</p>
             </div>
           </div>
         </div>
 
         {/* Summary Cards */}
         <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-            <div className="w-10 h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-3">
-              <Buildings className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+            <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center mb-3">
+              <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{data.totalProperties}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.totalProperties')}</p>
+            <p className="text-2xl font-bold text-fg dark:text-white">{data.totalProperties}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.totalProperties')}</p>
           </div>
 
           <div className="p-4 rounded-xl border border-success/30 bg-success-soft">
@@ -333,12 +330,12 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             <p className="text-sm text-primary">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
           </div>
 
-          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
-            <div className="w-10 h-10 rounded-md bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center mb-3">
-              <Buildings className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-ink/50">
+            <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center mb-3">
+              <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>
-            <p className="text-2xl font-bold text-neutral-700 dark:text-neutral-300">{data.totalAvailable}</p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.available')}</p>
+            <p className="text-2xl font-bold text-fg dark:text-fg-subtle">{data.totalAvailable}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.available')}</p>
           </div>
         </div>
       </div>
@@ -347,22 +344,22 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
       <div className="flex flex-wrap items-center gap-6 text-sm">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-success dark:bg-success" />
-          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.occupied')}</span>
+          <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.occupied')}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-primary dark:bg-primary" />
-          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.inProcess')}</span>
+          <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.inProcess')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-          <span className="text-neutral-600 dark:text-neutral-400">{t('inmobiliaria.finance.occupancy.available')}</span>
+          <span className="w-3 h-3 rounded-full bg-muted dark:bg-ink" />
+          <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.finance.occupancy.available')}</span>
         </div>
       </div>
 
       {/* Zone Breakdown */}
       {viewVariant === 'chart' ? (
-        <div className="space-y-6 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-          <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.finance.occupancy.breakdownByZone')}</h3>
+        <div className="space-y-6 p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+          <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.finance.occupancy.breakdownByZone')}</h3>
           <div className="space-y-6">
             {data.zones.map((zone, index) => (
               <motion.div

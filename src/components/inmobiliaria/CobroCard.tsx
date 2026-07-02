@@ -78,27 +78,27 @@ export function CobroCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onClick?.(cobro)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-card border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:shadow-sm',
+          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-card border-border cursor-pointer transition-all duration-200 hover:shadow-sm',
           borderColor
         )}
       >
         {/* Property */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-neutral-900 dark:text-white truncate text-sm">
+          <p className="font-medium text-fg truncate text-sm">
             {cobro.propertyTitle}
           </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+          <p className="text-xs text-fg-muted truncate">
             {cobro.tenantName} · {formatMonth(cobro.month)}
           </p>
         </div>
 
         {/* Amount */}
         <div className="text-right">
-          <p className="font-semibold text-neutral-900 dark:text-white text-sm">
+          <p className="font-semibold text-fg text-sm font-mono tabular-nums">
             {formatCurrency(cobro.totalAmount)}
           </p>
           {cobro.status === 'partial' && (
-            <p className="text-xs text-primary">
+            <p className="text-xs text-primary font-mono tabular-nums">
               {formatCurrency(cobro.paidAmount)} {t('inmobiliaria.cobros.card.paid')}
             </p>
           )}
@@ -127,22 +127,22 @@ export function CobroCard({
       className={cn(
         'w-full rounded-xl border-l-4 border bg-card overflow-hidden transition-all duration-200 group',
         borderColor,
-        'border-neutral-200 dark:border-neutral-700',
+        'border-border',
         onClick && 'cursor-pointer'
       )}
       onClick={() => onClick?.(cobro)}
     >
       {/* Header Section */}
-      <div className="p-5 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="p-5 pb-4 border-b border-faint">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <HouseLine className="w-4 h-4 text-neutral-400 shrink-0" />
-              <h3 className="font-semibold text-neutral-900 dark:text-white line-clamp-1">
+              <HouseLine className="w-4 h-4 text-fg-subtle shrink-0" />
+              <h3 className="font-semibold text-fg line-clamp-1">
                 {cobro.propertyTitle}
               </h3>
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 capitalize">
+            <p className="text-sm text-fg-muted capitalize">
               {formatMonth(cobro.month)}
             </p>
           </div>
@@ -153,20 +153,20 @@ export function CobroCard({
       </div>
 
       {/* Tenant Section */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="px-5 py-4 border-b border-faint">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
             <User className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-neutral-900 dark:text-white truncate">
+            <p className="font-medium text-fg truncate">
               {cobro.tenantName}
             </p>
             <div className="flex items-center gap-3 mt-1">
               <a
                 href={`tel:${cobro.tenantPhone}`}
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-primary transition-colors"
+                className="flex items-center gap-1 text-xs text-fg-muted hover:text-primary transition-colors"
               >
                 <Phone className="w-3.5 h-3.5" />
                 {cobro.tenantPhone}
@@ -189,15 +189,15 @@ export function CobroCard({
       <div className="px-5 py-4 space-y-3">
         {/* Total Amount */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Total</span>
-          <span className="text-xl font-bold text-neutral-900 dark:text-white">
+          <span className="text-sm text-fg-muted">Total</span>
+          <span className="text-xl font-bold text-fg font-mono tabular-nums">
             {formatCurrency(cobro.totalWithFees)}
           </span>
         </div>
 
         {/* Breakdown */}
         <div className="space-y-1.5 text-sm">
-          <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center justify-between text-fg-muted">
             <span>{t('inmobiliaria.cobros.card.canonAdmin')}</span>
             <span>{formatCurrency(cobro.totalAmount)}</span>
           </div>
@@ -213,7 +213,7 @@ export function CobroCard({
                 <span>{t('inmobiliaria.cobros.card.paidLabel')}</span>
                 <span>- {formatCurrency(cobro.paidAmount)}</span>
               </div>
-              <div className="flex items-center justify-between font-semibold text-neutral-900 dark:text-white pt-1 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center justify-between font-semibold text-fg pt-1 border-t border-faint">
                 <span>{t('inmobiliaria.cobros.card.pendingLabel')}</span>
                 <span>{formatCurrency(cobro.pendingAmount)}</span>
               </div>
@@ -223,12 +223,12 @@ export function CobroCard({
       </div>
 
       {/* Status Section */}
-      <div className="px-5 py-4 bg-neutral-50 dark:bg-muted/20 space-y-2">
+      <div className="px-5 py-4 bg-surface-muted space-y-2">
         {/* Due Date */}
         <div className="flex items-center gap-2 text-sm">
-          <CalendarBlank className="w-4 h-4 text-neutral-400" />
-          <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.cobros.card.dueDate')}</span>
-          <span className="text-neutral-700 dark:text-neutral-300">
+          <CalendarBlank className="w-4 h-4 text-fg-subtle" />
+          <span className="text-fg-muted">{t('inmobiliaria.cobros.card.dueDate')}</span>
+          <span className="text-fg-muted font-mono tabular-nums">
             {new Date(cobro.dueDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
               day: 'numeric',
               month: 'short',
@@ -258,7 +258,7 @@ export function CobroCard({
 
         {/* Reminders sent */}
         {cobro.remindersSent > 0 && (
-          <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+          <div className="flex items-center gap-2 text-sm text-fg-muted">
             <Bell className="w-4 h-4" />
             <span>{cobro.remindersSent > 1 ? t('inmobiliaria.cobros.card.remindersSentPlural', { count: cobro.remindersSent }) : t('inmobiliaria.cobros.card.remindersSent', { count: cobro.remindersSent })}</span>
           </div>
@@ -266,7 +266,7 @@ export function CobroCard({
       </div>
 
       {/* Actions */}
-      <div className="px-5 py-4 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800">
+      <div className="px-5 py-4 flex items-center justify-between border-t border-faint">
         {cobro.status !== 'paid' && onRegisterPayment && (
           <Button
             size="sm"
@@ -287,7 +287,7 @@ export function CobroCard({
           </div>
         )}
         {onClick && (
-          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-primary transition-colors ml-auto">
+          <div className="flex items-center gap-1 text-sm text-fg-muted group-hover:text-primary transition-colors ml-auto">
             {t('inmobiliaria.cobros.card.viewDetail')}
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>

@@ -24,8 +24,24 @@ import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { Chip, SegmentedControl } from '@leasefy/ui'
+import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Chip, SegmentedControl } from '@leasefy/cadence'
 import {
   usePaymentsFunnel,
   type UsePaymentsFunnelFilters,
@@ -57,23 +73,23 @@ function formatCop(value: number | null | undefined): string {
 
 // Semantic status tints vía tokens del DS (contrato §8). Antes: bg/text del mismo
 // hex → texto invisible; ahora soft-bg + texto sólido para contraste real.
-function statusBadgeClasses(status: Status): string {
+function statusBadgeVariant(
+  status: Status,
+): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' {
   switch (status) {
     case 'approved':
-      return 'bg-success-soft text-success ring-1 ring-success/30'
+      return 'success'
     case 'pending':
-      return 'bg-warning-soft text-warning ring-1 ring-warning/30'
+      return 'warning'
     case 'declined':
-      return 'bg-danger-soft text-danger ring-1 ring-danger/30'
+      return 'destructive'
     case 'disbursed':
-      return 'bg-muted text-muted-foreground ring-1 ring-border'
+      return 'secondary'
   }
 }
 
-function providerBadgeClasses(provider: Provider): string {
-  return provider === 'wompi'
-    ? 'bg-primary-soft text-primary ring-1 ring-primary/30'
-    : 'bg-muted text-muted-foreground ring-1 ring-border'
+function providerBadgeVariant(provider: Provider): 'default' | 'secondary' {
+  return provider === 'wompi' ? 'default' : 'secondary'
 }
 
 function KpiCard({
@@ -337,19 +353,22 @@ export default function PagosFunnelClient() {
         >
           Sort:
         </label>
-        <select
-          id="pagos-sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value as PaymentsFunnelSort)}
-          data-testid="pagos-sort-select"
-          className="text-xs px-2 py-1 rounded-md border border-border bg-card text-neutral-700 dark:text-neutral-200"
-        >
-          <option value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</option>
-          <option value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</option>
-          <option value="disbursement_pending_days">
-            {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
-          </option>
-        </select>
+        <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
+          <SelectTrigger
+            id="pagos-sort"
+            data-testid="pagos-sort-select"
+            className="h-8 w-auto gap-1 text-xs"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</SelectItem>
+            <SelectItem value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</SelectItem>
+            <SelectItem value="disbursement_pending_days">
+              {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Error banner */}
@@ -372,64 +391,64 @@ export default function PagosFunnelClient() {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+            <TableRow>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.nombre')}
-              </th>
-              <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-foreground"
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:text-foreground"
                 onClick={() => setSort('amount')}
                 data-testid="pagos-th-monto"
               >
                 {t('inmobiliaria.ai.cobranza.pagos.columns.monto')}
                 {sort === 'amount' && <span className="ml-1">↓</span>}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.fee')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.provider')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.status')}
-              </th>
-              <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-foreground"
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:text-foreground"
                 onClick={() => setSort('created_at')}
                 data-testid="pagos-th-fecha"
               >
                 {t('inmobiliaria.ai.cobranza.pagos.columns.fecha')}
                 {sort === 'created_at' && <span className="ml-1">↓</span>}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {isLoading && rows.length === 0 && (
               Array.from({ length: 5 }, (_, i) => (
-                <tr key={`pagos-skel-${i}`} className="animate-pulse">
+                <TableRow key={`pagos-skel-${i}`} className="animate-pulse">
                   {Array.from({ length: 6 }, (_, j) => (
-                    <td key={j} className="px-3 py-3">
+                    <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))
             )}
             {!isLoading && rows.length === 0 && !error && (
-              <tr>
-                <td colSpan={6} className="px-3 py-12 text-center">
+              <TableRow>
+                <TableCell colSpan={6} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
             {rows.map((row) => {
               const isPending = row.disbursementPendingDays >= 3
               return (
-                <tr
+                <TableRow
                   key={row.id}
                   data-testid={`pagos-row-${row.id}`}
                   onClick={() => handleRowClick(row)}
@@ -440,58 +459,49 @@ export default function PagosFunnelClient() {
                   }}
                   className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <td className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
+                  <TableCell className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
                     <Mask field="cedula" value={row.debtor.fullName} />
-                  </td>
-                  <td className="px-3 py-2 tabular-nums text-xs text-neutral-900 dark:text-white">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-900 dark:text-white">
                     {formatCop(row.amount)}
-                  </td>
-                  <td className="px-3 py-2 tabular-nums text-xs text-neutral-500 dark:text-neutral-400">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-500 dark:text-neutral-400">
                     {formatCop(row.feeCop)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                        providerBadgeClasses(row.provider)
-                      }
-                    >
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    <Badge variant={providerBadgeVariant(row.provider)}>
                       {t(`inmobiliaria.ai.cobranza.pagos.filter.${row.provider}`)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                          statusBadgeClasses(row.status)
-                        }
-                      >
+                      <Badge variant={statusBadgeVariant(row.status)}>
                         {t(`inmobiliaria.ai.cobranza.pagos.status.${row.status}`)}
-                      </span>
+                      </Badge>
                       {isPending && (
-                        <span
+                        <Badge
+                          variant="warning"
                           data-testid={`pagos-pending-pill-${row.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning ring-1 ring-warning/30"
+                          className="gap-1"
                         >
                           <span aria-hidden="true">⚠</span>
                           {t('inmobiliaria.ai.cobranza.pagos.pill.disbursementPending')}
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                     {new Date(row.createdAt).toLocaleDateString('es-CO', {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',
                     })}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Sentinel + loadingMore spinner */}

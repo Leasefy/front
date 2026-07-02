@@ -874,20 +874,24 @@ export default function ContratosPage() {
                 </h2>
 
                 <div className="flex gap-3">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={prevTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    className="w-12 h-12 rounded-full border border-border text-foreground hover:bg-black/5"
                     aria-label="Anterior testimonio"
                   >
                     <CaretLeft className="w-5 h-5" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={nextTestimonial}
-                    className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                    className="w-12 h-12 rounded-full border border-border text-foreground hover:bg-black/5"
                     aria-label="Siguiente testimonio"
                   >
                     <CaretRight className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </div>
               </motion.div>
 

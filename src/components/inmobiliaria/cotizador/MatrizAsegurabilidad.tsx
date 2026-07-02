@@ -30,7 +30,6 @@ import {
   XCircle,
   Warning,
   Question,
-  Spinner,
   Info,
   CaretDown,
   Star,
@@ -38,9 +37,19 @@ import {
   SquaresFour,
 } from '@phosphor-icons/react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
-import { SegmentedControl } from '@leasefy/ui'
+import { SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui/spinner'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import {
   buildMatrizRows,
@@ -75,7 +84,7 @@ function ResultIcon({ status }: { status: Status }) {
     case 'stub':
       return <Question weight="fill" className={cn(cls, 'text-fg-muted')} />
     case 'pending':
-      return <Spinner weight="bold" className={cn(cls, 'text-primary animate-spin')} />
+      return <Spinner size="sm" className="shrink-0" />
     default:
       return null
   }
@@ -133,10 +142,10 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
 function RecomendadaChip() {
   const { t } = useI18n()
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
+    <Badge className="gap-1 px-2 py-0.5 text-[10px] font-semibold">
       <Star weight="fill" className="w-3 h-3" />
       {t('inmobiliaria.ai.cotizador.detail.matriz.recomendada')}
-    </span>
+    </Badge>
   )
 }
 
@@ -158,31 +167,31 @@ function MatrizTable({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-border bg-surface-muted/60">
-            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+      <Table className="w-full text-left border-collapse">
+        <TableHeader>
+          <TableRow className="border-b border-border bg-surface-muted/60">
+            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colAseguradora')}
-            </th>
-            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            </TableHead>
+            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colResultado')}
-            </th>
-            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            </TableHead>
+            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colCondicion')}
-            </th>
-            <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
+            </TableHead>
+            <TableHead className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colCosto')}
-            </th>
-            <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
+            </TableHead>
+            <TableHead className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colTiempo')}
-            </th>
-            <th className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            </TableHead>
+            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colRecomendacion')}
-            </th>
-            <th className="px-2 py-2.5 w-8" aria-hidden="true" />
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+            <TableHead className="px-2 py-2.5 w-8" aria-hidden="true" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map(({ carrier }) => {
             const isRecommended = recommendedCarrier === carrier.carrier
             const isOpen = expanded === carrier.carrier
@@ -200,7 +209,7 @@ function MatrizTable({
 
             return (
               <React.Fragment key={carrier.carrier}>
-                <tr
+                <TableRow
                   id={rowId}
                   onClick={() => setExpanded(o => (o === carrier.carrier ? null : carrier.carrier))}
                   className={cn(
@@ -209,7 +218,7 @@ function MatrizTable({
                     isRecommended && 'bg-primary-soft/50',
                   )}
                 >
-                  <th scope="row" className="px-4 py-3 font-normal align-top">
+                  <TableHead scope="row" className="px-4 py-3 font-normal align-top">
                     <span className="block font-medium text-fg">
                       {carrier.carrier}
                     </span>
@@ -217,17 +226,17 @@ function MatrizTable({
                       labels={labelsByCarrier.get(carrier.carrier) ?? []}
                       className="mt-1.5"
                     />
-                  </th>
-                  <td className="px-4 py-3">
+                  </TableHead>
+                  <TableCell className="px-4 py-3">
                     <span className={cn('inline-flex items-center gap-1.5 text-sm font-medium', resultTextClass(carrier.status))}>
                       <ResultIcon status={carrier.status} />
                       {t(`inmobiliaria.ai.cotizador.detail.carrier.${carrier.status}Label`)}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-fg-muted max-w-[14rem] truncate">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-fg-muted max-w-[14rem] truncate">
                     {condicionResumen}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right">
                     {prima ? (
                       <span className="inline-flex flex-col items-end">
                         <span className="font-mono tabular-nums text-sm font-semibold text-fg">
@@ -242,33 +251,33 @@ function MatrizTable({
                     ) : (
                       <span className="text-fg-muted">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm tabular-nums text-fg-muted">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-fg-muted">
                     {tiempo ?? '—'}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     {isRecommended ? <RecomendadaChip /> : <span className="text-fg-muted">—</span>}
-                  </td>
-                  <td className="px-2 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="px-2 py-3 text-right">
                     <CaretDown
                       weight="bold"
                       aria-hidden="true"
                       className={cn('w-4 h-4 text-fg-muted transition-transform duration-200', isOpen && 'rotate-180')}
                     />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
                 {isOpen && (
-                  <tr id={detailId} className="bg-surface-muted/40">
-                    <td colSpan={7} className="p-0">
+                  <TableRow id={detailId} className="bg-surface-muted/40">
+                    <TableCell colSpan={7} className="p-0">
                       <CarrierCardExpandible carrier={carrier} bare />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
               </React.Fragment>
             )
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

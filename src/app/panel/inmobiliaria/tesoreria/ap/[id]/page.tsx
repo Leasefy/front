@@ -21,7 +21,6 @@ import {
   CaretLeft,
   Receipt,
   Info,
-  Spinner,
   Warning,
 } from '@phosphor-icons/react';
 
@@ -30,7 +29,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 
 // ---------------------------------------------------------------------------
 // AP Bill shape (mirrors ap-bills-source.ts)
@@ -187,7 +186,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
   if (isLoading) {
     return (
       <div className="p-6 lg:p-8 flex flex-col items-center justify-center gap-3 min-h-[300px]">
-        <Spinner className="w-6 h-6 text-muted-foreground animate-spin" />
+        <Spinner size="md" variant="muted" />
         <p className="text-sm text-muted-foreground">{t(k('fetching'))}</p>
       </div>
     );

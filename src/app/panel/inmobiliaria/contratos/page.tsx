@@ -28,8 +28,9 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
-import { Eyebrow } from '@leasefy/ui';
+import { Eyebrow } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useContracts } from '@/lib/hooks/useContracts';
 import {
   CONTRACT_STATUS_LABELS,
@@ -199,89 +200,84 @@ function ContratosContent() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {COLUMNS.map((col, i) => (
-                  <th
-                    key={i}
-                    className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap"
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && <TableSkeleton />}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {COLUMNS.map((col, i) => (
+                <TableHead key={i} className="whitespace-nowrap">
+                  {col}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && <TableSkeleton />}
 
-              {!isLoading && !error && contracts.length === 0 && (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="p-0">
-                    <EmptyState
-                      icon={FileText}
-                      title={tx('Sin contratos aún', 'No contracts yet')}
-                      description={tx(
-                        'Crea tu primer contrato de arrendamiento para empezar.',
-                        'Create your first rental contract to get started.',
-                      )}
-                    />
-                  </td>
-                </tr>
-              )}
+            {!isLoading && !error && contracts.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={COLUMNS.length} className="p-0">
+                  <EmptyState
+                    icon={FileText}
+                    title={tx('Sin contratos aún', 'No contracts yet')}
+                    description={tx(
+                      'Crea tu primer contrato de arrendamiento para empezar.',
+                      'Create your first rental contract to get started.',
+                    )}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
 
-              {!isLoading &&
-                contracts.map((c) => (
-                  <tr
-                    key={c.id}
-                    onClick={() => openContract(c)}
-                    className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
-                          <p className="text-caption text-muted-foreground truncate">{c.tenantEmail}</p>
-                        </div>
+            {!isLoading &&
+              contracts.map((c) => (
+                <TableRow
+                  key={c.id}
+                  onClick={() => openContract(c)}
+                  className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
+                >
+                  <TableCell className="px-5 py-4">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
+                        <User className="w-4 h-4 text-muted-foreground" />
                       </div>
-                    </td>
-                    <td className="px-5 py-4 max-w-[220px]">
-                      <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                        <House className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
-                          {c.propertyAddress}
-                          {c.propertyCity ? `, ${c.propertyCity}` : ''}
-                        </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
+                        <p className="text-caption text-muted-foreground truncate">{c.tenantEmail}</p>
                       </div>
-                    </td>
-                    <td className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">
-                      {fmtCop(c.monthlyRent)}
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
-                      {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
-                          CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
-                        )}
-                      >
-                        {CONTRACT_STATUS_LABELS[c.status] ?? c.status}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-5 py-4 max-w-[220px]">
+                    <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                      <House className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
+                        {c.propertyAddress}
+                        {c.propertyCity ? `, ${c.propertyCity}` : ''}
                       </span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">
+                    {fmtCop(c.monthlyRent)}
+                  </TableCell>
+                  <TableCell className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
+                    {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
+                  </TableCell>
+                  <TableCell className="px-5 py-4">
+                    <span
+                      className={cn(
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
+                        CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {CONTRACT_STATUS_LABELS[c.status] ?? c.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-5 py-4 text-right">
+                    <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
       </section>
     </div>
   );

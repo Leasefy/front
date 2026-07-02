@@ -70,7 +70,7 @@ export function WizardNavigation({
       </Button>
 
       {/* Step indicator - center (mobile only) */}
-      <span className="text-sm text-muted-foreground sm:hidden">
+      <span className="text-sm font-mono tabular-nums text-fg-muted sm:hidden">
         {currentStep}/{totalSteps}
       </span>
 

@@ -11,10 +11,7 @@ import {
   SquaresFour,
   Lightning,
   DownloadSimple,
-  CaretLeft,
-  CaretRight,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
   useDispersiones,
@@ -42,7 +39,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/ui';
+import { Pagination } from '@/components/ui/pagination';
+import { SegmentedControl } from '@leasefy/cadence';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -506,49 +504,12 @@ function DispersionesContent() {
 
         {/* Pagination Footer */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={cn(
-                'p-2 rounded-sm border border-border transition-all',
-                currentPage === 1
-                  ? 'text-muted-foreground/40 cursor-not-allowed'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <CaretLeft className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={cn(
-                    'w-8 h-8 rounded-sm text-sm font-medium transition-all',
-                    page === currentPage
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:bg-muted'
-                  )}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className={cn(
-                'p-2 rounded-sm border border-border transition-all',
-                currentPage === totalPages
-                  ? 'text-muted-foreground/40 cursor-not-allowed'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <CaretRight className="w-4 h-4" />
-            </button>
+          <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </motion.div>

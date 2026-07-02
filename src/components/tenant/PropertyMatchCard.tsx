@@ -85,7 +85,7 @@ export function PropertyMatchCard({
         <button
           onClick={onViewProperty}
           className={cn(
-            'group flex items-center gap-4 p-4 bg-card border border-plan-border w-full text-left',
+            'group flex items-center gap-4 p-4 bg-surface border border-plan-border w-full text-left',
             'hover:border-plan-border-hover transition-colors',
             className
           )}
@@ -99,7 +99,7 @@ export function PropertyMatchCard({
       <Link
         href={`/propiedades/${property.id}`}
         className={cn(
-          'group flex items-center gap-4 p-4 bg-card border border-plan-border',
+          'group flex items-center gap-4 p-4 bg-surface border border-plan-border',
           'hover:border-plan-border-hover transition-colors',
           className
         )}
@@ -137,7 +137,7 @@ export function PropertyMatchCard({
       <div
         className={cn(
           'absolute top-3 right-3 text-[10px] font-medium px-2 py-1 rounded-sm border backdrop-blur-sm',
-          'bg-white/90',
+          'bg-surface/90',
           acceptanceProbability === 'alta' ? 'text-[#2C7A53] border-[#2C7A53]/30' :
           acceptanceProbability === 'media' ? 'text-[#B7791F] border-[#B7791F]/30' :
           'text-[#C4503B] border-[#C4503B]/30'
@@ -165,7 +165,7 @@ export function PropertyMatchCard({
   return (
     <div
       className={cn(
-        'group bg-card border border-plan-border overflow-hidden h-full flex flex-col',
+        'group bg-surface border border-plan-border overflow-hidden h-full flex flex-col',
         'hover:border-plan-border-hover transition-colors',
         className
       )}
@@ -210,7 +210,7 @@ export function PropertyMatchCard({
         </div>
 
         {/* Recommendation - fixed height with line clamp */}
-        <div className="flex items-start gap-2 mt-3 p-2.5 bg-muted/50 rounded-sm min-h-[52px]">
+        <div className="flex items-start gap-2 mt-3 p-2.5 bg-surface-muted/50 rounded-sm min-h-[52px]">
           <Check className="w-4 h-4 text-[#2C7A53] flex-shrink-0 mt-0.5" />
           <p className="text-xs text-plan-secondary line-clamp-2">{recommendation}</p>
         </div>
@@ -227,7 +227,7 @@ export function PropertyMatchCard({
               'text-sm font-medium rounded-sm transition-colors',
               matchScore >= 70
                 ? 'bg-plan-primary text-white hover:bg-plan-primary/90'
-                : 'bg-muted text-plan-primary hover:bg-muted/80'
+                : 'bg-surface-muted text-plan-primary hover:bg-surface-muted/80'
             )}
           >
             Ver propiedad
@@ -241,7 +241,7 @@ export function PropertyMatchCard({
               'text-sm font-medium rounded-sm transition-colors',
               matchScore >= 70
                 ? 'bg-plan-primary text-white hover:bg-plan-primary/90'
-                : 'bg-muted text-plan-primary hover:bg-muted/80'
+                : 'bg-surface-muted text-plan-primary hover:bg-surface-muted/80'
             )}
           >
             Ver propiedad

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { User, Phone, Envelope, ChatCircle, UserCircle } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
 import { useOnboarding } from '@/lib/context/OnboardingContext'
 import type { PreferredContact } from '@/lib/auth/types'
 
@@ -62,18 +63,12 @@ export function StepWelcome() {
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <User className="h-5 w-5 text-neutral-400" />
           </div>
-          <input
+          <Input
             type="text"
             value={draft.displayName || ''}
             onChange={(e) => updateDraft({ displayName: e.target.value })}
             placeholder="Tu nombre"
-            className={cn(
-              'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white',
-              'transition-all duration-200',
-              'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
-              draft.displayName ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
-            )}
+            className={cn('h-12 pl-12 rounded-xl', draft.displayName && 'border-primary/30 bg-primary-soft/30')}
           />
         </div>
       </motion.div>
@@ -92,18 +87,12 @@ export function StepWelcome() {
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Phone className="h-5 w-5 text-neutral-400" />
           </div>
-          <input
+          <Input
             type="tel"
             value={draft.phone || ''}
             onChange={(e) => updateDraft({ phone: e.target.value })}
             placeholder="300 123 4567"
-            className={cn(
-              'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white',
-              'transition-all duration-200',
-              'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
-              draft.phone ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
-            )}
+            className={cn('h-12 pl-12 rounded-xl', draft.phone && 'border-primary/30 bg-primary-soft/30')}
           />
         </div>
         <p className="text-xs text-neutral-400 mt-2">
@@ -143,7 +132,7 @@ export function StepWelcome() {
                 <div
                   className={cn(
                     'w-10 h-10 rounded-md flex items-center justify-center transition-colors',
-                    isSelected ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
+                    isSelected ? 'bg-[#1A40FF] text-white' : 'bg-neutral-100 text-neutral-500'
                   )}
                 >
                   <Icon className="w-5 h-5" />

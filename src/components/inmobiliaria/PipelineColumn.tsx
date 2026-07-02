@@ -12,6 +12,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import { PipelineCard } from './PipelineCard';
@@ -49,8 +51,8 @@ export function PipelineColumn({
   const stageInfo = getPipelineStageInfo(stage);
 
   // Extract background and text color classes from stageInfo
-  const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-neutral-100';
-  const textColorClass = stageInfo?.color?.split(' ')[1] || 'text-neutral-700';
+  const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-surface-muted';
+  const textColorClass = stageInfo?.color?.split(' ')[1] || 'text-fg';
 
   // Check if content overflows
   useEffect(() => {
@@ -153,17 +155,14 @@ export function PipelineColumn({
 
         {/* Right side: collapse toggle */}
         {collapsible && (
-          <button
+          <IconButton
+            variant="ghost"
+            size="sm"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-expanded={!isCollapsed}
             aria-label={isCollapsed ? t('inmobiliaria.pipeline.expandColumn') : t('inmobiliaria.pipeline.collapseColumn')}
-          >
-            {isCollapsed ? (
-              <CaretDown className="w-4 h-4" />
-            ) : (
-              <CaretUp className="w-4 h-4" />
-            )}
-          </button>
+            icon={isCollapsed ? <CaretDown className="w-4 h-4" /> : <CaretUp className="w-4 h-4" />}
+          />
         )}
       </div>
 
@@ -179,7 +178,7 @@ export function PipelineColumn({
           >
             <div
               ref={scrollContainerRef}
-              className="flex flex-col gap-2.5 p-2.5 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-600 scrollbar-track-transparent max-h-[420px]"
+              className="flex flex-col gap-2.5 p-2.5 overflow-y-auto scrollbar-thin scrollbar-thumb-[#D5D1CA] dark:scrollbar-thumb-[#6E6A63] scrollbar-track-transparent max-h-[420px]"
               style={{
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent',
@@ -243,18 +242,16 @@ export function PipelineColumn({
             {/* Ver todo button */}
             {showExpandButton && (
               <div className="px-2.5 pb-2.5">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
                   onClick={() => setIsSidebarOpen(true)}
-                  className={cn(
-                    'w-full flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-all',
-                    'border border-border',
-                    'text-muted-foreground',
-                    'hover:bg-muted hover:text-foreground'
-                  )}
+                  className="w-full gap-2"
                 >
                   <ArrowsOutSimple className="w-4 h-4" />
                   {t('inmobiliaria.pipeline.viewAll')} ({items.length})
-                </button>
+                </Button>
               </div>
             )}
 
@@ -330,13 +327,13 @@ export function PipelineColumn({
                       </p>
                     </div>
                   </div>
-                  <button
+                  <IconButton
+                    variant="ghost"
+                    size="lg"
                     onClick={() => setIsSidebarOpen(false)}
-                    className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     aria-label={t('inmobiliaria.pipeline.close')}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                    icon={<X className="w-5 h-5" />}
+                  />
                 </div>
 
                 {/* Sidebar Content - Scrollable */}

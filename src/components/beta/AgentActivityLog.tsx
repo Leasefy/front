@@ -1,5 +1,6 @@
 'use client';
 
+import { MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -203,9 +204,9 @@ export function AgentActivityLog() {
       {/* Active executions */}
       {active.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-primary">
             {t('beta.agents.active')} ({active.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {active.map((entry) => (
               <ActivityItem
@@ -221,9 +222,9 @@ export function AgentActivityLog() {
       {/* Finished executions */}
       {finished.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-muted-foreground">
             {t('beta.agents.recent')} ({finished.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {finished.map((entry) => (
               <ActivityItem

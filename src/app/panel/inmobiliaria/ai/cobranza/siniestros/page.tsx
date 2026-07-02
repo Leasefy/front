@@ -18,27 +18,38 @@ import { ArrowClockwise, Siren, Warning } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { Chip } from '@leasefy/ui'
+import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
+import { Chip } from '@leasefy/cadence'
 import {
   useInsuranceClaims,
   type InsuranceClaimStatus,
 } from '@/lib/hooks/cobranza/use-insurance-claims'
 
-// ── Status badge colours — tokens semánticos del DS (contrato §8) ─────────────
-function statusBadgeClasses(status: string): string {
+// ── Status → Cadence Badge variant — tokens semánticos del DS (contrato §8) ────
+function statusBadgeVariant(
+  status: string,
+): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' {
   switch (status) {
     case 'pending_human_review':
-      return 'bg-warning-soft text-warning ring-1 ring-warning/30'
+      return 'warning'
     case 'draft':
-      return 'bg-muted text-muted-foreground ring-1 ring-border'
+      return 'secondary'
     case 'filed':
-      return 'bg-primary-soft text-primary ring-1 ring-primary/30'
+      return 'default'
     case 'accepted':
-      return 'bg-success-soft text-success ring-1 ring-success/30'
+      return 'success'
     case 'rejected':
     default:
-      return 'bg-danger-soft text-danger ring-1 ring-danger/30'
+      return 'destructive'
   }
 }
 
@@ -88,19 +99,19 @@ function SiniestrosContent() {
           <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mt-2" />
         </header>
         <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
+          <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+            <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
               {Array.from({ length: 6 }, (_, i) => (
-                <tr key={`skel-${i}`}>
+                <TableRow key={`skel-${i}`}>
                   {Array.from({ length: 5 }, (_, j) => (
-                    <td key={j} className="px-3 py-3">
+                    <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </main>
     )
@@ -188,40 +199,40 @@ function SiniestrosContent() {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+            <TableRow>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.aseguradora')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.status')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.createdAt')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.filedAt')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.approvedBy')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {claims.length === 0 && !isLoading && (
-              <tr>
-                <td colSpan={5} className="px-3 py-12 text-center">
+              <TableRow>
+                <TableCell colSpan={5} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {isEs
                       ? 'Sin siniestros con el filtro seleccionado.'
                       : 'No claims match the selected filter.'}
                   </p>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
             {claims.map((c) => (
-              <tr
+              <TableRow
                 key={c.id}
                 onClick={() => navigateToSiniestro(c.id)}
                 role="link"
@@ -231,29 +242,24 @@ function SiniestrosContent() {
                 }}
                 className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <td className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
                   {c.aseguradora}
-                </td>
-                <td className="px-3 py-2">
-                  <span
-                    className={
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                      statusBadgeClasses(c.status)
-                    }
-                  >
+                </TableCell>
+                <TableCell className="px-3 py-2">
+                  <Badge variant={statusBadgeVariant(c.status)}>
                     {isEs
                       ? (STATUS_LABELS[c.status as InsuranceClaimStatus]?.es ?? c.status)
                       : (STATUS_LABELS[c.status as InsuranceClaimStatus]?.en ?? c.status)}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                  </Badge>
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
                   {new Date(c.createdAt).toLocaleDateString(locale, {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
                   })}
-                </td>
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
                   {c.filedAt
                     ? new Date(c.filedAt).toLocaleDateString(locale, {
                         year: 'numeric',
@@ -261,14 +267,14 @@ function SiniestrosContent() {
                         day: 'numeric',
                       })
                     : '—'}
-                </td>
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
                   {c.approvedByHumanUserId ? c.approvedByHumanUserId.slice(0, 8) + '…' : '—'}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </main>
   )

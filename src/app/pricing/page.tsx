@@ -169,8 +169,7 @@ function FlexCalculator() {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="mb-12 rounded-xl overflow-hidden"
-      style={{ border: '1px solid rgba(0,0,0,0.08)' }}
+      className="mb-12 rounded-[20px] overflow-hidden border border-border"
     >
       <div className="relative bg-foreground text-background px-6 py-5">
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#B7791F] via-[#B7791F] to-[#C4503B]" />
@@ -199,8 +198,7 @@ function FlexCalculator() {
                   max="1000"
                   value={units}
                   onChange={(e) => setUnits(Math.max(10, Math.min(1000, parseInt(e.target.value) || 10)))}
-                  className="w-16 h-8 px-2 text-center text-[14px] font-bold bg-muted/50 rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/10"
-                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+                  className="w-16 h-8 px-2 text-center text-[14px] font-bold font-mono tabular-nums bg-muted/50 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10"
                 />
               </div>
               <div className="relative h-10 flex items-center">
@@ -252,27 +250,26 @@ function FlexCalculator() {
                     const numValue = parseInt(rawValue, 10);
                     if (!isNaN(numValue) && numValue >= 0) setAvgRent(numValue);
                   }}
-                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
-                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+                  className="w-full h-10 pl-7 pr-3 bg-muted/30 text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-all"
                 />
               </div>
             </div>
           </div>
           <div className="flex flex-col justify-center">
-            <div className="bg-muted/30 rounded-xl p-5" style={{ border: '1px solid rgba(0,0,0,0.04)' }}>
+            <div className="bg-muted/30 rounded-[18px] p-5 border border-border">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Costo mensual estimado</p>
-              <p className="text-[36px] font-heading font-bold text-foreground tracking-tight leading-none tabular-nums">
+              <p className="text-[36px] font-mono font-bold text-foreground tracking-tight leading-none tabular-nums">
                 ${monthlyFee.toLocaleString('es-CO')}
               </p>
               <p className="text-[12px] text-muted-foreground mt-1">COP/mes</p>
-              <div className="mt-4 pt-4 space-y-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <div className="mt-4 pt-4 space-y-2 border-t border-border">
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-muted-foreground">{units} unidades x ${avgRent.toLocaleString('es-CO')} canon</span>
-                  <span className="text-foreground font-medium">= ${(units * avgRent).toLocaleString('es-CO')}</span>
+                  <span className="text-foreground font-medium font-mono tabular-nums">= ${(units * avgRent).toLocaleString('es-CO')}</span>
                 </div>
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-muted-foreground">1% del canon administrado</span>
-                  <span className="text-foreground font-semibold">${monthlyFee.toLocaleString('es-CO')}</span>
+                  <span className="text-foreground font-semibold font-mono tabular-nums">${monthlyFee.toLocaleString('es-CO')}</span>
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground/70 mt-3 leading-relaxed">
@@ -374,7 +371,7 @@ export default function PricingPage() {
                     { value: '2,400+', label: 'Clientes' },
                   ].map((stat) => (
                     <div key={stat.label} className="flex items-baseline gap-2">
-                      <span className="text-[24px] font-heading font-bold text-white">{stat.value}</span>
+                      <span className="text-[24px] font-mono font-bold tabular-nums text-white">{stat.value}</span>
                       <span className="text-[13px] text-white/50">{stat.label}</span>
                     </div>
                   ))}
@@ -445,7 +442,7 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer border-2 bg-white hover: hover:ring-1 hover:ring-[#1A40FF]",
+                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer border-2 bg-surface hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'owner-managed'
                   ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
                   : "border-neutral-200 hover:border-[#1A40FF]/30"
@@ -469,7 +466,7 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Nosotros cobramos y gestionamos todo</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[24px] font-heading font-bold text-foreground">5-6%</span>
+                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">5-6%</span>
                     <span className="text-[12px] text-muted-foreground">del arriendo</span>
                   </div>
                 </div>
@@ -485,7 +482,7 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.1 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover: hover:ring-1 hover:ring-[#1A40FF]",
+                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'owner-diy'
                   ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
                   : "border-neutral-200 hover:border-[#1A40FF]/30"
@@ -509,7 +506,7 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-muted-foreground mb-3">Herramientas profesionales para ti</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[24px] font-heading font-bold text-foreground">$0</span>
+                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">$0</span>
                     <span className="text-[12px] text-muted-foreground">para empezar</span>
                   </div>
                 </div>
@@ -525,7 +522,7 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.2 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover: hover:ring-1 hover:ring-[#1A40FF]",
+                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'evaluation'
                   ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
                   : "border-neutral-200 hover:border-[#1A40FF]/30"
@@ -550,7 +547,7 @@ export default function PricingPage() {
                   <p className="text-[13px] text-muted-foreground mb-3">Crédito, identidad, antecedentes</p>
                   <div className="flex items-baseline gap-1 mb-3">
                     <span className="text-[12px] text-muted-foreground mr-0.5">Desde</span>
-                    <span className="text-[24px] font-heading font-bold text-foreground">$24.9K</span>
+                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">$24.9K</span>
                     <span className="text-[12px] text-muted-foreground">/eval</span>
                   </div>
                 </div>
@@ -566,7 +563,7 @@ export default function PricingPage() {
               whileHover={{ y: -4 }}
               transition={{ duration: 0.3, delay: 0.3 }}
               className={cn(
-                "group relative text-left rounded-xl overflow-hidden transition-all duration-300 cursor-pointer bg-white border-2 hover: hover:ring-1 hover:ring-[#1A40FF]",
+                "group relative text-left rounded-[20px] overflow-hidden transition-all duration-300 cursor-pointer bg-surface border-2 hover:ring-1 hover:ring-[#1A40FF]",
                 userTextT === 'agency'
                   ? "border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/10"
                   : "border-neutral-200 hover:border-[#1A40FF]/30"
@@ -590,7 +587,7 @@ export default function PricingPage() {
                   </h3>
                   <p className="text-[13px] text-sand-700 mb-3">Escala tu negocio con tecnología</p>
                   <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-[24px] font-heading font-bold text-foreground">$0</span>
+                    <span className="text-[24px] font-mono font-bold tabular-nums text-foreground">$0</span>
                     <span className="text-[12px] text-muted-foreground">para empezar</span>
                   </div>
                 </div>
@@ -649,7 +646,7 @@ export default function PricingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mb-10 p-5 rounded-xl bg-neutral-50 border border-neutral-200"
+              className="mb-10 p-5 rounded-[20px] bg-neutral-50 border border-neutral-200"
             >
               <div className="flex flex-col lg:flex-row lg:items-center gap-5">
                 {/* Input section */}
@@ -678,7 +675,7 @@ export default function PricingPage() {
                         }}
                         placeholder="2.000.000"
                         aria-label="Valor del arriendo mensual"
-                        className="w-full h-10 pl-7 pr-3 bg-white text-[15px] font-medium text-foreground rounded-md border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                        className="w-full h-10 pl-7 pr-3 bg-surface text-[15px] font-medium font-mono tabular-nums text-foreground rounded-md border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary/25 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
                       />
                     </div>
                     <span className="text-[12px] text-muted-foreground">/mes</span>
@@ -687,15 +684,15 @@ export default function PricingPage() {
 
                 {/* Results preview - compact */}
                 <div className="flex gap-3">
-                  <div className="px-4 py-3 rounded-md bg-white border border-neutral-200 text-center min-w-[100px]">
-                    <p className="text-[11px] text-muted-foreground mb-0.5">5%</p>
-                    <p className="text-[18px] font-heading font-bold text-foreground">
+                  <div className="px-4 py-3 rounded-md bg-surface border border-neutral-200 text-center min-w-[100px]">
+                    <p className="text-[11px] font-mono tabular-nums text-muted-foreground mb-0.5">5%</p>
+                    <p className="text-[18px] font-mono font-bold tabular-nums text-foreground">
                       ${(exampleRent * 0.05).toLocaleString('es-CL')}
                     </p>
                   </div>
                   <div className="px-4 py-3 rounded-md bg-[#E8F3EC] border border-[#2C7A53]/30 text-center min-w-[100px]">
-                    <p className="text-[11px] text-[#2C7A53] mb-0.5">6%</p>
-                    <p className="text-[18px] font-heading font-bold text-foreground">
+                    <p className="text-[11px] font-mono tabular-nums text-[#2C7A53] mb-0.5">6%</p>
+                    <p className="text-[18px] font-mono font-bold tabular-nums text-foreground">
                       ${(exampleRent * 0.06).toLocaleString('es-CL')}
                     </p>
                   </div>
@@ -705,7 +702,7 @@ export default function PricingPage() {
               {/* Savings indicator - compact */}
               <div className="mt-4 pt-3 border-t border-neutral-200 flex flex-wrap items-center gap-4 text-[12px]">
                 <span className="text-muted-foreground">
-                  Ahorro: <span className="text-[#2C7A53] font-medium">${(exampleRent * 0.05).toLocaleString('es-CL')}</span>/mes
+                  Ahorro: <span className="text-[#2C7A53] font-medium font-mono tabular-nums">${(exampleRent * 0.05).toLocaleString('es-CL')}</span>/mes
                 </span>
                 <span className="text-neutral-300">•</span>
                 <span className="text-muted-foreground">Sin compromisos</span>
@@ -1060,22 +1057,22 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="p-6 bg-gradient-to-br from-[#B7791F]/10 via-card to-card rounded-xl border border-[#B7791F]/30 mb-16"
+            className="p-6 bg-gradient-to-br from-[#B7791F]/10 via-card to-card rounded-[20px] border border-[#B7791F]/30 mb-16"
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#B7791F]/10 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-md bg-[#B7791F]/10 flex items-center justify-center">
                   <Buildings className="w-6 h-6 text-[#B7791F]" />
                 </div>
                 <div>
                   <h3 className="text-[15px] font-semibold text-foreground">¿Eres inmobiliaria o agente?</h3>
                   <p className="text-[13px] text-muted-foreground">
-                    Con el plan Pro pagas solo <span className="font-semibold text-[#B7791F]">$21.000/evaluación</span> (50% off). Con Flex son <span className="font-semibold text-[#B7791F]">ilimitadas y gratis</span>.
+                    Con el plan Pro pagas solo <span className="font-semibold font-mono tabular-nums text-[#B7791F]">$21.000/evaluación</span> (50% off). Con Flex son <span className="font-semibold text-[#B7791F]">ilimitadas y gratis</span>.
                   </p>
                 </div>
               </div>
               <Link href="/pricing">
-                <Button variant="outline" className="whitespace-nowrap rounded-xl" onClick={() => { /* Will scroll to agency section */ }}>
+                <Button variant="outline" className="whitespace-nowrap" onClick={() => { /* Will scroll to agency section */ }}>
                   Ver planes para inmobiliarias
                 </Button>
               </Link>
@@ -1087,7 +1084,7 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="p-8 md:p-10 bg-card rounded-xl border border-border"
+            className="p-8 md:p-10 bg-card rounded-[20px] border border-border"
           >
             <div className="flex items-center justify-center gap-2 mb-8">
               <span className="w-2 h-2 rounded-full bg-primary" />
@@ -1110,8 +1107,8 @@ export default function PricingPage() {
                   transition={{ delay: i * 0.1 }}
                   className="text-center"
                 >
-                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center mx-auto mb-4 shadow-primary/25">
-                    <span className="text-[15px] font-bold">{step.num}</span>
+                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-md flex items-center justify-center mx-auto mb-4 shadow-primary/25">
+                    <span className="text-[15px] font-bold font-mono tabular-nums">{step.num}</span>
                   </div>
                   <h4 className="font-semibold text-foreground text-[14px] mb-1">{step.title}</h4>
                   <p className="text-[12px] text-muted-foreground leading-relaxed">{step.desc}</p>
@@ -1162,7 +1159,7 @@ export default function PricingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="md:col-span-3 lg:col-span-5 rounded-xl p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 hover: transition-all relative overflow-hidden"
+              className="md:col-span-3 lg:col-span-5 rounded-[20px] p-6 bg-gradient-to-br from-sand-50 to-sand-100/80 border border-sand-200 transition-all relative overflow-hidden"
             >
               {/* Decorative corner */}
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sand-200/50 to-transparent rounded-bl-full" />
@@ -1202,7 +1199,7 @@ export default function PricingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="md:col-span-3 lg:col-span-4 rounded-xl p-6 bg-white border border-neutral-200 hover: transition-all"
+              className="md:col-span-3 lg:col-span-4 rounded-[20px] p-6 bg-surface border border-neutral-200 transition-all"
             >
               <div className="w-10 h-10 rounded-md bg-[#F8F0E0] flex items-center justify-center mb-4">
                 <Lightning className="w-5 h-5 text-[#B7791F]" />
@@ -1243,7 +1240,7 @@ export default function PricingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="md:col-span-6 lg:col-span-3 rounded-xl p-6 bg-neutral-50 border border-neutral-200 hover: transition-all"
+              className="md:col-span-6 lg:col-span-3 rounded-[20px] p-6 bg-neutral-50 border border-neutral-200 transition-all"
             >
               <div className="w-10 h-10 rounded-md bg-neutral-200 flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5 text-foreground" />

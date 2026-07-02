@@ -6,6 +6,7 @@ import { PricingCard } from './PricingCard';
 import { AgencyTierCard } from './AgencyTierCard';
 import { PLANS, PLAN_COMPARISON } from '@/lib/constants/subscription-plans';
 import { Check, X } from '@phosphor-icons/react';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { BillingCycle, PlanId, AgencyPlan, AgencyPlanId } from '@/lib/types/subscription';
@@ -66,9 +67,9 @@ export function PricingTable({
             <TabsTrigger value="monthly">Mensual</TabsTrigger>
             <TabsTrigger value="yearly" className="inline-flex items-center gap-2">
               Anual
-              <span className="rounded-full bg-success-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-success">
+              <Badge variant="success" className="font-mono tabular-nums">
                 -20%
-              </span>
+              </Badge>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -110,9 +111,9 @@ export function PricingTable({
             <TabsTrigger value="monthly">Mensual</TabsTrigger>
             <TabsTrigger value="yearly" className="inline-flex items-center gap-2">
               Anual
-              <span className="rounded-full bg-success-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-success">
+              <Badge variant="success" className="font-mono tabular-nums">
                 -20%
-              </span>
+              </Badge>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -138,7 +139,7 @@ export function PricingTable({
             Comparacion detallada
           </h3>
 
-          <div className="overflow-x-auto rounded-sm border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+          <div className="overflow-x-auto rounded-[18px] border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
             <Table>
               <TableHeader>
                 <TableRow className="border-b-border">
@@ -220,7 +221,7 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
 
   return (
     <span className={cn(
-      'text-sm font-semibold',
+      'text-sm font-semibold font-mono tabular-nums',
       highlighted ? 'text-primary' : 'text-foreground'
     )}>
       {value}

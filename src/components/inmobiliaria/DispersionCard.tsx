@@ -8,7 +8,6 @@ import {
   Buildings,
   CheckCircle,
   Warning,
-  SpinnerGap,
   CurrencyCircleDollar,
   CalendarBlank,
   CaretRight,
@@ -17,7 +16,7 @@ import {
   PaperPlaneTilt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import {
   formatCurrency,
@@ -101,16 +100,16 @@ export function DispersionCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onViewDetail?.(dispersion)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-white dark:bg-card border-neutral-200 dark:border-neutral-700 cursor-pointer transition-all duration-200 hover:',
+          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-surface dark:bg-card border-border dark:border-strong cursor-pointer transition-all duration-200 hover:',
           borderColor
         )}
       >
         {/* Propietario */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-neutral-900 dark:text-white truncate text-sm">
+          <p className="font-medium text-fg dark:text-white truncate text-sm">
             {dispersion.propietarioName}
           </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate capitalize">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle truncate capitalize">
             {formatMonth(dispersion.month)} · {dispersion.items.length}{' '}
             {dispersion.items.length === 1 ? 'propiedad' : 'propiedades'}
           </p>
@@ -135,7 +134,7 @@ export function DispersionCard({
 
         {/* Processing spinner */}
         {dispersion.status === 'processing' && (
-          <SpinnerGap className="w-4 h-4 text-primary animate-spin shrink-0" />
+          <Spinner size="sm" className="shrink-0" />
         )}
       </motion.div>
     );
@@ -146,24 +145,24 @@ export function DispersionCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border-l-4 border bg-white dark:bg-card overflow-hidden transition-all duration-200 group hover:',
+        'w-full rounded-xl border-l-4 border bg-surface dark:bg-card overflow-hidden transition-all duration-200 group hover:',
         borderColor,
-        'border-neutral-200 dark:border-neutral-700',
+        'border-border dark:border-strong',
         onViewDetail && 'cursor-pointer'
       )}
       onClick={() => onViewDetail?.(dispersion)}
     >
       {/* Header Section */}
-      <div className="p-5 pb-4 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="p-5 pb-4 border-b border-faint dark:border-strong">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <User className="w-4 h-4 text-neutral-400 shrink-0" />
-              <h3 className="font-semibold text-neutral-900 dark:text-white line-clamp-1">
+              <User className="w-4 h-4 text-fg-subtle shrink-0" />
+              <h3 className="font-semibold text-fg dark:text-white line-clamp-1">
                 {dispersion.propietarioName}
               </h3>
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 capitalize">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle capitalize">
               {formatMonth(dispersion.month)}
             </p>
           </div>
@@ -174,7 +173,7 @@ export function DispersionCard({
             )}
           >
             {dispersion.status === 'processing' && (
-              <SpinnerGap className="w-3 h-3 animate-spin" />
+              <Spinner size="xs" variant="current" />
             )}
             {statusLabel}
           </span>
@@ -182,16 +181,16 @@ export function DispersionCard({
       </div>
 
       {/* Bank Account Section */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="px-5 py-4 border-b border-faint dark:border-strong">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
             <Bank className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-0.5">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-0.5">
               Cuenta de destino
             </p>
-            <p className="font-medium text-neutral-900 dark:text-white truncate text-sm">
+            <p className="font-medium text-fg dark:text-white truncate text-sm">
               {formatBankAccount(
                 dispersion.propietarioBankAccount.bank,
                 dispersion.propietarioBankAccount.accountType,
@@ -206,7 +205,7 @@ export function DispersionCard({
       <div className="px-5 py-4 space-y-3">
         {/* Net Amount - Prominent */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">
+          <span className="text-sm text-fg-muted dark:text-fg-subtle">
             Neto a dispersar
           </span>
           <span className="text-xl font-bold text-success">
@@ -216,7 +215,7 @@ export function DispersionCard({
 
         {/* Breakdown */}
         <div className="space-y-1.5 text-sm">
-          <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center justify-between text-fg-muted dark:text-fg-subtle">
             <span>Total recaudado</span>
             <span>{formatCurrency(dispersion.totalCollected)}</span>
           </div>
@@ -228,16 +227,19 @@ export function DispersionCard({
       </div>
 
       {/* Properties Summary */}
-      <div className="px-5 py-4 bg-neutral-50 dark:bg-muted/20">
+      <div className="px-5 py-4 bg-surface-muted dark:bg-muted/20">
+        {/* allowlist: collapsible disclosure toggle (count + caret) driving a framer-motion height
+            animation inside a clickable card — Cadence Accordion would replace the bespoke animation */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             setShowProperties(!showProperties);
           }}
-          className="w-full flex items-center justify-between text-sm text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
+          aria-expanded={showProperties}
+          className="w-full flex items-center justify-between text-sm text-fg dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Buildings className="w-4 h-4 text-neutral-400" />
+            <Buildings className="w-4 h-4 text-fg-subtle" />
             <span>
               {dispersion.items.length}{' '}
               {dispersion.items.length === 1 ? 'propiedad' : 'propiedades'}{' '}
@@ -246,7 +248,7 @@ export function DispersionCard({
           </div>
           <CaretDown
             className={cn(
-              'w-4 h-4 text-neutral-400 transition-transform',
+              'w-4 h-4 text-fg-subtle transition-transform',
               showProperties && 'rotate-180'
             )}
           />
@@ -260,16 +262,16 @@ export function DispersionCard({
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="mt-3 space-y-2 border-t border-neutral-200 dark:border-neutral-700 pt-3">
+              <div className="mt-3 space-y-2 border-t border-border dark:border-strong pt-3">
                 {dispersion.items.map((item) => (
                   <div
                     key={item.cobroId}
                     className="flex items-center justify-between text-sm"
                   >
-                    <span className="text-neutral-600 dark:text-neutral-400 truncate max-w-[180px]">
+                    <span className="text-fg-muted dark:text-fg-subtle truncate max-w-[180px]">
                       {item.propertyTitle}
                     </span>
-                    <span className="text-neutral-900 dark:text-white font-medium">
+                    <span className="text-fg dark:text-white font-medium">
                       {formatCurrency(item.netAmount)}
                     </span>
                   </div>
@@ -281,7 +283,7 @@ export function DispersionCard({
       </div>
 
       {/* Status Section */}
-      <div className="px-5 py-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
+      <div className="px-5 py-4 border-t border-faint dark:border-strong space-y-2">
         {/* Completed: Show transfer info */}
         {dispersion.status === 'completed' &&
           dispersion.processedAt &&
@@ -298,7 +300,7 @@ export function DispersionCard({
                   })}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+              <div className="flex items-center gap-2 text-sm text-fg-muted dark:text-fg-subtle">
                 <Receipt className="w-4 h-4" />
                 <span className="font-mono text-xs">
                   Ref: {dispersion.transferReference}
@@ -310,7 +312,7 @@ export function DispersionCard({
         {/* Processing: Show processing message */}
         {dispersion.status === 'processing' && (
           <div className="flex items-center gap-2 text-sm text-primary">
-            <SpinnerGap className="w-4 h-4 animate-spin" />
+            <Spinner size="sm" variant="current" />
             <span>Procesando transferencia...</span>
           </div>
         )}
@@ -333,7 +335,7 @@ export function DispersionCard({
       </div>
 
       {/* Actions */}
-      <div className="px-5 py-4 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800">
+      <div className="px-5 py-4 flex items-center justify-between border-t border-faint dark:border-strong">
         {dispersion.status === 'pending' && onProcess && (
           <Button
             size="sm"
@@ -370,12 +372,12 @@ export function DispersionCard({
         )}
         {dispersion.status === 'processing' && (
           <div className="flex items-center gap-2 text-sm text-primary">
-            <SpinnerGap className="w-4 h-4 animate-spin" />
+            <Spinner size="sm" variant="current" />
             <span>En proceso</span>
           </div>
         )}
         {onViewDetail && (
-          <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-primary transition-colors ml-auto">
+          <div className="flex items-center gap-1 text-sm text-fg-muted dark:text-fg-subtle group-hover:text-primary transition-colors ml-auto">
             Ver detalle
             <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>

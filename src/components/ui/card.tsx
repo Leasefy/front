@@ -1,5 +1,5 @@
 /**
- * Card — THIN SHIM over @leasefy/ui.
+ * Card — THIN SHIM over @leasefy/cadence.
  *
  * La API del DS es un superset con los mismos nombres (Card, CardHeader,
  * CardTitle, CardDescription, CardContent, CardFooter) + prop `interactive`.
@@ -13,6 +13,6 @@ export {
   CardTitle,
   CardDescription,
   CardContent,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
-export type { CardProps } from "@leasefy/ui"
+export type { CardProps } from "@leasefy/cadence"

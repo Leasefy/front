@@ -18,7 +18,6 @@ import {
   PaperPlaneTilt,
   PencilSimpleLine,
   CheckCircle,
-  Spinner,
   WarningCircle,
   FileText,
   User,
@@ -35,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
+import { Spinner, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
@@ -43,10 +43,23 @@ import { RejectionsHistory } from '@/components/contract/RejectionsHistory';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
-import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '@/lib/types/contract';
+import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { ContractStatus } from '@/lib/types/contract';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
+
+// ContractStatus → Cadence Badge tone (replaces the hand-rolled CONTRACT_STATUS_COLORS pill).
+type ContractBadgeVariant = 'secondary' | 'warning' | 'default' | 'success' | 'destructive';
+const CONTRACT_STATUS_BADGE: Record<ContractStatus, ContractBadgeVariant> = {
+  draft: 'secondary',
+  pending_landlord: 'warning',
+  pending_tenant: 'default',
+  rejected_pending_modifications: 'warning',
+  signed: 'default',
+  active: 'success',
+  expired: 'secondary',
+  cancelled: 'destructive',
+};
 
 // ─── Content ─────────────────────────────────────────────────────────────────
 
@@ -144,7 +157,7 @@ function ContratoDetalleContent() {
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
-        <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Spinner size="md" variant="muted" />
       </div>
     );
   }
@@ -163,7 +176,7 @@ function ContratoDetalleContent() {
     );
   }
 
-  const statusClass = CONTRACT_STATUS_COLORS[contract.status as ContractStatus] ?? '';
+  const statusVariant = CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'neutral';
   const statusLabel = CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status;
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
@@ -187,9 +200,9 @@ function ContratoDetalleContent() {
           </Button>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">Contrato de arrendamiento</h1>
-            <span className={cn('px-3 py-1 rounded-full text-xs font-medium', statusClass)}>
+            <Badge variant={statusVariant}>
               {statusLabel}
-            </span>
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
         </div>
@@ -308,7 +321,7 @@ function ContratoDetalleContent() {
                   )}
                   {isLoadingSignedPdf ? (
                     <div className="py-20 flex items-center justify-center">
-                      <Spinner className="w-5 h-5 animate-spin text-muted-foreground" />
+                      <Spinner size="default" variant="muted" />
                     </div>
                   ) : (
                     <iframe
@@ -324,7 +337,7 @@ function ContratoDetalleContent() {
                 </div>
               ) : isLoadingPreview ? (
                 <div className="py-20 flex items-center justify-center">
-                  <Spinner className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <Spinner size="sm" variant="muted" />
                 </div>
               ) : preview?.origin === 'UPLOADED_PDF' ? (
                 <div className="space-y-3">
@@ -548,7 +561,7 @@ function ActionBar({
           )}
           {cta && (
             <Button onClick={cta.onClick} disabled={cta.loading} hideArrow className="gap-2">
-              {cta.loading ? <Spinner className="w-4 h-4 animate-spin" /> : <cta.icon className="w-4 h-4" />}
+              {cta.loading ? <Spinner size="sm" variant="current" /> : <cta.icon className="w-4 h-4" />}
               {cta.label}
             </Button>
           )}

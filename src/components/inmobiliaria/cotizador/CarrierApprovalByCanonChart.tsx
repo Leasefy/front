@@ -31,7 +31,7 @@ export function CarrierApprovalByCanonChart({ data, isLoading = false }: Carrier
   if (isLoading) {
     return (
       <div className="h-[220px] flex items-center justify-center">
-        <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+        <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
       </div>
     )
   }
@@ -39,7 +39,7 @@ export function CarrierApprovalByCanonChart({ data, isLoading = false }: Carrier
   if (data.length === 0) {
     return (
       <div className="h-[220px] flex items-center justify-center">
-        <p className="text-xs text-neutral-400 text-center py-8">
+        <p className="text-xs text-fg-subtle text-center py-8">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.noApprovalData')}
         </p>
       </div>

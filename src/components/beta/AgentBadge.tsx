@@ -7,6 +7,9 @@ import {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
   CheckCircle,
   XCircle,
   CircleNotch,
@@ -27,6 +30,9 @@ const ICON_MAP: Record<string, Icon> = {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 };
 
 // ============================================================================

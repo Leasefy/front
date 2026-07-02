@@ -19,19 +19,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { CurrencyDollar, Info } from '@phosphor-icons/react'
+import { Info } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { Button } from '@/components/ui'
-import { Eyebrow } from '@leasefy/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Eyebrow } from '@leasefy/cadence'
 import { ReglaCard } from '@/components/inmobiliaria/pagos/ReglaCard'
-import { useI18n } from '@/lib/i18n'
 
 function PagosReglas() {
-  const { t } = useI18n()
-
   // ── Estado local (preview). Sin endpoint → no persiste; ver "Próximamente". ──
 
   // Generación de cobros
@@ -63,15 +59,6 @@ function PagosReglas() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2 min-w-0">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/pagos"
-            icon={CurrencyDollar}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.pagos'), href: '/panel/inmobiliaria/ai/pagos' },
-              { label: 'Reglas' },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">Reglas</h1>
           <p className="text-sm text-fg-muted max-w-2xl">
             Define cómo se comporta el agente de pagos para tu inmobiliaria: cuándo genera cobros, cuándo

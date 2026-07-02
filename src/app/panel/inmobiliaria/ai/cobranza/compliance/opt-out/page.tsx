@@ -22,9 +22,17 @@ import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import {
+  Button,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
 
 interface OptOutEntry {
   event_id: string
@@ -144,15 +152,6 @@ function OptOutContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/cobranza/compliance"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.cobranza'), href: '/panel/inmobiliaria/ai/cobranza' },
-            { label: t('inmobiliaria.ai.cobranza.compliance.pageTitle'), href: '/panel/inmobiliaria/ai/cobranza/compliance' },
-            { label: t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle') },
-          ]}
-        />
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
         </h1>
@@ -167,38 +166,38 @@ function OptOutContent() {
       {items.length > 0 && (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto overscroll-contain">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30 border-b border-border">
-              <tr>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+          <Table>
+            <TableHeader className="bg-muted/30 border-b border-border">
+              <TableRow>
+                <TableHead>
                   {locale.startsWith('es') ? 'Solicitado' : 'Requested'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                </TableHead>
+                <TableHead>
                   {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                </TableHead>
+                <TableHead>
                   {locale.startsWith('es') ? 'Fuente' : 'Source'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                </TableHead>
+                <TableHead>
                   {locale.startsWith('es') ? 'Acuse' : 'Acknowledged'}
-                </th>
-                <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground" />
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead className="text-right" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((row) => {
                 const isAcked = row.acknowledged_at !== null
                 const isAcking = acking.has(row.event_id)
                 return (
-                  <tr key={row.event_id} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
+                  <TableRow key={row.event_id} className="border-b border-border last:border-0">
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
                       {new Date(row.requested_at).toLocaleString(locale)}
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
                       <Mask field="cedula" value={row.debtor_id_masked} onReveal={undefined} />
-                    </td>
-                    <td className="px-3 py-2 text-foreground">{row.source}</td>
-                    <td className="px-3 py-2 font-mono tabular-nums text-xs">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-foreground">{row.source}</TableCell>
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs">
                       {isAcked ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="w-3.5 h-3.5" aria-hidden="true" />
@@ -209,41 +208,43 @@ function OptOutContent() {
                           {locale.startsWith('es') ? 'Pendiente' : 'Pending'}
                         </span>
                       )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right">
                       {!isAcked && hasConfigPerm && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          hideArrow
                           onClick={() => void acknowledge(row.event_id)}
                           disabled={isAcking}
-                          className="text-xs px-3 py-1 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
                         >
                           {isAcking
                             ? locale.startsWith('es') ? '...' : '...'
                             : locale.startsWith('es')
                               ? 'Marcar acuse'
                               : t('inmobiliaria.ai.cobranza.compliance.actions.acknowledge')}
-                        </button>
+                        </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           </div>
           {nextCursor && (
             <div className="p-3 border-t border-border bg-muted/20 text-center">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={() => void loadMore()}
                 disabled={isLoadingMore}
-                className="text-xs px-4 py-2 rounded-sm border border-border hover:bg-muted disabled:opacity-50 transition font-medium"
               >
                 {isLoadingMore
                   ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
                   : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
-              </button>
+              </Button>
             </div>
           )}
         </div>

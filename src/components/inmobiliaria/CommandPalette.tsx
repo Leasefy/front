@@ -30,22 +30,23 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowElbowDownLeft,
-  Spinner,
   User,
   Clock,
   ChatCircleText,
   FileText,
   ChartLineUp,
   House,
-  Lightning,
   ArrowSquareOut,
   Phone,
   Envelope,
   Warning,
   CaretRight,
+  X,
 } from '@phosphor-icons/react';
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Spinner as DSSpinner } from '@/components/ui/spinner';
+import { IconButton } from '@leasefy/cadence';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -164,12 +165,6 @@ const QUICK_ACTIONS: QuickAction[] = [
     href: '/panel/inmobiliaria/portafolio',
     permission: { module: 'portafolio', action: 'view' },
   },
-  {
-    id: 'qa-hoy',
-    labelKey: 'inmobiliaria.commandPalette.quickActions.hoy',
-    icon: Lightning,
-    href: '/panel/inmobiliaria/hoy',
-  },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -180,7 +175,7 @@ const BADGE_COLORS = {
   green: 'bg-success-soft text-success border-success/30',
   amber: 'bg-warning-soft text-warning border-warning/30',
   red: 'bg-danger-soft text-danger border-danger/30',
-  violet: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
+  violet: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-strong',
   neutral: 'bg-muted text-muted-foreground border-border',
 };
 
@@ -244,8 +239,8 @@ function DebtorPreview({ data: rawData }: { data: Record<string, unknown> }) {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+          <div className="w-9 h-9 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-foreground truncate">
@@ -364,8 +359,8 @@ function PropietarioPreview({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+        <div className="w-9 h-9 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center flex-shrink-0">
+          <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
         </div>
         <div className="min-w-0">
           <p className="text-[14px] font-semibold text-foreground truncate">{name}</p>
@@ -435,7 +430,7 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
   const STATUS_COLORS: Record<string, string> = {
     available: 'bg-success-soft text-success border-success/30',
     published: 'bg-success-soft text-success border-success/30',
-    rented: 'bg-primary-soft text-primary dark:text-[#8FA3FF] border-primary/30',
+    rented: 'bg-primary-soft text-primary dark:text-[#7B95FF] border-primary/30',
     pending: 'bg-warning-soft text-warning border-warning/30',
     draft: 'bg-muted text-muted-foreground border-border',
   };
@@ -460,8 +455,8 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md p-2.5">
-          <p className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium">
+        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-strong rounded-md p-2.5">
+          <p className="text-[10px] text-fg-muted dark:text-fg-subtle font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
           <p className="text-[14px] font-semibold text-foreground">
@@ -516,7 +511,7 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
 
   const STATUS_COLORS_PILL: Record<string, string> = {
     ACTIVE: 'bg-success-soft text-success border-success/30',
-    SIGNED: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700',
+    SIGNED: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-strong',
     PENDING_TENANT: 'bg-warning-soft text-warning border-warning/30',
     PENDING_TENANT_SIGNATURE: 'bg-warning-soft text-warning border-warning/30',
     PENDING_LANDLORD: 'bg-warning-soft text-warning border-warning/30',
@@ -553,8 +548,8 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
     <div className="p-5 space-y-4">
       {tenantName && (
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+          <div className="w-9 h-9 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-foreground truncate">{tenantName}</p>
@@ -574,11 +569,11 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md p-2.5">
-          <p className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium">
+        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-strong rounded-md p-2.5">
+          <p className="text-[10px] text-fg-muted dark:text-fg-subtle font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-[14px] font-semibold text-neutral-600 dark:text-neutral-300">
+          <p className="text-[14px] font-semibold text-fg-muted dark:text-fg-subtle">
             ${monthlyRent.toLocaleString('es-CO')}
           </p>
         </div>
@@ -679,6 +674,8 @@ function NovadadesState({
         {visibleQuickActions.map((qa) => {
           const Icon = qa.icon;
           return (
+            // allowlist: command-list row (icon-tile + label + caret as one nav target) —
+            // rich list-row click target; Button can't host it (list-row precedent). Native.
             <button
               key={qa.id}
               onClick={() => onNavigate(qa.href)}
@@ -880,10 +877,14 @@ export function CommandPalette() {
         {/* ── Search input row ────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 px-4 h-[52px] border-b border-border">
           {isAnyLoading ? (
-            <Spinner className="w-[18px] h-[18px] text-muted-foreground animate-spin flex-shrink-0" />
+            <DSSpinner size="sm" variant="muted" className="flex-shrink-0" />
           ) : (
             <MagnifyingGlass className="w-[18px] h-[18px] text-muted-foreground flex-shrink-0" />
           )}
+          {/* allowlist: bare ⌘K combobox input (borderless, transparent, seamless palette bar
+              with role=combobox + arrow-key nav). Cadence Input's bordered skin breaks the
+              seamless bar; Cadence CommandMenu would require rewriting the federated-search
+              palette. Kept native. */}
           <input
             ref={inputRef}
             type="text"
@@ -899,15 +900,14 @@ export function CommandPalette() {
             className="flex-1 text-[15px] text-foreground placeholder:text-muted-foreground bg-transparent border-0 outline-none"
           />
           {query && (
-            <button
+            <IconButton
+              variant="ghost"
+              size="sm"
               onClick={() => setQuery('')}
-              className="grid place-items-center w-6 h-6 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label={locale === 'es' ? 'Limpiar búsqueda' : 'Clear search'}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              className="text-muted-foreground"
+              icon={<X className="w-4 h-4" />}
+            />
           )}
         </div>
 
@@ -956,6 +956,9 @@ export function CommandPalette() {
                             const isHighlighted = flatIdx === highlightIdx;
 
                             return (
+                              // allowlist: ARIA listbox option row (role="option", scroll-ref,
+                              // hover-highlight) in a custom combobox — Cadence has no listbox-option
+                              // primitive; Button would break the role/ref/keyboard-nav machinery.
                               <button
                                 key={result.id}
                                 ref={isHighlighted ? (el) => { highlightedItemRef.current = el; } : undefined}
@@ -1014,7 +1017,7 @@ export function CommandPalette() {
                         .filter((s) => bySource[s.id]?.isLoading)
                         .map((s) => (
                           <div key={`loading-${s.id}`} className="flex items-center gap-2 px-4 py-3">
-                            <Spinner className="w-3 h-3 text-muted-foreground animate-spin" />
+                            <DSSpinner size="xs" variant="muted" />
                             <span className="text-[12px] text-muted-foreground">
                               {t(s.labelKey)}…
                             </span>

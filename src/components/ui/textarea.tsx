@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Textarea as DSTextarea } from "@leasefy/ui"
+import { Textarea as DSTextarea } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Textarea de @leasefy/ui.
+ * ADAPTER fino sobre el Textarea de @leasefy/cadence.
  * Fidelidad mvp: min-h-[60px], px-4 py-2, text-base→md:text-sm (16px mobile
  * anti-zoom iOS). El DS muestra contador "n / max" cuando recibe maxLength —
  * el mvp nunca lo mostró, así que se oculta ([&+span]:hidden apunta al span

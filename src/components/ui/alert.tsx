@@ -1,10 +1,10 @@
 import * as React from "react"
-import { Alert as DSAlert } from "@leasefy/ui"
+import { Alert as DSAlert } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * Alert — ADAPTER fino sobre el Alert de @leasefy/ui que preserva la API
+ * Alert — ADAPTER fino sobre el Alert de @leasefy/cadence que preserva la API
  * shadcn local (composición con children: icono svg + AlertTitle +
  * AlertDescription):
  * - variant: default → info del DS con overrides neutros (el DS no tiene

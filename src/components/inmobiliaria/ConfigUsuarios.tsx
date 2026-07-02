@@ -15,8 +15,6 @@ import {
   Phone,
   Clock,
   Users,
-  PaperPlaneTilt,
-  X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -31,7 +29,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -39,10 +36,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListSeparator,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { IconButton } from '@leasefy/cadence';
 import type {
   AgencyUser,
   AgencyRole,
-  AgenteRole,
   UserInvite,
 } from '@/lib/types/inmobiliaria';
 import {
@@ -70,263 +82,6 @@ interface ConfigUsuariosProps {
 
 type FilterRole = AgencyRole | 'all';
 type FilterStatus = AgencyUser['status'] | 'all';
-
-// ============================================================================
-// Invite Modal Component
-// ============================================================================
-
-interface InviteModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (invite: UserInvite) => void;
-  isLoading?: boolean;
-}
-
-function InviteModal({ open, onOpenChange, onSubmit, isLoading }: InviteModalProps) {
-  const { t } = useI18n();
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState<AgencyRole>('agente');
-  const [position, setPosition] = useState('');
-  const [message, setMessage] = useState('');
-  // Agent-specific fields (shown when role === 'agente')
-  const [phone, setPhone] = useState('');
-  const [zone, setZone] = useState('');
-  const [specialization, setSpecialization] = useState<'residential' | 'commercial' | 'both'>('residential');
-  const [commissionSplit, setCommissionSplit] = useState(50);
-  const [agentRole, setAgentRole] = useState<AgenteRole>('agent');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email && name && role) {
-      const invite: UserInvite = {
-        email,
-        name,
-        role,
-        position: position.trim() || undefined,
-        message: message || undefined,
-      };
-      // Attach agent-specific fields when role is agente (backend expects UPPERCASE enums)
-      if (role === 'agente') {
-        invite.phone = phone || undefined;
-        invite.zone = zone || undefined;
-        invite.specialization = specialization.toUpperCase() as UserInvite['specialization'];
-        invite.commissionSplit = commissionSplit;
-        invite.agentRole = agentRole.toUpperCase() as UserInvite['agentRole'];
-      }
-      onSubmit(invite);
-      // Reset form
-      setEmail('');
-      setName('');
-      setRole('agente');
-      setPosition('');
-      setMessage('');
-      setPhone('');
-      setZone('');
-      setSpecialization('residential');
-      setCommissionSplit(50);
-      setAgentRole('agent');
-    }
-  };
-
-  const isValid = email.includes('@') && name.trim().length > 0;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>{t('inmobiliaria.config.users.inviteModal.title')}</DialogTitle>
-          <DialogDescription>
-            {t('inmobiliaria.config.users.inviteModal.description')}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto overscroll-contain pr-1">
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">{t('inmobiliaria.config.users.inviteModal.emailLabel')} *</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder={t('inmobiliaria.config.users.inviteModal.emailPlaceholder')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">{t('inmobiliaria.config.users.inviteModal.nameLabel')} *</Label>
-            <Input
-              id="name"
-              placeholder={t('inmobiliaria.config.users.inviteModal.namePlaceholder')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Role */}
-          <div className="space-y-2">
-            <Label htmlFor="role">{t('inmobiliaria.config.users.inviteModal.roleLabel')} *</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as AgencyRole)}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder={t('inmobiliaria.config.users.inviteModal.selectRole')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">{t('inmobiliaria.config.users.admin')}</SelectItem>
-                <SelectItem value="agente">{t('inmobiliaria.config.users.agent')}</SelectItem>
-                <SelectItem value="contador">{t('inmobiliaria.config.users.accountant')}</SelectItem>
-                <SelectItem value="viewer">{t('inmobiliaria.config.users.viewer')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Position / Cargo (optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="position">Cargo</Label>
-            <Input
-              id="position"
-              placeholder="Ej: Agente Senior, Administrador General"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              maxLength={100}
-            />
-          </div>
-
-          {/* Agent-specific fields — conditionally shown */}
-          {role === 'agente' && (
-            <div className="space-y-4 pt-2 border-t border-border">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Datos del agente</p>
-
-              {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="invite-phone">Teléfono</Label>
-                <Input
-                  id="invite-phone"
-                  type="tel"
-                  placeholder="+57 300 123 4567"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-
-              {/* Agent business role */}
-              <div className="space-y-2">
-                <Label>Rol operativo</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {([
-                    { value: 'agent' as AgenteRole, label: 'Agente', desc: 'Ventas/arriendos' },
-                    { value: 'coordinator' as AgenteRole, label: 'Coordinador', desc: 'Supervisa equipo' },
-                    { value: 'director' as AgenteRole, label: 'Director', desc: 'Director agencia' },
-                  ]).map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setAgentRole(opt.value)}
-                      className={cn(
-                        'p-2.5 rounded-md border text-center transition-all text-xs',
-                        agentRole === opt.value
-                          ? 'border-primary/30 bg-primary-soft'
-                          : 'border-border hover:bg-muted'
-                      )}
-                    >
-                      <p className={cn('font-medium', agentRole === opt.value ? 'text-primary' : 'text-foreground')}>{opt.label}</p>
-                      <p className="text-muted-foreground mt-0.5">{opt.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Zone + Specialization */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="invite-zone">Zona</Label>
-                  <Select value={zone} onValueChange={setZone}>
-                    <SelectTrigger id="invite-zone">
-                      <SelectValue placeholder="Seleccionar zona" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {['Norte', 'Sur', 'Este', 'Oeste', 'Centro', 'Chapinero', 'Usaquen', 'Suba', 'Kennedy', 'Fontibon'].map((z) => (
-                        <SelectItem key={z} value={z}>{z}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="invite-spec">Especialización</Label>
-                  <Select value={specialization} onValueChange={(v) => setSpecialization(v as 'residential' | 'commercial' | 'both')}>
-                    <SelectTrigger id="invite-spec">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="residential">Residencial</SelectItem>
-                      <SelectItem value="commercial">Comercial</SelectItem>
-                      <SelectItem value="both">Ambos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Commission */}
-              <div className="space-y-2">
-                <Label>Comisión ({commissionSplit}%)</Label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={commissionSplit}
-                    onChange={(e) => setCommissionSplit(Number(e.target.value))}
-                    className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
-                  />
-                  <span className="text-sm font-medium text-foreground w-10 text-right">{commissionSplit}%</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Porcentaje de la comisión de la agencia</p>
-              </div>
-            </div>
-          )}
-
-          {/* Custom Message (optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="message">{t('inmobiliaria.config.users.inviteModal.customMessage')}</Label>
-            <Textarea
-              id="message"
-              placeholder={t('inmobiliaria.config.users.inviteModal.messagePlaceholder')}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t('inmobiliaria.common.cancel')}
-            </Button>
-            <Button type="submit" disabled={!isValid || isLoading}>
-              {isLoading ? (
-                <>
-                  <ArrowClockwise className="w-4 h-4 mr-2 animate-spin" />
-                  {t('inmobiliaria.config.users.inviteModal.sending')}
-                </>
-              ) : (
-                <>
-                  <PaperPlaneTilt className="w-4 h-4 mr-2" />
-                  {t('inmobiliaria.config.users.inviteModal.send')}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ============================================================================
 // Edit Role Modal Component
@@ -588,7 +343,7 @@ export function ConfigUsuarios({
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
           <Input
             type="search"
             placeholder={t('inmobiliaria.config.users.searchPlaceholder')}
@@ -628,33 +383,33 @@ export function ConfigUsuarios({
 
       {/* Users Table */}
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <table className="w-full min-w-[800px]">
-          <thead>
-            <tr className="border-b border-neutral-100 dark:border-neutral-800">
-              <th className="text-left p-4">
-                <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <Table className="w-full min-w-[800px]">
+          <TableHeader>
+            <TableRow className="border-b border-faint dark:border-strong">
+              <TableHead className="text-left p-4">
+                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                   {t('inmobiliaria.config.users.tableUser')}
                 </span>
-              </th>
-              <th className="text-left p-4">
-                <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4">
+                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                   {t('inmobiliaria.config.users.role')}
                 </span>
-              </th>
-              <th className="text-left p-4">
-                <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4">
+                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                   {t('inmobiliaria.config.users.status')}
                 </span>
-              </th>
-              <th className="text-left p-4 hidden md:table-cell">
-                <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead className="text-left p-4 hidden md:table-cell">
+                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                   {t('inmobiliaria.config.users.lastAccess')}
                 </span>
-              </th>
-              <th className="w-12 p-4"></th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+              <TableHead className="w-12 p-4"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             <AnimatePresence mode="popLayout">
               {filteredUsers.map((user, index) => {
                 const initials = getInitials(user.name);
@@ -671,7 +426,7 @@ export function ConfigUsuarios({
                     className="border-b border-border hover:bg-muted/40 transition-colors"
                   >
                     {/* User Info */}
-                    <td className="p-4">
+                    <TableCell className="p-4">
                       <div className="flex items-center gap-3">
                         {user.avatar ? (
                           <img
@@ -690,42 +445,42 @@ export function ConfigUsuarios({
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[200px]">
+                          <p className="font-medium text-fg dark:text-white truncate max-w-[200px]">
                             {user.name}
                           </p>
-                          <div className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+                          <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
                             <EnvelopeSimple className="w-3.5 h-3.5 shrink-0" />
                             <span className="truncate max-w-[180px]">{user.email}</span>
                           </div>
                           {user.phone && (
-                            <div className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
                               <Phone className="w-3.5 h-3.5 shrink-0" />
                               <span>{user.phone}</span>
                             </div>
                           )}
                         </div>
                       </div>
-                    </td>
+                    </TableCell>
 
                     {/* Role */}
-                    <td className="p-4">
+                    <TableCell className="p-4">
                       <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', roleColor)}>
                         {getRoleLabel(user.role)}
                       </span>
-                    </td>
+                    </TableCell>
 
                     {/* Status */}
-                    <td className="p-4">
+                    <TableCell className="p-4">
                       <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusColor)}>
                         {getUserStatusLabel(user.status)}
                       </span>
-                    </td>
+                    </TableCell>
 
                     {/* Last Login */}
-                    <td className="p-4 hidden md:table-cell">
+                    <TableCell className="p-4 hidden md:table-cell">
                       {user.lastLoginAt ? (
-                        <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-300">
-                          <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
+                        <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
+                          <Clock className="w-4 h-4 text-fg-subtle shrink-0" />
                           <span>{formatRelativeTime(user.lastLoginAt)}</span>
                         </div>
                       ) : user.status === 'invited' && user.invitedAt ? (
@@ -734,102 +489,88 @@ export function ConfigUsuarios({
                           <span>{t('inmobiliaria.config.users.invitedOn')} {formatRelativeTime(user.invitedAt)}</span>
                         </div>
                       ) : (
-                        <span className="text-neutral-400">-</span>
+                        <span className="text-fg-subtle">-</span>
                       )}
-                    </td>
+                    </TableCell>
 
                     {/* Actions */}
-                    <td className="p-4">
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
-                          className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                        >
-                          <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
-                        </button>
+                    <TableCell className="p-4">
+                      <DropdownList
+                        open={openMenuId === user.id}
+                        onOpenChange={(o) => setOpenMenuId(o ? user.id : null)}
+                      >
+                        <DropdownListTrigger asChild>
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                            aria-label="Acciones"
+                          />
+                        </DropdownListTrigger>
+                        <DropdownListContent align="end" className="w-48">
+                          {/* Edit Role */}
+                          <DropdownListItem
+                            className="gap-3"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setEditRoleModalOpen(true);
+                            }}
+                          >
+                            <PencilSimple className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.config.users.editRole')}</span>
+                          </DropdownListItem>
 
-                        <AnimatePresence>
-                          {openMenuId === user.id && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              className="absolute right-0 top-full mt-1 w-48 p-2 rounded-lg border border-border bg-card z-10"
+                          {/* Resend Invite (if invited) */}
+                          {user.status === 'invited' && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={() => onResendInvite?.(user.id)}
                             >
-                              {/* Edit Role */}
-                              <button
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setEditRoleModalOpen(true);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <PencilSimple className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.config.users.editRole')}</span>
-                              </button>
-
-                              {/* Resend Invite (if invited) */}
-                              {user.status === 'invited' && (
-                                <button
-                                  onClick={() => {
-                                    onResendInvite?.(user.id);
-                                    setOpenMenuId(null);
-                                  }}
-                                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                                >
-                                  <ArrowClockwise className="w-4 h-4" />
-                                  <span className="text-sm">{t('inmobiliaria.config.users.resendInvite')}</span>
-                                </button>
-                              )}
-
-                              {/* Toggle Status */}
-                              <button
-                                onClick={() => {
-                                  onToggleStatus?.(user.id);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                {user.status === 'active' ? (
-                                  <>
-                                    <UserMinus className="w-4 h-4" />
-                                    <span className="text-sm">{t('inmobiliaria.config.users.deactivate')}</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserCheck className="w-4 h-4" />
-                                    <span className="text-sm">{t('inmobiliaria.config.users.activate')}</span>
-                                  </>
-                                )}
-                              </button>
-
-                              {/* Divider */}
-                              <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
-
-                              {/* Delete */}
-                              <button
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setDeleteModalOpen(true);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-danger hover:bg-danger-soft transition-colors"
-                              >
-                                <Trash className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
-                              </button>
-                            </motion.div>
+                              <ArrowClockwise className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.config.users.resendInvite')}</span>
+                            </DropdownListItem>
                           )}
-                        </AnimatePresence>
-                      </div>
-                    </td>
+
+                          {/* Toggle Status */}
+                          <DropdownListItem
+                            className="gap-3"
+                            onClick={() => onToggleStatus?.(user.id)}
+                          >
+                            {user.status === 'active' ? (
+                              <>
+                                <UserMinus className="w-4 h-4" />
+                                <span className="text-sm">{t('inmobiliaria.config.users.deactivate')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="w-4 h-4" />
+                                <span className="text-sm">{t('inmobiliaria.config.users.activate')}</span>
+                              </>
+                            )}
+                          </DropdownListItem>
+
+                          <DropdownListSeparator />
+
+                          {/* Delete */}
+                          <DropdownListItem
+                            className="gap-3 text-danger focus:text-danger"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setDeleteModalOpen(true);
+                            }}
+                          >
+                            <Trash className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
+                          </DropdownListItem>
+                        </DropdownListContent>
+                      </DropdownList>
+                    </TableCell>
                   </motion.tr>
                 );
               })}
             </AnimatePresence>
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         {/* Empty State */}
         {filteredUsers.length === 0 && (
@@ -881,14 +622,6 @@ export function ConfigUsuarios({
         onConfirm={handleDelete}
         isLoading={isLoading}
       />
-
-      {/* Click outside to close menu */}
-      {openMenuId && (
-        <div
-          className="fixed inset-0 z-0"
-          onClick={() => setOpenMenuId(null)}
-        />
-      )}
     </div>
   );
 }

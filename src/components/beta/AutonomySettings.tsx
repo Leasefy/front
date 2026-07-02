@@ -12,6 +12,8 @@ import {
   ArrowCounterClockwise,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { SegmentedControl } from '@leasefy/cadence';
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -171,43 +173,33 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
                 </span>
               </div>
 
-              {/* Segmented control */}
-              <div
-                className={cn(
-                  'flex rounded-md',
-                  'bg-neutral-100 dark:bg-neutral-800/50',
-                  'p-0.5'
-                )}
-              >
-                {AUTONOMY_LEVELS.map((level) => {
+              {/* Segmented control — Cadence SegmentedControl */}
+              <SegmentedControl<AutonomyLevel>
+                fullWidth
+                size="sm"
+                aria-label={t('beta.preferences.autonomy.title')}
+                value={currentLevel}
+                onChange={(level) => handleLevelChange(agentType, level)}
+                options={AUTONOMY_LEVELS.map((level) => {
                   const LevelIcon = LEVEL_ICON_MAP[level.icon];
                   const isActive = currentLevel === level.id;
-
-                  return (
-                    <button
-                      key={level.id}
-                      onClick={() => handleLevelChange(agentType, level.id)}
-                      className={cn(
-                        'flex-1 flex items-center justify-center gap-1.5',
-                        'px-2.5 py-1.5 rounded-sm',
-                        'text-[12px] font-medium',
-                        'transition-all duration-150',
-                        isActive
-                          ? 'bg-primary text-white'
-                          : 'text-muted-foreground hover:text-foreground'
-                      )}
-                    >
-                      {LevelIcon && (
-                        <LevelIcon
-                          className="w-3.5 h-3.5 flex-shrink-0"
-                          weight={isActive ? 'fill' : 'regular'}
-                        />
-                      )}
-                      <span className="whitespace-nowrap">{level.label}</span>
-                    </button>
-                  );
+                  return {
+                    value: level.id,
+                    ariaLabel: level.label,
+                    label: (
+                      <span className="flex items-center justify-center gap-1.5">
+                        {LevelIcon && (
+                          <LevelIcon
+                            className="w-3.5 h-3.5 flex-shrink-0"
+                            weight={isActive ? 'fill' : 'regular'}
+                          />
+                        )}
+                        <span className="whitespace-nowrap">{level.label}</span>
+                      </span>
+                    ),
+                  };
                 })}
-              </div>
+              />
 
               {/* Active level description */}
               {currentLevelMeta && (
@@ -221,18 +213,19 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
       </div>
 
       {/* Reset link */}
-      <button
+      <Button
+        variant="ghost"
+        hideArrow
         onClick={resetPreferences}
         className={cn(
-          'flex items-center gap-1.5',
+          'gap-1.5 h-auto px-1 py-0',
           'text-[12px] text-muted-foreground',
-          'hover:text-foreground transition-colors',
-          'px-1'
+          'hover:text-foreground hover:bg-transparent'
         )}
       >
         <ArrowCounterClockwise className="w-3.5 h-3.5" />
         <span>{t('beta.preferences.autonomy.resetDefault')}</span>
-      </button>
+      </Button>
     </section>
   );
 }

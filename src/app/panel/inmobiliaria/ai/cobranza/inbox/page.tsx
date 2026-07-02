@@ -37,9 +37,8 @@ import { Tray, PhoneCall, Users } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { formatRelativeTime } from '@/lib/format'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Chip, SegmentedControl } from '@leasefy/ui'
+import { Chip, SegmentedControl } from '@leasefy/cadence'
 import {
   InboxItemCard,
   InboxThreadPanel,
@@ -70,7 +69,7 @@ const FILTRO_OPCIONES: { value: GrupoFiltro; label: string }[] = [
 // ── Contenido ────────────────────────────────────────────────────────────────
 
 function InboxContent() {
-  const { t, locale } = useI18n()
+  const { locale } = useI18n()
 
   // FUENTE: endpoint unificado de inbox del agente (GET /cobranza/inbox).
   // FAIL-SOFT: si el backend no está desplegado responde vacío/404 → este hook
@@ -164,18 +163,7 @@ function InboxContent() {
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
-      {/* Header — patrón MigaDePan (cobranza) */}
       <header className="space-y-1">
-        <MigaDePan
-          backHref={BASE}
-          icon={Tray}
-          className="mb-2"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-            { label: 'Inbox de conversaciones' },
-          ]}
-        />
         <h1 className="text-2xl font-semibold tracking-tight text-fg">
           Inbox de conversaciones
         </h1>

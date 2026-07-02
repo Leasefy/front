@@ -16,7 +16,7 @@ export type ArcoStatusBadgeProps = {
 }
 
 const STATUS_COLORS: Record<ArcoStatus, string> = {
-  pending_email_verification: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800',
+  pending_email_verification: 'text-fg-muted bg-surface-muted',
   pending_admin_triage: 'text-warning bg-warning-soft',
   in_progress: 'text-primary bg-primary-soft',
   pending_counsel_review: 'text-warning bg-warning-soft',

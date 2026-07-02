@@ -23,7 +23,6 @@ import {
   ChartBar,
   FloppyDisk,
   ArrowCounterClockwise,
-  CircleNotch,
   X,
   Warning,
 } from '@phosphor-icons/react'
@@ -51,6 +50,17 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Spinner } from '@/components/ui/spinner'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
+import { IconButton } from '@leasefy/cadence'
 import {
   Select,
   SelectContent,
@@ -670,7 +680,7 @@ export default function CobranzaConfiguracionPage() {
             className="flex items-center gap-2 min-h-[44px]"
           >
             {isSimulating ? (
-              <CircleNotch className="h-4 w-4 animate-spin" />
+              <Spinner size="sm" variant="current" />
             ) : (
               <ChartBar className="h-4 w-4" />
             )}
@@ -694,14 +704,14 @@ export default function CobranzaConfiguracionPage() {
                   {t('inmobiliaria.ai.policies.simulator.disclaimer')}
                 </p>
               </div>
-              <button
-                type="button"
+              <IconButton
+                variant="ghost"
+                size="sm"
                 onClick={() => setSimulatorOpen(false)}
                 aria-label={t('inmobiliaria.ai.policies.simulator.dismiss')}
-                className="text-neutral-400 hover:text-neutral-600 text-xs p-1 rounded min-h-[44px] min-w-[44px] flex items-center justify-center"
-              >
-                <X className="h-4 w-4" />
-              </button>
+                className="text-neutral-400 hover:text-neutral-600"
+                icon={<X className="h-4 w-4" />}
+              />
             </div>
 
             {simulatorData && simulatorData.flipped_count === 0 && (
@@ -733,36 +743,30 @@ export default function CobranzaConfiguracionPage() {
 
                 {/* By-stage breakdown table */}
                 <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-700">
-                  <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700 text-sm">
-                    <thead className="bg-neutral-50 dark:bg-neutral-800/50">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('inmobiliaria.ai.policies.simulator.colDecision')}
-                        </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('inmobiliaria.ai.policies.simulator.colCurrent')}
-                        </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('inmobiliaria.ai.policies.simulator.colProposed')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-[#1a1a1c] divide-y divide-neutral-100 dark:divide-neutral-800">
+                  <Table className="min-w-full text-sm">
+                    <TableHeader className="bg-neutral-50 dark:bg-neutral-800/50">
+                      <TableRow>
+                        <TableHead>{t('inmobiliaria.ai.policies.simulator.colDecision')}</TableHead>
+                        <TableHead className="text-right">{t('inmobiliaria.ai.policies.simulator.colCurrent')}</TableHead>
+                        <TableHead className="text-right">{t('inmobiliaria.ai.policies.simulator.colProposed')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="bg-white dark:bg-[#1a1a1c]">
                       {Object.entries(simulatorData.by_stage).map(([stage, count]) => (
-                        <tr key={stage}>
-                          <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300 capitalize">
+                        <TableRow key={stage}>
+                          <TableCell className="px-4 py-2 text-neutral-700 dark:text-neutral-300 capitalize">
                             {stage}
-                          </td>
-                          <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600 dark:text-neutral-400">
+                          </TableCell>
+                          <TableCell className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600 dark:text-neutral-400">
                             —
-                          </td>
-                          <td className="px-4 py-2 text-right font-mono tabular-nums text-danger">
+                          </TableCell>
+                          <TableCell className="px-4 py-2 text-right font-mono tabular-nums text-danger">
                             {count}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
 
                 {/* Recharts BarChart (only when >= 2 stages) */}
@@ -816,34 +820,24 @@ export default function CobranzaConfiguracionPage() {
           {versions.length > 0 && (
             <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
               {/* Versions sorted DESC by versionNumber — hook guarantees DESC order */}
-              <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-                <thead className="bg-neutral-50 dark:bg-neutral-800/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                      {t('inmobiliaria.ai.policies.history.version')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                      {t('inmobiliaria.ai.policies.history.savedBy')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                      {t('inmobiliaria.ai.policies.history.date')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                      {t('inmobiliaria.ai.policies.history.note')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                      {t('inmobiliaria.ai.policies.history.actions')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
+              <Table className="min-w-full">
+                <TableHeader className="bg-neutral-50 dark:bg-neutral-800/50">
+                  <TableRow>
+                    <TableHead>{t('inmobiliaria.ai.policies.history.version')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.policies.history.savedBy')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.policies.history.date')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.policies.history.note')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.policies.history.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {versions.map((version, idx) => {
                     const isActive =
                       activeVersionNumber !== null
                         ? version.versionNumber === activeVersionNumber
                         : idx === 0
                     return (
-                      <tr
+                      <TableRow
                         key={version.id}
                         className={
                           isActive
@@ -851,7 +845,7 @@ export default function CobranzaConfiguracionPage() {
                             : 'bg-white dark:bg-[#1a1a1c]'
                         }
                       >
-                        <td className="px-4 py-3">
+                        <TableCell className="px-4 py-3">
                           <span className="flex items-center gap-2">
                             <span
                               className={`font-mono text-xs ${isActive ? 'font-semibold text-foreground' : 'text-neutral-600 dark:text-neutral-400'}`}
@@ -859,22 +853,22 @@ export default function CobranzaConfiguracionPage() {
                               v{version.versionNumber}
                             </span>
                             {isActive && (
-                              <span className="inline-flex items-center rounded-full bg-success-soft text-success">
+                              <Badge variant="success">
                                 {t('inmobiliaria.ai.policies.history.active')}
-                              </span>
+                              </Badge>
                             )}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300">
                           {version.createdByMemberId}
-                        </td>
-                        <td className="px-4 py-3 text-xs font-mono tabular-nums text-neutral-500">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-xs font-mono tabular-nums text-neutral-500">
                           {new Date(version.createdAt).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-neutral-500 italic">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-sm text-neutral-500 italic">
                           {version.changeDescription ?? '—'}
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           {!isActive && (
                             <Button
                               variant="ghost"
@@ -890,12 +884,12 @@ export default function CobranzaConfiguracionPage() {
                               {t('inmobiliaria.ai.policies.history.restore')}
                             </Button>
                           )}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </section>
@@ -966,7 +960,7 @@ export default function CobranzaConfiguracionPage() {
                 disabled={isSaving}
               >
                 {isSaving ? (
-                  <CircleNotch className="h-4 w-4 animate-spin mr-1" />
+                  <Spinner size="sm" variant="current" className="mr-1" />
                 ) : (
                   <FloppyDisk className="h-4 w-4 mr-1" />
                 )}
@@ -998,7 +992,7 @@ export default function CobranzaConfiguracionPage() {
           </Button>
           <Button
             size="sm"
-            className="min-h-[44px] bg-primary hover:opacity-90 text-white"
+            className="min-h-[44px] bg-primary hover:opacity-90 text-primary-fg"
             disabled={!isDirty || isSaving}
             onClick={() => setSaveDialogOpen(true)}
           >

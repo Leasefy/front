@@ -8,6 +8,14 @@
  */
 
 import { useI18n } from '@/lib/i18n'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
 
 // =============================================================================
 // Types
@@ -79,33 +87,33 @@ export function CarrierSlaBreachWindows({
 
       {!isLoading && breachWindows && breachWindows.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-surface-muted/60">
-              <tr>
-                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+          <Table className="min-w-full divide-y divide-border">
+            <TableHeader className="bg-surface-muted/60">
+              <TableRow>
+                <TableHead className="px-3 py-2 text-left">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.start')}
-                </th>
-                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-left">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.end')}
-                </th>
-                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-right">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.duration')}
-                </th>
-                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-right">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.maxP95')}
-                </th>
-                <th className="px-3 py-2 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-right">
                   {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.cols.maxErrorRate')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border">
               {breachWindows.map((w, idx) => (
-                <tr key={idx} className="hover:bg-surface-muted/50 transition-colors">
-                  <td className="px-3 py-2.5 text-sm text-fg-muted whitespace-nowrap">
+                <TableRow key={idx} className="hover:bg-surface-muted/50 transition-colors">
+                  <TableCell className="px-3 py-2.5 text-sm text-fg-muted whitespace-nowrap">
                     {formatDate(w.startedAt)}
-                  </td>
-                  <td className="px-3 py-2.5 text-sm whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-sm whitespace-nowrap">
                     {w.endedAt ? (
                       <span className="text-fg-muted">{formatDate(w.endedAt)}</span>
                     ) : (
@@ -113,20 +121,20 @@ export function CarrierSlaBreachWindows({
                         {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.breachWindows.ongoing')}
                       </span>
                     )}
-                  </td>
-                  <td className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                     {formatDuration(w.durationMinutes)}
-                  </td>
-                  <td className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                     {w.maxP95LatencyMs}ms
-                  </td>
-                  <td className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-sm text-fg-muted text-right font-mono tabular-nums whitespace-nowrap">
                     {(w.maxErrorRate * 100).toFixed(1)}%
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

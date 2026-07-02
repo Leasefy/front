@@ -23,7 +23,9 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/ui';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { SegmentedControl } from '@leasefy/cadence';
 import {
   AnalyticsDashboard,
 } from '@/components/inmobiliaria';
@@ -176,19 +178,14 @@ function HeroKPICard({
       {/* Trend & Target */}
       <div className="flex items-center justify-between">
         {trend && (
-          <div
-            className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-              trendIsPositive && 'bg-success-soft text-success',
-              trendIsNegative && 'bg-danger-soft text-danger',
-              !trendIsPositive && !trendIsNegative && 'bg-muted text-muted-foreground'
-            )}
+          <Badge
+            variant={trendIsPositive ? 'success' : trendIsNegative ? 'destructive' : 'secondary'}
           >
             {trendIsPositive && <TrendUp className="w-3 h-3" weight="bold" />}
             {trendIsNegative && <TrendDown className="w-3 h-3" weight="bold" />}
             {!trendIsPositive && !trendIsNegative && <Minus className="w-3 h-3" />}
             <span>{trend.percentage > 0 ? '+' : ''}{trend.percentage.toFixed(1)}%</span>
-          </div>
+          </Badge>
         )}
         {target && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -201,14 +198,11 @@ function HeroKPICard({
       {/* Target Progress Bar */}
       {target && (
         <div className="mt-3">
-          <div className={cn('h-1.5 rounded-full overflow-hidden', colors.progressBg)}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(100, (target.current / target.value) * 100)}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className={cn('h-full rounded-full', colors.progress)}
-            />
-          </div>
+          <Progress
+            value={Math.min(100, (target.current / target.value) * 100)}
+            variant={accentColor === 'emerald' ? 'success' : accentColor === 'amber' ? 'warning' : 'default'}
+            size="xs"
+          />
         </div>
       )}
     </motion.button>
@@ -259,13 +253,16 @@ function InsightCard({ type, title, description, action }: InsightProps) {
           <p className="font-medium text-foreground text-sm">{title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
           {action && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={action.onClick}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-4 hover:underline"
+              className="mt-2 h-auto p-0 gap-1 text-xs"
             >
               {action.label}
               <CaretRight className="w-3 h-3" />
-            </button>
+            </Button>
           )}
         </div>
       </div>

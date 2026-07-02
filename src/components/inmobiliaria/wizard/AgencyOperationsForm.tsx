@@ -1,6 +1,7 @@
 'use client';
 
 import { Percent, CalendarBlank, CurrencyDollar } from '@phosphor-icons/react';
+import { Input } from '@/components/ui/input';
 
 export interface AgencyOperationsFormData {
   defaultCommission: number;
@@ -41,31 +42,31 @@ function NumberInput({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+      <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-1.5">
         <span className="flex items-center gap-1.5">
-          {Icon && <Icon className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />}
+          {Icon && <Icon className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />}
           {label}
         </span>
       </label>
       {description && (
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">{description}</p>
+        <p className="text-xs text-fg-muted dark:text-fg-subtle mb-2">{description}</p>
       )}
       <div className="relative">
-        <input
+        <Input
           type="number"
           value={value}
           min={min}
           max={max}
           onChange={handleChange}
-          className="w-full px-4 py-3 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+          className="w-full"
         />
         {suffix && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400 dark:text-neutral-500">
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-fg-subtle dark:text-fg-muted">
             {suffix}
           </span>
         )}
       </div>
-      <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+      <p className="mt-1 text-xs text-fg-subtle dark:text-fg-muted">
         Valor entre {min} y {max}
       </p>
     </div>
@@ -79,7 +80,7 @@ function NumberInput({
 export function AgencyOperationsForm({ data, onChange }: AgencyOperationsFormProps) {
   return (
     <div className="space-y-6">
-      <p className="text-sm text-neutral-500 dark:text-neutral-400">
+      <p className="text-sm text-fg-muted dark:text-fg-subtle">
         Configura los valores por defecto para tu operación. Puedes cambiarlos en cualquier momento desde Configuración.
       </p>
 

@@ -91,7 +91,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
               title={isAvailable ? t(`${NS}.modo.${modo}Hint`) : t(`${NS}.noDisponible`)}
               className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ring-1 transition ${
                 isActive
-                  ? 'bg-primary-soft text-primary ring-primary/30 dark:ring-primary/30 font-medium'
+                  ? 'bg-primary-soft text-primary ring-primary/30 font-medium'
                   : 'bg-muted text-muted-foreground ring-border'
               } ${!isAvailable ? 'opacity-40' : ''}`}
             >
@@ -142,7 +142,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
                 <dt className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      regla.estado === 'activo' ? 'bg-success dark:bg-success' : 'bg-neutral-400'
+                      regla.estado === 'activo' ? 'bg-success' : 'bg-fg-subtle'
                     }`}
                     aria-hidden="true"
                   />

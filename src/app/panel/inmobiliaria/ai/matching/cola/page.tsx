@@ -11,12 +11,10 @@
  */
 
 import { useRouter } from 'next/navigation'
-import { GitMerge } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function MatchingCola() {
@@ -29,15 +27,6 @@ function MatchingCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/matching"
-            icon={GitMerge}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.matching'), href: '/panel/inmobiliaria/ai/matching' },
-              { label: t('inmobiliaria.ai.workspace.pages.matching.colaTitle') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.matching.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.matching.colaDesc')}

@@ -50,12 +50,11 @@ export function PriceMarker({
       aria-label={`Propiedad ${formattedPrice} por mes`}
       className={cn(
         // Base styles - pill shape
-        'px-3 py-1.5 rounded-full text-sm font-medium',
+        'px-3 py-1.5 rounded-full text-sm font-medium font-mono tabular-nums',
         'whitespace-nowrap cursor-pointer',
         // Default colors
         'bg-foreground text-white',
-        // Shadow and transitions
-        ' hover:',
+        // Transitions
         'transition-all duration-200 ease-out',
         // Hover effect
         'hover:scale-110 hover:z-20',

@@ -34,8 +34,9 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@leasefy/cadence';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
-import { getDispersionStatusColor } from '@/lib/types/inmobiliaria';
 import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
@@ -67,13 +68,14 @@ function CopyButton({ text, toastLabel, tooltip }: { text: string; toastLabel: s
   };
 
   return (
-    <button
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={<Copy className="w-4 h-4" />}
       onClick={handleCopy}
-      className="p-1.5 rounded-sm hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+      aria-label={tooltip}
       title={tooltip}
-    >
-      <Copy className="w-4 h-4" />
-    </button>
+    />
   );
 }
 
@@ -112,11 +114,17 @@ function ContactAction({
  */
 function StatusBadge({ status, label }: { status: DispersionStatus; label: string }) {
   const Icon = STATUS_ICONS[status];
+  const STATUS_VARIANT = {
+    pending: 'warning',
+    processing: 'default',
+    completed: 'success',
+    failed: 'destructive',
+  } as const;
   return (
-    <span className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium', getDispersionStatusColor(status))}>
+    <Badge variant={STATUS_VARIANT[status]} className="gap-1.5">
       <Icon className="w-4 h-4" weight="fill" />
       {label}
-    </span>
+    </Badge>
   );
 }
 
@@ -329,7 +337,7 @@ export function DispersionDetail({
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center">
                   <User className="w-6 h-6 text-primary" />
                 </div>
                 <div>
@@ -599,28 +607,13 @@ export function DispersionDetail({
             {/* Process button (primary - right) */}
             {isPending && onProcess && (
               <Button
-                className="flex-1 bg-primary hover:opacity-90 text-white"
+                className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
                 onClick={handleProcess}
                 disabled={isProcessing}
               >
                 {isProcessing ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
+                    <Spinner size="sm" variant="current" />
                     {t('inmobiliaria.dispersiones.detailView.processingAction')}
                   </span>
                 ) : (
@@ -641,22 +634,7 @@ export function DispersionDetail({
               >
                 {isProcessing ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
+                    <Spinner size="sm" variant="current" />
                     {t('inmobiliaria.dispersiones.detailView.retrying')}
                   </span>
                 ) : (
@@ -678,22 +656,7 @@ export function DispersionDetail({
           >
             {isDownloadingPDF ? (
               <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
+                <Spinner size="sm" variant="current" />
                 {t('inmobiliaria.dispersiones.detailView.downloading')}
               </span>
             ) : (

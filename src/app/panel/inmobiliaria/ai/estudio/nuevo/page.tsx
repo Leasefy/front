@@ -22,12 +22,19 @@ import {
   CheckCircle,
   IdentificationCard,
   PaperPlaneTilt,
-  UserPlus,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 
 const NS = 'inmobiliaria.ai.estudio'
@@ -71,11 +78,6 @@ const INITIAL_STATE: FormState = {
   origen: 'lead',
 }
 
-const INPUT_CLASSES =
-  'w-full rounded-md border border-border bg-surface ' +
-  'px-3 py-2 text-sm text-fg placeholder:text-fg-subtle ' +
-  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
-  'focus-visible:border-ring'
 
 const LABEL_CLASSES = 'block text-sm font-medium text-fg mb-1.5'
 
@@ -132,15 +134,6 @@ function EstudioNuevo() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/estudio"
-          icon={UserPlus}
-          crumbs={[
-            { label: tf('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-            { label: tf(`${NS}.overview.title`, 'Estudios de inquilinos'), href: '/panel/inmobiliaria/ai/estudio' },
-            { label: tf(`${NS}.nuevo.title`, 'Crear estudio') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {tf(`${NS}.nuevo.title`, 'Crear estudio')}
         </h1>
@@ -174,80 +167,70 @@ function EstudioNuevo() {
               <label htmlFor="propiedad" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.propiedad`, 'Propiedad')}
               </label>
-              <input
+              <Input
                 id="propiedad"
                 type="text"
                 value={form.propiedad}
                 onChange={(e) => set('propiedad', e.target.value)}
-                placeholder={tf(`${NS}.nuevo.inmueble.propiedadPlaceholder`, 'Apto 502, Torre Norte — Calle 100 #15-20')}
-                className={INPUT_CLASSES}
-              />
+                placeholder={tf(`${NS}.nuevo.inmueble.propiedadPlaceholder`, 'Apto 502, Torre Norte — Calle 100 #15-20')}              />
             </div>
 
             <div>
               <label htmlFor="ciudad" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.ciudad`, 'Ciudad')}
               </label>
-              <input
+              <Input
                 id="ciudad"
                 type="text"
                 value={form.ciudad}
                 onChange={(e) => set('ciudad', e.target.value)}
-                placeholder={tf(`${NS}.nuevo.inmueble.ciudadPlaceholder`, 'Bogotá')}
-                className={INPUT_CLASSES}
-              />
+                placeholder={tf(`${NS}.nuevo.inmueble.ciudadPlaceholder`, 'Bogotá')}              />
             </div>
 
             <div>
               <label htmlFor="fechaInicio" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.fechaInicio`, 'Fecha tentativa de inicio')}
               </label>
-              <input
+              <Input
                 id="fechaInicio"
                 type="date"
                 value={form.fechaInicio}
-                onChange={(e) => set('fechaInicio', e.target.value)}
-                className={INPUT_CLASSES}
-              />
+                onChange={(e) => set('fechaInicio', e.target.value)}              />
             </div>
 
             <div>
               <label htmlFor="canon" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.canon`, 'Canon mensual (COP)')}
               </label>
-              <input
+              <Input
                 id="canon"
                 type="number"
                 inputMode="numeric"
                 min="0"
                 value={form.canon}
                 onChange={(e) => set('canon', e.target.value)}
-                placeholder="2.500.000"
-                className={INPUT_CLASSES}
-              />
+                placeholder="2.500.000"              />
             </div>
 
             <div>
               <label htmlFor="administracion" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.administracion`, 'Administración (COP)')}
               </label>
-              <input
+              <Input
                 id="administracion"
                 type="number"
                 inputMode="numeric"
                 min="0"
                 value={form.administracion}
                 onChange={(e) => set('administracion', e.target.value)}
-                placeholder="350.000"
-                className={INPUT_CLASSES}
-              />
+                placeholder="350.000"              />
             </div>
 
             <div className="sm:col-span-2">
               <label htmlFor="valorTotal" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.valorTotal`, 'Valor total mensual')}
               </label>
-              <input
+              <Input
                 id="valorTotal"
                 type="text"
                 readOnly
@@ -270,28 +253,24 @@ function EstudioNuevo() {
               <label htmlFor="propietario" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.propietario`, 'Propietario')}
               </label>
-              <input
+              <Input
                 id="propietario"
                 type="text"
                 value={form.propietario}
                 onChange={(e) => set('propietario', e.target.value)}
-                placeholder={tf(`${NS}.nuevo.inmueble.propietarioPlaceholder`, 'Nombre del propietario')}
-                className={INPUT_CLASSES}
-              />
+                placeholder={tf(`${NS}.nuevo.inmueble.propietarioPlaceholder`, 'Nombre del propietario')}              />
             </div>
 
             <div>
               <label htmlFor="asesor" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.asesor`, 'Asesor responsable')}
               </label>
-              <input
+              <Input
                 id="asesor"
                 type="text"
                 value={form.asesor}
                 onChange={(e) => set('asesor', e.target.value)}
-                placeholder={tf(`${NS}.nuevo.inmueble.asesorPlaceholder`, 'Nombre del asesor')}
-                className={INPUT_CLASSES}
-              />
+                placeholder={tf(`${NS}.nuevo.inmueble.asesorPlaceholder`, 'Nombre del asesor')}              />
             </div>
           </div>
         </section>
@@ -317,95 +296,93 @@ function EstudioNuevo() {
               <label htmlFor="nombre" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.candidato.nombre`, 'Nombre completo')}
               </label>
-              <input
+              <Input
                 id="nombre"
                 type="text"
                 value={form.nombre}
                 onChange={(e) => set('nombre', e.target.value)}
-                placeholder={tf(`${NS}.nuevo.candidato.nombrePlaceholder`, 'María Fernanda Gómez')}
-                className={INPUT_CLASSES}
-              />
+                placeholder={tf(`${NS}.nuevo.candidato.nombrePlaceholder`, 'María Fernanda Gómez')}              />
             </div>
 
             <div>
               <label htmlFor="documento" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.candidato.documento`, 'Documento')}
               </label>
-              <input
+              <Input
                 id="documento"
                 type="text"
                 inputMode="numeric"
                 value={form.documento}
                 onChange={(e) => set('documento', e.target.value)}
-                placeholder={tf(`${NS}.nuevo.candidato.documentoPlaceholder`, 'C.C. 1.020.304.050')}
-                className={INPUT_CLASSES}
-              />
+                placeholder={tf(`${NS}.nuevo.candidato.documentoPlaceholder`, 'C.C. 1.020.304.050')}              />
             </div>
 
             <div>
               <label htmlFor="celular" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.candidato.celular`, 'Celular')}
               </label>
-              <input
+              <Input
                 id="celular"
                 type="tel"
                 inputMode="tel"
                 value={form.celular}
                 onChange={(e) => set('celular', e.target.value)}
-                placeholder="300 123 4567"
-                className={INPUT_CLASSES}
-              />
+                placeholder="300 123 4567"              />
             </div>
 
             <div>
               <label htmlFor="correo" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.candidato.correo`, 'Correo')}
               </label>
-              <input
+              <Input
                 id="correo"
                 type="email"
                 inputMode="email"
                 value={form.correo}
                 onChange={(e) => set('correo', e.target.value)}
-                placeholder="maria@correo.com"
-                className={INPUT_CLASSES}
-              />
+                placeholder="maria@correo.com"              />
             </div>
 
             <div>
               <label htmlFor="ocupacion" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.candidato.ocupacion`, 'Ocupación')}
               </label>
-              <select
-                id="ocupacion"
+              <Select
                 value={form.ocupacion}
-                onChange={(e) => set('ocupacion', e.target.value as Ocupacion)}
-                className={INPUT_CLASSES}
+                onValueChange={(v) => set('ocupacion', v as Ocupacion)}
               >
-                {ocupacionOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {tf(opt.labelKey, opt.fallback)}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="ocupacion">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ocupacionOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {tf(opt.labelKey, opt.fallback)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
               <label htmlFor="origen" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.candidato.origen`, 'Origen')}
               </label>
-              <select
-                id="origen"
+              <Select
                 value={form.origen}
-                onChange={(e) => set('origen', e.target.value as Origen)}
-                className={INPUT_CLASSES}
+                onValueChange={(v) => set('origen', v as Origen)}
               >
-                {origenOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {tf(opt.labelKey, opt.fallback)}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="origen">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {origenOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {tf(opt.labelKey, opt.fallback)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* ¿Tiene codeudor? — toggle */}
@@ -418,26 +395,11 @@ function EstudioNuevo() {
                   {tf(`${NS}.nuevo.candidato.codeudorHint`, 'Si el candidato aporta un codeudor para respaldar el arriendo.')}
                 </p>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={form.tieneCodeudor}
+              <Switch
+                checked={form.tieneCodeudor}
+                onCheckedChange={(v) => set('tieneCodeudor', v)}
                 aria-label={tf(`${NS}.nuevo.candidato.codeudor`, '¿Tiene codeudor?')}
-                onClick={() => set('tieneCodeudor', !form.tieneCodeudor)}
-                className={
-                  'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ' +
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring ' +
-                  (form.tieneCodeudor ? 'bg-primary' : 'bg-surface-muted border border-border')
-                }
-              >
-                <span
-                  aria-hidden="true"
-                  className={
-                    'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ' +
-                    (form.tieneCodeudor ? 'translate-x-6' : 'translate-x-1')
-                  }
-                />
-              </button>
+              />
             </div>
           </div>
         </section>

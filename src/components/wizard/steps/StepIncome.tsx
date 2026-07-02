@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { CurrencyDollar, Wallet, CreditCard, PiggyBank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
@@ -305,7 +306,7 @@ function CurrencyInput({
       )}>
         $
       </span>
-      <input
+      <Input
         id={id}
         type="text"
         inputMode="numeric"
@@ -314,14 +315,9 @@ function CurrencyInput({
         onChange={onChange}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 rounded-sm',
-          'bg-black/5 text-foreground placeholder:text-muted-foreground',
-          'border border-border',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
-          'transition-colors',
+          'h-12 pr-4',
           icon ? 'pl-16' : 'pl-9',
-          'pr-4',
-          hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
+          hasError && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40'
         )}
       />
     </div>

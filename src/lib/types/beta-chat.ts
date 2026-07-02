@@ -23,6 +23,9 @@ export type AgentType =
   | 'cotizador'
   | 'estudio'
   | 'matching'
+  | 'avaluo'
+  | 'conciliacion'
+  | 'pagos'
   | 'pipeline'
   | 'mantenimiento'
   | 'documentos'
@@ -177,6 +180,20 @@ export interface ActionProposal {
   error?: string;
 }
 
+/**
+ * "Estado de hoy" numeric snapshot the cobranza backend emits at the start of a
+ * turn (SSE `snapshot` event / one-shot `snapshot` field). Rendered as a
+ * `ChatDataCard` glance under the assistant reply. Mirrors the backend's numeric
+ * KPIs (drops `generatedAt`, which is display-irrelevant here).
+ */
+export interface ChatSnapshot {
+  deudoresActivos: number;
+  pagadoHoyCop: number;
+  llamadasHoy: number;
+  escalacionesPendientes: number;
+  enPrejuridico: number;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -196,6 +213,8 @@ export interface ChatMessage {
   responseMeta?: ResponseMeta;
   /** Action proposals (F5) — one or more work items awaiting human confirmation */
   actionProposals?: ActionProposal[];
+  /** "Estado de hoy" KPI snapshot from the backend (rendered as a data card). */
+  snapshot?: ChatSnapshot;
 }
 
 export interface Conversation {
@@ -248,6 +267,9 @@ export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; co
   cotizador:     { label: 'Cotizador',     icon: 'FileText',       color: 'blue' },
   estudio:       { label: 'Estudio',       icon: 'ChartBar',       color: 'purple' },
   matching:      { label: 'Matching',      icon: 'FunnelSimple',   color: 'amber' },
+  avaluo:        { label: 'Avalúos',       icon: 'Scales',         color: 'indigo' },
+  conciliacion:  { label: 'Conciliación',  icon: 'ArrowsLeftRight', color: 'blue' },
+  pagos:         { label: 'Pagos',         icon: 'Bank',           color: 'emerald' },
   pipeline:      { label: 'Pipeline',      icon: 'FunnelSimple',   color: 'blue' },
   mantenimiento: { label: 'Mantenimiento', icon: 'Wrench',         color: 'amber' },
   documentos:    { label: 'Documentos',    icon: 'FileText',       color: 'purple' },

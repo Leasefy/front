@@ -20,6 +20,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -68,7 +69,7 @@ export function MigaDePan({ backHref, crumbs, icon: CrumbIcon, className }: Miga
             aria-hidden="true"
           />
         )}
-        <ol className="flex items-center gap-1.5 min-w-0 text-[11px] font-mono uppercase tracking-wide">
+        <ol className="flex items-center gap-1.5 min-w-0 text-[11px]">
           {crumbs.map((crumb, i) => {
             const isLast = i === crumbs.length - 1
             return (
@@ -83,14 +84,14 @@ export function MigaDePan({ backHref, crumbs, icon: CrumbIcon, className }: Miga
                     href={crumb.href}
                     className="text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors truncate"
                   >
-                    {crumb.label}
+                    <MonoLabel className="text-current tracking-wide">{crumb.label}</MonoLabel>
                   </Link>
                 ) : (
                   <span
                     aria-current={isLast ? 'page' : undefined}
                     className={cn('truncate', isLast ? 'text-foreground' : 'text-muted-foreground')}
                   >
-                    {crumb.label}
+                    <MonoLabel className="text-current tracking-wide">{crumb.label}</MonoLabel>
                   </span>
                 )}
               </li>

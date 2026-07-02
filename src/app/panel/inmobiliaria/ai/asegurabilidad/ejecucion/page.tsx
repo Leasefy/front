@@ -34,7 +34,6 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
@@ -205,19 +204,6 @@ function AsegurabilidadEjecucion() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/asegurabilidad"
-            icon={Lightning}
-            className="mb-2"
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes', 'Agentes'), href: '/panel/inmobiliaria/ai' },
-              {
-                label: t('inmobiliaria.ai.asegurabilidad.title', 'Asegurabilidad'),
-                href: '/panel/inmobiliaria/ai/asegurabilidad',
-              },
-              { label: t(`${NS}.title`, 'Ejecución') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t(`${NS}.title`, 'Ejecución en tiempo real')}
           </h1>

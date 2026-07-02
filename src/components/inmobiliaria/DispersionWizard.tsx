@@ -13,7 +13,6 @@ import {
   CaretRight,
   Check,
   X,
-  SpinnerGap,
   Warning,
   Buildings,
   User,
@@ -23,6 +22,8 @@ import {
   Square,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { toast } from 'sonner';
 import type { Dispersion, Cobro, DispersionItem, DispersionStatus, Propietario, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -444,41 +445,26 @@ export function DispersionWizard({
             </div>
 
             {/* Month Grid */}
-            <div className="grid grid-cols-3 gap-3">
+            <RadioCardGroup
+              className="grid grid-cols-3 gap-3"
+              value={state.month}
+              onValueChange={handleMonthChange}
+            >
               {recentMonths.map((month) => {
-                const isSelected = state.month === month.value;
                 const hasExisting = allDispersiones.some(
                   (d) => d.month === month.value
                 );
 
                 return (
-                  <button
+                  <RadioCard
                     key={month.value}
-                    onClick={() => handleMonthChange(month.value)}
-                    className={cn(
-                      'p-4 rounded-xl border-2 text-left transition-all relative',
-                      isSelected
-                        ? 'border-primary/30 bg-primary-soft'
-                        : 'border-border bg-card hover:border-primary/30'
-                    )}
-                  >
-                    <p
-                      className={cn(
-                        'font-medium capitalize',
-                        isSelected
-                          ? 'text-primary'
-                          : 'text-foreground'
-                      )}
-                    >
-                      {month.label}
-                    </p>
-                    {hasExisting && (
-                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-foreground" />
-                    )}
-                  </button>
+                    value={month.value}
+                    label={<span className="font-medium capitalize">{month.label}</span>}
+                    badge={hasExisting ? <span className="w-2 h-2 rounded-full bg-foreground" /> : undefined}
+                  />
                 );
               })}
-            </div>
+            </RadioCardGroup>
 
             {/* Warning if dispersiones exist */}
             {hasExistingDispersiones && (
@@ -544,7 +530,7 @@ export function DispersionWizard({
                   className="p-4 rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center">
                       <User className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1">
@@ -702,7 +688,7 @@ export function DispersionWizard({
                   className="p-5 rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center">
                       <User className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -756,14 +742,17 @@ export function DispersionWizard({
             {/* Select All Toggle */}
             <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
               <div className="flex items-center gap-3">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  hideArrow
                   onClick={() =>
                     state.selectedForApproval.length ===
                     state.generatedDispersiones.length
                       ? deselectAll()
                       : selectAll()
                   }
-                  className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary dark:hover:text-primary transition-colors"
+                  className="h-auto gap-2 p-0 text-sm font-medium text-foreground hover:bg-transparent hover:text-primary"
                 >
                   {state.selectedForApproval.length ===
                   state.generatedDispersiones.length ? (
@@ -775,7 +764,7 @@ export function DispersionWizard({
                     <Square className="w-5 h-5" />
                   )}
                   Seleccionar todas
-                </button>
+                </Button>
               </div>
               <span className="text-sm text-muted-foreground">
                 {state.selectedForApproval.length} de{' '}
@@ -913,6 +902,8 @@ export function DispersionWizard({
 
             return (
               <div key={step.id} className="flex items-center">
+                {/* allowlist: clickable wizard step-navigator (icon-per-step circle + label-below,
+                    completed/current/upcoming). Cadence Stepper is display-only — can't model this. Native. */}
                 <button
                   onClick={() => status !== 'upcoming' && goToStep(step.id)}
                   disabled={status === 'upcoming'}
@@ -943,8 +934,8 @@ export function DispersionWizard({
                       status === 'current'
                         ? 'text-primary'
                         : status === 'completed'
-                          ? 'text-neutral-900 dark:text-white'
-                          : 'text-neutral-400'
+                          ? 'text-fg dark:text-white'
+                          : 'text-fg-subtle'
                     )}
                   >
                     {step.label}
@@ -969,14 +960,14 @@ export function DispersionWizard({
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">
+            <span className="text-sm font-medium text-fg dark:text-white">
               Paso {currentStep} de 6: {STEPS[currentStep - 1]?.label}
             </span>
-            <span className="text-sm text-neutral-500">
+            <span className="text-sm text-fg-muted">
               {Math.round((currentStep / 6) * 100)}%
             </span>
           </div>
-          <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-primary"
               initial={false}
@@ -988,7 +979,7 @@ export function DispersionWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-card rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-surface dark:bg-card rounded-xl border border-border dark:border-strong overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -1004,38 +995,36 @@ export function DispersionWizard({
         </div>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-muted/20 flex items-center justify-between">
-          <button
+        <div className="px-6 py-4 border-t border-faint dark:border-strong bg-surface-muted dark:bg-muted/20 flex items-center justify-between">
+          <Button
             type="button"
+            variant="ghost"
+            hideArrow
             onClick={handleCancel}
-            className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="text-fg-muted dark:text-fg-subtle"
           >
             Cancelar
-          </button>
+          </Button>
 
           <div className="flex items-center gap-3">
             {currentStep > 1 && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                hideArrow
                 onClick={goToPreviousStep}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
                 <CaretLeft className="w-4 h-4" />
                 Anterior
-              </button>
+              </Button>
             )}
 
             {currentStep < 6 ? (
-              <button
+              <Button
                 type="button"
+                hideArrow
                 onClick={goToNextStep}
                 disabled={!isStepValid}
-                className={cn(
-                  'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all',
-                  isStepValid
-                    ? 'bg-primary text-white hover:opacity-90'
-                    : 'bg-muted text-muted-foreground cursor-not-allowed'
-                )}
               >
                 {currentStep === 4 ? (
                   <>
@@ -1053,31 +1042,24 @@ export function DispersionWizard({
                     <CaretRight className="w-4 h-4" />
                   </>
                 )}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                hideArrow
                 onClick={handleSubmit}
                 disabled={!isStepValid || isSubmitting}
-                className={cn(
-                  'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
-                  isStepValid && !isSubmitting
-                    ? 'bg-primary text-white hover:opacity-90'
-                    : 'bg-muted text-muted-foreground cursor-not-allowed'
-                )}
+                isLoading={isSubmitting}
               >
                 {isSubmitting ? (
-                  <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" />
-                    Procesando...
-                  </>
+                  'Procesando...'
                 ) : (
                   <>
                     <Check className="w-4 h-4" weight="bold" />
                     Confirmar Dispersiones
                   </>
                 )}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -1098,35 +1080,40 @@ export function DispersionWizard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-white dark:bg-card border border-neutral-200 dark:border-neutral-700"
+              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-card border border-border dark:border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
                   <X className="w-5 h-5 text-warning" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-white">
+                  <h3 className="font-semibold text-fg dark:text-white">
                     Cancelar generacion?
                   </h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
                     Se perdera el progreso actual
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-end gap-3">
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  hideArrow
                   onClick={() => setShowCancelDialog(false)}
-                  className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="text-fg-muted dark:text-fg-subtle"
                 >
                   Continuar editando
-                </button>
-                <button
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  hideArrow
                   onClick={confirmCancel}
-                  className="px-4 py-2 rounded-xl bg-danger text-white font-medium hover:bg-danger transition-colors"
                 >
                   Si, cancelar
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>

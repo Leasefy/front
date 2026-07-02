@@ -33,10 +33,10 @@ const tierIcons = {
 
 const tierConfig = {
   none: {
-    iconBg: 'bg-muted',
-    iconColor: 'text-muted-foreground',
-    selectedBg: 'bg-neutral-50 dark:bg-neutral-800/50',
-    selectedBorder: 'border-neutral-300 dark:border-neutral-600',
+    iconBg: 'bg-surface-muted',
+    iconColor: 'text-fg-muted',
+    selectedBg: 'bg-surface-muted dark:bg-ink/50',
+    selectedBorder: 'border-border dark:border-border-strong',
     gradient: '',
   },
   basic: {
@@ -89,10 +89,10 @@ export function InsuranceSelector({
           <Shield className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-foreground">
+          <h3 className="font-semibold text-fg">
             Protección del arriendo
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-fg-muted">
             Protege tu inversión con seguro
           </p>
         </div>
@@ -123,11 +123,11 @@ export function InsuranceSelector({
               className={cn(
                 'relative w-full rounded-xl border text-left transition-all overflow-hidden',
                 isSelected
-                  ? `${config.selectedBorder} ${config.selectedBg} ring-2 ring-offset-2 ring-offset-background`
-                  : 'border-border hover:border-border-strong bg-card',
+                  ? `${config.selectedBorder} ${config.selectedBg} ring-2 ring-offset-2 ring-offset-bg`
+                  : 'border-border hover:border-border-strong bg-surface',
                 isSelected && policy.tier === 'basic' && 'ring-primary/30',
                 isSelected && policy.tier === 'premium' && 'ring-success/30',
-                isSelected && policy.tier === 'none' && 'ring-neutral-300/50 dark:ring-neutral-600/50'
+                isSelected && policy.tier === 'none' && 'ring-border/50 dark:ring-neutral-600/50'
               )}
             >
               {/* Popular/Best Value Badge */}
@@ -161,10 +161,10 @@ export function InsuranceSelector({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground">
+                  <h4 className="font-semibold text-fg">
                     {policy.name}
                   </h4>
-                  <p className="text-sm text-muted-foreground mt-0.5">
+                  <p className="text-sm text-fg-muted mt-0.5">
                     {policy.description}
                   </p>
                 </div>
@@ -175,7 +175,7 @@ export function InsuranceSelector({
                     <p className={cn(
                       'text-lg font-bold',
                       policy.tier === 'none'
-                        ? 'text-neutral-600 dark:text-neutral-300'
+                        ? 'text-fg-muted dark:text-fg-subtle'
                         : policy.tier === 'basic'
                           ? 'text-primary'
                           : 'text-success'
@@ -185,7 +185,7 @@ export function InsuranceSelector({
                         : formatCurrency(calculatedPremium)}
                     </p>
                     {calculatedPremium > 0 && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-fg-muted">
                         {policy.percentageRate}% /mes
                       </p>
                     )}
@@ -198,8 +198,8 @@ export function InsuranceSelector({
                           ? 'bg-primary border-primary/30'
                           : policy.tier === 'premium'
                             ? 'bg-success border-success/30'
-                            : 'bg-neutral-600 border-neutral-600'
-                        : 'border-neutral-300 dark:border-neutral-600'
+                            : 'bg-surface-muted border-border-strong'
+                        : 'border-border dark:border-border-strong'
                     )}
                   >
                     {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
@@ -212,7 +212,7 @@ export function InsuranceSelector({
                 <div className={cn(
                   'border-t px-4 py-3',
                   isSelected
-                    ? 'border-neutral-200/50 dark:border-neutral-700/50 bg-neutral-50/50 dark:bg-neutral-800/30'
+                    ? 'border-border/50 dark:border-border-strong/50 bg-surface-muted/50 dark:bg-ink/30'
                     : 'border-border'
                 )}>
                   <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -231,9 +231,9 @@ export function InsuranceSelector({
                             : 'text-success'
                         )} />
                       </div>
-                      <span className="text-xs text-neutral-600 dark:text-neutral-300">
+                      <span className="text-xs text-fg-muted dark:text-fg-subtle">
                         Daños hasta{' '}
-                        <span className="font-semibold text-foreground">
+                        <span className="font-semibold text-fg">
                           {formatCurrency(policy.coverage.propertyDamage)}
                         </span>
                       </span>
@@ -253,8 +253,8 @@ export function InsuranceSelector({
                             : 'text-success'
                         )} />
                       </div>
-                      <span className="text-xs text-neutral-600 dark:text-neutral-300">
-                        <span className="font-semibold text-foreground">
+                      <span className="text-xs text-fg-muted dark:text-fg-subtle">
+                        <span className="font-semibold text-fg">
                           {policy.coverage.rentDefault} meses
                         </span>{' '}
                         de renta
@@ -276,7 +276,7 @@ export function InsuranceSelector({
                               : 'text-success'
                           )} />
                         </div>
-                        <span className="text-xs text-neutral-600 dark:text-neutral-300">Urgencias 24/7</span>
+                        <span className="text-xs text-fg-muted dark:text-fg-subtle">Urgencias 24/7</span>
                       </div>
                     )}
                     {/* Legal Assistance */}
@@ -285,7 +285,7 @@ export function InsuranceSelector({
                         <div className="w-5 h-5 rounded-sm flex items-center justify-center bg-success-soft">
                           <Scales className="w-3 h-3 text-success" />
                         </div>
-                        <span className="text-xs text-neutral-600 dark:text-neutral-300">Asistencia legal</span>
+                        <span className="text-xs text-fg-muted dark:text-fg-subtle">Asistencia legal</span>
                       </div>
                     )}
                   </div>
@@ -325,7 +325,7 @@ export function InsuranceSelector({
               (feature, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm text-foreground"
+                  className="flex items-start gap-2 text-sm text-fg"
                 >
                   <Check className={cn(
                     'w-4 h-4 mt-0.5 shrink-0',

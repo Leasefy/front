@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   GitMerge,
 } from '@phosphor-icons/react';
+import { MonoLabel, StatusBadge } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
@@ -104,13 +105,9 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">{name}</h1>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success-soft text-success">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-success" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-              </span>
+            <StatusBadge tone="success" pulse>
               {locale === 'es' ? 'Activo' : 'Active'}
-            </span>
+            </StatusBadge>
           </div>
           <p className="text-neutral-500 dark:text-neutral-400 mt-0.5">{description}</p>
         </div>
@@ -262,9 +259,9 @@ export default function AIAgentsPage() {
             <Robot weight="duotone" className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <MonoLabel className="text-[11px] text-neutral-500 dark:text-neutral-400">
               {locale === 'es' ? 'Agentes IA · Equipo' : 'AI Agents · Team'}
-            </span>
+            </MonoLabel>
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
               {locale === 'es' ? 'Equipo de agentes' : 'Agent team'}
             </h1>

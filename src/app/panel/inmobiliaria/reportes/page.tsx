@@ -23,7 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui';
-import { SegmentedControl } from '@leasefy/ui';
+import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
 import {

@@ -125,7 +125,7 @@ export function CobranzaExecKpiGrid({ data, isLoading = false }: CobranzaExecKpi
         data-testid="cobranza-exec-kpi-grid"
       >
         {cells.map(({ label, value, Icon, iconColor }) => (
-          <div key={label} className="rounded-xl border border-border bg-card p-4">
+          <div key={label} className="rounded-[20px] border border-border bg-surface p-6">
             <div className="flex items-center gap-2 mb-2">
               <Icon size={18} className={iconColor} weight="duotone" aria-hidden="true" />
               <p className="text-xs text-fg-muted leading-tight">{label}</p>
@@ -133,7 +133,7 @@ export function CobranzaExecKpiGrid({ data, isLoading = false }: CobranzaExecKpi
             {isLoading && !data ? (
               <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
             ) : (
-              <p className="text-xl font-semibold text-fg mt-1 tabular-nums">{value}</p>
+              <p className="text-xl font-semibold text-fg mt-1 font-mono tabular-nums">{value}</p>
             )}
           </div>
         ))}

@@ -14,6 +14,7 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { Button, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { ResponseMeta, ResponseAction } from '@/lib/types/beta-chat';
@@ -72,15 +73,9 @@ function TypeBadge({ type }: { type: 'informative' | 'actionable' }) {
   const isActionable = type === 'actionable';
 
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
-        'text-[11px] font-medium leading-none',
-        'shrink-0',
-        isActionable
-          ? 'bg-primary-soft text-primary'
-          : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
-      )}
+    <Badge
+      variant={isActionable ? 'default' : 'secondary'}
+      className="gap-1 px-2 py-0.5 text-[11px] font-medium leading-none shrink-0"
     >
       {isActionable && (
         <ArrowRight className="w-2.5 h-2.5" weight="bold" />
@@ -88,40 +83,16 @@ function TypeBadge({ type }: { type: 'informative' | 'actionable' }) {
       {isActionable
         ? t('beta.response.actionable')
         : t('beta.response.informative')}
-    </span>
+    </Badge>
   );
 }
 
 function ActionButton({ action }: { action: ResponseAction }) {
   const ActionIcon = ICON_MAP[action.icon];
-
-  const baseClasses = cn(
-    'inline-flex items-center gap-1.5',
-    'px-3 py-1.5 rounded-md',
-    'text-[13px] font-medium',
-    'transition-all duration-150',
-    'cursor-pointer',
-    'shrink-0'
-  );
-
-  const variantClasses: Record<string, string> = {
-    primary: cn(
-      'bg-primary text-white uppercase tracking-wide font-mono',
-      'hover:opacity-90',
-      ' hover:',
-      'bg-primary dark:hover:opacity-90'
-    ),
-    secondary: cn(
-      'bg-white text-foreground',
-      'border border-neutral-200 dark:border-neutral-700',
-      'hover:bg-neutral-50 dark:hover:bg-neutral-800',
-      'dark:bg-neutral-900 dark:text-neutral-200'
-    ),
-    ghost: cn(
-      'text-muted-foreground',
-      'hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-800'
-    ),
-  };
+  // primary → DS primary pill (drops the old mono-uppercase anti-pattern);
+  // secondary → outline; ghost → ghost.
+  const variant =
+    action.variant === 'primary' ? 'default' : action.variant === 'secondary' ? 'outline' : 'ghost';
 
   const content = (
     <>
@@ -132,22 +103,16 @@ function ActionButton({ action }: { action: ResponseAction }) {
 
   if (action.href) {
     return (
-      <a
-        href={action.href}
-        className={cn(baseClasses, variantClasses[action.variant])}
-      >
-        {content}
-      </a>
+      <Button asChild variant={variant} size="sm" hideArrow className="gap-1.5 rounded-md shrink-0">
+        <a href={action.href}>{content}</a>
+      </Button>
     );
   }
 
   return (
-    <button
-      type="button"
-      className={cn(baseClasses, variantClasses[action.variant])}
-    >
+    <Button type="button" variant={variant} size="sm" hideArrow className="gap-1.5 rounded-md shrink-0">
       {content}
-    </button>
+    </Button>
   );
 }
 

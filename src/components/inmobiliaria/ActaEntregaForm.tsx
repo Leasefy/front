@@ -11,12 +11,12 @@ import {
   CaretLeft,
   CaretRight,
   Check,
-  SpinnerGap,
   FloppyDisk,
   House,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import type {
@@ -287,7 +287,7 @@ export function ActaEntregaForm({
                     className={cn(
                       'w-12 h-12 rounded-full flex items-center justify-center transition-all',
                       status === 'completed'
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-success-fg text-white'
                         : status === 'current'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-surface-muted text-fg-muted'
@@ -319,7 +319,7 @@ export function ActaEntregaForm({
                     className={cn(
                       'flex-1 h-0.5 mx-2',
                       step.id < currentStep
-                        ? 'bg-emerald-600'
+                        ? 'bg-success-fg'
                         : 'bg-border'
                     )}
                   />
@@ -335,7 +335,7 @@ export function ActaEntregaForm({
             <span className="text-sm font-medium text-foreground">
               {t('inmobiliaria.acta.stepProgress', { current: currentStep, total: 6 })}: {t(STEP_KEYS[currentStep - 1]?.labelKey)}
             </span>
-            <span className="text-sm text-neutral-500">
+            <span className="text-sm text-fg-muted">
               {Math.round((currentStep / 6) * 100)}%
             </span>
           </div>
@@ -430,7 +430,7 @@ export function ActaEntregaForm({
                 >
                   {isSubmitting ? (
                     <>
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
+                      <Spinner size="sm" variant="current" />
                       {t('inmobiliaria.acta.creating')}
                     </>
                   ) : (

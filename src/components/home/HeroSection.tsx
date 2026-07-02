@@ -2,7 +2,9 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, SpinnerGap, Sparkle } from "@phosphor-icons/react";
+import { ArrowUp, Sparkle } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { MonoLabel } from "@leasefy/cadence";
 
 const SUGGESTIONS = [
   "2 hab. en Chapinero con parqueadero",
@@ -47,7 +49,7 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative overflow-hidden bg-[#f8f8f8]">
+    <section className="relative overflow-hidden bg-bg">
       {/* Ambient blue glow — atmosphere, not a clickable element (allowed by brand) */}
       <div
         className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 h-[420px] w-[820px] rounded-full opacity-[0.06]"
@@ -59,9 +61,9 @@ export function HeroSection() {
           {/* Eyebrow — brand signature */}
           <span className="inline-flex items-center gap-2 mb-6">
             <span className="inline-block h-1.5 w-1.5 rounded-[2px] bg-primary" />
-            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
+            <MonoLabel className="tracking-[0.08em] text-primary">
               Arriendo inteligente · Colombia
-            </span>
+            </MonoLabel>
           </span>
 
           {/* Headline */}
@@ -95,21 +97,20 @@ export function HeroSection() {
               />
             </div>
             <div className="flex items-center justify-between gap-2 px-1 pt-1">
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-neutral-400 pl-1">
+              <MonoLabel className="text-[10.5px] tracking-[0.06em] text-neutral-400 pl-1">
                 Búsqueda con IA
-              </span>
-              <button
+              </MonoLabel>
+              <Button
+                size="icon"
+                hideArrow
+                isLoading={isSearching}
                 onClick={() => startSearch(query)}
                 disabled={isSearching}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-primary text-white transition-opacity hover:opacity-90 disabled:opacity-50 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
                 aria-label="Buscar"
+                className="h-9 w-9 flex-shrink-0"
               >
-                {isSearching ? (
-                  <SpinnerGap className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowUp className="h-4 w-4" weight="bold" />
-                )}
-              </button>
+                <ArrowUp className="h-4 w-4" weight="bold" />
+              </Button>
             </div>
           </div>
 
@@ -117,27 +118,30 @@ export function HeroSection() {
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 min-h-[34px]">
             {isSearching
               ? THINKING_STEPS.map((step, i) => (
-                  <span
+                  <MonoLabel
                     key={step}
-                    className={`rounded-full border border-neutral-200 bg-white px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.06em] text-neutral-600 transition-all duration-300 ${
+                    className={`rounded-full border border-neutral-200 bg-surface px-3 py-1.5 text-[10.5px] tracking-[0.06em] text-neutral-600 transition-all duration-300 ${
                       i <= searchStep ? "opacity-100" : "opacity-0 pointer-events-none"
                     }`}
                   >
                     {i < searchStep ? "✓ " : i === searchStep ? "● " : ""}
                     {step}
-                  </span>
+                  </MonoLabel>
                 ))
               : SUGGESTIONS.map((s) => (
-                  <button
+                  <Button
                     key={s}
+                    variant="outline"
+                    size="sm"
+                    hideArrow
                     onClick={() => {
                       setQuery(s);
                       startSearch(s);
                     }}
-                    className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-[12.5px] text-neutral-600 transition-colors hover:bg-[rgba(0,0,0,0.04)]"
+                    className="text-[12.5px] text-neutral-600"
                   >
                     {s}
-                  </button>
+                  </Button>
                 ))}
           </div>
 
@@ -145,12 +149,12 @@ export function HeroSection() {
           <div className="mt-12 flex items-center justify-center divide-x divide-neutral-200">
             {STATS.map((s) => (
               <div key={s.label} className="px-6 first:pl-0 last:pr-0">
-                <p className="font-heading text-[24px] font-semibold tabular-nums leading-none text-neutral-900">
+                <p className="font-mono text-[24px] font-semibold tabular-nums leading-none text-neutral-900">
                   {s.value}
                 </p>
-                <p className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[0.06em] text-neutral-400">
+                <MonoLabel className="mt-1.5 block text-[10.5px] tracking-[0.06em] text-neutral-400">
                   {s.label}
-                </p>
+                </MonoLabel>
               </div>
             ))}
           </div>

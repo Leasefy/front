@@ -3,9 +3,10 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { CreditCard, Lock, Check, Buildings, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import { CreditCard, Lock, Check, Buildings, WarningCircle } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui';
 import { getAgencyPlanById } from '@/lib/constants/subscription-plans';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import { formatCurrency } from '@/lib/format';
@@ -75,7 +76,7 @@ function AgencyCheckoutInner() {
   if (loadingPlan) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <SpinnerGap className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Spinner size="md" variant="muted" />
       </div>
     );
   }
@@ -184,7 +185,7 @@ function AgencyCheckoutInner() {
               >
                 {isRedirecting ? (
                   <>
-                    <SpinnerGap className="w-4 h-4 animate-spin mr-2" />
+                    <Spinner size="sm" variant="current" className="mr-2" />
                     Redirigiendo...
                   </>
                 ) : isCustom ? (
@@ -226,7 +227,7 @@ function AgencyCheckoutContent() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <SpinnerGap className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Spinner size="md" variant="muted" />
       </div>
     }>
       <AgencyCheckoutInner />

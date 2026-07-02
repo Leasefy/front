@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tag, X, Check, SpinnerGap } from '@phosphor-icons/react';
+import { Tag, X, Check } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type { PlanId } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
@@ -81,7 +82,7 @@ export function CouponInput({
   if (appliedCoupon) {
     return (
       <div className={cn('', className)}>
-        <div className="flex items-center justify-between bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-sm p-3">
+        <div className="flex items-center justify-between bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-md p-3">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-[#E8F3EC] flex items-center justify-center shrink-0">
               <Check className="w-3.5 h-3.5 text-[#2C7A53]" />
@@ -95,13 +96,13 @@ export function CouponInput({
               </p>
             </div>
           </div>
-          <button
+          <IconButton
+            variant="ghost"
             onClick={handleRemove}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2C7A53] hover:text-[#2C7A53] hover:bg-[#E8F3EC] rounded transition-colors shrink-0"
+            className="min-w-[44px] min-h-[44px] text-success hover:bg-success-soft shrink-0"
             aria-label="Quitar cupón"
-          >
-            <X className="w-4 h-4" />
-          </button>
+            icon={<X className="w-4 h-4" />}
+          />
         </div>
       </div>
     );
@@ -130,7 +131,7 @@ export function CouponInput({
             placeholder="Ingresa tu código"
             className={cn(
               'pl-10',
-              error && 'border-[#C4503B]/30 focus-visible:ring-[#C4503B]'
+              error && 'border-danger/30 focus-visible:ring-danger'
             )}
             disabled={isLoading}
             autoComplete="off"
@@ -143,17 +144,14 @@ export function CouponInput({
           onClick={handleApply}
           disabled={!code.trim() || isLoading}
           variant="outline"
+          isLoading={isLoading}
           className="shrink-0"
         >
-          {isLoading ? (
-            <SpinnerGap className="w-4 h-4 animate-spin" />
-          ) : (
-            'Aplicar'
-          )}
+          Aplicar
         </Button>
       </div>
       {error && (
-        <p className="text-sm text-[#C4503B] mt-2" role="alert">
+        <p className="text-sm text-danger mt-2" role="alert">
           {error}
         </p>
       )}

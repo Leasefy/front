@@ -18,8 +18,17 @@ import { ArrowClockwise, PhoneCall, Warning } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
-import { Chip } from '@leasefy/ui'
+import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
+import { Chip } from '@leasefy/cadence'
 import {
   useCalls,
   type CallOutcomeFilter,
@@ -29,29 +38,31 @@ import {
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
-function outcomeBadgeClasses(outcome: string | null): string {
+function outcomeBadgeVariant(
+  outcome: string | null,
+): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' {
   // Semantic status tints vía tokens del DS (contrato §8)
   switch (outcome) {
     case 'completed':
-      return 'bg-success-soft text-success ring-1 ring-success/30'
+      return 'success'
     case 'no_answer':
     case 'voicemail':
-      return 'bg-muted text-muted-foreground ring-1 ring-border'
+      return 'secondary'
     case 'wrong_party':
     case 'failed':
-      return 'bg-danger-soft text-danger ring-1 ring-danger/30'
+      return 'destructive'
     case 'opt_out':
-      return 'bg-warning-soft text-warning ring-1 ring-warning/30'
+      return 'warning'
     case 'escalated':
-      return 'bg-primary-soft text-primary ring-1 ring-primary/30'
+      return 'default'
     default:
-      return 'bg-muted text-muted-foreground ring-1 ring-border'
+      return 'secondary'
   }
 }
 
-function channelBadgeClasses(_channel: string): string {
-  // Channel is metadata, not a state signal — gray-first per brand contract §2.
-  return 'bg-muted text-muted-foreground ring-1 ring-border'
+// Channel is metadata, not a state signal — gray-first per brand contract §2.
+function channelBadgeVariant(_channel: string): 'secondary' {
+  return 'secondary'
 }
 
 // ── Label maps ────────────────────────────────────────────────────────────────
@@ -158,19 +169,19 @@ function LlamadasContent() {
           <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mt-2" />
         </header>
         <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
+          <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+            <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
               {Array.from({ length: 6 }, (_, i) => (
-                <tr key={`skel-${i}`}>
+                <TableRow key={`skel-${i}`}>
                   {Array.from({ length: 7 }, (_, j) => (
-                    <td key={j} className="px-3 py-3">
+                    <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </main>
     )
@@ -303,46 +314,46 @@ function LlamadasContent() {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+            <TableRow>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.debtor')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.channel')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.outcome')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.duration')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.initiatedAt')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.qaScore')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.llamadas.list.columns.flags')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {calls.length === 0 && !isLoading && (
-              <tr>
-                <td colSpan={7} className="px-3 py-12 text-center">
+              <TableRow>
+                <TableCell colSpan={7} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {isEs
                       ? 'Sin llamadas con los filtros seleccionados.'
                       : 'No calls match the selected filters.'}
                   </p>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
             {calls.map((call) => (
-              <tr
+              <TableRow
                 key={call.id}
                 onClick={() => navigateToCall(call.id)}
                 role="link"
@@ -353,61 +364,51 @@ function LlamadasContent() {
                 className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {/* Debtor (masked) */}
-                <td className="px-3 py-2">
+                <TableCell className="px-3 py-2">
                   <div className="font-medium text-neutral-900 dark:text-white text-sm whitespace-nowrap">
                     {call.debtorNameMasked}
                   </div>
                   <div className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
                     {call.debtorCedulaMasked}
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Channel + direction badges */}
-                <td className="px-3 py-2 whitespace-nowrap">
+                <TableCell className="px-3 py-2 whitespace-nowrap">
                   <div className="flex flex-col gap-1">
-                    <span
-                      className={
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                        channelBadgeClasses(call.channel)
-                      }
-                    >
+                    <Badge variant={channelBadgeVariant(call.channel)}>
                       {CHANNEL_LABELS[call.channel]?.[isEs ? 'es' : 'en'] ?? call.channel}
-                    </span>
+                    </Badge>
                     <span className="inline-flex items-center text-xs text-neutral-400 dark:text-neutral-500">
                       {DIRECTION_LABELS[call.direction]?.[isEs ? 'es' : 'en'] ?? call.direction}
                     </span>
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Outcome badge */}
-                <td className="px-3 py-2">
+                <TableCell className="px-3 py-2">
                   {call.outcome ? (
-                    <span
-                      className={
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                        outcomeBadgeClasses(call.outcome)
-                      }
-                    >
+                    <Badge variant={outcomeBadgeVariant(call.outcome)}>
                       {OUTCOME_LABELS[call.outcome as CallOutcomeFilter]?.[isEs ? 'es' : 'en'] ??
                         call.outcome}
-                    </span>
+                    </Badge>
                   ) : (
                     <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
                   )}
-                </td>
+                </TableCell>
 
                 {/* Duration */}
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
                   {formatDuration(call.durationSeconds, isEs)}
-                </td>
+                </TableCell>
 
                 {/* initiatedAt — relative time */}
-                <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                   {formatRelative(call.initiatedAt, locale)}
-                </td>
+                </TableCell>
 
                 {/* QA score */}
-                <td className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
                   {call.qaScore != null ? (
                     <span
                       className={
@@ -423,10 +424,10 @@ function LlamadasContent() {
                   ) : (
                     <span className="text-neutral-400 dark:text-neutral-500">—</span>
                   )}
-                </td>
+                </TableCell>
 
                 {/* Compliance flags */}
-                <td className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
                   {call.complianceFlagsCount > 0 ? (
                     <span className="inline-flex items-center gap-0.5 text-warning font-medium">
                       <Warning className="w-3 h-3" weight="fill" aria-hidden="true" />
@@ -435,11 +436,11 @@ function LlamadasContent() {
                   ) : (
                     <span className="text-neutral-400 dark:text-neutral-500">0</span>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </main>
   )

@@ -28,16 +28,16 @@ import { relativeTime, type TranslateFn } from './ColaHumana'
  *  (la voz del agente es el momento de marca; purple es off-brand). */
 export const ACTOR_META: Record<ActorType, { cls: string; dot: string }> = {
   user: {
-    cls: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 ring-neutral-300 dark:ring-neutral-700',
-    dot: 'bg-neutral-500 dark:bg-neutral-400',
+    cls: 'bg-surface-muted text-fg-muted ring-border',
+    dot: 'bg-fg-subtle',
   },
   agent: {
-    cls: 'bg-primary-soft text-primary ring-primary/30 dark:ring-primary/30',
-    dot: 'bg-primary dark:bg-primary',
+    cls: 'bg-primary-soft text-primary ring-primary/30',
+    dot: 'bg-primary',
   },
   system: {
     cls: 'bg-muted text-muted-foreground ring-border',
-    dot: 'bg-neutral-400',
+    dot: 'bg-fg-subtle',
   },
 }
 

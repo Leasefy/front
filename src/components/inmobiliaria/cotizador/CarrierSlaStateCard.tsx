@@ -146,7 +146,7 @@ export function CarrierSlaStateCard({
                   ]}
                 />
                 <ReferenceLine y={0.05} stroke="#E0A89E" strokeDasharray="3 3" />
-                <Line type="monotone" dataKey="errorRate" stroke="#C4503B" dot={false} strokeWidth={1.5} />
+                <Line type="monotone" dataKey="errorRate" stroke="#C0392B" dot={false} strokeWidth={1.5} />
               </LineChart>
             </ResponsiveContainer>
           )}

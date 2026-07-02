@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
+import { SegmentedControl } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -55,6 +56,10 @@ export interface PlanHeaderProps {
   className?: string;
   /** For tenant dashboards - pass subscription type */
   tenantSubscription?: TenantSubscriptionTextT;
+  /** Optional element rendered in the empty left zone (e.g. a contextual
+   *  breadcrumb). Sits after the mobile-menu trigger and before the right
+   *  cluster. Self-hides when omitted. */
+  leftSlot?: React.ReactNode;
 }
 
 // Get category label for notification popover
@@ -75,6 +80,7 @@ export function PlanHeader({
   actions,
   className,
   tenantSubscription,
+  leftSlot,
 }: PlanHeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -90,7 +96,7 @@ export function PlanHeader({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [teamInviteOpen, setTeamInviteOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
+  const [activeTab, setNotifTab] = useState<'all' | 'unread'>('all');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteEmailError, setInviteEmailError] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
@@ -271,7 +277,7 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-white dark:bg-card border-b border-neutral-200 dark:border-border', className)}>
+    <header className={cn('sticky top-0 z-30 bg-bg border-b border-neutral-200 dark:border-border', className)}>
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Left: mobile menu trigger + MagnifyingGlass */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -284,6 +290,10 @@ export function PlanHeader({
           >
             <List className="w-5 h-5" />
           </button>
+
+        {/* Contextual left slot (e.g. agent breadcrumb). Truncates so it never
+            pushes the right-side cluster off-screen. */}
+        {leftSlot && <div className="min-w-0 flex-1 truncate">{leftSlot}</div>}
 
         {showMagnifyingGlass && (
           <div
@@ -845,33 +855,41 @@ export function PlanHeader({
                 </button>
               </div>
 
-              {/* Tabs */}
-              <div className="flex items-center gap-1.5 px-5 py-3 border-b border-neutral-100 dark:border-white/10">
-                {(['all', 'unread'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={cn(
-                      'px-3 py-1.5 text-[12px] font-medium rounded-full transition-colors',
-                      activeTab === tab
-                        ? 'bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-white'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/5'
-                    )}
-                  >
-                    {tab === 'all' && (locale === 'es' ? 'Todas' : 'All')}
-                    {tab === 'unread' && (locale === 'es' ? 'Sin leer' : 'Unread')}
-                    {tab === 'all' && notifications.length > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
-                        {notifications.length}
-                      </span>
-                    )}
-                    {tab === 'unread' && unreadCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
-                ))}
+              {/* Tabs — Cadence SegmentedControl */}
+              <div className="px-5 py-3 border-b border-neutral-100 dark:border-white/10">
+                <SegmentedControl
+                  value={activeTab}
+                  onChange={setNotifTab}
+                  aria-label={locale === 'es' ? 'Filtrar notificaciones' : 'Filter notifications'}
+                  options={[
+                    {
+                      value: 'all',
+                      label: (
+                        <span className="inline-flex items-center">
+                          {locale === 'es' ? 'Todas' : 'All'}
+                          {notifications.length > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
+                              {notifications.length}
+                            </span>
+                          )}
+                        </span>
+                      ),
+                    },
+                    {
+                      value: 'unread',
+                      label: (
+                        <span className="inline-flex items-center">
+                          {locale === 'es' ? 'Sin leer' : 'Unread'}
+                          {unreadCount > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </span>
+                      ),
+                    },
+                  ]}
+                />
               </div>
 
               {/* Notifications List */}
@@ -908,7 +926,7 @@ export function PlanHeader({
                     <div
                       className={cn(
                         'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0 cursor-pointer',
-                        !notification.read ? 'bg-primary text-white uppercase tracking-wide font-mono' : 'bg-muted text-plan-secondary'
+                        !notification.read ? 'bg-primary text-primary-fg uppercase tracking-wide font-mono' : 'bg-muted text-plan-secondary'
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >

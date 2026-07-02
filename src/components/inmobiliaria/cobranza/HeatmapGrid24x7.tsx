@@ -57,7 +57,7 @@ const HOURS_LABELS: string[] = Array.from({ length: 24 }, (_, h) =>
 // into a single HSL color. Zero calls → neutral grey.
 
 function cellBgColor(count: number, positiveRate: number, max: number): string {
-  if (count === 0) return '#e5e7eb'; // neutral-200
+  if (count === 0) return '#E5E2DC'; // neutral-200 (Cadence warm)
   const intensity = Math.min(1, count / Math.max(1, max));
   const hue = 230; // brand electric-blue hue (#1A40FF ≈ hsl(230 100% 55%))
   const saturation = 30 + positiveRate * 55;
@@ -124,7 +124,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
 
   return (
     <div role="region" aria-label={regionTitle}>
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+      <p className="text-xs font-medium text-fg-subtle mb-2">
         {regionTitle}
       </p>
       {/* Single focusable scroll wrapper — the 168 cells are NOT in the tab
@@ -140,13 +140,13 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
           style={{ gridTemplateColumns: 'auto repeat(24, minmax(18px, 1fr))' }}
         >
           {/* Row 0: header — empty corner + 24 hour labels */}
-          <div className="text-[9px] text-neutral-400" aria-hidden="true" />
+          <div className="text-[9px] text-fg-subtle" aria-hidden="true" />
           {HOURS_LABELS.map((label, h) => (
             <div
               key={`h-${h}`}
               role="columnheader"
               aria-label={label ? `${label}:00` : undefined}
-              className="text-center text-[9px] text-neutral-400 pb-0.5"
+              className="text-center text-[9px] text-fg-subtle pb-0.5"
             >
               {label}
             </div>
@@ -158,7 +158,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
               {/* Day label */}
               <div
                 role="rowheader"
-                className="pr-1.5 text-[10px] text-neutral-500 flex items-center"
+                className="pr-1.5 text-[10px] text-fg-subtle flex items-center"
               >
                 {dayLabels[d]}
               </div>
@@ -197,7 +197,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
       {/* Selected-cell summary line (tap-to-inspect) */}
       <p
         aria-live="polite"
-        className="text-xs text-neutral-600 dark:text-neutral-300 mt-1.5 min-h-4"
+        className="text-xs text-fg-muted mt-1.5 min-h-4"
       >
         {selectedCell
           ? describeCell(selectedCell)
@@ -205,7 +205,7 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
             ? 'Toca una celda para ver el detalle'
             : 'Tap a cell to see details'}
       </p>
-      <p className="text-[10px] text-neutral-400 mt-1">
+      <p className="text-[10px] text-fg-subtle mt-1">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.heatmap.legend')}
       </p>
     </div>

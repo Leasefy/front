@@ -203,8 +203,7 @@ export default async function BlogArticlePage({ params }: Props) {
                   <Link
                     key={r.slug}
                     href={r.href}
-                    className="group block overflow-hidden"
-                    style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                    className="group block overflow-hidden border border-faint"
                   >
                     <div className="relative h-[200px] overflow-hidden">
                       <Image

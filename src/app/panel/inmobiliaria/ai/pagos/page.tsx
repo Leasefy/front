@@ -39,13 +39,11 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
-import { Button, Card, EmptyState } from '@/components/ui'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Button, Card, EmptyState, Badge } from '@/components/ui'
 import { PrioridadInbox } from '@/components/inmobiliaria/pagos/PrioridadInbox'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import type { OverviewFeedEntry } from '@/lib/api/agent-workspace'
-import { useI18n } from '@/lib/i18n'
 
 // ── Formateadores ──────────────────────────────────────────────────────────
 
@@ -149,32 +147,31 @@ const OPERACIONES_PROFUNDAS: { label: string; detalle: string; href: string; ico
 function FeedActorChip({ actorType }: { actorType: OverviewFeedEntry['actorType'] }) {
   if (actorType === 'agent') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary-soft text-primary shrink-0">
+      <Badge variant="default" className="shrink-0">
         <Robot className="w-3 h-3" weight="duotone" aria-hidden="true" />
         Agente
-      </span>
+      </Badge>
     )
   }
   if (actorType === 'user') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-surface-muted text-fg-muted shrink-0">
+      <Badge variant="secondary" className="shrink-0">
         <UserIcon className="w-3 h-3" weight="duotone" aria-hidden="true" />
         Tú
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-surface-muted text-fg-muted shrink-0">
+    <Badge variant="secondary" className="shrink-0">
       <Gear className="w-3 h-3" weight="duotone" aria-hidden="true" />
       Sistema
-    </span>
+    </Badge>
   )
 }
 
 // ── Página ──────────────────────────────────────────────────────────────────
 
 function PagosHome() {
-  const { t } = useI18n()
   const { data, isLoading: ovLoading, error: ovError } = useAgentOverview('pagos')
   const { items, isLoading: wiLoading, error: wiError, runAction } = useAgentWorkItems('pagos')
 
@@ -199,14 +196,6 @@ function PagosHome() {
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai"
-            icon={CurrencyDollar}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: 'Pagos IA' },
-            ]}
-          />
           <h1 className="text-2xl font-semibold tracking-tight text-fg">Pagos IA</h1>
           <p className="text-sm text-fg-muted max-w-2xl">
             Gestiona cobros, links de pago, recordatorios, pagos fallidos y liquidaciones desde un

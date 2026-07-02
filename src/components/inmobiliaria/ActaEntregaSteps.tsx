@@ -15,6 +15,17 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IconButton, Chip, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
   ActaInventoryItem,
@@ -103,35 +114,24 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
         <label className="text-sm font-medium text-foreground">
           {t('inmobiliaria.acta.actaType')}
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <RadioCardGroup
+          value={formData.type}
+          onValueChange={(value) => updateFormData({ type: value as ActaType })}
+          className="grid grid-cols-2"
+        >
           {(['entrega', 'devolucion'] as ActaType[]).map((type) => (
-            <button
+            <RadioCard
               key={type}
-              type="button"
-              onClick={() => updateFormData({ type })}
-              className={cn(
-                'p-4 rounded-xl border text-left transition-all',
-                formData.type === type
-                  ? 'border-primary/40 bg-primary-soft'
-                  : 'border-border hover:border-fg-muted/40 hover:bg-surface-hover'
-              )}
-            >
-              <span className={cn(
-                'text-sm font-medium',
-                formData.type === type
-                  ? 'text-primary'
-                  : 'text-foreground'
-              )}>
-                {getActaTypeLabel(type)}
-              </span>
-              <p className="text-xs text-muted-foreground mt-1">
-                {type === 'entrega'
+              value={type}
+              label={getActaTypeLabel(type)}
+              description={
+                type === 'entrega'
                   ? t('inmobiliaria.acta.typeEntregaDesc')
-                  : t('inmobiliaria.acta.typeDevolucionDesc')}
-              </p>
-            </button>
+                  : t('inmobiliaria.acta.typeDevolucionDesc')
+              }
+            />
           ))}
-        </div>
+        </RadioCardGroup>
       </div>
 
       {/* Property Selection */}
@@ -139,18 +139,21 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
         <label className="text-sm font-medium text-foreground">
           {t('inmobiliaria.acta.property')}
         </label>
-        <select
-          value={formData.consignacionId}
-          onChange={(e) => updateFormData({ consignacionId: e.target.value })}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40"
+        <Select
+          value={formData.consignacionId || undefined}
+          onValueChange={(value) => updateFormData({ consignacionId: value })}
         >
-          <option value="">{t('inmobiliaria.acta.selectProperty')}</option>
-          {consignaciones.map((consignacion) => (
-            <option key={consignacion.id} value={consignacion.id}>
-              {consignacion.propertyTitle} - {consignacion.propertyAddress}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t('inmobiliaria.acta.selectProperty')} />
+          </SelectTrigger>
+          <SelectContent>
+            {consignaciones.map((consignacion) => (
+              <SelectItem key={consignacion.id} value={consignacion.id}>
+                {consignacion.propertyTitle} - {consignacion.propertyAddress}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Selected Property Info */}
@@ -188,22 +191,22 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
           <label className="text-sm font-medium text-foreground">
             {formData.type === 'entrega' ? t('inmobiliaria.acta.deliveryDate') : t('inmobiliaria.acta.returnDate')}
           </label>
-          <input
+          <Input
             type="date"
             value={formData.deliveryDate}
             onChange={(e) => updateFormData({ deliveryDate: e.target.value })}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40"
+            className="w-full"
           />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
             {t('inmobiliaria.acta.time')}
           </label>
-          <input
+          <Input
             type="time"
             value={formData.deliveryTime}
             onChange={(e) => updateFormData({ deliveryTime: e.target.value })}
-            className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40"
+            className="w-full"
           />
         </div>
       </div>
@@ -251,36 +254,20 @@ export function StepRoomSelection({ formData, updateFormData, t }: StepProps) {
         </Button>
       </div>
 
-      {/* Room Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {/* Room Grid (multi-select) */}
+      <div className="flex flex-wrap gap-2">
         {ALL_ROOM_TYPES.map((room) => {
           const isSelected = formData.rooms.includes(room);
           return (
-            <button
+            <Chip
               key={room}
               type="button"
+              selected={isSelected}
               onClick={() => toggleRoom(room)}
-              className={cn(
-                'p-4 rounded-xl border text-left transition-all',
-                isSelected
-                  ? 'border-primary/40 bg-primary-soft'
-                  : 'border-border hover:border-fg-muted/40 hover:bg-surface-hover'
-              )}
+              icon={isSelected ? <CheckCircle className="w-4 h-4" weight="fill" /> : undefined}
             >
-              <div className="flex items-center justify-between">
-                <span className={cn(
-                  'text-sm font-medium',
-                  isSelected
-                    ? 'text-primary'
-                    : 'text-foreground'
-                )}>
-                  {getRoomLabel(room)}
-                </span>
-                {isSelected && (
-                  <CheckCircle className="w-4 h-4 text-primary" weight="fill" />
-                )}
-              </div>
-            </button>
+              {getRoomLabel(room)}
+            </Chip>
           );
         })}
       </div>
@@ -406,33 +393,26 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
         </p>
       </div>
 
-      {/* Room Tabs */}
+      {/* Room Tabs (single active room switcher) */}
       <div className="flex gap-2 overflow-x-auto pb-2">
         {formData.rooms.map((room) => {
           const progress = getRoomProgress(room);
           const isActive = activeRoom === room;
           return (
-            <button
+            <Chip
               key={room}
               type="button"
+              selected={isActive}
               onClick={() => handleRoomSwitch(room)}
-              className={cn(
-                'flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-primary-soft text-primary'
-                  : 'bg-surface border border-border text-fg-muted hover:bg-surface-hover hover:text-fg'
-              )}
+              className="flex-shrink-0"
             >
               {getRoomLabel(room)}
               {progress.total > 0 && (
-                <span className={cn(
-                  'ml-2 px-1.5 py-0.5 rounded text-xs',
-                  isActive ? 'bg-primary/15 text-primary' : 'bg-muted'
-                )}>
+                <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-black/5 dark:bg-white/10">
                   {progress.total}
                 </span>
               )}
-            </button>
+            </Chip>
           );
         })}
       </div>
@@ -453,62 +433,61 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0 space-y-3">
                     {/* Item Name */}
-                    <input
+                    <Input
                       type="text"
                       value={item.name}
                       onChange={(e) => updateItemName(item.id, e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40"
+                      className="w-full h-9 px-3 text-sm"
                     />
 
-                    {/* Condition Selector */}
+                    {/* Condition Selector (single-select; selected tone via getConditionColor) */}
                     <div className="flex flex-wrap gap-1.5">
                       {ALL_ITEM_CONDITIONS.map((condition) => (
-                        <button
+                        <Chip
                           key={condition}
                           type="button"
+                          selected={item.condition === condition}
                           onClick={() => updateItemCondition(item.id, condition)}
-                          className={cn(
-                            'px-2.5 py-1 rounded-md text-xs font-medium transition-all',
-                            item.condition === condition
-                              ? getConditionColor(condition)
-                              : 'bg-muted text-muted-foreground hover:bg-muted'
-                          )}
+                          className={item.condition === condition ? getConditionColor(condition) : undefined}
                         >
                           {getConditionLabel(condition)}
-                        </button>
+                        </Chip>
                       ))}
                     </div>
 
                     {/* Defect Description */}
                     {item.hasDefects && (
-                      <input
+                      <Input
                         type="text"
                         placeholder={t('inmobiliaria.acta.defectPlaceholder')}
                         value={item.defectDescription || ''}
                         onChange={(e) => updateItemDefect(item.id, e.target.value)}
-                        className="w-full px-3 py-2 rounded-md border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 text-foreground text-sm placeholder:text-amber-700/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        className="w-full h-9 px-3 text-sm border-warning/40 bg-warning-soft/40"
                       />
                     )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex flex-col gap-1">
-                    <button
+                    <IconButton
                       type="button"
-                      className="p-2 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-muted transition-colors opacity-50 cursor-not-allowed"
-                      title={t('inmobiliaria.acta.addPhotoSoon')}
+                      variant="ghost"
+                      size="sm"
                       disabled
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
-                    <button
+                      title={t('inmobiliaria.acta.addPhotoSoon')}
+                      aria-label={t('inmobiliaria.acta.addPhotoSoon')}
+                      icon={<Camera className="w-4 h-4" />}
+                    />
+                    <IconButton
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => deleteItem(item.id)}
-                      className="p-2 rounded-md text-neutral-400 hover:text-danger hover:bg-danger-soft/50 transition-colors"
                       title={t('inmobiliaria.acta.deleteItem')}
-                    >
-                      <Trash className="w-4 h-4" />
-                    </button>
+                      aria-label={t('inmobiliaria.acta.deleteItem')}
+                      icon={<Trash className="w-4 h-4" />}
+                      className="text-fg-subtle hover:text-danger hover:bg-danger-soft/50"
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -516,14 +495,16 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
           </AnimatePresence>
 
           {/* Add Item Button */}
-          <button
+          <Button
             type="button"
+            variant="outline"
+            hideArrow
             onClick={() => addCustomItem(activeRoom)}
-            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-border text-fg-muted hover:border-primary/40 hover:text-primary transition-colors"
+            className="w-full border-dashed text-fg-muted hover:text-primary"
           >
             <Plus className="w-4 h-4" />
             {t('inmobiliaria.acta.addItem')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -611,12 +592,12 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
               </span>
               {t('inmobiliaria.acta.waterMeter')}
             </label>
-            <input
+            <Input
               type="text"
               value={getMeterValue('agua')}
               onChange={(e) => updateMeterReading('agua', e.target.value)}
               placeholder="00000"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40 font-mono"
+              className="w-full font-mono"
             />
           </div>
 
@@ -628,12 +609,12 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
               </span>
               {t('inmobiliaria.acta.electricityMeter')}
             </label>
-            <input
+            <Input
               type="text"
               value={getMeterValue('luz')}
               onChange={(e) => updateMeterReading('luz', e.target.value)}
               placeholder="00000"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40 font-mono"
+              className="w-full font-mono"
             />
           </div>
 
@@ -645,12 +626,12 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
               </span>
               {t('inmobiliaria.acta.gasMeter')}
             </label>
-            <input
+            <Input
               type="text"
               value={getMeterValue('gas')}
               onChange={(e) => updateMeterReading('gas', e.target.value)}
               placeholder="00000"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40 font-mono"
+              className="w-full font-mono"
             />
           </div>
         </div>
@@ -680,34 +661,36 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
               key={index}
               className="flex items-center gap-3 p-4 rounded-xl bg-surface-muted border border-border"
             >
-              <Key className="w-5 h-5 text-neutral-400 flex-shrink-0" />
-              <input
+              <Key className="w-5 h-5 text-fg-subtle flex-shrink-0" />
+              <Input
                 type="text"
                 value={key.type}
                 onChange={(e) => updateKey(index, { type: e.target.value })}
                 placeholder={t('inmobiliaria.acta.keyTypePlaceholder')}
-                className="flex-1 px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+                className="flex-1 h-9 px-3 text-sm"
               />
-              <input
+              <Input
                 type="number"
                 min={1}
                 value={key.quantity}
                 onChange={(e) => updateKey(index, { quantity: parseInt(e.target.value) || 1 })}
-                className="w-20 px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring/20"
+                className="w-20 h-9 px-3 text-sm text-center"
               />
-              <button
+              <IconButton
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => deleteKey(index)}
-                className="p-2 rounded-md text-neutral-400 hover:text-danger hover:bg-danger-soft/50 transition-colors"
-              >
-                <Trash className="w-4 h-4" />
-              </button>
+                aria-label={t('inmobiliaria.acta.deleteItem')}
+                icon={<Trash className="w-4 h-4" />}
+                className="text-fg-subtle hover:text-danger hover:bg-danger-soft/50"
+              />
             </div>
           ))}
 
           {formData.keysDelivered.length === 0 && (
             <div className="p-6 rounded-xl bg-surface-muted border border-dashed border-border text-center">
-              <Key className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+              <Key className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
               <p className="text-muted-foreground text-sm">
                 {t('inmobiliaria.acta.noKeysRegistered')}
               </p>
@@ -740,21 +723,17 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
         <label className="text-sm font-medium text-foreground">
           {t('inmobiliaria.acta.generalCondition')}
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="flex flex-wrap gap-2">
           {ALL_ITEM_CONDITIONS.filter((c) => c !== 'no_aplica').map((condition) => (
-            <button
+            <Chip
               key={condition}
               type="button"
+              selected={formData.generalCondition === condition}
               onClick={() => updateFormData({ generalCondition: condition })}
-              className={cn(
-                'p-3 rounded-xl text-center transition-all',
-                formData.generalCondition === condition
-                  ? getConditionColor(condition) + ' ring-2 ring-offset-2 ring-neutral-900 dark:ring-neutral-100'
-                  : 'bg-muted text-muted-foreground hover:bg-muted'
-              )}
+              className={formData.generalCondition === condition ? getConditionColor(condition) : undefined}
             >
-              <span className="text-sm font-medium">{getConditionLabel(condition)}</span>
-            </button>
+              {getConditionLabel(condition)}
+            </Chip>
           ))}
         </div>
       </div>
@@ -764,12 +743,12 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
         <label className="text-sm font-medium text-foreground">
           {t('inmobiliaria.acta.observations')}
         </label>
-        <textarea
+        <Textarea
           value={formData.generalObservations}
           onChange={(e) => updateFormData({ generalObservations: e.target.value })}
           rows={6}
           placeholder={t('inmobiliaria.acta.observationsPlaceholder')}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40 resize-none"
+          className="w-full resize-none"
         />
         <p className="text-xs text-muted-foreground text-right">
           {formData.generalObservations.length} {t('inmobiliaria.acta.characters')}
@@ -788,8 +767,8 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
               {t('inmobiliaria.acta.depositAmount')}
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">$</span>
-              <input
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-muted">$</span>
+              <Input
                 type="text"
                 value={formData.depositAmount?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') || ''}
                 onChange={(e) => {
@@ -797,7 +776,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                   updateFormData({ depositAmount: value });
                 }}
                 placeholder="0"
-                className="w-full pl-8 pr-4 py-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/40"
+                className="w-full pl-8"
               />
             </div>
           </div>
@@ -808,23 +787,26 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
               <label className="text-sm font-medium text-foreground">
                 {t('inmobiliaria.acta.deductions')}
               </label>
-              <button
+              <Button
                 type="button"
+                variant="link"
+                size="sm"
+                hideArrow
                 onClick={() => {
                   const current = formData.deductions || [];
                   updateFormData({
                     deductions: [...current, { concept: '', amount: 0 }],
                   });
                 }}
-                className="text-xs font-medium text-primary hover:underline"
+                className="h-auto p-0 text-xs"
               >
                 + {t('inmobiliaria.acta.addDeduction')}
-              </button>
+              </Button>
             </div>
 
             {(formData.deductions || []).map((deduction, index) => (
               <div key={index} className="flex items-center gap-2">
-                <input
+                <Input
                   type="text"
                   value={deduction.concept}
                   onChange={(e) => {
@@ -833,11 +815,11 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                     updateFormData({ deductions: newDeductions });
                   }}
                   placeholder={t('inmobiliaria.acta.concept')}
-                  className="flex-1 px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+                  className="flex-1 h-9 px-3 text-sm"
                 />
                 <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">$</span>
-                  <input
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-fg-muted text-sm">$</span>
+                  <Input
                     type="text"
                     value={deduction.amount.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
                     onChange={(e) => {
@@ -845,19 +827,21 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                       newDeductions[index].amount = parseInt(e.target.value.replace(/\D/g, '')) || 0;
                       updateFormData({ deductions: newDeductions });
                     }}
-                    className="w-28 pl-6 pr-2 py-2 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+                    className="w-28 h-9 pl-6 pr-2 text-sm"
                   />
                 </div>
-                <button
+                <IconButton
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     const newDeductions = formData.deductions?.filter((_, i) => i !== index);
                     updateFormData({ deductions: newDeductions });
                   }}
-                  className="p-2 text-neutral-400 hover:text-danger"
-                >
-                  <Trash className="w-4 h-4" />
-                </button>
+                  aria-label={t('inmobiliaria.acta.deleteItem')}
+                  icon={<Trash className="w-4 h-4" />}
+                  className="text-fg-subtle hover:text-danger"
+                />
               </div>
             ))}
 
@@ -953,7 +937,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
                 'px-3 py-1.5 rounded-md text-xs font-medium',
                 count > 0
                   ? getConditionColor(condition as ItemCondition)
-                  : 'bg-muted text-neutral-400'
+                  : 'bg-muted text-fg-subtle'
               )}
             >
               {getConditionLabel(condition as ItemCondition)}: {count}
@@ -995,7 +979,7 @@ export function StepSignatures({ formData, updateFormData, selectedConsignacion,
                 key={party}
                 className="p-4 rounded-xl border-2 border-dashed border-border text-center"
               >
-                <Signature className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+                <Signature className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
                 <p className="text-sm font-medium text-foreground">
                   {partyLabels[party]}
                 </p>

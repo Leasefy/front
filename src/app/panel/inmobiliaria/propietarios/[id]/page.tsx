@@ -37,7 +37,8 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/ui';
+import { Textarea } from '@/components/ui/textarea';
+import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import {
   PropietarioStats,
   PropietarioBankInfo,
@@ -122,13 +123,13 @@ function Modal({
             <h3 className="text-base font-semibold text-foreground">
               {title}
             </h3>
-            <button
+            <IconButton
+              variant="ghost"
+              size="sm"
               onClick={onClose}
               aria-label="Cerrar"
-              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+              icon={<X className="w-4 h-4" />}
+            />
           </div>
           <div className="flex-1 overflow-y-auto overscroll-contain p-6">{children}</div>
         </div>
@@ -305,7 +306,7 @@ function PropietarioDetailContent() {
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
-  const [activeTab, setActiveTab] = useState<'properties' | 'payments' | 'notes'>('properties');
+  const [activeTab, setTab] = useState<'properties' | 'payments' | 'notes'>('properties');
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
@@ -399,12 +400,15 @@ function PropietarioDetailContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <button
+        <Button
+          variant="link"
+          size="sm"
+          hideArrow
           onClick={() => router.push('/panel/inmobiliaria/propietarios')}
-          className="hover:text-foreground transition-colors"
+          className="h-auto p-0 text-xs font-normal text-muted-foreground hover:text-foreground"
         >
           {t('inmobiliaria.propietarios.title')}
-        </button>
+        </Button>
         <CaretRight className="w-3 h-3" />
         <span className="text-foreground">{propietario.name}</span>
       </div>
@@ -474,25 +478,38 @@ function PropietarioDetailContent() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card z-10"
                 >
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-foreground hover:bg-muted transition-colors">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
+                    className="w-full justify-start gap-3 px-3 font-normal text-foreground"
+                  >
                     <FileText className="w-4 h-4" />
                     <span>{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-foreground hover:bg-muted transition-colors">
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
+                    className="w-full justify-start gap-3 px-3 font-normal text-foreground"
+                  >
                     <Download className="w-4 h-4" />
                     <span>{t('inmobiliaria.propietarios.detail.exportData')}</span>
-                  </button>
+                  </Button>
                   <div className="h-px bg-border my-1" />
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={() => {
                       setShowActionsMenu(false);
                       setShowDeleteModal(true);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-danger hover:bg-danger-soft transition-colors"
+                    className="w-full justify-start gap-3 px-3 font-normal text-danger hover:bg-danger-soft"
                   >
                     <TrashSimple className="w-4 h-4" />
                     <span>{t('inmobiliaria.common.delete')}</span>
-                  </button>
+                  </Button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -530,13 +547,13 @@ function PropietarioDetailContent() {
                     </a>
                   </div>
                 </div>
-                <button
+                <IconButton
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleCopy(propietario.email, 'email')}
                   aria-label={t('inmobiliaria.propietarios.detail.copied')}
-                  className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  {copiedEmail ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                </button>
+                  icon={copiedEmail ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                />
               </div>
 
               {/* Phone */}
@@ -555,13 +572,13 @@ function PropietarioDetailContent() {
                     </a>
                   </div>
                 </div>
-                <button
+                <IconButton
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleCopy(propietario.phone, 'phone')}
                   aria-label={t('inmobiliaria.propietarios.detail.copied')}
-                  className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  {copiedPhone ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                </button>
+                  icon={copiedPhone ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                />
               </div>
 
               {/* Address */}
@@ -600,7 +617,7 @@ function PropietarioDetailContent() {
           {/* Tabs */}
           <SegmentedControl<typeof activeTab>
             value={activeTab}
-            onChange={setActiveTab}
+            onChange={setTab}
             aria-label={t('inmobiliaria.propietarios.detail.properties')}
             options={[
               {
@@ -786,12 +803,12 @@ function PropietarioDetailContent() {
             <label className="block text-sm font-medium text-foreground mb-2">
               {t('inmobiliaria.propietarios.detail.notesAbout', { name: propietario.name })}
             </label>
-            <textarea
+            <Textarea
               value={notesValue}
               onChange={(e) => setNotesValue(e.target.value)}
               placeholder={t('inmobiliaria.propietarios.detail.notesPlaceholder')}
               rows={6}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all resize-none"
+              className="resize-none"
             />
             <p className="mt-2 text-xs text-muted-foreground">
               {t('inmobiliaria.propietarios.detail.notesPrivacy')}

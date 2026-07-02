@@ -18,6 +18,24 @@ import {
   EnvelopeSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+} from '@/components/ui/dropdown-menu';
+import { IconButton, SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { VencimientosReport, VencimientoItem, RenewalStatus } from '@/lib/types/inmobiliaria';
 
@@ -34,71 +52,21 @@ interface VencimientosTableProps {
   onBulkReminder?: (propertyIds: string[]) => void;
 }
 
-/**
- * Get bucket color classes
- */
-function getBucketColor(bucket: VencimientoItem['bucket']): {
-  bg: string;
-  text: string;
-  border: string;
-} {
-  const colors: Record<VencimientoItem['bucket'], { bg: string; text: string; border: string }> = {
-    '0-30': {
-      bg: 'bg-danger-soft',
-      text: 'text-danger',
-      border: 'border-danger/30 dark:border-danger/40',
-    },
-    '31-60': {
-      bg: 'bg-warning-soft',
-      text: 'text-warning',
-      border: 'border-warning/30 dark:border-warning/40',
-    },
-    '61-90': {
-      bg: 'bg-primary-soft',
-      text: 'text-primary',
-      border: 'border-primary/30 dark:border-primary/40',
-    },
-    '90+': {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      text: 'text-neutral-600 dark:text-neutral-400',
-      border: 'border-neutral-200 dark:border-neutral-700',
-    },
-  };
-  return colors[bucket];
-}
+// Mapeo bucket de urgencia → variant del Badge de Cadence (reemplaza getBucketColor).
+const BUCKET_BADGE_VARIANT = {
+  '0-30': 'destructive',
+  '31-60': 'warning',
+  '61-90': 'default',
+  '90+': 'secondary',
+} as const;
 
-/**
- * Get renewal status display
- */
-function getRenewalStatusDisplay(status: RenewalStatus, t: (key: string) => string): {
-  label: string;
-  bg: string;
-  text: string;
-} {
-  const displays: Record<RenewalStatus, { label: string; bg: string; text: string }> = {
-    pending: {
-      label: t('inmobiliaria.finance.expirations.statusPending'),
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      text: 'text-neutral-600 dark:text-neutral-400',
-    },
-    negotiating: {
-      label: t('inmobiliaria.finance.expirations.statusNegotiating'),
-      bg: 'bg-primary-soft',
-      text: 'text-primary',
-    },
-    renewed: {
-      label: t('inmobiliaria.finance.expirations.statusRenewed'),
-      bg: 'bg-success-soft',
-      text: 'text-success',
-    },
-    terminating: {
-      label: t('inmobiliaria.finance.expirations.statusTerminating'),
-      bg: 'bg-danger-soft',
-      text: 'text-danger',
-    },
-  };
-  return displays[status];
-}
+// Estado de renovación → label i18n + variant (reemplaza getRenewalStatusDisplay).
+const RENEWAL_STATUS = {
+  pending: { key: 'statusPending', variant: 'secondary' },
+  negotiating: { key: 'statusNegotiating', variant: 'default' },
+  renewed: { key: 'statusRenewed', variant: 'success' },
+  terminating: { key: 'statusTerminating', variant: 'destructive' },
+} as const;
 
 /**
  * Format date to display
@@ -129,7 +97,6 @@ export function VencimientosTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Count items by bucket
   const bucketCounts = useMemo(() => {
@@ -232,15 +199,16 @@ export function VencimientosTable({
     children: React.ReactNode;
     className?: string;
   }) => (
-    <th className={cn('text-left p-4', className)}>
+    <TableHead className={cn('text-left p-4', className)}>
+      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
       </button>
-    </th>
+    </TableHead>
   );
 
   const hasSelection = selectedItems.size > 0;
@@ -286,14 +254,14 @@ export function VencimientosTable({
         </div>
 
         {/* Total */}
-        <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-card">
+        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
           <div className="flex items-center gap-2 mb-1">
-            <HouseLine className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-            <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+            <HouseLine className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+            <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.finance.expirations.total')}
             </span>
           </div>
-          <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <p className="text-2xl font-bold text-fg dark:text-white">
             {data.summary.totalVencimientos}
           </p>
         </div>
@@ -302,64 +270,54 @@ export function VencimientosTable({
       {/* Filter Tabs and Bulk Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Bucket Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 overflow-x-auto">
-          <button
-            onClick={() => setBucketFilter('all')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === 'all'
-                ? 'bg-white dark:bg-card text-neutral-900 dark:text-white'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            <Funnel className="w-4 h-4" />
-            {t('inmobiliaria.finance.expirations.all')}
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-neutral-200 dark:bg-neutral-700">
-              {bucketCounts.all}
-            </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('0-30')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === '0-30'
-                ? 'bg-white dark:bg-card text-danger'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            0-30d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-danger-soft text-danger">
-              {bucketCounts['0-30']}
-            </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('31-60')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === '31-60'
-                ? 'bg-white dark:bg-card text-warning'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            31-60d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-warning-soft text-warning">
-              {bucketCounts['31-60']}
-            </span>
-          </button>
-          <button
-            onClick={() => setBucketFilter('61-90')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-              bucketFilter === '61-90'
-                ? 'bg-white dark:bg-card text-primary'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            )}
-          >
-            61-90d
-            <span className="px-1.5 py-0.5 rounded-full text-xs bg-primary-soft text-primary">
-              {bucketCounts['61-90']}
-            </span>
-          </button>
+        <div className="overflow-x-auto">
+          <SegmentedControl<BucketFilter>
+            value={bucketFilter}
+            onChange={setBucketFilter}
+            options={[
+              {
+                value: 'all',
+                ariaLabel: t('inmobiliaria.finance.expirations.all'),
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    <Funnel className="w-4 h-4" />
+                    {t('inmobiliaria.finance.expirations.all')}
+                    <Badge variant="secondary">{bucketCounts.all}</Badge>
+                  </span>
+                ),
+              },
+              {
+                value: '0-30',
+                ariaLabel: '0-30d',
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    0-30d
+                    <Badge variant="destructive">{bucketCounts['0-30']}</Badge>
+                  </span>
+                ),
+              },
+              {
+                value: '31-60',
+                ariaLabel: '31-60d',
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    31-60d
+                    <Badge variant="warning">{bucketCounts['31-60']}</Badge>
+                  </span>
+                ),
+              },
+              {
+                value: '61-90',
+                ariaLabel: '61-90d',
+                label: (
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    61-90d
+                    <Badge variant="default">{bucketCounts['61-90']}</Badge>
+                  </span>
+                ),
+              },
+            ]}
+          />
         </div>
 
         {/* Bulk Actions */}
@@ -371,26 +329,31 @@ export function VencimientosTable({
               exit={{ opacity: 0, x: 20 }}
               className="flex items-center gap-2"
             >
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+              <span className="text-sm text-fg-muted dark:text-fg-subtle">
                 {selectedItems.size} {t('inmobiliaria.finance.expirations.selected')}
               </span>
               {onBulkRenewal && (
-                <button
+                <Button
+                  size="sm"
+                  hideArrow
                   onClick={() => onBulkRenewal(Array.from(selectedItems))}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-white text-sm font-medium hover:opacity-90 transition-colors"
+                  className="gap-2"
                 >
                   <ArrowsClockwise className="w-4 h-4" />
                   {t('inmobiliaria.finance.expirations.startRenewal')}
-                </button>
+                </Button>
               )}
               {onBulkReminder && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
                   onClick={() => onBulkReminder(Array.from(selectedItems))}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-card text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  className="gap-2"
                 >
                   <EnvelopeSimple className="w-4 h-4" />
                   {t('inmobiliaria.finance.expirations.sendReminders')}
-                </button>
+                </Button>
               )}
             </motion.div>
           )}
@@ -398,36 +361,33 @@ export function VencimientosTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-card">
-        <table className="w-full min-w-[1000px]">
-          <thead>
-            <tr className="border-b border-neutral-100 dark:border-neutral-800">
-              <th className="w-12 p-4">
-                <input
-                  type="checkbox"
+      <div className="overflow-x-auto rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
+        <Table className="min-w-[1000px]">
+          <TableHeader>
+            <TableRow className="border-b border-faint dark:border-strong">
+              <TableHead className="w-12 p-4">
+                <Checkbox
                   checked={
                     selectedItems.size === filteredAndSortedItems.length &&
                     filteredAndSortedItems.length > 0
                   }
-                  onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600"
+                  onCheckedChange={toggleSelectAll}
+                  aria-label={t('inmobiliaria.finance.expirations.all')}
                 />
-              </th>
+              </TableHead>
               <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.expirations.property')}</SortableHeader>
               <SortableHeader field="tenantName">{t('inmobiliaria.finance.expirations.tenant')}</SortableHeader>
               <SortableHeader field="propietarioName">{t('inmobiliaria.finance.expirations.owner')}</SortableHeader>
-              <th className="p-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              <TableHead className="p-4 text-left">
                 {t('inmobiliaria.finance.expirations.expiration')}
-              </th>
+              </TableHead>
               <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.expirations.days')}</SortableHeader>
               <SortableHeader field="renewalStatus">{t('inmobiliaria.finance.expirations.status')}</SortableHeader>
-              <th className="w-12 p-4"></th>
-            </tr>
-          </thead>
-          <tbody>
+              <TableHead className="w-12 p-4" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredAndSortedItems.map((item, index) => {
-              const bucketColors = getBucketColor(item.bucket);
-              const statusDisplay = getRenewalStatusDisplay(item.renewalStatus, t);
               const isUrgent = item.bucket === '0-30';
               const isSelected = selectedItems.has(item.propertyId);
 
@@ -438,23 +398,22 @@ export function VencimientosTable({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
                   className={cn(
-                    'border-b border-neutral-50 dark:border-neutral-800 transition-colors',
+                    'border-b border-faint dark:border-strong transition-colors',
                     isSelected && 'bg-primary-soft',
-                    !isSelected && 'hover:bg-neutral-50 dark:hover:bg-muted/20'
+                    !isSelected && 'hover:bg-surface-muted dark:hover:bg-muted/20'
                   )}
                 >
                   {/* Checkbox */}
-                  <td className="p-4">
-                    <input
-                      type="checkbox"
+                  <TableCell className="p-4">
+                    <Checkbox
                       checked={isSelected}
-                      onChange={() => toggleSelectItem(item.propertyId)}
-                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600"
+                      onCheckedChange={() => toggleSelectItem(item.propertyId)}
+                      aria-label={item.propertyTitle}
                     />
-                  </td>
+                  </TableCell>
 
                   {/* Property */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
@@ -474,162 +433,114 @@ export function VencimientosTable({
                         />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[160px]">
+                        <p className="font-medium text-fg dark:text-white truncate max-w-[160px]">
                           {item.propertyTitle}
                         </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate max-w-[160px]">
+                        <p className="text-sm text-fg-muted dark:text-fg-subtle truncate max-w-[160px]">
                           {item.propertyAddress}
                         </p>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Tenant */}
-                  <td className="p-4">
+                  <TableCell className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+                      <div className="w-8 h-8 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[120px]">
+                        <p className="font-medium text-fg dark:text-white truncate max-w-[120px]">
                           {item.tenantName}
                         </p>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Propietario */}
-                  <td className="p-4">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate block max-w-[120px]">
+                  <TableCell className="p-4">
+                    <span className="text-sm text-fg dark:text-fg-subtle truncate block max-w-[120px]">
                       {item.propietarioName}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* End Date */}
-                  <td className="p-4">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                  <TableCell className="p-4">
+                    <span className="text-sm text-fg dark:text-fg-subtle">
                       {formatDate(item.contractEndDate, locale)}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Days Until Expiry */}
-                  <td className="p-4">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
-                        bucketColors.bg,
-                        bucketColors.text
-                      )}
-                    >
+                  <TableCell className="p-4">
+                    <Badge variant={BUCKET_BADGE_VARIANT[item.bucket]} className="gap-1.5">
                       {isUrgent && <Warning className="w-3.5 h-3.5" weight="fill" />}
                       {item.daysUntilExpiry}d
-                    </span>
-                  </td>
+                    </Badge>
+                  </TableCell>
 
                   {/* Renewal Status */}
-                  <td className="p-4">
-                    <span
-                      className={cn(
-                        'inline-flex px-2.5 py-1 rounded-full text-xs font-medium',
-                        statusDisplay.bg,
-                        statusDisplay.text
-                      )}
-                    >
-                      {statusDisplay.label}
-                    </span>
-                  </td>
+                  <TableCell className="p-4">
+                    <Badge variant={RENEWAL_STATUS[item.renewalStatus].variant}>
+                      {t(`inmobiliaria.finance.expirations.${RENEWAL_STATUS[item.renewalStatus].key}`)}
+                    </Badge>
+                  </TableCell>
 
                   {/* Actions */}
-                  <td className="p-4">
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuId(openMenuId === item.consignacionId ? null : item.consignacionId);
-                        }}
-                        className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                      >
-                        <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
-                      </button>
-
-                      <AnimatePresence>
-                        {openMenuId === item.consignacionId && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-card z-10"
-                          >
-                            {onContactTenant && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onContactTenant(item.propertyId);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <Phone className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.finance.expirations.contactTenant')}</span>
-                              </button>
-                            )}
-                            {onStartRenewal && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onStartRenewal(item.propertyId);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft dark:hover:bg-primary/20 transition-colors"
-                              >
-                                <ArrowsClockwise className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.finance.expirations.startRenewal')}</span>
-                              </button>
-                            )}
-                            {onViewContract && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onViewContract(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <Eye className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.finance.expirations.viewContract')}</span>
-                              </button>
-                            )}
-                          </motion.div>
+                  <TableCell className="p-4">
+                    <DropdownList>
+                      <DropdownListTrigger asChild>
+                        <IconButton
+                          variant="ghost"
+                          size="sm"
+                          icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                          aria-label="Acciones"
+                        />
+                      </DropdownListTrigger>
+                      <DropdownListContent align="end" className="w-48">
+                        {onContactTenant && (
+                          <DropdownListItem onSelect={() => onContactTenant(item.propertyId)}>
+                            <Phone className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.finance.expirations.contactTenant')}</span>
+                          </DropdownListItem>
                         )}
-                      </AnimatePresence>
-                    </div>
-                  </td>
+                        {onStartRenewal && (
+                          <DropdownListItem onSelect={() => onStartRenewal(item.propertyId)} className="text-primary">
+                            <ArrowsClockwise className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.finance.expirations.startRenewal')}</span>
+                          </DropdownListItem>
+                        )}
+                        {onViewContract && (
+                          <DropdownListItem onSelect={() => onViewContract(item)}>
+                            <Eye className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.finance.expirations.viewContract')}</span>
+                          </DropdownListItem>
+                        )}
+                      </DropdownListContent>
+                    </DropdownList>
+                  </TableCell>
                 </motion.tr>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         {/* Empty State */}
         {filteredAndSortedItems.length === 0 && (
           <div className="p-12 text-center">
+            {/* allowlist: empty-state hero icon-circle (wraps Phosphor glyph), no text-label pill */}
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success-soft flex items-center justify-center">
               <CheckSquare className="w-8 h-8 text-success" weight="fill" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+            <h3 className="text-lg font-semibold text-fg dark:text-white mb-1">
               {t('inmobiliaria.finance.expirations.noExpirations')}
             </h3>
-            <p className="text-neutral-500 dark:text-neutral-400">
+            <p className="text-fg-muted dark:text-fg-subtle">
               {bucketFilter === 'all'
                 ? t('inmobiliaria.finance.expirations.noExpirationsDesc')
                 : t('inmobiliaria.finance.expirations.noExpirationsRange', { range: bucketFilter })}
             </p>
           </div>
-        )}
-
-        {/* Close dropdown on click outside */}
-        {openMenuId && (
-          <div className="fixed inset-0 z-[5]" onClick={() => setOpenMenuId(null)} />
         )}
       </div>
     </div>

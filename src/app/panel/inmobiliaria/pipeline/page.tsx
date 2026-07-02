@@ -26,7 +26,7 @@ import {
   type PipelineFiltersState,
 } from '@/components/inmobiliaria';
 import { Spinner } from '@/components/ui/spinner';
-import { KpiCard } from '@leasefy/ui';
+import { KpiCard } from '@leasefy/cadence';
 
 /**
  * Pipeline Page - Kanban board for managing the rental pipeline

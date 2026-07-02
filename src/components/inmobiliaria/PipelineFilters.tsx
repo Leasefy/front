@@ -1,15 +1,21 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo, useCallback } from 'react';
 import {
   MagnifyingGlass,
   X,
-  CaretDown,
   Buildings,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
+import { Chip, IconButton } from '@leasefy/cadence';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 
 export interface PipelineFiltersState {
@@ -41,25 +47,12 @@ export function PipelineFilters({
   onFilterChange,
 }: PipelineFiltersProps) {
   const { t } = useI18n();
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const DATE_PRESETS = [
     { label: t('inmobiliaria.pipeline.today'), value: 'today' as const },
     { label: t('inmobiliaria.pipeline.week'), value: 'week' as const },
     { label: t('inmobiliaria.pipeline.monthPreset'), value: 'month' as const },
   ];
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Get unique properties from consignaciones
   const uniqueProperties = useMemo(() => {
@@ -162,214 +155,136 @@ export function PipelineFilters({
   };
 
   return (
-    <div className="p-4 space-y-4 border-b border-border" ref={dropdownRef}>
+    <div className="p-4 space-y-4 border-b border-border">
       {/* Row 1: Search */}
       <div className="relative max-w-md">
-        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
+        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+        <Input
           type="text"
           placeholder={t('inmobiliaria.pipeline.searchPlaceholder')}
           value={filters.search || ''}
           onChange={(e) => updateFilter('search', e.target.value || undefined)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-md border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-sm"
+          className="w-full pl-10 pr-4"
         />
         {filters.search && (
-          <button
+          <IconButton
+            variant="ghost"
+            size="sm"
             onClick={() => updateFilter('search', undefined)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-          >
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
+            aria-label="Limpiar búsqueda"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+            icon={<X className="w-4 h-4" />}
+          />
         )}
       </div>
 
       {/* Row 2: Dropdowns + Date Presets */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Agente Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setOpenDropdown(openDropdown === 'agente' ? null : 'agente')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all border',
-              filters.agenteId
-                ? 'bg-primary-soft text-primary border-primary/30'
-                : 'bg-background text-muted-foreground border-border hover:bg-muted'
-            )}
-          >
-            <span className="truncate max-w-[100px]">{getAgenteLabel()}</span>
-            <CaretDown className={cn('w-4 h-4 shrink-0 transition-transform', openDropdown === 'agente' && 'rotate-180')} />
-          </button>
-          <AnimatePresence>
-            {openDropdown === 'agente' && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-64 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
-              >
-                <button
-                  onClick={() => {
-                    updateFilter('agenteId', undefined);
-                    setOpenDropdown(null);
-                  }}
-                  className={cn(
-                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                    !filters.agenteId
-                      ? 'bg-primary-soft text-primary'
-                      : 'text-foreground hover:bg-muted'
-                  )}
-                >
-                  {t('inmobiliaria.pipeline.allAgents')}
-                </button>
-                {agentes
-                  .filter((a) => a.status === 'active')
-                  .map((agente) => (
-                    <button
-                      key={agente.id}
-                      onClick={() => {
-                        updateFilter('agenteId', agente.id);
-                        setOpenDropdown(null);
-                      }}
-                      className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
-                        filters.agenteId === agente.id
-                          ? 'bg-primary-soft text-primary'
-                          : 'text-foreground hover:bg-muted'
-                      )}
-                    >
-                      {agente.avatar ? (
-                        <img
-                          src={agente.avatar}
-                          alt={agente.name}
-                          className="w-6 h-6 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center text-xs font-medium text-primary">
-                          {getInitials(agente.name)}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className="truncate block">{agente.name}</span>
-                        <span className="text-xs text-muted-foreground">{agente.zone}</span>
-                      </div>
-                    </button>
-                  ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Property Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setOpenDropdown(openDropdown === 'property' ? null : 'property')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all border',
-              filters.consignacionId
-                ? 'bg-primary-soft text-primary border-primary/30'
-                : 'bg-background text-muted-foreground border-border hover:bg-muted'
-            )}
-          >
-            <span className="truncate max-w-[120px]">{getPropertyLabel()}</span>
-            <CaretDown className={cn('w-4 h-4 shrink-0 transition-transform', openDropdown === 'property' && 'rotate-180')} />
-          </button>
-          <AnimatePresence>
-            {openDropdown === 'property' && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                className="absolute top-full left-0 mt-2 w-72 p-2 rounded-xl border border-border bg-card z-50 max-h-60 overflow-y-auto"
-              >
-                <button
-                  onClick={() => {
-                    updateFilter('consignacionId', undefined);
-                    setOpenDropdown(null);
-                  }}
-                  className={cn(
-                    'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                    !filters.consignacionId
-                      ? 'bg-primary-soft text-primary'
-                      : 'text-foreground hover:bg-muted'
-                  )}
-                >
-                  {t('inmobiliaria.pipeline.allProperties')}
-                </button>
-                {uniqueProperties.map((consignacion) => (
-                  <button
-                    key={consignacion.id}
-                    onClick={() => {
-                      updateFilter('consignacionId', consignacion.id);
-                      setOpenDropdown(null);
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors',
-                      filters.consignacionId === consignacion.id
-                        ? 'bg-primary-soft text-primary'
-                        : 'text-foreground hover:bg-muted'
-                    )}
-                  >
-                    {consignacion.propertyThumbnail ? (
+        <Select
+          value={filters.agenteId ?? 'all'}
+          onValueChange={(v) => updateFilter('agenteId', v === 'all' ? undefined : v)}
+        >
+          <SelectTrigger className="w-auto max-w-[180px] gap-2">
+            <span className="truncate">{getAgenteLabel()}</span>
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            <SelectItem value="all">{t('inmobiliaria.pipeline.allAgents')}</SelectItem>
+            {agentes
+              .filter((a) => a.status === 'active')
+              .map((agente) => (
+                <SelectItem key={agente.id} value={agente.id}>
+                  <span className="flex items-center gap-2">
+                    {agente.avatar ? (
                       <img
-                        src={consignacion.propertyThumbnail}
-                        alt={consignacion.propertyTitle}
-                        className="w-8 h-8 rounded-md object-cover shrink-0"
+                        src={agente.avatar}
+                        alt={agente.name}
+                        className="w-6 h-6 rounded-full"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-                        <Buildings className="w-4 h-4 text-muted-foreground" />
-                      </div>
+                      <span className="w-6 h-6 rounded-full bg-surface-brand flex items-center justify-center text-xs font-medium text-primary">
+                        {getInitials(agente.name)}
+                      </span>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <span className="truncate block font-medium">
-                        {consignacion.propertyTitle}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate block">
-                        {consignacion.propertyZone}, {consignacion.propertyCity}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                    <span className="min-w-0">
+                      <span className="truncate block">{agente.name}</span>
+                      <span className="text-xs text-muted-foreground">{agente.zone}</span>
+                    </span>
+                  </span>
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+
+        {/* Property Dropdown */}
+        <Select
+          value={filters.consignacionId ?? 'all'}
+          onValueChange={(v) => updateFilter('consignacionId', v === 'all' ? undefined : v)}
+        >
+          <SelectTrigger className="w-auto max-w-[200px] gap-2">
+            <span className="truncate">{getPropertyLabel()}</span>
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            <SelectItem value="all">{t('inmobiliaria.pipeline.allProperties')}</SelectItem>
+            {uniqueProperties.map((consignacion) => (
+              <SelectItem key={consignacion.id} value={consignacion.id}>
+                <span className="flex items-center gap-2">
+                  {consignacion.propertyThumbnail ? (
+                    <img
+                      src={consignacion.propertyThumbnail}
+                      alt={consignacion.propertyTitle}
+                      className="w-8 h-8 rounded-md object-cover shrink-0"
+                    />
+                  ) : (
+                    <span className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+                      <Buildings className="w-4 h-4 text-muted-foreground" />
+                    </span>
+                  )}
+                  <span className="min-w-0">
+                    <span className="truncate block font-medium">
+                      {consignacion.propertyTitle}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate block">
+                      {consignacion.propertyZone}, {consignacion.propertyCity}
+                    </span>
+                  </span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Separator */}
         <div className="hidden sm:block w-px h-6 bg-border" />
 
-        {/* Date Presets - Pill Style */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted">
+        {/* Date Presets - Chip group */}
+        <div className="flex items-center gap-1.5">
           {DATE_PRESETS.map((preset) => (
-            <button
+            <Chip
               key={preset.value}
+              selected={activeDatePreset === preset.value}
               onClick={() => applyDatePreset(preset.value)}
-              className={cn(
-                'px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap',
-                activeDatePreset === preset.value
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
+              className="whitespace-nowrap"
             >
               {preset.label}
-            </button>
+            </Chip>
           ))}
         </div>
 
         {/* Custom Date Range */}
         <div className="flex items-center gap-2">
-          <input
+          <Input
             type="date"
             value={filters.dateFrom || ''}
             onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
-            className="px-3 py-2 rounded-md text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+            className="w-auto"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
-          <input
+          <Input
             type="date"
             value={filters.dateTo || ''}
             onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
-            className="px-3 py-2 rounded-md text-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+            className="w-auto"
           />
         </div>
 
@@ -377,13 +292,16 @@ export function PipelineFilters({
         {hasAnyFilter && (
           <>
             <div className="hidden sm:block w-px h-6 bg-border" />
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={clearAllFilters}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-danger hover:bg-danger-soft transition-colors"
+              className="gap-1.5 text-danger hover:bg-danger-soft hover:text-danger"
             >
               <X className="w-4 h-4" />
               {t('inmobiliaria.pipeline.clear')}
-            </button>
+            </Button>
           </>
         )}
       </div>

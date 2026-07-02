@@ -19,6 +19,15 @@ import * as React from 'react'
 import { useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 void React
 
@@ -82,38 +91,42 @@ export function RechazarForm({
   return (
     <section
       data-testid="rechazar-form"
-      className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+      className="space-y-3 rounded-md border border-border bg-surface p-4"
     >
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
-        {t('inmobiliaria.ai.cobranza.approval.rechazarForm.reasonLabel')}
-        <select
-          data-testid="rechazar-reason"
-          value={reason}
-          onChange={(e) => setReason(e.target.value as RejectReasonSlug | '')}
-          className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+      <div className="space-y-1">
+        <span className="block text-sm font-medium text-fg-muted">
+          {t('inmobiliaria.ai.cobranza.approval.rechazarForm.reasonLabel')}
+        </span>
+        <Select
+          value={reason || undefined}
+          onValueChange={(v) => setReason(v as RejectReasonSlug)}
         >
-          <option value="">
-            {t('inmobiliaria.ai.cobranza.approval.rechazarForm.reasonPlaceholder')}
-          </option>
-          {REJECT_REASONS.map((slug) => (
-            <option key={slug} value={slug}>
-              {t(`inmobiliaria.ai.cobranza.approval.rechazarForm.reason.${slug}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+          <SelectTrigger data-testid="rechazar-reason" className="w-full">
+            <SelectValue
+              placeholder={t('inmobiliaria.ai.cobranza.approval.rechazarForm.reasonPlaceholder')}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {REJECT_REASONS.map((slug) => (
+              <SelectItem key={slug} value={slug}>
+                {t(`inmobiliaria.ai.cobranza.approval.rechazarForm.reason.${slug}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+      <label className="block text-sm font-medium text-fg-muted">
         {t('inmobiliaria.ai.cobranza.approval.rechazarForm.commentLabel')}
-        <textarea
+        <Textarea
           data-testid="rechazar-comment"
           value={comment}
           onChange={(e) => setComment(e.target.value.slice(0, MAX_COMMENT))}
           maxLength={MAX_COMMENT}
           rows={3}
-          className="mt-1 block w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+          className="mt-1 block w-full"
         />
-        <span className="mt-1 block text-xs text-neutral-500 dark:text-neutral-400">
+        <span className="mt-1 block text-xs text-fg-subtle">
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.charsRemaining', {
             remaining,
           })}
@@ -121,24 +134,28 @@ export function RechazarForm({
       </label>
 
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
+          variant="destructive"
+          size="sm"
+          hideArrow
           data-testid="rechazar-confirm"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-sm bg-danger px-3 py-1.5 text-sm font-medium text-white hover:bg-danger disabled:cursor-not-allowed disabled:bg-neutral-300 dark:disabled:bg-neutral-700"
         >
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.confirm')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
           data-testid="rechazar-cancel"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="inline-flex items-center rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
         >
           {t('inmobiliaria.ai.cobranza.approval.rechazarForm.cancel')}
-        </button>
+        </Button>
       </div>
     </section>
   )

@@ -19,7 +19,7 @@
  */
 
 import * as React from 'react'
-import { Chip } from '@leasefy/ui'
+import { Chip } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { CarrierLabel } from '@/lib/cotizador/carrier-labels'

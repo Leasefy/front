@@ -37,11 +37,12 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
-import { BrandContour, Eyebrow } from '@leasefy/ui'
+import { BrandContour, Eyebrow, KpiCard, StatusBadge, MonoLabel } from '@leasefy/cadence'
+import { Card } from '@/components/ui'
 
 // ── Brand constants ───────────────────────────────────────────────────────────
 const BLUE = '#1A40FF'
-const INK_GRADIENT = 'linear-gradient(150deg, #0B1220 56%, #122457 140%)'
+const INK_GRADIENT = 'linear-gradient(150deg, #14130f 56%, #2a2824 140%)'
 
 // Desaturated semantic signals (BRAND-CONTRACT §2) — soft tint + ink text.
 const SEV = {
@@ -178,37 +179,32 @@ function Monogram({ inicial, lead = false, size = 36 }: { inicial: string; lead?
 }
 
 function ConfianzaChip({ value }: { value: RecienteRow['confianza'] }) {
-  const map = {
-    Alta: SEV.success,
-    Media: SEV.neutral,
-    Baja: SEV.warning,
-  }[value]
+  const tone = {
+    Alta: 'success',
+    Media: 'neutral',
+    Baja: 'warning',
+  }[value] as 'success' | 'neutral' | 'warning'
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: map.fg }}>
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: map.dot }} />
+    <StatusBadge tone={tone} dot>
       {value}
-    </span>
+    </StatusBadge>
   )
 }
 
 function EstadoChip({ value }: { value: RecienteRow['estado'] }) {
   // Estados are informational — gray-first (blue is reserved for actionables,
   // §2). Cerrado is the one real positive signal → success. Enviado/Publicado
-  // differ by text weight, not hue.
-  const map: Record<RecienteRow['estado'], { soft: string; fg: string }> = {
-    Borrador: { soft: '#F1F3F6', fg: '#6B7280' },
-    Enviado: { soft: '#ECEEF2', fg: '#0B1220' },
-    Publicado: { soft: '#F1F3F6', fg: '#3A4254' },
-    Cerrado: { soft: '#E9F3EE', fg: '#22663F' },
+  // differ by weight, not hue → neutral.
+  const tone: Record<RecienteRow['estado'], 'neutral' | 'success'> = {
+    Borrador: 'neutral',
+    Enviado: 'neutral',
+    Publicado: 'neutral',
+    Cerrado: 'success',
   }
-  const m = map[value]
   return (
-    <span
-      className="inline-flex items-center h-6 px-2.5 rounded-md text-[12px] font-medium"
-      style={{ background: m.soft, color: m.fg }}
-    >
+    <StatusBadge tone={tone[value]} dot={false}>
       {value}
-    </span>
+    </StatusBadge>
   )
 }
 
@@ -222,20 +218,18 @@ export default function AvaluosIAHomePage() {
         <div className="flex items-center justify-between gap-4">
           <Link
             href="/panel/inmobiliaria/ai"
-            className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#0B1220] transition-colors"
+            className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-fg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Agentes IA
           </Link>
-          <span className="inline-flex items-center h-6 px-2.5 rounded-full border border-neutral-200 bg-neutral-50 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400">
-            Vista previa
-          </span>
+          <StatusBadge tone="neutral" dot={false}>Vista previa</StatusBadge>
         </div>
 
         {/* ── 1. HERO — the ink anchor ─────────────────────────────────── */}
         <section
           className="relative overflow-hidden rounded-2xl px-7 py-7 sm:px-9 sm:py-8"
-          style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(11,18,32,0.55)' }}
+          style={{ background: INK_GRADIENT, boxShadow: '0 26px 64px -28px rgba(20, 19, 15,0.55)' }}
         >
           {/* BrandContour — the quiet roof signature */}
           <div className="pointer-events-none absolute -inset-x-2 top-[42%] h-[46%] text-white/[0.10]">
@@ -276,7 +270,7 @@ export default function AvaluosIAHomePage() {
               <div className="flex flex-wrap items-center gap-3 pt-3">
                 <Link
                   href="/panel/inmobiliaria/avaluos-ia/nuevo"
-                  className="group inline-flex items-center gap-2 h-11 px-5 rounded-lg bg-white text-[#0B1220] text-sm font-medium hover:bg-white/90 transition-colors"
+                  className="group inline-flex items-center gap-2 h-11 px-5 rounded-lg bg-white text-fg text-sm font-medium hover:bg-white/90 transition-colors"
                 >
                   <Plus className="w-4 h-4" weight="bold" />
                   Nuevo avalúo
@@ -319,43 +313,34 @@ export default function AvaluosIAHomePage() {
         {/* ── 2. KPI STRIP ──────────────────────────────────────────────── */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {KPIS.map((kpi) => (
-            <div key={kpi.label} className="rounded-xl border border-neutral-200/80 bg-white p-5">
-              <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 truncate">
-                {kpi.label}
-              </p>
-              <p className="mt-2.5 text-[26px] font-semibold tracking-[-0.01em] text-[#0B1220] tabular-nums leading-none">
-                {kpi.value}
-              </p>
-              <div className="mt-1.5 flex items-center gap-2">
-                {kpi.delta && (
-                  <span className="inline-flex items-center gap-1 text-[12.5px] font-medium tabular-nums" style={{ color: SEV.success.fg }}>
-                    <TrendUp className="w-3.5 h-3.5" weight="bold" />
-                    {kpi.delta}
-                  </span>
-                )}
-                {kpi.sub && <span className="text-[12px] text-neutral-400 truncate">{kpi.sub}</span>}
-              </div>
-            </div>
+            <KpiCard
+              key={kpi.label}
+              label={kpi.label}
+              value={kpi.value}
+              delta={kpi.delta}
+              deltaDirection={kpi.dir}
+              sublabel={kpi.sub}
+            />
           ))}
         </section>
 
         {/* ── 3 + 4. BANDEJA (2/3) + EQUIPO (1/3) ───────────────────────── */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Bandeja */}
-          <div id="bandeja" className="lg:col-span-2 rounded-2xl border border-neutral-200/80 bg-white overflow-hidden">
+          <Card id="bandeja" className="lg:col-span-2 overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
               <div className="space-y-1.5">
                 <Eyebrow accent>Qué necesita tu atención</Eyebrow>
-                <p className="text-[13px] text-neutral-500">
+                <p className="text-[13px] text-fg-muted">
                   Gabriela ordena lo importante primero. Tú decides.
                 </p>
               </div>
-              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-neutral-100 text-[13px] font-semibold tabular-nums text-neutral-600">
+              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-surface-muted text-[13px] font-semibold tabular-nums text-fg-muted">
                 {BANDEJA.length}
               </span>
             </div>
 
-            <ul className="divide-y divide-neutral-100">
+            <ul className="divide-y divide-border-faint">
               {BANDEJA.map((item) => {
                 const sev = SEV[item.severity]
                 const ItemIcon = item.icon
@@ -363,7 +348,7 @@ export default function AvaluosIAHomePage() {
                   <li key={item.id}>
                     <button
                       type="button"
-                      className="group w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-neutral-50/80 transition-colors"
+                      className="group w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-surface-hover transition-colors"
                     >
                       <span
                         className="mt-0.5 inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0"
@@ -374,20 +359,17 @@ export default function AvaluosIAHomePage() {
 
                       <span className="flex-1 min-w-0">
                         <span className="flex items-center gap-2 mb-1">
-                          <span
-                            className="inline-flex items-center h-[18px] px-1.5 rounded font-mono text-[9.5px] font-medium uppercase tracking-[0.08em]"
-                            style={{ background: sev.soft, color: sev.fg }}
-                          >
+                          <StatusBadge tone={item.severity} dot={false} className="text-[9.5px]">
                             {item.tag}
-                          </span>
+                          </StatusBadge>
                         </span>
-                        <span className="block text-[14px] font-medium text-[#0B1220] leading-snug">
+                        <span className="block text-[14px] font-medium text-fg leading-snug">
                           {item.title}
                         </span>
-                        <span className="block mt-1 text-[13px] text-neutral-500 leading-relaxed">
+                        <span className="block mt-1 text-[13px] text-fg-muted leading-relaxed">
                           {item.detail}
                         </span>
-                        <span className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-medium" style={{ color: BLUE }}>
+                        <span className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-primary">
                           {item.cta}
                           <CaretRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" weight="bold" />
                         </span>
@@ -397,13 +379,13 @@ export default function AvaluosIAHomePage() {
                 )
               })}
             </ul>
-          </div>
+          </Card>
 
           {/* Equipo */}
-          <div className="rounded-2xl border border-neutral-200/80 bg-white p-5">
+          <Card className="p-5">
             <div className="space-y-1.5 mb-4">
               <Eyebrow>El equipo</Eyebrow>
-              <p className="text-[13px] text-neutral-500">
+              <p className="text-[13px] text-fg-muted">
                 7 especialistas detrás de cada avalúo.
               </p>
             </div>
@@ -412,17 +394,17 @@ export default function AvaluosIAHomePage() {
               {EQUIPO.map((m, i) => (
                 <li
                   key={i}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-neutral-50 transition-colors"
+                  className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-hover transition-colors"
                 >
                   <Monogram inicial={m.inicial} lead={m.lead} size={34} />
                   <span className="flex-1 min-w-0">
                     <span className="flex items-center gap-1.5">
-                      <span className="text-[13.5px] font-medium text-[#0B1220] truncate">{m.nombre}</span>
+                      <span className="text-[13.5px] font-medium text-fg truncate">{m.nombre}</span>
                       {m.lead && (
                         <Sparkle className="w-3.5 h-3.5 shrink-0" weight="fill" style={{ color: BLUE }} />
                       )}
                     </span>
-                    <span className="block text-[12px] text-neutral-500 truncate">{m.rol}</span>
+                    <span className="block text-[12px] text-fg-muted truncate">{m.rol}</span>
                   </span>
                   {m.lead && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: SEV.success.fg }}>
@@ -433,17 +415,16 @@ export default function AvaluosIAHomePage() {
                 </li>
               ))}
             </ul>
-          </div>
+          </Card>
         </section>
 
         {/* ── 5. AVALÚOS RECIENTES ──────────────────────────────────────── */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white overflow-hidden">
+        <Card className="overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
             <Eyebrow>Avalúos recientes</Eyebrow>
             <Link
               href="#"
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium hover:opacity-80 transition-opacity"
-              style={{ color: BLUE }}
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:opacity-80 transition-opacity"
             >
               Ver todos
               <ArrowRight className="w-3.5 h-3.5" />
@@ -451,15 +432,15 @@ export default function AvaluosIAHomePage() {
           </div>
 
           {/* Column header — mono technical labels */}
-          <div className="hidden sm:grid grid-cols-[1fr_110px_170px_110px_110px_90px] gap-4 px-5 py-2 border-y border-neutral-100 bg-neutral-50/60">
+          <div className="hidden sm:grid grid-cols-[1fr_110px_170px_110px_110px_90px] gap-4 px-5 py-2 border-y border-border-faint bg-surface-muted">
             {['Inmueble', 'Tipo', 'Recomendado', 'Confianza', 'Estado', 'Fecha'].map((h) => (
-              <span key={h} className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+              <MonoLabel key={h} className="text-[10px] tracking-[0.08em]">
                 {h}
-              </span>
+              </MonoLabel>
             ))}
           </div>
 
-          <ul className="divide-y divide-neutral-100">
+          <ul className="divide-y divide-border-faint">
             {RECIENTES.map((row) => {
               const tipo = TIPO_META[row.tipo]
               const TipoIcon = tipo.icon
@@ -467,37 +448,37 @@ export default function AvaluosIAHomePage() {
                 <li key={row.id}>
                   <Link
                     href={`/panel/inmobiliaria/avaluos-ia/${row.id}`}
-                    className="group grid grid-cols-1 sm:grid-cols-[1fr_110px_170px_110px_110px_90px] gap-2 sm:gap-4 sm:items-center px-5 py-3.5 hover:bg-neutral-50/80 transition-colors"
+                    className="group grid grid-cols-1 sm:grid-cols-[1fr_110px_170px_110px_110px_90px] gap-2 sm:gap-4 sm:items-center px-5 py-3.5 hover:bg-surface-hover transition-colors"
                   >
                     <span className="flex items-center gap-2.5 min-w-0">
-                      <MapPin className="w-4 h-4 text-neutral-300 shrink-0" weight="fill" />
+                      <MapPin className="w-4 h-4 text-fg-subtle shrink-0" weight="fill" />
                       <span className="min-w-0">
-                        <span className="block text-[14px] font-medium text-[#0B1220] truncate">{row.inmueble}</span>
-                        <span className="block text-[12px] text-neutral-400 truncate">{row.zona}</span>
+                        <span className="block text-[14px] font-medium text-fg truncate">{row.inmueble}</span>
+                        <span className="block text-[12px] text-fg-subtle truncate">{row.zona}</span>
                       </span>
                     </span>
 
-                    <span className="inline-flex items-center gap-1.5 text-[13px] text-neutral-600">
-                      <TipoIcon className="w-3.5 h-3.5 text-neutral-400" weight="bold" />
+                    <span className="inline-flex items-center gap-1.5 text-[13px] text-fg-muted">
+                      <TipoIcon className="w-3.5 h-3.5 text-fg-subtle" weight="bold" />
                       {tipo.label}
                     </span>
 
-                    <span className="text-[13.5px] font-medium text-[#0B1220] tabular-nums">{row.recomendado}</span>
+                    <span className="text-[13.5px] font-medium text-fg tabular-nums">{row.recomendado}</span>
 
                     <span><ConfianzaChip value={row.confianza} /></span>
 
                     <span><EstadoChip value={row.estado} /></span>
 
                     <span className="flex items-center justify-between sm:justify-start gap-2">
-                      <span className="text-[12px] text-neutral-400 tabular-nums">{row.fecha}</span>
-                      <CaretRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors" weight="bold" />
+                      <span className="text-[12px] text-fg-subtle tabular-nums">{row.fecha}</span>
+                      <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" weight="bold" />
                     </span>
                   </Link>
                 </li>
               )
             })}
           </ul>
-        </section>
+        </Card>
       </div>
     </div>
   )

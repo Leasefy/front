@@ -26,6 +26,8 @@
 
 import * as React from 'react'
 
+import { MonoLabel } from '@leasefy/cadence'
+
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import type { HabeasDataOpenRequest, HabeasDataColor } from '@/lib/hooks/cobranza/use-compliance-overview'
@@ -118,9 +120,9 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
             {relativeFromIso(timestamp, locale)}
           </p>
         </div>
-        <span
+        <MonoLabel
           className={[
-            'text-xs font-mono uppercase tracking-wide tabular-nums whitespace-nowrap',
+            'text-xs tabular-nums whitespace-nowrap',
             remaining_days <= 0
               ? 'text-danger font-semibold'
               : color === 'red' || color === 'red-pulse'
@@ -131,7 +133,7 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
           ].join(' ')}
         >
           {countdown}
-        </span>
+        </MonoLabel>
       </div>
 
       {/* Progress bar */}

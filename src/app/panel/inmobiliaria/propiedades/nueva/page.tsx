@@ -7,8 +7,9 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { Button, Input, Textarea } from '@/components/ui';
-import { BackButton, SegmentedControl } from '@leasefy/ui';
+import { Button, Input, Textarea, Spinner } from '@/components/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BackButton, SegmentedControl } from '@leasefy/cadence';
 import { COLOMBIAN_CITIES } from '@/lib/types/property';
 import type { PropertyType } from '@/lib/types/property';
 
@@ -18,10 +19,6 @@ const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
   { value: 'studio',    label: 'Estudio' },
   { value: 'room',      label: 'Habitación' },
 ];
-
-// Native <select> styled to match the DS Input skin (tokens only, no brand hex).
-const selectClass =
-  'w-full px-3 py-2.5 rounded-md border border-border bg-bg text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary text-sm transition-all';
 
 function NuevaPropiedadContent() {
   const router = useRouter();
@@ -98,7 +95,7 @@ function NuevaPropiedadContent() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-primary/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     );
   }
@@ -172,16 +169,16 @@ function NuevaPropiedadContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-fg">Ciudad *</label>
-              <select
-                value={form.city}
-                onChange={(e) => update('city', e.target.value)}
-                className={selectClass}
-              >
-                <option value="">Seleccioná una ciudad</option>
-                {COLOMBIAN_CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <Select value={form.city || undefined} onValueChange={(v) => update('city', v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccioná una ciudad" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOMBIAN_CITIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

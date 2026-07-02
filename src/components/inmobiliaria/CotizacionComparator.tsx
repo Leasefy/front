@@ -23,6 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import type {
   SolicitudMantenimiento,
   MantenimientoQuote,
@@ -135,28 +136,28 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
       {/* Badges Row */}
       <div className="flex flex-wrap gap-1.5 p-3 pb-0">
         {isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning-soft text-warning">
+          <Badge variant="warning" className="gap-1">
             <Crown className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.bestValue')}
-          </span>
+          </Badge>
         )}
         {isLowestPrice && !isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-soft text-success">
+          <Badge variant="success" className="gap-1">
             <TrendDown className="w-3 h-3" weight="bold" />
             {t('inmobiliaria.finance.quotes.cheapest')}
-          </span>
+          </Badge>
         )}
         {isFastest && !isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-soft text-primary">
+          <Badge variant="default" className="gap-1">
             <Lightning className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.fastest')}
-          </span>
+          </Badge>
         )}
         {isSelected && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-soft text-success">
+          <Badge variant="success" className="gap-1">
             <CheckCircle className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.selected')}
-          </span>
+          </Badge>
         )}
       </div>
 
@@ -411,7 +412,7 @@ export function CotizacionComparator({
 
       {/* Quotes Horizontal Scroll */}
       <div className="relative">
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-[#D5D1CA] dark:scrollbar-thumb-[#4D4A45] scrollbar-track-transparent">
           <AnimatePresence mode="popLayout">
             {solicitud.quotes.map((quote) => (
               <QuoteCard

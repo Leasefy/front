@@ -26,10 +26,10 @@ export function RejectionsHistory({ rejections, collapsible = true, className }:
     <section className={cn('rounded-xl border border-warning/30 bg-warning-soft/60 dark:bg-warning/20 p-5 space-y-3', className)}>
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-sm text-foreground">
+          <h3 className="font-semibold text-sm text-fg">
             {hasHistory ? `Modificaciones solicitadas (${rejections.length})` : 'Modificación solicitada'}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-fg-muted mt-0.5">
             Historial de rechazos del inquilino
           </p>
         </div>
@@ -78,8 +78,8 @@ function RejectionCard({ rejection, highlight = false }: { rejection: ContractRe
       className={cn(
         'rounded-xl border p-3 flex items-start gap-3',
         highlight
-          ? 'bg-white dark:bg-neutral-900 border-warning/30'
-          : 'bg-white/50 dark:bg-neutral-900/40 border-border'
+          ? 'bg-surface dark:bg-ink border-warning/30'
+          : 'bg-surface/50 dark:bg-ink/40 border-border'
       )}
     >
       <div className={cn(
@@ -95,15 +95,15 @@ function RejectionCard({ rejection, highlight = false }: { rejection: ContractRe
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-xs font-semibold text-foreground">{typeLabel}</span>
-          <span className="text-[11px] text-muted-foreground tabular-nums">
+          <span className="text-xs font-semibold text-fg">{typeLabel}</span>
+          <span className="text-[11px] text-fg-muted tabular-nums">
             {formatDate(rejection.createdAt)}
           </span>
         </div>
-        <p className="text-sm text-foreground whitespace-pre-wrap break-words">
+        <p className="text-sm text-fg whitespace-pre-wrap break-words">
           {rejection.reason}
         </p>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-fg-muted">
           <User className="w-3 h-3" />
           <span>{rejection.rejectedBy.firstName} {rejection.rejectedBy.lastName}</span>
         </div>

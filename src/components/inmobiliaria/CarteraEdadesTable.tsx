@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
@@ -19,7 +19,22 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/ui';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+} from '@/components/ui/dropdown-menu';
+import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import type { CarteraReport, CarteraItem } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -92,7 +107,6 @@ export function CarteraEdadesTable({
   const [sortField, setSortField] = useState<SortField>('daysLate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Count items by bucket
   const bucketCounts = useMemo(() => {
@@ -179,15 +193,16 @@ export function CarteraEdadesTable({
     children: React.ReactNode;
     className?: string;
   }) => (
-    <th className={cn('text-left p-4', className)}>
+    <TableHead className={className}>
+      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 hover:text-fg dark:hover:text-white"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
       </button>
-    </th>
+    </TableHead>
   );
 
   return (
@@ -261,9 +276,7 @@ export function CarteraEdadesTable({
                   <span className="flex items-center gap-2 whitespace-nowrap">
                     <Funnel className="w-4 h-4" />
                     {t('inmobiliaria.finance.aging.all')}
-                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-neutral-200 dark:bg-neutral-700">
-                      {bucketCounts.all}
-                    </span>
+                    <Badge variant="secondary">{bucketCounts.all}</Badge>
                   </span>
                 ),
               },
@@ -273,9 +286,7 @@ export function CarteraEdadesTable({
                 label: (
                   <span className="flex items-center gap-2 whitespace-nowrap">
                     0-30d
-                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-success-soft text-success">
-                      {bucketCounts['0-30']}
-                    </span>
+                    <Badge variant="success">{bucketCounts['0-30']}</Badge>
                   </span>
                 ),
               },
@@ -329,10 +340,10 @@ export function CarteraEdadesTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+      <div className="overflow-x-auto rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
         <table className="w-full min-w-[1100px]">
           <thead>
-            <tr className="border-b border-neutral-100 dark:border-neutral-800">
+            <tr className="border-b border-faint dark:border-strong">
               <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.aging.property')}</SortableHeader>
               <SortableHeader field="tenantName">{t('inmobiliaria.finance.aging.tenant')}</SortableHeader>
               <SortableHeader field="propietarioName">{t('inmobiliaria.finance.aging.owner')}</SortableHeader>
@@ -353,7 +364,7 @@ export function CarteraEdadesTable({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
-                  className="border-b border-neutral-50 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-[#141416] transition-colors"
+                  className="border-b border-faint dark:border-strong hover:bg-surface-muted dark:hover:bg-[#14130F] transition-colors"
                 >
                   {/* Property */}
                   <td className="p-4">
@@ -362,10 +373,10 @@ export function CarteraEdadesTable({
                         <HouseLine className="w-5 h-5 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[160px]">
+                        <p className="font-medium text-fg dark:text-white truncate max-w-[160px]">
                           {item.propertyTitle}
                         </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate max-w-[160px]">
+                        <p className="text-sm text-fg-muted dark:text-fg-subtle truncate max-w-[160px]">
                           {item.propertyAddress}
                         </p>
                       </div>
@@ -375,21 +386,21 @@ export function CarteraEdadesTable({
                   {/* Tenant */}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+                      <div className="w-8 h-8 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate max-w-[120px]">
+                        <p className="font-medium text-fg dark:text-white truncate max-w-[120px]">
                           {item.tenantName}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <a
                             href={`tel:${item.tenantPhone}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                            className="p-1 rounded hover:bg-surface-muted dark:hover:bg-ink transition-colors"
                             title={t('inmobiliaria.finance.aging.call')}
                           >
-                            <Phone className="w-3.5 h-3.5 text-neutral-400" />
+                            <Phone className="w-3.5 h-3.5 text-fg-subtle" />
                           </a>
                           <a
                             href={`https://wa.me/${item.tenantPhone.replace(/\D/g, '')}`}
@@ -411,21 +422,21 @@ export function CarteraEdadesTable({
 
                   {/* Propietario */}
                   <td className="p-4">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate block max-w-[120px]">
+                    <span className="text-sm text-fg dark:text-fg-subtle truncate block max-w-[120px]">
                       {item.propietarioName}
                     </span>
                   </td>
 
                   {/* Agente */}
                   <td className="p-4">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate block max-w-[120px]">
+                    <span className="text-sm text-fg dark:text-fg-subtle truncate block max-w-[120px]">
                       {item.agenteName}
                     </span>
                   </td>
 
                   {/* Month */}
                   <td className="p-4">
-                    <span className="text-neutral-700 dark:text-neutral-300 capitalize text-sm">
+                    <span className="text-fg dark:text-fg-subtle capitalize text-sm">
                       {formatMonth(item.month, locale)}
                     </span>
                   </td>
@@ -453,68 +464,37 @@ export function CarteraEdadesTable({
 
                   {/* Actions */}
                   <td className="p-4">
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuId(openMenuId === item.cobroId ? null : item.cobroId);
-                        }}
-                        className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                      >
-                        <DotsThree className="w-5 h-5 text-neutral-500" weight="bold" />
-                      </button>
-
-                      <AnimatePresence>
-                        {openMenuId === item.cobroId && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10"
-                          >
-                            {onContactTenant && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onContactTenant(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <Phone className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.finance.aging.contactTenant')}</span>
-                              </button>
-                            )}
-                            {onViewCobro && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onViewCobro(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                              >
-                                <Eye className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.finance.aging.viewCharge')}</span>
-                              </button>
-                            )}
-                            {onNotifyAgent && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onNotifyAgent(item);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-primary hover:bg-primary-soft transition-colors"
-                              >
-                                <Envelope className="w-4 h-4" />
-                                <span className="text-sm">{t('inmobiliaria.finance.aging.notifyAgent')}</span>
-                              </button>
-                            )}
-                          </motion.div>
+                    <DropdownList>
+                      <DropdownListTrigger asChild>
+                        <IconButton
+                          variant="ghost"
+                          size="sm"
+                          icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="Acciones"
+                        />
+                      </DropdownListTrigger>
+                      <DropdownListContent align="end" className="w-48">
+                        {onContactTenant && (
+                          <DropdownListItem onSelect={() => onContactTenant(item)}>
+                            <Phone className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.finance.aging.contactTenant')}</span>
+                          </DropdownListItem>
                         )}
-                      </AnimatePresence>
-                    </div>
+                        {onViewCobro && (
+                          <DropdownListItem onSelect={() => onViewCobro(item)}>
+                            <Eye className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.finance.aging.viewCharge')}</span>
+                          </DropdownListItem>
+                        )}
+                        {onNotifyAgent && (
+                          <DropdownListItem onSelect={() => onNotifyAgent(item)} className="text-primary">
+                            <Envelope className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.finance.aging.notifyAgent')}</span>
+                          </DropdownListItem>
+                        )}
+                      </DropdownListContent>
+                    </DropdownList>
                   </td>
                 </motion.tr>
               );
@@ -539,10 +519,6 @@ export function CarteraEdadesTable({
           </div>
         )}
 
-        {/* Close dropdown on click outside */}
-        {openMenuId && (
-          <div className="fixed inset-0 z-[5]" onClick={() => setOpenMenuId(null)} />
-        )}
       </div>
     </div>
   );

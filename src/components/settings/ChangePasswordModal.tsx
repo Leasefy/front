@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeSlash, SpinnerGap, X } from '@phosphor-icons/react';
+import { Eye, EyeSlash, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth/use-auth';
 
 interface ChangePasswordModalProps {
@@ -71,12 +74,13 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Cambiar contraseña</h3>
-              <button
+              <IconButton
+                variant="ghost"
+                aria-label="Cerrar"
                 onClick={handleClose}
-                className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+                icon={<X className="w-4 h-4" />}
+                className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+              />
             </div>
 
             {/* Body */}
@@ -90,20 +94,21 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                   Opcional si iniciaste sesión con Google o es la primera vez que asignas contraseña
                 </p>
                 <div className="relative">
-                  <input
+                  <Input
                     type={show.current ? 'text' : 'password'}
                     value={form.current}
                     onChange={(e) => setForm(prev => ({ ...prev, current: e.target.value }))}
-                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+                    className="h-12 pr-12 rounded-xl"
                     placeholder="Tu contraseña actual"
                   />
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    aria-label={show.current ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     onClick={() => setShow(prev => ({ ...prev, current: !prev.current }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                  >
-                    {show.current ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                    icon={show.current ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-transparent"
+                  />
                 </div>
               </div>
 
@@ -113,20 +118,21 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                   Nueva contraseña
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     type={show.new ? 'text' : 'password'}
                     value={form.new}
                     onChange={(e) => setForm(prev => ({ ...prev, new: e.target.value }))}
-                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+                    className="h-12 pr-12 rounded-xl"
                     placeholder="Mínimo 8 caracteres"
                   />
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    aria-label={show.new ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     onClick={() => setShow(prev => ({ ...prev, new: !prev.new }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                  >
-                    {show.new ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                    icon={show.new ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-transparent"
+                  />
                 </div>
               </div>
 
@@ -136,39 +142,44 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
                   Confirmar nueva contraseña
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     type={show.confirm ? 'text' : 'password'}
                     value={form.confirm}
                     onChange={(e) => setForm(prev => ({ ...prev, confirm: e.target.value }))}
-                    className="w-full h-12 px-4 pr-12 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+                    className="h-12 pr-12 rounded-xl"
                     placeholder="Repetir nueva contraseña"
                   />
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    aria-label={show.confirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     onClick={() => setShow(prev => ({ ...prev, confirm: !prev.confirm }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                  >
-                    {show.confirm ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                    icon={show.confirm ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-transparent"
+                  />
                 </div>
               </div>
 
               {/* Botones */}
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
+                  variant="outline"
+                  hideArrow
                   onClick={handleClose}
-                  className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+                  className="flex-1 rounded-xl"
                 >
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  hideArrow
+                  isLoading={isLoading}
                   onClick={handleSubmit}
                   disabled={isLoading || !form.new || !form.confirm}
-                  className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100"
                 >
-                  {isLoading && <SpinnerGap className="w-4 h-4 animate-spin" />}
                   {isLoading ? 'Guardando...' : 'Cambiar contraseña'}
-                </button>
+                </Button>
               </div>
             </div>
           </motion.div>

@@ -7,12 +7,9 @@
  * GET …/ai-hub/agentes/estudio/analitica (404 → graceful panel).
  */
 
-import { ShieldCheck } from '@phosphor-icons/react'
-
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function EstudioAnalitica() {
@@ -22,15 +19,6 @@ function EstudioAnalitica() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/estudio"
-          icon={ShieldCheck}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.estudio'), href: '/panel/inmobiliaria/ai/estudio' },
-            { label: t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-fg tracking-tight">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
         <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.estudio.analiticaDesc')}

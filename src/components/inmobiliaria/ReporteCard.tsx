@@ -20,6 +20,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@leasefy/cadence';
 import type { ReportDefinition } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
@@ -56,13 +59,13 @@ const ICON_MAP: Record<string, React.ElementType> = {
 const CATEGORY_BG_COLORS: Record<string, string> = {
   financiero: 'bg-success-soft',
   operativo: 'bg-primary-soft',
-  agentes: 'bg-neutral-100 dark:bg-neutral-800',
+  agentes: 'bg-surface-muted dark:bg-ink',
 };
 
 const CATEGORY_ICON_COLORS: Record<string, string> = {
   financiero: 'text-success',
   operativo: 'text-primary',
-  agentes: 'text-neutral-600 dark:text-neutral-300',
+  agentes: 'text-fg-muted dark:text-fg-subtle',
 };
 
 /**
@@ -73,7 +76,7 @@ function getGenerationStatus(lastGenerated: string | undefined, t: (key: string,
   label: string;
 } {
   if (!lastGenerated) {
-    return { color: 'bg-neutral-400', label: t('inmobiliaria.reporte.neverGenerated') };
+    return { color: 'bg-muted', label: t('inmobiliaria.reporte.neverGenerated') };
   }
 
   const lastDate = new Date(lastGenerated);
@@ -87,7 +90,7 @@ function getGenerationStatus(lastGenerated: string | undefined, t: (key: string,
   } else if (diffDays <= 7) {
     return { color: 'bg-warning', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   } else {
-    return { color: 'bg-neutral-400', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
+    return { color: 'bg-muted', label: t('inmobiliaria.reporte.daysAgo', { days: diffDays }) };
   }
 }
 
@@ -116,8 +119,8 @@ export function ReporteCard({
 }: ReporteCardProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const Icon = ICON_MAP[report.icon] || FileText;
-  const bgColor = CATEGORY_BG_COLORS[report.category] || 'bg-neutral-100';
-  const iconColor = CATEGORY_ICON_COLORS[report.category] || 'text-neutral-600';
+  const bgColor = CATEGORY_BG_COLORS[report.category] || 'bg-surface-muted';
+  const iconColor = CATEGORY_ICON_COLORS[report.category] || 'text-fg-muted';
   const status = getGenerationStatus(report.lastGenerated, t);
   const FormatIcon = report.format === 'pdf' ? FilePdf : FileXls;
 
@@ -137,11 +140,11 @@ export function ReporteCard({
           <div
             className={cn(
               'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
-              isLocked ? 'bg-neutral-100 dark:bg-neutral-800' : bgColor
+              isLocked ? 'bg-surface-muted dark:bg-ink' : bgColor
             )}
           >
             {isLocked ? (
-              <Lock className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
+              <Lock className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
             ) : (
               <Icon className={cn('w-5 h-5', iconColor)} weight="duotone" />
             )}
@@ -152,14 +155,14 @@ export function ReporteCard({
             <div className="flex items-center gap-2 mb-1">
               <h3 className={cn(
                 'font-semibold text-sm truncate',
-                isLocked ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'
+                isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg dark:text-white'
               )}>
                 {report.title}
               </h3>
               {isLocked && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-soft text-primary text-[10px] font-medium shrink-0">
+                <Badge variant="default" className="text-[10px] shrink-0">
                   Pro
-                </span>
+                </Badge>
               )}
               {!isLocked && report.isFavorite && (
                 <Star
@@ -168,7 +171,7 @@ export function ReporteCard({
                 />
               )}
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-1">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle line-clamp-1">
               {report.description}
             </p>
             <div className="flex items-center gap-2 mt-2">
@@ -181,7 +184,7 @@ export function ReporteCard({
                 <FormatIcon className="w-3 h-3" />
                 {report.format.toUpperCase()}
               </span>
-              <span className="text-xs text-neutral-400">
+              <span className="text-xs text-fg-subtle">
                 {getReportFrequencyLabel(report.frequency)}
               </span>
             </div>
@@ -214,17 +217,15 @@ export function ReporteCard({
               <div className="flex items-center gap-2 mb-1">
                 <h3 className={cn(
                   'font-semibold',
-                  isLocked ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'
+                  isLocked ? 'text-fg-subtle dark:text-fg-muted' : 'text-fg dark:text-white'
                 )}>
                   {report.title}
                 </h3>
                 {isLocked && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-soft text-primary text-[10px] font-medium shrink-0">
-                    Pro
-                  </span>
+                  <Badge className="shrink-0">Pro</Badge>
                 )}
               </div>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 line-clamp-2">
+              <p className="text-sm text-fg-muted dark:text-fg-subtle line-clamp-2">
                 {report.description}
               </p>
             </div>
@@ -232,23 +233,25 @@ export function ReporteCard({
 
           {/* Favorite Toggle */}
           {onToggleFavorite && (
-            <button
+            <IconButton
+              variant="ghost"
+              size="md"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleFavorite();
               }}
-              className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-            >
-              <Star
-                className={cn(
-                  'w-5 h-5',
-                  report.isFavorite
-                    ? 'text-warning'
-                    : 'text-neutral-400 hover:text-warning'
-                )}
-                weight={report.isFavorite ? 'fill' : 'regular'}
-              />
-            </button>
+              aria-label="Favorito"
+              aria-pressed={report.isFavorite}
+              icon={
+                <Star
+                  className={cn(
+                    'w-5 h-5',
+                    report.isFavorite ? 'text-warning' : 'text-fg-subtle'
+                  )}
+                  weight={report.isFavorite ? 'fill' : 'regular'}
+                />
+              }
+            />
           )}
         </div>
       </div>
@@ -278,7 +281,7 @@ export function ReporteCard({
           </span>
 
           {/* Frequency Badge */}
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle">
             {getReportFrequencyLabel(report.frequency)}
           </span>
         </div>
@@ -289,7 +292,7 @@ export function ReporteCard({
         <span
           className={cn('w-2 h-2 rounded-full shrink-0', status.color)}
         />
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">
+        <span className="text-sm text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.reporte.last')}: {formatLastGeneratedFn(report.lastGenerated, t, fmtDate)}
         </span>
       </div>
@@ -323,7 +326,7 @@ export function ReporteCard({
               >
                 {isGenerating ? (
                   <>
-                    <ArrowClockwise className="w-4 h-4 animate-spin" />
+                    <Spinner size="sm" variant="current" />
                     {t('inmobiliaria.reporte.generating')}
                   </>
                 ) : (

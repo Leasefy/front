@@ -18,7 +18,17 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Warning } from '@phosphor-icons/react'
 
-import { Button, EmptyState } from '@/components/ui'
+import {
+  Button,
+  EmptyState,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui'
 import type { Severidad, WorkItem, WorkItemAction } from '@/lib/api/work-item'
 
 // ── Prioridad: colapsa las 4 severidades en 3 niveles con tono token ─────────
@@ -80,35 +90,34 @@ function InboxRow({
     else toast.error(`No se pudo completar: ${res.error ?? 'error'}`)
   }
 
+  const prioridadVariant =
+    prioridad === 'alta' ? 'destructive' : prioridad === 'media' ? 'warning' : 'success'
+
   return (
-    <tr className="border-t border-border align-top">
+    <TableRow className="align-top">
       {/* Prioridad */}
-      <td className="py-3 pr-3 whitespace-nowrap">
-        <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${pri.text} ${pri.bg} ${pri.border}`}
-        >
-          {pri.label}
-        </span>
-      </td>
+      <TableCell className="py-3 pr-3 whitespace-nowrap">
+        <Badge variant={prioridadVariant}>{pri.label}</Badge>
+      </TableCell>
 
       {/* Caso */}
-      <td className="py-3 pr-4">
+      <TableCell className="py-3 pr-4">
         <p className="text-sm font-medium text-fg leading-snug">{item.titulo}</p>
         {item.subject?.masked && (
           <p className="text-xs text-fg-muted mt-0.5">{item.subject.masked}</p>
         )}
-      </td>
+      </TableCell>
 
       {/* Motivo (acción sugerida del agente) */}
-      <td className="py-3 pr-4">
+      <TableCell className="py-3 pr-4">
         <p className="text-sm text-fg leading-snug">{item.accionSugerida.label}</p>
         {item.accionSugerida.razon && (
           <p className="text-xs text-fg-muted mt-0.5 leading-snug">{item.accionSugerida.razon}</p>
         )}
-      </td>
+      </TableCell>
 
       {/* Acción */}
-      <td className="py-3 text-right whitespace-nowrap">
+      <TableCell className="py-3 text-right whitespace-nowrap">
         {ejecutable ? (
           <Button size="sm" variant="secondary" hideArrow isLoading={busy} onClick={run}>
             {accionReal!.label}
@@ -119,8 +128,8 @@ function InboxRow({
             Próximamente
           </Button>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   )
 }
 
@@ -160,21 +169,21 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <table className="w-full min-w-[640px] text-left">
-        <thead>
-          <tr className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-            <th scope="col" className="py-2.5 px-4 font-medium">Prioridad</th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">Caso</th>
-            <th scope="col" className="py-2.5 pr-4 font-medium">Motivo</th>
-            <th scope="col" className="py-2.5 px-4 font-medium text-right">Acción</th>
-          </tr>
-        </thead>
-        <tbody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
+      <Table className="min-w-[640px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="px-4">Prioridad</TableHead>
+            <TableHead className="pr-4">Caso</TableHead>
+            <TableHead className="pr-4">Motivo</TableHead>
+            <TableHead className="px-4 text-right">Acción</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
           {sorted.map((item) => (
             <InboxRow key={item.id} item={item} onAction={onAction} />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

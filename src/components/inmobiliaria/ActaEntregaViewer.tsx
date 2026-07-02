@@ -29,6 +29,16 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import { IconButton } from '@leasefy/cadence';
 import type { ActaEntrega, RoomType, ItemCondition } from '@/lib/types/inmobiliaria';
 import {
   getRoomLabel,
@@ -66,9 +76,13 @@ function Section({ title, icon, children, defaultOpen = true }: SectionProps) {
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
+      {/* allowlist: collapsible-section disclosure toggle (icon-tile + title + caret) that drives a
+          framer-motion height animation — Cadence Accordion would replace the bespoke animation and
+          can't host the rich header; kept native with aria-expanded */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
         className="w-full flex items-center justify-between p-4 bg-surface-muted hover:bg-muted transition-colors"
       >
         <div className="flex items-center gap-3">
@@ -78,9 +92,9 @@ function Section({ title, icon, children, defaultOpen = true }: SectionProps) {
           <span className="font-medium text-foreground">{title}</span>
         </div>
         {isOpen ? (
-          <CaretUp className="w-4 h-4 text-neutral-500" />
+          <CaretUp className="w-4 h-4 text-fg-muted" />
         ) : (
-          <CaretDown className="w-4 h-4 text-neutral-500" />
+          <CaretDown className="w-4 h-4 text-fg-muted" />
         )}
       </button>
       <AnimatePresence>
@@ -124,18 +138,18 @@ function PartyCard({ label, name, cedula, phone, email, icon }: PartyCardProps) 
       </div>
       <div className="space-y-1 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
-          <IdentificationCard className="w-4 h-4 text-neutral-400" />
+          <IdentificationCard className="w-4 h-4 text-fg-subtle" />
           <span>{cedula}</span>
         </div>
         {phone && (
           <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-neutral-400" />
+            <Phone className="w-4 h-4 text-fg-subtle" />
             <span>{phone}</span>
           </div>
         )}
         {email && (
           <div className="flex items-center gap-2">
-            <Envelope className="w-4 h-4 text-neutral-400" />
+            <Envelope className="w-4 h-4 text-fg-subtle" />
             <span className="truncate">{email}</span>
           </div>
         )}
@@ -215,16 +229,9 @@ export function ActaEntregaViewer({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <span
-                className={cn(
-                  'px-3 py-1 rounded-full text-xs font-medium',
-                  acta.type === 'entrega'
-                    ? 'bg-primary-soft text-primary'
-                    : 'bg-muted text-muted-foreground'
-                )}
-              >
+              <Badge variant={acta.type === 'entrega' ? 'default' : 'secondary'}>
                 {getActaTypeLabel(acta.type)}
-              </span>
+              </Badge>
               <span className={cn('px-3 py-1 rounded-full text-xs font-medium', getActaStatusColor(acta.status))}>
                 {getActaStatusLabel(acta.status)}
               </span>
@@ -270,19 +277,19 @@ export function ActaEntregaViewer({
             cedula={acta.tenantCedula}
             phone={acta.tenantPhone}
             email={acta.tenantEmail}
-            icon={<User className="w-5 h-5 text-neutral-500" />}
+            icon={<User className="w-5 h-5 text-fg-muted" />}
           />
           <PartyCard
             label={t('inmobiliaria.acta.owner')}
             name={acta.propietarioName}
             cedula=""
-            icon={<HouseLine className="w-5 h-5 text-neutral-500" />}
+            icon={<HouseLine className="w-5 h-5 text-fg-muted" />}
           />
           <PartyCard
             label={t('inmobiliaria.acta.agent')}
             name={acta.agenteName}
             cedula=""
-            icon={<UserCircle className="w-5 h-5 text-neutral-500" />}
+            icon={<UserCircle className="w-5 h-5 text-fg-muted" />}
           />
         </div>
       </Section>
@@ -324,40 +331,40 @@ export function ActaEntregaViewer({
 
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-2 px-4 text-xs font-medium text-neutral-500 uppercase">
+                  <Table className="w-full">
+                    <TableHeader>
+                      <TableRow className="border-b border-border">
+                        <TableHead className="text-left py-2 px-4 text-xs font-medium text-fg-muted uppercase">
                           {t('inmobiliaria.acta.thItem')}
-                        </th>
-                        <th className="text-center py-2 px-4 text-xs font-medium text-neutral-500 uppercase">
+                        </TableHead>
+                        <TableHead className="text-center py-2 px-4 text-xs font-medium text-fg-muted uppercase">
                           {t('inmobiliaria.acta.thQty')}
-                        </th>
-                        <th className="text-center py-2 px-4 text-xs font-medium text-neutral-500 uppercase">
+                        </TableHead>
+                        <TableHead className="text-center py-2 px-4 text-xs font-medium text-fg-muted uppercase">
                           {t('inmobiliaria.acta.thCondition')}
-                        </th>
-                        <th className="text-left py-2 px-4 text-xs font-medium text-neutral-500 uppercase">
+                        </TableHead>
+                        <TableHead className="text-left py-2 px-4 text-xs font-medium text-fg-muted uppercase">
                           {t('inmobiliaria.acta.thNotes')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {roomItems.map((item) => (
-                        <tr
+                        <TableRow
                           key={item.id}
-                          className="border-b border-neutral-50 dark:border-neutral-800/50 last:border-0"
+                          className="border-b border-faint dark:border-strong/50 last:border-0"
                         >
-                          <td className="py-3 px-4">
+                          <TableCell className="py-3 px-4">
                             <span className="font-medium text-foreground text-sm">
                               {item.name}
                             </span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-center">
                             <span className="text-muted-foreground text-sm">
                               {item.quantity}
                             </span>
-                          </td>
-                          <td className="py-3 px-4">
+                          </TableCell>
+                          <TableCell className="py-3 px-4">
                             <div className="flex justify-center">
                               <span
                                 className={cn(
@@ -373,20 +380,20 @@ export function ActaEntregaViewer({
                                 {getConditionLabel(item.condition)}
                               </span>
                             </div>
-                          </td>
-                          <td className="py-3 px-4">
+                          </TableCell>
+                          <TableCell className="py-3 px-4">
                             {item.hasDefects && item.defectDescription ? (
                               <span className="text-warning text-sm">
                                 {item.defectDescription}
                               </span>
                             ) : (
-                              <span className="text-neutral-400 text-sm">-</span>
+                              <span className="text-fg-subtle text-sm">-</span>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
 
                 {/* Mobile Cards */}
@@ -634,26 +641,32 @@ export function ActaEntregaViewer({
                       {partyLabels[party]}
                     </p>
                     <p className="text-sm text-warning">{partyNames[party]}</p>
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
                       onClick={() => onRequestSignature?.(party)}
-                      className="mt-3 px-3 py-1.5 rounded-md bg-warning-soft text-warning text-xs font-medium hover:bg-warning-soft transition-colors"
+                      className="mt-3 bg-warning-soft text-warning hover:bg-warning-soft/80"
                     >
                       {t('inmobiliaria.acta.requestSignature')}
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>
-                    <Signature className="w-10 h-10 text-neutral-400 mx-auto mb-2" />
+                    <Signature className="w-10 h-10 text-fg-subtle mx-auto mb-2" />
                     <p className="font-medium text-muted-foreground">
                       {partyLabels[party]}
                     </p>
                     <p className="text-sm text-muted-foreground">{t('inmobiliaria.acta.pending')}</p>
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
                       onClick={() => onRequestSignature?.(party)}
-                      className="mt-3 px-3 py-1.5 rounded-md bg-muted text-muted-foreground text-xs font-medium hover:bg-muted transition-colors"
+                      className="mt-3"
                     >
                       {t('inmobiliaria.acta.requestSignature')}
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>
@@ -702,12 +715,13 @@ export function ActaEntregaViewer({
                 alt={t('inmobiliaria.acta.expandedView')}
                 className="max-w-full max-h-[80vh] object-contain"
               />
-              <button
+              <IconButton
+                variant="ghost"
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                aria-label="Cerrar"
+                icon={<X className="w-5 h-5" />}
+                className="absolute top-3 right-3 rounded-full bg-black/50 text-white hover:bg-black/70"
+              />
             </motion.div>
           </motion.div>
         )}

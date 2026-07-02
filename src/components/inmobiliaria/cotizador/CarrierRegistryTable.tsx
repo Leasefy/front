@@ -25,6 +25,20 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -129,12 +143,12 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
 
   return (
     <>
-      <tr
+      <TableRow
         className={trClass}
         data-has-override={row.hasOverride ? 'true' : undefined}
       >
         {/* Name + Route — sticky first column */}
-        <td className="px-4 py-3 text-sm sticky left-0 bg-card z-10">
+        <TableCell className="px-4 py-3 text-sm sticky left-0 bg-card z-10">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium text-fg capitalize">
               {row.global.name}
@@ -149,10 +163,10 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
               </span>
             )}
           </div>
-        </td>
+        </TableCell>
 
         {/* Mode — global / tenant */}
-        <td className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm">
           <div className="flex flex-col gap-0.5">
             <span className="text-fg">{row.global.mode}</span>
             {row.override?.mode != null ? (
@@ -163,35 +177,35 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
               </span>
             )}
           </div>
-        </td>
+        </TableCell>
 
         {/* Global Enabled */}
-        <td className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm">
           <Badge
             variant="outline"
             className={globalEnabled ? 'text-success border-success/30' : 'text-fg-muted'}
           >
             {globalEnabled ? 'On' : 'Off'}
           </Badge>
-        </td>
+        </TableCell>
 
         {/* Tenant Enabled — interactive Switch */}
-        <td className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm">
           <Switch
             checked={tenantEnabled ?? globalEnabled}
             onCheckedChange={handleToggle}
             disabled={!canConfigure}
             aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.popover.enabledLabel')}
           />
-        </td>
+        </TableCell>
 
         {/* Global Priority */}
-        <td className="px-4 py-3 text-sm text-fg">
+        <TableCell className="px-4 py-3 text-sm text-fg">
           {row.global.priority}
-        </td>
+        </TableCell>
 
         {/* Tenant Priority */}
-        <td className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm">
           {tenantPriority != null ? (
             <span className="text-fg">{tenantPriority}</span>
           ) : (
@@ -199,22 +213,22 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.inherits', { value: String(row.global.priority) })}
             </span>
           )}
-        </td>
+        </TableCell>
 
         {/* Breach Status */}
-        <td className="px-4 py-3 text-sm">
+        <TableCell className="px-4 py-3 text-sm">
           <Badge
             variant={row.global.breachStatus === 'unknown' ? 'outline' : 'outline'}
             className={`text-xs ${breachClass}`}
           >
             {row.global.breachStatus}
           </Badge>
-        </td>
+        </TableCell>
 
         {/* Actions — kebab menu */}
-        <td className="px-4 py-3 text-sm">
-          <Popover open={kebabOpen} onOpenChange={setKebabOpen}>
-            <PopoverTrigger asChild>
+        <TableCell className="px-4 py-3 text-sm">
+          <DropdownList open={kebabOpen} onOpenChange={setKebabOpen}>
+            <DropdownListTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
@@ -223,24 +237,19 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
               >
                 <DotsThreeVertical className="h-4 w-4" weight="bold" aria-hidden="true" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-1" align="end">
-              <div className="flex flex-col">
-                <button
-                  className="flex items-center px-3 py-2 text-sm rounded hover:bg-surface-muted text-fg text-left w-full"
-                  onClick={handleEdit}
-                >
-                  {t('inmobiliaria.ai.cotizador.aseguradoras.table.actionEdit')}
-                </button>
-                <button
-                  className="flex items-center px-3 py-2 text-sm rounded hover:bg-surface-muted text-danger text-left w-full"
-                  onClick={handleResetClick}
-                >
-                  {t('inmobiliaria.ai.cotizador.aseguradoras.table.actionReset')}
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
+            </DropdownListTrigger>
+            <DropdownListContent className="w-40" align="end">
+              <DropdownListItem onClick={handleEdit}>
+                {t('inmobiliaria.ai.cotizador.aseguradoras.table.actionEdit')}
+              </DropdownListItem>
+              <DropdownListItem
+                onClick={handleResetClick}
+                className="text-danger focus:text-danger"
+              >
+                {t('inmobiliaria.ai.cotizador.aseguradoras.table.actionReset')}
+              </DropdownListItem>
+            </DropdownListContent>
+          </DropdownList>
 
           {/* Edit popover (separate Popover for the edit form) */}
           <Popover open={editOpen} onOpenChange={setEditOpen}>
@@ -257,13 +266,13 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
               />
             </PopoverContent>
           </Popover>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
 
       {/* Conflict Alert — inline below row when tenantEnabled=true AND globalEnabled=false */}
       {hasConflict && (
-        <tr>
-          <td colSpan={8} className="px-4 pb-2">
+        <TableRow>
+          <TableCell colSpan={8} className="px-4 pb-2">
             <div
               role="alert"
               data-testid="conflict-alert"
@@ -271,8 +280,8 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
             >
               {t('inmobiliaria.ai.cotizador.aseguradoras.table.conflictWarning')}
             </div>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
 
       {/* AlertDialog for Reset — shadcn, NOT browser confirm() */}
@@ -325,36 +334,36 @@ export function CarrierRegistryTable({
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-surface-muted/60">
-            <tr>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left sticky left-0 bg-surface-muted z-10">
+        <Table className="min-w-full divide-y divide-border">
+          <TableHeader className="bg-surface-muted/60">
+            <TableRow>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left sticky left-0 bg-surface-muted z-10">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colName')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colMode')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalEnabled')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantEnabled')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalPriority')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantPriority')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colBreachStatus')}
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              </TableHead>
+              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colActions')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-border">
             {rows.map((row) => (
               <CarrierTableRow
                 key={`${row.global.name}:${row.global.route}`}
@@ -364,8 +373,8 @@ export function CarrierRegistryTable({
                 onResetOverride={onResetOverride}
               />
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )

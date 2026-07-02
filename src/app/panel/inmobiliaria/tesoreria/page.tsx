@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -98,31 +99,29 @@ function TesoreriaContent() {
               <p className="text-xs text-fg-muted mt-0.5">{t(k('egresosDesc'))}</p>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  {COLUMNS.map((c) => (
-                    <th key={c} className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap">
-                      {t(k(c))}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colSpan={COLUMNS.length} className="p-0">
-                    <EmptyState
-                      icon={Wallet}
-                      title={t(k('emptyTitle'))}
-                      description={t(k('emptyDesc'))}
-                      action={{ label: t(k('processCta')), href: '/panel/inmobiliaria/dispersiones' }}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {COLUMNS.map((c) => (
+                  <TableHead key={c} className="whitespace-nowrap">
+                    {t(k(c))}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={COLUMNS.length} className="p-0">
+                  <EmptyState
+                    icon={Wallet}
+                    title={t(k('emptyTitle'))}
+                    description={t(k('emptyDesc'))}
+                    action={{ label: t(k('processCta')), href: '/panel/inmobiliaria/dispersiones' }}
+                  />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </section>
       </div>
     </div>

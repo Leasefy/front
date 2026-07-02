@@ -1,23 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip as CadenceTooltip } from '@leasefy/cadence';
 
 /**
  * IconTooltip — instant (no-delay) tooltip for icon-only actions.
  *
- * The native `title` attribute only surfaces after a ~1s browser delay, which
- * makes icon-only buttons hard to read on hover. This wraps the trigger in a
- * Radix tooltip with `delayDuration={0}` so the label appears immediately.
+ * Now renders the Cadence `Tooltip` (dark ink body `bg-fg` + white text +
+ * arrow — the Cadence dark spec) instead of the legacy cobalt Radix tooltip.
+ * The Cadence Tooltip ships its own Provider, so this stays self-contained and
+ * works anywhere without a root-level provider.
  *
- * Self-contained: it ships its own TooltipProvider, so it works anywhere without
- * a root-level provider. Always keep an `aria-label` on the child for screen
- * readers (the tooltip is visual only).
+ * `delayDuration={0}` preserves the original instant-on-hover behavior (the
+ * native `title` attribute only surfaces after a ~1s delay). Always keep an
+ * `aria-label` on the child for screen readers (the tooltip is visual only).
+ *
+ * Public API (label / side / children) is unchanged.
  *
  * Usage:
  *   <IconTooltip label="Ver propiedad">
@@ -34,11 +32,8 @@ export function IconTooltip({
   children: React.ReactNode;
 }) {
   return (
-    <TooltipProvider delayDuration={0} skipDelayDuration={0}>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent side={side}>{label}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <CadenceTooltip content={label} side={side} delayDuration={0}>
+      {children}
+    </CadenceTooltip>
   );
 }

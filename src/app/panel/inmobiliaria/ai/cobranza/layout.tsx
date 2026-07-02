@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
-import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useI18n } from '@/lib/i18n';
+import { Spinner } from '@/components/ui';
 
 export default function CobranzaLayout({ children }: { children: React.ReactNode }) {
   const { canAccess, isLoading } = usePermissionsContext();
@@ -12,7 +12,7 @@ export default function CobranzaLayout({ children }: { children: React.ReactNode
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     );
   }
@@ -30,19 +30,7 @@ export default function CobranzaLayout({ children }: { children: React.ReactNode
     );
   }
 
-  return (
-    <div>
-      <div className="px-6 pt-4 lg:px-8">
-        <Breadcrumb
-          items={[
-            { label: t('inmobiliaria.ai.breadcrumb.aiAgents'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.breadcrumb.cobranza') },
-          ]}
-          showHouseIcon
-          homeHref="/panel/inmobiliaria"
-        />
-      </div>
-      {children}
-    </div>
-  );
+  // Navigation (breadcrumb + tabs) now lives at the top: the breadcrumb in the
+  // PlanHeader (AgentHeaderBreadcrumb) and the function tabs in WorkspaceNav.
+  return <>{children}</>;
 }

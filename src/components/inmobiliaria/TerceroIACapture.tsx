@@ -10,9 +10,10 @@ import {
   PencilSimple,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { SegmentedControl } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
 import { PropietarioForm } from './PropietarioForm';
 import {
   extractTerceroFromImage,
@@ -176,20 +177,14 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
           <p className="text-body-sm text-muted-foreground max-w-sm">{errorMsg}</p>
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <button
-            onClick={resetToUpload}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs transition-colors font-medium"
-          >
+          <Button variant="secondary" size="sm" hideArrow onClick={resetToUpload}>
             <ArrowClockwise className="w-4 h-4" />
             {t(k('retry'))}
-          </button>
-          <button
-            onClick={fillManually}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs transition-transform active:scale-[0.97] font-medium"
-          >
+          </Button>
+          <Button size="sm" hideArrow onClick={fillManually}>
             <PencilSimple className="w-4 h-4" weight="bold" />
             {t(k('fillManual'))}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -205,26 +200,13 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
         <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
       </div>
 
-      {/* Tipo de documento */}
-      <div role="tablist" aria-label={t(k('docKindLabel'))} className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted">
-        {DOC_KINDS.map((dk) => (
-          <button
-            key={dk.value}
-            type="button"
-            role="tab"
-            aria-selected={docKind === dk.value}
-            onClick={() => setDocKind(dk.value)}
-            className={cn(
-              'h-9 px-4 rounded-md text-sm font-medium transition-colors',
-              docKind === dk.value
-                ? 'bg-card text-foreground'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t(k(dk.labelKey))}
-          </button>
-        ))}
-      </div>
+      {/* Tipo de documento — Cadence SegmentedControl */}
+      <SegmentedControl
+        value={docKind}
+        onChange={setDocKind}
+        aria-label={t(k('docKindLabel'))}
+        options={DOC_KINDS.map((dk) => ({ value: dk.value, label: t(k(dk.labelKey)) }))}
+      />
 
       {/* Dropzone */}
       <input
@@ -260,20 +242,13 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       </button>
 
       <div className="flex items-center justify-end gap-2 pt-1">
-        <button
-          onClick={onClose}
-          className="h-11 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-sm transition-colors font-medium"
-        >
+        <Button variant="secondary" hideArrow onClick={onClose}>
           {t(k('cancel'))}
-        </button>
-        <button
-          onClick={handleExtract}
-          disabled={!file}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm transition-transform active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-        >
+        </Button>
+        <Button hideArrow onClick={handleExtract} disabled={!file}>
           <Sparkle className="w-4 h-4" weight="fill" />
           {t(k('extract'))}
-        </button>
+        </Button>
       </div>
     </div>
   );

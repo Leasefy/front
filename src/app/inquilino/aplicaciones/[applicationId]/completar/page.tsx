@@ -21,6 +21,10 @@ import { StepReferences } from '@/components/wizard/steps/StepReferences';
 import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
 
+import { Button } from '@/components/ui/button';
+import { IconButton } from '@leasefy/cadence';
+import { Spinner } from '@/components/ui/spinner';
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -152,17 +156,17 @@ export default function CompletarPage({ params }: CompletarPageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-surface-muted">
+        <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
   }
 
   if (error || !application || !property) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">{error ?? 'No se pudo cargar la aplicación.'}</p>
+          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la aplicación.'}</p>
           <a
             href={`/inquilino/aplicaciones/${applicationId}`}
             className="text-[#1A40FF] hover:underline text-sm"
@@ -219,28 +223,30 @@ function UpdateWizardContent({
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-muted flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-muted flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-[#1a1a1c] rounded-xl p-8 max-w-md w-full text-center"
+          className="bg-surface dark:bg-[#1a1a1c] rounded-xl p-8 max-w-md w-full text-center"
         >
           <div className="w-16 h-16 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-[#2C7A53] dark:text-[#3EAE70]" />
           </div>
-          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-3">
+          <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
             ¡Información actualizada!
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-8">
+          <p className="text-fg-muted dark:text-fg-subtle mb-8">
             La inmobiliaria fue notificada de que completaste la información solicitada.
             Revisarán tu solicitud a la brevedad.
           </p>
-          <button
+          <Button
+            size="lg"
+            hideArrow
             onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}`)}
-            className="w-full py-3 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-semibold transition-colors"
+            className="w-full"
           >
             Ver mi aplicación
-          </button>
+          </Button>
         </motion.div>
       </div>
     );
@@ -276,13 +282,13 @@ function SubmissionErrorBanner({ message }: { message: string }) {
             {message}
           </p>
         </div>
-        <button
+        <IconButton
+          variant="ghost"
           onClick={() => setDismissed(true)}
-          className="flex-shrink-0 w-7 h-7 rounded-sm flex items-center justify-center hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/60 transition-colors"
+          className="flex-shrink-0 w-7 h-7 rounded-sm hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/60"
           aria-label="Cerrar"
-        >
-          <X className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D]" />
-        </button>
+          icon={<X className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D]" />}
+        />
       </div>
     </div>
   );

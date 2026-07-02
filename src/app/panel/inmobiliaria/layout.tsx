@@ -311,10 +311,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
  */
 export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps) {
   return (
-    // DEV-LOCAL-OVERRIDE (2026-06-14, NO COMMIT): permite que una cuenta tenant
-    // entre al panel de inmobiliaria en local para pruebas de UI. Revertir a
-    // allowedRoles={['agency']} antes de cualquier commit. Buscar "DEV-LOCAL-OVERRIDE".
-    <ProtectedRoute allowedRoles={['agency', 'tenant']}>
+    <ProtectedRoute allowedRoles={['agency']}>
       <I18nProvider>
         <PermissionsProvider>
           <PanelPrefsProvider>

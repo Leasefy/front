@@ -290,12 +290,12 @@ describe('getSeverityIndicator', () => {
 
   it('returns correct indicator for medium severity', () => {
     const indicator = getSeverityIndicator('medium');
-    expect(indicator).toEqual({ label: 'Moderado', color: 'text-amber-600' });
+    expect(indicator).toEqual({ label: 'Moderado', color: 'text-[#B7791F]' });
   });
 
   it('returns correct indicator for high severity', () => {
     const indicator = getSeverityIndicator('high');
-    expect(indicator).toEqual({ label: 'Importante', color: 'text-red-600' });
+    expect(indicator).toEqual({ label: 'Importante', color: 'text-[#C4503B]' });
   });
 
   it('returns objects with label and color properties for all severities', () => {

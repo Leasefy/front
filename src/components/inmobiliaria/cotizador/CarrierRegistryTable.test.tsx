@@ -236,11 +236,16 @@ describe('<CarrierRegistryTable>', () => {
     })
     render([row])
 
-    // Click the kebab trigger to open the popover/menu
+    // Click the kebab trigger to open the dropdown menu.
+    // Radix DropdownMenuTrigger opens on `pointerdown` (not `click`), so we must
+    // dispatch a PointerEvent — a plain `.click()` only fires the click event and
+    // the portal never renders its items in JSDOM.
     const kebabBtn = container.querySelector('[aria-label*="Acciones para"]')
     expect(kebabBtn).toBeTruthy()
     await act(async () => {
-      ;(kebabBtn as HTMLElement).click()
+      ;(kebabBtn as HTMLElement).dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+      )
       await new Promise((r) => setTimeout(r, 0))
     })
 

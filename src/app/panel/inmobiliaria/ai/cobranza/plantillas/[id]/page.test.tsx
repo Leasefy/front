@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { vi as _vi } from 'vitest'
 // Flake conocido: estos specs montan páginas pesadas y exceden los 5s default
 // bajo carga paralela del runner (pasan aislados). Timeout holgado a propósito.
-_vi.setConfig({ testTimeout: 20_000 })
+_vi.setConfig({ testTimeout: 60_000 })
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
@@ -90,6 +90,24 @@ const WA_TEMPLATE = {
   updatedAt: '2026-05-29T10:00:00Z',
 }
 
+// ----- Test helpers ---------------------------------------------------------
+
+/**
+ * Polls getter() until it returns a truthy value or the timeout expires.
+ * Uses plain setTimeout (no act()) so React's scheduler can process pending
+ * work between polls without adding act() overhead under parallel test load.
+ */
+async function waitForEl<T>(getter: () => T, timeout = 15_000): Promise<T> {
+  const deadline = Date.now() + timeout
+  let value = getter()
+  while (!value && Date.now() < deadline) {
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise<void>((r) => setTimeout(r, 50))
+    value = getter()
+  }
+  return value
+}
+
 // ----- Tests ----------------------------------------------------------------
 
 describe('TemplatePage (detail editor)', () => {
@@ -136,9 +154,12 @@ describe('TemplatePage (detail editor)', () => {
       )
     })
 
-    // Find save draft button
-    const saveDraftBtn = Array.from(container.querySelectorAll('button')).find(
-      (btn) => btn.textContent?.includes('inmobiliaria.ai.templates.saveDraft'),
+    // Wait for save draft button to appear (async effects may delay render under load)
+    const saveDraftBtn = await waitForEl(
+      () =>
+        Array.from(container.querySelectorAll('button')).find(
+          (btn) => btn.textContent?.includes('inmobiliaria.ai.templates.saveDraft'),
+        ) ?? null,
     )
     expect(saveDraftBtn).toBeTruthy()
 
@@ -163,11 +184,14 @@ describe('TemplatePage (detail editor)', () => {
       )
     })
 
-    // Find publish button
-    const publishBtn = Array.from(container.querySelectorAll('button')).find(
-      (btn) =>
-        btn.textContent?.includes('inmobiliaria.ai.templates.publish') &&
-        !btn.textContent?.includes('dialog'),
+    // Wait for publish button to appear before clicking
+    const publishBtn = await waitForEl(
+      () =>
+        Array.from(container.querySelectorAll('button')).find(
+          (btn) =>
+            btn.textContent?.includes('inmobiliaria.ai.templates.publish') &&
+            !btn.textContent?.includes('dialog'),
+        ) ?? null,
     )
     expect(publishBtn).toBeTruthy()
 
@@ -180,9 +204,9 @@ describe('TemplatePage (detail editor)', () => {
     const publishCalls = fetchCalls.filter((c) => c.url.includes('/publish'))
     expect(publishCalls.length).toBe(0)
 
-    // AlertDialog renders via a Portal to document.body (outside container)
-    // Check the body for the dialog element
-    const dialog = document.querySelector('[role="alertdialog"]')
+    // AlertDialog renders via a Portal to document.body (outside container).
+    // Wait for it — Radix may animate it in asynchronously.
+    const dialog = await waitForEl(() => document.querySelector('[role="alertdialog"]'))
     expect(dialog).toBeTruthy()
   })
 
@@ -194,6 +218,14 @@ describe('TemplatePage (detail editor)', () => {
         React.createElement(TemplatePage, { params: { id: 'tpl-stage-1' } }),
       )
     })
+
+    // Wait for the save draft button as a stable render anchor, then check WA absence
+    await waitForEl(
+      () =>
+        Array.from(container.querySelectorAll('button')).find(
+          (btn) => btn.textContent?.includes('inmobiliaria.ai.templates.saveDraft'),
+        ) ?? null,
+    )
 
     // WA status section should not be present
     const waSection = container.querySelector('[data-wa-status-section]')
@@ -217,8 +249,12 @@ describe('TemplatePage (detail editor)', () => {
       )
     })
 
+    // Wait for the warning alert to appear (async effects may delay render under load)
+    const warningAlert = await waitForEl(
+      () => container.querySelector('[data-unknown-var-alert]'),
+    )
+
     // Should show unknown variable warning
-    const warningAlert = container.querySelector('[data-unknown-var-alert]')
     expect(warningAlert).toBeTruthy()
   })
 })

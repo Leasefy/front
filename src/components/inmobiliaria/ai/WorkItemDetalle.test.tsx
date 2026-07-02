@@ -231,8 +231,8 @@ describe('WorkItemDetalle — states', () => {
     const decision = container.querySelector('[data-testid="caso-decision"]')
     expect(decision).not.toBeNull()
     expect(decision!.textContent).toContain('Con problema')
-    // danger tone (#C4503B) on the estado label
-    expect(decision!.querySelector('.text-\\[\\#C4503B\\]')).not.toBeNull()
+    // danger tone (cadence token `text-danger`) on the estado label
+    expect(decision!.querySelector('.text-danger')).not.toBeNull()
     expect(container.querySelector('[data-testid="accion-sugerida"]')).toBeNull()
   })
 

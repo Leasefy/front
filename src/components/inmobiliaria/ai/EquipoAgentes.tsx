@@ -72,13 +72,26 @@ const AI_BASE = '/panel/inmobiliaria/ai'
 
 /** Sala (overview) route per agent. */
 export function salaHref(agente: AgenteId): string {
-  return `${AI_BASE}/${agente}`
+  return `${AI_BASE}/${routeSegment(agente)}`
+}
+
+/**
+ * Route segment overrides — the data/API id (`cotizador`) differs from the
+ * renamed app route segment (`asegurabilidad`). Map here so links stay correct
+ * without changing the AgenteId type or backend contract.
+ */
+const ROUTE_SEGMENT: Partial<Record<AgenteId, string>> = {
+  cotizador: 'asegurabilidad',
+}
+
+function routeSegment(agente: AgenteId): string {
+  return ROUTE_SEGMENT[agente] ?? agente
 }
 
 /** Cola (queue) route per agent — cobranza's human queue = escalaciones. */
 export function colaHref(agente: AgenteId): string {
   if (agente === 'cobranza') return `${AI_BASE}/cobranza/escalaciones`
-  return `${AI_BASE}/${agente}/cola`
+  return `${AI_BASE}/${routeSegment(agente)}/cola`
 }
 
 const numberFormatter = new Intl.NumberFormat('es-CO')

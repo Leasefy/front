@@ -153,6 +153,24 @@ vi.mock('@/components/inmobiliaria/cotizador/WizardStep2Propiedad', () => ({
     </div>
   ),
 }))
+vi.mock('@/components/inmobiliaria/cotizador/WizardStep3Config', () => ({
+  WizardStep3Config: ({ onNext, onBack }: any) => (
+    <div data-testid="step3-config">
+      <button data-testid="step3-config-next" type="button" onClick={onNext}>
+        next
+      </button>
+      <button data-testid="step3-config-back" type="button" onClick={onBack}>
+        back
+      </button>
+    </div>
+  ),
+  EMPTY_WIZARD_CONFIG: {
+    carrierMode: 'recomendar',
+    selectedCarriers: [],
+    priority: 'probabilidad',
+    runMode: 'automatico',
+  },
+}))
 vi.mock('@/components/inmobiliaria/cotizador/WizardStep3Review', () => ({
   WizardStep3Review: ({ onSubmit }: any) => (
     <div data-testid="step3">
@@ -438,6 +456,10 @@ describe('NuevaCotizacionPage — Phase 33 re-quote flow', () => {
     act(() => {
       ;(h.container.querySelector('[data-testid="step2-next"]') as HTMLButtonElement).click()
     })
+    // Step 3 is now the config step (WizardStep3Config); advance to the review step.
+    act(() => {
+      ;(h.container.querySelector('[data-testid="step3-config-next"]') as HTMLButtonElement).click()
+    })
     await act(async () => {
       ;(h.container.querySelector('[data-testid="step3-submit"]') as HTMLButtonElement).click()
     })
@@ -493,6 +515,10 @@ describe('NuevaCotizacionPage — Phase 33 re-quote flow', () => {
     })
     act(() => {
       ;(h.container.querySelector('[data-testid="step2-next"]') as HTMLButtonElement).click()
+    })
+    // Step 3 is now the config step (WizardStep3Config); advance to the review step.
+    act(() => {
+      ;(h.container.querySelector('[data-testid="step3-config-next"]') as HTMLButtonElement).click()
     })
     await act(async () => {
       ;(h.container.querySelector('[data-testid="step3-submit"]') as HTMLButtonElement).click()

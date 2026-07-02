@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
 import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, ApiError } from '@/lib/api/client';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
@@ -82,6 +82,9 @@ function RegistroContent() {
   const [invitation, setInvitation] = useState<InvitationInfo | null>(null);
   const [loadingInvitation, setLoadingInvitation] = useState(true);
   const [invitationError, setInvitationError] = useState<string | null>(null);
+  // True when the token is conclusively dead (expired / already-accepted / not-found),
+  // as opposed to a transient network failure we shouldn't act on.
+  const [invitationDead, setInvitationDead] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -102,13 +105,35 @@ function RegistroContent() {
     agencyApi.getInvitation(token)
       .then((data) => {
         setInvitation(data);
-        if (data.invitedEmail || data.email) {
-          authForm.setValue('email', data.invitedEmail ?? data.email ?? '');
+        const rawEmail = data.invitedEmail ?? data.email ?? '';
+        if (rawEmail) {
+          // Defend against a malformed value (e.g. RFC-2822 `name"<email>`):
+          // extract the address inside angle brackets, else use the trimmed value.
+          const angle = rawEmail.match(/<([^>]+)>/);
+          authForm.setValue('email', (angle ? angle[1] : rawEmail).trim());
         }
       })
-      .catch(() => setInvitationError('La invitación no existe o ya expiró.'))
+      .catch((err) => {
+        // Distinguish a dead token (expired / already-accepted / not-found) from a
+        // transient network error, so we don't wipe a still-valid token on a blip.
+        const dead = err instanceof ApiError && [400, 404, 410].includes(err.status);
+        setInvitationDead(dead);
+        setInvitationError(
+          dead
+            ? 'Esta invitación ya no es válida: expiró o ya fue aceptada.'
+            : 'No pudimos validar la invitación. Revisá tu conexión e intentá de nuevo.'
+        );
+      })
       .finally(() => setLoadingInvitation(false));
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A dead invitation token left in localStorage makes ProtectedRoute bounce the user
+  // back here forever (panel → /registro → error → …). Purge it to break the loop.
+  useEffect(() => {
+    if (invitationDead) {
+      try { localStorage.removeItem(PENDING_INVITATION_KEY); } catch { /* ignore */ }
+    }
+  }, [invitationDead]);
 
   // ─── Auto-accept / auto-complete ─────────────────────────────────────────
   // Fires whenever the user is authenticated and has an invitation token loaded.
@@ -235,6 +260,27 @@ function RegistroContent() {
           </div>
           <h1 className="text-lg font-semibold text-foreground mb-2">Invitación inválida</h1>
           <p className="text-sm text-muted-foreground">{invitationError}</p>
+          {invitationDead && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Si ya sos miembro, entrá a tu panel. Si no, pedile al administrador que te reenvíe la invitación.
+            </p>
+          )}
+          {isAuthenticated && (
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                onClick={() => window.location.replace('/panel/inmobiliaria')}
+                className="w-full h-11 flex items-center justify-center rounded-xl bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                Ir a mi panel
+              </button>
+              <a
+                href="/"
+                className="w-full h-11 flex items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Volver al inicio
+              </a>
+            </div>
+          )}
         </div>
       </div>
     );

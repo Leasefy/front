@@ -149,9 +149,32 @@ function OnboardingInmobiliariaContent() {
   const isStep1Valid = data.agencyName.trim().length > 0 && data.contactPerson.trim().length > 0
   const isStep2Valid = data.city.trim().length > 0 && data.portfolioSize !== null
   const isStep3Valid = data.services.length > 0
-  const isStep4Valid = data.email.trim().length > 0 &&
+  // When already authenticated, step 4 only confirms the profile — no account
+  // credentials are needed (the account already exists).
+  const isStep4Valid = isAuthenticated || (
+    data.email.trim().length > 0 &&
     data.password.length >= 8 &&
     data.password === data.confirmPassword
+  )
+
+  // Step 4 copy switches from "create account" to "complete profile" for
+  // already-authenticated users (e.g. invited members) so we never ask them to
+  // create an account they already have.
+  const step4Badge = isAuthenticated
+    ? t('inmobiliaria.onboarding.register.step4.badgeProfile')
+    : t('inmobiliaria.onboarding.register.step4.badge')
+  const step4Title = isAuthenticated
+    ? t('inmobiliaria.onboarding.register.step4.titleProfile')
+    : t('inmobiliaria.onboarding.register.step4.title')
+  const step4Subtitle = isAuthenticated
+    ? t('inmobiliaria.onboarding.register.step4.subtitleProfile')
+    : t('inmobiliaria.onboarding.register.step4.subtitle')
+  const step4SubmitLabel = isAuthenticated
+    ? t('inmobiliaria.onboarding.register.step4.completeProfile')
+    : t('inmobiliaria.onboarding.register.step4.createAccount')
+  const step4SubmittingLabel = isAuthenticated
+    ? t('inmobiliaria.onboarding.register.step4.savingProfile')
+    : t('inmobiliaria.onboarding.register.step4.creatingAccount')
 
   // First missing-field message per step (for the disabled-CTA tap affordance)
   const step1HintMessage = !data.agencyName.trim()
@@ -776,13 +799,13 @@ function OnboardingInmobiliariaContent() {
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#EEF1FF] text-[#1A40FF] rounded-full text-sm font-medium mb-4">
                   <Lock className="w-4 h-4" />
-                  {t('inmobiliaria.onboarding.register.step4.badge')}
+                  {step4Badge}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-2">
-                  {t('inmobiliaria.onboarding.register.step4.title')}
+                  {step4Title}
                 </h1>
                 <p className="text-neutral-500">
-                  {t('inmobiliaria.onboarding.register.step4.subtitle')}
+                  {step4Subtitle}
                 </p>
               </div>
 
@@ -794,6 +817,8 @@ function OnboardingInmobiliariaContent() {
                 }}
               >
               <div className="space-y-5">
+                {!isAuthenticated && (
+                  <>
                 {/* Email */}
                 <div>
                   <label htmlFor="accountEmail" className="block text-sm font-medium text-neutral-700 mb-2">
@@ -881,6 +906,8 @@ function OnboardingInmobiliariaContent() {
                     </p>
                   )}
                 </div>
+                  </>
+                )}
 
                 {/* Error message */}
                 {authError && (
@@ -889,17 +916,19 @@ function OnboardingInmobiliariaContent() {
                   </div>
                 )}
 
-                {/* Terms notice */}
-                <p className="text-xs text-neutral-400 text-center">
-                  {t('inmobiliaria.onboarding.register.step4.termsPrefix')}{' '}
-                  <Link href="/terminos" className="text-[#1A40FF] hover:underline">
-                    {t('inmobiliaria.onboarding.register.step4.termsOfService')}
-                  </Link>{' '}
-                  {t('common.and')}{' '}
-                  <Link href="/privacidad" className="text-[#1A40FF] hover:underline">
-                    {t('inmobiliaria.onboarding.register.step4.privacyPolicy')}
-                  </Link>
-                </p>
+                {/* Terms notice — only when creating a new account */}
+                {!isAuthenticated && (
+                  <p className="text-xs text-neutral-400 text-center">
+                    {t('inmobiliaria.onboarding.register.step4.termsPrefix')}{' '}
+                    <Link href="/terminos" className="text-[#1A40FF] hover:underline">
+                      {t('inmobiliaria.onboarding.register.step4.termsOfService')}
+                    </Link>{' '}
+                    {t('common.and')}{' '}
+                    <Link href="/privacidad" className="text-[#1A40FF] hover:underline">
+                      {t('inmobiliaria.onboarding.register.step4.privacyPolicy')}
+                    </Link>
+                  </p>
+                )}
               </div>
 
               {/* Navigation */}
@@ -931,11 +960,11 @@ function OnboardingInmobiliariaContent() {
                     {isSubmitting ? (
                       <>
                         <SpinnerGap className="w-4 h-4 animate-spin" />
-                        {t('inmobiliaria.onboarding.register.step4.creatingAccount')}
+                        {step4SubmittingLabel}
                       </>
                     ) : (
                       <>
-                        {t('inmobiliaria.onboarding.register.step4.createAccount')}
+                        {step4SubmitLabel}
                         <Rocket className="w-4 h-4" />
                       </>
                     )}

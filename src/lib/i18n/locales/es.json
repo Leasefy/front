@@ -565,7 +565,9 @@
       "month": "mes",
       "properties": "Propiedades",
       "contracts": "Contratos",
-      "upgradePlan": "Mejorar plan"
+      "upgradePlan": "Mejorar plan",
+      "loadError": "No pudimos cargar tu plan. Intentá de nuevo.",
+      "retry": "Reintentar"
     },
     "notifications": {
       "title": "Notificaciones",
@@ -3434,6 +3436,11 @@
           "confirmPasswordPlaceholder": "Repite tu contraseña",
           "createAccount": "Crear cuenta",
           "creatingAccount": "Creando cuenta...",
+          "badgeProfile": "Completar perfil",
+          "titleProfile": "Completa tu perfil",
+          "subtitleProfile": "Último paso para acceder a tu panel de administración",
+          "completeProfile": "Completar perfil",
+          "savingProfile": "Guardando...",
           "termsPrefix": "Al crear tu cuenta aceptas nuestros",
           "termsOfService": "Términos de servicio",
           "privacyPolicy": "Política de privacidad"
@@ -5754,7 +5761,6 @@
         "analitica": {
           "title": "Analítica de Cobranza",
           "subtitle": "Métricas agregadas de recuperación, objeciones y cadencia del agente.",
-          "sampleDataWatermark": "Datos de muestra",
           "agencyGate": {
             "title": "Sin datos suficientes",
             "reason": "Necesitas al menos 5 llamadas en los últimos 30 días para ver analítica.",
@@ -8136,7 +8142,9 @@
       "securePayment": "Pago seguro",
       "cancelAnytime": "Cancela cuando quieras",
       "satisfactionGuarantee": "Garantía de satisfacción",
-      "acceptedMethods": "Aceptamos Visa, Mastercard y PSE"
+      "acceptedMethods": "Aceptamos Visa, Mastercard y PSE",
+      "subscriptionLoadError": "No pudimos cargar tu plan actual.",
+      "subscriptionRetry": "Reintentar"
     },
     "candidates": {
       "title": "Candidatos",

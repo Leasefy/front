@@ -153,6 +153,20 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   React.useEffect(() => {
     if (!didAuthenticateInForm.current) return;
     if (authLoading) return;
+    // MFA gate first (security): never bypass a pending second factor, regardless
+    // of onboarding/returnUrl state (mirrors ProtectedRoute.tsx:127-130).
+    if (mfaRequired) {
+      window.location.href = '/auth/mfa-verify';
+      return;
+    }
+    // Invitation flow: the /invitacion/[token] page handles needsOnboarding on its
+    // own (it offers "complete registration" → /registro?invitationToken). Honor a
+    // returnUrl pointing there BEFORE the generic onboarding redirect — otherwise an
+    // invited user is sent to the "create agency" onboarding and the token is lost.
+    if (returnUrl.startsWith('/invitacion/')) {
+      window.location.href = returnUrl;
+      return;
+    }
     // JWT valid but backend has no user record yet → onboarding
     if (needsOnboarding) {
       window.location.href = '/onboarding/seleccionar-rol';
@@ -162,12 +176,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     // Si el onboarding no está completo, siempre ir a seleccionar rol
     if (!user.onboardingCompleted) {
       window.location.href = '/onboarding/seleccionar-rol';
-      return;
-    }
-    // MFA gate: if a second factor is still required, send to the verify page
-    // instead of the panel (mirrors ProtectedRoute.tsx:127-130).
-    if (mfaRequired) {
-      window.location.href = '/auth/mfa-verify';
       return;
     }
     if (returnUrl && returnUrl !== '/') {
@@ -314,7 +322,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     try {
-      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password);
+      // Preserve context on the email-confirmation link so it returns through
+      // /auth/callback (which exchanges the code server-side and honors returnUrl)
+      // instead of Supabase's default Site URL (the root "/"), which would drop the
+      // invitation/onboarding context and land the user as a bare TENANT.
+      const dest = returnUrl && returnUrl !== '/' ? returnUrl : getOnboardingHref(selectedRole);
+      const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo);
       if (requiresConfirmation) {
         setResetEmail(data.email);
         setRegisterStep('confirm-email');

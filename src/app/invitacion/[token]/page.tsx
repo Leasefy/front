@@ -129,7 +129,9 @@ export default function InvitacionPage() {
   // (No auto-accept — user must click the button explicitly.)
 
   // ---- Redirect helpers ----
-  const loginUrl = `/auth?redirect=/invitacion/${token}`;
+  // AuthForm reads `returnUrl` (not `redirect`); after login it sends the user
+  // back here, where the invitation flow (accept / complete-registration) lives.
+  const loginUrl = `/auth?returnUrl=${encodeURIComponent(`/invitacion/${token}`)}`;
   // New users go through /registro which creates backend profile (AGENCY type) + accepts invitation.
   // The generic /auth flow only creates a Supabase account and leaves needsOnboarding: true.
   const registerUrl = `/registro?invitationToken=${token}`;

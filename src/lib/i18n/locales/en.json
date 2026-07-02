@@ -565,7 +565,9 @@
       "month": "month",
       "properties": "Properties",
       "contracts": "Contracts",
-      "upgradePlan": "Upgrade plan"
+      "upgradePlan": "Upgrade plan",
+      "loadError": "We couldn't load your plan. Try again.",
+      "retry": "Retry"
     },
     "notifications": {
       "title": "Notifications",
@@ -3433,6 +3435,11 @@
           "confirmPasswordPlaceholder": "Repeat your password",
           "createAccount": "Create account",
           "creatingAccount": "Creating account...",
+          "badgeProfile": "Complete profile",
+          "titleProfile": "Complete your profile",
+          "subtitleProfile": "Last step to access your admin panel",
+          "completeProfile": "Complete profile",
+          "savingProfile": "Saving...",
           "termsPrefix": "By creating your account you accept our",
           "termsOfService": "Terms of service",
           "privacyPolicy": "Privacy policy"
@@ -5753,7 +5760,6 @@
         "analitica": {
           "title": "Collections Analytics",
           "subtitle": "Aggregate recovery, objections, and agent cadence metrics.",
-          "sampleDataWatermark": "Sample data",
           "agencyGate": {
             "title": "Not enough data yet",
             "reason": "You need at least 5 calls in the last 30 days to see analytics.",
@@ -8135,7 +8141,9 @@
       "securePayment": "Secure payment",
       "cancelAnytime": "Cancel anytime",
       "satisfactionGuarantee": "Satisfaction guarantee",
-      "acceptedMethods": "We accept Visa, Mastercard and PSE"
+      "acceptedMethods": "We accept Visa, Mastercard and PSE",
+      "subscriptionLoadError": "We couldn't load your current plan.",
+      "subscriptionRetry": "Retry"
     },
     "candidates": {
       "title": "Candidates",

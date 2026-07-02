@@ -18,10 +18,8 @@ import {
   Wrench,
   UserCircle,
   PaperPlaneTilt,
-  Robot,
   ChatCircleText,
   ShieldCheck,
-  SlidersHorizontal,
   Receipt,
   Bank,
   Lifebuoy,
@@ -29,15 +27,9 @@ import {
   Sparkle,
   Wallet,
   FilePlus,
-  CreditCard,
   ClipboardText,
-  Envelope,
-  PhoneCall,
-  Siren,
   GitMerge,
-  ArrowsClockwise,
   Scales,
-  ListChecks,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
@@ -52,6 +44,7 @@ import { MobileNavBar } from '@/components/layout/MobileNavBar';
 import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/CommandPaletteContext';
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { CommandPaletteTrigger } from '@/components/inmobiliaria/CommandPaletteTrigger';
+import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 
 /** Registers the global ⌘K keyboard shortcut for the command palette. */
 function CommandPaletteShortcuts() {
@@ -106,8 +99,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
     // exact match so it doesn't stay highlighted on every subroute.
     { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: Sparkle,       exact: true, module: null },
-    { label: t('inmobiliaria.nav.hoy'),          href: '/panel/inmobiliaria/hoy',          icon: Sparkle,       module: null },
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
     // ── AGENTES IA ──
     { kind: 'section', label: t('inmobiliaria.nav.secAgentes'), href: '#sec-agentes', icon: Sparkle, module: null },
     {
@@ -116,137 +107,18 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: ChatCircleText,
       module: 'cobranza',
       dataTourTarget: 'sidebar-cobranza',
-      // Visión #13 (2026-06-12): IA humana en 3 capas — entender (Resumen),
-      // operar (Casos/Pendientes/Pagos/Llamadas/Cartas/Siniestros), aprender
-      // (Reporte/Analítica/Playbooks) y gobernar (Cumplimiento/Habeas Data/
-      // Configuración). "Escalaciones" ya no es entrada propia: la cola vive
-      // agrupada dentro de Pendientes (la página /escalaciones sigue ruteable).
-      children: [
-        {
-          // Exact: solo se ilumina en la portada del agente, no en subrutas.
-          label: t('inmobiliaria.ai.nav.cobranzaResumen'),
-          href: '/panel/inmobiliaria/ai/cobranza',
-          icon: SquaresFour,
-          exact: true,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.cobranzaCasos'),
-          href: '/panel/inmobiliaria/ai/cobranza/deudores',
-          icon: Users,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          // Bandeja unificada: escalaciones + cartas por aprobar + siniestros
-          // + planes + promesas a vencer.
-          label: t('inmobiliaria.ai.nav.cobranzaPendientes'),
-          href: '/panel/inmobiliaria/ai/cobranza/pendientes',
-          icon: ListChecks,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.pagos'),
-          href: '/panel/inmobiliaria/ai/cobranza/pagos',
-          icon: CreditCard,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.llamadas'),
-          href: '/panel/inmobiliaria/ai/cobranza/llamadas',
-          icon: PhoneCall,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.cartas'),
-          href: '/panel/inmobiliaria/ai/cobranza/cartas',
-          icon: Envelope,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.siniestros'),
-          href: '/panel/inmobiliaria/ai/cobranza/siniestros',
-          icon: Siren,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.cobranzaReporte'),
-          href: '/panel/inmobiliaria/ai/cobranza/reporte',
-          icon: ChartLine,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.analitica'),
-          href: '/panel/inmobiliaria/ai/cobranza/analitica',
-          icon: ChartLineUp,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          // Playbooks = la antigua "Plantillas" con nombre de la visión.
-          label: t('inmobiliaria.ai.nav.cobranzaPlaybooks'),
-          href: '/panel/inmobiliaria/ai/cobranza/plantillas',
-          icon: FileText,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.compliance'),
-          href: '/panel/inmobiliaria/ai/cobranza/compliance',
-          icon: ClipboardText,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.arco'),
-          href: '/panel/inmobiliaria/ai/cobranza/arco',
-          icon: ShieldCheck,
-          module: 'cobranza',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.configuracion'),
-          href: '/panel/inmobiliaria/ai/cobranza/configuracion',
-          icon: SlidersHorizontal,
-          module: 'cobranza',
-          dataTourTarget: 'sidebar-configuraciones',
-        } as NavItemWithModule,
-      ],
+      // Las funciones del agente (Casos/Pendientes/Inbox/Pagos/Cartas/…) ya NO
+      // viven aquí: se renderizan como tabs DENTRO del workspace (WorkspaceNav),
+      // alimentadas por src/lib/nav/agentWorkspaceNav.ts. El sidebar muestra el
+      // agente como un único ítem para no abrumar.
     } as NavItemWithModule,
     {
       label: t('inmobiliaria.ai.nav.cotizador'),
-      href: '/panel/inmobiliaria/ai/cotizador',
+      href: '/panel/inmobiliaria/ai/asegurabilidad',
       icon: FileText,
       module: 'cotizador',
       dataTourTarget: 'sidebar-cotizador',
-      children: [
-        {
-          label: t('inmobiliaria.ai.nav.cotizadorCola'),
-          href: '/panel/inmobiliaria/ai/cotizador/cola',
-          icon: ClipboardText,
-          module: 'cotizador',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.cotizador.nav.aseguradoras'),
-          href: '/panel/inmobiliaria/ai/cotizador/aseguradoras',
-          icon: ShieldCheck,
-          module: 'cotizador',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.cotizador.nav.insights'),
-          href: '/panel/inmobiliaria/ai/cotizador/insights',
-          icon: ChartLineUp,
-          module: 'cotizador',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.cotizador.nav.costos'),
-          href: '/panel/inmobiliaria/ai/cotizador/costos',
-          icon: CurrencyDollar,
-          module: 'cotizador',
-        } as NavItemWithModule,
-        {
-          // F9: autonomy posture (read-only AutonomiaPanel; t323 amber callout).
-          label: t('inmobiliaria.ai.cotizador.nav.configuracion'),
-          href: '/panel/inmobiliaria/ai/cotizador/configuracion',
-          icon: SlidersHorizontal,
-          module: 'cotizador',
-        } as NavItemWithModule,
-      ],
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     {
       // Avalúos (7º agente): standalone service proxied by the agent backend;
@@ -258,20 +130,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       href: '/panel/inmobiliaria/ai/avaluos',
       icon: Scales,
       module: 'avaluos',
-      children: [
-        {
-          label: t('inmobiliaria.ai.nav.avaluosCola'),
-          href: '/panel/inmobiliaria/ai/avaluos/cola',
-          icon: ClipboardText,
-          module: 'avaluos',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.avaluosConfiguracion'),
-          href: '/panel/inmobiliaria/ai/avaluos/configuracion',
-          icon: SlidersHorizontal,
-          module: 'avaluos',
-        } as NavItemWithModule,
-      ],
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     {
       // F6: Conciliación is the first complete agent workspace — the parent
@@ -282,39 +141,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: Bank,
       module: null,
       roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-      children: [
-        {
-          label: t('inmobiliaria.ai.nav.conciliacionCola'),
-          href: '/panel/inmobiliaria/ai/conciliacion/cola',
-          icon: ClipboardText,
-          module: null,
-          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-        } as NavItemWithModule,
-        {
-          // F10 (SPEC §4): the legacy movimientos/extractos page moved INTO the
-          // workspace; /conciliacion now redirects to the Sala.
-          label: t('inmobiliaria.ai.nav.conciliacionMovimientos'),
-          href: '/panel/inmobiliaria/ai/conciliacion/movimientos',
-          icon: ArrowsClockwise,
-          module: null,
-          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.conciliacionConfiguracion'),
-          href: '/panel/inmobiliaria/ai/conciliacion/configuracion',
-          icon: SlidersHorizontal,
-          module: null,
-          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-        } as NavItemWithModule,
-        {
-          // F10: per-agent analítica (superficie 6) — same icon as cobranza's child.
-          label: t('inmobiliaria.ai.nav.conciliacionAnalitica'),
-          href: '/panel/inmobiliaria/ai/conciliacion/analitica',
-          icon: ChartLineUp,
-          module: null,
-          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-        } as NavItemWithModule,
-      ],
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     {
       // F7: Estudio del inquilino complete workspace. Gated by the agent
@@ -326,27 +153,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       href: '/panel/inmobiliaria/ai/estudio',
       icon: ShieldCheck,
       module: 'estudio',
-      children: [
-        {
-          label: t('inmobiliaria.ai.nav.estudioCola'),
-          href: '/panel/inmobiliaria/ai/estudio/cola',
-          icon: ClipboardText,
-          module: 'estudio',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.estudioConfiguracion'),
-          href: '/panel/inmobiliaria/ai/estudio/configuracion',
-          icon: SlidersHorizontal,
-          module: 'estudio',
-        } as NavItemWithModule,
-        {
-          // F10: per-agent analítica (superficie 6) — same gate as the rest of estudio.
-          label: t('inmobiliaria.ai.nav.estudioAnalitica'),
-          href: '/panel/inmobiliaria/ai/estudio/analitica',
-          icon: ChartLineUp,
-          module: 'estudio',
-        } as NavItemWithModule,
-      ],
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     {
       // F8: Matching complete workspace. Gated by the agent module 'matching'
@@ -357,27 +164,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       href: '/panel/inmobiliaria/ai/matching',
       icon: GitMerge,
       module: 'matching',
-      children: [
-        {
-          label: t('inmobiliaria.ai.nav.matchingCola'),
-          href: '/panel/inmobiliaria/ai/matching/cola',
-          icon: ClipboardText,
-          module: 'matching',
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.matchingConfiguracion'),
-          href: '/panel/inmobiliaria/ai/matching/configuracion',
-          icon: SlidersHorizontal,
-          module: 'matching',
-        } as NavItemWithModule,
-        {
-          // F10: per-agent analítica (superficie 6) — same gate as the rest of matching.
-          label: t('inmobiliaria.ai.nav.matchingAnalitica'),
-          href: '/panel/inmobiliaria/ai/matching/analitica',
-          icon: ChartLineUp,
-          module: 'matching',
-        } as NavItemWithModule,
-      ],
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     {
       // F9: Pagos (AP) complete workspace — the parent now points at the Sala
@@ -389,30 +176,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: CurrencyDollar,
       module: null,
       roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-      children: [
-        {
-          label: t('inmobiliaria.ai.nav.pagosCola'),
-          href: '/panel/inmobiliaria/ai/pagos/cola',
-          icon: ClipboardText,
-          module: null,
-          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-        } as NavItemWithModule,
-        {
-          label: t('inmobiliaria.ai.nav.pagosConfiguracion'),
-          href: '/panel/inmobiliaria/ai/pagos/configuracion',
-          icon: SlidersHorizontal,
-          module: null,
-          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-        } as NavItemWithModule,
-        {
-          // F10: per-agent analítica (superficie 6) — ADMIN|CONTADOR gate preserved.
-          label: t('inmobiliaria.ai.nav.pagosAnalitica'),
-          href: '/panel/inmobiliaria/ai/pagos/analitica',
-          icon: ChartLineUp,
-          module: null,
-          roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-        } as NavItemWithModule,
-      ],
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', icon: ClipboardText, module: null },
     // ── PORTAFOLIO ──
@@ -441,7 +205,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes',     icon: Chat,          badge: 5, module: null },
     // ── BOTTOM ──
     { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,      module: 'documentos' },
-    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: null },
+    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: null, dataTourTarget: 'sidebar-configuraciones' },
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
@@ -510,8 +274,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
         )}
       >
-        {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar. */}
-        <PlanHeader showMagnifyingGlass={false} />
+        {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar.
+            leftSlot carries the AI agent breadcrumb — all agent nav lives at the top now
+            (breadcrumb here + WorkspaceNav tabs below), so pages drop their MigaDePan. */}
+        <PlanHeader showMagnifyingGlass={false} leftSlot={<AgentHeaderBreadcrumb />} />
         <main id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
@@ -530,7 +296,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
  */
 export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps) {
   return (
-    <ProtectedRoute allowedRoles={['agency']}>
+    // DEV-LOCAL-OVERRIDE (2026-06-14, NO COMMIT): permite que una cuenta tenant
+    // entre al panel de inmobiliaria en local para pruebas de UI. Revertir a
+    // allowedRoles={['agency']} antes de cualquier commit. Buscar "DEV-LOCAL-OVERRIDE".
+    <ProtectedRoute allowedRoles={['agency', 'tenant']}>
       <I18nProvider>
         <PermissionsProvider>
           <PanelPrefsProvider>

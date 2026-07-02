@@ -9,12 +9,9 @@
  * callout renders).
  */
 
-import { ShieldCheck } from '@phosphor-icons/react'
-
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import { AutonomiaPanel } from '@/components/inmobiliaria/ai/AutonomiaPanel'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function EstudioConfiguracion() {
@@ -25,17 +22,8 @@ function EstudioConfiguracion() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/estudio"
-          icon={ShieldCheck}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.estudio'), href: '/panel/inmobiliaria/ai/estudio' },
-            { label: t('inmobiliaria.ai.workspace.pages.comun.configTitle') },
-          ]}
-        />
-        <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <h1 className="text-2xl font-semibold text-fg tracking-tight">{t('inmobiliaria.ai.workspace.pages.comun.configTitle')}</h1>
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.comun.configDesc')}
         </p>
       </header>

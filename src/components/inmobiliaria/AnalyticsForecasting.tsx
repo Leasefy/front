@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ChartLineUp,
   TrendUp,
@@ -18,6 +18,22 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
+import { SegmentedControl } from '@leasefy/cadence';
 import type {
   ForecastData,
   ForecastScenario,
@@ -161,26 +177,26 @@ function ForecastChart({
   const isPercentMetric = forecast.unit === '%';
 
   return (
-    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+        <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.analytics.forecastComp.projectionMonths', { count: horizon })}
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-[#1A40FF] rounded" />
-            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.historic')}</span>
+            <span className="w-3 h-0.5 bg-primary rounded" />
+            <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.forecastComp.historic')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span
-              className="w-3 h-0.5 bg-neutral-500 rounded"
+              className="w-3 h-0.5 bg-muted rounded"
               style={{ borderTop: '2px dashed' }}
             />
-            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.base')}</span>
+            <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.forecastComp.base')}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 bg-neutral-200 dark:bg-neutral-700 rounded-sm opacity-50" />
-            <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.interval')}</span>
+            <span className="w-3 h-3 bg-surface-muted dark:bg-ink rounded-sm opacity-50" />
+            <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.forecastComp.interval')}</span>
           </div>
         </div>
       </div>
@@ -205,7 +221,7 @@ function ForecastChart({
               x={padding.left - 8}
               y={padding.top + innerHeight * ratio + 4}
               textAnchor="end"
-              className="fill-neutral-400 dark:fill-neutral-500"
+              className="fill-[#B3AEA5] dark:fill-[#726E68]"
               fontSize={10}
             >
               {isPercentMetric
@@ -224,7 +240,7 @@ function ForecastChart({
               x={'data' in point && 'date' in point.data ? point.x : point.x}
               y={chartHeight - 12}
               textAnchor="middle"
-              className="fill-neutral-400 dark:fill-neutral-500"
+              className="fill-[#B3AEA5] dark:fill-[#726E68]"
               fontSize={10}
             >
               {formatMonthLabel('date' in point.data ? point.data.date : '', locale)}
@@ -245,7 +261,7 @@ function ForecastChart({
           x={(historicalPoints[historicalPoints.length - 1]?.x || padding.left) - 5}
           y={padding.top + 15}
           textAnchor="end"
-          className="fill-neutral-400 dark:fill-neutral-500"
+          className="fill-[#B3AEA5] dark:fill-[#726E68]"
           fontSize={9}
         >
           {t('inmobiliaria.analytics.forecastComp.historic')}
@@ -254,7 +270,7 @@ function ForecastChart({
           x={(historicalPoints[historicalPoints.length - 1]?.x || padding.left) + 5}
           y={padding.top + 15}
           textAnchor="start"
-          className="fill-neutral-400 dark:fill-neutral-500"
+          className="fill-[#B3AEA5] dark:fill-[#726E68]"
           fontSize={9}
         >
           {t('inmobiliaria.analytics.forecastComp.projection')}
@@ -327,10 +343,10 @@ function ForecastChart({
 
           const color =
             scenario.id === 'optimistic'
-              ? '#2C7A53'
+              ? '#3F8A53'
               : scenario.id === 'pessimistic'
-              ? '#C4503B'
-              : '#8A9CFF';
+              ? '#C0392B'
+              : '#7B95FF';
 
           return (
             <motion.path
@@ -379,13 +395,13 @@ function ForecastChart({
               fill="white"
               stroke="#E5E7EB"
               strokeWidth={1}
-              className="dark:fill-neutral-800 dark:stroke-neutral-700"
+              className="dark:fill-[#2A2824] dark:stroke-[#4D4A45]"
             />
             <text
               x={baselinePoints[hoveredPoint.index].x}
               y={baselinePoints[hoveredPoint.index].y - 42}
               textAnchor="middle"
-              className="fill-neutral-900 dark:fill-white"
+              className="fill-[#14130F] dark:fill-white"
               fontSize={12}
               fontWeight={600}
             >
@@ -395,7 +411,7 @@ function ForecastChart({
               x={baselinePoints[hoveredPoint.index].x}
               y={baselinePoints[hoveredPoint.index].y - 26}
               textAnchor="middle"
-              className="fill-neutral-500 dark:fill-neutral-400"
+              className="fill-[#726E68] dark:fill-[#B3AEA5]"
               fontSize={10}
             >
               {formatConfidence(baselinePoints[hoveredPoint.index].data.confidence)}
@@ -404,7 +420,7 @@ function ForecastChart({
               x={baselinePoints[hoveredPoint.index].x}
               y={baselinePoints[hoveredPoint.index].y - 14}
               textAnchor="middle"
-              className="fill-neutral-400 dark:fill-neutral-500"
+              className="fill-[#B3AEA5] dark:fill-[#726E68]"
               fontSize={9}
             >
               {formatValue(baselinePoints[hoveredPoint.index].data.lowerBound, forecast.unit)} -{' '}
@@ -447,7 +463,7 @@ function ScenarioCard({
         'p-4 rounded-xl border-2 cursor-pointer transition-all',
         isActive
           ? `border-${color}-500 dark:border-${color}-400 bg-${color}-50 dark:bg-${color}-900/20`
-          : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] opacity-60 hover:opacity-100'
+          : 'border-border dark:border-strong bg-surface dark:bg-[#14130F] opacity-60 hover:opacity-100'
       )}
       onClick={onToggle}
     >
@@ -456,44 +472,44 @@ function ScenarioCard({
           <div
             className={cn(
               'w-3 h-3 rounded-full',
-              scenario.id === 'optimistic' && 'bg-[#2C7A53]',
-              scenario.id === 'conservative' && 'bg-[#1A40FF]',
-              scenario.id === 'pessimistic' && 'bg-[#C4503B]'
+              scenario.id === 'optimistic' && 'bg-success',
+              scenario.id === 'conservative' && 'bg-primary',
+              scenario.id === 'pessimistic' && 'bg-danger'
             )}
           />
-          <h4 className="font-medium text-neutral-900 dark:text-white text-sm">
+          <h4 className="font-medium text-fg dark:text-white text-sm">
             {scenario.name}
           </h4>
         </div>
         <span
           className={cn(
             'px-2 py-0.5 rounded-full text-xs font-medium',
-            scenario.id === 'optimistic' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-            scenario.id === 'conservative' && 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
-            scenario.id === 'pessimistic' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+            scenario.id === 'optimistic' && 'bg-success-soft text-success',
+            scenario.id === 'conservative' && 'bg-primary-soft text-primary',
+            scenario.id === 'pessimistic' && 'bg-danger-soft text-danger'
           )}
         >
           {(scenario.probability * 100).toFixed(0)}%
         </span>
       </div>
 
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3 line-clamp-2">
+      <p className="text-xs text-fg-muted dark:text-fg-subtle mb-3 line-clamp-2">
         {scenario.description}
       </p>
 
       <div className="mb-3">
-        <p className="text-lg font-bold text-neutral-900 dark:text-white">
+        <p className="text-lg font-bold text-fg dark:text-white">
           {formatValue(endValue, unit)}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.analytics.forecastComp.projectedFinalValue')}</p>
+        <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.forecastComp.projectedFinalValue')}</p>
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300">{t('inmobiliaria.analytics.forecastComp.assumptions')}:</p>
+        <p className="text-xs font-medium text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.forecastComp.assumptions')}:</p>
         <ul className="space-y-1">
           {scenario.assumptions.slice(0, 3).map((assumption, i) => (
-            <li key={i} className="flex items-start gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-              <CheckCircle className="w-3 h-3 shrink-0 mt-0.5 text-neutral-400" weight="fill" />
+            <li key={i} className="flex items-start gap-1.5 text-xs text-fg-muted dark:text-fg-subtle">
+              <CheckCircle className="w-3 h-3 shrink-0 mt-0.5 text-fg-subtle" weight="fill" />
               {assumption}
             </li>
           ))}
@@ -509,58 +525,58 @@ function ScenarioCard({
 function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit: string }) {
   const { t, locale } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-      <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-4">
+    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+      <h3 className="text-sm font-medium text-fg dark:text-white mb-4">
         {t('inmobiliaria.analytics.forecastComp.projectionDetails')}
       </h3>
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-neutral-100 dark:border-neutral-800">
-              <th className="text-left p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+        <Table className="w-full">
+          <TableHeader>
+            <TableRow className="border-b border-faint dark:border-strong">
+              <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.forecastComp.month')}
-              </th>
-              <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.forecastComp.prediction')}
-              </th>
-              <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.forecastComp.lowerBound')}
-              </th>
-              <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.forecastComp.upperBound')}
-              </th>
-              <th className="text-right p-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.forecastComp.confidenceLabel')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data.map((point, index) => (
               <motion.tr
                 key={index}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="border-b border-neutral-50 dark:border-neutral-800/50 hover:bg-neutral-50 dark:hover:bg-neutral-800/30"
+                className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30"
               >
-                <td className="p-2 text-sm font-medium text-neutral-900 dark:text-white">
+                <TableCell className="p-2 text-sm font-medium text-fg dark:text-white">
                   {new Date(point.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                     month: 'long',
                     year: 'numeric',
                   })}
-                </td>
-                <td className="p-2 text-sm text-right font-semibold text-neutral-900 dark:text-white">
+                </TableCell>
+                <TableCell className="p-2 text-sm text-right font-semibold text-fg dark:text-white">
                   {formatValue(point.predicted, unit)}
-                </td>
-                <td className="p-2 text-sm text-right text-neutral-500 dark:text-neutral-400">
+                </TableCell>
+                <TableCell className="p-2 text-sm text-right text-fg-muted dark:text-fg-subtle">
                   {formatValue(point.lowerBound, unit)}
-                </td>
-                <td className="p-2 text-sm text-right text-neutral-500 dark:text-neutral-400">
+                </TableCell>
+                <TableCell className="p-2 text-sm text-right text-fg-muted dark:text-fg-subtle">
                   {formatValue(point.upperBound, unit)}
-                </td>
-                <td className="p-2 text-right">
+                </TableCell>
+                <TableCell className="p-2 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <div className="w-16 h-2 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                    <div className="w-16 h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${point.confidence * 100}%` }}
@@ -568,22 +584,22 @@ function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit:
                         className={cn(
                           'h-full rounded-full',
                           point.confidence >= 0.8
-                            ? 'bg-[#2C7A53]'
+                            ? 'bg-success'
                             : point.confidence >= 0.6
-                            ? 'bg-[#B7791F]'
-                            : 'bg-[#C4503B]'
+                            ? 'bg-warning'
+                            : 'bg-danger'
                         )}
                       />
                     </div>
-                    <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400 w-10">
+                    <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle w-10">
                       {(point.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
-                </td>
+                </TableCell>
               </motion.tr>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -599,10 +615,10 @@ function FactorsPanel({
 }) {
   const { t } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-2 mb-4">
-        <Funnel className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-        <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
+        <Funnel className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+        <h3 className="text-sm font-medium text-fg dark:text-white">
           {t('inmobiliaria.analytics.forecastComp.influenceFactors')}
         </h3>
       </div>
@@ -619,43 +635,43 @@ function FactorsPanel({
             <div
               className={cn(
                 'w-6 h-6 rounded-md flex items-center justify-center shrink-0',
-                factor.impact === 'positive' && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-                factor.impact === 'negative' && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-                factor.impact === 'neutral' && 'bg-neutral-100 dark:bg-neutral-800'
+                factor.impact === 'positive' && 'bg-success-soft',
+                factor.impact === 'negative' && 'bg-danger-soft',
+                factor.impact === 'neutral' && 'bg-surface-muted dark:bg-ink'
               )}
             >
               {factor.impact === 'positive' && (
-                <TrendUp className="w-3.5 h-3.5 text-[#2C7A53] dark:text-[#3EAE70]" weight="bold" />
+                <TrendUp className="w-3.5 h-3.5 text-success" weight="bold" />
               )}
               {factor.impact === 'negative' && (
-                <TrendDown className="w-3.5 h-3.5 text-[#C4503B] dark:text-[#E0664D]" weight="bold" />
+                <TrendDown className="w-3.5 h-3.5 text-danger" weight="bold" />
               )}
               {factor.impact === 'neutral' && (
-                <Minus className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400" weight="bold" />
+                <Minus className="w-3.5 h-3.5 text-fg-muted dark:text-fg-subtle" weight="bold" />
               )}
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+              <p className="text-sm font-medium text-fg dark:text-white truncate">
                 {factor.name}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="w-20 h-2 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+              <div className="w-20 h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${factor.weight * 100}%` }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className={cn(
                     'h-full rounded-full',
-                    factor.impact === 'positive' && 'bg-[#2C7A53]',
-                    factor.impact === 'negative' && 'bg-[#C4503B]',
-                    factor.impact === 'neutral' && 'bg-neutral-500'
+                    factor.impact === 'positive' && 'bg-success',
+                    factor.impact === 'negative' && 'bg-danger',
+                    factor.impact === 'neutral' && 'bg-muted'
                   )}
                 />
               </div>
-              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 w-8">
+              <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle w-8">
                 {(factor.weight * 100).toFixed(0)}%
               </span>
             </div>
@@ -709,7 +725,7 @@ export function AnalyticsForecasting({
 
   if (!currentForecast) {
     return (
-      <div className={cn('p-6 text-center text-neutral-500', className)}>
+      <div className={cn('p-6 text-center text-fg-muted', className)}>
         {t('inmobiliaria.analytics.forecastComp.noData')}
       </div>
     );
@@ -720,12 +736,12 @@ export function AnalyticsForecasting({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="bold" />
+          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-ink flex items-center justify-center">
+            <ChartLineUp className="w-5 h-5 text-fg-muted dark:text-fg-subtle" weight="bold" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.forecastComp.projections')}</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.analytics.forecastComp.projections')}</h2>
+            <p className="text-sm text-fg-muted">
               {t('inmobiliaria.analytics.forecastComp.confidenceIntervals')}
             </p>
           </div>
@@ -733,71 +749,50 @@ export function AnalyticsForecasting({
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Metric Selector */}
-          <div className="relative">
-            <button
-              onClick={() => setIsMetricDropdownOpen(!isMetricDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-            >
-              {currentForecast.metricLabel}
-              <CaretDown
-                className={cn('w-4 h-4 transition-transform', isMetricDropdownOpen && 'rotate-180')}
-              />
-            </button>
-
-            <AnimatePresence>
-              {isMetricDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-56 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-10 overflow-hidden"
+          <DropdownList open={isMetricDropdownOpen} onOpenChange={setIsMetricDropdownOpen}>
+            <DropdownListTrigger asChild>
+              <Button variant="secondary" size="sm" hideArrow className="gap-2">
+                {currentForecast.metricLabel}
+                <CaretDown
+                  className={cn('w-4 h-4 transition-transform', isMetricDropdownOpen && 'rotate-180')}
+                />
+              </Button>
+            </DropdownListTrigger>
+            <DropdownListContent align="end" className="w-56">
+              {data.map((item) => (
+                <DropdownListItem
+                  key={item.metricId}
+                  onClick={() => handleMetricChange(item.metricId)}
+                  className={cn(activeMetric === item.metricId && 'bg-muted font-medium')}
                 >
-                  {data.map((item) => (
-                    <button
-                      key={item.metricId}
-                      onClick={() => handleMetricChange(item.metricId)}
-                      className={cn(
-                        'w-full px-4 py-2.5 text-left text-sm transition-colors',
-                        activeMetric === item.metricId
-                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 font-medium'
-                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
-                      )}
-                    >
-                      {item.metricLabel}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  {item.metricLabel}
+                </DropdownListItem>
+              ))}
+            </DropdownListContent>
+          </DropdownList>
 
           {/* Horizon Selector */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800">
-            {[3, 6, 12].map((months) => (
-              <button
-                key={months}
-                onClick={() => handleHorizonChange(months)}
-                className={cn(
-                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                  activeHorizon === months
-                    ? 'bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                )}
-              >
-                {months}M
-              </button>
-            ))}
-          </div>
+          <SegmentedControl<string>
+            value={String(activeHorizon)}
+            onChange={(v) => handleHorizonChange(Number(v))}
+            options={[3, 6, 12].map((months) => ({
+              value: String(months),
+              label: `${months}M`,
+            }))}
+          />
 
           {/* Export Button */}
           {onExport && (
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
+              hideArrow
               onClick={onExport}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              className="gap-2"
             >
               <Export className="w-4 h-4" />
               {t('inmobiliaria.analytics.forecastComp.export')}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -812,7 +807,7 @@ export function AnalyticsForecasting({
       {/* Scenario Cards */}
       {currentForecast.scenarios.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-4">
+          <h3 className="text-sm font-medium text-fg dark:text-white mb-4">
             {t('inmobiliaria.analytics.forecastComp.scenarios')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -846,7 +841,7 @@ export function AnalyticsForecasting({
       </div>
 
       {/* Last Updated */}
-      <div className="flex items-center justify-end gap-2 text-xs text-neutral-400 dark:text-neutral-500">
+      <div className="flex items-center justify-end gap-2 text-xs text-fg-subtle dark:text-fg-muted">
         <ArrowsClockwise className="w-3.5 h-3.5" />
         {t('inmobiliaria.analytics.forecastComp.lastUpdated')}:{' '}
         {new Date(currentForecast.lastUpdated).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {

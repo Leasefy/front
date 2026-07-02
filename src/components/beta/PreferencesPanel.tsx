@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowCounterClockwise } from '@phosphor-icons/react';
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -70,20 +71,19 @@ export function PreferencesPanel({ className }: PreferencesPanelProps) {
 
         {/* Global reset */}
         <div className="border-t border-neutral-200 dark:border-border pt-6 pb-4">
-          <button
+          <Button
+            variant="outline"
+            hideArrow
             onClick={resetPreferences}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-md',
-              'border border-neutral-200 dark:border-border',
-              'bg-white dark:bg-card',
-              'text-[13px] font-medium text-muted-foreground',
-              'hover:text-[#C4503B] hover:border-[#C4503B]/30 dark:hover:text-[#C4503B] dark:hover:border-[#C4503B]/30',
-              'transition-colors duration-150'
+              'gap-2 px-4 py-2 h-auto rounded-md',
+              'text-sm font-medium text-fg-muted',
+              'hover:text-danger hover:border-danger/30'
             )}
           >
             <ArrowCounterClockwise className="w-4 h-4" />
             {t('beta.preferences.reset')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

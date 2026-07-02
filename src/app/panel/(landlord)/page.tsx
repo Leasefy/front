@@ -7,7 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Buildings, Users, Clock, WarningCircle, CurrencyDollar, House, TrendUp, Calendar, ArrowUpRight, CaretDown, CaretRight, PencilLine, CreditCard, UserCheck, CalendarCheck, CalendarBlank, MapPin, Phone, Chat, X, Plus, Eye, FileText, ChartBarHorizontal, ChartBar, Wallet, Bell, CheckCircle, Star, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { BrandDot, BrandContour, StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
+import { BrandDot, BrandContour, MonoLabel, StatusBadge, SEMANTIC, type SemanticTone } from '@/components/brand';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { useLandlordProperties, useLandlordDashboard } from '@/lib/hooks/useLandlord';
@@ -42,10 +42,11 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-8 rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 overflow-hidden"
+      className="mb-8 rounded-xl bg-surface border border-border overflow-hidden"
     >
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
         className="w-full p-4 flex items-center gap-3 hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
       >
@@ -56,10 +57,10 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
           <WarningCircle className="w-5 h-5" style={{ color: SEMANTIC.warning.fg }} />
         </div>
         <div className="flex-1 text-left">
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">
+          <p className="text-sm font-medium text-fg">
             {t('landlord.dashboard.pendingActions', { count: actions.length })}
           </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted">
             {actions[0]?.description}
           </p>
         </div>
@@ -79,14 +80,14 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
               <Link
                 key={action.id}
                 href={action.href}
-                className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 dark:border-neutral-800 hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl border border-border-faint hover:bg-[rgba(0,0,0,0.03)] dark:hover:bg-white/[0.04] transition-colors"
               >
                 <span className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: c.soft }}>
                   <Icon className="w-4 h-4" style={{ color: c.fg }} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white">{action.title}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{action.description}</p>
+                  <p className="text-sm font-medium text-fg">{action.title}</p>
+                  <p className="text-xs text-fg-muted">{action.description}</p>
                 </div>
                 <span
                   className="font-mono text-[10.5px] font-semibold px-2 py-0.5 rounded-full tabular-nums"
@@ -221,7 +222,7 @@ export default function PanelPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Hero Header */}
@@ -233,11 +234,11 @@ export default function PanelPage() {
           <div>
             <span className="inline-flex items-center gap-2 mb-2">
               <BrandDot />
-              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
+              <MonoLabel className="text-[11px] font-medium text-primary">
                 {greeting}
-              </span>
+              </MonoLabel>
             </span>
-            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-fg tracking-tight">
               {t('dashboard.hello', { name: firstName })}
             </h1>
           </div>
@@ -248,7 +249,7 @@ export default function PanelPage() {
           {/* Monthly Income - Featured Card (ink brand hero) */}
           <div
             className="sm:col-span-2 lg:col-span-1 relative overflow-hidden rounded-xl p-6"
-            style={{ background: 'linear-gradient(150deg, #0B1220 58%, #122457 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
+            style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
           >
             {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
             <div className="absolute -inset-x-1 top-[34%] h-[44%] text-white/[0.14] pointer-events-none">
@@ -265,7 +266,7 @@ export default function PanelPage() {
                 </span>
               )}
             </div>
-            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-white/55 mb-1.5">{t('landlord.dashboard.monthlyIncome')}</p>
+            <MonoLabel className="block text-[11px] font-medium text-white/55 mb-1.5">{t('landlord.dashboard.monthlyIncome')}</MonoLabel>
             {isLoading ? (
               <Skeleton className="h-9 w-36 rounded-md bg-white/10" />
             ) : (
@@ -283,46 +284,46 @@ export default function PanelPage() {
           </div>
 
           {/* Properties */}
-          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <Buildings className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <Buildings className="w-5 h-5 text-fg-muted" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.properties')}</p>
+            <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.properties')}</p>
             {isLoading ? (
               <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
-              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              <p className="text-3xl font-bold text-fg tracking-tight">
                 {properties.length}
               </p>
             )}
             {isLoading ? (
               <Skeleton className="h-4 w-20 mt-2 rounded" />
             ) : (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+              <p className="text-sm text-fg-muted mt-2">
                 {dashboardData.financial.activeLeases} {t('landlord.dashboard.rented')}
               </p>
             )}
           </div>
 
           {/* Candidates */}
-          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <Users className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <Users className="w-5 h-5 text-fg-muted" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.candidates')}</p>
+            <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.candidates')}</p>
             {isLoading ? (
               <Skeleton className="h-9 w-12 rounded-md" />
             ) : (
-              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              <p className="text-3xl font-bold text-fg tracking-tight">
                 {totalCandidates}
               </p>
             )}
             {isLoading ? (
               <Skeleton className="h-4 w-28 mt-2 rounded" />
             ) : (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+              <p className="text-sm text-fg-muted mt-2">
                 {pendingReviews > 0 && (
-                  <span className="font-medium text-[#B7791F]">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
+                  <span className="font-medium text-warning">{t('landlord.dashboard.pendingCount', { count: pendingReviews })}</span>
                 )}
                 {pendingReviews === 0 && t('landlord.dashboard.allReviewed')}
               </p>
@@ -330,11 +331,11 @@ export default function PanelPage() {
           </div>
 
           {/* Collection Rate */}
-          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <ChartBar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <ChartBar className="w-5 h-5 text-fg-muted" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('landlord.dashboard.collectionRate')}</p>
+            <p className="text-sm text-fg-muted mb-1">{t('landlord.dashboard.collectionRate')}</p>
             {isLoading ? (
               <>
                 <Skeleton className="h-9 w-20 rounded-md" />
@@ -343,14 +344,14 @@ export default function PanelPage() {
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <p className="font-heading text-3xl font-semibold text-neutral-900 dark:text-white tracking-tight tabular-nums">
+                  <p className="font-heading text-3xl font-semibold text-fg tracking-tight tabular-nums">
                     {dashboardData.financial.collectionRate}%
                   </p>
                   <StatusBadge tone="success" dot={false}>
                     {t('landlord.dashboard.excellent')}
                   </StatusBadge>
                 </div>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+                <p className="text-sm text-fg-muted mt-2">
                   {t('landlord.dashboard.thisMonth')}
                 </p>
               </>
@@ -374,10 +375,10 @@ export default function PanelPage() {
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('landlord.dashboard.myProperties')}</h2>
+                <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.myProperties')}</h2>
                 <Link
                   href="/panel/propiedades"
-                  className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
+                  className="text-sm text-fg-muted hover:text-neutral-900 dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('landlord.dashboard.viewAll')}
                   <CaretRight className="w-4 h-4" />
@@ -387,7 +388,7 @@ export default function PanelPage() {
               {propertiesLoading ? (
                 <div className="space-y-4">
                   {[0, 1, 2].map((i) => (
-                    <div key={i} className="rounded-xl bg-neutral-100 dark:bg-[#1a1a1c] overflow-hidden">
+                    <div key={i} className="rounded-xl bg-surface-muted overflow-hidden">
                       <div className="flex flex-col sm:flex-row">
                         <Skeleton className="w-full sm:w-48 h-36 rounded-none" />
                         <div className="flex-1 p-5 space-y-3">
@@ -398,7 +399,7 @@ export default function PanelPage() {
                             </div>
                             <Skeleton className="h-6 w-24 rounded" />
                           </div>
-                          <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700 flex gap-3">
+                          <div className="pt-4 border-t border-border flex gap-3">
                             <Skeleton className="h-8 w-16 rounded-xl" />
                             <Skeleton className="h-8 w-24 rounded-xl" />
                           </div>
@@ -424,7 +425,7 @@ export default function PanelPage() {
                         transition={{ delay: 0.1 + index * 0.05 }}
                       >
                         <Link href={`/panel/${property.id}`}>
-                          <div className="group relative overflow-hidden rounded-xl bg-neutral-100 dark:bg-[#1a1a1c] hover: transition-all duration-300">
+                          <div className="group relative overflow-hidden rounded-xl bg-surface-muted hover: transition-all duration-300">
                             <div className="flex flex-col sm:flex-row">
                               {/* Image */}
                               <div className="relative w-full sm:w-48 h-36 sm:h-auto flex-shrink-0">
@@ -436,22 +437,20 @@ export default function PanelPage() {
                                 />
                                 {/* Status badge on image */}
                                 <div className="absolute top-3 left-3">
-                                  <span
-                                    className="px-2.5 py-1 text-white font-mono text-[10.5px] font-medium uppercase tracking-[0.06em] rounded-full"
-                                    style={{
-                                      backgroundColor: property.status === 'available'
-                                        ? SEMANTIC.success.fg
-                                        : property.status === 'rented'
-                                          ? SEMANTIC.info.fg
-                                          : SEMANTIC.neutral.fg,
-                                    }}
+                                  <StatusBadge
+                                    tone={property.status === 'available'
+                                      ? 'success'
+                                      : property.status === 'rented'
+                                        ? 'info'
+                                        : 'neutral'}
+                                    dot={false}
                                   >
                                     {property.status === 'available'
                                       ? t('landlord.dashboard.statusAvailable')
                                       : property.status === 'rented'
                                         ? t('landlord.dashboard.statusRented')
                                         : t('landlord.dashboard.statusPending')}
-                                  </span>
+                                  </StatusBadge>
                                 </div>
                               </div>
 
@@ -459,34 +458,34 @@ export default function PanelPage() {
                               <div className="flex-1 p-5">
                                 <div className="flex items-start justify-between mb-2">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-primary transition-colors">
+                                    <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
                                       {property.title}
                                     </h3>
-                                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1.5">
+                                    <p className="text-sm text-fg-muted mt-0.5 flex items-center gap-1.5">
                                       <MapPin className="w-3.5 h-3.5" />
                                       {property.neighborhood}, {property.city}
                                     </p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-lg font-bold text-neutral-900 dark:text-white">
+                                    <p className="text-lg font-bold text-fg">
                                       {i18nFormatCurrency(property.monthlyRent)}
                                     </p>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">/{t('landlord.dashboard.perMonth')}</p>
+                                    <p className="text-xs text-fg-muted">/{t('landlord.dashboard.perMonth')}</p>
                                   </div>
                                 </div>
 
                                 {/* Stats Row */}
-                                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#2a2a2c] rounded-xl">
-                                    <Users className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                                    <span className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
+                                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-border">
+                                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-xl">
+                                    <Users className="w-4 h-4 text-fg-muted" />
+                                    <span className="text-sm text-fg-muted font-medium">
                                       {property.candidateCount}
                                     </span>
                                   </div>
 
                                   {property.candidateCount > 0 && (
                                     <div className="flex items-center gap-2">
-                                      <div className="w-20 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                      <div className="w-20 h-2 bg-surface-muted rounded-full overflow-hidden">
                                         <div
                                           className="h-full rounded-full transition-all"
                                           style={{
@@ -495,7 +494,7 @@ export default function PanelPage() {
                                           }}
                                         />
                                       </div>
-                                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                                      <span className="text-xs text-fg-muted">
                                         {goodCandidatePercent}% A-B
                                       </span>
                                     </div>
@@ -523,9 +522,9 @@ export default function PanelPage() {
                   })}
                 </div>
               ) : (
-                <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
-                    <Buildings className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+                <div className="rounded-xl bg-surface-muted py-14 px-6 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
+                    <Buildings className="w-6 h-6 text-fg-subtle" />
                   </div>
                   <h3 className="text-base font-semibold text-foreground mb-1.5">
                     {t('landlord.dashboard.noPublishedProperties')}
@@ -547,10 +546,10 @@ export default function PanelPage() {
               {properties.length > 3 && (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-[#1a1a1c] hover:text-neutral-900 dark:hover:text-white transition-colors"
+                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-xl border border-border text-sm font-medium text-fg-muted hover:bg-surface-hover hover:text-neutral-900 dark:hover:text-white transition-colors"
                 >
                   {t('landlord.dashboard.viewAllProperties')}
-                  <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-xs">
+                  <span className="px-2 py-0.5 bg-surface-muted rounded-full text-xs">
                     {t('landlord.dashboard.moreCount', { count: properties.length - 3 })}
                   </span>
                 </Link>
@@ -564,10 +563,10 @@ export default function PanelPage() {
               transition={{ delay: 0.4 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('landlord.dashboard.recentActivity')}</h2>
+                <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.recentActivity')}</h2>
               </div>
 
-              <div className="bg-neutral-50 dark:bg-[#1a1a1c] rounded-xl overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+              <div className="bg-surface-muted rounded-xl overflow-hidden divide-y divide-border-faint">
                 {dashboardLoading ? (
                   [0, 1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-4 p-4">
@@ -581,31 +580,31 @@ export default function PanelPage() {
                   ))
                 ) : dashboardData.recentActivity.length > 0 ? (
                   dashboardData.recentActivity.slice(0, 5).map((activity) => (
-                    <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-neutral-100 dark:hover:bg-[#222224] transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
-                        {activity.type === 'application' && <FileText className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
-                        {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
-                        {activity.type === 'message' && <Chat className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
-                        {activity.type === 'document' && <FileText className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />}
+                    <div key={activity.id} className="flex items-center gap-4 p-4 hover:bg-surface-hover transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
+                        {activity.type === 'application' && <FileText className="w-5 h-5 text-fg-muted" />}
+                        {activity.type === 'status_change' && <CheckCircle className="w-5 h-5 text-fg-muted" />}
+                        {activity.type === 'message' && <Chat className="w-5 h-5 text-fg-muted" />}
+                        {activity.type === 'document' && <FileText className="w-5 h-5 text-fg-muted" />}
                         {!['application', 'status_change', 'message', 'document'].includes(activity.type) && (
                           <Bell className="w-5 h-5 text-neutral-500" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                        <p className="text-sm font-medium text-fg truncate">
                           {activity.title}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                        <p className="text-xs text-fg-muted truncate">
                           {activity.description}
                         </p>
                       </div>
-                      <span className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
+                      <span className="text-xs text-fg-subtle whitespace-nowrap">
                         {activity.timestamp}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center text-sm text-neutral-400 dark:text-neutral-500">
+                  <div className="p-8 text-center text-sm text-fg-subtle">
                     Sin actividad reciente
                   </div>
                 )}
@@ -621,19 +620,19 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 p-6"
+              className="rounded-xl bg-surface border border-border p-6"
             >
               <div className="flex items-center gap-2 mb-3">
                 <BrandDot />
-                <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+                <MonoLabel className="text-[11px] font-medium text-neutral-400">
                   {t('landlord.dashboard.financialSummary')}
-                </span>
+                </MonoLabel>
               </div>
               {dashboardLoading ? (
                 <>
                   <Skeleton className="h-9 w-36 rounded-md" />
                   <Skeleton className="h-4 w-28 mt-1 rounded" />
-                  <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-3">
+                  <div className="mt-6 pt-4 border-t border-border-faint space-y-3">
                     <div className="flex justify-between">
                       <Skeleton className="h-4 w-24 rounded" />
                       <Skeleton className="h-4 w-10 rounded" />
@@ -643,19 +642,19 @@ export default function PanelPage() {
                 </>
               ) : (
                 <>
-                  <p className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                  <p className="text-3xl font-bold tracking-tight text-fg">
                     {i18nFormatCurrency(dashboardData.financial.monthlyIncome)}
                   </p>
-                  <p className="text-neutral-600 dark:text-neutral-400 text-sm mt-1">
+                  <p className="text-fg-muted text-sm mt-1">
                     {t('landlord.dashboard.incomeThisMonth')}
                   </p>
 
-                  <div className="mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-3">
+                  <div className="mt-6 pt-4 border-t border-border-faint space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.collectionRateLabel')}</span>
-                      <span className="text-neutral-900 dark:text-white font-medium tabular-nums">{dashboardData.financial.collectionRate}%</span>
+                      <span className="text-fg-muted">{t('landlord.dashboard.collectionRateLabel')}</span>
+                      <span className="text-fg font-medium tabular-nums">{dashboardData.financial.collectionRate}%</span>
                     </div>
-                    <div className="h-2 bg-neutral-100 dark:bg-[#1f1f21] rounded-full overflow-hidden">
+                    <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{ width: `${dashboardData.financial.collectionRate}%`, backgroundColor: '#1A40FF' }}
@@ -663,8 +662,8 @@ export default function PanelPage() {
                     </div>
                     {dashboardData.financial.pendingPayments > 0 && (
                       <div className="flex items-center justify-between text-sm pt-2">
-                        <span className="text-neutral-500 dark:text-neutral-400">{t('landlord.dashboard.pendingPayments')}</span>
-                        <span className="text-[#C4503B] font-medium tabular-nums">{dashboardData.financial.pendingPayments}</span>
+                        <span className="text-fg-muted">{t('landlord.dashboard.pendingPayments')}</span>
+                        <span className="text-danger font-medium tabular-nums">{dashboardData.financial.pendingPayments}</span>
                       </div>
                     )}
                   </div>
@@ -685,9 +684,9 @@ export default function PanelPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
+              className="rounded-xl bg-surface-muted p-5"
             >
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t('landlord.dashboard.quickActions')}</h3>
+              <h3 className="font-semibold text-fg mb-4">{t('landlord.dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
                   { href: '/publicar?from=panel', icon: Plus, label: t('landlord.dashboard.newProperty'), desc: t('landlord.dashboard.publishAProperty') },
@@ -696,18 +695,18 @@ export default function PanelPage() {
                   { href: '/panel/contratos', icon: FileText, label: t('landlord.dashboard.contracts'), desc: t('landlord.dashboard.manageLeases') },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#222224] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
-                        <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-hover transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
+                        <action.icon className="w-5 h-5 text-fg-muted" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-primary transition-colors">
+                        <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
                           {action.label}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
+                        <p className="text-xs text-fg-muted truncate">{action.desc}</p>
                       </div>
                       {action.badge && (
-                        <span className="w-2 h-2 rounded-full bg-[#1A40FF]" />
+                        <span className="w-2 h-2 rounded-full bg-primary" />
                       )}
                       <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-primary transition-colors" />
                     </div>
@@ -740,11 +739,11 @@ export default function PanelPage() {
 
 // Semantic dots: confirmed=success, requested=info, completed=neutral, cancelled=critical, no_show=warning.
 const VISIT_STATUS_COLORS: Record<string, string> = {
-  confirmed: 'bg-[#2C7A53]',
-  requested: 'bg-[#1A40FF]',
-  completed: 'bg-neutral-400 dark:bg-neutral-600',
-  cancelled: 'bg-[#C4503B]',
-  no_show: 'bg-[#B7791F]',
+  confirmed: 'bg-success',
+  requested: 'bg-primary',
+  completed: 'bg-fg-subtle',
+  cancelled: 'bg-danger',
+  no_show: 'bg-warning',
 };
 
 function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
@@ -758,7 +757,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       content: (
         <div className="flex items-start gap-3">
           <MapPin className="w-4 h-4 text-neutral-400 mt-0.5" />
-          <p className="text-sm text-neutral-900 dark:text-white">{selected.propertyTitle}</p>
+          <p className="text-sm text-fg">{selected.propertyTitle}</p>
         </div>
       ),
     },
@@ -768,7 +767,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       content: (
         <div className="flex items-start gap-3">
           <Clock className="w-4 h-4 text-neutral-400 mt-0.5" />
-          <p className="text-sm text-neutral-900 dark:text-white">
+          <p className="text-sm text-fg">
             {i18nFmtDate(selected.requestedDate + 'T12:00:00', {
               weekday: 'long',
               day: 'numeric',
@@ -784,7 +783,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       content: (
         <div className="flex items-start gap-3">
           <Chat className="w-4 h-4 text-neutral-400 mt-0.5" />
-          <p className="text-sm text-neutral-900 dark:text-white">{selected.candidateMessage}</p>
+          <p className="text-sm text-fg">{selected.candidateMessage}</p>
         </div>
       ),
     }] : []),
@@ -794,7 +793,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       content: (
         <div className="flex items-start gap-3">
           <Chat className="w-4 h-4 text-neutral-400 mt-0.5" />
-          <p className="text-sm text-neutral-900 dark:text-white">{selected.landlordNotes}</p>
+          <p className="text-sm text-fg">{selected.landlordNotes}</p>
         </div>
       ),
     }] : []),
@@ -806,10 +805,10 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
+        className="rounded-xl bg-surface-muted p-5"
       >
-        <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
-          <CalendarBlank className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+        <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
+          <CalendarBlank className="w-4 h-4 text-fg-muted" />
           {t('landlord.dashboard.upcomingVisits')}
         </h3>
         <div className="space-y-1">
@@ -817,12 +816,12 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
             <button
               key={visit.id}
               onClick={() => setSelected(visit)}
-              className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-white dark:hover:bg-[#222224] transition-colors"
+              className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-surface-hover transition-colors"
             >
-              <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-[#1A40FF]')} />
+              <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', VISIT_STATUS_COLORS[visit.status] || 'bg-primary')} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{visit.candidateName}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-sm font-medium text-fg truncate">{visit.candidateName}</p>
+                <p className="text-xs text-fg-muted">
                   {i18nFmtDate(visit.requestedDate + 'T12:00:00', {
                     day: 'numeric',
                     month: 'short',
@@ -836,7 +835,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
         {visits.length > 3 && (
           <Link
             href="/panel/visitas"
-            className="block mt-3 text-center text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            className="block mt-3 text-center text-xs text-fg-muted hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
             {t('landlord.dashboard.viewAllVisits')} →
           </Link>
@@ -857,7 +856,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
           <div className="flex gap-2">
             <Link
               href={`/panel/${selected.propertyId}`}
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-white dark:bg-[#2a2a2c] border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white rounded-xl hover:bg-neutral-50 dark:hover:bg-[#333] transition-colors"
+              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-surface border border-border text-fg rounded-xl hover:bg-neutral-50 dark:hover:bg-[#333] transition-colors"
             >
               {t('landlord.dashboard.viewProperty')}
             </Link>
@@ -884,9 +883,9 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
   const [selected, setSelected] = useState<DashboardUpcomingEvent | null>(null);
 
   const EVENT_DOT_COLOR: Record<string, string> = {
-    payment_due: 'bg-[#1A40FF]',
-    lease_ending: 'bg-[#B7791F]',
-    contract_renewal: 'bg-[#2C7A53]',
+    payment_due: 'bg-primary',
+    lease_ending: 'bg-warning',
+    contract_renewal: 'bg-success',
     inspection: 'bg-neutral-500',
   };
 
@@ -918,7 +917,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
       content: (
         <div className="flex items-start gap-3">
           <Buildings className="w-4 h-4 text-neutral-400 mt-0.5" />
-          <p className="text-sm text-neutral-900 dark:text-white">{selected.description}</p>
+          <p className="text-sm text-fg">{selected.description}</p>
         </div>
       ),
     }] : []),
@@ -928,7 +927,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
       content: (
         <div className="flex items-start gap-3">
           <Calendar className="w-4 h-4 text-neutral-400 mt-0.5" />
-          <p className="text-sm text-neutral-900 dark:text-white">
+          <p className="text-sm text-fg">
             {i18nFmtDate(selected.date + 'T12:00:00', {
               weekday: 'long',
               day: 'numeric',
@@ -953,25 +952,25 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5"
+        className="rounded-xl bg-surface-muted p-5"
       >
-        <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+        <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-fg-muted" />
           {t('landlord.dashboard.upcomingEvents')}
         </h3>
         <div className="space-y-1">
           {events.slice(0, 5).map((event) => {
-            const dotColor = event.daysUntil < 0 ? 'bg-[#C4503B]' : (EVENT_DOT_COLOR[event.type] || 'bg-[#1A40FF]');
+            const dotColor = event.daysUntil < 0 ? 'bg-danger' : (EVENT_DOT_COLOR[event.type] || 'bg-primary');
             return (
               <button
                 key={event.id}
                 onClick={() => setSelected(event)}
-                className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-white dark:hover:bg-[#222224] transition-colors"
+                className="group w-full flex items-center gap-3 p-3 rounded-xl text-left hover:bg-surface-hover transition-colors"
               >
                 <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', dotColor)} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{event.title}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm font-medium text-fg truncate">{event.title}</p>
+                  <p className="text-xs text-fg-muted">
                     {i18nFmtDate(event.date + 'T12:00:00', {
                       day: 'numeric',
                       month: 'short',

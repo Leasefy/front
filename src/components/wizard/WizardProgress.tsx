@@ -76,7 +76,7 @@ export function WizardProgress({
                       'w-10 h-10 rounded-sm flex items-center justify-center transition-all duration-300',
                       'border-2',
                       isCompleted
-                        ? 'bg-primary border-primary text-white uppercase tracking-wide font-mono'
+                        ? 'bg-primary border-primary text-white'
                         : isCurrent
                         ? 'bg-card border-primary text-primary'
                         : 'bg-card border-border text-muted-foreground'

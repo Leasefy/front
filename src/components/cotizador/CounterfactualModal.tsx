@@ -401,7 +401,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                       >
                         <Minus size={16} />
                       </button>
-                      <span className="min-w-[2rem] text-center text-base font-semibold">
+                      <span className="min-w-[2rem] text-center text-base font-semibold font-mono tabular-nums">
                         {draftValues.codeudores}
                       </span>
                       <button

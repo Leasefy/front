@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, PencilSimple, SpinnerGap } from '@phosphor-icons/react';
+import { Users, UserPlus, PencilSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { Input } from '@/components/ui/input';
 import { useTeamMembers } from '@/lib/hooks/useSettings';
 import type { TeamRole } from '@/lib/types/team';
 import { SettingsModal } from './SettingsModal';
@@ -89,13 +93,14 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">{teamMembersList.length} {teamMembersList.length !== 1 ? t('landlordSettings.team.members') : t('landlordSettings.team.member')}</p>
               </div>
             </div>
-            <button
+            <Button
+              hideArrow
               onClick={() => setShowInviteModal(true)}
-              className="px-4 py-2 bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
+              className="rounded-xl"
             >
               <UserPlus className="w-4 h-4" />
               {t('landlordSettings.team.invite')}
-            </button>
+            </Button>
           </div>
         </div>
         <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
@@ -113,13 +118,9 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={cn(
-                  'px-2.5 py-1 rounded-full text-xs font-medium',
-                  member.role === 'admin' ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]' :
-                  'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-                )}>
+                <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
                   {member.role === 'admin' ? t('landlordSettings.team.roles.admin') : member.role === 'contador' ? t('landlordSettings.team.roles.accountant') : t('landlordSettings.team.roles.viewer')}
-                </span>
+                </Badge>
                 {member.role !== 'admin' && (
                   <div className="flex items-center gap-3">
                     <button
@@ -156,11 +157,11 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.inviteMember.email')}</label>
-            <input
+            <Input
               type="email"
               value={inviteForm.email}
               onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+              className="h-12 rounded-xl"
               placeholder="email@ejemplo.com"
             />
           </div>
@@ -203,20 +204,23 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowInviteModal(false)}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1 rounded-xl"
             >
               {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={handleInviteMember}
               disabled={isLoading || !inviteForm.email}
-              className="flex-1 py-3 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 rounded-xl"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+              {isLoading ? <Spinner size="xs" variant="current" /> : <UserPlus className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsModal>
@@ -226,11 +230,11 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.editMember.name')}</label>
-            <input
+            <Input
               type="text"
               value={editMemberForm.name}
               onChange={(e) => setEditMemberForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+              className="h-12 rounded-xl"
               placeholder={t('landlordSettings.modals.editMember.namePlaceholder')}
             />
           </div>
@@ -273,23 +277,26 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => {
                 setShowEditMemberModal(false);
                 setEditingMember(null);
               }}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1 rounded-xl"
             >
               {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={handleEditMember}
               disabled={isLoading}
-              className="flex-1 py-3 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 rounded-xl"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <PencilSimple className="w-4 h-4" />}
+              {isLoading ? <Spinner size="xs" variant="current" /> : <PencilSimple className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsModal>

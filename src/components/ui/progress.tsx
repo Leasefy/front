@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Progress as DSProgress } from '@leasefy/ui';
+import { Progress as DSProgress } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 
 /**
- * ADAPTER fino sobre el Progress de @leasefy/ui que preserva la API local:
+ * ADAPTER fino sobre el Progress de @leasefy/cadence que preserva la API local:
  * - variant: default/success/warning/error/info/indigo/gradient → color del DS
  *   (default/info/indigo/gradient → primary; error → danger).
  * - size: xs/sm/default/md/lg/xl → xs/sm/md del DS + altura exacta legacy por

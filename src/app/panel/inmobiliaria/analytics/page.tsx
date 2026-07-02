@@ -22,6 +22,10 @@ import {
   CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { SegmentedControl } from '@leasefy/cadence';
 import {
   AnalyticsDashboard,
 } from '@/components/inmobiliaria';
@@ -88,28 +92,28 @@ function HeroKPICard({
       bg: 'bg-neutral-100 dark:bg-neutral-800',
       icon: 'text-neutral-600 dark:text-neutral-300',
       border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-[#1A40FF]',
-      progressBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+      progress: 'bg-primary',
+      progressBg: 'bg-primary-soft',
     },
     emerald: {
       bg: 'bg-neutral-100 dark:bg-neutral-800',
       icon: 'text-neutral-600 dark:text-neutral-300',
       border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-[#2C7A53]',
-      progressBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+      progress: 'bg-success',
+      progressBg: 'bg-success-soft',
     },
     amber: {
       bg: 'bg-neutral-100 dark:bg-neutral-800',
       icon: 'text-neutral-600 dark:text-neutral-300',
       border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-[#B7791F]',
-      progressBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+      progress: 'bg-warning',
+      progressBg: 'bg-warning-soft',
     },
     violet: {
       bg: 'bg-neutral-100 dark:bg-neutral-800',
       icon: 'text-neutral-600 dark:text-neutral-300',
       border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-[#1A40FF]',
+      progress: 'bg-primary',
       progressBg: 'bg-neutral-100 dark:bg-neutral-800',
     },
   };
@@ -174,19 +178,14 @@ function HeroKPICard({
       {/* Trend & Target */}
       <div className="flex items-center justify-between">
         {trend && (
-          <div
-            className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-              trendIsPositive && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-              trendIsNegative && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
-              !trendIsPositive && !trendIsNegative && 'bg-muted text-muted-foreground'
-            )}
+          <Badge
+            variant={trendIsPositive ? 'success' : trendIsNegative ? 'destructive' : 'secondary'}
           >
             {trendIsPositive && <TrendUp className="w-3 h-3" weight="bold" />}
             {trendIsNegative && <TrendDown className="w-3 h-3" weight="bold" />}
             {!trendIsPositive && !trendIsNegative && <Minus className="w-3 h-3" />}
             <span>{trend.percentage > 0 ? '+' : ''}{trend.percentage.toFixed(1)}%</span>
-          </div>
+          </Badge>
         )}
         {target && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -199,14 +198,11 @@ function HeroKPICard({
       {/* Target Progress Bar */}
       {target && (
         <div className="mt-3">
-          <div className={cn('h-1.5 rounded-full overflow-hidden', colors.progressBg)}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(100, (target.current / target.value) * 100)}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className={cn('h-full rounded-full', colors.progress)}
-            />
-          </div>
+          <Progress
+            value={Math.min(100, (target.current / target.value) * 100)}
+            variant={accentColor === 'emerald' ? 'success' : accentColor === 'amber' ? 'warning' : 'default'}
+            size="xs"
+          />
         </div>
       )}
     </motion.button>
@@ -227,16 +223,16 @@ interface InsightProps {
 function InsightCard({ type, title, description, action }: InsightProps) {
   const config = {
     success: {
-      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-      border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+      bg: 'bg-success-soft',
+      border: 'border-success/30',
       icon: CheckCircle,
-      iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      iconColor: 'text-success',
     },
     warning: {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
+      bg: 'bg-warning-soft',
+      border: 'border-warning/30',
       icon: WarningCircle,
-      iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
+      iconColor: 'text-warning',
     },
     // Informational (non-actionable) = neutral; blue stays reserved for actions.
     info: {
@@ -257,13 +253,16 @@ function InsightCard({ type, title, description, action }: InsightProps) {
           <p className="font-medium text-foreground text-sm">{title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
           {action && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={action.onClick}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+              className="mt-2 h-auto p-0 gap-1 text-xs"
             >
               {action.label}
               <CaretRight className="w-3 h-3" />
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -450,31 +449,31 @@ function AnalyticsContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
               <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             {t('inmobiliaria.analytics.title')}
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.analytics.subtitle')}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Date Range */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
+              <Button variant="secondary" size="sm" hideArrow className="gap-2">
                 <CalendarBlank className="w-4 h-4 text-muted-foreground" />
                 <span className="hidden sm:inline">
                   {DATE_RANGES.find((r) => r.id === dateRange)?.label}
                 </span>
                 <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
+              </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-44">
               {DATE_RANGES.map((range) => (
@@ -492,10 +491,10 @@ function AnalyticsContent() {
           {/* Export */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#1A40FF] text-white hover:bg-[#1636D8] text-sm font-medium transition-colors">
+              <Button size="sm" hideArrow className="gap-2">
                 <Export className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('inmobiliaria.common.export')}</span>
-              </button>
+              </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-44">
               <DropdownListItem onSelect={() => handleExport('pdf')}>
@@ -563,26 +562,24 @@ function AnalyticsContent() {
         className="rounded-xl border border-border bg-card overflow-hidden"
       >
         {/* View Tabs */}
-        <div className="flex items-center gap-1 p-1.5 m-4 mb-0 rounded-xl bg-muted w-fit">
-          {VIEWS.map((view) => {
-            const Icon = view.icon;
-            const isActive = activeView === view.id;
-            return (
-              <button
-                key={view.id}
-                onClick={() => setActiveView(view.id)}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-background text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                {view.label}
-              </button>
-            );
-          })}
+        <div className="m-4 mb-0 w-fit">
+          <SegmentedControl<AnalyticsView>
+            value={activeView}
+            onChange={setActiveView}
+            options={VIEWS.map((view) => {
+              const Icon = view.icon;
+              return {
+                value: view.id,
+                ariaLabel: view.label,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Icon className="w-4 h-4" />
+                    {view.label}
+                  </span>
+                ),
+              };
+            })}
+          />
         </div>
 
         {/* View Content */}
@@ -598,7 +595,7 @@ function AnalyticsContent() {
               {activeView === 'dashboard' && (
                 <>
                   {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-                  {analyticsError && <p className="text-sm text-[#C4503B]">{analyticsError}</p>}
+                  {analyticsError && <p className="text-sm text-danger">{analyticsError}</p>}
                   {analyticsData && <AnalyticsDashboard data={analyticsData} />}
                 </>
               )}

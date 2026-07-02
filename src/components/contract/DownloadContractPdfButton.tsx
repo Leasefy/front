@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, SpinnerGap } from '@phosphor-icons/react';
+import { Download } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { contractsApi } from '@/lib/api/contracts.service';
 import type { ContractStatus } from '@/lib/types/contract';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export interface DownloadContractPdfButtonProps {
@@ -63,28 +64,25 @@ export function DownloadContractPdfButton({
 
   const tooltip = tooltipForStatus(contractStatus);
 
-  const base = 'inline-flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-  const variantClasses = {
-    primary: 'px-4 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white',
-    secondary: 'px-3 py-2 rounded-xl border border-border bg-background text-foreground hover:bg-muted',
-    ghost: 'text-muted-foreground hover:text-foreground underline-offset-2 hover:underline',
-  }[variant];
+  // Mapea la API local del botón al variant del DS (Cadence pill).
+  const dsVariant = variant === 'primary' ? 'default' : variant === 'ghost' ? 'link' : 'secondary';
+  const dsSize = variant === 'primary' ? 'default' : 'sm';
 
   return (
-    <button
+    <Button
       type="button"
+      variant={dsVariant}
+      size={variant === 'ghost' ? undefined : dsSize}
+      hideArrow
       onClick={handleClick}
+      isLoading={isLoading}
       disabled={isLoading}
       title={tooltip}
-      className={cn(base, variantClasses, className)}
+      className={cn('gap-2', className)}
     >
-      {isLoading ? (
-        <SpinnerGap className="w-4 h-4 animate-spin" />
-      ) : (
-        <Download className="w-4 h-4" />
-      )}
+      <Download className="w-4 h-4" />
       {label ?? 'Descargar PDF'}
-    </button>
+    </Button>
   );
 }
 

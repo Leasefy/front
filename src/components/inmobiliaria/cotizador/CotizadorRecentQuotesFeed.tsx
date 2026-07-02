@@ -21,10 +21,10 @@ function formatCOP(value: number): string {
 // ---------------------------------------------------------------------------
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
-  partial: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
-  final: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-  error: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
+  pending: 'bg-warning-soft text-warning',
+  partial: 'bg-primary-soft text-primary',
+  final: 'bg-success-soft text-success',
+  error: 'bg-danger-soft text-danger',
 }
 
 function StatusBadge({ status, t }: { status: string; t: (k: string) => string }) {
@@ -65,27 +65,27 @@ export function CotizadorRecentQuotesFeed({
   const { t } = useI18n()
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
+    <div className="rounded-xl border border-border bg-card p-5">
       {/* Loading skeleton */}
       {isLoading && quotes.length === 0 ? (
-        <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <ul className="divide-y divide-border">
           {[1, 2, 3].map((i) => (
             <li key={i} className="flex items-center justify-between py-3">
               <div className="space-y-1.5">
-                <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-                <div className="h-3 w-20 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
+                <div className="h-3 w-20 rounded bg-surface-muted animate-pulse" />
               </div>
-              <div className="h-5 w-16 rounded-full bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+              <div className="h-5 w-16 rounded-full bg-surface-muted animate-pulse" />
             </li>
           ))}
         </ul>
       ) : quotes.length === 0 ? (
         /* Empty state */
-        <div className="py-10 flex flex-col items-center gap-2 text-center">
-          <p className="text-sm font-medium text-neutral-500">
+        <div className="py-10 flex flex-col items-center gap-1.5 text-center">
+          <p className="text-sm font-medium text-fg">
             {t('inmobiliaria.ai.cotizador.overview.recentQuotes.empty')}
           </p>
-          <p className="text-xs text-neutral-400 max-w-xs">
+          <p className="text-xs text-fg-muted max-w-xs">
             {t('inmobiliaria.ai.cotizador.overview.recentQuotes.emptyHelper')}
           </p>
         </div>
@@ -94,7 +94,7 @@ export function CotizadorRecentQuotesFeed({
         <ul
           aria-live="polite"
           aria-relevant="additions"
-          className="divide-y divide-neutral-100 dark:divide-neutral-800"
+          className="divide-y divide-border"
         >
           <AnimatePresence initial={false}>
             {quotes.map((q) => (
@@ -107,7 +107,7 @@ export function CotizadorRecentQuotesFeed({
               >
                 <Link
                   href={`/panel/inmobiliaria/ai/asegurabilidad/${q.id}`}
-                  className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-md transition-colors"
+                  className="flex items-center justify-between py-3 px-1 hover:bg-surface-muted rounded-md transition-colors"
                   aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.ariaRow')
                     .replace('{{name}}', `Ref. ${q.cedulaHashPrefix8}`)
                     .replace('{{city}}', q.ciudad)
@@ -116,19 +116,19 @@ export function CotizadorRecentQuotesFeed({
                   {/* Identidad visual primaria = ciudad + canon (humano); el hash
                       de cédula es solo una referencia técnica → "Ref. {hash}" */}
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-neutral-900 dark:text-white">
+                    <span className="text-sm font-medium text-fg">
                       {q.ciudad} · ${formatCOP(q.canonCop)}/mes
                     </span>
-                    <span className="text-xs font-mono text-neutral-500 dark:text-neutral-400">
+                    <span className="text-xs font-mono text-fg-muted">
                       Ref. {q.cedulaHashPrefix8}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={q.status} t={t} />
-                    <span className="text-xs text-neutral-400">
+                    <span className="text-xs text-fg-muted tabular-nums">
                       {q.approvedCount}/{q.totalCarriers}
                     </span>
-                    <ArrowRight className="h-4 w-4 text-neutral-400" />
+                    <ArrowRight className="h-4 w-4 text-fg-subtle" />
                   </div>
                 </Link>
               </motion.li>

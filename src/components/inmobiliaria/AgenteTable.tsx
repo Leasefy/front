@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
@@ -12,6 +12,22 @@ import {
   Users,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+} from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -25,37 +41,35 @@ interface AgenteTableProps {
   onEdit: (agente: Agente) => void;
 }
 
-// Role badge colors (labels moved inside component for i18n)
+// Role badge colors — usado por el avatar fallback (color-coded por rol).
 const ROLE_STYLES: Record<AgenteRole, { bg: string; text: string }> = {
   agent: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   coordinator: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-surface-muted',
+    text: 'text-fg-muted',
   },
   director: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
 };
 
-// Status badge colors (labels moved inside component for i18n)
-const STATUS_STYLES: Record<AgenteStatus, { bg: string; text: string }> = {
-  active: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-  },
-  inactive: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-400',
-  },
-  on_leave: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-  },
-};
+// Rol → variant del Badge de Cadence (pill de rol).
+const ROLE_BADGE_VARIANT = {
+  agent: 'default',
+  coordinator: 'secondary',
+  director: 'warning',
+} as const;
+
+// Estado → variant del Badge de Cadence (pill de estado).
+const STATUS_BADGE_VARIANT = {
+  active: 'success',
+  inactive: 'secondary',
+  on_leave: 'warning',
+} as const;
 
 // Role order for sorting
 const ROLE_ORDER: Record<AgenteRole, number> = {
@@ -83,7 +97,6 @@ export function AgenteTable({
   const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const ROLE_LABELS: Record<AgenteRole, string> = {
     agent: t('inmobiliaria.agente.roleAgent'),
@@ -155,6 +168,27 @@ export function AgenteTable({
 
   const SortIcon = sortDirection === 'asc' ? SortAscending : SortDescending;
 
+  const SortableHeader = ({
+    field,
+    children,
+    className,
+  }: {
+    field: SortField;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <TableHead className={cn('text-left p-4', className)}>
+      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      <button
+        onClick={() => handleSort(field)}
+        className="inline-flex items-center gap-1.5 hover:text-fg"
+      >
+        {children}
+        {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
+      </button>
+    </TableHead>
+  );
+
   // Get initials for avatar fallback
   const getInitials = (name: string) => {
     return name
@@ -167,84 +201,25 @@ export function AgenteTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px]">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="text-left p-4">
-              <button
-                onClick={() => handleSort('name')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.agente.agentLabel')}
-                {sortField === 'name' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </th>
-            <th className="text-left p-4">
-              <button
-                onClick={() => handleSort('role')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.agente.role')}
-                {sortField === 'role' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </th>
-            <th className="text-left p-4">
-              <button
-                onClick={() => handleSort('status')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.agente.status')}
-                {sortField === 'status' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </th>
-            <th className="text-left p-4 hidden lg:table-cell">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {t('inmobiliaria.agente.zone')}
-              </span>
-            </th>
-            <th className="text-left p-4">
-              <button
-                onClick={() => handleSort('assignedProperties')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.agente.propsShort')}
-                {sortField === 'assignedProperties' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </th>
-            <th className="text-left p-4 hidden md:table-cell">
-              <button
-                onClick={() => handleSort('closedThisMonth')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.agente.closings')}
-                {sortField === 'closedThisMonth' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </th>
-            <th className="text-left p-4 hidden md:table-cell">
-              <button
-                onClick={() => handleSort('commissionsThisMonth')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.agente.commissions')}
-                {sortField === 'commissionsThisMonth' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </th>
-            <th className="text-left p-4 hidden lg:table-cell">
-              <button
-                onClick={() => handleSort('commissionSplit')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                Split %
-                {sortField === 'commissionSplit' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </th>
-            <th className="w-12 p-4"></th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="min-w-[900px]">
+        <TableHeader>
+          <TableRow className="border-b border-border bg-bg">
+            <SortableHeader field="name">{t('inmobiliaria.agente.agentLabel')}</SortableHeader>
+            <SortableHeader field="role">{t('inmobiliaria.agente.role')}</SortableHeader>
+            <SortableHeader field="status">{t('inmobiliaria.agente.status')}</SortableHeader>
+            <TableHead className="text-left p-4 hidden lg:table-cell">
+              {t('inmobiliaria.agente.zone')}
+            </TableHead>
+            <SortableHeader field="assignedProperties">{t('inmobiliaria.agente.propsShort')}</SortableHeader>
+            <SortableHeader field="closedThisMonth" className="hidden md:table-cell">{t('inmobiliaria.agente.closings')}</SortableHeader>
+            <SortableHeader field="commissionsThisMonth" className="hidden md:table-cell">{t('inmobiliaria.agente.commissions')}</SortableHeader>
+            <SortableHeader field="commissionSplit" className="hidden lg:table-cell">Split %</SortableHeader>
+            <TableHead className="w-12 p-4" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {sortedAgentes.map((agente, index) => {
             const roleStyle = ROLE_STYLES[agente.role];
-            const statusStyle = STATUS_STYLES[agente.status];
             const initials = getInitials(agente.name);
 
             return (
@@ -254,10 +229,10 @@ export function AgenteTable({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
                 onClick={() => onView(agente)}
-                className="hover:bg-muted/50 cursor-pointer transition-colors"
+                className="border-t border-faint hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {/* Agent Name + Avatar */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <div className="flex items-center gap-3">
                     {agente.avatar ? (
                       <img
@@ -284,24 +259,24 @@ export function AgenteTable({
                       </p>
                     </div>
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Role */}
-                <td className="p-4">
-                  <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', roleStyle.bg, roleStyle.text)}>
+                <TableCell className="p-4">
+                  <Badge variant={ROLE_BADGE_VARIANT[agente.role]}>
                     {ROLE_LABELS[agente.role]}
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
 
                 {/* Status */}
-                <td className="p-4">
-                  <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusStyle.bg, statusStyle.text)}>
+                <TableCell className="p-4">
+                  <Badge variant={STATUS_BADGE_VARIANT[agente.status]}>
                     {STATUS_LABELS[agente.status]}
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
 
                 {/* Zone */}
-                <td className="p-4 hidden lg:table-cell">
+                <TableCell className="p-4 hidden lg:table-cell">
                   {agente.zone ? (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -312,102 +287,80 @@ export function AgenteTable({
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
-                </td>
+                </TableCell>
 
                 {/* Assigned Properties */}
-                <td className="p-4">
-                  <span className="font-semibold text-foreground">
+                <TableCell className="p-4">
+                  <span className="font-semibold font-mono tabular-nums text-foreground">
                     {agente.metrics.assignedProperties}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Closings this month */}
-                <td className="p-4 hidden md:table-cell">
-                  <span className="font-semibold text-foreground">
+                <TableCell className="p-4 hidden md:table-cell">
+                  <span className="font-semibold font-mono tabular-nums text-foreground">
                     {agente.metrics.closedThisMonth}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Commissions this month */}
-                <td className="p-4 hidden md:table-cell">
-                  <span className="font-semibold text-foreground">
+                <TableCell className="p-4 hidden md:table-cell">
+                  <span className="font-semibold font-mono tabular-nums text-foreground">
                     {formatCurrency(agente.metrics.commissionsThisMonth)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Commission Split */}
-                <td className="p-4 hidden lg:table-cell">
-                  <span className="inline-flex px-2.5 py-1 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-sm font-medium">
+                <TableCell className="p-4 hidden lg:table-cell">
+                  <Badge variant="default" className="font-mono tabular-nums">
                     {agente.commissionSplit}%
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
 
                 {/* Actions */}
-                <td className="p-4">
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(openMenuId === agente.id ? null : agente.id);
-                      }}
-                      className="p-2 rounded-md hover:bg-muted transition-colors"
-                    >
-                      <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
-                    </button>
-
-                    <AnimatePresence>
-                      {openMenuId === agente.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-40 p-2 rounded-xl border border-border bg-card z-10"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onView(agente);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.agente.viewDetail')}</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEdit(agente);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-foreground hover:bg-muted transition-colors"
-                          >
-                            <PencilSimple className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.agente.edit')}</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </td>
+                <TableCell className="p-4">
+                  <DropdownList>
+                    <DropdownListTrigger asChild>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Acciones"
+                      />
+                    </DropdownListTrigger>
+                    <DropdownListContent align="end" className="w-40">
+                      <DropdownListItem onSelect={() => onView(agente)}>
+                        <Eye className="w-4 h-4" />
+                        <span className="text-sm">{t('inmobiliaria.agente.viewDetail')}</span>
+                      </DropdownListItem>
+                      <DropdownListItem onSelect={() => onEdit(agente)}>
+                        <PencilSimple className="w-4 h-4" />
+                        <span className="text-sm">{t('inmobiliaria.agente.edit')}</span>
+                      </DropdownListItem>
+                    </DropdownListContent>
+                  </DropdownList>
+                </TableCell>
               </motion.tr>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       {/* Empty State */}
       {sortedAgentes.length === 0 && (
-        <div className="p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <Users className="w-8 h-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-surface-muted flex items-center justify-center">
+            <Users className="w-6 h-6 text-fg-muted" weight="duotone" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            {t('inmobiliaria.agente.noAgentsFound')}
-          </h3>
-          <p className="text-muted-foreground">
-            {t('inmobiliaria.agente.adjustFiltersOrAdd')}
-          </p>
+          <div className="space-y-1.5">
+            <h3 className="text-base font-semibold text-fg">
+              {t('inmobiliaria.agente.noAgentsFound')}
+            </h3>
+            <p className="max-w-sm text-sm text-fg-muted">
+              {t('inmobiliaria.agente.adjustFiltersOrAdd')}
+            </p>
+          </div>
         </div>
       )}
     </div>

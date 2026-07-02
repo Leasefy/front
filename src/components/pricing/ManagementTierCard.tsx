@@ -29,7 +29,7 @@ export function ManagementTierCard({
     return (
       <div
         className={cn(
-          'relative flex flex-col rounded-xl p-6 transition-all overflow-hidden',
+          'relative flex flex-col rounded-[20px] p-6 transition-all overflow-hidden',
           'bg-gradient-to-br from-sand-50 via-sand-50 to-sand-100/80',
           'border border-sand-200/80 shadow-sand-200/30',
           className
@@ -48,7 +48,7 @@ export function ManagementTierCard({
 
         {/* Premium icon */}
         <div className="mb-4">
-          <div className="w-10 h-10 rounded-xl bg-sand-200/60 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-md bg-sand-200/60 flex items-center justify-center">
             <Shield className="w-5 h-5 text-sand-700" />
           </div>
         </div>
@@ -60,16 +60,15 @@ export function ManagementTierCard({
         </div>
 
         {/* Pricing with highlight */}
-        <div className="mb-6 p-4 -mx-1 rounded-xl bg-white/60 border border-sand-200/50">
+        <div className="mb-6 p-4 -mx-1 rounded-[18px] bg-white/60 border border-sand-200/50">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[40px] font-heading font-bold text-foreground tracking-tight">
+            <span className="text-[40px] font-mono font-bold tabular-nums text-foreground tracking-tight">
               {tier.feePercentage}%
             </span>
             <span className="text-[14px] text-sand-600">del arriendo</span>
           </div>
           <p className="mt-1 text-[12px] text-sand-600">
-            Ejemplo: ${monthlyCost.toLocaleString('es-CL')}/mes para arriendo de $
-            {exampleRent.toLocaleString('es-CL')}
+            Ejemplo: <span className="font-mono tabular-nums">${monthlyCost.toLocaleString('es-CL')}/mes</span> para arriendo de <span className="font-mono tabular-nums">${exampleRent.toLocaleString('es-CL')}</span>
           </p>
         </div>
 
@@ -111,13 +110,13 @@ export function ManagementTierCard({
   return (
     <div
       className={cn(
-        'relative flex flex-col rounded-xl border bg-white border-neutral-200 p-6 transition-all hover: hover:border-neutral-300',
+        'relative flex flex-col rounded-[20px] border bg-surface border-neutral-200 p-6 transition-all hover:border-neutral-300',
         className
       )}
     >
       {/* Icon */}
       <div className="mb-4">
-        <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-md bg-neutral-100 flex items-center justify-center">
           <Shield className="w-5 h-5 text-neutral-500" />
         </div>
       </div>
@@ -129,16 +128,15 @@ export function ManagementTierCard({
       </div>
 
       {/* Pricing */}
-      <div className="mb-6 p-4 -mx-1 rounded-xl bg-neutral-50 border border-neutral-100">
+      <div className="mb-6 p-4 -mx-1 rounded-[18px] bg-neutral-50 border border-neutral-100">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-[40px] font-heading font-bold text-foreground tracking-tight">
+          <span className="text-[40px] font-mono font-bold tabular-nums text-foreground tracking-tight">
             {tier.feePercentage}%
           </span>
           <span className="text-[14px] text-muted-foreground">del arriendo</span>
         </div>
         <p className="mt-1 text-[12px] text-muted-foreground">
-          Ejemplo: ${monthlyCost.toLocaleString('es-CL')}/mes para arriendo de $
-          {exampleRent.toLocaleString('es-CL')}
+          Ejemplo: <span className="font-mono tabular-nums">${monthlyCost.toLocaleString('es-CL')}/mes</span> para arriendo de <span className="font-mono tabular-nums">${exampleRent.toLocaleString('es-CL')}</span>
         </p>
       </div>
 

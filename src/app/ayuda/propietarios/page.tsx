@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
-import { CaretDown, House, Users, FileText, CreditCard, Shield, ChartBarHorizontal, CheckCircle, ArrowRight, Lightbulb, ChartBar } from '@phosphor-icons/react';
+import { Button } from "@/components/ui/button";
+import { CaretDown, House, Users, FileText, CreditCard, Shield, ChartBarHorizontal, CheckCircle, Lightbulb, ChartBar } from '@phosphor-icons/react';
 
 interface GuideSection {
   id: string;
@@ -251,7 +252,7 @@ function GuideAccordion({ section }: { section: GuideSection }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border border-border rounded-xl overflow-hidden">
+    <div className="border border-border rounded-[20px] overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-4 p-5 text-left bg-background hover:bg-muted/50 transition-colors"
@@ -355,23 +356,16 @@ export default function PropietariosGuidePage() {
 
               {/* Quick actions */}
               <div className="flex flex-wrap gap-3 mb-12">
-                <Link
-                  href="/publicar"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1A40FF] text-white text-[14px] font-medium rounded-md hover:opacity-90 transition-colors"
-                >
-                  Publicar propiedad
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-[14px] font-medium rounded-md hover:bg-muted/50 transition-colors"
-                >
-                  Ver planes y precios
-                </Link>
+                <Button asChild>
+                  <Link href="/publicar">Publicar propiedad</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/pricing">Ver planes y precios</Link>
+                </Button>
               </div>
 
               {/* Pro tip */}
-              <div className="flex items-start gap-3 p-4 mb-10 rounded-md bg-[#B7791F]/10 border border-[#B7791F]/30">
+              <div className="flex items-start gap-3 p-4 mb-10 rounded-[18px] bg-[#B7791F]/10 border border-[#B7791F]/30">
                 <Lightbulb className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[14px] font-medium text-foreground">
@@ -393,7 +387,7 @@ export default function PropietariosGuidePage() {
               </div>
 
               {/* Contact section */}
-              <div className="mt-16 p-8 border border-border rounded-xl bg-muted/30 text-center">
+              <div className="mt-16 p-8 border border-border rounded-[22px] bg-muted/30 text-center">
                 <h2 className="text-[18px] font-medium text-foreground mb-2">
                   ¿Tienes más preguntas?
                 </h2>
@@ -402,12 +396,9 @@ export default function PropietariosGuidePage() {
                   paso del proceso.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <Link
-                    href="/ayuda"
-                    className="inline-flex items-center px-5 py-2.5 border border-border text-foreground text-[14px] font-medium rounded-md hover:bg-muted/50 transition-colors"
-                  >
-                    Ver preguntas frecuentes
-                  </Link>
+                  <Button variant="outline" asChild>
+                    <Link href="/ayuda">Ver preguntas frecuentes</Link>
+                  </Button>
                   <a
                     href="mailto:soporte@leasefy.com"
                     className="inline-flex items-center px-5 py-2.5 bg-foreground text-background text-[14px] font-medium rounded-md hover:bg-foreground/90 transition-colors"

@@ -21,7 +21,6 @@ import {
   CaretLeft,
   Receipt,
   Info,
-  Spinner,
   Warning,
 } from '@phosphor-icons/react';
 
@@ -30,6 +29,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { agentAuthHeaders } from '@/lib/api/agent-auth';
 import { cn } from '@/lib/utils';
+import { Button, Spinner } from '@/components/ui';
 
 // ---------------------------------------------------------------------------
 // AP Bill shape (mirrors ap-bills-source.ts)
@@ -58,24 +58,24 @@ const STATUS_COLORS: Record<
   { text: string; bg: string; border: string }
 > = {
   paid: {
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    text: 'text-success',
+    bg: 'bg-success-soft',
+    border: 'border-success/30',
   },
   approved: {
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
+    text: 'text-success',
+    bg: 'bg-success-soft',
+    border: 'border-success/30',
   },
   pending_approval: {
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
+    text: 'text-warning',
+    bg: 'bg-warning-soft',
+    border: 'border-warning/30',
   },
   rejected: {
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    border: 'border-[#C4503B]/30 dark:border-[#C4503B]/40',
+    text: 'text-danger',
+    bg: 'bg-danger-soft',
+    border: 'border-danger/30',
   },
   void: {
     text: 'text-neutral-600 dark:text-neutral-400',
@@ -186,7 +186,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
   if (isLoading) {
     return (
       <div className="p-6 lg:p-8 flex flex-col items-center justify-center gap-3 min-h-[300px]">
-        <Spinner className="w-6 h-6 text-muted-foreground animate-spin" />
+        <Spinner size="md" variant="muted" />
         <p className="text-sm text-muted-foreground">{t(k('fetching'))}</p>
       </div>
     );
@@ -199,13 +199,13 @@ function ApBillDetailContent({ billId }: { billId: string }) {
         <BackNav t={t} k={k} />
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4"
+          className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger-soft p-4"
         >
           <Warning
-            className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
             weight="fill"
           />
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
+          <p className="text-sm text-danger">{error}</p>
         </div>
       </div>
     );
@@ -228,13 +228,12 @@ function ApBillDetailContent({ billId }: { billId: string }) {
               {t(k('notFoundDesc'))}
             </p>
           </div>
-          <Link
-            href="/panel/inmobiliaria/tesoreria"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
-          >
-            <CaretLeft className="w-4 h-4" />
-            {t(k('backToList'))}
-          </Link>
+          <Button asChild hideArrow>
+            <Link href="/panel/inmobiliaria/tesoreria">
+              <CaretLeft className="w-4 h-4" />
+              {t(k('backToList'))}
+            </Link>
+          </Button>
         </div>
       </div>
     );
@@ -258,10 +257,10 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             <Receipt className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
           </div>
           <div>
-            <h1 className="text-h2 text-foreground font-semibold">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">
               {bill.invoiceNumber}
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-sm text-fg-muted mt-0.5">
               {bill.costCenterCode}
             </p>
           </div>
@@ -281,16 +280,16 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       </header>
 
       {/* M1 info banner */}
-      <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-3 flex items-start gap-2.5">
+      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
         <Info
-          className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] flex-shrink-0 mt-0.5"
+          className="w-5 h-5 text-primary dark:text-primary flex-shrink-0 mt-0.5"
           weight="fill"
         />
         <div>
-          <p className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">
+          <p className="text-xs font-semibold text-primary dark:text-primary">
             {t(k('m1BannerTitle'))}
           </p>
-          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]/90 mt-0.5">
+          <p className="text-xs text-primary dark:text-primary/90 mt-0.5">
             {t(k('m1BannerDesc'))}
           </p>
         </div>

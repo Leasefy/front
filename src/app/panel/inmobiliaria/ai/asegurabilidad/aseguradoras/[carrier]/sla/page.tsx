@@ -18,6 +18,7 @@ import { CarrierSlaStateCard } from '@/components/inmobiliaria/cotizador/Carrier
 import { CarrierSlaBreachWindows } from '@/components/inmobiliaria/cotizador/CarrierSlaBreachWindows'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui/button'
 
 // =============================================================================
 // Component
@@ -52,47 +53,50 @@ export default function CarrierSlaPage() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
             <Link
               href=".."
-              className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted hover:text-fg transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               {carrier.toUpperCase()}
             </Link>
           </div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.title')} — {carrier.toUpperCase()}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.subtitle')}
           </p>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="icon"
+          hideArrow
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
           aria-label={t('inmobiliaria.ai.cotizador.aseguradoras.carrier.refresh')}
         >
           <ArrowClockwise className="h-4 w-4" />
-        </button>
+        </Button>
       </header>
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.errorLoading')}: {error}
           </p>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="text-xs text-[#C4503B] dark:text-[#E0664D] underline hover:no-underline flex-shrink-0"
+            className="shrink-0"
           >
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.retry')}
-          </button>
+          </Button>
         </div>
       )}
 

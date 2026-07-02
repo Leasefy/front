@@ -27,8 +27,10 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
+import { Button } from '@/components/ui/button';
+import { Eyebrow } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useContracts } from '@/lib/hooks/useContracts';
 import {
   CONTRACT_STATUS_LABELS,
@@ -115,53 +117,57 @@ function ContratosContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
-          <SectionLabel>{tx('Portafolio', 'Portfolio')}</SectionLabel>
-          <h1 className="text-h2 text-foreground">{tx('Contratos', 'Contracts')}</h1>
-          <p className="text-body text-muted-foreground max-w-2xl">
+        <div className="space-y-1">
+          <Eyebrow>{tx('Portafolio', 'Portfolio')}</Eyebrow>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{tx('Contratos', 'Contracts')}</h1>
+          <p className="text-sm text-muted-foreground max-w-2xl">
             {tx(
               'Gestiona los contratos de arrendamiento de tu inmobiliaria: firma, vigencia y estado.',
               'Manage your agency rental contracts: signing, term and status.',
             )}
           </p>
         </div>
-        <button
+        <Button
           onClick={() => router.push('/panel/inmobiliaria/contratos/nuevo')}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:bg-[#1636D8] transition-all active:scale-[0.97] flex-shrink-0"
+          hideArrow
+          className="shrink-0 gap-2"
         >
           <Plus className="w-4 h-4" weight="bold" />
           {tx('Nuevo contrato', 'New contract')}
-        </button>
+        </Button>
       </header>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-neutral-400" />
-        <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-[#2C7A53]" />
+        <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-emerald-600" />
         <StatCard
           label={tx('Pendientes de firma', 'Pending signature')}
           value={isLoading ? '—' : stats.pendingLandlord + stats.pendingTenant}
-          dot="bg-[#B7791F]"
+          dot="bg-amber-600"
         />
         <StatCard label={tx('Borradores', 'Drafts')} value={isLoading ? '—' : stats.draft} dot="bg-neutral-400" />
       </div>
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-start gap-2.5">
-          <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5" weight="fill" />
+        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2.5">
+          <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-[#C4503B] dark:text-[#E0664D]">
+            <p className="text-xs font-medium text-danger">
               {tx('Error cargando contratos', 'Error loading contracts')}
             </p>
-            <p className="text-xs text-[#C4503B] dark:text-[#E0664D]/90 mt-0.5">{error}</p>
+            <p className="text-xs text-danger/90 mt-0.5">{error}</p>
           </div>
-          <button
+          <Button
             onClick={() => void refetch()}
-            className="h-7 px-2.5 rounded-md bg-white dark:bg-neutral-900 border border-[#C4503B]/30 text-[#C4503B] dark:text-[#E0664D] text-xs font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors flex-shrink-0"
+            variant="outline"
+            size="sm"
+            hideArrow
+            className="shrink-0"
           >
             {tx('Reintentar', 'Retry')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -173,107 +179,105 @@ function ContratosContent() {
               <FileText className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             <div>
-              <h2 className="text-h4 text-foreground">{tx('Contratos', 'Contracts')}</h2>
-              <p className="text-caption text-muted-foreground mt-0.5">
+              <h2 className="text-base font-semibold text-foreground">{tx('Contratos', 'Contracts')}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {tx('Toca un contrato para ver el detalle y la firma.', 'Tap a contract to see detail and signing.')}
               </p>
             </div>
           </div>
           {!isLoading && !error && (
-            <button
+            <Button
               onClick={() => void refetch()}
+              variant="ghost"
+              size="icon"
+              hideArrow
               title={tx('Actualizar', 'Refresh')}
               aria-label={tx('Actualizar', 'Refresh')}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              className="h-8 w-8 text-muted-foreground"
             >
               <ArrowsClockwise className="w-4 h-4" />
-            </button>
+            </Button>
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {COLUMNS.map((col, i) => (
-                  <th
-                    key={i}
-                    className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap"
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && <TableSkeleton />}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {COLUMNS.map((col, i) => (
+                <TableHead key={i} className="whitespace-nowrap">
+                  {col}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && <TableSkeleton />}
 
-              {!isLoading && !error && contracts.length === 0 && (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="p-0">
-                    <EmptyState
-                      icon={FileText}
-                      title={tx('Sin contratos aún', 'No contracts yet')}
-                      description={tx(
-                        'Crea tu primer contrato de arrendamiento para empezar.',
-                        'Create your first rental contract to get started.',
-                      )}
-                    />
-                  </td>
-                </tr>
-              )}
+            {!isLoading && !error && contracts.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={COLUMNS.length} className="p-0">
+                  <EmptyState
+                    icon={FileText}
+                    title={tx('Sin contratos aún', 'No contracts yet')}
+                    description={tx(
+                      'Crea tu primer contrato de arrendamiento para empezar.',
+                      'Create your first rental contract to get started.',
+                    )}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
 
-              {!isLoading &&
-                contracts.map((c) => (
-                  <tr
-                    key={c.id}
-                    onClick={() => openContract(c)}
-                    className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
-                          <p className="text-caption text-muted-foreground truncate">{c.tenantEmail}</p>
-                        </div>
+            {!isLoading &&
+              contracts.map((c) => (
+                <TableRow
+                  key={c.id}
+                  onClick={() => openContract(c)}
+                  className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
+                >
+                  <TableCell className="px-5 py-4">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
+                        <User className="w-4 h-4 text-muted-foreground" />
                       </div>
-                    </td>
-                    <td className="px-5 py-4 max-w-[220px]">
-                      <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                        <House className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
-                          {c.propertyAddress}
-                          {c.propertyCity ? `, ${c.propertyCity}` : ''}
-                        </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
+                        <p className="text-caption text-muted-foreground truncate">{c.tenantEmail}</p>
                       </div>
-                    </td>
-                    <td className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">
-                      {fmtCop(c.monthlyRent)}
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
-                      {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
-                          CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
-                        )}
-                      >
-                        {CONTRACT_STATUS_LABELS[c.status] ?? c.status}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-5 py-4 max-w-[220px]">
+                    <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                      <House className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
+                        {c.propertyAddress}
+                        {c.propertyCity ? `, ${c.propertyCity}` : ''}
                       </span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">
+                    {fmtCop(c.monthlyRent)}
+                  </TableCell>
+                  <TableCell className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
+                    {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
+                  </TableCell>
+                  <TableCell className="px-5 py-4">
+                    <span
+                      className={cn(
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
+                        CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {CONTRACT_STATUS_LABELS[c.status] ?? c.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-5 py-4 text-right">
+                    <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
       </section>
     </div>
   );

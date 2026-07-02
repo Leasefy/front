@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { MonoLabel, IconButton } from "@leasefy/cadence";
 
 // --- Original multi-audience testimonials (commented for agency-only launch) ---
 // const _originalTestimonials = [
@@ -89,20 +90,20 @@ export function TestimonialsSection() {
 
             {/* Compass arrows - Luxterra style */}
             <div className="flex gap-3">
-              <button
+              <IconButton
+                variant="outline"
                 onClick={prevTestimonial}
-                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full"
                 aria-label="Anterior testimonio"
-              >
-                <CaretLeft className="w-5 h-5" />
-              </button>
-              <button
+                icon={<CaretLeft className="w-5 h-5" />}
+              />
+              <IconButton
+                variant="outline"
                 onClick={nextTestimonial}
-                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full"
                 aria-label="Siguiente testimonio"
-              >
-                <CaretRight className="w-5 h-5" />
-              </button>
+                icon={<CaretRight className="w-5 h-5" />}
+              />
             </div>
           </motion.div>
 
@@ -158,9 +159,9 @@ export function TestimonialsSection() {
                       </div>
                       {testimonial.result && (
                         <div className="flex-shrink-0 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-sm">
-                          <span className="text-[9px] font-mono font-normal text-primary uppercase tracking-wide whitespace-nowrap">
+                          <MonoLabel className="text-[9px] font-normal text-primary tracking-wide whitespace-nowrap">
                             {testimonial.result}
-                          </span>
+                          </MonoLabel>
                         </div>
                       )}
                     </div>

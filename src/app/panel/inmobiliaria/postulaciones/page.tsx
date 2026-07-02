@@ -1,10 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ClipboardText, ArrowClockwise } from '@phosphor-icons/react'
+import { ClipboardText } from '@phosphor-icons/react'
 import { useAuth } from '@/lib/auth'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { cn } from '@/lib/utils'
+import { ErrorState } from '@/components/ui/error-state'
+import { Spinner } from '@/components/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { StatusBadge } from '@leasefy/cadence'
 import {
   fetchFunnelApplications,
   shortApplicationRef,
@@ -46,28 +49,23 @@ export default function PostulacionesPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <header className="mb-6">
+      <header className="mb-6 space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Postulaciones</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground max-w-2xl">
           Inquilinos que completaron su estudio. Contáctalos para avanzar con el arriendo.
         </p>
       </header>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-24" role="status" aria-label="Cargando postulaciones">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 dark:border-neutral-600 border-t-transparent" />
+        <div className="flex items-center justify-center py-24">
+          <Spinner size="md" variant="muted" label="Cargando postulaciones" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
-          <p className="text-sm text-destructive">{error}</p>
-          <button
-            onClick={() => void load()}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-muted"
-          >
-            <ArrowClockwise className="h-4 w-4" />
-            Reintentar
-          </button>
-        </div>
+        <ErrorState
+          title="No se pudieron cargar las postulaciones"
+          description={error}
+          onRetry={() => void load()}
+        />
       ) : items.length === 0 ? (
         <EmptyState
           icon={ClipboardText}
@@ -76,36 +74,36 @@ export default function PostulacionesPage() {
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-                <th className="px-4 py-3">Postulación</th>
-                <th className="px-4 py-3">Estado</th>
-                <th className="px-4 py-3">Puntaje</th>
-                <th className="px-4 py-3">Evaluada</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Postulación</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Puntaje</TableHead>
+                <TableHead>Evaluada</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((a) => {
                 const v = VERDICT_CONFIG[a.verdict]
                 return (
-                  <tr key={a.applicationId || a.scoredAt} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs text-foreground">{shortApplicationRef(a.applicationId)}</td>
-                    <td className="px-4 py-3">
-                      <span className={cn('inline-flex rounded-full px-2.5 py-1 text-xs font-medium', v.className)}>
+                  <TableRow key={a.applicationId || a.scoredAt}>
+                    <TableCell className="text-xs tabular-nums text-foreground">{shortApplicationRef(a.applicationId)}</TableCell>
+                    <TableCell>
+                      <StatusBadge tone={a.verdict === 'approved' ? 'success' : 'warning'} dot={false}>
                         {v.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-foreground">
+                      </StatusBadge>
+                    </TableCell>
+                    <TableCell className="text-foreground">
                       {a.score !== null ? a.score : '—'}
                       {a.level ? <span className="ml-1 text-muted-foreground">· {a.level}</span> : null}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{formatScoredAt(a.scoredAt)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{formatScoredAt(a.scoredAt)}</TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

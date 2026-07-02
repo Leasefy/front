@@ -33,25 +33,25 @@ const tierIcons = {
 
 const tierConfig = {
   none: {
-    iconBg: 'bg-neutral-100 dark:bg-neutral-800',
-    iconColor: 'text-neutral-500 dark:text-neutral-400',
-    selectedBg: 'bg-neutral-50 dark:bg-neutral-800/50',
-    selectedBorder: 'border-neutral-300 dark:border-neutral-600',
+    iconBg: 'bg-surface-muted',
+    iconColor: 'text-fg-muted',
+    selectedBg: 'bg-surface-muted dark:bg-ink/50',
+    selectedBorder: 'border-border dark:border-border-strong',
     gradient: '',
   },
   basic: {
-    iconBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    iconColor: 'text-[#1A40FF] dark:text-[#5570FF]',
-    selectedBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    selectedBorder: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
-    gradient: 'from-[#1A40FF] to-[#1A40FF]',
+    iconBg: 'bg-primary-soft',
+    iconColor: 'text-primary',
+    selectedBg: 'bg-primary-soft',
+    selectedBorder: 'border-primary/30',
+    gradient: 'from-primary to-primary',
   },
   premium: {
-    iconBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    selectedBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    selectedBorder: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-    gradient: 'from-[#2C7A53] to-[#6B6B6B]',
+    iconBg: 'bg-success-soft',
+    iconColor: 'text-success',
+    selectedBg: 'bg-success-soft',
+    selectedBorder: 'border-success/30',
+    gradient: 'from-success to-success',
   },
 } as const;
 
@@ -85,14 +85,14 @@ export function InsuranceSelector({
     <div className={cn('space-y-4', className)}>
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
+          <Shield className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-neutral-900 dark:text-white">
+          <h3 className="font-semibold text-fg">
             Protección del arriendo
           </h3>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted">
             Protege tu inversión con seguro
           </p>
         </div>
@@ -123,24 +123,24 @@ export function InsuranceSelector({
               className={cn(
                 'relative w-full rounded-xl border text-left transition-all overflow-hidden',
                 isSelected
-                  ? `${config.selectedBorder} ${config.selectedBg} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#222224]`
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#222224]',
-                isSelected && policy.tier === 'basic' && 'ring-[#1A40FF]/30',
-                isSelected && policy.tier === 'premium' && 'ring-[#2C7A53]/30',
-                isSelected && policy.tier === 'none' && 'ring-neutral-300/50 dark:ring-neutral-600/50'
+                  ? `${config.selectedBorder} ${config.selectedBg} ring-2 ring-offset-2 ring-offset-bg`
+                  : 'border-border hover:border-border-strong bg-surface',
+                isSelected && policy.tier === 'basic' && 'ring-primary/30',
+                isSelected && policy.tier === 'premium' && 'ring-success/30',
+                isSelected && policy.tier === 'none' && 'ring-border/50 dark:ring-neutral-600/50'
               )}
             >
               {/* Popular/Best Value Badge */}
               {policy.recommended && (
                 <div className="absolute top-0 right-0">
-                  <div className="bg-gradient-to-r from-[#1A40FF] to-[#1A40FF] text-white text-[10px] font-semibold px-3 py-1 rounded-bl-md">
+                  <div className="bg-gradient-to-r from-primary to-primary text-white text-[10px] font-semibold px-3 py-1 rounded-bl-md">
                     Popular
                   </div>
                 </div>
               )}
               {isPremium && (
                 <div className="absolute top-0 right-0">
-                  <div className="bg-gradient-to-r from-[#2C7A53] to-[#6B6B6B] text-white text-[10px] font-semibold px-3 py-1 rounded-bl-md flex items-center gap-1">
+                  <div className="bg-gradient-to-r from-success to-success text-white text-[10px] font-semibold px-3 py-1 rounded-bl-md flex items-center gap-1">
                     <Sparkle className="w-3 h-3" />
                     Mejor valor
                   </div>
@@ -161,10 +161,10 @@ export function InsuranceSelector({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-neutral-900 dark:text-white">
+                  <h4 className="font-semibold text-fg">
                     {policy.name}
                   </h4>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  <p className="text-sm text-fg-muted mt-0.5">
                     {policy.description}
                   </p>
                 </div>
@@ -175,17 +175,17 @@ export function InsuranceSelector({
                     <p className={cn(
                       'text-lg font-bold',
                       policy.tier === 'none'
-                        ? 'text-neutral-600 dark:text-neutral-300'
+                        ? 'text-fg-muted dark:text-fg-subtle'
                         : policy.tier === 'basic'
-                          ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                          : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                          ? 'text-primary'
+                          : 'text-success'
                     )}>
                       {calculatedPremium === 0
                         ? 'Gratis'
                         : formatCurrency(calculatedPremium)}
                     </p>
                     {calculatedPremium > 0 && (
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      <p className="text-xs text-fg-muted">
                         {policy.percentageRate}% /mes
                       </p>
                     )}
@@ -195,11 +195,11 @@ export function InsuranceSelector({
                       'w-6 h-6 rounded-full flex items-center justify-center transition-all shrink-0 border-2',
                       isSelected
                         ? policy.tier === 'basic'
-                          ? 'bg-[#1A40FF] border-[#1A40FF]/30'
+                          ? 'bg-primary border-primary/30'
                           : policy.tier === 'premium'
-                            ? 'bg-[#2C7A53] border-[#2C7A53]/30'
-                            : 'bg-neutral-600 border-neutral-600'
-                        : 'border-neutral-300 dark:border-neutral-600'
+                            ? 'bg-success border-success/30'
+                            : 'bg-surface-muted border-border-strong'
+                        : 'border-border dark:border-border-strong'
                     )}
                   >
                     {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
@@ -212,8 +212,8 @@ export function InsuranceSelector({
                 <div className={cn(
                   'border-t px-4 py-3',
                   isSelected
-                    ? 'border-neutral-200/50 dark:border-neutral-700/50 bg-neutral-50/50 dark:bg-neutral-800/30'
-                    : 'border-neutral-100 dark:border-neutral-800'
+                    ? 'border-border/50 dark:border-border-strong/50 bg-surface-muted/50 dark:bg-ink/30'
+                    : 'border-border'
                 )}>
                   <div className="flex flex-wrap gap-x-4 gap-y-2">
                     {/* Property Damage */}
@@ -221,19 +221,19 @@ export function InsuranceSelector({
                       <div className={cn(
                         'w-5 h-5 rounded-sm flex items-center justify-center',
                         policy.tier === 'basic'
-                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                          : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                          ? 'bg-primary-soft'
+                          : 'bg-success-soft'
                       )}>
                         <Shield className={cn(
                           'w-3 h-3',
                           policy.tier === 'basic'
-                            ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                            : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                            ? 'text-primary'
+                            : 'text-success'
                         )} />
                       </div>
-                      <span className="text-xs text-neutral-600 dark:text-neutral-300">
+                      <span className="text-xs text-fg-muted dark:text-fg-subtle">
                         Daños hasta{' '}
-                        <span className="font-semibold text-neutral-900 dark:text-white">
+                        <span className="font-semibold text-fg">
                           {formatCurrency(policy.coverage.propertyDamage)}
                         </span>
                       </span>
@@ -243,18 +243,18 @@ export function InsuranceSelector({
                       <div className={cn(
                         'w-5 h-5 rounded-sm flex items-center justify-center',
                         policy.tier === 'basic'
-                          ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                          : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                          ? 'bg-primary-soft'
+                          : 'bg-success-soft'
                       )}>
                         <Clock className={cn(
                           'w-3 h-3',
                           policy.tier === 'basic'
-                            ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                            : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                            ? 'text-primary'
+                            : 'text-success'
                         )} />
                       </div>
-                      <span className="text-xs text-neutral-600 dark:text-neutral-300">
-                        <span className="font-semibold text-neutral-900 dark:text-white">
+                      <span className="text-xs text-fg-muted dark:text-fg-subtle">
+                        <span className="font-semibold text-fg">
                           {policy.coverage.rentDefault} meses
                         </span>{' '}
                         de renta
@@ -266,26 +266,26 @@ export function InsuranceSelector({
                         <div className={cn(
                           'w-5 h-5 rounded-sm flex items-center justify-center',
                           policy.tier === 'basic'
-                            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                            : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                            ? 'bg-primary-soft'
+                            : 'bg-success-soft'
                         )}>
                           <Wrench className={cn(
                             'w-3 h-3',
                             policy.tier === 'basic'
-                              ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                              : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                              ? 'text-primary'
+                              : 'text-success'
                           )} />
                         </div>
-                        <span className="text-xs text-neutral-600 dark:text-neutral-300">Urgencias 24/7</span>
+                        <span className="text-xs text-fg-muted dark:text-fg-subtle">Urgencias 24/7</span>
                       </div>
                     )}
                     {/* Legal Assistance */}
                     {policy.coverage.legalAssistance && (
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-sm flex items-center justify-center bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
-                          <Scales className="w-3 h-3 text-[#2C7A53] dark:text-[#3EAE70]" />
+                        <div className="w-5 h-5 rounded-sm flex items-center justify-center bg-success-soft">
+                          <Scales className="w-3 h-3 text-success" />
                         </div>
-                        <span className="text-xs text-neutral-600 dark:text-neutral-300">Asistencia legal</span>
+                        <span className="text-xs text-fg-muted dark:text-fg-subtle">Asistencia legal</span>
                       </div>
                     )}
                   </div>
@@ -301,21 +301,21 @@ export function InsuranceSelector({
         <div className={cn(
           'rounded-xl border p-4',
           selected.tier === 'basic'
-            ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-            : 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+            ? 'border-primary/30 bg-primary-soft'
+            : 'border-success/30 bg-success-soft'
         )}>
           <div className="flex items-center gap-2 mb-3">
             <Check className={cn(
               'w-4 h-4',
               selected.tier === 'basic'
-                ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                ? 'text-primary'
+                : 'text-success'
             )} />
             <p className={cn(
               'text-xs font-semibold uppercase tracking-wider',
               selected.tier === 'basic'
-                ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                ? 'text-primary'
+                : 'text-success'
             )}>
               Tu póliza incluye
             </p>
@@ -325,13 +325,13 @@ export function InsuranceSelector({
               (feature, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300"
+                  className="flex items-start gap-2 text-sm text-fg"
                 >
                   <Check className={cn(
                     'w-4 h-4 mt-0.5 shrink-0',
                     selected.tier === 'basic'
-                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                      : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                      ? 'text-primary'
+                      : 'text-success'
                   )} />
                   <span>{feature}</span>
                 </li>

@@ -5,12 +5,12 @@ import {
   SelectContent as DSSelectContent,
   SelectItem as DSSelectItem,
   SelectTrigger as DSSelectTrigger,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Select de @leasefy/ui (misma API que Radix).
+ * ADAPTER fino sobre el Select de @leasefy/cadence (misma API que Radix).
  * - SelectTrigger: fidelidad mvp h-11 / px-4 / text-sm (alineado con Input).
  *   Refinamiento focus-visible del producto: el ring eléctrico solo aparece
  *   con navegación por teclado (focus-visible); el focus por mouse no pinta
@@ -31,7 +31,7 @@ export {
   SelectSeparator,
   SelectScrollUpButton,
   SelectScrollDownButton,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof DSSelectTrigger>,

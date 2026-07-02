@@ -7,36 +7,31 @@
  * GET …/ai-hub/agentes/conciliacion/analitica (404 → graceful panel).
  */
 
-import { Bank } from '@phosphor-icons/react'
-
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
+import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { ConciliacionResumen } from '@/components/inmobiliaria/ai/ConciliacionResumen'
 import { useI18n } from '@/lib/i18n'
 
 function ConciliacionAnalitica() {
   const { t } = useI18n()
   const { data, isLoading, error, notAvailable } = useAgentAnalitica('conciliacion')
+  // Resumen real del backend (taxonomía + totales + tasa). Fail-soft: null → no se muestra.
+  const { data: summary } = useConciliacionSummary()
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/conciliacion"
-          icon={Bank}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.conciliacion'), href: '/panel/inmobiliaria/ai/conciliacion' },
-            { label: t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle') },
-          ]}
-        />
         <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
           {t('inmobiliaria.ai.workspace.pages.conciliacion.analiticaDesc')}
         </p>
       </header>
+
+      {/* Resumen real del backend: taxonomía + totales + tasa (fail-soft: null → nada) */}
+      <ConciliacionResumen data={summary} />
 
       <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
     </div>

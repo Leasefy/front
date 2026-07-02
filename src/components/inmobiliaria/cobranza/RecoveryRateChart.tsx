@@ -59,11 +59,11 @@ interface RecoveryRateChartProps {
 
 const STAGE_COLORS: Record<string, string> = {
   S0: '#1A40FF', // electric-blue (primary)
-  S1: '#8A9CFF', // blue-tint
-  S2: '#6B6B6B', // neutral-mid
-  S3: '#9B9B9B', // neutral-light
-  S4: '#C9CDD3', // neutral-pale
-  S5: '#C4503B', // semantic red (highest severity stage)
+  S1: '#7B95FF', // primary-300 (blue tint)
+  S2: '#6E6A63', // neutral-600 (Cadence warm)
+  S3: '#B3AEA5', // neutral-400 (Cadence warm)
+  S4: '#C9C4BB', // neutral-300 (Cadence warm)
+  S5: '#C0392B', // semantic red (highest severity stage)
 };
 
 // ─── Pivot Helper ─────────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
               yAxisId="left"
               type="monotone"
               dataKey={`${stage}_pct_n`}
-              stroke={STAGE_COLORS[stage] ?? '#94a3b8'}
+              stroke={STAGE_COLORS[stage] ?? '#B3AEA5'}
               dot={false}
               strokeWidth={1.5}
               name={`${stage} ${t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.legend.transitions')}`}
@@ -143,7 +143,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
               yAxisId="right"
               type="monotone"
               dataKey={`${stage}_pct_cop`}
-              stroke={STAGE_COLORS[stage] ?? '#94a3b8'}
+              stroke={STAGE_COLORS[stage] ?? '#B3AEA5'}
               dot={false}
               strokeWidth={1}
               strokeDasharray="4 2"
@@ -157,7 +157,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
 
   return (
     <div>
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+      <p className="text-xs font-medium text-fg-subtle mb-2">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
       </p>
       <SampleDataWatermark show={showWatermark}>

@@ -203,3 +203,21 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 | Plan gating | Flex plans only | AI agents are Flex plan differentiator |
 | Default plan | Flex | Demo shows all features |
 | Mastra location | Separate repo `Leasefy/agent` | Microservice owns agents; frontend calls via HTTP. Decided 2026-04-07 (commit `60e773c`) |
+
+## Versionamiento — tren de versiones (cómo entregamos a integración sin frenar)
+
+Este repo entrega a integración (Victor) mediante un **tren de versiones**: **nunca se para de
+mandar PRs** para emparejar el ritmo de integración. Cada versión es un **corte congelado**
+(`git tag vN`) que Victor integra a su ritmo mientras la rama de integración sigue avanzando.
+
+**Fuente de verdad:** `.planning/releases/` — `README.md` (cómo funciona el tren) + `vN.md`
+(manifiesto/ledger por versión: PRs en orden, migraciones, secrets, flags, smoke).
+
+**Reglas para cualquier agente que trabaje en este repo:**
+- **No frenar.** Apilá los PRs como siempre; al abrir uno, agregá una fila en el manifiesto de
+  la versión **ABIERTA** (la de mayor `N` aún sin tag).
+- **No decidas la línea de corte** — la confirma Nico/Victor. Una versión = un *freeze*
+  (`git tag vN`), no una pausa.
+- **Una sola versión ABIERTA** a la vez (donde caen los PRs nuevos).
+- **Cada repo tiene su propio tren** (su propio `vN`). Un release del producto puede emparejar
+  p.ej. `agent v3` + `front v2`; anotá el emparejamiento en el encabezado del manifiesto.

@@ -11,11 +11,10 @@
  */
 
 import { useRouter } from 'next/navigation'
-import { ShieldCheck } from '@phosphor-icons/react'
 
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { MonoLabel } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 
 export default function CotizadorColaPage() {
@@ -28,15 +27,6 @@ export default function CotizadorColaPage() {
       {/* Header / Sala */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/asegurabilidad"
-            icon={ShieldCheck}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.cotizador'), href: '/panel/inmobiliaria/ai/asegurabilidad' },
-              { label: t('inmobiliaria.ai.workspace.pages.cotizador.colaTitle') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.cotizador.colaTitle')}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.cotizador.colaDescPre')}{' '}
@@ -50,9 +40,9 @@ export default function CotizadorColaPage() {
           <p className="text-2xl font-semibold text-foreground tabular-nums">
             {isLoading ? '—' : total}
           </p>
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
+          <MonoLabel>
             {t('inmobiliaria.ai.workspace.pages.cotizador.porRevisar')}
-          </p>
+          </MonoLabel>
         </div>
       </header>
 

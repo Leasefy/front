@@ -11,6 +11,7 @@
 // console, Sentry, analytics, or any persistent store. Stays in React state only.
 
 import { useMemo } from 'react'
+import { Button } from '@/components/ui'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useI18n } from '@/lib/i18n'
 import {
@@ -41,18 +42,18 @@ function speakerTone(speaker: TranscriptSpeaker): {
     case 'operador':
       return {
         label: 'speakerOperador',
-        cls: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-[#6B6B6B]/30 dark:text-neutral-600 dark:text-neutral-300',
+        cls: 'bg-surface-muted text-fg-muted',
       }
     case 'bot':
       return {
         label: 'speakerBot',
-        cls: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F]',
+        cls: 'bg-warning-soft text-warning',
       }
     case 'deudor':
     default:
       return {
         label: 'speakerDeudor',
-        cls: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+        cls: 'bg-surface-muted text-fg-muted',
       }
   }
 }
@@ -75,10 +76,10 @@ export default function CallTranscript({
   return (
     <section
       aria-label={t('inmobiliaria.ai.cobranza.call.transcript.title')}
-      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+      className="rounded-xl border border-border bg-surface"
     >
-      <header className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
-        <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
+      <header className="px-4 py-3 border-b border-border">
+        <h2 className="text-sm font-semibold text-fg">
           {t('inmobiliaria.ai.cobranza.call.transcript.title')}
         </h2>
       </header>
@@ -88,7 +89,7 @@ export default function CallTranscript({
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-12 rounded bg-neutral-100 dark:bg-neutral-800 animate-pulse"
+              className="h-12 rounded bg-surface-muted animate-pulse"
             />
           ))}
           <p className="sr-only">
@@ -99,30 +100,33 @@ export default function CallTranscript({
 
       {error && !data && (
         <div className="p-4">
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.call.transcript.error')}
           </p>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
+            hideArrow
             onClick={() => {
               void refetch()
             }}
-            className="mt-2 inline-flex items-center min-h-11 min-w-11 px-3 py-2 rounded-md bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-sm"
+            className="mt-2"
           >
             {t('inmobiliaria.ai.cobranza.call.transcript.errorRetry')}
-          </button>
+          </Button>
         </div>
       )}
 
       {data && data.turns.length === 0 && (
-        <p className="p-6 text-sm text-neutral-500 dark:text-neutral-400 text-center">
+        <p className="p-6 text-sm text-fg-subtle text-center">
           {t('inmobiliaria.ai.cobranza.call.transcript.empty')}
         </p>
       )}
 
       {data && data.turns.length > 0 && (
         <ScrollArea className="max-h-[70vh] md:max-h-[calc(100vh-16rem)]">
-          <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <ul className="divide-y divide-border-faint">
             {data.turns.map((turn) => {
               const sp = speakerTone(turn.speaker)
               const flags = turn.complianceFlagIds
@@ -136,19 +140,22 @@ export default function CallTranscript({
                     >
                       {t(`inmobiliaria.ai.cobranza.call.transcript.${sp.label}`)}
                     </span>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={() => onSeek(turn.startSec)}
                       aria-label={t(
                         'inmobiliaria.ai.cobranza.call.transcript.seekAria',
                         { time: formatSec(turn.startSec) },
                       )}
-                      className="inline-flex items-center justify-center min-h-11 min-w-11 px-2 py-1 rounded-sm text-xs tabular-nums text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-[#6B6B6B]/20 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] font-medium"
+                      className="min-h-11 min-w-11 tabular-nums text-fg-muted"
                     >
                       {formatSec(turn.startSec)}
-                    </button>
+                    </Button>
                   </div>
-                  <p className="text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed">
+                  <p className="text-sm text-fg leading-relaxed">
                     {/* turn.text is pre-redacted server-side per T-31-PII;
                         rendered verbatim. Do NOT pass into analytics or loggers. */}
                     {turn.text}

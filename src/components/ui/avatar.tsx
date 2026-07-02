@@ -1,5 +1,5 @@
 /**
- * Avatar — THIN SHIM over @leasefy/ui.
+ * Avatar — THIN SHIM over @leasefy/cadence.
  *
  * Sin call sites en el mvp (0 imports). La API composable legacy
  * (Avatar/AvatarImage/AvatarFallback/AvatarGroup/AvatarWithStatus,
@@ -8,5 +8,5 @@
  * pasa a ser la única API.
  */
 
-export { Avatar, AvatarStack } from "@leasefy/ui"
-export type { AvatarProps, AvatarStackProps, AvatarSize } from "@leasefy/ui"
+export { Avatar, AvatarStack } from "@leasefy/cadence"
+export type { AvatarProps, AvatarStackProps, AvatarSize } from "@leasefy/cadence"

@@ -28,16 +28,21 @@ import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { ArcoRequestRow } from '@/lib/hooks/cobranza/use-arco-requests'
 
 type TabValue = 'all' | 'acceso' | 'rectificacion' | 'cancelacion' | 'oposicion'
 
-const TYPE_COLORS: Record<ArcoRequestRow['type'], string> = {
-  acceso: 'text-[#1A40FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-  rectificacion: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800',
-  cancelacion: 'text-[#B7791F] bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-  oposicion: 'text-[#C4503B] bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+const TYPE_VARIANT: Record<
+  ArcoRequestRow['type'],
+  'default' | 'secondary' | 'warning' | 'destructive'
+> = {
+  acceso: 'default',
+  rectificacion: 'secondary',
+  cancelacion: 'warning',
+  oposicion: 'destructive',
 }
 
 function KpiSkeleton() {
@@ -75,13 +80,7 @@ function KpiCard({ icon, label, value, isLoading }: KpiCardProps) {
 
 function TypeBadge({ type }: { type: ArcoRequestRow['type'] }) {
   const { t } = useI18n()
-  return (
-    <span
-      className={`inline-flex items-center text-xs font-medium rounded-full px-2 py-0.5 ${TYPE_COLORS[type]}`}
-    >
-      {t(`inmobiliaria.ai.arco.type.${type}`)}
-    </span>
-  )
+  return <Badge variant={TYPE_VARIANT[type]}>{t(`inmobiliaria.ai.arco.type.${type}`)}</Badge>
 }
 
 interface RequestsTableProps {
@@ -103,75 +102,77 @@ function RequestsTable({ requests }: RequestsTableProps) {
 
   return (
     <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-      <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-        <thead className="bg-neutral-50 dark:bg-neutral-800/50">
-          <tr>
-            <th className="px-4 py-3 text-xs font-normal text-neutral-500 uppercase tracking-wide text-left">
+      <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
+        <TableHeader className="bg-neutral-50 dark:bg-neutral-800/50">
+          <TableRow>
+            <TableHead>
               {t('inmobiliaria.ai.arco.table.type')}
-            </th>
-            <th className="sticky left-0 z-10 bg-neutral-50 dark:bg-neutral-800/50 px-4 py-3 text-xs font-normal text-neutral-500 uppercase tracking-wide text-left">
+            </TableHead>
+            <TableHead className="sticky left-0 z-10 bg-neutral-50 dark:bg-neutral-800/50">
               {t('inmobiliaria.ai.arco.table.requester')}
-            </th>
-            <th className="px-4 py-3 text-xs font-normal text-neutral-500 uppercase tracking-wide text-left">
+            </TableHead>
+            <TableHead>
               {t('inmobiliaria.ai.arco.table.email')}
-            </th>
-            <th className="px-4 py-3 text-xs font-normal text-neutral-500 uppercase tracking-wide text-left">
+            </TableHead>
+            <TableHead>
               {t('inmobiliaria.ai.arco.table.status')}
-            </th>
-            <th className="px-4 py-3 text-xs font-normal text-neutral-500 uppercase tracking-wide text-left">
+            </TableHead>
+            <TableHead>
               {t('inmobiliaria.ai.arco.table.sla')}
-            </th>
-            <th className="px-4 py-3 text-xs font-normal text-neutral-500 uppercase tracking-wide text-left">
+            </TableHead>
+            <TableHead>
               {t('inmobiliaria.ai.arco.table.submitted')}
-            </th>
-            <th className="px-4 py-3 text-xs font-normal text-neutral-500 uppercase tracking-wide text-right">
+            </TableHead>
+            <TableHead className="text-right">
               {t('inmobiliaria.ai.arco.table.actions')}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
           {requests.map((row) => (
-            <tr key={row.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
-              <td className="px-4 py-3 whitespace-nowrap">
+            <TableRow key={row.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
+              <TableCell className="px-4 py-3 whitespace-nowrap">
                 <TypeBadge type={row.type} />
-              </td>
-              <td className="sticky left-0 z-10 bg-white dark:bg-[#1a1a1c] px-4 py-3 min-w-[180px]">
+              </TableCell>
+              <TableCell className="sticky left-0 z-10 bg-white dark:bg-[#1a1a1c] px-4 py-3 min-w-[180px]">
                 <p className="text-sm font-medium text-neutral-900 dark:text-white">
                   {row.requesterName}
                 </p>
                 <div className="mt-0.5">
                   <Mask field="cedula" value={row.requesterCedulaHash} />
                 </div>
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
+              </TableCell>
+              <TableCell className="px-4 py-3 whitespace-nowrap">
                 <p className="text-sm text-neutral-500">{row.requesterEmail}</p>
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
+              </TableCell>
+              <TableCell className="px-4 py-3 whitespace-nowrap">
                 <ArcoStatusBadge status={row.status} />
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
+              </TableCell>
+              <TableCell className="px-4 py-3 whitespace-nowrap">
                 <SlaCountdownBadge deadline={row.slaDeadline} type={row.type} />
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
+              </TableCell>
+              <TableCell className="px-4 py-3 whitespace-nowrap">
                 <span className="text-xs font-mono tabular-nums text-neutral-500">
                   {new Date(row.submittedAt).toLocaleDateString()}
                 </span>
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-right">
-                <Link href={`/panel/inmobiliaria/ai/cobranza/arco/${row.id}`}>
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-sm text-neutral-500 hover:text-[#1A40FF] hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/20 transition-colors"
-                    aria-label={t('inmobiliaria.ai.arco.actions.view', { name: row.requesterName })}
-                  >
+              </TableCell>
+              <TableCell className="px-4 py-3 whitespace-nowrap text-right">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon"
+                  hideArrow
+                  aria-label={t('inmobiliaria.ai.arco.actions.view', { name: row.requesterName })}
+                >
+                  <Link href={`/panel/inmobiliaria/ai/cobranza/arco/${row.id}`}>
                     <ArrowSquareOut className="h-4 w-4" weight="regular" />
-                  </button>
-                </Link>
-              </td>
-            </tr>
+                  </Link>
+                </Button>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }
@@ -179,7 +180,7 @@ function RequestsTable({ requests }: RequestsTableProps) {
 export default function ArcoInboxPage() {
   const { t } = useI18n()
   const { data, isLoading, error, refetch } = useArcoRequests()
-  const [activeTab, setActiveTab] = useState<TabValue>('all')
+  const [activeTab, setTab] = useState<TabValue>('all')
 
   const requests = data?.requests ?? []
   const kpis = data?.kpis
@@ -233,14 +234,15 @@ export default function ArcoInboxPage() {
             {t('inmobiliaria.ai.arco.title')}
           </h1>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition font-medium"
           aria-label={t('common.refresh')}
         >
           {t('common.refresh')}
-        </button>
+        </Button>
       </div>
 
       {/* Error state */}
@@ -270,13 +272,13 @@ export default function ArcoInboxPage() {
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<CheckCircle className="h-5 w-5 text-[#2C7A53]" weight="duotone" />}
+          icon={<CheckCircle className="h-5 w-5 text-success" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.onTime')}
           value={kpis?.onTime}
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<Warning className="h-5 w-5 text-[#C4503B]" weight="duotone" />}
+          icon={<Warning className="h-5 w-5 text-danger" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.overdue')}
           value={kpis?.overdue}
           isLoading={isLoading && !data}
@@ -290,7 +292,7 @@ export default function ArcoInboxPage() {
       </div>
 
       {/* Type-group Tabs + Table */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
+      <Tabs value={activeTab} onValueChange={(v) => setTab(v as TabValue)}>
         <TabsList variant="underline" className="flex-wrap">
           {(['all', 'acceso', 'rectificacion', 'cancelacion', 'oposicion'] as TabValue[]).map((tab) => (
             <TabsTrigger
@@ -299,12 +301,9 @@ export default function ArcoInboxPage() {
               className="inline-flex items-center gap-1.5"
             >
               {t(`inmobiliaria.ai.arco.tab.${tab}`)}
-              <span
-                className={`rounded-full px-1.5 py-0.5 font-mono text-[11px] tabular-nums ${
-                  hasOverdue[tab]
-                    ? 'bg-danger-soft text-danger'
-                    : 'bg-surface-muted text-fg-muted'
-                }`}
+              <Badge
+                variant={hasOverdue[tab] ? 'destructive' : 'secondary'}
+                className="px-1.5 py-0.5 font-mono text-[11px] tabular-nums"
                 // a11y (XR-06): color encodes overdue state — surface it via
                 // aria-label so screen-reader users get the same signal.
                 aria-label={
@@ -314,7 +313,7 @@ export default function ArcoInboxPage() {
                 }
               >
                 {tabCounts[tab]}
-              </span>
+              </Badge>
             </TabsTrigger>
           ))}
         </TabsList>

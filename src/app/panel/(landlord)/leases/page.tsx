@@ -2,10 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { House, CurrencyDollar, Clock, WarningCircle, TrendUp, SpinnerGap } from '@phosphor-icons/react';
+import { House, CurrencyDollar, Clock, WarningCircle, TrendUp } from '@phosphor-icons/react';
 import { LeaseExpandableItem } from '@/components/lease/LeaseExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { Button, Spinner } from '@/components/ui';
+import { PageHeader, KpiCard } from '@leasefy/cadence';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLeases } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -21,36 +24,6 @@ interface TabConfig {
 }
 
 // ============================================================================
-// Stats Card Component
-// ============================================================================
-
-interface StatsCardProps {
-  label: string;
-  value: string | number;
-  sublabel: string;
-  icon: React.ElementType;
-  iconBgClass: string;
-  iconColorClass: string;
-}
-
-function StatsCard({ label, value, sublabel, icon: Icon, iconBgClass, iconColorClass }: StatsCardProps) {
-  return (
-    <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-5">
-      <div className="flex items-start gap-4">
-        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0', iconBgClass)}>
-          <Icon className={cn('w-5 h-5', iconColorClass)} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{label}</p>
-          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{value}</p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">{sublabel}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Progress Bar Component
 // ============================================================================
 
@@ -61,9 +34,9 @@ interface ProgressBarProps {
 
 function ProgressBar({ value, variant }: ProgressBarProps) {
   const barColorClass = {
-    success: 'bg-[#2C7A53]',
-    warning: 'bg-[#B7791F]',
-    danger: 'bg-[#C4503B]',
+    success: 'bg-success',
+    warning: 'bg-warning',
+    danger: 'bg-danger',
   }[variant];
 
   return (
@@ -84,7 +57,7 @@ export default function LandlordLeasesPage() {
   const { leases, stats, isLoading, error, refetch } = useLeases();
   const { t, formatCurrency } = useI18n();
 
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setTab] = useState('all');
 
   // Payment status counts are not available at list level (lazy-loaded per expand).
   // We use empty placeholders for tabs; payment-based tabs will show 0 until the
@@ -131,15 +104,15 @@ export default function LandlordLeasesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 text-[#1A40FF] animate-spin" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <ErrorState description={error} onRetry={refetch} />
         </div>
@@ -148,76 +121,61 @@ export default function LandlordLeasesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-            {t('landlord.leases.title')}
-          </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-            {t('landlord.leases.subtitle')}
-          </p>
-        </header>
+        <PageHeader title={t('landlord.leases.title')} subtitle={t('landlord.leases.subtitle')} />
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatsCard
+          <KpiCard
             label={t('landlord.leases.activeLeases')}
-            value={stats.activeLeases}
+            value={String(stats.activeLeases)}
             sublabel={t('landlord.leases.activeLeasesSubLabel')}
-            icon={House}
-            iconBgClass="bg-neutral-100 dark:bg-neutral-800"
-            iconColorClass="text-neutral-600 dark:text-neutral-300"
+            icon={<House />}
           />
-          <StatsCard
+          <KpiCard
             label={t('landlord.leases.monthlyIncome')}
-            value={formatCurrency(stats.totalMonthlyIncome)}
+            value={String(formatCurrency(stats.totalMonthlyIncome))}
             sublabel={t('landlord.leases.monthlyIncomeSubLabel')}
-            icon={CurrencyDollar}
-            iconBgClass="bg-[#E8F3EC] dark:bg-[#2C7A53]/15"
-            iconColorClass="text-[#2C7A53] dark:text-[#3EAE70]"
+            icon={<CurrencyDollar />}
           />
-          <StatsCard
+          <KpiCard
             label={t('landlord.leases.pendingPayments')}
-            value={stats.pendingPayments}
+            value={String(stats.pendingPayments)}
             sublabel={t('landlord.leases.pendingPaymentsSubLabel')}
-            icon={Clock}
-            iconBgClass="bg-[#F8F0E0] dark:bg-[#B7791F]/15"
-            iconColorClass="text-[#B7791F] dark:text-[#D2992F]"
+            icon={<Clock />}
           />
-          <StatsCard
+          <KpiCard
             label={t('landlord.leases.latePayments')}
-            value={stats.latePayments}
+            value={String(stats.latePayments)}
             sublabel={stats.latePayments > 0 ? t('landlord.leases.latePaymentsSubLabel') : t('landlord.leases.latePaymentsAllGood')}
-            icon={WarningCircle}
-            iconBgClass={stats.latePayments > 0 ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15' : 'bg-neutral-100 dark:bg-neutral-800'}
-            iconColorClass={stats.latePayments > 0 ? 'text-[#C4503B] dark:text-[#E0664D]' : 'text-neutral-600 dark:text-neutral-300'}
+            icon={<WarningCircle />}
           />
         </div>
 
         {/* Financial Summary Card */}
-        <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 rounded-xl p-6 mb-8">
+        <div className="bg-primary-soft border border-primary/30 rounded-xl p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                  <TrendUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
+                  <TrendUp className="w-5 h-5 text-primary" />
                 </div>
-                <span className="text-[#1A40FF] dark:text-[#5570FF] text-sm font-medium">{t('landlord.leases.financialSummary')}</span>
+                <span className="text-primary text-sm font-medium">{t('landlord.leases.financialSummary')}</span>
               </div>
-              <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              <p className="text-3xl font-bold text-fg tracking-tight">
                 {formatCurrency(stats.totalMonthlyIncome)}
               </p>
-              <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
+              <p className="text-fg-muted text-sm mt-1">
                 {t('landlord.leases.expectedMonthlyIncome')}
               </p>
             </div>
             <div className="flex-1 max-w-xs">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-neutral-600 dark:text-neutral-400 text-sm">{t('landlord.leases.collectionRate')}</span>
-                <span className="text-neutral-900 dark:text-white font-semibold">{collectionRate}%</span>
+                <span className="text-fg-muted text-sm">{t('landlord.leases.collectionRate')}</span>
+                <span className="text-fg font-semibold">{collectionRate}%</span>
               </div>
               <ProgressBar
                 value={collectionRate}
@@ -229,18 +187,18 @@ export default function LandlordLeasesPage() {
 
         {/* Ending Soon Warning */}
         {stats.endingSoon > 0 && (
-          <div className="mb-6 p-4 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
+          <div className="mb-6 p-4 bg-warning-soft border border-warning/30 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
-                <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
+              <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
+                <WarningCircle className="w-5 h-5 text-warning" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
+                <p className="text-sm font-medium text-warning">
                   {stats.endingSoon > 1
                     ? t('landlord.leases.endingSoonWarningPlural', { count: stats.endingSoon })
                     : t('landlord.leases.endingSoonWarning', { count: stats.endingSoon })}
                 </p>
-                <p className="text-xs text-[#B7791F]/70 dark:text-[#B7791F]/70">
+                <p className="text-xs text-warning/70">
                   {t('landlord.leases.endingSoonDescription')}
                 </p>
               </div>
@@ -248,76 +206,63 @@ export default function LandlordLeasesPage() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="inline-flex items-center gap-1 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl">
+        {/* Tabs (segmented filter over the leases list) */}
+        <Tabs value={activeTab} onValueChange={setTab}>
+          <TabsList variant="segmented" className="mb-6">
             {tabs.map((tab) => (
-              <button
+              <TabsTrigger
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2',
-                  activeTab === tab.id
-                    ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                )}
+                value={tab.id}
+                className="group inline-flex items-center gap-2"
               >
                 {tab.label}
-                <span
-                  className={cn(
-                    'px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums',
-                    activeTab === tab.id
-                      ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                      : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
-                  )}
-                >
+                <span className="px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums bg-surface-muted text-fg-muted group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">
                   {tab.count}
                 </span>
-              </button>
+              </TabsTrigger>
             ))}
-          </div>
-        </div>
+          </TabsList>
 
-        {/* Leases List */}
-        {leases.length === 0 ? (
-          <EmptyState
-            icon={House}
-            title={t('landlord.leases.emptyTitle')}
-            description={t('landlord.leases.emptyDescription')}
-            action={{ label: t('landlord.leases.emptyAction'), href: "/panel/contratos" }}
-          />
-        ) : (
-          <section className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
-            {filteredLeases.length > 0 ? (
-              <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
-                {filteredLeases.map((lease) => (
-                  <LeaseExpandableItem
-                    key={lease.id}
-                    lease={lease}
-                  />
-                ))}
-              </div>
+          {/* Leases List */}
+          <TabsContent value={activeTab} className="mt-0">
+            {leases.length === 0 ? (
+              <EmptyState
+                icon={House}
+                title={t('landlord.leases.emptyTitle')}
+                description={t('landlord.leases.emptyDescription')}
+                action={{ label: t('landlord.leases.emptyAction'), href: "/panel/contratos" }}
+              />
             ) : (
-              <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-                <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
-                  <House className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
-                </div>
-                <h3 className="text-base font-semibold text-foreground mb-1.5">
-                  {t('landlord.leases.noFilteredLeases', { filter: tabs.find(tItem => tItem.id === activeTab)?.label.toLowerCase() || '' })}
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
-                  {t('landlord.leases.noFilteredDescription')}
-                </p>
-                <button
-                  onClick={() => setActiveTab('all')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] hover:opacity-90 text-white rounded-xl text-sm font-medium transition-colors"
-                >
-                  {t('landlord.leases.viewAllLeases')}
-                </button>
-              </div>
+              <section className="bg-surface rounded-xl border border-border overflow-hidden">
+                {filteredLeases.length > 0 ? (
+                  <div className="divide-y divide-border-faint">
+                    {filteredLeases.map((lease) => (
+                      <LeaseExpandableItem
+                        key={lease.id}
+                        lease={lease}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-surface-muted py-14 px-6 text-center">
+                    <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
+                      <House className="w-6 h-6 text-fg-subtle" />
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground mb-1.5">
+                      {t('landlord.leases.noFilteredLeases', { filter: tabs.find(tItem => tItem.id === activeTab)?.label.toLowerCase() || '' })}
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
+                      {t('landlord.leases.noFilteredDescription')}
+                    </p>
+                    <Button onClick={() => setTab('all')} hideArrow>
+                      {t('landlord.leases.viewAllLeases')}
+                    </Button>
+                  </div>
+                )}
+              </section>
             )}
-          </section>
-        )}
+          </TabsContent>
+        </Tabs>
 
       </div>
     </div>

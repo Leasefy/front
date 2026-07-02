@@ -22,7 +22,6 @@ import type { AgentOverviewResponse, KpiFormat } from '@/lib/api/agent-workspace
 import { useI18n } from '@/lib/i18n'
 import { estadoLabel, relativeTime } from './ColaHumana'
 import { actorLabel, actorMeta } from './TrazaCaso'
-import { MigaDePan } from './MigaDePan'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -32,13 +31,13 @@ const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
  *  Brand-contract ramp: gris = idle, azules = activo, success/warning/danger
  *  desaturados como señales reales. */
 const ESTADO_BAR_CLS: Record<WorkItemEstado, string> = {
-  detectado: 'bg-neutral-400 dark:bg-neutral-500',
-  sugerido: 'bg-[#5570FF]',
-  en_revision: 'bg-[#B7791F]',
-  aprobado: 'bg-[#3EAE70]',
-  ejecutando: 'bg-[#1A40FF]',
-  resuelto: 'bg-[#2C7A53]',
-  rechazado: 'bg-[#C4503B]',
+  detectado: 'bg-fg-subtle',
+  sugerido: 'bg-primary',
+  en_revision: 'bg-warning',
+  aprobado: 'bg-success',
+  ejecutando: 'bg-primary',
+  resuelto: 'bg-success',
+  rechazado: 'bg-danger',
   fallo: 'bg-[#A23A28]',
 }
 
@@ -124,7 +123,7 @@ function OverviewBody({
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
         data-testid="sala-agente-error"
       >
         {t(`${WORKSPACE_NS}.sala.error`, { error })}
@@ -141,18 +140,18 @@ function OverviewBody({
         className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
         data-testid="sala-agente-empty"
       >
-        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
           <EmptyIcon
             weight="duotone"
-            className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+            className="h-6 w-6 text-fg-subtle"
             aria-hidden="true"
           />
         </div>
         <div className="space-y-1.5">
-          <p className="text-[15px] font-semibold text-neutral-800 dark:text-neutral-100">
+          <p className="text-[15px] font-semibold text-fg">
             {t(`${WORKSPACE_NS}.sala.emptyTitle`)}
           </p>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm leading-relaxed mx-auto">
+          <p className="text-sm text-fg-subtle max-w-sm leading-relaxed mx-auto">
             {emptyHint ?? t(`${WORKSPACE_NS}.sala.emptyBody`)}
           </p>
         </div>
@@ -201,7 +200,7 @@ function OverviewBody({
                 .map((seg) => (
                   <span
                     key={seg.estado}
-                    className={`${ESTADO_BAR_CLS[seg.estado] ?? 'bg-neutral-400'} h-full`}
+                    className={`${ESTADO_BAR_CLS[seg.estado] ?? 'bg-fg-subtle'} h-full`}
                     style={{ width: `${(seg.count / pipelineTotal) * 100}%` }}
                     title={`${estadoLabel(t, seg.estado, agente)}: ${seg.count}`}
                   />
@@ -211,7 +210,7 @@ function OverviewBody({
               {overview.pipeline.map((seg) => (
                 <div key={seg.estado} className="flex items-center gap-1.5">
                   <span
-                    className={`w-2 h-2 rounded-full ${ESTADO_BAR_CLS[seg.estado] ?? 'bg-neutral-400'}`}
+                    className={`w-2 h-2 rounded-full ${ESTADO_BAR_CLS[seg.estado] ?? 'bg-fg-subtle'}`}
                     aria-hidden="true"
                   />
                   <dt className="text-[11px] text-muted-foreground">
@@ -284,15 +283,7 @@ export function SalaAgente({
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          {/* ← + miga de pan: volver al hub de agentes con un clic */}
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai"
-            icon={HeaderIcon}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: titulo },
-            ]}
-          />
+          {/* Navegación arriba (breadcrumb en el header + tabs en WorkspaceNav). */}
           <h1 className="text-2xl font-semibold text-foreground">{titulo}</h1>
           <p className="text-sm text-muted-foreground max-w-2xl">{descripcion}</p>
         </div>

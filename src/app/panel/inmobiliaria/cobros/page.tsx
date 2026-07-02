@@ -11,10 +11,12 @@ import {
   SquaresFour,
   Plus,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Pagination } from '@/components/ui/pagination';
+import { Button, Spinner } from '@/components/ui';
+import { ErrorState } from '@/components/ui/error-state';
+import { SegmentedControl } from '@leasefy/cadence';
 import {
   useCobros,
   useCobroSummary,
@@ -338,31 +340,28 @@ function CobrosContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('inmobiliaria.cobros.title')}</h1>
-          <p className="text-muted-foreground mt-1">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.cobros.title')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.cobros.subtitle')}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsConfigOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-medium"
-          >
-            <Gear className="w-5 h-5" />
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="secondary" hideArrow onClick={() => setIsConfigOpen(true)}>
+            <Gear className="w-4 h-4" />
             <span className="hidden sm:inline">{t('inmobiliaria.config.title')}</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            hideArrow
             onClick={() => {
               setPaymentCobro(null);
               setIsPaymentModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             {t('inmobiliaria.cobros.registerPayment')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -388,33 +387,34 @@ function CobrosContent() {
       >
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
-            <button
-              onClick={() => setViewMode('table')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                viewMode === 'table'
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Table className="w-4 h-4" />
-              {t('inmobiliaria.cobros.viewTable')}
-            </button>
-            <button
-              onClick={() => setViewMode('cards')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                viewMode === 'cards'
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <SquaresFour className="w-4 h-4" />
-              {t('inmobiliaria.cobros.viewCards')}
-            </button>
-          </div>
-          <span className="text-sm text-muted-foreground tabular-nums">
+          <SegmentedControl
+            aria-label={t('inmobiliaria.cobros.viewTable')}
+            value={viewMode}
+            onChange={(v) => setViewMode(v as ViewMode)}
+            options={[
+              {
+                value: 'table',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Table className="w-4 h-4" />
+                    {t('inmobiliaria.cobros.viewTable')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.cobros.viewTable'),
+              },
+              {
+                value: 'cards',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <SquaresFour className="w-4 h-4" />
+                    {t('inmobiliaria.cobros.viewCards')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.cobros.viewCards'),
+              },
+            ]}
+          />
+          <span className="text-xs text-fg-muted tabular-nums">
             {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
           </span>
         </div>
@@ -432,27 +432,16 @@ function CobrosContent() {
         <div>
           {cobrosLoading ? (
             <div className="p-12 text-center">
-              <div className="inline-block w-8 h-8 border-4 border-[#1A40FF]/30 border-t-[#1A40FF] rounded-full animate-spin mb-4" />
-              <p className="text-muted-foreground">Cargando cobros...</p>
+              <Spinner size="lg" className="mb-4" />
+              <p className="text-sm text-fg-muted">Cargando cobros...</p>
             </div>
           ) : cobrosError ? (
-            <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-              <div className="w-14 h-14 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center mx-auto mb-5">
-                <CurrencyCircleDollar className="w-6 h-6 text-[#C4503B]" />
-              </div>
-              <h3 className="text-base font-semibold text-foreground mb-1.5">
-                Error al cargar cobros
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-6">
-                {cobrosError}
-              </p>
-              <button
-                onClick={() => refetchCobros()}
-                className="px-4 py-2 rounded-md bg-[#1A40FF] text-white hover:opacity-90 transition-colors font-medium"
-              >
-                Reintentar
-              </button>
-            </div>
+            <ErrorState
+              title="Error al cargar cobros"
+              description={cobrosError}
+              onRetry={() => refetchCobros()}
+              className="border-0 bg-transparent"
+            />
           ) : paginatedCobros.length > 0 ? (
             viewMode === 'table' ? (
               <CobroTable
@@ -474,23 +463,29 @@ function CobrosContent() {
               </div>
             )
           ) : (
-            <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-              <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
-                <CurrencyCircleDollar className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+            <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+                <CurrencyCircleDollar
+                  weight="duotone"
+                  className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+                  aria-hidden="true"
+                />
               </div>
-              <h3 className="text-base font-semibold text-foreground mb-1.5">
-                {t('inmobiliaria.cobros.noPayments')}
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                {t('inmobiliaria.cobros.noPaymentsDesc')}
-              </p>
+              <div className="space-y-1.5">
+                <p className="text-base font-semibold text-fg">
+                  {t('inmobiliaria.cobros.noPayments')}
+                </p>
+                <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
+                  {t('inmobiliaria.cobros.noPaymentsDesc')}
+                </p>
+              </div>
               {filters.status !== 'all' && (
-                <button
+                <Button
+                  variant="link"
                   onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
-                  className="mt-4 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
                 >
                   {t('inmobiliaria.cobros.filters.all')}
-                </button>
+                </Button>
               )}
             </div>
           )}

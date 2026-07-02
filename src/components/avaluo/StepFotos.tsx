@@ -146,11 +146,11 @@ export function StepFotos() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-foreground mb-1">
+        <h3 className="text-sm font-medium text-fg mb-1">
           Fotos del inmueble{' '}
-          <span className="text-muted-foreground font-normal">(opcional)</span>
+          <span className="text-fg-muted font-normal">(opcional)</span>
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-fg-muted">
           Las fotos ayudan al avaluador a contextualizar el inmueble. Podés
           continuar sin ellas.
         </p>
@@ -175,24 +175,24 @@ export function StepFotos() {
         onDragLeave={handleDragLeave}
         disabled={isFull}
         className={cn(
-          'w-full border-2 border-dashed rounded-xl p-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'w-full border-2 border-dashed rounded-[20px] p-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isFull
-            ? 'border-border bg-muted cursor-not-allowed'
+            ? 'border-border bg-surface-muted cursor-not-allowed'
             : isDragOver
-            ? 'border-primary bg-primary/5'
-            : 'border-border hover:border-muted-foreground hover:bg-muted/40'
+            ? 'border-primary bg-primary-soft'
+            : 'border-border hover:border-border-strong hover:bg-surface-hover'
         )}
       >
-        <ImageSquare className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-        <p className="text-sm font-medium text-foreground">
+        <ImageSquare className="w-10 h-10 mx-auto text-fg-subtle mb-3" />
+        <p className="text-sm font-medium text-fg">
           {isFull
             ? 'Máximo de fotos alcanzado'
             : isDragOver
             ? 'Soltá las fotos aquí'
             : 'Hacé clic o arrastrá fotos aquí'}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {totalCount}/{MAX_PHOTOS} fotos · JPG, PNG o WebP · Máx 10 MB c/u
+        <p className="text-xs text-fg-subtle mt-1">
+          <span className="font-mono tabular-nums">{totalCount}/{MAX_PHOTOS}</span> fotos · JPG, PNG o WebP · Máx 10 MB c/u
         </p>
       </button>
 

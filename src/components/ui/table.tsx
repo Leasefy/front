@@ -1,5 +1,5 @@
 /**
- * Table — THIN SHIM over @leasefy/ui (alias de nombres shadcn → primitivas DS).
+ * Table — THIN SHIM over @leasefy/cadence (alias de nombres shadcn → primitivas DS).
  *
  * DS: headers mono uppercase, hairline dividers, hover row. Los TH/TD del DS
  * aceptan además `numeric` / `muted` (superset de la API shadcn local).
@@ -30,7 +30,7 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
       <table
         ref={ref}
         className={cn(
-          // mismas clases que el Table del DS (@leasefy/ui)
+          // mismas clases que el Table del DS (@leasefy/cadence)
           "w-full border-collapse text-body-sm",
           stickyHeader &&
             "[&_th]:sticky [&_th]:top-0 [&_th]:bg-bg [&_th]:z-10",
@@ -50,8 +50,8 @@ export {
   TH as TableHead,
   TR as TableRow,
   TD as TableCell,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
-export type { THProps as TableHeadProps, TDProps as TableCellProps } from "@leasefy/ui"
+export type { THProps as TableHeadProps, TDProps as TableCellProps } from "@leasefy/cadence"
 
 export { Table }

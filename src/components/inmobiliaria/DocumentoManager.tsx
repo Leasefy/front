@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { IconButton, SegmentedControl } from '@leasefy/cadence';
 import {
   Table,
   TableBody,
@@ -215,67 +216,51 @@ export function DocumentoManager({
             </p>
           </div>
         ) : (
-          <div className="flex items-center gap-1 p-1 rounded-md bg-muted">
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                viewMode === 'list'
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <List className="w-4 h-4" />
-              {t('inmobiliaria.documento.listView')}
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                viewMode === 'grid'
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <GridFour className="w-4 h-4" />
-              {t('inmobiliaria.documento.cardView')}
-            </button>
-          </div>
+          <SegmentedControl<'list' | 'grid'>
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              {
+                value: 'list',
+                ariaLabel: t('inmobiliaria.documento.listView'),
+                label: (
+                  <span className="flex items-center gap-2">
+                    <List className="w-4 h-4" />
+                    {t('inmobiliaria.documento.listView')}
+                  </span>
+                ),
+              },
+              {
+                value: 'grid',
+                ariaLabel: t('inmobiliaria.documento.cardView'),
+                label: (
+                  <span className="flex items-center gap-2">
+                    <GridFour className="w-4 h-4" />
+                    {t('inmobiliaria.documento.cardView')}
+                  </span>
+                ),
+              },
+            ]}
+          />
         )}
         <div className="flex items-center gap-2">
           {/* View Toggle - only in non-minimal mode */}
           {!minimal && (
-            <div className="flex border rounded-md p-1">
-              <button
-                onClick={() => setViewMode('list')}
-                className={cn(
-                  'p-1.5 rounded',
-                  viewMode === 'list'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={cn(
-                  'p-1.5 rounded',
-                  viewMode === 'grid'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <GridFour className="w-4 h-4" />
-              </button>
-            </div>
+            <SegmentedControl<'list' | 'grid'>
+              value={viewMode}
+              onChange={setViewMode}
+              options={[
+                { value: 'list', ariaLabel: t('inmobiliaria.documento.listView'), label: <List className="w-4 h-4" /> },
+                { value: 'grid', ariaLabel: t('inmobiliaria.documento.cardView'), label: <GridFour className="w-4 h-4" /> },
+              ]}
+            />
           )}
 
           {/* Generate Document Dropdown */}
           {onGenerateNew && (
             <DropdownList>
               <DropdownListTrigger asChild>
-                <Button className={cn("gap-2", minimal && "bg-[#1A40FF] hover:opacity-90")} hideArrow>
+                <Button className="gap-2" hideArrow>
                   <FilePlus className="w-4 h-4" />
                   {t('inmobiliaria.documento.generateDoc')}
                   <CaretDown className="w-4 h-4" />
@@ -391,19 +376,19 @@ export function DocumentoManager({
               <span className="font-medium">{stats.total}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-[#B7791F]" />
+              <span className="w-2 h-2 rounded-full bg-warning" />
               <span className="text-muted-foreground">{t('inmobiliaria.documento.pendingSignature')}:</span>
-              <span className="font-medium text-[#B7791F]">{stats.pendingSignature}</span>
+              <span className="font-medium text-warning tabular-nums">{stats.pendingSignature}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-[#2C7A53]" />
+              <span className="w-2 h-2 rounded-full bg-success" />
               <span className="text-muted-foreground">{t('inmobiliaria.documento.signed')}:</span>
-              <span className="font-medium text-[#2C7A53]">{stats.signed}</span>
+              <span className="font-medium text-success tabular-nums">{stats.signed}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-[#C4503B]" />
+              <span className="w-2 h-2 rounded-full bg-danger" />
               <span className="text-muted-foreground">{t('inmobiliaria.documento.expired')}:</span>
-              <span className="font-medium text-[#C4503B]">{stats.expired}</span>
+              <span className="font-medium text-danger tabular-nums">{stats.expired}</span>
             </div>
           </div>
         )}
@@ -414,7 +399,7 @@ export function DocumentoManager({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 p-3 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-md border border-[#1A40FF]/30 dark:border-[#1A40FF]/40"
+          className="flex items-center gap-3 p-3 bg-primary-soft rounded-md border border-primary/30"
         >
           <span className="text-sm font-medium">
             {t('inmobiliaria.documento.selectedCount', { count: selectedDocIds.length })}
@@ -579,9 +564,12 @@ export function DocumentoManager({
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownList>
                         <DropdownListTrigger asChild>
-                          <button className="p-1.5 rounded-xl hover:bg-muted">
-                            <DotsThree className="w-4 h-4" />
-                          </button>
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<DotsThree className="w-4 h-4" />}
+                            aria-label="Acciones"
+                          />
                         </DropdownListTrigger>
                         <DropdownListContent align="end" className="w-48">
                           {onView && (
@@ -656,7 +644,7 @@ export function DocumentoManager({
                 >
                   <Card
                     className={cn(
-                      'p-4 cursor-pointer hover: transition-shadow',
+                      'p-4 cursor-pointer transition-colors hover:border-fg/20',
                       selectedDocIds.includes(doc.id) && 'ring-2 ring-primary'
                     )}
                     onClick={() => onView?.(doc)}
@@ -665,7 +653,7 @@ export function DocumentoManager({
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-start gap-3 min-w-0">
                         <div
-                          className="w-10 h-10 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0"
+                          className="w-10 h-10 rounded-md bg-surface-brand flex items-center justify-center shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleDocSelection(doc.id);
@@ -674,7 +662,7 @@ export function DocumentoManager({
                           {selectedDocIds.includes(doc.id) ? (
                             <CheckCircle className="w-5 h-5 text-primary" weight="fill" />
                           ) : (
-                            <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
+                            <FileText className="w-5 h-5 text-primary" weight="duotone" />
                           )}
                         </div>
                         <div className="min-w-0">
@@ -689,9 +677,13 @@ export function DocumentoManager({
 
                       <DropdownList>
                         <DropdownListTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className="p-1.5 rounded-xl hover:bg-muted shrink-0">
-                            <DotsThree className="w-4 h-4" />
-                          </button>
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<DotsThree className="w-4 h-4" />}
+                            aria-label="Acciones"
+                            className="shrink-0"
+                          />
                         </DropdownListTrigger>
                         <DropdownListContent align="end" className="w-48">
                           {onView && (

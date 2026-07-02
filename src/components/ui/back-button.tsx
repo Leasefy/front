@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from '@phosphor-icons/react'
+import { backButtonVariants } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 
 interface BackButtonProps {
@@ -17,7 +18,13 @@ interface BackButtonProps {
 }
 
 /**
- * Reusable back navigation button with consistent styling
+ * Reusable back navigation button — Cadence BackButton styling.
+ *
+ * Uses the Cadence `backButtonVariants` (ghost pill `default`, text-only
+ * `subtle`, hairline chip `pill`) with the electric focus ring and the
+ * ArrowLeft micro-nudge on hover. Behavior is preserved: with `href` it renders
+ * a Next `<Link>` (client-side nav); without it, a `<button>` that calls
+ * `router.back()`.
  *
  * Usage:
  * <BackButton label="Volver a propiedades" href="/panel" />
@@ -31,45 +38,28 @@ export function BackButton({
 }: BackButtonProps) {
   const router = useRouter()
 
-  const baseStyles = cn(
-    "group inline-flex items-center gap-2 text-sm font-medium transition-all duration-200",
-    {
-      // Default: clean with subtle background on hover
-      'default': "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white px-3 py-2 -ml-3 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800",
-      // Subtle: minimal, just text and icon
-      'subtle': "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white",
-      // Pill: contained button style
-      'pill': "text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-4 py-2.5 rounded-xl shadow-sm hover:shadow",
-    }[variant],
-    className
-  )
-
-  const iconStyles = cn(
-    "transition-transform duration-200 group-hover:-translate-x-1",
-    {
-      'default': "w-4 h-4",
-      'subtle': "w-4 h-4",
-      'pill': "w-4 h-4",
-    }[variant]
-  )
+  const classes = cn(backButtonVariants({ variant }), className)
 
   const content = (
     <>
-      <ArrowLeft className={iconStyles} weight="bold" />
+      <ArrowLeft
+        aria-hidden="true"
+        className="transition-transform duration-150 group-hover/back:-translate-x-0.5"
+      />
       <span>{label}</span>
     </>
   )
 
   if (href) {
     return (
-      <Link href={href} className={baseStyles}>
+      <Link href={href} className={classes}>
         {content}
       </Link>
     )
   }
 
   return (
-    <button onClick={() => router.back()} className={baseStyles}>
+    <button type="button" onClick={() => router.back()} className={classes}>
       {content}
     </button>
   )

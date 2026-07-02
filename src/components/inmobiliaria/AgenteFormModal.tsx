@@ -12,11 +12,19 @@ import {
   Percent,
   Buildings,
   UserCircle,
-  SpinnerGap,
   PaperPlaneTilt,
   Briefcase,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { Button, Input, Textarea } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliaria';
 
@@ -162,11 +170,8 @@ export function AgenteFormModal({
 
   const isFormLoading = isSubmitting || isLoading;
 
-  // --- Shared input classes ---
-  const inputCls = (hasError: boolean) => cn(
-    'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all',
-    hasError ? 'border-[#C4503B]/30' : 'border-border'
-  );
+  // --- Error border for Cadence Input (skin comes from the adapter) ---
+  const errorCls = (hasError: boolean) => (hasError ? 'border-danger focus-visible:ring-danger/30' : undefined);
 
   if (!mounted) return null;
 
@@ -196,11 +201,11 @@ export function AgenteFormModal({
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                    <UserCircle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <UserCircle className="w-5 h-5 text-fg-muted" weight="duotone" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">
+                    <h2 className="text-base font-semibold text-foreground">
                       {variant === 'agent' ? t('inmobiliaria.agente.newAgent') : 'Invitar usuario'}
                     </h2>
                     <p className="text-sm text-muted-foreground">
@@ -210,9 +215,14 @@ export function AgenteFormModal({
                     </p>
                   </div>
                 </div>
-                <button onClick={handleClose} disabled={isFormLoading} className="p-2 rounded-md hover:bg-muted transition-colors disabled:opacity-50">
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<X className="w-5 h-5" />}
+                  onClick={handleClose}
+                  disabled={isFormLoading}
+                  aria-label={t('inmobiliaria.agente.cancel')}
+                />
               </div>
 
             {/* Form */}
@@ -223,8 +233,8 @@ export function AgenteFormModal({
                     <User className="w-4 h-4 text-muted-foreground" />
                     {t('inmobiliaria.agente.fullName')} *
                   </label>
-                  <input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={inputCls(!!errors.name)} />
-                  {errors.name && <p className="text-xs text-[#C4503B]">{errors.name}</p>}
+                  <Input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
+                  {errors.name && <p className="text-xs text-danger">{errors.name}</p>}
                 </div>
 
                 {/* Email */}
@@ -233,8 +243,8 @@ export function AgenteFormModal({
                     <Envelope className="w-4 h-4 text-muted-foreground" />
                     Email *
                   </label>
-                  <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={inputCls(!!errors.email)} />
-                  {errors.email && <p className="text-xs text-[#C4503B]">{errors.email}</p>}
+                  <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
+                  {errors.email && <p className="text-xs text-danger">{errors.email}</p>}
                 </div>
 
                 {/* Phone — always for agent, shown for member when agente */}
@@ -244,8 +254,8 @@ export function AgenteFormModal({
                       <Phone className="w-4 h-4 text-muted-foreground" />
                       {t('inmobiliaria.agente.phone')} {showAgentFields ? '*' : ''}
                     </label>
-                    <input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={inputCls(!!errors.phone)} />
-                    {errors.phone && <p className="text-xs text-[#C4503B]">{errors.phone}</p>}
+                    <Input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={errorCls(!!errors.phone)} />
+                    {errors.phone && <p className="text-xs text-danger">{errors.phone}</p>}
                   </div>
                 )}
 
@@ -256,7 +266,7 @@ export function AgenteFormModal({
                       <Briefcase className="w-4 h-4 text-muted-foreground" />
                       Cargo
                     </label>
-                    <input type="text" value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Ej: Agente Senior, Administrador General" maxLength={100} className={inputCls(false)} />
+                    <Input type="text" value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Ej: Agente Senior, Administrador General" maxLength={100} />
                   </div>
                 )}
 
@@ -272,26 +282,20 @@ export function AgenteFormModal({
                     {/* Agent Business Role */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground">{t('inmobiliaria.agente.role')}</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <RadioCardGroup
+                        className="grid grid-cols-3 gap-2"
+                        value={agentRole}
+                        onValueChange={(v) => setAgentRole(v as AgenteRole)}
+                      >
                         {AGENT_ROLE_OPTIONS.map((opt) => (
-                          <button
+                          <RadioCard
                             key={opt.value}
-                            type="button"
-                            onClick={() => setAgentRole(opt.value)}
-                            className={cn(
-                              'p-3 rounded-xl border text-center transition-all',
-                              agentRole === opt.value
-                                ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
-                                : 'border-border hover:bg-muted'
-                            )}
-                          >
-                            <p className={cn('text-sm font-medium', agentRole === opt.value ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-foreground')}>
-                              {opt.label}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
-                          </button>
+                            value={opt.value}
+                            label={opt.label}
+                            description={opt.description}
+                          />
                         ))}
-                      </div>
+                      </RadioCardGroup>
                     </div>
 
                     {/* Zone + Specialization — disabled until backend supports them */}
@@ -301,19 +305,28 @@ export function AgenteFormModal({
                           <MapPin className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.zone')}
                         </label>
-                        <select disabled value={zone} onChange={(e) => setZone(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted text-muted-foreground transition-all cursor-not-allowed">
-                          <option value="">{t('inmobiliaria.agente.selectZone')}</option>
-                          {ZONE_OPTIONS.map((z) => <option key={z} value={z}>{z}</option>)}
-                        </select>
+                        <Select disabled value={zone || undefined} onValueChange={setZone}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={t('inmobiliaria.agente.selectZone')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ZONE_OPTIONS.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <Buildings className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.specialization')}
                         </label>
-                        <select disabled value={specialization} onChange={(e) => setSpecialization(e.target.value as typeof specialization)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted text-muted-foreground transition-all cursor-not-allowed">
-                          {SPECIALIZATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
+                        <Select disabled value={specialization} onValueChange={(v) => setSpecialization(v as typeof specialization)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SPECIALIZATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -325,14 +338,22 @@ export function AgenteFormModal({
                           {t('inmobiliaria.agente.commissionPercentage')}
                         </label>
                         <div className="flex items-center gap-4">
-                          <input type="range" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(parseInt(e.target.value))} className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-[#1A40FF]" />
+                          <Slider
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={[commissionSplit]}
+                            onValueChange={([v]) => setCommissionSplit(v)}
+                            className="flex-1"
+                            aria-label={t('inmobiliaria.agente.commissionPercentage')}
+                          />
                           <div className="relative w-20">
-                            <input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="w-full px-3 py-2 pr-7 rounded-xl border border-border bg-background text-sm font-medium text-foreground text-center focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                            <Input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="pr-7 text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
-                        {errors.commissionSplit && <p className="text-xs text-[#C4503B]">{errors.commissionSplit}</p>}
+                        {errors.commissionSplit && <p className="text-xs text-danger">{errors.commissionSplit}</p>}
                       </div>
                     )}
                   </>
@@ -342,22 +363,19 @@ export function AgenteFormModal({
                 {variant === 'member' && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Mensaje personalizado (opcional)</label>
-                    <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all resize-none" />
+                    <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="resize-none" />
                   </div>
                 )}
               </form>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
-                <button type="button" onClick={handleClose} disabled={isFormLoading} className="px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50">
+              <div className="flex items-center justify-end gap-2 p-6 border-t border-border">
+                <Button type="button" variant="secondary" hideArrow onClick={handleClose} disabled={isFormLoading}>
                   {t('inmobiliaria.agente.cancel')}
-                </button>
-                <button type="submit" onClick={handleSubmit} disabled={isFormLoading} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] hover:opacity-90 text-white font-medium transition-colors shadow-[#1A40FF]/20 disabled:opacity-50">
+                </Button>
+                <Button type="submit" hideArrow onClick={handleSubmit} disabled={isFormLoading} isLoading={isFormLoading}>
                   {isFormLoading ? (
-                    <>
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
-                      {variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando...'}
-                    </>
+                    variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando...'
                   ) : variant === 'agent' ? (
                     t('inmobiliaria.agente.createAgent')
                   ) : (
@@ -366,7 +384,7 @@ export function AgenteFormModal({
                       Enviar invitación
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </div>

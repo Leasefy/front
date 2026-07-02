@@ -15,7 +15,10 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
@@ -35,8 +38,8 @@ const TABS: TabDef[] = [
   {
     key: 'ventas',
     icon: ArrowUpRight,
-    iconWrap: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    iconWrap: 'bg-success-soft',
+    iconColor: 'text-success',
     columns: ['colNumero', 'colTercero', 'colConcepto', 'colFecha', 'colSubtotal', 'colIva', 'colTotal', 'colPago', 'colDian'],
     estados: [
       { labelKey: 'estadoAceptada', variant: 'success' },
@@ -48,8 +51,8 @@ const TABS: TabDef[] = [
   {
     key: 'compras',
     icon: ArrowDownRight,
-    iconWrap: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
+    iconWrap: 'bg-warning-soft',
+    iconColor: 'text-warning',
     columns: ['colNumero', 'colProveedor', 'colConcepto', 'colFecha', 'colTotal', 'colVence', 'colPago'],
     estados: [
       { labelKey: 'estadoPagada', variant: 'success' },
@@ -61,8 +64,8 @@ const TABS: TabDef[] = [
   {
     key: 'electronica',
     icon: Lightning,
-    iconWrap: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    iconColor: 'text-[#1A40FF] dark:text-[#5570FF]',
+    iconWrap: 'bg-primary-soft',
+    iconColor: 'text-primary',
     columns: ['colTipo', 'colNumero', 'colCufe', 'colTercero', 'colFecha', 'colTotal', 'colDian'],
     estados: [
       { labelKey: 'estadoAceptada', variant: 'success' },
@@ -97,62 +100,39 @@ function FacturacionContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <SectionLabel>{t(k('label'))}</SectionLabel>
-          <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
-          <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t(k('title'))}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
         </div>
-        <button
-          onClick={() => toast.info(t(k('newSoon')))}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm transition-transform active:scale-[0.97] flex-shrink-0 font-medium"
-        >
+        <Button hideArrow onClick={() => toast.info(t(k('newSoon')))} className="flex-shrink-0">
           <Plus className="w-4 h-4" weight="bold" />
           {t(k('new'))}
-        </button>
+        </Button>
       </header>
 
       {/* Honest "engine arrives in M2" banner */}
-      <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF] flex-shrink-0 mt-0.5" weight="fill" />
+      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
+        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
-          <p className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">{t(k('m2BannerTitle'))}</p>
-          <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
+          <p className="text-xs font-semibold text-primary">{t(k('m2BannerTitle'))}</p>
+          <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
 
       {/* Tabs (segmented) */}
-      <div role="tablist" aria-label={t(k('label'))} className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted overflow-x-auto max-w-full">
-        {TABS.map((x) => {
-          const isActive = x.key === active;
-          return (
-            <button
-              key={x.key}
-              type="button"
-              role="tab"
-              id={`fact-tab-${x.key}`}
-              aria-selected={isActive}
-              aria-controls="fact-tabpanel"
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => setActive(x.key)}
-              className={cn(
-                'whitespace-nowrap px-3.5 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-card text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {t(k(`tab_${x.key}`))}
-            </button>
-          );
-        })}
-      </div>
+      <Tabs value={active} onValueChange={(v) => setActive(v as FacturacionTab)}>
+      <TabsList variant="segmented" aria-label={t(k('label'))}>
+        {TABS.map((x) => (
+          <TabsTrigger key={x.key} value={x.key} className="whitespace-nowrap">
+            {t(k(`tab_${x.key}`))}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
       {/* Active tab panel */}
+      <TabsContent value={active} className="mt-4">
       <section
-        role="tabpanel"
-        id="fact-tabpanel"
-        aria-labelledby={`fact-tab-${active}`}
-        tabIndex={0}
         className="rounded-xl border border-border bg-card overflow-hidden"
       >
         {/* Panel header: descriptor + estados legend */}
@@ -174,34 +154,31 @@ function FacturacionContent() {
         </div>
 
         {/* Column schema + empty state */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {tab.columns.map((c) => (
-                  <th
-                    key={c}
-                    className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap"
-                  >
-                    {t(k(c))}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={tab.columns.length} className="p-0">
-                  <EmptyState
-                    icon={Receipt}
-                    title={t(k(`empty_${tab.key}_title`))}
-                    description={t(k('emptyDesc'))}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {tab.columns.map((c) => (
+                <TableHead key={c} className="whitespace-nowrap">
+                  {t(k(c))}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={tab.columns.length} className="p-0">
+                <EmptyState
+                  icon={Receipt}
+                  title={t(k(`empty_${tab.key}_title`))}
+                  description={t(k('emptyDesc'))}
+                />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </section>
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

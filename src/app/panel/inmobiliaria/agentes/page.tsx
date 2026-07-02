@@ -15,13 +15,13 @@ import {
   CheckCircle,
   ChartLineUp,
   CurrencyDollar,
-  CaretLeft,
-  CaretRight,
   Trophy,
   ChartBar,
   UsersThree,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { Button, Pagination } from '@/components/ui';
+import { EmptyState as DSEmptyState } from '@/components/ui/empty-state';
+import { SegmentedControl } from '@leasefy/cadence';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
@@ -53,7 +53,7 @@ function AgentesContent() {
     { id: 'ranking', label: t('inmobiliaria.agentes.leaderboard'), icon: Trophy },
     { id: 'workload', label: t('inmobiliaria.agentes.tabs.workload'), icon: ChartBar },
   ], [t]);
-  const [activeTab, setActiveTab] = useState<TabType>('equipo');
+  const [activeTab, setTab] = useState<TabType>('equipo');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<AgenteFiltersState>({
@@ -160,39 +160,36 @@ function AgentesContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.agentes.teamTitle')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.agentes.subtitle')}
           </p>
         </div>
         {canAccess('agentes', 'create') && (
-          <button
-            onClick={handleNuevoAgente}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
+          <Button onClick={handleNuevoAgente} hideArrow className="shrink-0">
+            <Plus className="w-4 h-4" />
             {t('inmobiliaria.agentes.addAgent')}
-          </button>
+          </Button>
         )}
       </div>
 
-      {/* Stats Row */}
+      {/* Stats Row — neutral icon tiles (blue = actionable only, DS golden rule) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Total Agents */}
-        <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+        <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              <Users className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+            <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+              <Users className="w-5 h-5 text-fg-muted" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold tabular-nums text-fg">
                 {stats.total}
               </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-xs text-fg-muted">
                 {t('inmobiliaria.common.total')}
               </p>
             </div>
@@ -200,16 +197,16 @@ function AgentesContent() {
         </div>
 
         {/* Active Agents */}
-        <div className="p-4 rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15">
+        <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+            <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-fg-muted" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold tabular-nums text-fg">
                 {stats.active}
               </p>
-              <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">
+              <p className="text-xs text-fg-muted">
                 {t('inmobiliaria.agentes.active')}
               </p>
             </div>
@@ -217,16 +214,16 @@ function AgentesContent() {
         </div>
 
         {/* Closings This Month */}
-        <div className="p-4 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
+        <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+            <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+              <ChartLineUp className="w-5 h-5 text-fg-muted" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold tabular-nums text-fg">
                 {stats.closedThisMonth}
               </p>
-              <p className="text-xs text-[#1A40FF] dark:text-[#5570FF]">
+              <p className="text-xs text-fg-muted">
                 {t('inmobiliaria.agentes.closingsMonth')}
               </p>
             </div>
@@ -234,16 +231,16 @@ function AgentesContent() {
         </div>
 
         {/* Commissions This Month */}
-        <div className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
+        <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
-              <CurrencyDollar className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
+            <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+              <CurrencyDollar className="w-5 h-5 text-fg-muted" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F] truncate">
+            <div className="min-w-0">
+              <p className="text-lg font-semibold tabular-nums text-fg truncate">
                 {formatCurrency(stats.commissionsThisMonth)}
               </p>
-              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
+              <p className="text-xs text-fg-muted">
                 {t('inmobiliaria.agentes.commissionsMonth')}
               </p>
             </div>
@@ -253,28 +250,26 @@ function AgentesContent() {
 
       {/* Tab Content - Tabs integrated into card */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        {/* Tab Navigation - Inside the card */}
+        {/* Tab Navigation - Inside the card (exclusive selector → SegmentedControl) */}
         <div className="px-4 py-3 border-b border-border bg-muted/20">
-          <div className="flex items-center gap-1 p-1 rounded-md bg-muted w-fit">
-            {TABS.map((tab) => {
+          <SegmentedControl<TabType>
+            value={activeTab}
+            onChange={setTab}
+            aria-label={t('inmobiliaria.agentes.tabs.team')}
+            options={TABS.map((tab) => {
               const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium transition-all',
-                    activeTab === tab.id
-                      ? 'bg-background text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Icon className="w-4 h-4" weight={activeTab === tab.id ? 'fill' : 'regular'} />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              );
+              return {
+                value: tab.id,
+                ariaLabel: tab.label,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Icon className="w-4 h-4" weight={activeTab === tab.id ? 'fill' : 'regular'} />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </span>
+                ),
+              };
             })}
-          </div>
+          />
         </div>
 
         {/* Tab Content */}
@@ -286,35 +281,36 @@ function AgentesContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* View Toggle Header */}
+              {/* View Toggle Header (exclusive selector → SegmentedControl) */}
               <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2 p-1 rounded-md bg-muted">
-                  <button
-                    onClick={() => setViewMode('table')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                      viewMode === 'table'
-                        ? 'bg-background text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    <List className="w-4 h-4" />
-                    {t('inmobiliaria.agentes.viewTable')}
-                  </button>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm font-medium transition-all',
-                      viewMode === 'grid'
-                        ? 'bg-background text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    <SquaresFour className="w-4 h-4" />
-                    {t('inmobiliaria.agentes.viewCards')}
-                  </button>
-                </div>
-                <span className="text-sm text-muted-foreground tabular-nums">
+                <SegmentedControl<ViewMode>
+                  value={viewMode}
+                  onChange={setViewMode}
+                  aria-label={t('inmobiliaria.agentes.viewTable')}
+                  options={[
+                    {
+                      value: 'table',
+                      ariaLabel: t('inmobiliaria.agentes.viewTable'),
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <List className="w-4 h-4" />
+                          {t('inmobiliaria.agentes.viewTable')}
+                        </span>
+                      ),
+                    },
+                    {
+                      value: 'grid',
+                      ariaLabel: t('inmobiliaria.agentes.viewCards'),
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <SquaresFour className="w-4 h-4" />
+                          {t('inmobiliaria.agentes.viewCards')}
+                        </span>
+                      ),
+                    },
+                  ]}
+                />
+                <span className="text-sm text-fg-muted tabular-nums">
                   {filteredAgentes.length} {t('inmobiliaria.agentes.title').toLowerCase()}
                 </span>
               </div>
@@ -375,49 +371,12 @@ function AgentesContent() {
 
               {/* Pagination Footer */}
               {totalPages > 1 && (
-                <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className={cn(
-                      'p-2 rounded-sm border border-border transition-all',
-                      currentPage === 1
-                        ? 'text-muted-foreground/40 cursor-not-allowed'
-                        : 'text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <CaretLeft className="w-4 h-4" />
-                  </button>
-
-                  <div className="flex items-center gap-1 px-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={cn(
-                          'w-8 h-8 rounded-sm text-sm font-medium transition-all',
-                          page === currentPage
-                            ? 'bg-foreground text-background'
-                            : 'text-muted-foreground hover:bg-muted'
-                        )}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className={cn(
-                      'p-2 rounded-sm border border-border transition-all',
-                      currentPage === totalPages
-                        ? 'text-muted-foreground/40 cursor-not-allowed'
-                        : 'text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <CaretRight className="w-4 h-4" />
-                  </button>
+                <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
               )}
             </motion.div>
@@ -459,21 +418,15 @@ function AgentesContent() {
   );
 }
 
-// Empty State Component
+// Empty State Component — DS EmptyState, no action (header owns the CTA)
 function EmptyState() {
   const { t } = useI18n();
   return (
-    <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-      <div className="w-14 h-14 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5">
-        <Users className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
-      </div>
-      <h3 className="text-base font-semibold text-foreground mb-1.5">
-        {t('inmobiliaria.agentes.noAgents')}
-      </h3>
-      <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-        {t('inmobiliaria.agentes.noAgentsDesc')}
-      </p>
-    </div>
+    <DSEmptyState
+      icon={Users}
+      title={t('inmobiliaria.agentes.noAgents')}
+      description={t('inmobiliaria.agentes.noAgentsDesc')}
+    />
   );
 }
 

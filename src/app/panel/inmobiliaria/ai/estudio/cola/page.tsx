@@ -12,12 +12,10 @@
  */
 
 import { useRouter } from 'next/navigation'
-import { ShieldCheck } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { useI18n } from '@/lib/i18n'
 
 function EstudioCola() {
@@ -30,32 +28,23 @@ function EstudioCola() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai/estudio"
-            icon={ShieldCheck}
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.workspace.agente.estudio'), href: '/panel/inmobiliaria/ai/estudio' },
-              { label: t('inmobiliaria.ai.workspace.pages.estudio.colaTitle') },
-            ]}
-          />
-          <h1 className="text-2xl font-semibold text-foreground">{t('inmobiliaria.ai.workspace.pages.estudio.colaTitle')}</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">{t('inmobiliaria.ai.workspace.pages.estudio.colaTitle')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.ai.workspace.pages.estudio.colaDesc')}
           </p>
           {/* Leyenda de niveles — los items muestran "Nivel A/B/C/D" sin explicación */}
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Niveles:</span>{' '}
+          <p className="text-xs text-fg-muted">
+            <span className="font-medium text-fg">Niveles:</span>{' '}
             A = mejor perfil · B = buen perfil · C = perfil ajustado · D = mayor riesgo
           </p>
         </div>
 
         {/* Pending KPI */}
         <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
-          <p className="text-2xl font-semibold text-foreground tabular-nums">
+          <p className="text-2xl font-semibold text-fg tabular-nums">
             {isLoading ? '—' : total}
           </p>
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-mono">
+          <p className="text-xs uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.workspace.pages.comun.enCola')}
           </p>
         </div>

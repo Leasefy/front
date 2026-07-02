@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Check, WarningCircle } from '@phosphor-icons/react';
 
+import { Progress } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { Button } from '@/components/ui/button';
 import { WizardNavigation } from './WizardNavigation';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import { WIZARD_STEPS } from '@/lib/types/application';
@@ -97,23 +99,25 @@ export function WizardShell({
   }, [tryAdvanceStep, currentStepValidation.errors]);
 
   return (
-    <div className={cn('min-h-screen bg-muted', className)}>
+    <div className={cn('min-h-screen bg-bg', className)}>
       {/* Mobile Header - only visible on mobile */}
-      <header className="lg:hidden sticky top-0 z-10 bg-card border-b border-border">
+      <header className="lg:hidden sticky top-0 z-10 bg-surface border-b border-border">
         <div className="px-4 py-3">
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => router.back()}
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            hideArrow
+            className="text-fg-muted hover:text-fg gap-2"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Volver
-          </button>
+          </Button>
         </div>
 
         {/* Mobile property summary */}
         <div className="px-4 pb-4 flex items-center gap-3">
-          <div className="relative w-14 h-14 rounded-sm overflow-hidden flex-shrink-0 bg-black/5">
+          <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-surface-muted">
             <Image
               src={property.thumbnailUrl}
               alt={property.title}
@@ -122,59 +126,56 @@ export function WizardShell({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-medium text-foreground truncate">
+            <h1 className="text-sm font-medium text-fg truncate">
               {property.title}
             </h1>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-fg-muted">
               <MapPin className="h-3 w-3" />
               <span className="truncate">{property.neighborhood}</span>
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-mono tabular-nums font-medium text-fg">
               {formatCurrency(property.monthlyRent)}
             </p>
-            <p className="text-xs text-muted-foreground">/mes</p>
+            <p className="text-xs text-fg-muted">/mes</p>
           </div>
         </div>
 
         {/* Mobile progress indicator */}
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-foreground" aria-live="polite" aria-atomic="true">
+            <span className="text-xs font-mono tabular-nums font-medium text-fg" aria-live="polite" aria-atomic="true">
               Paso {currentStep} de {totalSteps}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-fg-muted">
               {currentStepConfig?.label}
             </span>
           </div>
-          <div className="h-1 bg-black/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-500"
-              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-            />
-          </div>
+          <Progress value={currentStep} max={totalSteps} size="xs" label="Progreso de la solicitud" />
         </div>
       </header>
 
       {/* Main Layout */}
       <div className="lg:flex lg:min-h-screen">
         {/* Sidebar - Desktop only */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-[320px] xl:w-[360px] bg-card border-r border-border lg:sticky lg:top-0 lg:h-screen">
+        <aside className="hidden lg:flex lg:flex-col lg:w-[320px] xl:w-[360px] bg-surface border-r border-border lg:sticky lg:top-0 lg:h-screen">
           {/* Back link and property info */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
               onClick={() => router.back()}
-              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+              hideArrow
+              className="text-fg-muted hover:text-fg gap-2 mb-6"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
               Volver
-            </button>
+            </Button>
 
             {/* Property card */}
             <div className="flex items-start gap-4">
-              <div className="relative w-16 h-16 rounded-sm overflow-hidden flex-shrink-0 bg-black/5">
+              <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-surface-muted">
                 <Image
                   src={property.thumbnailUrl}
                   alt={property.title}
@@ -183,18 +184,18 @@ export function WizardShell({
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-sm font-medium text-foreground leading-tight">
+                <h1 className="text-sm font-medium text-fg leading-tight">
                   {property.title}
                 </h1>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                <div className="flex items-center gap-1 text-xs text-fg-muted mt-1">
                   <MapPin className="h-3 w-3" />
                   <span>{property.neighborhood}, {property.city}</span>
                 </div>
                 <div className="mt-2">
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="text-sm font-mono tabular-nums font-medium text-fg">
                     {formatCurrency(property.monthlyRent)}
                   </span>
-                  <span className="text-xs text-muted-foreground">/mes</span>
+                  <span className="text-xs text-fg-muted">/mes</span>
                 </div>
               </div>
             </div>
@@ -202,10 +203,10 @@ export function WizardShell({
 
           {/* Step title and description */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <h2 className="text-xl font-semibold text-foreground tracking-tight">
+            <h2 className="text-xl font-semibold text-fg tracking-tight">
               {currentStepConfig?.description}
             </h2>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+            <p className="text-sm text-fg-muted mt-2 leading-relaxed">
               {STEP_DESCRIPTIONS[currentStep]}
             </p>
           </div>
@@ -221,12 +222,13 @@ export function WizardShell({
 
                 return (
                   <div key={step.id} className="relative">
-                    {/* Connecting line */}
+                    {/* Connecting line — Cadence #steps: 2px, cobalt done / hairline pending */}
                     {!isLast && (
                       <div
+                        aria-hidden
                         className={cn(
-                          'absolute left-[11px] top-[28px] w-[2px] h-[32px]',
-                          completedSteps.includes(step.id) ? 'bg-primary' : 'bg-black/10'
+                          'absolute left-[15px] top-[36px] w-[2px] h-[24px] rounded-full',
+                          completedSteps.includes(step.id) ? 'bg-primary' : 'bg-border'
                         )}
                       />
                     )}
@@ -236,28 +238,35 @@ export function WizardShell({
                       type="button"
                       onClick={() => isClickable && goToStep(step.id)}
                       disabled={!isClickable}
+                      aria-current={isCurrent ? 'step' : undefined}
                       className={cn(
                         'flex items-center gap-4 w-full py-2 text-left transition-colors',
                         isClickable ? 'cursor-pointer' : 'cursor-not-allowed'
                       )}
                     >
-                      {/* Circle indicator */}
+                      {/* Circle indicator — Cadence #steps: 32px; done = cobalt fill + check;
+                          active = white + 2px cobalt ring (halo) + mono numeral; pending = hairline */}
                       <div
+                        style={
+                          isCurrent
+                            ? { boxShadow: '0 0 0 4px rgba(26,64,255,0.14)' }
+                            : undefined
+                        }
                         className={cn(
-                          'relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all',
-                          'border-2',
-                          isCompleted
-                            ? 'bg-primary border-primary'
+                          'relative z-10 size-8 rounded-full flex items-center justify-center transition-all',
+                          'font-mono text-[13px] font-semibold tabular-nums',
+                          isCompleted && !isCurrent
+                            ? 'bg-primary border-2 border-primary text-primary-fg'
                             : isCurrent
-                            ? 'bg-primary border-primary'
-                            : 'bg-card border-border'
+                            ? 'bg-surface border-2 border-primary text-primary'
+                            : 'bg-surface border border-border text-fg-subtle'
                         )}
                       >
                         {isCompleted && !isCurrent ? (
-                          <Check className="h-3 w-3 text-white" strokeWidth={3} />
-                        ) : isCurrent ? (
-                          <div className="w-2 h-2 rounded-full bg-white" />
-                        ) : null}
+                          <Check className="h-4 w-4" weight="bold" />
+                        ) : (
+                          <span>{step.id}</span>
+                        )}
                       </div>
 
                       {/* Step label */}
@@ -265,10 +274,10 @@ export function WizardShell({
                         className={cn(
                           'text-sm font-medium transition-colors',
                           isCurrent
-                            ? 'text-foreground'
+                            ? 'text-fg'
                             : isCompleted
-                            ? 'text-foreground/70'
-                            : 'text-muted-foreground'
+                            ? 'text-fg/70'
+                            : 'text-fg-muted'
                         )}
                       >
                         {step.label}
@@ -285,18 +294,18 @@ export function WizardShell({
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
             {/* Step content */}
-            <div className="bg-card rounded-sm border border-border">
+            <div className="bg-surface rounded-[22px] border border-border">
               {/* Desktop step header - hidden on mobile since sidebar shows it */}
               <div className="hidden lg:block px-6 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-white text-sm font-medium">
+                  <span className="flex items-center justify-center size-8 rounded-full bg-ink text-ink-fg font-mono text-sm font-semibold tabular-nums">
                     {currentStep}
                   </span>
                   <div>
-                    <h3 className="text-base font-medium text-foreground">
+                    <h3 className="text-base font-medium text-fg">
                       {currentStepConfig?.description}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-fg-muted">
                       Paso {currentStep} de {totalSteps}
                     </p>
                   </div>
@@ -305,10 +314,10 @@ export function WizardShell({
 
               {/* Mobile step header */}
               <div className="lg:hidden px-4 py-4 border-b border-border">
-                <h3 className="text-base font-medium text-foreground">
+                <h3 className="text-base font-medium text-fg">
                   {currentStepConfig?.description}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-fg-muted mt-1">
                   {STEP_DESCRIPTIONS[currentStep]}
                 </p>
               </div>
@@ -321,13 +330,13 @@ export function WizardShell({
               {/* Validation Errors */}
               {attemptedAdvance && !currentStepValidation.isValid && (
                 <div className="px-4 lg:px-6 mb-4" aria-live="assertive" role="alert">
-                  <div className="flex items-start gap-3 p-4 bg-[#F8EAE7] border border-[#C4503B]/30 rounded-sm">
-                    <WarningCircle className="h-5 w-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 p-4 bg-danger-soft border border-danger/20 rounded-[14px]">
+                    <WarningCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-[#C4503B]">
+                      <p className="text-sm font-medium text-danger">
                         Completa los campos requeridos para continuar
                       </p>
-                      <ul className="mt-2 text-sm text-[#C4503B] list-disc list-inside space-y-1">
+                      <ul className="mt-2 text-sm text-danger list-disc list-inside space-y-1">
                         {currentStepMissingFields.map((field, idx) => (
                           <li key={idx}>
                             <button
@@ -361,7 +370,7 @@ export function WizardShell({
             </div>
 
             {/* FloppyDisk indicator */}
-            <p className="text-center text-xs text-muted-foreground mt-4">
+            <p className="text-center text-xs text-fg-muted mt-4">
               Tu progreso se guarda automáticamente
             </p>
           </div>

@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { PropietarioBankAccount } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
@@ -65,84 +66,79 @@ export function PropietarioBankInfo({
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]',
+        'p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]',
         className
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-            <Bank className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
+            <Bank className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h4 className="font-semibold text-neutral-900 dark:text-white">
+            <h4 className="font-semibold text-fg dark:text-white">
               {t('inmobiliaria.propietario.bankInfo.bankAccount')}
             </h4>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.propietario.bankInfo.forDispersions')}
             </p>
           </div>
         </div>
         {onEdit && (
-          <button
+          <IconButton
+            variant="ghost"
+            size="md"
             onClick={onEdit}
-            className="p-2 rounded-md text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-          >
-            <PencilSimple className="w-4 h-4" />
-          </button>
+            aria-label="Editar datos bancarios"
+            icon={<PencilSimple className="w-4 h-4" />}
+          />
         )}
       </div>
 
       {/* Bank Info */}
       <div className="space-y-3">
         {/* Bank */}
-        <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.bank')}</span>
-          <span className="font-medium text-neutral-900 dark:text-white">
+        <div className="flex items-center justify-between py-2 border-b border-faint dark:border-strong">
+          <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.bank')}</span>
+          <span className="font-medium text-fg dark:text-white">
             {bank?.name || bankAccount.bank}
           </span>
         </div>
 
         {/* Account Type */}
-        <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.type')}</span>
-          <span className="font-medium text-neutral-900 dark:text-white">
+        <div className="flex items-center justify-between py-2 border-b border-faint dark:border-strong">
+          <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.type')}</span>
+          <span className="font-medium text-fg dark:text-white">
             {accountTypeLabel}
           </span>
         </div>
 
         {/* Account Number */}
-        <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.number')}</span>
+        <div className="flex items-center justify-between py-2 border-b border-faint dark:border-strong">
+          <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.number')}</span>
           <div className="flex items-center gap-2">
-            <span className="font-mono font-medium text-neutral-900 dark:text-white">
+            <span className="font-mono font-medium text-fg dark:text-white">
               {showAccount ? bankAccount.accountNumber : maskAccount(bankAccount.accountNumber)}
             </span>
             <div className="flex items-center gap-1">
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowAccount(!showAccount)}
-                className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                 title={showAccount ? t('inmobiliaria.propietario.bankInfo.hide') : t('inmobiliaria.propietario.bankInfo.show')}
-              >
-                {showAccount ? (
-                  <EyeSlash className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
+                aria-label={showAccount ? t('inmobiliaria.propietario.bankInfo.hide') : t('inmobiliaria.propietario.bankInfo.show')}
+                icon={showAccount ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              />
               {showAccount && (
-                <button
+                <IconButton
+                  variant="ghost"
+                  size="sm"
                   onClick={handleCopy}
-                  className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                   title={t('inmobiliaria.propietario.bankInfo.copy')}
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-[#2C7A53]" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
+                  aria-label={t('inmobiliaria.propietario.bankInfo.copy')}
+                  icon={copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                />
               )}
             </div>
           </div>
@@ -150,16 +146,16 @@ export function PropietarioBankInfo({
 
         {/* Account Holder */}
         <div className="flex items-center justify-between py-2">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.bankInfo.holder')}</span>
-          <span className="font-medium text-neutral-900 dark:text-white">
+          <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.holder')}</span>
+          <span className="font-medium text-fg dark:text-white">
             {bankAccount.accountHolder}
           </span>
         </div>
       </div>
 
       {/* Verification Badge */}
-      <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-        <div className="flex items-center gap-2 text-[#2C7A53] dark:text-[#3EAE70]">
+      <div className="mt-4 pt-3 border-t border-faint dark:border-strong">
+        <div className="flex items-center gap-2 text-success">
           <ShieldCheck className="w-4 h-4" />
           <span className="text-xs font-medium">{t('inmobiliaria.propietario.bankInfo.verified')}</span>
         </div>
@@ -189,14 +185,14 @@ export function PropietarioBankInfoCompact({
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <div className="w-8 h-8 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center shrink-0">
-        <Bank className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
+      <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center shrink-0">
+        <Bank className="w-4 h-4 text-success" />
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+        <p className="text-sm font-medium text-fg dark:text-white truncate">
           {bank?.name || bankAccount.bank} {maskAccount(bankAccount.accountNumber)}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="text-xs text-fg-muted dark:text-fg-subtle">
           {accountTypeLabel} • {bankAccount.accountHolder}
         </p>
       </div>

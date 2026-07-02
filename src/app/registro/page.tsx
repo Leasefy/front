@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { apiClient } from '@/lib/api/client';
+import { Input } from '@/components/ui/input';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
@@ -298,10 +299,10 @@ function RegistroContent() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
-                      <input
+                      <Input
                         {...profileForm.register('firstName', { required: 'Requerido' })}
                         placeholder="Tu nombre"
-                        className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full"
                       />
                       {profileForm.formState.errors.firstName && (
                         <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.firstName.message}</p>
@@ -309,10 +310,10 @@ function RegistroContent() {
                     </div>
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
-                      <input
+                      <Input
                         {...profileForm.register('lastName', { required: 'Requerido' })}
                         placeholder="Tu apellido"
-                        className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full"
                       />
                       {profileForm.formState.errors.lastName && (
                         <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.lastName.message}</p>
@@ -326,11 +327,11 @@ function RegistroContent() {
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
+                      <Input
                         {...profileForm.register('phone')}
                         placeholder="3001234567"
                         type="tel"
-                        className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full pl-9"
                       />
                     </div>
                   </div>
@@ -385,10 +386,10 @@ function RegistroContent() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
-                        <input
+                        <Input
                           {...authForm.register('firstName', { required: 'Requerido' })}
                           placeholder="Tu nombre"
-                          className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full"
                         />
                         {authForm.formState.errors.firstName && (
                           <p className="text-xs text-destructive mt-1">{authForm.formState.errors.firstName.message}</p>
@@ -396,10 +397,10 @@ function RegistroContent() {
                       </div>
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
-                        <input
+                        <Input
                           {...authForm.register('lastName', { required: 'Requerido' })}
                           placeholder="Tu apellido"
-                          className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full"
                         />
                         {authForm.formState.errors.lastName && (
                           <p className="text-xs text-destructive mt-1">{authForm.formState.errors.lastName.message}</p>
@@ -411,11 +412,11 @@ function RegistroContent() {
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Email</label>
                       <div className="relative">
                         <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
+                        <Input
                           {...authForm.register('email', { required: 'Requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email inválido' } })}
                           type="email"
                           placeholder="tu@email.com"
-                          className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full pl-9"
                         />
                       </div>
                       {authForm.formState.errors.email && (
@@ -427,11 +428,11 @@ function RegistroContent() {
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Contraseña</label>
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
+                        <Input
                           {...authForm.register('password', { required: 'Requerido', minLength: { value: 6, message: 'Mínimo 6 caracteres' } })}
                           type="password"
                           placeholder="Mínimo 6 caracteres"
-                          className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full pl-9"
                         />
                       </div>
                       {authForm.formState.errors.password && (

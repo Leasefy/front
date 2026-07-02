@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { useLenis } from '@/components/providers/SmoothScroll';
 
 export function SettingsModal({
@@ -52,12 +53,13 @@ export function SettingsModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
-          <button
+          <IconButton
+            variant="ghost"
+            aria-label="Cerrar"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+            icon={<X className="w-4 h-4" />}
+            className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+          />
         </div>
         {/* Scrollable content */}
         <div

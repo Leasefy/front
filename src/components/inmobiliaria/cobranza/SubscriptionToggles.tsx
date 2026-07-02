@@ -12,9 +12,11 @@
  */
 
 import { Envelope, WhatsappLogo, type Icon } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 
 import type { SubscriptionRow } from '@/lib/hooks/cobranza/use-subscription'
 import { useI18n } from '@/lib/i18n'
+import { Switch } from '@/components/ui/switch'
 
 export interface SubscriptionTogglesProps {
   data: SubscriptionRow
@@ -46,12 +48,12 @@ export function SubscriptionToggles({
         onChange={(v) => onToggle({ whatsapp_enabled: v })}
       />
       {isSaving && (
-        <p className="text-[10px] font-mono uppercase text-muted-foreground tracking-wide">
+        <MonoLabel className="block text-[10px] text-muted-foreground tracking-wide">
           {locale.startsWith('es') ? 'Guardando…' : 'Saving…'}
-        </p>
+        </MonoLabel>
       )}
       {error && (
-        <div className="rounded-sm border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-2 text-xs text-[#C4503B] dark:text-[#E0664D] font-mono">
+        <div className="rounded-sm border border-danger/30 bg-danger-soft text-danger font-mono">
           {locale.startsWith('es') ? 'Error al actualizar suscripción' : 'Subscription update failed'}: {error}
         </div>
       )}
@@ -76,23 +78,7 @@ function ToggleRow({
         <Icon className="w-4 h-4 text-muted-foreground" aria-hidden={true} />
         {label}
       </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={[
-          'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-          checked ? 'bg-[#2C7A53]' : 'bg-muted',
-        ].join(' ')}
-      >
-        <span
-          className={[
-            'inline-block h-5 w-5 transform rounded-full bg-white transition',
-            checked ? 'translate-x-5' : 'translate-x-0.5',
-          ].join(' ')}
-        />
-      </button>
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </label>
   )
 }

@@ -8,6 +8,9 @@ import { MapPin, Users, Clock, CheckCircle, XCircle, WarningCircle, Eye, FileTex
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button, Spinner, Card } from '@/components/ui';
+import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates } from '@/lib/hooks/useLandlord';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
@@ -92,7 +95,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const isLoading = propertyLoading || candidatesLoading;
 
   // State for tabs
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setTab] = useState('all');
 
   // Use API candidates as local state for optimistic updates
   const [candidates, setCandidates] = useState(apiCandidates);
@@ -462,7 +465,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Category Breakdown */}
           {selectedCandidate.riskScore?.categories && (
             <div>
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-3">Desglose por categoría</p>
+              <MonoLabel className="block text-xs text-plan-secondary mb-3">Desglose por categoría</MonoLabel>
               <div className="space-y-3">
                 {selectedCandidate.riskScore.categories.map((cat) => (
                   <div key={cat.name}>
@@ -487,10 +490,10 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Key Drivers (Positive Factors) */}
           {selectedCandidate.riskScore?.drivers && selectedCandidate.riskScore.drivers.length > 0 && (
             <div>
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2 flex items-center gap-1">
+              <MonoLabel className="text-xs text-plan-secondary mb-2 flex items-center gap-1">
                 <TrendUp className="w-3 h-3" />
                 Factores positivos
-              </p>
+              </MonoLabel>
               <ul className="space-y-1.5">
                 {selectedCandidate.riskScore.drivers.slice(0, 4).map((driver, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-foreground">
@@ -505,10 +508,10 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Risk Flags (if any) */}
           {selectedCandidate.riskScore?.flags && selectedCandidate.riskScore.flags.length > 0 && (
             <div>
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2 flex items-center gap-1">
+              <MonoLabel className="text-xs text-plan-secondary mb-2 flex items-center gap-1">
                 <Warning className="w-3 h-3" />
                 Puntos a considerar
-              </p>
+              </MonoLabel>
               <ul className="space-y-2">
                 {selectedCandidate.riskScore.flags.map((flag) => (
                   <li key={flag.id} className={`flex items-start gap-2 text-sm p-2 rounded ${
@@ -532,10 +535,10 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           {/* Suggested Conditions */}
           {selectedCandidate.riskScore?.suggestedConditions && selectedCandidate.riskScore.suggestedConditions.length > 0 && (
             <div>
-              <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2 flex items-center gap-1">
+              <MonoLabel className="text-xs text-plan-secondary mb-2 flex items-center gap-1">
                 <Info className="w-3 h-3" />
                 Recomendaciones
-              </p>
+              </MonoLabel>
               <ul className="space-y-2">
                 {selectedCandidate.riskScore.suggestedConditions.map((cond) => (
                   <li key={cond.id} className="text-sm bg-muted p-2 rounded">
@@ -554,27 +557,33 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       title: 'Acciones',
       content: (
         <div className="space-y-2">
-          <button
+          <Button
+            variant="secondary"
+            hideArrow
             onClick={() => handleDecision(selectedCandidate.id, 'pre-approved')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-blue-bg text-[#1A40FF] rounded-sm text-sm font-medium hover:bg-[#EEF1FF] transition-colors"
+            className="w-full bg-plan-status-blue-bg text-primary rounded-sm hover:bg-[#EEF1FF]"
           >
             <Clock className="w-4 h-4" />
             Pre-aprobar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
+            hideArrow
             onClick={() => handleDecision(selectedCandidate.id, 'approved')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-green-bg text-[#2C7A53] rounded-sm text-sm font-medium hover:bg-[#E8F3EC] transition-colors"
+            className="w-full bg-plan-status-green-bg text-success rounded-sm hover:bg-[#E8F3EC]"
           >
             <CheckCircle className="w-4 h-4" />
             Aprobar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
+            hideArrow
             onClick={() => handleDecision(selectedCandidate.id, 'rejected')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-plan-status-red-bg text-[#C4503B] rounded-sm text-sm font-medium hover:bg-[#F8EAE7] transition-colors"
+            className="w-full bg-plan-status-red-bg text-danger rounded-sm hover:bg-[#F8EAE7]"
           >
             <XCircle className="w-4 h-4" />
             Rechazar
-          </button>
+          </Button>
         </div>
       ),
     },
@@ -589,7 +598,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       <div className="space-y-4">
         {/* Employment */}
         <div>
-          <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2">Información Laboral</p>
+          <MonoLabel className="block text-xs text-plan-secondary mb-2">Información Laboral</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Empresa</span>
@@ -615,7 +624,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         </div>
         {/* Income */}
         <div>
-          <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2">Información Financiera</p>
+          <MonoLabel className="block text-xs text-plan-secondary mb-2">Información Financiera</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Salario mensual</span>
@@ -643,7 +652,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         </div>
         {/* Housing */}
         <div>
-          <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2">Vivienda Actual</p>
+          <MonoLabel className="block text-xs text-plan-secondary mb-2">Vivienda Actual</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Dirección</span>
@@ -661,7 +670,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         </div>
         {/* References */}
         <div>
-          <p className="text-xs font-normal text-plan-secondary font-mono uppercase mb-2">Referencias</p>
+          <MonoLabel className="block text-xs text-plan-secondary mb-2">Referencias</MonoLabel>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-plan-secondary">Arrendadores anteriores</span>
@@ -682,7 +691,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       <div className="space-y-3">
         {isLoadingDocs ? (
           <div className="flex items-center justify-center py-8">
-            <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+            <Spinner size="md" />
           </div>
         ) : (
           <>
@@ -778,7 +787,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-[#1a1a1c] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -920,7 +929,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 {/* Contract details card */}
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-6 space-y-5">
                   <div>
-                    <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Contrato</p>
+                    <MonoLabel className="block text-xs tracking-wider text-neutral-500 dark:text-neutral-400">Contrato</MonoLabel>
                     <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-0.5">{getContractTypeLabel(activeContract)}</p>
                   </div>
 
@@ -929,12 +938,12 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   {/* Parties */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">Arrendador</p>
+                      <MonoLabel className="block text-xs tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">Arrendador</MonoLabel>
                       <p className="font-medium text-neutral-900 dark:text-white">{activeContract.landlordName}</p>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">{activeContract.landlordEmail}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">Arrendatario</p>
+                      <MonoLabel className="block text-xs tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">Arrendatario</MonoLabel>
                       <p className="font-medium text-neutral-900 dark:text-white">{activeContract.tenantName}</p>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">{activeContract.tenantEmail}</p>
                     </div>
@@ -1006,7 +1015,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
 
                 {/* Tenant summary card */}
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-5">
-                  <p className="text-xs font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Arrendatario</p>
+                  <MonoLabel className="block text-xs tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Arrendatario</MonoLabel>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center text-sm font-semibold text-[#1A40FF] dark:text-[#5570FF]">
                       {activeContract.tenantName.charAt(0)}
@@ -1024,7 +1033,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           <>
             {/* Stats Row - Compact Style */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+              <Card className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                     <Users className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
@@ -1034,8 +1043,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Total candidatos</p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+              </Card>
+              <Card className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
                     <Clock className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" />
@@ -1045,8 +1054,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Pendientes</p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+              </Card>
+              <Card className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
                     <Eye className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
@@ -1056,8 +1065,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Pre-aprobados</p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-white dark:bg-[#222224] rounded-xl border border-neutral-200 dark:border-neutral-700 p-4">
+              </Card>
+              <Card className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
@@ -1067,44 +1076,30 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">Aprobados</p>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
 
-            {/* Tabs - Modern Pill Style */}
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-1 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-xl">
+            {/* Tabs - segmented filter over the candidate/visit views */}
+            <Tabs value={activeTab} onValueChange={setTab}>
+              <TabsList variant="segmented" className="mb-6">
                 {tabs.map((tab) => (
-                  <button
+                  <TabsTrigger
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2
-                      ${activeTab === tab.id
-                        ? 'bg-white dark:bg-[#222224] text-neutral-900 dark:text-white'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                      }
-                    `}
+                    value={tab.id}
+                    className="group flex items-center gap-2"
                   >
                     {tab.label}
                     {tab.count !== undefined && (
-                      <span
-                        className={`
-                          px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums
-                          ${activeTab === tab.id
-                            ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                            : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
-                          }
-                        `}
-                      >
+                      <span className="px-1.5 py-0.5 rounded-sm text-xs font-medium tabular-nums bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 group-data-[state=active]:bg-[#EEF1FF] dark:group-data-[state=active]:bg-[#1A40FF]/15 group-data-[state=active]:text-[#1A40FF] dark:group-data-[state=active]:text-[#5570FF]">
                         {tab.count}
                       </span>
                     )}
-                  </button>
+                  </TabsTrigger>
                 ))}
-              </div>
-            </div>
+              </TabsList>
 
-            {/* Content based on active tab */}
+              {/* Content based on active tab */}
+              <TabsContent value={activeTab} className="mt-0">
             {activeTab === 'schedule' ? (
               <AvailabilityScheduleEditor
                 schedule={availabilitySchedule}
@@ -1180,6 +1175,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 />
               </div>
             )}
+              </TabsContent>
+            </Tabs>
           </>
         )}
 
@@ -1217,9 +1214,12 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <h3 className="text-base font-semibold text-neutral-900 dark:text-white">{previewDoc.name}</h3>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{selectedCandidate.fullName} · {previewDoc.subtitle}</p>
               </div>
-              <button type="button" onClick={() => setPreviewDoc(null)} className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors">
-                <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-              </button>
+              <IconButton
+                variant="ghost"
+                onClick={() => setPreviewDoc(null)}
+                icon={<X className="w-5 h-5" />}
+                aria-label="Cerrar"
+              />
             </div>
 
             {/* Document preview area */}
@@ -1281,26 +1281,27 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             {/* Footer */}
             {previewDoc.url && (
               <div className="px-6 py-4 border-t border-neutral-200 dark:border-neutral-700 flex gap-3">
-                <a
-                  href={previewDoc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  onClick={() => {
-                    toast.success('Documento descargado', { description: `${previewDoc.name} guardado exitosamente.` });
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1A40FF] hover:opacity-90 text-white rounded-xl text-sm font-medium transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Descargar
-                </a>
-                <button
+                <Button asChild variant="default" hideArrow className="flex-1">
+                  <a
+                    href={previewDoc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    onClick={() => {
+                      toast.success('Documento descargado', { description: `${previewDoc.name} guardado exitosamente.` });
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                    Descargar
+                  </a>
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setPreviewDoc(null)}
-                  className="px-4 py-2.5 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm font-medium text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                 >
                   Cerrar
-                </button>
+                </Button>
               </div>
             )}
           </div>

@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Switch as DSSwitch } from "@leasefy/ui"
+import { Switch as DSSwitch } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Switch de @leasefy/ui (API y métricas idénticas:
+ * ADAPTER fino sobre el Switch de @leasefy/cadence (API y métricas idénticas:
  * track 36×20, thumb 16, translate-x-4). Única fidelidad: el thumb del mvp
  * era bg-background (oscuro en dark mode); el DS lo fija bg-white. Se
  * restaura vía selector descendiente para que dark mode siga igual

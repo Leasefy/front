@@ -28,7 +28,7 @@ export function TrendChart({
   data,
   maxValue: maxOverride,
   height = 120,
-  color = 'bg-neutral-500',
+  color = 'bg-muted',
   showLabels = true,
 }: TrendChartProps) {
   if (data.length === 0) return null;
@@ -130,8 +130,8 @@ export function BarChart({
   data,
   maxValue: maxOverride,
   height = 160,
-  color = 'bg-neutral-600 dark:bg-neutral-400',
-  secondaryColor = 'bg-neutral-300 dark:bg-neutral-600',
+  color = 'bg-ink dark:bg-muted',
+  secondaryColor = 'bg-muted dark:bg-ink',
   showLabels = true,
   horizontal = false,
 }: BarChartProps) {
@@ -167,7 +167,7 @@ export function BarChart({
                 </span>
               </div>
               <div className="space-y-1">
-                <div className="h-2.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                <div className="h-2.5 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
                   <div
                     className={cn(
                       'h-full rounded-full transition-all duration-500',
@@ -177,7 +177,7 @@ export function BarChart({
                   />
                 </div>
                 {hasSecondary && point.secondaryValue != null && (
-                  <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                  <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
                     <div
                       className={cn(
                         'h-full rounded-full transition-all duration-500',

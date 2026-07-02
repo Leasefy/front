@@ -240,7 +240,7 @@ export function ProblemSection() {
                   viewport={{ once: true }}
                   transition={{ delay: 0.4 }}
                 >
-                  <span className="text-[56px] md:text-[72px] font-heading font-medium text-white leading-none tracking-[-0.03em]">
+                  <span className="text-[56px] md:text-[72px] font-mono tabular-nums font-medium text-white leading-none tracking-[-0.03em]">
                     $18M
                   </span>
                   <p className="text-[15px] text-white/80 mt-3 leading-relaxed font-medium">
@@ -305,7 +305,7 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4 }}
-              className="group relative rounded-xl overflow-hidden bg-[#EEF1FF] md:col-span-3 p-6 md:p-8"
+              className="group relative rounded-xl overflow-hidden bg-accent-soft md:col-span-3 p-6 md:p-8"
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
                 {/* UI Illustration Area - Stack of 3 rejected applications */}
@@ -374,9 +374,9 @@ export function ProblemSection() {
                         <div className="text-[8px] text-muted-foreground">Hoy</div>
                       </div>
                       <div className="space-y-1.5 mb-3">
-                        <div className="h-2 bg-[#EEF1FF] rounded w-full" />
-                        <div className="h-2 bg-[#EEF1FF] rounded w-4/5" />
-                        <div className="h-2 bg-[#EEF1FF] rounded w-2/3" />
+                        <div className="h-2 bg-accent-soft rounded w-full" />
+                        <div className="h-2 bg-accent-soft rounded w-4/5" />
+                        <div className="h-2 bg-accent-soft rounded w-2/3" />
                       </div>
                       <div className="flex items-center gap-1 text-[8px] text-muted-foreground">
                         <span>Motivo:</span>

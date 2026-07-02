@@ -4,8 +4,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { MonoLabel } from '@leasefy/cadence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { MapPin, Calendar, ChatCircle, FileText, CreditCard, User, Phone, Envelope } from '@phosphor-icons/react';
 import type { Lease } from '@/lib/types/lease';
 
@@ -64,16 +66,16 @@ export function LeaseCard({
   );
 
   return (
-    <div
+    <Card
       onClick={onSelect}
       className={cn(
         'overflow-hidden',
-        'rounded-sm',
+        'rounded-[22px]',
         'transition-all duration-300 ease-out',
         onSelect && 'cursor-pointer',
         isSelected
-          ? 'bg-card text-card-foreground border border-primary rounded-sm shadow-elevated ring-2 ring-primary/20'
-          : 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
+          ? 'border-primary shadow-elevated ring-2 ring-primary/20'
+          : 'shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
         className
       )}
     >
@@ -99,37 +101,37 @@ export function LeaseCard({
           {/* Header with title and rent */}
           <div className="flex items-start justify-between gap-4 mb-3">
             <div className="min-w-0">
-              <h3 className={cn('font-semibold truncate', 'text-foreground')}>
+              <h3 className="font-semibold truncate text-fg">
                 {lease.propertyTitle}
               </h3>
-              <div className={cn('flex items-center gap-1.5 text-sm mt-1', 'text-muted-foreground')}>
+              <div className="flex items-center gap-1.5 text-sm mt-1 text-fg-muted">
                 <MapPin className="w-4 h-4 shrink-0" />
                 <span className="truncate">{lease.propertyAddress}</span>
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className={cn('text-lg font-bold', 'text-foreground')}>
+              <p className="text-lg font-bold text-fg font-mono tabular-nums">
                 {formatCurrency(lease.monthlyRent)}
               </p>
-              <p className={cn('text-xs', 'text-muted-foreground')}>/mes</p>
+              <p className="text-xs text-fg-muted">/mes</p>
             </div>
           </div>
 
           {/* Contact info */}
-          <div className={cn('p-3 mb-4', 'rounded-sm', 'bg-muted/50')}>
-            <p className={cn('text-xs font-medium font-mono uppercase tracking-wider mb-2', 'text-muted-foreground')}>
+          <div className="p-3 mb-4 rounded-[14px] bg-surface-muted">
+            <MonoLabel className="block text-xs font-medium tracking-wider mb-2 text-fg-muted">
               {contactLabel}
-            </p>
+            </MonoLabel>
             <div className="flex items-center gap-3">
-              <div className={cn('w-10 h-10', 'rounded-full', 'bg-muted flex items-center justify-center shrink-0')}>
-                <User className={cn('w-5 h-5', 'text-muted-foreground')} />
+              <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center shrink-0">
+                <User className="w-5 h-5 text-fg-muted" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className={cn('font-medium truncate', 'text-foreground')}>
+                <p className="font-medium truncate text-fg">
                   {contactName}
                 </p>
-                <div className={cn('flex flex-wrap gap-x-3 gap-y-1 text-xs', 'text-muted-foreground')}>
-                  <span className="flex items-center gap-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-fg-muted">
+                  <span className="flex items-center gap-1 font-mono tabular-nums">
                     <Phone className="w-3 h-3" />
                     {contactPhone}
                   </span>
@@ -143,22 +145,22 @@ export function LeaseCard({
           </div>
 
           {/* Dates and time remaining */}
-          <div className={cn('flex flex-wrap items-center gap-x-4 gap-y-2 text-sm mb-4', 'text-foreground')}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm mb-4 text-fg">
             <div className="flex items-center gap-1.5">
-              <Calendar className={cn('w-4 h-4', 'text-muted-foreground')} />
-              <span>
+              <Calendar className="w-4 h-4 text-fg-muted" />
+              <span className="font-mono tabular-nums">
                 {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
               </span>
             </div>
             {lease.status === 'active' && daysRemaining > 0 && (
-              <span className={cn('text-xs px-2 py-0.5', 'rounded-sm', 'bg-muted text-foreground')}>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted text-fg font-mono tabular-nums">
                 {daysRemaining} días restantes
               </span>
             )}
             {lease.status === 'ending_soon' && (
-              <span className={cn('text-xs px-2 py-0.5', 'rounded-sm', 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]')}>
+              <Badge variant="warning">
                 Vence pronto
-              </span>
+              </Badge>
             )}
           </div>
 
@@ -185,6 +187,6 @@ export function LeaseCard({
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

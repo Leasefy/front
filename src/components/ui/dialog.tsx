@@ -11,12 +11,12 @@ import {
   type DialogContentProps as DSDialogContentProps,
   DialogTitle as DSDialogTitle,
   DialogDescription as DSDialogDescription,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Dialog de @leasefy/ui que preserva la API local del mvp:
+ * ADAPTER fino sobre el Dialog de @leasefy/cadence que preserva la API local del mvp:
  * - DialogContent: contrato de layout legacy (`p-6 grid gap-4 max-w-lg`,
  *   overridable vía className) + sizing mobile (`w-[calc(100%-2rem)]`,
  *   `max-h-[min(640px,90dvh)]`, `overflow-y-auto`), z-[300] sobre headers

@@ -17,12 +17,12 @@ import {
   DropdownMenuLabel as DSDropdownMenuLabel,
   DropdownMenuSeparator as DSDropdownMenuSeparator,
   DropdownMenuShortcut,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el DropdownMenu de @leasefy/ui, expuesto con los nombres
+ * ADAPTER fino sobre el DropdownMenu de @leasefy/cadence, expuesto con los nombres
  * legacy del mvp (DropdownList*). Root/Trigger/Group/Portal/Sub/Radio/
  * Shortcut son re-exports con alias (misma API Radix; el Item del DS es
  * superset: inset/destructive/shortcut).

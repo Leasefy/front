@@ -16,6 +16,19 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import { IconButton } from '@leasefy/cadence';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
 interface ActaEntregaViewProps {
@@ -27,28 +40,41 @@ interface ActaEntregaViewProps {
 }
 
 // Condition styling
-const CONDITION_STYLES: Record<InventoryItem['condition'], { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
+const CONDITION_STYLES: Record<
+  InventoryItem['condition'],
+  {
+    bg: string;
+    text: string;
+    variant: 'success' | 'default' | 'warning' | 'destructive';
+    labelKey: string;
+    icon: React.ElementType;
+  }
+> = {
   excellent: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    variant: 'success',
     labelKey: 'inmobiliaria.acta.condExcellent',
     icon: CheckCircle,
   },
   good: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
+    variant: 'default',
     labelKey: 'inmobiliaria.acta.condGood',
     icon: CheckCircle,
   },
   fair: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    variant: 'warning',
     labelKey: 'inmobiliaria.acta.condFair',
     icon: Warning,
   },
   poor: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    variant: 'destructive',
     labelKey: 'inmobiliaria.acta.condPoor',
     icon: Warning,
   },
@@ -89,36 +115,42 @@ export function ActaEntregaView({
     : { excellent: 0, good: 0, fair: 0, poor: 0 };
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-              <Package className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
+            <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center">
+              <Package className="w-4 h-4 text-success" />
             </div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.acta.title')}</h3>
+            <h3 className="text-base font-semibold text-foreground">{t('inmobiliaria.acta.title')}</h3>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
+              hideArrow
               onClick={onPrint}
-              className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
+              className="h-8 w-8 text-muted-foreground opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >
               <Printer className="w-4 h-4" />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              hideArrow
               onClick={onDownload}
-              className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors opacity-50 cursor-not-allowed"
+              className="h-8 w-8 text-muted-foreground opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >
               <DownloadSimple className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-muted-foreground">
           {t('inmobiliaria.acta.deliveryDateLabel')}: {fmtDate(contractDate)}
         </p>
       </div>
@@ -148,39 +180,39 @@ export function ActaEntregaView({
 
             {/* Search */}
             <div className="relative">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+              <Input
                 type="text"
                 placeholder={t('inmobiliaria.acta.searchItem')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-[#141416] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm"
+                className="pl-10"
               />
             </div>
 
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                    <th className="text-left py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow className="border-b border-border">
+                    <TableHead className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
                       {t('inmobiliaria.acta.thItem')}
-                    </th>
-                    <th className="text-center py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                    </TableHead>
+                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
                       {t('inmobiliaria.acta.thQty')}
-                    </th>
-                    <th className="text-center py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                    </TableHead>
+                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
                       {t('inmobiliaria.acta.thCondition')}
-                    </th>
-                    <th className="text-left py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
                       {t('inmobiliaria.acta.thNotes')}
-                    </th>
-                    <th className="text-center py-3 px-2 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+                    </TableHead>
+                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
                       {t('inmobiliaria.acta.thPhoto')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredItems.map((item, index) => {
                     const style = CONDITION_STYLES[item.condition];
                     const Icon = style.icon;
@@ -190,47 +222,44 @@ export function ActaEntregaView({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="border-b border-neutral-50 dark:border-neutral-800/50 last:border-0"
+                        className="border-b border-border/60 last:border-0"
                       >
-                        <td className="py-3 px-2">
-                          <span className="font-medium text-neutral-900 dark:text-white text-sm">
+                        <TableCell className="py-3 px-2">
+                          <span className="font-medium text-foreground text-sm">
                             {item.name}
                           </span>
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <span className="text-neutral-600 dark:text-neutral-400 text-sm">
+                        </TableCell>
+                        <TableCell className="py-3 px-2 text-center">
+                          <span className="text-muted-foreground text-sm">
                             {item.quantity}
                           </span>
-                        </td>
-                        <td className="py-3 px-2">
+                        </TableCell>
+                        <TableCell className="py-3 px-2">
                           <div className="flex justify-center">
-                            <span
-                              className={cn(
-                                'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                                style.bg,
-                                style.text
-                              )}
-                            >
+                            <Badge variant={style.variant} className="gap-1">
                               <Icon className="w-3 h-3" />
                               {t(style.labelKey)}
-                            </span>
+                            </Badge>
                           </div>
-                        </td>
-                        <td className="py-3 px-2">
+                        </TableCell>
+                        <TableCell className="py-3 px-2">
                           {item.notes ? (
-                            <span className="text-neutral-600 dark:text-neutral-400 text-sm line-clamp-1">
+                            <span className="text-muted-foreground text-sm line-clamp-1">
                               {item.notes}
                             </span>
                           ) : (
-                            <span className="text-neutral-400 dark:text-neutral-500 text-sm">-</span>
+                            <span className="text-muted-foreground/70 text-sm">-</span>
                           )}
-                        </td>
-                        <td className="py-3 px-2">
+                        </TableCell>
+                        <TableCell className="py-3 px-2">
                           <div className="flex justify-center">
                             {item.photoUrl ? (
+                              // allowlist: clickable image-tile thumbnail (wraps an <img>) opening a
+                              // lightbox — Button/IconButton can't host a fill image without breaking it
                               <button
                                 onClick={() => setSelectedImage(item.photoUrl!)}
-                                className="w-8 h-8 rounded-md overflow-hidden bg-neutral-100 dark:bg-neutral-800 hover:ring-2 hover:ring-[#1A40FF] transition-all"
+                                aria-label={item.name}
+                                className="w-8 h-8 rounded-md overflow-hidden bg-muted hover:ring-2 hover:ring-primary transition-all"
                               >
                                 <img
                                   src={item.photoUrl}
@@ -239,15 +268,15 @@ export function ActaEntregaView({
                                 />
                               </button>
                             ) : (
-                              <span className="text-neutral-400 dark:text-neutral-500">-</span>
+                              <span className="text-muted-foreground/70">-</span>
                             )}
                           </div>
-                        </td>
+                        </TableCell>
                       </motion.tr>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             {/* Mobile Cards */}
@@ -261,35 +290,32 @@ export function ActaEntregaView({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416]"
+                    className="p-4 rounded-xl bg-surface-muted"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-medium text-neutral-900 dark:text-white">{item.name}</p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                        <p className="font-medium text-foreground">{item.name}</p>
+                        <p className="text-sm text-muted-foreground">
                           {t('inmobiliaria.acta.quantity')}: {item.quantity}
                         </p>
                       </div>
-                      <span
-                        className={cn(
-                          'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                          style.bg,
-                          style.text
-                        )}
-                      >
+                      <Badge variant={style.variant} className="gap-1">
                         <Icon className="w-3 h-3" />
                         {t(style.labelKey)}
-                      </span>
+                      </Badge>
                     </div>
                     {item.notes && (
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+                      <p className="text-sm text-muted-foreground mb-2">
                         {item.notes}
                       </p>
                     )}
                     {item.photoUrl && (
+                      // allowlist: clickable image-tile thumbnail (wraps an <img>) opening a
+                      // lightbox — Button/IconButton can't host a fill image without breaking it
                       <button
                         onClick={() => setSelectedImage(item.photoUrl!)}
-                        className="w-16 h-16 rounded-md overflow-hidden bg-neutral-100 dark:bg-neutral-800"
+                        aria-label={item.name}
+                        className="w-16 h-16 rounded-md overflow-hidden bg-muted"
                       >
                         <img
                           src={item.photoUrl}
@@ -304,42 +330,43 @@ export function ActaEntregaView({
             </div>
 
             {/* Total Count */}
-            <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <span className="text-sm text-muted-foreground">
                 {t('inmobiliaria.acta.total')}: {filteredItems.length} items
               </span>
-              <button
+              <Button
+                variant="link"
+                size="sm"
+                hideArrow
                 onClick={onAddItem}
-                className="inline-flex items-center gap-1.5 text-sm text-[#1A40FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium opacity-50 cursor-not-allowed"
+                className="h-auto gap-1.5 px-0 opacity-50 cursor-not-allowed hover:no-underline"
                 disabled
                 title={t('inmobiliaria.acta.comingSoon')}
               >
                 <Plus className="w-4 h-4" />
                 {t('inmobiliaria.acta.addItem')}
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           /* Empty State */
-          <div className="text-center py-8">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              <Package className="w-7 h-7 text-neutral-400" />
-            </div>
-            <p className="text-neutral-600 dark:text-neutral-400 font-medium mb-1">
-              {t('inmobiliaria.acta.noInventory')}
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('inmobiliaria.acta.noInventoryDesc')}
-            </p>
-            <button
+          <div className="flex flex-col items-center gap-4">
+            <EmptyState
+              icon={Package}
+              title={t('inmobiliaria.acta.noInventory')}
+              description={t('inmobiliaria.acta.noInventoryDesc')}
+              className="py-10"
+            />
+            <Button
+              hideArrow
               onClick={onAddItem}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors text-sm opacity-50 cursor-not-allowed"
+              className="gap-2 opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.acta.comingSoon')}
             >
               <Plus className="w-4 h-4" />
               {t('inmobiliaria.acta.addInventory')}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -366,12 +393,13 @@ export function ActaEntregaView({
                 alt={t('inmobiliaria.acta.expandedView')}
                 className="max-w-full max-h-[80vh] object-contain"
               />
-              <button
+              <IconButton
+                variant="ghost"
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                aria-label="Cerrar"
+                icon={<X className="w-5 h-5" />}
+                className="absolute top-3 right-3 rounded-full bg-black/50 text-white hover:bg-black/70"
+              />
             </motion.div>
           </motion.div>
         )}

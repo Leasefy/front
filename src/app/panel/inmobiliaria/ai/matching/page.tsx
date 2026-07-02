@@ -60,7 +60,7 @@ function MatchingSala() {
       {/* Domain slot: cómo funciona — el viaje del matching en 4 pasos */}
       <section className="space-y-4" data-testid="matching-como-funciona">
         <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="text-base font-semibold text-foreground">
             {t(`${PAGES_NS}.comoFunciona.title`)}
           </h2>
           <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -72,9 +72,9 @@ function MatchingSala() {
                     <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
                       <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
                     </span>
-                    <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground leading-tight">
+                  <p className="text-sm font-semibold text-foreground leading-tight">
                     {t(step.titleKey)}
                   </p>
                   <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>

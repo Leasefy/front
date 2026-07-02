@@ -63,8 +63,7 @@ export default function BlogPage() {
               >
                 <Link
                   href={featured.href}
-                  className="group relative block h-[400px] md:h-[520px] overflow-hidden"
-                  style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                  className="group relative block h-[400px] md:h-[520px] overflow-hidden border border-faint"
                 >
                   <Image
                     src={featured.image}
@@ -113,8 +112,7 @@ export default function BlogPage() {
                   >
                     <Link
                       href={post.href}
-                      className="group block overflow-hidden"
-                      style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                      className="group block overflow-hidden border border-faint"
                     >
                       <div className="relative h-[220px] overflow-hidden">
                         <Image

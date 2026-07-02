@@ -66,10 +66,10 @@ export function WizardStep1Candidato({
               nombreRef.current?.focus()
             }
           }}
-          className={errors.cedula ? 'border-[#C4503B]/30 focus-visible:ring-[#C4503B]/20' : ''}
+          className={errors.cedula ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
         {errors.cedula && (
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{errors.cedula}</p>
+          <p className="text-sm text-danger">{errors.cedula}</p>
         )}
       </div>
 
@@ -90,10 +90,10 @@ export function WizardStep1Candidato({
               ciudadRef.current?.focus()
             }
           }}
-          className={errors.nombre ? 'border-[#C4503B]/30 focus-visible:ring-[#C4503B]/20' : ''}
+          className={errors.nombre ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
         {errors.nombre && (
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{errors.nombre}</p>
+          <p className="text-sm text-danger">{errors.nombre}</p>
         )}
       </div>
 
@@ -115,10 +115,10 @@ export function WizardStep1Candidato({
               else nextBtnRef.current?.focus()
             }
           }}
-          className={errors.ciudad ? 'border-[#C4503B]/30 focus-visible:ring-[#C4503B]/20' : ''}
+          className={errors.ciudad ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
         {errors.ciudad && (
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{errors.ciudad}</p>
+          <p className="text-sm text-danger">{errors.ciudad}</p>
         )}
       </div>
 

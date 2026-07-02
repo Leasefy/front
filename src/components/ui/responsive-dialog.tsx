@@ -15,22 +15,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 /**
- * ResponsiveDialog — renders a centered Dialog on >=md viewports and a
- * bottom-sheet Drawer (vaul) on <md viewports.
+ * ResponsiveDialog — renders a centered Cadence Dialog (warm card, r24) on
+ * >=md viewports and a Cadence bottom Sheet on <md viewports.
  *
- * The compound API mirrors Dialog 1:1 (Trigger/Content/Header/Title/
- * Description/Footer/Close), so consumers can migrate with an import swap:
+ * Both sides are now Cadence: the desktop Dialog and the mobile Sheet
+ * (`side="bottom"`) come from the @leasefy/cadence-backed adapters. The compound
+ * API mirrors Dialog 1:1 (Trigger/Content/Header/Title/Description/Footer/
+ * Close), so consumers can migrate with an import swap:
  *
  *   import {
  *     ResponsiveDialog as Dialog,
@@ -50,7 +52,7 @@ type ResponsiveDialogProps = DialogPrimitive.DialogProps
 
 const ResponsiveDialog = ({ children, ...props }: ResponsiveDialogProps) => {
   const isMobile = useIsMobile()
-  const Root = isMobile ? Drawer : Dialog
+  const Root = isMobile ? Sheet : Dialog
 
   return (
     <ResponsiveDialogContext.Provider value={{ isMobile }}>
@@ -65,7 +67,7 @@ const ResponsiveDialogTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Trigger>
 >((props, ref) => {
   const { isMobile } = useResponsiveDialog()
-  const Trigger = isMobile ? DrawerTrigger : DialogTrigger
+  const Trigger = isMobile ? SheetTrigger : DialogTrigger
   return <Trigger ref={ref} {...props} />
 })
 ResponsiveDialogTrigger.displayName = "ResponsiveDialogTrigger"
@@ -75,7 +77,7 @@ const ResponsiveDialogClose = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close>
 >((props, ref) => {
   const { isMobile } = useResponsiveDialog()
-  const Close = isMobile ? DrawerClose : DialogClose
+  const Close = isMobile ? SheetClose : DialogClose
   return <Close ref={ref} {...props} />
 })
 ResponsiveDialogClose.displayName = "ResponsiveDialogClose"
@@ -85,8 +87,10 @@ const ResponsiveDialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >((props, ref) => {
   const { isMobile } = useResponsiveDialog()
-  const Content = isMobile ? DrawerContent : DialogContent
-  return <Content ref={ref} {...props} />
+  if (isMobile) {
+    return <SheetContent ref={ref} side="bottom" {...props} />
+  }
+  return <DialogContent ref={ref} {...props} />
 })
 ResponsiveDialogContent.displayName = "ResponsiveDialogContent"
 
@@ -94,7 +98,7 @@ const ResponsiveDialogHeader = (
   props: React.HTMLAttributes<HTMLDivElement>
 ) => {
   const { isMobile } = useResponsiveDialog()
-  const Header = isMobile ? DrawerHeader : DialogHeader
+  const Header = isMobile ? SheetHeader : DialogHeader
   return <Header {...props} />
 }
 ResponsiveDialogHeader.displayName = "ResponsiveDialogHeader"
@@ -103,7 +107,7 @@ const ResponsiveDialogFooter = (
   props: React.HTMLAttributes<HTMLDivElement>
 ) => {
   const { isMobile } = useResponsiveDialog()
-  const Footer = isMobile ? DrawerFooter : DialogFooter
+  const Footer = isMobile ? SheetFooter : DialogFooter
   return <Footer {...props} />
 }
 ResponsiveDialogFooter.displayName = "ResponsiveDialogFooter"
@@ -113,7 +117,7 @@ const ResponsiveDialogTitle = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >((props, ref) => {
   const { isMobile } = useResponsiveDialog()
-  const Title = isMobile ? DrawerTitle : DialogTitle
+  const Title = isMobile ? SheetTitle : DialogTitle
   return <Title ref={ref} {...props} />
 })
 ResponsiveDialogTitle.displayName = "ResponsiveDialogTitle"
@@ -123,7 +127,7 @@ const ResponsiveDialogDescription = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >((props, ref) => {
   const { isMobile } = useResponsiveDialog()
-  const Description = isMobile ? DrawerDescription : DialogDescription
+  const Description = isMobile ? SheetDescription : DialogDescription
   return <Description ref={ref} {...props} />
 })
 ResponsiveDialogDescription.displayName = "ResponsiveDialogDescription"

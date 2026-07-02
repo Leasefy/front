@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useDocumentAnalysis } from '@/lib/hooks/useDocumentAnalysis';
 import { toast } from 'sonner';
@@ -201,7 +202,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
     return (
       <div className={cn('space-y-3', className)}>
         <div className="flex items-center gap-2">
-          <SpinnerGap className="w-4 h-4 text-neutral-400 animate-spin" />
+          <Spinner size="sm" variant="muted" />
           <span className="text-sm text-neutral-500">Cargando resultados...</span>
         </div>
       </div>
@@ -229,7 +230,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
           >
             {triggering || isAnalyzing ? (
               <>
-                <SpinnerGap className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                <Spinner size="xs" variant="current" className="mr-1.5" />
                 Analizando...
               </>
             ) : hasResults ? (

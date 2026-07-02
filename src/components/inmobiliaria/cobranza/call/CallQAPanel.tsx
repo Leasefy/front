@@ -17,23 +17,23 @@ function tone(score: number | null): {
 } {
   if (score == null) {
     return {
-      bar: 'bg-neutral-200 dark:bg-neutral-700',
-      text: 'text-neutral-500 dark:text-neutral-400',
+      bar: 'bg-surface-muted',
+      text: 'text-fg-subtle',
     }
   }
   if (score >= 0.8) {
     return {
-      bar: 'bg-[#2C7A53]',
-      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      bar: 'bg-success',
+      text: 'text-success',
     }
   }
   if (score >= 0.6) {
     return {
-      bar: 'bg-[#B7791F]',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      bar: 'bg-warning',
+      text: 'text-warning',
     }
   }
-  return { bar: 'bg-[#C4503B]', text: 'text-[#C4503B] dark:text-[#E0664D]' }
+  return { bar: 'bg-danger', text: 'text-danger' }
 }
 
 function ScoreRow({
@@ -48,8 +48,8 @@ function ScoreRow({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-neutral-700 dark:text-neutral-300">{label}</span>
-        <span className={`font-semibold tabular-nums ${c.text}`}>
+        <span className="text-fg-muted">{label}</span>
+        <span className={`font-mono font-semibold tabular-nums ${c.text}`}>
           {pct == null ? '—' : `${pct}/100`}
         </span>
       </div>
@@ -59,7 +59,7 @@ function ScoreRow({
         aria-valuemax={100}
         aria-valuenow={pct ?? 0}
         aria-label={label}
-        className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden"
+        className="h-1.5 rounded-full bg-surface-muted overflow-hidden"
       >
         <div
           className={`h-full ${c.bar} transition-all`}
@@ -80,13 +80,13 @@ export default function CallQAPanel({ qa }: CallQAPanelProps) {
   return (
     <section
       aria-label={t('inmobiliaria.ai.cobranza.call.qa.title')}
-      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
+      className="rounded-xl border border-border bg-surface p-4"
     >
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
+      <h2 className="text-sm font-semibold text-fg mb-3">
         {t('inmobiliaria.ai.cobranza.call.qa.title')}
       </h2>
       {allNull ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-subtle">
           {t('inmobiliaria.ai.cobranza.call.qa.empty')}
         </p>
       ) : (

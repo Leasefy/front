@@ -6,11 +6,11 @@ import {
   Accordion as DSAccordion,
   AccordionItem as DSAccordionItem,
   AccordionTrigger as DSAccordionTrigger,
-} from '@leasefy/ui';
+} from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 
 /**
- * Accordion — ADAPTER fino sobre @leasefy/ui que preserva la API local:
+ * Accordion — ADAPTER fino sobre @leasefy/cadence que preserva la API local:
  * - Accordion / AccordionTrigger: re-export directo del DS (misma API Radix).
  * - AccordionItem: wrapper que restaura el comportamiento de borde del mvp
  *   (border-border en vez de border-faint, y el último item CONSERVA su

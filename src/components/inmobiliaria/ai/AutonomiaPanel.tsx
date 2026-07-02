@@ -49,7 +49,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
         data-testid="autonomia-panel-error"
       >
         {t(`${NS}.error`, { error })}
@@ -91,7 +91,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
               title={isAvailable ? t(`${NS}.modo.${modo}Hint`) : t(`${NS}.noDisponible`)}
               className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ring-1 transition ${
                 isActive
-                  ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] ring-[#1A40FF]/30 dark:ring-[#1A40FF]/40 font-medium'
+                  ? 'bg-primary-soft text-primary ring-primary/30 font-medium'
                   : 'bg-muted text-muted-foreground ring-border'
               } ${!isAvailable ? 'opacity-40' : ''}`}
             >
@@ -119,7 +119,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
       {/* T-323 callout */}
       {data.t323 && (
         <div
-          className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-3 text-sm text-[#B7791F] dark:text-[#D2992F]"
+          className="rounded-xl border border-warning/30 bg-warning-soft text-warning"
           data-testid="autonomia-t323"
         >
           {t(`${NS}.t323`)}
@@ -142,7 +142,7 @@ export function AutonomiaPanel({ data, isLoading, error }: AutonomiaPanelProps) 
                 <dt className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      regla.estado === 'activo' ? 'bg-[#2C7A53] dark:bg-[#3EAE70]' : 'bg-neutral-400'
+                      regla.estado === 'activo' ? 'bg-success' : 'bg-fg-subtle'
                     }`}
                     aria-hidden="true"
                   />

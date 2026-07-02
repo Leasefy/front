@@ -29,28 +29,28 @@ const EVENT_ICONS: Record<ApplicationEventType, React.ElementType> = {
  * Color classes for each event type
  */
 const EVENT_COLORS: Record<ApplicationEventType, string> = {
-  created: 'text-muted-foreground bg-muted',
+  created: 'text-fg-muted bg-surface-muted',
   submitted: 'text-[#1A40FF] bg-[#EEF1FF]',
   documents_verified: 'text-[#1A40FF] bg-[#EEF1FF]',
   under_review: 'text-[#1A40FF] bg-[#EEF1FF]',
   pre_approved: 'text-[#B7791F] bg-[#F8F0E0]',
   approved: 'text-[#2C7A53] bg-[#E8F3EC]',
   rejected: 'text-[#C4503B] bg-[#F8EAE7]',
-  withdrawn: 'text-muted-foreground bg-muted',
+  withdrawn: 'text-fg-muted bg-surface-muted',
 };
 
 /**
  * Line color for connecting timeline items
  */
 const EVENT_LINE_COLORS: Record<ApplicationEventType, string> = {
-  created: 'bg-muted',
+  created: 'bg-surface-muted',
   submitted: 'bg-[#EEF1FF]',
   documents_verified: 'bg-[#EEF1FF]',
   under_review: 'bg-[#EEF1FF]',
   pre_approved: 'bg-[#F8F0E0]',
   approved: 'bg-[#E8F3EC]',
   rejected: 'bg-[#F8EAE7]',
-  withdrawn: 'bg-muted',
+  withdrawn: 'bg-surface-muted',
 };
 
 /**
@@ -109,12 +109,12 @@ export function ApplicationTimeline({
             {/* Content column */}
             <div className={cn('flex-1 pb-6', isLast && 'pb-0')}>
               {/* Event title */}
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-medium text-fg">
                 {event.description}
               </p>
 
               {/* Timestamp */}
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-fg-muted mt-0.5">
                 {formatDateTime(event.timestamp)}
               </p>
             </div>
@@ -124,7 +124,7 @@ export function ApplicationTimeline({
 
       {/* Empty state */}
       {events.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">
+        <p className="text-sm text-fg-muted text-center py-4">
           No hay eventos para mostrar
         </p>
       )}

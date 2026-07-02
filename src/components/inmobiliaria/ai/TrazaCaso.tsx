@@ -28,16 +28,16 @@ import { relativeTime, type TranslateFn } from './ColaHumana'
  *  (la voz del agente es el momento de marca; purple es off-brand). */
 export const ACTOR_META: Record<ActorType, { cls: string; dot: string }> = {
   user: {
-    cls: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 ring-neutral-300 dark:ring-neutral-700',
-    dot: 'bg-neutral-500 dark:bg-neutral-400',
+    cls: 'bg-surface-muted text-fg-muted ring-border',
+    dot: 'bg-fg-subtle',
   },
   agent: {
-    cls: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] ring-[#1A40FF]/30 dark:ring-[#1A40FF]/40',
-    dot: 'bg-[#1A40FF] dark:bg-[#5570FF]',
+    cls: 'bg-primary-soft text-primary ring-primary/30',
+    dot: 'bg-primary',
   },
   system: {
     cls: 'bg-muted text-muted-foreground ring-border',
-    dot: 'bg-neutral-400',
+    dot: 'bg-fg-subtle',
   },
 }
 
@@ -111,7 +111,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
         data-testid="traza-caso-error"
       >
         {t('inmobiliaria.ai.workspace.traza.error', { error })}

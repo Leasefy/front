@@ -106,14 +106,14 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-11 flex items-center justify-center gap-2.5 rounded-md border border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full h-11 flex items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-neutral-400" />
       ) : (
         <GoogleIcon className="w-4 h-4" />
       )}
-      <span className="text-[13.5px] font-medium text-[#0B1220]">{children}</span>
+      <span className="text-[13.5px] font-medium text-[#14130f]">{children}</span>
     </button>
   );
 }
@@ -124,9 +124,9 @@ function ErrorBanner({ children }: { children: React.ReactNode }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-md bg-[#F8EAE7] border border-[#C4503B]/20"
+      className="px-3.5 py-2.5 rounded-xl bg-[#FBE9E6] border border-[#F4D2CC]"
     >
-      <p className="text-[12.5px] text-[#C4503B]">{children}</p>
+      <p className="text-[12.5px] text-[#C0392B]">{children}</p>
     </motion.div>
   );
 }
@@ -372,7 +372,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           <button
             type="button"
             onClick={() => handleModeSwitch('login')}
-            className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#0B1220] transition-colors mb-5"
+            className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors mb-5"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver al inicio de sesión
@@ -384,15 +384,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            className="w-10 h-10 mb-5 rounded-md bg-[#E8F3EC] flex items-center justify-center"
+            className="w-10 h-10 mb-5 rounded-xl bg-[#E8F4EA] flex items-center justify-center"
           >
-            <CheckCircle className="w-5 h-5 text-[#2C7A53]" weight="fill" />
+            <CheckCircle className="w-5 h-5 text-[#3F8A53]" weight="fill" />
           </motion.div>
         )}
 
         <Eyebrow>{eyebrow}</Eyebrow>
 
-        <h1 className="mt-3 font-heading text-[24px] font-medium text-[#0B1220] tracking-[-0.01em] leading-tight">
+        <h1 className="mt-3 font-heading text-[24px] font-medium text-[#14130f] tracking-[-0.01em] leading-tight">
           {mode === 'login' && 'Bienvenido de vuelta'}
           {mode === 'register' && registerStep === 'role' && '¿Cómo usarás Leasefy?'}
           {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
@@ -458,14 +458,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   <button
                     type="button"
                     onClick={() => handleModeSwitch('forgot-password')}
-                    className="text-[12.5px] text-neutral-500 hover:text-[#0B1220] transition-colors"
+                    className="text-[12.5px] text-neutral-500 hover:text-[#14130f] transition-colors"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
                 </div>
               </div>
               {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-md text-[14px]">
+              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Ingresando...</>) : 'Iniciar sesión'}
               </Button>
             </form>
@@ -515,19 +515,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                       className={cn(
                         'relative w-full text-left transition-colors duration-150 rounded-xl p-4 group border',
                         isSelected
-                          ? 'border-[#0B1220] bg-[#0B1220]'
+                          ? 'border-[#14130f] bg-[#14130f]'
                           : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-[rgba(0,0,0,0.02)]'
                       )}
                     >
                       <div className="flex items-center gap-3.5">
                         <div className={cn(
-                          'w-10 h-10 rounded-md flex items-center justify-center shrink-0 transition-colors duration-150',
+                          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-150',
                           isSelected ? 'bg-white/10' : 'bg-neutral-100'
                         )}>
                           <Icon className={cn('w-5 h-5 transition-colors duration-150', isSelected ? 'text-white' : 'text-neutral-600')} weight={isSelected ? 'fill' : 'regular'} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className={cn('text-[14px] font-medium transition-colors duration-150', isSelected ? 'text-white' : 'text-[#0B1220]')}>{card.title}</h3>
+                          <h3 className={cn('text-[14px] font-medium transition-colors duration-150', isSelected ? 'text-white' : 'text-[#14130f]')}>{card.title}</h3>
                           <p className={cn('text-[12.5px] mt-0.5 transition-colors duration-150 leading-snug', isSelected ? 'text-white/65' : 'text-neutral-500')}>{card.description}</p>
                         </div>
                         <div className={cn(
@@ -536,7 +536,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                         )}>
                           {isSelected && (
                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }}>
-                              <Check className="w-3 h-3 text-[#0B1220]" weight="bold" />
+                              <Check className="w-3 h-3 text-[#14130f]" weight="bold" />
                             </motion.div>
                           )}
                         </div>
@@ -550,7 +550,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                     type="button"
                     disabled={!selectedRole}
                     onClick={handleRoleContinue}
-                    className="w-full h-11 rounded-md text-[14px]"
+                    className="w-full h-11 rounded-full text-[14px]"
                   >
                     {selectedRole ? 'Continuar' : 'Selecciona una opción'}
                   </Button>
@@ -585,7 +585,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <button
                 type="button"
                 onClick={() => { setRegisterStep('role'); setError(null); registerForm.reset(); }}
-                className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#0B1220] transition-colors mb-6"
+                className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors mb-6"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cambiar perfil
@@ -632,7 +632,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 error={registerForm.formState.errors.confirmPassword?.message}
               />
               {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-md text-[14px]">
+              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
@@ -659,7 +659,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 <li>Vuelve aquí e inicia sesión</li>
               </ol>
             </div>
-            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-md text-[14px]">
+            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-full text-[14px]">
               Ir a iniciar sesión
             </Button>
           </motion.div>
@@ -687,7 +687,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               error={forgotPasswordForm.formState.errors.email?.message}
             />
             {error && <ErrorBanner>{error}</ErrorBanner>}
-            <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-md text-[14px]">
+            <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>
             <p className="text-[12px] text-neutral-400 leading-relaxed">
@@ -716,7 +716,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 <li>Crea tu nueva contraseña</li>
               </ol>
             </div>
-            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-md text-[14px]">
+            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-full text-[14px]">
               Volver al inicio de sesión
             </Button>
             <p className="text-[13px] text-neutral-500">

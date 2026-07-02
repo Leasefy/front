@@ -48,10 +48,10 @@ interface CadenceChannelMixChartProps {
 // ─── Color Map ────────────────────────────────────────────────────────────────
 
 const OUTCOME_COLORS: Record<string, string> = {
-  paid:            '#2C7A53', // semantic green (genuine positive)
-  broken_promise:  '#9B9B9B', // neutral-light
-  escalated:       '#C4503B', // semantic red (negative)
-  no_answer:       '#C9CDD3', // neutral-pale
+  paid:            '#3F8A53', // Cadence green (genuine positive)
+  broken_promise:  '#B3AEA5', // neutral-400 (warm)
+  escalated:       '#C0392B', // Cadence red (negative)
+  no_answer:       '#C9C4BB', // neutral-300 (warm)
   completed:       '#1A40FF', // electric-blue (primary)
 };
 
@@ -132,7 +132,7 @@ export function CadenceChannelMixChart({ data }: CadenceChannelMixChartProps) {
 
   return (
     <div>
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+      <p className="text-xs font-medium text-fg-subtle mb-2">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.channelMix.title')}
       </p>
       <SampleDataWatermark show={showWatermark}>

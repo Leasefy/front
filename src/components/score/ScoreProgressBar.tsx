@@ -69,7 +69,7 @@ export function ScoreProgressBar({
       {/* Progress bar container */}
       <div
         className={cn(
-          'relative flex-1 rounded-full bg-muted overflow-hidden',
+          'relative flex-1 rounded-full bg-border overflow-hidden',
           sizeConfig.height
         )}
         role="progressbar"
@@ -92,7 +92,7 @@ export function ScoreProgressBar({
       {showValue && (
         <span
           className={cn(
-            'tabular-nums font-medium shrink-0',
+            'font-mono tabular-nums font-medium shrink-0',
             sizeConfig.text,
             colors.text
           )}

@@ -39,6 +39,8 @@ function SparkleGradient({ className }: { className?: string }) {
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import type { Property } from '@/lib/types/property';
 
 interface AISearchInputProps {
@@ -112,7 +114,7 @@ export function AISearchInput({
         <div className="relative px-5 pt-5 pb-3">
           <div className="flex items-start gap-4">
             {/* AI Sparkle Icon */}
-            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-[#1A40FF]/10 rounded-xl">
+            <div className="flex-shrink-0 mt-1 p-2 bg-gradient-to-br from-primary/10 to-primary/10 rounded-xl">
               {isMagnifyingGlassing ? (
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -126,7 +128,7 @@ export function AISearchInput({
             </div>
 
             {/* Textarea */}
-            <textarea
+            <Textarea
               ref={inputRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -138,8 +140,9 @@ export function AISearchInput({
               disabled={isMagnifyingGlassing}
               rows={2}
               className={cn(
-                'flex-1 bg-transparent border-0 outline-none resize-none',
-                'text-[15px] text-foreground placeholder:text-muted-foreground/70',
+                'border-0 bg-transparent shadow-none resize-none px-0 py-0',
+                'focus-visible:ring-0 focus-visible:border-0',
+                'text-[15px] md:text-[15px] text-foreground placeholder:text-muted-foreground/70',
                 'leading-relaxed',
                 'disabled:cursor-not-allowed min-h-[52px]'
               )}
@@ -153,30 +156,31 @@ export function AISearchInput({
           <div className="flex items-center gap-2">
             {/* Clear button - shows when there's text or results */}
             {(value.trim() || showResults) && !isMagnifyingGlassing && (
-              <button
+              <Button
                 type="button"
+                size="icon"
+                variant="ghost"
                 onClick={() => {
                   onChange('');
                   onClear?.();
                 }}
-                className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all text-muted-foreground hover:text-foreground hover:bg-neutral-100"
+                aria-label="Limpiar búsqueda"
+                className="flex-shrink-0 h-9 w-9"
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="button"
+              size="icon"
+              hideArrow
               onClick={handleSubmit}
               disabled={!value.trim() || isMagnifyingGlassing}
-              className={cn(
-                'flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200',
-                value.trim() && !isMagnifyingGlassing
-                  ? 'bg-primary text-white hover:bg-primary/90'
-                  : 'bg-neutral-100 text-muted-foreground/50 cursor-not-allowed'
-              )}
+              aria-label="Buscar"
+              className="flex-shrink-0 h-9 w-9"
             >
               <ArrowUp className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -204,9 +208,9 @@ export function AISearchInput({
                       Analizando tu búsqueda...
                     </p>
                     {/* Progress bar */}
-                    <div className="h-1 bg-neutral-100 rounded-full overflow-hidden mt-2">
+                    <div className="h-1 bg-surface-muted rounded-full overflow-hidden mt-2">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-primary to-[#1A40FF] rounded-full"
+                        className="h-full bg-gradient-to-r from-primary to-primary rounded-full"
                         initial={{ width: '0%' }}
                         animate={{ width: '100%' }}
                         transition={{ duration: 1.8, ease: 'easeInOut' }}
@@ -239,7 +243,7 @@ export function AISearchInput({
                   </div>
                   <div>
                     <p className="text-[13px] font-medium text-foreground">
-                      Encontré <span className="text-success-600">{results.length} propiedades</span>
+                      Encontré <span className="text-success-600 font-mono tabular-nums">{results.length} propiedades</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       Basado en: &ldquo;{value}&rdquo;
@@ -258,10 +262,10 @@ export function AISearchInput({
                     >
                       <Link
                         href={`/propiedades/${property.id}`}
-                        className="group flex gap-3 p-3 bg-neutral-50 hover:bg-neutral-100 rounded-xl border border-border/50 hover:border-border transition-all"
+                        className="group flex gap-3 p-3 bg-surface-muted hover:bg-surface-hover rounded-xl border border-border/50 hover:border-border transition-all"
                       >
                         {/* Property Image */}
-                        <div className="w-16 h-16 rounded-md bg-neutral-200 flex-shrink-0 overflow-hidden">
+                        <div className="w-16 h-16 rounded-md bg-surface-muted flex-shrink-0 overflow-hidden">
                           {property.images?.[0] ? (
                             <img
                               src={property.images[0]}
@@ -285,7 +289,7 @@ export function AISearchInput({
                             {property.neighborhood || property.city || 'Sin ubicación'}
                           </p>
                           <div className="flex items-baseline gap-1.5 mt-1.5">
-                            <span className="text-[14px] font-bold text-foreground">
+                            <span className="text-[14px] font-bold text-foreground font-mono tabular-nums">
                               {formatPrice(property.monthlyRent)}
                             </span>
                             <span className="text-[10px] text-muted-foreground">
@@ -301,9 +305,9 @@ export function AISearchInput({
                 {/* View All Link */}
                 {results.length > 4 && (
                   <div className="mt-4 pt-4 border-t border-border/50">
-                    <button className="text-[13px] text-primary hover:text-primary/80 font-medium transition-colors">
+                    <Button variant="link" hideArrow className="h-auto p-0 text-[13px] font-medium">
                       Ver las {results.length} propiedades encontradas →
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

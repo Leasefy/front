@@ -28,6 +28,8 @@ import { HabeasDataSlaCard } from '@/components/inmobiliaria/cobranza/HabeasData
 import { ComplianceSparkline } from '@/components/inmobiliaria/cobranza/ComplianceSparkline'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui'
+import { MonoLabel } from '@leasefy/cadence'
 
 function ComplianceOverviewContent() {
   const { t, locale } = useI18n()
@@ -102,14 +104,16 @@ function ComplianceOverviewContent() {
             </p>
           )}
         </div>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
+          hideArrow
           aria-label="refresh"
         >
           {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </button>
+        </Button>
       </div>
 
       {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15 */}
@@ -117,15 +121,15 @@ function ComplianceOverviewContent() {
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-start gap-3"
+          className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
           role="alert"
         >
           <Warning
-            className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
             weight="fill"
             aria-hidden="true"
           />
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
           </p>
         </motion.div>
@@ -135,7 +139,7 @@ function ComplianceOverviewContent() {
       {error && !data && (
         <div
           role="alert"
-          className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2"
+          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -146,16 +150,16 @@ function ComplianceOverviewContent() {
         <>
           {/* Section 1: Ley 2300 weekly counter */}
           <section className="rounded-xl border border-border bg-card p-4">
-            <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+            <MonoLabel>
               {t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
-            </h2>
+            </MonoLabel>
             <div className="mt-3 flex items-baseline gap-3">
               <span
                 className={[
                   'text-4xl font-mono tabular-nums',
                   data.ley_2300.weekly_outside_hours_count === 0
-                    ? 'text-[#2C7A53] dark:text-[#3EAE70]'
-                    : 'text-[#C4503B] dark:text-[#E0664D] font-bold',
+                    ? 'text-success'
+                    : 'text-danger font-bold',
                 ].join(' ')}
               >
                 {data.ley_2300.weekly_outside_hours_count}
@@ -169,9 +173,9 @@ function ComplianceOverviewContent() {
           {/* Section 2: Habeas Data SLA list */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.compliance.overview.habeasDataHeading')}
-              </h2>
+              </MonoLabel>
               <Link
                 href="/panel/inmobiliaria/ai/cobranza/compliance/opt-out"
                 className="text-xs text-primary hover:underline font-medium"
@@ -196,17 +200,17 @@ function ComplianceOverviewContent() {
 
           {/* Section 3: Retention gauge */}
           <section className="rounded-xl border border-border bg-card p-4">
-            <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+            <MonoLabel>
               {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
-            </h2>
+            </MonoLabel>
             <div className="mt-3 space-y-2">
               <div className="flex items-baseline gap-2">
                 <span
                   className={[
                     'text-3xl font-mono tabular-nums',
                     data.retention.compliance_pct >= data.retention.target
-                      ? 'text-[#2C7A53] dark:text-[#3EAE70]'
-                      : 'text-[#B7791F] dark:text-[#D2992F]',
+                      ? 'text-success'
+                      : 'text-warning',
                   ].join(' ')}
                 >
                   {data.retention.compliance_pct}%
@@ -226,8 +230,8 @@ function ComplianceOverviewContent() {
                   className={[
                     'h-full transition-all',
                     data.retention.compliance_pct >= data.retention.target
-                      ? 'bg-[#2C7A53]'
-                      : 'bg-[#B7791F]',
+                      ? 'bg-success'
+                      : 'bg-warning',
                   ].join(' ')}
                   style={{
                     width: `${Math.min(100, Math.max(0, data.retention.compliance_pct))}%`,
@@ -239,9 +243,9 @@ function ComplianceOverviewContent() {
 
           {/* Section 4: 30-day sparkline */}
           <section className="rounded-xl border border-border bg-card p-4">
-            <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground mb-3">
+            <MonoLabel className="mb-3">
               {t('inmobiliaria.ai.cobranza.compliance.overview.sparklineHeading')}
-            </h2>
+            </MonoLabel>
             <ComplianceSparkline buckets={data.sparkline.daily_buckets_30d} />
           </section>
 

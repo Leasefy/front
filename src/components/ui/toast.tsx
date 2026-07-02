@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { Toaster as DSToaster, toast, type ToasterProps } from '@leasefy/ui';
+import { Toaster as DSToaster, toast, type ToasterProps } from '@leasefy/cadence';
 
 /**
- * SHIM sobre el Toast del DS (@leasefy/ui): sonner re-skineado con la piel ink
+ * SHIM sobre el Toast del DS (@leasefy/cadence): sonner re-skineado con la piel ink
  * (superficie de marca, shadow-overlay, Satoshi medium).
  *
  * - `toast` es la API imperativa de sonner re-exportada por el DS:

@@ -3,7 +3,9 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CaretDown, X } from '@phosphor-icons/react';
+import { Chip } from '@leasefy/cadence';
 
+import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
@@ -222,37 +224,35 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
     onSelect: (value: string | null) => void
   ) => (
     <div className="relative z-10">
-      <button
-        type="button"
+      <Chip
+        selected={!!selectedValue}
         onClick={() => setActiveFilter(activeFilter === id ? null : id)}
-        className={cn(
-          'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
-          selectedValue
-            ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-            : 'border-border text-foreground/70 hover:border-foreground/30'
-        )}
+        className="whitespace-nowrap"
       >
-        {options.find(o => o.value === selectedValue)?.label || label}
-        <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFilter === id && 'rotate-180')} />
-      </button>
+        <span className="inline-flex items-center gap-1.5">
+          {options.find(o => o.value === selectedValue)?.label || label}
+          <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFilter === id && 'rotate-180')} />
+        </span>
+      </Chip>
       {activeFilter === id && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setActiveFilter(null)} />
-          <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm z-[110] min-w-[140px]">
+          <div className="absolute left-0 top-full mt-1 py-1 bg-surface border border-border rounded-md z-[110] min-w-[140px]">
             {options.map((option) => (
-              <button
+              <Button
                 key={option.value}
-                type="button"
+                variant="ghost"
+                hideArrow
                 onClick={() => { onSelect(selectedValue === option.value ? null : option.value); setActiveFilter(null); }}
                 className={cn(
-                  'w-full px-3 py-2 text-left text-sm',
+                  'w-full justify-start h-auto rounded-none px-3 py-2 text-sm font-normal',
                   selectedValue === option.value
                     ? 'bg-black/5 dark:bg-white/10 font-medium'
                     : 'hover:bg-black/5 dark:hover:bg-white/10'
                 )}
               >
                 {option.label}
-              </button>
+              </Button>
             ))}
           </div>
         </>
@@ -351,52 +351,57 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
 
                 {/* Clear Filters */}
                 {hasActiveFilters && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={clearAllFilters}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="gap-1 text-muted-foreground hover:text-foreground"
                   >
                     <X className="w-3.5 h-3.5" />
                     Limpiar
-                  </button>
+                  </Button>
                 )}
               </div>
 
               {/* Results Count + Sort */}
               <div className="flex items-center justify-between">
                 <p className="text-sm text-foreground/70">
-                  <span className="font-medium text-foreground">{filteredProperties.length}</span> propiedades
+                  <span className="font-medium text-foreground font-mono tabular-nums">{filteredProperties.length}</span> propiedades
                 </p>
 
                 {/* Sort Dropdown */}
                 <div className="relative">
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={() => setShowSortList(!showSortList)}
-                    className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                    className="gap-2 px-2 text-sm font-normal text-foreground/70 hover:text-foreground"
                   >
                     <span>{currentSortLabel}</span>
                     <CaretDown className={cn('w-4 h-4 transition-transform', showSortList && 'rotate-180')} />
-                  </button>
+                  </Button>
 
                   {showSortList && (
                     <>
                       <div className="fixed inset-0 z-[100]" onClick={() => setShowSortList(false)} />
-                      <div className="absolute right-0 top-full mt-2 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm z-[110] min-w-[160px]">
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-surface border border-border rounded-md z-[110] min-w-[160px]">
                         {SORT_OPTIONS.map((option) => (
-                          <button
+                          <Button
                             key={option.value}
-                            type="button"
+                            variant="ghost"
+                            hideArrow
                             onClick={() => { setSortBy(option.value); setShowSortList(false); }}
                             className={cn(
-                              'w-full px-4 py-2 text-left text-sm transition-colors',
+                              'w-full justify-start h-auto rounded-none px-4 py-2 text-sm font-normal',
                               sortBy === option.value
                                 ? 'bg-black/5 dark:bg-white/10 text-foreground font-medium'
                                 : 'text-foreground/70 hover:bg-black/5 dark:hover:bg-white/10'
                             )}
                           >
                             {option.label}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </>

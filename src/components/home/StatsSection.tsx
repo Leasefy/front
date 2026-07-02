@@ -177,7 +177,7 @@ export function StatsSection() {
               className="text-center"
             >
               {/* Number */}
-              <div className="text-[3.5rem] md:text-[5.5rem] font-heading font-extralight text-foreground leading-none tracking-[-0.04em]">
+              <div className="text-[3.5rem] md:text-[5.5rem] font-mono tabular-nums font-extralight text-foreground leading-none tracking-[-0.04em]">
                 <AnimatedCounter
                   end={stat.value}
                   suffix={stat.suffix}

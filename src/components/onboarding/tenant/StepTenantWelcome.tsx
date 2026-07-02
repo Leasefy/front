@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { User, Phone, SignIn, IdentificationCard } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 
 export function StepTenantWelcome() {
@@ -32,21 +33,13 @@ export function StepTenantWelcome() {
           <div className="absolute left-4 top-1/2 -translate-y-1/2">
             <User className="h-5 w-5 text-neutral-400" />
           </div>
-          <input
+          <Input
             type="text"
             id="displayName"
             value={draft.displayName || ''}
             onChange={(e) => updateDraft({ displayName: e.target.value })}
             placeholder="Tu nombre completo"
-            className={cn(
-              'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-              'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-              'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
-              draft.displayName
-                ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
-                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-            )}
+            className={cn('h-12 pl-12 rounded-xl', draft.displayName && 'border-primary/30')}
           />
         </div>
       </motion.div>
@@ -64,21 +57,13 @@ export function StepTenantWelcome() {
           <div className="absolute left-4 top-1/2 -translate-y-1/2">
             <IdentificationCard className="h-5 w-5 text-neutral-400" />
           </div>
-          <input
+          <Input
             type="text"
             id="rut"
             value={draft.rut || ''}
             onChange={(e) => updateDraft({ rut: e.target.value })}
             placeholder="Ej: 1090525663"
-            className={cn(
-              'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-              'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-              'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
-              draft.rut
-                ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
-                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-            )}
+            className={cn('h-12 pl-12 rounded-xl', draft.rut && 'border-primary/30')}
           />
         </div>
       </motion.div>
@@ -96,21 +81,13 @@ export function StepTenantWelcome() {
           <div className="absolute left-4 top-1/2 -translate-y-1/2">
             <Phone className="h-5 w-5 text-neutral-400" />
           </div>
-          <input
+          <Input
             type="tel"
             id="phone"
             value={draft.phone || ''}
             onChange={(e) => updateDraft({ phone: e.target.value })}
             placeholder="+57 300 123 4567"
-            className={cn(
-              'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-              'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-              'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20',
-              draft.phone
-                ? 'border-[#1A40FF]/30 focus:border-[#1A40FF]/30'
-                : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-[#1A40FF]/30'
-            )}
+            className={cn('h-12 pl-12 rounded-xl', draft.phone && 'border-primary/30')}
           />
         </div>
         <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">

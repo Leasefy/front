@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import {
   useLease,
@@ -47,7 +49,7 @@ export default function LeaseDetailPage() {
   if (leaseLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -60,13 +62,13 @@ export default function LeaseDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <div className="w-20 h-20 rounded-full bg-neutral-100 dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
-            <House className="w-10 h-10 text-neutral-400" />
+          <div className="w-20 h-20 rounded-full bg-surface-muted dark:bg-[#1a1a1c] flex items-center justify-center mx-auto mb-6">
+            <House className="w-10 h-10 text-fg-subtle" />
           </div>
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-2">
             {locale === 'es' ? 'Arriendo no encontrado' : 'Rental not found'}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
+          <p className="text-fg-muted dark:text-fg-subtle mb-6">
             {locale === 'es' ? 'El arriendo que buscas no existe o no tienes acceso.' : 'The rental you are looking for does not exist or you do not have access.'}
           </p>
           <BackButton
@@ -120,7 +122,7 @@ export default function LeaseDetailPage() {
       case 'DISPUTED':
         return { label: locale === 'es' ? 'Rechazado' : 'Rejected', bgColor: 'bg-[#F8EAE7]', textColor: 'text-[#C4503B]', icon: XCircle };
       case 'CANCELLED':
-        return { label: locale === 'es' ? 'Cancelado' : 'Cancelled', bgColor: 'bg-neutral-100', textColor: 'text-neutral-600', icon: Prohibit };
+        return { label: locale === 'es' ? 'Cancelado' : 'Cancelled', bgColor: 'bg-surface-muted', textColor: 'text-fg-muted', icon: Prohibit };
     }
   };
 
@@ -203,7 +205,7 @@ export default function LeaseDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden mb-8"
+          className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] overflow-hidden mb-8"
         >
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
@@ -234,54 +236,54 @@ export default function LeaseDetailPage() {
             <div className="flex-1 p-6 lg:p-8">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+                  <h1 className="text-2xl lg:text-3xl font-semibold text-fg dark:text-white tracking-tight">
                     {lease.propertyTitle}
                   </h1>
-                  <p className="text-neutral-500 dark:text-neutral-400 mt-2 flex items-center gap-1.5">
+                  <p className="text-fg-muted dark:text-fg-subtle mt-2 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4" />
                     {lease.propertyAddress}, {lease.propertyCity}
                   </p>
                 </div>
                 <div className="text-left sm:text-right">
-                  <p className="text-3xl lg:text-4xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                  <p className="text-3xl lg:text-4xl font-bold text-fg dark:text-white tracking-tight">
                     {formatCurrency(lease.monthlyRent + (lease.adminFee ?? 0))}
                   </p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">/{locale === 'es' ? 'mes' : 'mo'}</p>
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">/{locale === 'es' ? 'mes' : 'mo'}</p>
                 </div>
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-neutral-100 dark:border-neutral-700">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-y border-border-faint dark:border-border-strong">
                 <div className="text-center sm:text-left">
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
-                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatCurrency(lease.monthlyRent)}</p>
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
+                  <p className="text-lg font-semibold text-fg dark:text-white">{formatCurrency(lease.monthlyRent)}</p>
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">Admin</p>
-                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatCurrency(lease.adminFee ?? 0)}</p>
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">Admin</p>
+                  <p className="text-lg font-semibold text-fg dark:text-white">{formatCurrency(lease.adminFee ?? 0)}</p>
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
-                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Día' : 'Day'} {lease.paymentDay}</p>
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
+                  <p className="text-lg font-semibold text-fg dark:text-white">{locale === 'es' ? 'Día' : 'Day'} {lease.paymentDay}</p>
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Restante' : 'Remaining'}</p>
-                  <p className="text-lg font-semibold text-neutral-900 dark:text-white">{daysRemaining} {locale === 'es' ? 'días' : 'days'}</p>
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Restante' : 'Remaining'}</p>
+                  <p className="text-lg font-semibold text-fg dark:text-white">{daysRemaining} {locale === 'es' ? 'días' : 'days'}</p>
                 </div>
               </div>
 
               {/* Contract Timeline */}
               <div className="pt-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-neutral-400" />
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-fg-subtle" />
                     {formatDate(lease.startDate)}
                   </span>
-                  <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
                     {formatDate(lease.endDate)}
                   </span>
                 </div>
-                <div className="relative h-3 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                <div className="relative h-3 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${leaseProgress}%` }}
@@ -304,7 +306,7 @@ export default function LeaseDetailPage() {
                     )} />
                   </motion.div>
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 text-center">
+                <p className="text-xs text-fg-muted dark:text-fg-subtle mt-2 text-center">
                   {leaseProgress}% {locale === 'es' ? 'del contrato transcurrido' : 'of contract elapsed'}
                 </p>
               </div>
@@ -364,10 +366,10 @@ export default function LeaseDetailPage() {
                         </>
                       )}
                     </div>
-                    <p className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                    <p className="text-4xl font-bold tracking-tight text-fg dark:text-white">
                       {formatCurrency(paymentInfo.monthlyRent)}
                     </p>
-                    <p className="text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5 capitalize">
+                    <p className="text-fg-muted dark:text-fg-subtle mt-1 flex items-center gap-1.5 capitalize">
                       <Calendar className="w-4 h-4" />
                       {formatPeriod(paymentInfo.currentPeriod.month, paymentInfo.currentPeriod.year)}
                     </p>
@@ -378,17 +380,19 @@ export default function LeaseDetailPage() {
                     )}
                   </div>
                   {canPay && (
-                    <button
+                    <Button
                       type="button"
+                      size="lg"
+                      hideArrow
                       onClick={() => setPayModalOpen(true)}
-                      className="flex items-center justify-center gap-2 px-8 py-4 bg-[#1A40FF] text-white rounded-xl font-semibold hover:opacity-90 transition-colors"
+                      className="px-8 py-4"
                     >
                       <Wallet className="w-5 h-5" />
                       {periodStatus === 'REJECTED'
                         ? (locale === 'es' ? 'Reintentar' : 'Retry')
                         : (locale === 'es' ? 'Pagar arriendo' : 'Pay rent')}
                       <ArrowUpRight className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </motion.div>
@@ -401,25 +405,25 @@ export default function LeaseDetailPage() {
               transition={{ delay: 0.3 }}
               className="grid grid-cols-2 sm:grid-cols-3 gap-4"
             >
-              <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
                   <TrendUp className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{formatCurrency(totalPaid)}</p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
+                <p className="text-2xl font-bold text-fg dark:text-white">{formatCurrency(totalPaid)}</p>
+                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
               </div>
-              <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-5">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
                   <Receipt className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{approvedRequests.length}</p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
+                <p className="text-2xl font-bold text-fg dark:text-white">{approvedRequests.length}</p>
+                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
               </div>
               <div className={cn('rounded-xl p-5 col-span-2 sm:col-span-1', accountStatus.cardClass)}>
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
                   <AccountStatusIcon className={cn('w-5 h-5', accountStatus.iconClass)} />
                 </div>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{accountStatus.label}</p>
+                <p className="text-2xl font-bold text-fg dark:text-white">{accountStatus.label}</p>
                 <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
               </div>
             </motion.div>
@@ -429,22 +433,22 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] overflow-hidden"
             >
-              <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint dark:border-border-strong">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                    <Receipt className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center">
+                    <Receipt className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Historial de Pagos' : 'Payment History'}</h2>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{requests.length} {locale === 'es' ? 'transacciones' : 'transactions'}</p>
+                    <h2 className="font-semibold text-fg dark:text-white">{locale === 'es' ? 'Historial de Pagos' : 'Payment History'}</h2>
+                    <p className="text-sm text-fg-muted dark:text-fg-subtle">{requests.length} {locale === 'es' ? 'transacciones' : 'transactions'}</p>
                   </div>
                 </div>
               </div>
 
               {requests.length > 0 ? (
-                <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
+                <div className="divide-y divide-border dark:divide-neutral-700">
                   {requests.map((request, index) => {
                     const statusInfo = getRequestStatusInfo(request.status);
                     const StatusIcon = statusInfo.icon;
@@ -461,7 +465,7 @@ export default function LeaseDetailPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 + index * 0.05 }}
-                        className="flex items-center gap-4 px-6 py-4 hover:bg-neutral-50 dark:hover:bg-[#222224] transition-colors"
+                        className="flex items-center gap-4 px-6 py-4 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors"
                       >
                         <div className={cn(
                           'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
@@ -472,7 +476,7 @@ export default function LeaseDetailPage() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <p className="font-medium text-neutral-900 dark:text-white">
+                            <p className="font-medium text-fg dark:text-white">
                               {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
                             </p>
                             <span className={cn(
@@ -483,12 +487,12 @@ export default function LeaseDetailPage() {
                               {statusInfo.label}
                             </span>
                           </div>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                          <p className="text-sm text-fg-muted dark:text-fg-subtle">
                             {dateText}
                             {request.bankName && <> · {request.bankName}</>}
                           </p>
                           {request.referenceNumber && (
-                            <p className="text-xs text-neutral-400 mt-1">Ref: {request.referenceNumber}</p>
+                            <p className="text-xs text-fg-subtle mt-1">Ref: {request.referenceNumber}</p>
                           )}
                           {request.rejectionReason && (
                             <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1 italic">
@@ -498,7 +502,7 @@ export default function LeaseDetailPage() {
                         </div>
 
                         <div className="text-right flex-shrink-0">
-                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+                          <p className="text-lg font-semibold text-fg dark:text-white">
                             {formatCurrency(request.amount)}
                           </p>
                         </div>
@@ -508,10 +512,10 @@ export default function LeaseDetailPage() {
                 </div>
               ) : (
                 <div className="py-16 text-center">
-                  <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
-                    <Receipt className="w-8 h-8 text-neutral-400" />
+                  <div className="w-16 h-16 rounded-full bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
+                    <Receipt className="w-8 h-8 text-fg-subtle" />
                   </div>
-                  <p className="text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}</p>
+                  <p className="text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}</p>
                 </div>
               )}
             </motion.div>
@@ -525,48 +529,48 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] overflow-hidden"
             >
-              <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint dark:border-border-strong">
                 <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
                   <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                 </div>
-                <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Contrato' : 'Contract'}</h2>
+                <h2 className="font-semibold text-fg dark:text-white">{locale === 'es' ? 'Contrato' : 'Contract'}</h2>
               </div>
               <div className="p-6 space-y-5">
                 <div>
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Vigencia' : 'Term'}</p>
-                  <p className="text-sm text-neutral-900 dark:text-white font-medium">
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Vigencia' : 'Term'}</p>
+                  <p className="text-sm text-fg dark:text-white font-medium">
                     {formatFullDate(lease.startDate)} — {formatFullDate(lease.endDate)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">{locale === 'es' ? 'Garantía' : 'Guarantee'}</p>
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Garantía' : 'Guarantee'}</p>
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
-                    <p className="text-sm text-neutral-900 dark:text-white font-medium">
+                    <p className="text-sm text-fg dark:text-white font-medium">
                       {lease.guaranteeType === 'poliza' ? (locale === 'es' ? 'Póliza de arriendo' : 'Rental insurance') :
                        lease.guaranteeType === 'codeudor' ? (locale === 'es' ? 'Codeudor' : 'Co-signer') :
                        lease.guaranteeType}
                     </p>
                   </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 ml-6">{lease.guaranteeDetails}</p>
+                  <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1 ml-6">{lease.guaranteeDetails}</p>
                 </div>
 
                 {/* Documents */}
-                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700 space-y-2">
-                  <p className="text-xs text-neutral-400 uppercase tracking-wider mb-3">{t('documents.title')}</p>
+                <div className="pt-4 border-t border-border-faint dark:border-border-strong space-y-2">
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-3">{t('documents.title')}</p>
 
                   {lease.contractUrl && (
                     <a
                       href={lease.contractUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-[#222224] rounded-xl hover:bg-surface-muted dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
-                      <FileText className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                      <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Contrato de arriendo' : 'Lease agreement'}</span>
-                      <Download className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
+                      <FileText className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
+                      <span className="text-sm text-fg dark:text-neutral-200 flex-1">{locale === 'es' ? 'Contrato de arriendo' : 'Lease agreement'}</span>
+                      <Download className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted dark:group-hover:text-fg-subtle transition-colors" />
                     </a>
                   )}
 
@@ -575,11 +579,11 @@ export default function LeaseDetailPage() {
                       href={lease.insuranceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-[#222224] rounded-xl hover:bg-surface-muted dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
-                      <Shield className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                      <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Póliza de seguro' : 'Insurance policy'}</span>
-                      <Download className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
+                      <Shield className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
+                      <span className="text-sm text-fg dark:text-neutral-200 flex-1">{locale === 'es' ? 'Póliza de seguro' : 'Insurance policy'}</span>
+                      <Download className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted dark:group-hover:text-fg-subtle transition-colors" />
                     </a>
                   )}
 
@@ -588,11 +592,11 @@ export default function LeaseDetailPage() {
                       href={lease.inventoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-[#222224] rounded-xl hover:bg-surface-muted dark:hover:bg-[#2a2a2c] transition-colors group"
                     >
-                      <Buildings className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                      <span className="text-sm text-neutral-700 dark:text-neutral-200 flex-1">{locale === 'es' ? 'Inventario' : 'Inventory'}</span>
-                      <Download className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
+                      <Buildings className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
+                      <span className="text-sm text-fg dark:text-neutral-200 flex-1">{locale === 'es' ? 'Inventario' : 'Inventory'}</span>
+                      <Download className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted dark:group-hover:text-fg-subtle transition-colors" />
                     </a>
                   )}
                 </div>
@@ -604,13 +608,13 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] overflow-hidden"
             >
-              <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
-                <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                  <User className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint dark:border-border-strong">
+                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center">
+                  <User className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
-                <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Propietario' : 'Landlord'}</h2>
+                <h2 className="font-semibold text-fg dark:text-white">{locale === 'es' ? 'Propietario' : 'Landlord'}</h2>
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-4 mb-5">
@@ -618,31 +622,31 @@ export default function LeaseDetailPage() {
                     {lease.landlordName.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold text-neutral-900 dark:text-white">{lease.landlordName}</p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Propietario verificado' : 'Verified landlord'}</p>
+                    <p className="font-semibold text-fg dark:text-white">{lease.landlordName}</p>
+                    <p className="text-sm text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Propietario verificado' : 'Verified landlord'}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2 mb-5">
                   <a
                     href={`mailto:${lease.landlordEmail}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white bg-surface-muted dark:bg-[#222224] rounded-xl hover:bg-surface-muted dark:hover:bg-[#2a2a2c] transition-colors"
                   >
-                    <Envelope className="w-4 h-4 text-neutral-400" />
+                    <Envelope className="w-4 h-4 text-fg-subtle" />
                     {lease.landlordEmail}
                   </a>
                   <a
                     href={`tel:${lease.landlordPhone}`}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white bg-neutral-50 dark:bg-[#222224] rounded-xl hover:bg-neutral-100 dark:hover:bg-[#2a2a2c] transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white bg-surface-muted dark:bg-[#222224] rounded-xl hover:bg-surface-muted dark:hover:bg-[#2a2a2c] transition-colors"
                   >
-                    <Phone className="w-4 h-4 text-neutral-400" />
+                    <Phone className="w-4 h-4 text-fg-subtle" />
                     {lease.landlordPhone}
                   </a>
                 </div>
 
                 <Link
                   href="/inquilino/mensajes"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-xl text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-ink dark:bg-surface text-white dark:text-fg rounded-xl text-sm font-medium hover:bg-ink dark:hover:bg-surface-muted transition-colors"
                 >
                   <Chat className="w-4 h-4" />
                   {locale === 'es' ? 'Enviar mensaje' : 'Send message'}
@@ -656,27 +660,27 @@ export default function LeaseDetailPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] overflow-hidden"
             >
-              <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint dark:border-border-strong">
                 <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>
-                <h2 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Métodos de pago' : 'Payment methods'}</h2>
+                <h2 className="font-semibold text-fg dark:text-white">{locale === 'es' ? 'Métodos de pago' : 'Payment methods'}</h2>
               </div>
               <div className="p-4 space-y-2">
                 {PAYMENT_METHODS.filter(m => m.enabled).slice(0, 4).map((method) => (
                   <div
                     key={method.id}
-                    className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-[#222224] rounded-xl"
+                    className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-[#222224] rounded-xl"
                   >
                     <span className="text-xl">{method.icon}</span>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{method.name}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{method.processingTime}</p>
+                      <p className="text-sm font-medium text-fg dark:text-white">{method.name}</p>
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle">{method.processingTime}</p>
                     </div>
                     {method.fee && method.fee > 0 ? (
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400 bg-white dark:bg-[#2a2a2c] px-2 py-1 rounded-md">+{method.fee}%</span>
+                      <span className="text-xs text-fg-muted dark:text-fg-subtle bg-surface dark:bg-[#2a2a2c] px-2 py-1 rounded-md">+{method.fee}%</span>
                     ) : (
                       <span className="text-xs text-[#2C7A53] dark:text-[#3EAE70] bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-2 py-1 rounded-md font-medium">{locale === 'es' ? 'Gratis' : 'Free'}</span>
                     )}

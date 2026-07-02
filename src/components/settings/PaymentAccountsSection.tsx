@@ -2,10 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Bank, Wallet, House, Star, SpinnerGap, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
+import { CreditCard, Bank, Wallet, House, Star, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import {
   type PaymentAccount,
   type BankAccount,
@@ -380,13 +392,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
           )}
 
           {/* Single Add Account Button */}
-          <button
+          <Button
+            variant="outline"
+            hideArrow
             onClick={() => { resetForms(); setShowAddAccountModal(true); }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-[#1A40FF]/30 hover:text-[#1A40FF] dark:hover:border-[#1A40FF]/30 dark:hover:text-[#1A40FF] transition-colors"
+            className="w-full border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-[#1A40FF]/30 hover:text-[#1A40FF] dark:hover:border-[#1A40FF]/30 dark:hover:text-[#1A40FF]"
           >
             <Plus className="w-5 h-5" />
             <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addAccount')}</span>
-          </button>
+          </Button>
         </div>
       </motion.section>
 
@@ -440,19 +454,19 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.bank')}
                 </label>
-                <div className="relative">
-                  <select
-                    value={bankForm.bankCode}
-                    onChange={(e) => setBankForm(prev => ({ ...prev, bankCode: e.target.value as BankCode }))}
-                    className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">{t('landlordSettings.paymentAccounts.modals.addBankAccount.selectBank')}</option>
+                <Select
+                  value={bankForm.bankCode}
+                  onValueChange={(v) => setBankForm(prev => ({ ...prev, bankCode: v as BankCode }))}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.selectBank')} />
+                  </SelectTrigger>
+                  <SelectContent>
                     {COLOMBIAN_BANKS.map((bank) => (
-                      <option key={bank.code} value={bank.code}>{bank.name}</option>
+                      <SelectItem key={bank.code} value={bank.code}>{bank.name}</SelectItem>
                     ))}
-                  </select>
-                  <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Account Type */}
@@ -493,16 +507,11 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumber')}
                 </label>
-                <input
+                <Input
                   type="text"
                   value={bankForm.accountNumber}
                   onChange={(e) => { setBankForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') })); setFieldErrors(prev => { const n = { ...prev }; delete n.accountNumber; return n; }); }}
-                  className={cn(
-                    'w-full h-12 px-4 border rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-all',
-                    fieldErrors.accountNumber
-                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
-                      : 'border-neutral-200 dark:border-neutral-600 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
-                  )}
+                  className={cn('h-12 rounded-xl', fieldErrors.accountNumber && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumberPlaceholder')}
                   maxLength={20}
                 />
@@ -516,11 +525,11 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolder')}
                 </label>
-                <input
+                <Input
                   type="text"
                   value={bankForm.accountHolderName}
                   onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderName: e.target.value }))}
-                  className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+                  className="h-12 rounded-xl"
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolderPlaceholder')}
                 />
               </div>
@@ -530,16 +539,11 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.document')}
                 </label>
-                <input
+                <Input
                   type="text"
                   value={bankForm.accountHolderDocument}
                   onChange={(e) => { setBankForm(prev => ({ ...prev, accountHolderDocument: e.target.value.replace(/\D/g, '') })); setFieldErrors(prev => { const n = { ...prev }; delete n.document; return n; }); }}
-                  className={cn(
-                    'w-full h-12 px-4 border rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-all',
-                    fieldErrors.document
-                      ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
-                      : 'border-neutral-200 dark:border-neutral-600 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
-                  )}
+                  className={cn('h-12 rounded-xl', fieldErrors.document && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.documentPlaceholder')}
                   maxLength={12}
                 />
@@ -555,19 +559,19 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addWallet.wallet')}
                 </label>
-                <div className="relative">
-                  <select
-                    value={walletForm.walletCode}
-                    onChange={(e) => setWalletForm(prev => ({ ...prev, walletCode: e.target.value as WalletCode }))}
-                    className="w-full h-12 px-4 pr-10 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">{t('landlordSettings.paymentAccounts.modals.addWallet.selectWallet')}</option>
+                <Select
+                  value={walletForm.walletCode}
+                  onValueChange={(v) => setWalletForm(prev => ({ ...prev, walletCode: v as WalletCode }))}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.selectWallet')} />
+                  </SelectTrigger>
+                  <SelectContent>
                     {DIGITAL_WALLETS.map((wallet) => (
-                      <option key={wallet.code} value={wallet.code}>{wallet.name}</option>
+                      <SelectItem key={wallet.code} value={wallet.code}>{wallet.name}</SelectItem>
                     ))}
-                  </select>
-                  <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Phone Number */}
@@ -582,16 +586,11 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   )}>
                     +57
                   </div>
-                  <input
+                  <Input
                     type="text"
                     value={walletForm.phoneNumber}
                     onChange={(e) => { setWalletForm(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })); setFieldErrors(prev => { const n = { ...prev }; delete n.phone; return n; }); }}
-                    className={cn(
-                      'flex-1 h-12 px-4 border rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-all',
-                      fieldErrors.phone
-                        ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30'
-                        : 'border-neutral-200 dark:border-neutral-600 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30'
-                    )}
+                    className={cn('flex-1 h-12 rounded-xl', fieldErrors.phone && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                     placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.phonePlaceholder')}
                     maxLength={10}
                   />
@@ -606,11 +605,11 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addWallet.holderName')}
                 </label>
-                <input
+                <Input
                   type="text"
                   value={walletForm.holderName}
                   onChange={(e) => setWalletForm(prev => ({ ...prev, holderName: e.target.value }))}
-                  className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
+                  className="h-12 rounded-xl"
                   placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.holderPlaceholder')}
                 />
               </div>
@@ -662,13 +661,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                       >
                         <House className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate max-w-[140px]">{prop.title}</span>
-                        <button
+                        <IconButton
                           type="button"
+                          variant="ghost"
+                          aria-label="Quitar"
                           onClick={() => setSelectedPropertyIds(prev => prev.filter(id => id !== pid))}
-                          className="w-4 h-4 rounded-full hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF] flex items-center justify-center ml-0.5 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                          icon={<X className="w-3 h-3" />}
+                          className="w-4 h-4 min-h-0 rounded-full ml-0.5 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
+                        />
                       </span>
                     );
                   })}
@@ -711,17 +711,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
           {/* Set as Default */}
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={accountMethodType === 'bank' ? bankForm.isDefault : walletForm.isDefault}
-              onChange={(e) => {
+              onCheckedChange={(c) => {
                 if (accountMethodType === 'bank') {
-                  setBankForm(prev => ({ ...prev, isDefault: e.target.checked }));
+                  setBankForm(prev => ({ ...prev, isDefault: c === true }));
                 } else {
-                  setWalletForm(prev => ({ ...prev, isDefault: e.target.checked }));
+                  setWalletForm(prev => ({ ...prev, isDefault: c === true }));
                 }
               }}
-              className="w-5 h-5 rounded border-neutral-300 text-[#1A40FF] focus:ring-[#1A40FF]"
             />
             <span className="text-sm text-neutral-700 dark:text-neutral-300">
               {t('landlordSettings.paymentAccounts.modals.addBankAccount.setDefault')}
@@ -730,26 +728,29 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => { setShowAddAccountModal(false); resetForms(); }}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1 rounded-xl"
             >
               {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={handleAddAccount}
               disabled={isLoading}
-              className="flex-1 py-3 bg-[#1A40FF] text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1 rounded-xl"
             >
               {isLoading ? (
-                <SpinnerGap className="w-4 h-4 animate-spin" />
+                <Spinner size="xs" variant="current" />
               ) : (
                 accountMethodType === 'bank' ? <Bank className="w-4 h-4" /> : <Wallet className="w-4 h-4" />
               )}
               {isLoading
                 ? t('landlordSettings.paymentAccounts.modals.addAccount.adding')
                 : t('landlordSettings.paymentAccounts.modals.addAccount.addButton')}
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsModal>
@@ -789,20 +790,24 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
+                  variant="outline"
+                  hideArrow
                   onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
-                  className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+                  className="flex-1 rounded-xl"
                 >
                   {t('landlordSettings.modals.cancel')}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="destructive"
+                  hideArrow
                   onClick={handleDeletePaymentAccount}
                   disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
-                  className="flex-1 py-3 bg-[#C4503B] text-white text-sm font-medium rounded-xl hover:bg-[#C4503B] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 rounded-xl"
                 >
-                  {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
+                  {isLoading ? <Spinner size="xs" variant="current" /> : <TrashSimple className="w-4 h-4" />}
                   {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}
-                </button>
+                </Button>
               </div>
             </>
           )}

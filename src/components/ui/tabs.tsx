@@ -1,20 +1,20 @@
 'use client';
 
 import * as React from 'react';
-import { TabsList as DSTabsList } from '@leasefy/ui';
-import type { TabsListProps } from '@leasefy/ui';
+import { TabsList as DSTabsList } from '@leasefy/cadence';
+import type { TabsListProps } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 
 /**
- * SHIM: Tabs del DS (@leasefy/ui) — Radix + dos variants en TabsList:
+ * SHIM: Tabs del DS (@leasefy/cadence) — Radix + dos variants en TabsList:
  *   - "underline" (default): hairline border-b, texto activo ink, indicador primary.
  *   - "segmented": control segmentado quieto (surface-muted + fill surface, sin sombra).
  *
  * Uso: <TabsList variant="segmented"> … — los call sites no deben re-pintar
  * estados activos; el contrato de marca vive en el DS.
  */
-export { Tabs, TabsTrigger, TabsContent } from '@leasefy/ui';
-export type { TabsListProps } from '@leasefy/ui';
+export { Tabs, TabsTrigger, TabsContent } from '@leasefy/cadence';
+export type { TabsListProps } from '@leasefy/cadence';
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof DSTabsList>,

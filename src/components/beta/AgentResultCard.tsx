@@ -16,6 +16,7 @@ import {
   ArrowsLeftRight,
   Bank,
 } from '@phosphor-icons/react';
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AgentType, AgentExecutionStatus } from '@/lib/types/beta-chat';
@@ -222,26 +223,25 @@ export function AgentResultCard({
 
             {/* Retry button for failed agents */}
             {isFailed && onRetry && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onRetry();
                 }}
                 className={cn(
-                  'mt-2 inline-flex items-center gap-1.5',
-                  'px-2.5 py-1 rounded-sm',
+                  'mt-2 gap-1.5 px-2.5 py-1 h-auto rounded-sm',
                   'text-xs font-medium',
-                  'bg-danger-soft',
-                  'text-danger',
-                  'border border-danger/30 border-danger/40',
-                  'hover:bg-danger-soft',
-                  'transition-colors duration-150'
+                  'bg-danger-soft text-danger',
+                  'border border-danger/30',
+                  'hover:bg-danger-soft'
                 )}
               >
                 <ArrowClockwise className="w-3 h-3" weight="bold" />
                 {t('beta.agents.retry')}
-              </button>
+              </Button>
             )}
           </div>
         </div>

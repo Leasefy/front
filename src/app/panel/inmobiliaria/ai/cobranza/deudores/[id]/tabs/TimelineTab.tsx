@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useDebtorTimeline } from '@/lib/hooks/cobranza/use-debtor-timeline'
 import { relativeTime } from '@/lib/cartera'
+import { Button } from '@/components/ui'
 
 void React
 
@@ -59,17 +60,19 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-md border border-[#C4503B] dark:border-[#C4503B] bg-[#C4503B] dark:bg-[#C4503B]/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-[#C4503B] dark:text-[#C4503B]">
+      <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.timeline.error')}: {error}
         </p>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
+          hideArrow
         >
           {t('inmobiliaria.ai.cobranza.detail.timeline.errorRetry')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -115,7 +118,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
             <button
               type="button"
               onClick={handleClick}
-              className="w-full text-left px-3 py-2 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6B6B6B] rounded-sm"
+              className="w-full text-left px-3 py-2 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
             >
               <span
                 aria-hidden="true"

@@ -18,7 +18,6 @@ import {
   PaperPlaneTilt,
   PencilSimpleLine,
   CheckCircle,
-  Spinner,
   WarningCircle,
   FileText,
   User,
@@ -34,6 +33,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { formatCurrency } from '@/lib/format';
+import { Button } from '@/components/ui/button';
+import { Spinner, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
@@ -42,10 +43,23 @@ import { RejectionsHistory } from '@/components/contract/RejectionsHistory';
 import { CancelContractModal } from '@/components/contract/CancelContractModal';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
-import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '@/lib/types/contract';
+import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { ContractStatus } from '@/lib/types/contract';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
+
+// ContractStatus → Cadence Badge tone (replaces the hand-rolled CONTRACT_STATUS_COLORS pill).
+type ContractBadgeVariant = 'secondary' | 'warning' | 'default' | 'success' | 'destructive';
+const CONTRACT_STATUS_BADGE: Record<ContractStatus, ContractBadgeVariant> = {
+  draft: 'secondary',
+  pending_landlord: 'warning',
+  pending_tenant: 'default',
+  rejected_pending_modifications: 'warning',
+  signed: 'default',
+  active: 'success',
+  expired: 'secondary',
+  cancelled: 'destructive',
+};
 
 // ─── Content ─────────────────────────────────────────────────────────────────
 
@@ -143,7 +157,7 @@ function ContratoDetalleContent() {
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
-        <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Spinner size="md" variant="muted" />
       </div>
     );
   }
@@ -151,18 +165,18 @@ function ContratoDetalleContent() {
   if (error || !contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[#C4503B]">No se pudo cargar el contrato</p>
-            <p className="text-sm text-[#C4503B] mt-1">{error ?? 'Contrato no encontrado'}</p>
+            <p className="font-semibold text-danger">No se pudo cargar el contrato</p>
+            <p className="text-sm text-danger mt-1">{error ?? 'Contrato no encontrado'}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  const statusClass = CONTRACT_STATUS_COLORS[contract.status as ContractStatus] ?? '';
+  const statusVariant = CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'neutral';
   const statusLabel = CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status;
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
@@ -176,17 +190,19 @@ function ContratoDetalleContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <button
+          <Button
             onClick={() => router.back()}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
+            variant="link"
+            hideArrow
+            className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
           >
             <CaretLeft className="w-4 h-4" /> Volver
-          </button>
+          </Button>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-semibold text-foreground">Contrato de arrendamiento</h1>
-            <span className={cn('px-3 py-1 rounded-full text-xs font-medium', statusClass)}>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Contrato de arrendamiento</h1>
+            <Badge variant={statusVariant}>
               {statusLabel}
-            </span>
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
         </div>
@@ -197,13 +213,12 @@ function ContratoDetalleContent() {
             variant="secondary"
           />
           {chatHref && (
-            <Link
-              href={chatHref}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors"
-            >
-              <ChatCircle className="w-4 h-4" />
-              Abrir chat
-            </Link>
+            <Button asChild variant="secondary" hideArrow className="gap-2">
+              <Link href={chatHref}>
+                <ChatCircle className="w-4 h-4" />
+                Abrir chat
+              </Link>
+            </Button>
           )}
         </div>
       </div>
@@ -241,9 +256,9 @@ function ContratoDetalleContent() {
       )}
 
       {actionError && (
-        <div className="rounded-xl border border-[#C4503B]/30 bg-[#F8EAE7] p-4 flex items-start gap-2">
-          <WarningCircle className="w-5 h-5 text-[#C4503B] flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-[#C4503B]">{actionError}</p>
+        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-danger">{actionError}</p>
         </div>
       )}
 
@@ -280,7 +295,7 @@ function ContratoDetalleContent() {
           <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <h3 className="font-semibold text-sm text-foreground">Documento</h3>
+              <h3 className="text-base font-semibold text-foreground">Documento</h3>
             </div>
             <div className="p-5">
               {/* Cuando hay firma(s), el iframe usa la URL de /pdf (con estampado actualizado).
@@ -288,25 +303,25 @@ function ContratoDetalleContent() {
               {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
                 <div className="space-y-3">
                   {contract.tenantSignature && !contract.landlordSignature && (
-                    <div className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F] flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
+                    <div className="rounded-xl border border-amber-600/30 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/15 px-4 py-2.5 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
                         Este PDF ya incluye la <strong>firma del inquilino</strong> y un certificado parcial.
                         Firmá abajo para completar el contrato.
                       </p>
                     </div>
                   )}
                   {contract.tenantSignature && contract.landlordSignature && (
-                    <div className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 px-4 py-2.5 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70] flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-[#2C7A53] dark:text-[#3EAE70]">
+                    <div className="rounded-xl border border-emerald-600/30 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/15 px-4 py-2.5 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-emerald-700 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400">
                         PDF final con <strong>ambas firmas</strong>, certificado completo y hash SHA-256.
                       </p>
                     </div>
                   )}
                   {isLoadingSignedPdf ? (
                     <div className="py-20 flex items-center justify-center">
-                      <Spinner className="w-5 h-5 animate-spin text-muted-foreground" />
+                      <Spinner size="default" variant="muted" />
                     </div>
                   ) : (
                     <iframe
@@ -322,7 +337,7 @@ function ContratoDetalleContent() {
                 </div>
               ) : isLoadingPreview ? (
                 <div className="py-20 flex items-center justify-center">
-                  <Spinner className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <Spinner size="sm" variant="muted" />
                 </div>
               ) : preview?.origin === 'UPLOADED_PDF' ? (
                 <div className="space-y-3">
@@ -383,14 +398,16 @@ function ActionPanel({
 }) {
   const status = contract.status as ContractStatus;
   const cancelButton = canCancel ? (
-    <button
+    <Button
       type="button"
+      variant="link"
+      hideArrow
       onClick={onCancelRequest}
-      className="text-xs font-medium text-[#C4503B] hover:text-[#C4503B] hover:underline inline-flex items-center gap-1"
+      className="h-auto gap-1 px-0 text-xs font-medium text-danger hover:text-danger"
     >
       <XCircle className="w-3.5 h-3.5" />
       Cancelar contrato
-    </button>
+    </Button>
   ) : null;
 
   if (status === 'draft') {
@@ -521,59 +538,32 @@ function ActionBar({
   tone: 'indigo' | 'amber' | 'blue' | 'emerald';
   footer?: React.ReactNode;
 }) {
-  const toneClasses: Record<typeof tone, { bg: string; border: string; button: string }> = {
-    indigo: {
-      bg: 'bg-[#EEF1FF]/60 dark:bg-[#1A40FF]/20',
-      border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
-      button: 'bg-[#1A40FF] hover:opacity-90',
-    },
-    amber: {
-      bg: 'bg-[#F8F0E0]/60 dark:bg-[#B7791F]/20',
-      border: 'border-[#B7791F]/30 dark:border-[#B7791F]/40',
-      button: 'bg-[#B7791F] hover:bg-[#B7791F]',
-    },
-    blue: {
-      bg: 'bg-[#EEF1FF]/60 dark:bg-[#1A40FF]/20',
-      border: 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
-      button: 'bg-[#1A40FF] hover:bg-[#1A40FF]',
-    },
-    emerald: {
-      bg: 'bg-[#E8F3EC]/60 dark:bg-[#2C7A53]/20',
-      border: 'border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-      button: 'bg-[#2C7A53] hover:bg-[#2C7A53]',
-    },
+  const toneClasses: Record<typeof tone, string> = {
+    indigo: 'bg-primary-soft/40 border-primary/30',
+    blue: 'bg-primary-soft/40 border-primary/30',
+    amber: 'bg-amber-50/60 border-amber-600/30 dark:bg-amber-900/20 dark:border-amber-500/40',
+    emerald: 'bg-emerald-50/60 border-emerald-600/30 dark:bg-emerald-900/20 dark:border-emerald-500/40',
   };
-  const c = toneClasses[tone];
 
   return (
-    <section className={cn('rounded-xl border p-5 space-y-3', c.bg, c.border)}>
+    <section className={cn('rounded-xl border p-5 space-y-3', toneClasses[tone])}>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="font-semibold text-sm text-foreground">{title}</p>
+          <p className="text-base font-semibold text-foreground">{title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {secondaryCta && (
-            <button
-              onClick={secondaryCta.onClick}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors"
-            >
+            <Button variant="secondary" hideArrow onClick={secondaryCta.onClick} className="gap-2">
               <secondaryCta.icon className="w-4 h-4" />
               {secondaryCta.label}
-            </button>
+            </Button>
           )}
           {cta && (
-            <button
-              onClick={cta.onClick}
-              disabled={cta.loading}
-              className={cn(
-                'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-50',
-                c.button
-              )}
-            >
-              {cta.loading ? <Spinner className="w-4 h-4 animate-spin" /> : <cta.icon className="w-4 h-4" />}
+            <Button onClick={cta.onClick} disabled={cta.loading} hideArrow className="gap-2">
+              {cta.loading ? <Spinner size="sm" variant="current" /> : <cta.icon className="w-4 h-4" />}
               {cta.label}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -599,7 +589,7 @@ function InfoCard({
     <section className="rounded-xl border border-border bg-card p-5 space-y-3">
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4 text-muted-foreground" />
-        <h3 className="font-semibold text-sm text-foreground">{title}</h3>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
       </div>
       <div className="space-y-2">{children}</div>
     </section>

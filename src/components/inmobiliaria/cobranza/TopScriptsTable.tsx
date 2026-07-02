@@ -25,6 +25,14 @@
 import { useI18n } from '@/lib/i18n'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { SampleDataWatermark } from '@/components/data-display/SampleDataWatermark'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type {
   TopScriptsData,
   TopScriptsRow,
@@ -70,7 +78,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
   if (data === undefined) {
     return (
       <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-        <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+        <h3 className="text-sm font-semibold text-fg-muted mb-3">
           {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
         </h3>
         <NoDataYetBadge
@@ -87,64 +95,64 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
 
   return (
     <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-      <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+      <h3 className="text-sm font-semibold text-fg-muted mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
       </h3>
       <SampleDataWatermark show={showWatermark}>
-        <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="text-xs text-neutral-500 dark:text-neutral-400">
-                <th className="text-left px-3 py-2 font-medium">
+        <div className="overflow-x-auto rounded-[18px] border border-border bg-surface">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-left px-3 py-2">
                   {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.script')}
-                </th>
-                <th className="text-left px-3 py-2 font-medium">
+                </TableHead>
+                <TableHead className="text-left px-3 py-2">
                   {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.stage')}
-                </th>
-                <th className="text-right px-3 py-2 font-medium">
+                </TableHead>
+                <TableHead className="text-right px-3 py-2">
                   {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.nCalls')}
-                </th>
-                <th className="text-right px-3 py-2 font-medium">
+                </TableHead>
+                <TableHead className="text-right px-3 py-2">
                   {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.conversionRate')}
-                </th>
-                <th className="text-right px-3 py-2 font-medium">
+                </TableHead>
+                <TableHead className="text-right px-3 py-2">
                   {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.lift')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((row) => (
-                <tr
+                <TableRow
                   key={row.scriptTemplateId}
-                  className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/30"
+                  className="border-b border-border-faint hover:bg-surface-hover"
                 >
-                  <td className="px-3 py-2 text-neutral-900 dark:text-white">
+                  <TableCell className="px-3 py-2 text-fg">
                     {row.scriptName}
-                  </td>
-                  <td className="px-3 py-2 text-neutral-600 dark:text-neutral-300 font-semibold">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-fg-muted font-semibold">
                     {row.stage}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-fg-muted">
                     {row.nCalls}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-fg-muted">
                     {(row.conversionRate * 100).toFixed(1)}%
-                  </td>
-                  <td
+                  </TableCell>
+                  <TableCell
                     className={
-                      'px-3 py-2 text-right tabular-nums font-medium ' +
+                      'px-3 py-2 text-right font-mono tabular-nums font-medium ' +
                       (row.lift >= 1
-                        ? 'text-[#2C7A53] dark:text-[#3EAE70]'
-                        : 'text-[#B7791F] dark:text-[#D2992F]')
+                        ? 'text-success'
+                        : 'text-warning')
                     }
                   >
                     {row.lift >= 0 ? '+' : ''}
                     {((row.lift - 1) * 100).toFixed(0)}%
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </SampleDataWatermark>
     </section>

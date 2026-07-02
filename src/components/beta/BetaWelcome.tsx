@@ -1,15 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import {
-  CurrencyDollar,
-  Buildings,
-  FileText,
-  Wrench,
-  FunnelSimple,
-  ChartBar,
-} from '@phosphor-icons/react';
-import type { Icon } from '@phosphor-icons/react';
+import { PromptComposer, AgentSuggestionCard, Eyebrow } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 
@@ -19,7 +10,7 @@ import { useI18n } from '@/lib/i18n';
 
 interface BetaWelcomeProps {
   onPromptClick?: (prompt: string) => void;
-  /** The hero ChatInput rendered centered under the greeting (Manus-style). */
+  /** @deprecated the hero now uses the cadence <PromptComposer>; kept for API compat. */
   inputSlot?: React.ReactNode;
   className?: string;
 }
@@ -28,23 +19,22 @@ interface PromptChip {
   id: string;
   titleKey: string;
   descKey: string;
-  icon: Icon;
+  gradient: string;
 }
 
+// §33 "Sugerencias · Agentes Leasefy" — one gradient monogram per domain.
 const PROMPT_CHIPS: PromptChip[] = [
-  { id: 'cobros', titleKey: 'beta.welcome.prompts.cobros', descKey: 'beta.welcome.prompts.cobros_desc', icon: CurrencyDollar },
-  { id: 'propiedades', titleKey: 'beta.welcome.prompts.propiedades', descKey: 'beta.welcome.prompts.propiedades_desc', icon: Buildings },
-  { id: 'contratos', titleKey: 'beta.welcome.prompts.contratos', descKey: 'beta.welcome.prompts.contratos_desc', icon: FileText },
-  { id: 'mantenimiento', titleKey: 'beta.welcome.prompts.mantenimiento', descKey: 'beta.welcome.prompts.mantenimiento_desc', icon: Wrench },
-  { id: 'candidatos', titleKey: 'beta.welcome.prompts.candidatos', descKey: 'beta.welcome.prompts.candidatos_desc', icon: FunnelSimple },
-  { id: 'reportes', titleKey: 'beta.welcome.prompts.reportes', descKey: 'beta.welcome.prompts.reportes_desc', icon: ChartBar },
+  { id: 'cobros', titleKey: 'beta.welcome.prompts.cobros', descKey: 'beta.welcome.prompts.cobros_desc', gradient: 'linear-gradient(140deg,#1F8A5B,#7DE08A)' },
+  { id: 'propiedades', titleKey: 'beta.welcome.prompts.propiedades', descKey: 'beta.welcome.prompts.propiedades_desc', gradient: 'linear-gradient(140deg,#1A40FF,#2BB5E8)' },
+  { id: 'contratos', titleKey: 'beta.welcome.prompts.contratos', descKey: 'beta.welcome.prompts.contratos_desc', gradient: 'linear-gradient(140deg,#8E7BF0,#F5A878)' },
+  { id: 'mantenimiento', titleKey: 'beta.welcome.prompts.mantenimiento', descKey: 'beta.welcome.prompts.mantenimiento_desc', gradient: 'linear-gradient(140deg,#2BB5E8,#1A40FF)' },
+  { id: 'candidatos', titleKey: 'beta.welcome.prompts.candidatos', descKey: 'beta.welcome.prompts.candidatos_desc', gradient: 'linear-gradient(140deg,#1A40FF,#2BB5E8)' },
+  { id: 'reportes', titleKey: 'beta.welcome.prompts.reportes', descKey: 'beta.welcome.prompts.reportes_desc', gradient: 'linear-gradient(140deg,#1F8A5B,#7DE08A)' },
 ];
 
-function getTimeGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'beta.welcome.greeting_morning';
-  if (hour >= 12 && hour < 19) return 'beta.welcome.greeting_afternoon';
-  return 'beta.welcome.greeting_evening';
+/** First grapheme of a title for the monogram tile. */
+function monogram(title: string): string {
+  return title.trim().charAt(0).toUpperCase() || '·';
 }
 
 // ============================================================================
@@ -52,55 +42,50 @@ function getTimeGreeting(): string {
 // ============================================================================
 
 /**
- * BetaWelcome — Manus-style welcome: mono eyebrow greeting, bold hero question,
- * the hero chat input centered, and a row of suggestion chips below.
+ * BetaWelcome — state-0 (empty) chat, rebuilt to the cadence §33 design:
+ * the greeting, the framed <PromptComposer>, and the "Sugerencias · Agentes
+ * Leasefy" grid of <AgentSuggestionCard>. Sending (or picking a suggestion)
+ * calls onPromptClick — the same `sendMessage` handler as before.
  */
-export function BetaWelcome({ onPromptClick, inputSlot, className }: BetaWelcomeProps) {
+export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const { t } = useI18n();
-  const greetingKey = useMemo(() => getTimeGreeting(), []);
 
   return (
-    <div className={cn('flex flex-col items-center justify-center h-full px-4 sm:px-6', className)}>
-      <div className="w-full max-w-[660px] flex flex-col items-center -mt-8">
-        {/* Time greeting — mono eyebrow */}
-        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500 mb-3">
-          {t(greetingKey)}
-        </p>
-
-        {/* Hero question */}
-        <h1 className="text-[32px] sm:text-[40px] font-bold text-foreground mb-8 text-center tracking-tight leading-tight">
+    <div className={cn('flex min-h-full flex-col items-center justify-center px-4 py-12 sm:px-6', className)}>
+      <div className="flex w-full max-w-[760px] flex-col items-center">
+        {/* Hero greeting */}
+        <h1 className="mb-9 text-center font-heading font-medium tracking-[-0.025em] leading-[1.04] text-fg text-[clamp(2.25rem,5vw,3.25rem)]">
           {t('beta.welcome.heroTitle')}
         </h1>
 
-        {/* Hero input — centered like Manus */}
-        {inputSlot && <div className="w-full mb-5">{inputSlot}</div>}
+        {/* Prompt composer (state 0) */}
+        <PromptComposer
+          className="w-full"
+          onSend={(text) => onPromptClick?.(text)}
+          onAttach={() => {}}
+          onTemplates={() => {}}
+          placeholder={t('beta.chat.placeholder')}
+        />
 
-        {/* Suggestion chips */}
-        <div className="flex flex-wrap items-center justify-center gap-2 w-full">
-          {PROMPT_CHIPS.map((chip) => {
-            const ChipIcon = chip.icon;
-            return (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => onPromptClick?.(t(chip.descKey))}
-                className={cn(
-                  'inline-flex items-center gap-2',
-                  'px-3.5 py-2 rounded-md',
-                  'text-[13px] font-medium text-muted-foreground',
-                  'bg-white dark:bg-neutral-900',
-                  'border border-neutral-200/90 dark:border-neutral-800',
-                  'hover:border-neutral-300 dark:hover:border-neutral-600',
-                  'hover:text-foreground',
-                  'transition-all duration-150',
-                  'cursor-pointer'
-                )}
-              >
-                <ChipIcon className="w-4 h-4 opacity-70" weight="duotone" />
-                {t(chip.titleKey)}
-              </button>
-            );
-          })}
+        {/* Sugerencias · Agentes Leasefy */}
+        <div className="mt-8 w-full">
+          <Eyebrow className="mb-3.5 px-1">{t('beta.welcome.suggestionsLabel')}</Eyebrow>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {PROMPT_CHIPS.map((chip) => {
+              const title = t(chip.titleKey);
+              const desc = t(chip.descKey);
+              return (
+                <AgentSuggestionCard
+                  key={chip.id}
+                  initials={monogram(title)}
+                  gradient={chip.gradient}
+                  title={title}
+                  description={desc}
+                  onSelect={() => onPromptClick?.(desc)}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

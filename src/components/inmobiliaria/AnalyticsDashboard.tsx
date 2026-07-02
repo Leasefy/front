@@ -17,6 +17,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Progress } from '@/components/ui/progress';
+import { Spinner } from '@/components/ui/spinner';
 import type {
   AnalyticsData,
   AnalyticsChart,
@@ -43,18 +45,18 @@ const SECTION_ICONS: Record<AdvancedKPI['category'], {
 }> = {
   financial: {
     icon: CurrencyDollar,
-    color: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    color: 'text-success',
+    bgColor: 'bg-success-soft',
   },
   operational: {
     icon: Buildings,
-    color: 'text-[#1A40FF] dark:text-[#5570FF]',
-    bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+    color: 'text-primary',
+    bgColor: 'bg-primary-soft',
   },
   performance: {
     icon: ChartLineUp,
-    color: 'text-neutral-600 dark:text-neutral-300',
-    bgColor: 'bg-neutral-100 dark:bg-neutral-800',
+    color: 'text-fg-muted dark:text-fg-subtle',
+    bgColor: 'bg-surface-muted dark:bg-ink',
   },
 };
 
@@ -97,48 +99,44 @@ function CompactKPICard({ kpi }: { kpi: AdvancedKPI }) {
   return (
     <motion.div
       whileHover={{ y: -1 }}
-      className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover: transition-all"
+      className="p-4 rounded-xl border border-border bg-card transition-all hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-2">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">{kpi.label}</p>
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">{kpi.label}</p>
         <div
           className={cn(
             'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium',
-            isPositiveTrend && 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-            isNegativeTrend && 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
-            !isPositiveTrend && !isNegativeTrend && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+            isPositiveTrend && 'bg-success-soft text-success',
+            isNegativeTrend && 'bg-danger-soft text-danger',
+            !isPositiveTrend && !isNegativeTrend && 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle'
           )}
         >
           <TrendIcon className="w-3 h-3" weight="bold" />
           <span>{kpi.trend.percentage > 0 ? '+' : ''}{kpi.trend.percentage.toFixed(1)}%</span>
         </div>
       </div>
-      <p className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+      <p className="text-xl font-bold text-fg dark:text-white mb-2">
         {kpi.formattedValue}
       </p>
       {progress !== null && kpi.targetLabel && (
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-400 flex items-center gap-1">
+            <span className="text-fg-subtle flex items-center gap-1">
               <Target className="w-3 h-3" />
               {kpi.targetLabel}
             </span>
             <span className={cn(
               'font-medium',
-              progress >= 100 ? 'text-[#2C7A53]' : 'text-neutral-500'
+              progress >= 100 ? 'text-success' : 'text-fg-muted'
             )}>
               {progress.toFixed(0)}%
             </span>
           </div>
-          <div className="h-1 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-            <div
-              className={cn(
-                'h-full rounded-full transition-all',
-                progress >= 100 ? 'bg-[#2C7A53]' : 'bg-[#1A40FF]'
-              )}
-              style={{ width: `${Math.min(100, progress)}%` }}
-            />
-          </div>
+          <Progress
+            value={Math.min(100, progress)}
+            variant={progress >= 100 ? 'success' : 'default'}
+            size="xs"
+          />
         </div>
       )}
     </motion.div>
@@ -166,8 +164,8 @@ function KPISection({
           <Icon className={cn('w-5 h-5', config.color)} weight="duotone" />
         </div>
         <div>
-          <h3 className="font-semibold text-neutral-900 dark:text-white">{t(`inmobiliaria.analytics.sections.${category}.title`)}</h3>
-          <p className="text-xs text-neutral-500">{t(`inmobiliaria.analytics.sections.${category}.description`)}</p>
+          <h3 className="font-semibold text-fg dark:text-white">{t(`inmobiliaria.analytics.sections.${category}.title`)}</h3>
+          <p className="text-xs text-fg-muted">{t(`inmobiliaria.analytics.sections.${category}.description`)}</p>
         </div>
       </div>
       {/* KPIs Grid */}
@@ -192,8 +190,8 @@ function BarChart({ chart }: { chart: AnalyticsChart }) {
       {chart.labels.map((label, idx) => (
         <div key={label} className="space-y-1">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-600 dark:text-neutral-400">{label}</span>
-            <span className="font-medium text-neutral-900 dark:text-white">
+            <span className="text-fg-muted dark:text-fg-subtle">{label}</span>
+            <span className="font-medium text-fg dark:text-white">
               {chart.datasets[0].data[idx]}
               {chart.id.includes('ocupacion') ? '%' : ''}
             </span>
@@ -281,7 +279,7 @@ function AreaLineChart({ chart }: { chart: AnalyticsChart }) {
           );
         })}
       </svg>
-      <div className="flex justify-between text-xs text-neutral-500 px-5 -mt-2">
+      <div className="flex justify-between text-xs text-fg-muted px-5 -mt-2">
         {chart.labels.map((label) => (
           <span key={label}>{label}</span>
         ))}
@@ -290,7 +288,7 @@ function AreaLineChart({ chart }: { chart: AnalyticsChart }) {
         {chart.datasets.map((dataset) => (
           <div key={dataset.label} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: dataset.color }} />
-            <span className="text-xs text-neutral-600 dark:text-neutral-400">{dataset.label}</span>
+            <span className="text-xs text-fg-muted dark:text-fg-subtle">{dataset.label}</span>
           </div>
         ))}
       </div>
@@ -302,7 +300,7 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
   const { t } = useI18n();
   const data = chart.datasets[0].data;
   const total = data.reduce((sum, val) => sum + val, 0);
-  const colors = ['#1A40FF', '#8A9CFF', '#6B6B6B', '#9B9B9B', '#C9CDD3'];
+  const colors = ['#1A40FF', '#7B95FF', '#6B6B6B', '#9B9B9B', '#C9CDD3'];
 
   let currentAngle = -90;
   const segments = data.map((value, idx) => {
@@ -349,8 +347,8 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{data[0]}%</p>
-            <p className="text-xs text-neutral-500">{t('inmobiliaria.analytics.dashboard.upToDate')}</p>
+            <p className="text-2xl font-bold text-fg dark:text-white">{data[0]}%</p>
+            <p className="text-xs text-fg-muted">{t('inmobiliaria.analytics.dashboard.upToDate')}</p>
           </div>
         </div>
       </div>
@@ -358,8 +356,8 @@ function DonutChartViz({ chart }: { chart: AnalyticsChart }) {
         {segments.map((segment, idx) => (
           <div key={idx} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }} />
-            <span className="flex-1 text-sm text-neutral-600 dark:text-neutral-400">{segment.label}</span>
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">
+            <span className="flex-1 text-sm text-fg-muted dark:text-fg-subtle">{segment.label}</span>
+            <span className="text-sm font-medium text-fg dark:text-white">
               {segment.percentage.toFixed(0)}%
             </span>
           </div>
@@ -375,21 +373,21 @@ function ChartCard({ chart }: { chart: AnalyticsChart }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover: hover:shadow-neutral-500/5 transition-all"
+      className="p-5 rounded-xl border border-border bg-card transition-all hover:border-foreground/15"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <ChartIcon className="w-4 h-4 text-neutral-600 dark:text-neutral-400" weight="duotone" />
+          <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+            <ChartIcon className="w-4 h-4 text-fg-muted dark:text-fg-subtle" weight="duotone" />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white">{chart.title}</h3>
+            <h3 className="font-semibold text-fg dark:text-white">{chart.title}</h3>
             {chart.description && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{chart.description}</p>
+              <p className="text-xs text-fg-muted dark:text-fg-subtle">{chart.description}</p>
             )}
           </div>
         </div>
-        <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">
+        <span className="text-xs font-medium text-fg-muted dark:text-fg-subtle bg-surface-muted dark:bg-ink px-2.5 py-1 rounded-full">
           {getPeriodLabel(chart.period)}
         </span>
       </div>
@@ -425,7 +423,7 @@ export function AnalyticsDashboard({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -444,12 +442,12 @@ export function AnalyticsDashboard({
       {/* Section 4: Visualizations */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center">
-            <ChartBar className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F]" weight="duotone" />
+          <div className="w-9 h-9 rounded-xl bg-warning-soft flex items-center justify-center">
+            <ChartBar className="w-5 h-5 text-warning" weight="duotone" />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>
-            <p className="text-xs text-neutral-500">{t('inmobiliaria.analytics.dashboard.visualizationsDesc')}</p>
+            <h3 className="font-semibold text-fg dark:text-white">{t('inmobiliaria.analytics.dashboard.visualizations')}</h3>
+            <p className="text-xs text-fg-muted">{t('inmobiliaria.analytics.dashboard.visualizationsDesc')}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

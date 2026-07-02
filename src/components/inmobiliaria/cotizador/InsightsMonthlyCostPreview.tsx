@@ -41,8 +41,8 @@ export function InsightsMonthlyCostPreview({
   if (isLoading && trend === null) {
     return (
       <div className="space-y-3 animate-pulse">
-        <div className="h-[160px] bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
-        <div className="h-4 w-40 bg-neutral-200 dark:bg-neutral-700 rounded" />
+        <div className="h-[160px] bg-surface-muted rounded-xl" />
+        <div className="h-4 w-40 bg-surface-muted rounded" />
       </div>
     )
   }
@@ -58,7 +58,7 @@ export function InsightsMonthlyCostPreview({
         <div className="text-center">
           <Link
             href="../costos"
-            className="text-xs text-[#1A40FF] hover:text-[#1A40FF] underline"
+            className="text-xs text-primary underline-offset-4 hover:underline font-medium"
           >
             {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}
           </Link>
@@ -111,7 +111,7 @@ export function InsightsMonthlyCostPreview({
       <div className="text-center">
         <Link
           href="../costos"
-          className="text-xs text-[#1A40FF] hover:text-[#1A40FF] underline"
+          className="text-xs text-primary underline-offset-4 hover:underline font-medium"
         >
           {t('inmobiliaria.ai.cotizador.insights.costPreview.viewAll')}
         </Link>

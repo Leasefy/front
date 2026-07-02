@@ -12,6 +12,7 @@
  */
 
 import { CurrencyDollar, Wallet, TrendUp, Info } from '@phosphor-icons/react'
+import { IconButton } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import {
   Tooltip,
@@ -54,7 +55,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       label: t('inmobiliaria.ai.cotizador.costos.kpiCostPerQuote'),
       value: formatUsd4(kpis?.costPerQuoteUsd),
       Icon: CurrencyDollar,
-      iconColor: 'text-[#1A40FF]',
+      iconColor: 'text-primary',
       caption: null,
     },
     {
@@ -62,7 +63,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       label: t('inmobiliaria.ai.cotizador.costos.kpiMonthlyBurn'),
       value: formatUsd2(kpis?.monthlyBurnUsd),
       Icon: Wallet,
-      iconColor: 'text-neutral-600 dark:text-neutral-300',
+      iconColor: 'text-fg-muted',
       caption: null,
     },
     {
@@ -71,7 +72,7 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       // Explicit null check: != null catches both null and undefined (T-35-14)
       value: kpis?.forecast30dUsd != null ? `$${kpis.forecast30dUsd.toFixed(2)}` : '—',
       Icon: TrendUp,
-      iconColor: 'text-neutral-400',
+      iconColor: 'text-fg-muted',
       caption: t('inmobiliaria.ai.cotizador.costos.forecastCaption'),
     },
   ]
@@ -81,28 +82,33 @@ export function CostKpiStrip({ kpis, isLoading = false }: CostKpiStripProps) {
       {cards.map(({ key, label, value, Icon, iconColor, caption }) => (
         <div
           key={key}
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4"
+          className="rounded-lg border border-border bg-card p-4"
         >
           <div className="flex items-center gap-2 mb-1">
             <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{label}</p>
+            <p className="text-xs text-fg-muted truncate">{label}</p>
           </div>
           {isLoading ? (
-            <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse mt-1" />
+            <div className="h-6 w-16 rounded bg-surface-muted animate-pulse mt-1" />
           ) : (
-            <p className="text-xl font-semibold text-neutral-900 dark:text-white mt-1">{value}</p>
+            <p className="text-xl font-semibold text-fg mt-1">{value}</p>
           )}
           {caption && (
             <div className="flex items-center gap-1 mt-2">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">
+              <p className="text-xs text-fg-muted leading-snug">
                 {caption}
               </p>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="flex-shrink-0 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
-                      <Info className="h-3 w-3" />
-                    </button>
+                    <IconButton
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      icon={<Info className="h-3 w-3" />}
+                      aria-label={t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}
+                      className="flex-shrink-0"
+                    />
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs text-xs">
                     {t('inmobiliaria.ai.cotizador.costos.forecastTooltip')}

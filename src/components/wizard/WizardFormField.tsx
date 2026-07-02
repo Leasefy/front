@@ -1,8 +1,15 @@
 'use client';
 
 import { type ReactNode, type InputHTMLAttributes, forwardRef } from 'react';
-import { CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 // ============================================================================
 // FormField - Container with label and error handling
@@ -34,14 +41,14 @@ export function FormField({
         className="block text-sm font-medium text-foreground/70"
       >
         {label}
-        {required && <span className="text-[#C4503B] ml-0.5">*</span>}
+        {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
       {hint && !error && (
         <p className="text-xs text-muted-foreground">{hint}</p>
       )}
       {error && (
-        <p className="text-xs text-[#C4503B]">{error}</p>
+        <p className="text-xs text-danger">{error}</p>
       )}
     </div>
   );
@@ -78,134 +85,31 @@ const KIND_PRESETS: Record<FieldKind, InputHTMLAttributes<HTMLInputElement>> = {
 };
 
 // ============================================================================
-// DarkInput - Luxterra-style dark input field
+// LightInput - clean light input on the real Cadence Input
 // ============================================================================
 
-interface DarkInputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface FieldInputProps extends InputHTMLAttributes<HTMLInputElement> {
   icon?: ReactNode;
   hasError?: boolean;
   /** Preset for mobile keyboard, autofill and spellcheck. Explicit props win. */
   kind?: FieldKind;
 }
 
-export const DarkInput = forwardRef<HTMLInputElement, DarkInputProps>(
+export const LightInput = forwardRef<HTMLInputElement, FieldInputProps>(
   ({ className, icon, hasError, kind, ...props }, ref) => {
     return (
       <div className="relative">
         {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-muted-foreground pointer-events-none">
             {icon}
           </div>
         )}
-        <input
+        <Input
           ref={ref}
           className={cn(
-            'w-full h-12 px-4 rounded-sm',
-            'bg-foreground text-white placeholder:text-white/40',
-            'border border-transparent',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
-            'transition-colors',
+            'h-12',
             icon && 'pl-12',
-            hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
-            className
-          )}
-          {...(kind ? KIND_PRESETS[kind] : {})}
-          {...props}
-        />
-      </div>
-    );
-  }
-);
-DarkInput.displayName = 'DarkInput';
-
-// ============================================================================
-// DarkSelect - Luxterra-style dark select field
-// ============================================================================
-
-interface DarkSelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  options: readonly { value: string; label: string }[];
-  icon?: ReactNode;
-  hasError?: boolean;
-  className?: string;
-  id?: string;
-  onBlur?: () => void;
-}
-
-export function DarkSelect({
-  value,
-  onChange,
-  placeholder = 'Seleccionar',
-  options,
-  icon,
-  hasError,
-  className,
-  id,
-  onBlur,
-}: DarkSelectProps) {
-  return (
-    <div className="relative">
-      {icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none z-10">
-          {icon}
-        </div>
-      )}
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        className={cn(
-          'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
-          'bg-foreground text-white',
-          'border border-transparent',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
-          'transition-colors',
-          icon && 'pl-12',
-          !value && 'text-white/40',
-          hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
-          className
-        )}
-      >
-        <option value="" disabled className="text-white/40">
-          {placeholder}
-        </option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value} className="text-white bg-foreground">
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <CaretDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50 pointer-events-none" />
-    </div>
-  );
-}
-
-// ============================================================================
-// LightInput - Clean light input for white backgrounds (alternative)
-// ============================================================================
-
-export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
-  ({ className, icon, hasError, kind, ...props }, ref) => {
-    return (
-      <div className="relative">
-        {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-            {icon}
-          </div>
-        )}
-        <input
-          ref={ref}
-          className={cn(
-            'w-full h-12 px-4 rounded-sm',
-            'bg-black/5 text-foreground placeholder:text-muted-foreground',
-            'border border-border',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
-            'transition-colors',
-            icon && 'pl-12',
-            hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
+            hasError && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40',
             className
           )}
           {...(kind ? KIND_PRESETS[kind] : {})}
@@ -218,10 +122,20 @@ export const LightInput = forwardRef<HTMLInputElement, DarkInputProps>(
 LightInput.displayName = 'LightInput';
 
 // ============================================================================
-// LightSelect - Clean light select for white backgrounds
+// LightSelect - clean light select on the real Cadence (Radix) Select
 // ============================================================================
 
-interface LightSelectProps extends DarkSelectProps {}
+interface FieldSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  options: readonly { value: string; label: string }[];
+  icon?: ReactNode;
+  hasError?: boolean;
+  className?: string;
+  id?: string;
+  onBlur?: () => void;
+}
 
 export function LightSelect({
   value,
@@ -233,41 +147,34 @@ export function LightSelect({
   className,
   id,
   onBlur,
-}: LightSelectProps) {
+}: FieldSelectProps) {
   return (
-    <div className="relative">
-      {icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10">
-          {icon}
-        </div>
-      )}
-      <select
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger
         id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
+        aria-invalid={hasError || undefined}
         className={cn(
-          'w-full h-12 px-4 rounded-sm appearance-none cursor-pointer',
-          'bg-black/5 text-foreground',
-          'border border-border',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
-          'transition-colors',
+          'relative h-12 w-full',
           icon && 'pl-12',
-          !value && 'text-muted-foreground',
-          hasError && 'border-[#C4503B]/30 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30',
+          hasError && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40',
           className
         )}
       >
-        <option value="" disabled className="text-muted-foreground">
-          {placeholder}
-        </option>
+        {icon && (
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            {icon}
+          </span>
+        )}
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <SelectItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-      <CaretDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-    </div>
+      </SelectContent>
+    </Select>
   );
 }

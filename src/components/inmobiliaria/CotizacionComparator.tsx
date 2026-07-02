@@ -22,6 +22,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import type {
   SolicitudMantenimiento,
   MantenimientoQuote,
@@ -127,35 +129,35 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
       className={cn(
         'flex-shrink-0 w-72 rounded-xl border transition-all',
         isSelected
-          ? 'border-[#2C7A53]/30 bg-[#E8F3EC]/50 dark:bg-[#2C7A53]/20 shadow-[#2C7A53]/10'
-          : 'border-border bg-card hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30'
+          ? 'border-success/30 bg-success-soft/50'
+          : 'border-border bg-card hover:border-primary/30'
       )}
     >
       {/* Badges Row */}
       <div className="flex flex-wrap gap-1.5 p-3 pb-0">
         {isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#F8F0E0] dark:bg-[#B7791F]/12 text-[#B7791F] dark:from-[#B7791F]/40 dark:to-[#B7791F]/40 dark:text-[#B7791F]">
+          <Badge variant="warning" className="gap-1">
             <Crown className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.bestValue')}
-          </span>
+          </Badge>
         )}
         {isLowestPrice && !isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:bg-[#2C7A53]/40 dark:text-[#2C7A53]">
+          <Badge variant="success" className="gap-1">
             <TrendDown className="w-3 h-3" weight="bold" />
             {t('inmobiliaria.finance.quotes.cheapest')}
-          </span>
+          </Badge>
         )}
         {isFastest && !isBestValue && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:bg-[#1A40FF]/40 dark:text-[#1A40FF]">
+          <Badge variant="default" className="gap-1">
             <Lightning className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.fastest')}
-          </span>
+          </Badge>
         )}
         {isSelected && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:bg-[#2C7A53]/40 dark:text-[#2C7A53]">
+          <Badge variant="success" className="gap-1">
             <CheckCircle className="w-3 h-3" weight="fill" />
             {t('inmobiliaria.finance.quotes.selected')}
-          </span>
+          </Badge>
         )}
       </div>
 
@@ -165,7 +167,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
           <h4 className="font-semibold text-foreground">{quote.providerName}</h4>
           <a
             href={`tel:${quote.providerPhone}`}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             <Phone className="w-3.5 h-3.5" />
             {quote.providerPhone}
@@ -184,8 +186,8 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
               className={cn(
                 'inline-flex items-center gap-1 text-xs font-medium',
                 priceDeviation < 0
-                  ? 'text-[#2C7A53] dark:text-[#3EAE70]'
-                  : 'text-[#C4503B] dark:text-[#E0664D]'
+                  ? 'text-success'
+                  : 'text-danger'
               )}
             >
               {priceDeviation < 0 ? (
@@ -223,10 +225,10 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
               className={cn(
                 'h-full rounded-full transition-all',
                 isLowestPrice
-                  ? 'bg-[#2C7A53]'
+                  ? 'bg-success'
                   : priceDeviation > 10
-                  ? 'bg-[#C4503B]'
-                  : 'bg-[#1A40FF]'
+                  ? 'bg-danger'
+                  : 'bg-primary'
               )}
               style={{
                 width: `${Math.min(100, Math.max(20, (analysis.avgPrice / quote.amount) * 50 + 50))}%`,
@@ -239,28 +241,17 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
         </div>
 
         {/* Action Button */}
-        <button
-          onClick={onSelect}
-          disabled={isSelected}
-          className={cn(
-            'w-full py-2.5 px-4 rounded-md font-medium transition-all flex items-center justify-center gap-2',
-            isSelected
-              ? 'bg-[#2C7A53] text-white cursor-default'
-              : 'bg-[#1A40FF] text-white hover:opacity-90'
-          )}
-        >
-          {isSelected ? (
-            <>
-              <CheckCircle className="w-4 h-4" weight="fill" />
-              {t('inmobiliaria.finance.quotes.selected')}
-            </>
-          ) : (
-            <>
-              <Check className="w-4 h-4" weight="bold" />
-              {t('inmobiliaria.finance.quotes.select')}
-            </>
-          )}
-        </button>
+        {isSelected ? (
+          <div className="w-full py-2.5 px-4 rounded-md font-medium flex items-center justify-center gap-2 bg-success-soft text-success cursor-default">
+            <CheckCircle className="w-4 h-4" weight="fill" />
+            {t('inmobiliaria.finance.quotes.selected')}
+          </div>
+        ) : (
+          <Button hideArrow onClick={onSelect} className="w-full">
+            <Check className="w-4 h-4" weight="bold" />
+            {t('inmobiliaria.finance.quotes.select')}
+          </Button>
+        )}
       </div>
     </motion.div>
   );
@@ -298,13 +289,10 @@ export function CotizacionComparator({
           </p>
         </div>
         {onRequestNewQuote && (
-          <button
-            onClick={onRequestNewQuote}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
-          >
+          <Button hideArrow onClick={onRequestNewQuote}>
             <Plus className="w-4 h-4" weight="bold" />
             {t('inmobiliaria.finance.quotes.requestQuote')}
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -321,7 +309,7 @@ export function CotizacionComparator({
               <h4 className="font-semibold text-foreground">{quote.providerName}</h4>
               <a
                 href={`tel:${quote.providerPhone}`}
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-[#1A40FF] transition-colors"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 <Phone className="w-4 h-4" />
                 {quote.providerPhone}
@@ -343,36 +331,22 @@ export function CotizacionComparator({
               </p>
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              onClick={() => onSelectQuote(quote.id)}
-              disabled={selectedQuoteId === quote.id}
-              className={cn(
-                'flex-1 py-2.5 px-4 rounded-md font-medium transition-all flex items-center justify-center gap-2',
-                selectedQuoteId === quote.id
-                  ? 'bg-[#2C7A53] text-white cursor-default'
-                  : 'bg-[#1A40FF] text-white hover:opacity-90'
-              )}
-            >
-              {selectedQuoteId === quote.id ? (
-                <>
-                  <CheckCircle className="w-4 h-4" weight="fill" />
-                  {t('inmobiliaria.finance.quotes.selected')}
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" weight="bold" />
-                  {t('inmobiliaria.finance.quotes.select')}
-                </>
-              )}
-            </button>
+          <div className="mt-4 flex items-center gap-2">
+            {selectedQuoteId === quote.id ? (
+              <div className="flex-1 py-2.5 px-4 rounded-md font-medium flex items-center justify-center gap-2 bg-success-soft text-success cursor-default">
+                <CheckCircle className="w-4 h-4" weight="fill" />
+                {t('inmobiliaria.finance.quotes.selected')}
+              </div>
+            ) : (
+              <Button hideArrow onClick={() => onSelectQuote(quote.id)} className="flex-1">
+                <Check className="w-4 h-4" weight="bold" />
+                {t('inmobiliaria.finance.quotes.select')}
+              </Button>
+            )}
             {onRequestNewQuote && (
-              <button
-                onClick={onRequestNewQuote}
-                className="py-2.5 px-4 rounded-md font-medium border border-border hover:bg-muted transition-colors text-foreground"
-              >
+              <Button variant="outline" size="icon" hideArrow onClick={onRequestNewQuote}>
                 <Plus className="w-4 h-4" />
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -398,42 +372,39 @@ export function CotizacionComparator({
           </p>
         </div>
         {onRequestNewQuote && (
-          <button
-            onClick={onRequestNewQuote}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border hover:bg-muted transition-colors text-sm font-medium text-foreground"
-          >
+          <Button variant="secondary" size="sm" hideArrow onClick={onRequestNewQuote}>
             <Plus className="w-4 h-4" />
             {t('inmobiliaria.finance.quotes.newQuote')}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Comparison Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="p-3 rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40">
-          <div className="flex items-center gap-2 text-[#2C7A53] dark:text-[#3EAE70]">
+        <div className="p-3 rounded-lg bg-success-soft border border-success/30">
+          <div className="flex items-center gap-2 text-success">
             <TrendDown className="w-4 h-4" weight="bold" />
             <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.cheapest')}</span>
           </div>
-          <p className="text-lg font-bold text-[#2C7A53] dark:text-[#3EAE70] mt-1">
+          <p className="text-lg font-bold text-success mt-1">
             {formatCurrency(Math.min(...solicitud.quotes.map((q) => q.amount)))}
           </p>
         </div>
-        <div className="p-3 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40">
-          <div className="flex items-center gap-2 text-[#1A40FF] dark:text-[#5570FF]">
+        <div className="p-3 rounded-lg bg-primary-soft border border-primary/30">
+          <div className="flex items-center gap-2 text-primary">
             <Lightning className="w-4 h-4" weight="fill" />
             <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.fastest')}</span>
           </div>
-          <p className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF] mt-1">
+          <p className="text-lg font-bold text-primary mt-1">
             {Math.min(...solicitud.quotes.map((q) => q.estimatedDays))} {t('inmobiliaria.finance.quotes.days')}
           </p>
         </div>
-        <div className="p-3 rounded-md bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
-          <div className="flex items-center gap-2 text-[#B7791F] dark:text-[#D2992F]">
+        <div className="p-3 rounded-lg bg-warning-soft border border-warning/30">
+          <div className="flex items-center gap-2 text-warning">
             <Crown className="w-4 h-4" weight="fill" />
             <span className="text-xs font-medium">{t('inmobiliaria.finance.quotes.bestValue')}</span>
           </div>
-          <p className="text-lg font-bold text-[#B7791F] dark:text-[#D2992F] mt-1">
+          <p className="text-lg font-bold text-warning mt-1">
             {solicitud.quotes.find((q) => q.id === analysis.bestValueId)?.providerName?.split(' ')[0] || '-'}
           </p>
         </div>
@@ -441,7 +412,7 @@ export function CotizacionComparator({
 
       {/* Quotes Horizontal Scroll */}
       <div className="relative">
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-[#D5D1CA] dark:scrollbar-thumb-[#4D4A45] scrollbar-track-transparent">
           <AnimatePresence mode="popLayout">
             {solicitud.quotes.map((quote) => (
               <QuoteCard
@@ -467,18 +438,18 @@ export function CotizacionComparator({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border border-[#2C7A53]/30 dark:border-[#2C7A53]/40"
+          className="p-4 rounded-xl bg-success-soft border border-success/30"
         >
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
+              <div className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-success" weight="fill" />
               </div>
               <div>
-                <p className="font-medium text-[#2C7A53] dark:text-[#3EAE70]">
+                <p className="font-medium text-success">
                   {t('inmobiliaria.finance.quotes.quoteSelected')}
                 </p>
-                <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70]">
+                <p className="text-sm text-success">
                   {solicitud.quotes.find((q) => q.id === selectedQuoteId)?.providerName} -{' '}
                   {formatCurrency(
                     solicitud.quotes.find((q) => q.id === selectedQuoteId)?.amount || 0
@@ -486,7 +457,7 @@ export function CotizacionComparator({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
+            <div className="flex items-center gap-2 text-sm text-success font-medium">
               <span>{t('inmobiliaria.finance.quotes.continueToApproval')}</span>
               <ArrowRight className="w-4 h-4" />
             </div>

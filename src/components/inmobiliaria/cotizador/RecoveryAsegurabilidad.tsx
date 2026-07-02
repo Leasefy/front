@@ -23,6 +23,7 @@
  */
 
 import * as React from 'react'
+import Link from 'next/link'
 import {
   ArrowClockwise,
   ArrowRight,
@@ -33,9 +34,14 @@ import {
   UsersThree,
   House,
   Coins,
+  UserPlus,
+  Buildings,
+  Archive,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import {
   parseRecoveryPaths,
@@ -48,7 +54,7 @@ import {
 // ---------------------------------------------------------------------------
 
 function PathIcon({ kind }: { kind: RecoveryPath['kind'] }) {
-  const cls = 'w-4 h-4 text-[#1A40FF] dark:text-[#8FA3FF]'
+  const cls = 'w-4 h-4 text-primary'
   switch (kind) {
     case 'canon':
       return <Coins weight="duotone" className={cls} />
@@ -65,38 +71,106 @@ function PathIcon({ kind }: { kind: RecoveryPath['kind'] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Secondary-action menu button (callback → enabled; none → "Próximamente")
+// ---------------------------------------------------------------------------
+
+function RecoveryMenuButton({
+  icon,
+  label,
+  onClick,
+  proximamenteLabel,
+}: {
+  icon: React.ReactNode
+  label: string
+  onClick?: () => void
+  proximamenteLabel: string
+}) {
+  if (onClick) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        hideArrow
+        onClick={onClick}
+        className="group w-full justify-between gap-2 text-left"
+      >
+        <span className="flex items-center gap-2 min-w-0 text-primary">
+          {icon}
+          <span className="text-sm font-medium text-fg truncate">
+            {label}
+          </span>
+        </span>
+        <ArrowRight
+          className="w-3.5 h-3.5 text-fg-muted shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+          aria-hidden="true"
+        />
+      </Button>
+    )
+  }
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      hideArrow
+      disabled
+      title={proximamenteLabel}
+      className="w-full justify-between gap-2 text-left"
+    >
+      <span className="flex items-center gap-2 min-w-0 text-fg-muted">
+        {icon}
+        <span className="text-sm font-medium truncate">{label}</span>
+      </span>
+      <span className="text-[10px] font-normal text-fg-muted shrink-0">
+        {proximamenteLabel}
+      </span>
+    </Button>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Block 1 — Recovery ("nadie lo asegura")
 // ---------------------------------------------------------------------------
 
 function RecoveryBlock({
   recovery,
   onReQuote,
+  onComplementarIngresos,
+  onConsultarOtraEntidad,
+  onGuardarNoAsegurable,
 }: {
   recovery: RecoveryEvent | null
   onReQuote: () => void
+  /** Optional handlers; omit → the menu item degrades to "Próximamente". */
+  onComplementarIngresos?: () => void
+  onConsultarOtraEntidad?: () => void
+  onGuardarNoAsegurable?: () => void
 }) {
   const { t } = useI18n()
+  const tf = (k: string, fb: string) => {
+    const r = t(k)
+    return r === k ? fb : r
+  }
   const paths = recovery ? parseRecoveryPaths(recovery.payload) : []
 
   return (
     <section
       aria-labelledby="recovery-heading"
-      className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+      className="rounded-xl border border-border bg-card overflow-hidden"
     >
-      <div className="px-5 pt-5 pb-4 border-b border-neutral-200/80 dark:border-neutral-800">
+      <div className="px-5 pt-5 pb-4 border-b border-border">
         <div className="flex items-center gap-2.5">
-          <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0" />
-          <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#1A40FF] dark:text-[#8FA3FF]">
+          <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0" />
+          <span className="text-xs font-medium uppercase tracking-wide text-primary">
             {t('inmobiliaria.ai.cotizador.detail.recovery.eyebrow')}
           </span>
         </div>
         <h2
           id="recovery-heading"
-          className="mt-2.5 text-[18px] font-medium tracking-[-0.02em] text-neutral-800 dark:text-white leading-tight"
+          className="mt-2.5 text-base font-semibold tracking-tight text-fg leading-tight"
         >
           {t('inmobiliaria.ai.cotizador.detail.recovery.titulo')}
         </h2>
-        <p className="mt-1.5 text-[13.5px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+        <p className="mt-1.5 text-sm text-fg-muted leading-relaxed">
           {paths.length > 0
             ? t('inmobiliaria.ai.cotizador.detail.recovery.introPaths')
             : t('inmobiliaria.ai.cotizador.detail.recovery.intro')}
@@ -109,17 +183,17 @@ function RecoveryBlock({
             {paths.map((p, i) => (
               <li
                 key={i}
-                className="flex items-start gap-3 rounded-lg border border-neutral-200/70 dark:border-neutral-800 px-3.5 py-3"
+                className="flex items-start gap-3 rounded-lg border border-border px-3.5 py-3"
               >
-                <span className="mt-0.5 flex items-center justify-center w-7 h-7 rounded-lg bg-[#1A40FF]/[0.07] dark:bg-[#1A40FF]/15 shrink-0">
+                <span className="mt-0.5 flex items-center justify-center w-7 h-7 rounded-lg bg-primary-soft shrink-0">
                   <PathIcon kind={p.kind} />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13.5px] font-medium text-neutral-800 dark:text-neutral-100">
+                  <p className="text-sm font-medium text-fg">
                     {p.label}
                   </p>
                   {p.detail && (
-                    <p className="mt-0.5 text-[12.5px] text-neutral-500 dark:text-neutral-400">
+                    <p className="mt-0.5 text-xs text-fg-muted">
                       {p.detail}
                     </p>
                   )}
@@ -129,29 +203,102 @@ function RecoveryBlock({
           </ul>
         ) : (
           // Honest fallback — no recovery paths from the agent.
-          <div className="flex items-start gap-2.5 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 px-3.5 py-3">
-            <ChatCircleDots weight="duotone" className="w-4 h-4 text-neutral-400 mt-0.5 shrink-0" />
-            <p className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+          <div className="flex items-start gap-2.5 rounded-lg bg-surface-muted px-3.5 py-3">
+            <ChatCircleDots weight="duotone" className="w-4 h-4 text-fg-muted mt-0.5 shrink-0" />
+            <p className="text-sm text-fg-muted leading-relaxed">
               {t('inmobiliaria.ai.cotizador.detail.recovery.asesorHint')}
             </p>
           </div>
         )}
       </div>
 
+      {/* Secondary-action menu (visión #10) — explicit alternative caminos when
+          nobody insures this candidate. Two are deep-links (buscar otro
+          candidato → nueva consulta; sugerir otro inmueble → matching); the
+          rest are optional callbacks that degrade to "Próximamente". */}
+      <div className="px-5 pb-4">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
+          {tf('inmobiliaria.ai.cotizador.detail.recovery.menu.eyebrow', 'Otros caminos')}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Buscar otro candidato → nueva consulta */}
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            asChild
+            className="group w-full justify-between gap-2 text-left"
+          >
+            <Link href="/panel/inmobiliaria/ai/asegurabilidad/nueva">
+              <span className="flex items-center gap-2 min-w-0">
+                <MagnifyingGlass weight="duotone" className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
+                <span className="text-sm font-medium text-fg truncate">
+                  {tf('inmobiliaria.ai.cotizador.detail.recovery.menu.otroCandidato', 'Buscar otro candidato')}
+                </span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-fg-muted shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
+            </Link>
+          </Button>
+
+          {/* Sugerir otro inmueble → matching (deep-link) */}
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            asChild
+            className="group w-full justify-between gap-2 text-left"
+          >
+            <Link href="/panel/inmobiliaria/ai/matching">
+              <span className="flex items-center gap-2 min-w-0">
+                <House weight="duotone" className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
+                <span className="text-sm font-medium text-fg truncate">
+                  {tf('inmobiliaria.ai.cotizador.detail.recovery.menu.sugerirInmueble', 'Sugerir otro inmueble')}
+                </span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-fg-muted shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
+            </Link>
+          </Button>
+
+          {/* Complementar ingresos */}
+          <RecoveryMenuButton
+            icon={<TrendUp weight="duotone" className="w-4 h-4 shrink-0" aria-hidden="true" />}
+            label={tf('inmobiliaria.ai.cotizador.detail.recovery.menu.complementarIngresos', 'Complementar ingresos')}
+            onClick={onComplementarIngresos}
+            proximamenteLabel={tf('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente', 'Próximamente')}
+          />
+
+          {/* Consultar otra entidad */}
+          <RecoveryMenuButton
+            icon={<Buildings weight="duotone" className="w-4 h-4 shrink-0" aria-hidden="true" />}
+            label={tf('inmobiliaria.ai.cotizador.detail.recovery.menu.otraEntidad', 'Consultar otra entidad')}
+            onClick={onConsultarOtraEntidad}
+            proximamenteLabel={tf('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente', 'Próximamente')}
+          />
+
+          {/* Guardar como no asegurable */}
+          <RecoveryMenuButton
+            icon={<Archive weight="duotone" className="w-4 h-4 shrink-0" aria-hidden="true" />}
+            label={tf('inmobiliaria.ai.cotizador.detail.recovery.menu.guardarNoAsegurable', 'Guardar como no asegurable')}
+            onClick={onGuardarNoAsegurable}
+            proximamenteLabel={tf('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente', 'Próximamente')}
+          />
+        </div>
+      </div>
+
       {/* Footer — primary CTA reuses the existing re-quote flow. */}
-      <div className="flex items-center justify-between gap-4 border-t border-neutral-200/80 dark:border-neutral-800 px-5 py-4">
-        <span className="text-[12px] text-neutral-400 dark:text-neutral-500">
+      <div className="flex items-center justify-between gap-4 border-t border-border px-5 py-4">
+        <span className="text-xs text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.recovery.footerNote')}
         </span>
-        <button
-          type="button"
+        <Button
+          hideArrow
           onClick={onReQuote}
-          className="group inline-flex items-center gap-2 h-10 px-5 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 transition-colors motion-reduce:transition-none"
+          className="group shrink-0"
         >
           <ArrowClockwise className="w-4 h-4" />
           {t('inmobiliaria.ai.cotizador.detail.recovery.recotizar')}
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
-        </button>
+        </Button>
       </div>
     </section>
   )
@@ -188,19 +335,19 @@ function CondicionadoBlock({
   return (
     <section
       aria-labelledby="condicionado-heading"
-      className="rounded-xl border border-[#B7791F]/25 dark:border-[#B7791F]/30 bg-[#F8F0E0]/40 dark:bg-[#B7791F]/[0.08] overflow-hidden"
+      className="rounded-xl border border-warning/25 bg-warning-soft/40 overflow-hidden"
     >
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">
-          <ListChecks weight="duotone" className="w-4 h-4 text-[#B7791F] dark:text-[#D2992F]" />
+          <ListChecks weight="duotone" className="w-4 h-4 text-warning" />
           <h2
             id="condicionado-heading"
-            className="text-[15px] font-semibold text-[#8A5A12] dark:text-[#D2992F]"
+            className="text-base font-semibold text-warning"
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.titulo')}
           </h2>
         </div>
-        <p className="mt-1 text-[13px] text-[#8A5A12]/80 dark:text-[#D2992F]/80 leading-relaxed">
+        <p className="mt-1 text-sm text-warning/80 leading-relaxed">
           {t('inmobiliaria.ai.cotizador.detail.condiciones.subtitle', { n: entries.length })}
         </p>
       </div>
@@ -209,14 +356,14 @@ function CondicionadoBlock({
         {entries.map((e, i) => (
           <li
             key={`${e.carrier}-${i}`}
-            className="flex items-start gap-2.5 rounded-lg bg-white/70 dark:bg-neutral-900/40 px-3.5 py-2.5"
+            className="flex items-start gap-2.5 rounded-lg bg-card/70 px-3.5 py-2.5"
           >
-            <span aria-hidden="true" className="mt-1.5 w-1 h-1 rounded-full bg-[#B7791F]/70 shrink-0" />
+            <span aria-hidden="true" className="mt-1.5 w-1 h-1 rounded-full bg-warning/70 shrink-0" />
             <div className="min-w-0">
-              <p className="text-[13px] text-neutral-700 dark:text-neutral-200 leading-relaxed">
+              <p className="text-sm text-fg leading-relaxed">
                 {e.condicion}
               </p>
-              <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-[#B7791F] dark:text-[#D2992F]">
+              <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-warning">
                 {e.carrier}
               </p>
             </div>
@@ -226,26 +373,28 @@ function CondicionadoBlock({
 
       <div className="flex items-center justify-end px-5 py-4">
         {onResolverCondiciones ? (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={onResolverCondiciones}
-            className="inline-flex items-center gap-2 rounded-md border border-[#B7791F]/40 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-medium text-[#8A5A12] dark:text-[#D2992F] hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/15 transition-colors"
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.resolver')}
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             disabled
             title={t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 dark:border-neutral-700 px-4 py-2 text-sm font-medium text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
           >
             {t('inmobiliaria.ai.cotizador.detail.condiciones.resolver')}
             <span className="text-[11px] font-normal opacity-70">
               · {t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
             </span>
-          </button>
+          </Button>
         )}
       </div>
     </section>
@@ -267,6 +416,10 @@ interface RecoveryAsegurabilidadProps {
   onReQuote: () => void
   /** Opens the counterfactual modal; omit to degrade the condicionado CTA. */
   onResolverCondiciones?: () => void
+  /** Secondary-action menu (visión #10) — optional; omitted items degrade to "Próximamente". */
+  onComplementarIngresos?: () => void
+  onConsultarOtraEntidad?: () => void
+  onGuardarNoAsegurable?: () => void
 }
 
 export function RecoveryAsegurabilidad({
@@ -275,6 +428,9 @@ export function RecoveryAsegurabilidad({
   carriers,
   onReQuote,
   onResolverCondiciones,
+  onComplementarIngresos,
+  onConsultarOtraEntidad,
+  onGuardarNoAsegurable,
 }: RecoveryAsegurabilidadProps) {
   const showRecovery = asegurabilidad === 'no'
   const hasConditional = carriers.some(c => c.status === 'conditional')
@@ -283,7 +439,15 @@ export function RecoveryAsegurabilidad({
 
   return (
     <div className={cn('space-y-4')}>
-      {showRecovery && <RecoveryBlock recovery={recovery} onReQuote={onReQuote} />}
+      {showRecovery && (
+        <RecoveryBlock
+          recovery={recovery}
+          onReQuote={onReQuote}
+          onComplementarIngresos={onComplementarIngresos}
+          onConsultarOtraEntidad={onConsultarOtraEntidad}
+          onGuardarNoAsegurable={onGuardarNoAsegurable}
+        />
+      )}
       {hasConditional && (
         <CondicionadoBlock carriers={carriers} onResolverCondiciones={onResolverCondiciones} />
       )}

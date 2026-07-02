@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion'
 import { CreditCard, Buildings, DeviceMobile, Calendar, Check, Info, Wallet } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { useOnboarding } from '@/lib/context/OnboardingContext'
 import type { PaymentMethod } from '@/lib/auth/types'
 
@@ -109,38 +111,21 @@ export function StepPayments() {
         <label className="block text-sm font-semibold text-neutral-700 mb-2">
           Banco para depósitos
         </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Buildings className="h-5 w-5 text-neutral-400" />
-          </div>
-          <select
-            value={draft.bankName || ''}
-            onChange={(e) => updateDraft({ bankName: e.target.value })}
-            className={cn(
-              'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white appearance-none',
-              'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
-              draft.bankName ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
-            )}
+        <Select value={draft.bankName || ''} onValueChange={(v) => updateDraft({ bankName: v })}>
+          <SelectTrigger
+            className={cn('relative h-12 pl-12 rounded-xl', draft.bankName && 'border-primary/30 bg-primary-soft/30')}
           >
-            <option value="">Selecciona tu banco</option>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
+              <Buildings className="h-5 w-5" />
+            </span>
+            <SelectValue placeholder="Selecciona tu banco" />
+          </SelectTrigger>
+          <SelectContent>
             {BANKS.map((bank) => (
-              <option key={bank} value={bank}>
-                {bank}
-              </option>
+              <SelectItem key={bank} value={bank}>{bank}</SelectItem>
             ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-            <svg
-              className="h-5 w-5 text-neutral-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
+          </SelectContent>
+        </Select>
       </motion.div>
 
       {/* Account Number */}
@@ -152,18 +137,15 @@ export function StepPayments() {
         <label className="block text-sm font-semibold text-neutral-700 mb-2">
           Número de cuenta
         </label>
-        <input
+        <Input
           type="text"
           inputMode="numeric"
           value={draft.bankAccount || ''}
           onChange={(e) => updateDraft({ bankAccount: e.target.value.replace(/\D/g, '') })}
           placeholder="Ej: 1234567890"
           className={cn(
-            'w-full px-4 py-4 text-base rounded-xl border bg-white',
-            'transition-all duration-200',
-            'placeholder:text-neutral-400',
-            'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
-            draft.bankAccount ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
+            'h-12 rounded-xl',
+            draft.bankAccount && 'border-primary/30 bg-primary-soft/30'
           )}
         />
         <p className="text-xs text-neutral-400 mt-2">
@@ -213,7 +195,7 @@ export function StepPayments() {
                 <div
                   className={cn(
                     'w-9 h-9 rounded-md flex items-center justify-center transition-colors',
-                    isSelected ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
+                    isSelected ? 'bg-[#1A40FF] text-white' : 'bg-neutral-100 text-neutral-500'
                   )}
                 >
                   <Icon className="w-4 h-4" />

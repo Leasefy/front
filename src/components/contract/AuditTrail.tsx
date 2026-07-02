@@ -66,14 +66,14 @@ interface TimelineEvent {
 // ============================================================================
 
 const EVENT_VISUAL: Record<TimelineEventType, { icon: typeof FileText; color: string; bgColor: string }> = {
-  created:                  { icon: FileText,      color: 'text-[#1A40FF] dark:text-[#5570FF]',       bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15' },
-  sent_for_signing:         { icon: PaperPlaneTilt, color: 'text-[#1A40FF] dark:text-[#5570FF]',  bgColor: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15' },
-  tenant_signed:            { icon: PenNib,         color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
-  landlord_signed:          { icon: PenNib,         color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
-  rejection_modifications:  { icon: PencilSimple,   color: 'text-[#B7791F] dark:text-[#D2992F]',    bgColor: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15' },
-  rejection_definitive:     { icon: XCircle,        color: 'text-[#C4503B] dark:text-[#E0664D]',      bgColor: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15' },
-  fully_signed:             { icon: CheckCircle,    color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
-  activated:                { icon: CheckCircle,    color: 'text-[#2C7A53] dark:text-[#3EAE70]', bgColor: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15' },
+  created:                  { icon: FileText,      color: 'text-primary',       bgColor: 'bg-primary-soft' },
+  sent_for_signing:         { icon: PaperPlaneTilt, color: 'text-primary',  bgColor: 'bg-primary-soft' },
+  tenant_signed:            { icon: PenNib,         color: 'text-success', bgColor: 'bg-success-soft' },
+  landlord_signed:          { icon: PenNib,         color: 'text-success', bgColor: 'bg-success-soft' },
+  rejection_modifications:  { icon: PencilSimple,   color: 'text-warning',    bgColor: 'bg-warning-soft' },
+  rejection_definitive:     { icon: XCircle,        color: 'text-danger',      bgColor: 'bg-danger-soft' },
+  fully_signed:             { icon: CheckCircle,    color: 'text-success', bgColor: 'bg-success-soft' },
+  activated:                { icon: CheckCircle,    color: 'text-success', bgColor: 'bg-success-soft' },
 };
 
 // ============================================================================
@@ -212,16 +212,16 @@ function TimelineEventItem({
       <div className="flex-1 pb-6">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h4 className="font-medium text-foreground text-sm">{event.title}</h4>
+            <h4 className="font-medium text-fg text-sm">{event.title}</h4>
             {event.description && (
-              <p className="text-xs text-muted-foreground mt-0.5 break-words whitespace-pre-wrap">
+              <p className="text-xs text-fg-muted mt-0.5 break-words whitespace-pre-wrap">
                 {event.description}
               </p>
             )}
           </div>
           <div className="text-right shrink-0">
-            <p className="text-xs text-muted-foreground">{formatDate(event.timestamp)}</p>
-            <p className="text-[10px] text-muted-foreground font-mono">
+            <p className="text-xs text-fg-muted">{formatDate(event.timestamp)}</p>
+            <p className="text-[10px] text-fg-muted font-mono">
               {new Date(event.timestamp).toLocaleTimeString(locale === 'es' ? 'es-CO' : 'en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -232,32 +232,32 @@ function TimelineEventItem({
 
         {/* Detalle técnico expandible — solo para firmas */}
         {isSignature && showDetails && (
-          <div className="mt-3 rounded-sm bg-muted p-3 space-y-2">
+          <div className="mt-3 rounded-sm bg-surface-muted p-3 space-y-2">
             {event.actor && (
               <div className="flex items-center gap-2 text-xs">
-                <PenNib className="h-3 w-3 text-muted-foreground" />
-                <span className="text-muted-foreground">Firmante:</span>
-                <span className="text-foreground font-medium">{event.actor}</span>
+                <PenNib className="h-3 w-3 text-fg-muted" />
+                <span className="text-fg-muted">Firmante:</span>
+                <span className="text-fg font-medium">{event.actor}</span>
               </div>
             )}
             {event.ipAddress && (
               <div className="flex items-center gap-2 text-xs">
-                <Globe className="h-3 w-3 text-muted-foreground" />
-                <span className="text-muted-foreground">IP:</span>
-                <span className="text-foreground font-mono">{maskIpAddress(event.ipAddress)}</span>
+                <Globe className="h-3 w-3 text-fg-muted" />
+                <span className="text-fg-muted">IP:</span>
+                <span className="text-fg font-mono">{maskIpAddress(event.ipAddress)}</span>
               </div>
             )}
             {event.userAgent && (
               <div className="flex items-center gap-2 text-xs">
-                <Monitor className="h-3 w-3 text-muted-foreground" />
-                <span className="text-muted-foreground">Dispositivo:</span>
-                <span className="text-foreground truncate max-w-[240px]">{parseUserAgent(event.userAgent)}</span>
+                <Monitor className="h-3 w-3 text-fg-muted" />
+                <span className="text-fg-muted">Dispositivo:</span>
+                <span className="text-fg truncate max-w-[240px]">{parseUserAgent(event.userAgent)}</span>
               </div>
             )}
             {event.otpVerified && (
               <div className="flex items-center gap-2 text-xs">
-                <Shield className="h-3 w-3 text-[#2C7A53]" />
-                <span className="text-[#2C7A53] font-medium">Identidad verificada por código de un solo uso</span>
+                <Shield className="h-3 w-3 text-success" />
+                <span className="text-success font-medium">Identidad verificada por código de un solo uso</span>
               </div>
             )}
           </div>
@@ -265,7 +265,7 @@ function TimelineEventItem({
 
         {/* Badge verificado en vista compacta */}
         {isSignature && !showDetails && event.otpVerified && (
-          <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#2C7A53]">
+          <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-success">
             <Shield className="h-3 w-3" />
             <span>Verificado</span>
           </div>
@@ -273,7 +273,7 @@ function TimelineEventItem({
 
         {/* Para rechazos mostramos el actor fuera del detalle técnico */}
         {(event.type === 'rejection_modifications' || event.type === 'rejection_definitive') && event.actor && (
-          <p className="mt-1 text-[11px] text-muted-foreground">— {event.actor}</p>
+          <p className="mt-1 text-[11px] text-fg-muted">— {event.actor}</p>
         )}
       </div>
     </div>
@@ -290,13 +290,13 @@ export function AuditTrail({ contract, rejections = [], expanded = false, classN
   const events = useMemo(() => buildTimelineEvents(contract, rejections), [contract, rejections]);
 
   return (
-    <div className={cn('rounded-sm border border-border bg-card', className)}>
+    <div className={cn('rounded-sm border border-border bg-surface', className)}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Historial del contrato</h3>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          <Clock className="h-5 w-5 text-fg-muted" />
+          <h3 className="font-semibold text-fg">Historial del contrato</h3>
+          <span className="text-xs text-fg-muted bg-surface-muted px-2 py-0.5 rounded-full">
             {events.length} {events.length === 1 ? 'evento' : 'eventos'}
           </span>
         </div>
@@ -319,7 +319,7 @@ export function AuditTrail({ contract, rejections = [], expanded = false, classN
       {/* Timeline */}
       <div className="p-4 pt-6">
         {events.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
+          <p className="text-sm text-fg-muted text-center py-4">
             Sin eventos registrados todavía.
           </p>
         ) : (
@@ -335,7 +335,7 @@ export function AuditTrail({ contract, rejections = [], expanded = false, classN
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 bg-muted/50 border-t border-border text-xs text-muted-foreground text-center">
+      <div className="px-4 py-3 bg-surface-muted/50 border-t border-border text-xs text-fg-muted text-center">
         <p>Los eventos se registran con marca de tiempo inmutable.</p>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { useAuth } from '@/lib/auth';
 import { getAccessToken } from '@/lib/api/client';
@@ -94,7 +95,7 @@ export default function UpdatePasswordPage() {
 
   return (
     <ForceLightMode>
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen bg-bg flex items-center justify-center px-4">
         <div className="w-full max-w-[400px]">
           {/* Logo */}
           <div className="flex justify-center mb-8">
@@ -105,13 +106,13 @@ export default function UpdatePasswordPage() {
 
           {success ? (
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-[#E8F3EC] rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="h-9 w-9 text-[#2C7A53]" />
+              <div className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="h-9 w-9 text-success" weight="fill" />
               </div>
-              <h1 className="text-xl font-semibold text-foreground mb-2">
+              <h1 className="text-xl font-semibold text-fg mb-2">
                 Contraseña actualizada
               </h1>
-              <p className="text-sm text-muted-foreground mb-6">
+              <p className="text-sm text-fg-muted mb-6">
                 Tu contraseña fue cambiada exitosamente. Redirigiendo...
               </p>
               <Link href="/">
@@ -121,13 +122,13 @@ export default function UpdatePasswordPage() {
           ) : (
             <>
               <div className="text-center mb-8">
-                <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
-                  <Lock className="h-5 w-5 text-foreground" />
+                <div className="mx-auto w-12 h-12 bg-surface-muted rounded-full flex items-center justify-center mb-4">
+                  <Lock className="h-5 w-5 text-fg" />
                 </div>
-                <h1 className="text-2xl font-semibold text-foreground mb-1">
+                <h1 className="text-2xl font-semibold text-fg mb-1">
                   Nueva contraseña
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-fg-muted">
                   Elige una contraseña segura para tu cuenta
                 </p>
               </div>
@@ -135,60 +136,62 @@ export default function UpdatePasswordPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                  <label className="block text-sm font-medium text-fg mb-1.5">
                     Nueva contraseña
                   </label>
                   <div className="relative">
-                    <input
+                    <Input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Mínimo 8 caracteres"
-                      className="w-full h-12 px-4 pr-11 rounded-xl border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="h-12 pr-11"
                       autoComplete="new-password"
                     />
                     <button
                       type="button"
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg"
                     >
                       {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   {password && !isStrong && (
-                    <p className="text-xs text-destructive mt-1">Mínimo 8 caracteres</p>
+                    <p className="text-xs text-danger mt-1">Mínimo 8 caracteres</p>
                   )}
                 </div>
 
                 {/* Confirm */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                  <label className="block text-sm font-medium text-fg mb-1.5">
                     Confirmar contraseña
                   </label>
                   <div className="relative">
-                    <input
+                    <Input
                       type={showConfirm ? 'text' : 'password'}
                       value={confirm}
                       onChange={(e) => setConfirm(e.target.value)}
                       placeholder="Repite tu contraseña"
-                      className="w-full h-12 px-4 pr-11 rounded-xl border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="h-12 pr-11"
                       autoComplete="new-password"
                     />
                     <button
                       type="button"
+                      aria-label={showConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       onClick={() => setShowConfirm((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg"
                     >
                       {showConfirm ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   {confirm && !passwordsMatch && (
-                    <p className="text-xs text-destructive mt-1">Las contraseñas no coinciden</p>
+                    <p className="text-xs text-danger mt-1">Las contraseñas no coinciden</p>
                   )}
                 </div>
 
                 {error && (
-                  <p className="text-sm text-destructive bg-destructive/10 px-4 py-3 rounded-xl">
+                  <p className="text-sm text-danger bg-danger-soft px-4 py-3 rounded-[12px]">
                     {error}
                   </p>
                 )}
@@ -207,9 +210,9 @@ export default function UpdatePasswordPage() {
                 </Button>
               </form>
 
-              <p className="text-center text-xs text-muted-foreground mt-6">
+              <p className="text-center text-xs text-fg-muted mt-6">
                 ¿Recordaste tu contraseña?{' '}
-                <Link href="/auth" className="text-foreground hover:underline">
+                <Link href="/auth" className="text-fg hover:underline">
                   Iniciar sesión
                 </Link>
               </p>

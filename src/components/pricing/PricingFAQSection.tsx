@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Circle, Plus, X, ArrowRight } from '@phosphor-icons/react';
+import { Plus, X, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { SectionLabel } from '@/components/ui/section-label';
 
 export const pricingFaqs = [
   {
@@ -51,13 +52,8 @@ export function PricingFAQSection() {
             transition={{ duration: 0.6 }}
             className="lg:sticky lg:top-32 self-start"
           >
-            {/* Label with icon */}
-            <div className="flex items-center gap-2 mb-4">
-              <Circle className="w-4 h-4 text-primary" />
-              <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">
-                FAQ
-              </span>
-            </div>
+            {/* Label */}
+            <SectionLabel className="mb-4">FAQ</SectionLabel>
 
             {/* Main heading */}
             <h2 className="text-[clamp(2.5rem,5vw,4rem)] font-heading font-light text-foreground leading-[1.05] tracking-[-0.03em] mb-8">
@@ -72,7 +68,7 @@ export function PricingFAQSection() {
             {/* CTA Button */}
             <a
               href="mailto:info@leasefy.co"
-              className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-foreground text-background text-[14px] font-medium hover:bg-foreground/90 transition-colors"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-foreground text-background text-[14px] font-medium hover:bg-foreground/90 transition-colors"
             >
               Contáctanos
               <ArrowRight className="w-4 h-4 ml-2" />

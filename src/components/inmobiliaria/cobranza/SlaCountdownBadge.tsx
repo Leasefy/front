@@ -55,9 +55,9 @@ export function calcBusinessDaysRemaining(deadline: Date): number {
 }
 
 const SLA_COLORS = {
-  onTime: 'text-[#2C7A53] bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-  warning: 'text-[#B7791F] bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-  overdue: 'text-[#C4503B] bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+  onTime: 'text-success bg-success-soft',
+  warning: 'text-warning bg-warning-soft',
+  overdue: 'text-danger bg-danger-soft',
 } as const
 
 export function SlaCountdownBadge({ deadline, type: _type, className }: SlaBadgeProps) {

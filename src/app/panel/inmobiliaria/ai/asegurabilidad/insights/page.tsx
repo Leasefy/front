@@ -11,6 +11,7 @@ import { PrimaDistributionChart } from '@/components/inmobiliaria/cotizador/Prim
 import { InsightsAssumptionTable } from '@/components/inmobiliaria/cotizador/InsightsAssumptionTable'
 import { InsightsMonthlyCostPreview } from '@/components/inmobiliaria/cotizador/InsightsMonthlyCostPreview'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { Button } from '@/components/ui/button'
 
 /**
  * Placeholder "Disponible próximamente" para los widgets aún no activos.
@@ -23,13 +24,13 @@ function ProximamentePlaceholder() {
   return (
     <div
       role="status"
-      className="rounded-xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/30 px-6 py-8 flex flex-col items-center gap-3 text-center"
+      className="rounded-xl border-2 border-dashed border-border bg-surface-muted/40 px-6 py-8 flex flex-col items-center gap-3 text-center"
     >
-      <Hourglass weight="duotone" className="h-8 w-8 text-neutral-400" />
-      <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+      <Hourglass weight="duotone" className="h-8 w-8 text-fg-muted" />
+      <p className="text-sm font-semibold text-fg">
         {t('inmobiliaria.ai.cotizador.noDataYet.heading')}
       </p>
-      <span className="text-xs bg-neutral-200 dark:bg-neutral-700 rounded-full px-2 py-0.5 text-neutral-600 dark:text-neutral-300">
+      <span className="text-xs bg-surface-muted rounded-full px-2 py-0.5 text-fg-muted">
         Disponible próximamente
       </span>
     </div>
@@ -57,28 +58,30 @@ export default function CotizadorInsightsPage() {
   return (
     <main className="p-6 lg:p-8 space-y-6">
       {/* Page header */}
-      <header>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">
           {t('inmobiliaria.ai.cotizador.insights.title')}
         </h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.cotizador.insights.subtitle')}
         </p>
       </header>
 
       {/* Error banner */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cotizador.insights.errorLoading')}: {error}
           </p>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="shrink-0 text-xs font-medium text-[#C4503B] dark:text-[#E0664D] underline hover:no-underline"
+            className="shrink-0"
           >
             {t('inmobiliaria.ai.cotizador.insights.retry')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -86,8 +89,8 @@ export default function CotizadorInsightsPage() {
       {(!isLoading || approvalRateMonthly.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Widget 1 — Approval Rate Monthly (full-row at md) */}
-          <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4 md:col-span-2">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <section className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
+            <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.approvalRate')}
             </h2>
             <ApprovalRateMonthlyChart
@@ -97,8 +100,8 @@ export default function CotizadorInsightsPage() {
           </section>
 
           {/* Widget 2 — Prima Distribution */}
-          <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.primaDistribution')}
             </h2>
             <PrimaDistributionChart
@@ -108,8 +111,8 @@ export default function CotizadorInsightsPage() {
           </section>
 
           {/* Widget 3 — Assumption Registry Table */}
-          <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.assumptions')}
             </h2>
             <InsightsAssumptionTable
@@ -119,8 +122,8 @@ export default function CotizadorInsightsPage() {
           </section>
 
           {/* Widget 4 — Monthly Cost Preview */}
-          <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.costTrend')}
             </h2>
             <InsightsMonthlyCostPreview
@@ -130,16 +133,16 @@ export default function CotizadorInsightsPage() {
           </section>
 
           {/* Widget 5 — Cohort Match Quality (aún sin datos) */}
-          <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.cohortQuality')}
             </h2>
             <ProximamentePlaceholder />
           </section>
 
           {/* Widget 6 — Drift Report (aún sin datos) */}
-          <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <h2 className="text-base font-semibold text-fg">
               {t('inmobiliaria.ai.cotizador.insights.sections.driftReport')}
             </h2>
             <ProximamentePlaceholder />

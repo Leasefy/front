@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   Buildings,
   House,
@@ -24,6 +22,14 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import {
+  Button,
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+} from '@/components/ui';
+import { IconButton } from '@leasefy/cadence';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -49,26 +55,26 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
 // Availability status colors (labels resolved via i18n in component)
 const AVAILABILITY_STYLES: Record<PropertyAvailability, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
   available: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     labelKey: 'inmobiliaria.consignaciones.availability.available',
     icon: CheckCircle,
   },
   rented: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
     labelKey: 'inmobiliaria.consignaciones.availability.rented',
     icon: House,
   },
   in_process: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
     labelKey: 'inmobiliaria.consignaciones.availability.inProcess',
     icon: Timer,
   },
   maintenance: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
     labelKey: 'inmobiliaria.consignaciones.availability.maintenance',
     icon: Wrench,
   },
@@ -77,23 +83,23 @@ const AVAILABILITY_STYLES: Record<PropertyAvailability, { bg: string; text: stri
 // Consignacion status colors (labels resolved via i18n in component)
 const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; labelKey: string }> = {
   active: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     labelKey: 'inmobiliaria.consignaciones.status.active',
   },
   pending: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
     labelKey: 'inmobiliaria.consignaciones.status.pending',
   },
   expired: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-400',
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
     labelKey: 'inmobiliaria.consignaciones.status.expired',
   },
   terminated: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
     labelKey: 'inmobiliaria.consignaciones.status.terminated',
   },
 };
@@ -110,8 +116,6 @@ export function ConsignacionHeader({
   onTerminate,
   onRenew,
 }: ConsignacionHeaderProps) {
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { t, formatDate } = useI18n();
 
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
@@ -120,10 +124,10 @@ export function ConsignacionHeader({
   const AvailabilityIcon = availability.icon;
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex flex-col lg:flex-row rounded-xl">
         {/* Image/Thumbnail Section */}
-        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-neutral-100 dark:bg-neutral-800 overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
+        <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
           {consignacion.propertyThumbnail ? (
             <img
               src={consignacion.propertyThumbnail}
@@ -132,13 +136,13 @@ export function ConsignacionHeader({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <PropertyIcon className="w-20 h-20 text-neutral-300 dark:text-neutral-600" />
+              <PropertyIcon className="w-20 h-20 text-fg-subtle dark:text-fg-muted" />
             </div>
           )}
 
           {/* Property type badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+            <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-ink/90 backdrop-blur-sm text-sm font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
               <PropertyIcon className="w-4 h-4" />
               {t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)}
             </span>
@@ -167,12 +171,12 @@ export function ConsignacionHeader({
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl lg:text-3xl font-bold text-neutral-900 dark:text-white mb-2">
+          <h1 className="text-2xl lg:text-3xl font-bold text-fg dark:text-white mb-2">
             {consignacion.propertyTitle}
           </h1>
 
           {/* Address */}
-          <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 mb-4">
+          <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle mb-4">
             <MapPin className="w-5 h-5 shrink-0" />
             <span className="text-base">
               {consignacion.propertyAddress}, {consignacion.propertyZone}, {consignacion.propertyCity}
@@ -181,19 +185,19 @@ export function ConsignacionHeader({
 
           {/* Rent and Admin Fee */}
           <div className="flex flex-wrap items-baseline gap-3 mb-5">
-            <span className="text-3xl lg:text-4xl font-bold text-neutral-900 dark:text-white">
+            <span className="text-3xl lg:text-4xl font-bold text-fg dark:text-white">
               {formatCurrency(consignacion.monthlyRent)}
             </span>
-            <span className="text-lg text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
+            <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
             {consignacion.adminFee && consignacion.adminFee > 0 && (
-              <span className="text-sm text-neutral-400 dark:text-neutral-500">
+              <span className="text-sm text-fg-subtle dark:text-fg-muted">
                 + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.consignaciones.header.admin')}
               </span>
             )}
           </div>
 
           {/* Contract Dates */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-fg-muted dark:text-fg-subtle mb-6">
             <div className="flex items-center gap-1.5">
               <CalendarBlank className="w-4 h-4" />
               <span>{t('inmobiliaria.consignaciones.header.from')} {formatDate(consignacion.contractDate)}</span>
@@ -213,122 +217,81 @@ export function ConsignacionHeader({
           </div>
 
           {/* Actions Bar */}
-          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-faint dark:border-strong">
             {/* Edit Button */}
-            <button
-              onClick={onEdit}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A40FF] text-white font-medium hover:opacity-90 transition-colors"
-            >
+            <Button hideArrow onClick={onEdit}>
               <PencilSimple className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.header.edit')}
-            </button>
+            </Button>
 
             {/* View Portal Button */}
-            <button
+            <Button
+              variant="secondary"
+              hideArrow
               onClick={onViewPortal}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors opacity-50 cursor-not-allowed"
               disabled
               title={t('inmobiliaria.consignaciones.header.comingSoon')}
             >
               <Eye className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.header.viewOnPortal')}
               <ArrowSquareOut className="w-4 h-4" />
-            </button>
+            </Button>
 
             {/* Status Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-              >
-                {t('inmobiliaria.consignaciones.header.changeStatus')}
-                <CaretDown className={cn('w-4 h-4 transition-transform', showStatusDropdown && 'rotate-180')} />
-              </button>
-
-              {showStatusDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute top-full left-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-[100]"
-                >
-                  {(Object.entries(AVAILABILITY_STYLES) as [PropertyAvailability, typeof AVAILABILITY_STYLES[PropertyAvailability]][]).map(([key, style]) => {
-                    const Icon = style.icon;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          onChangeStatus?.(key);
-                          setShowStatusDropdown(false);
-                        }}
-                        className={cn(
-                          'w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors first:rounded-t-xl last:rounded-b-xl',
-                          consignacion.availability === key && 'bg-neutral-50 dark:bg-neutral-800'
-                        )}
-                      >
-                        <Icon className={cn('w-4 h-4', style.text)} />
-                        <span className="text-neutral-700 dark:text-neutral-300">{t(style.labelKey)}</span>
-                        {consignacion.availability === key && (
-                          <CheckCircle className="w-4 h-4 ml-auto text-[#1A40FF]" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </div>
+            <DropdownList>
+              <DropdownListTrigger asChild>
+                <Button variant="secondary" hideArrow>
+                  {t('inmobiliaria.consignaciones.header.changeStatus')}
+                  <CaretDown className="w-4 h-4" />
+                </Button>
+              </DropdownListTrigger>
+              <DropdownListContent align="start" className="w-48">
+                {(Object.entries(AVAILABILITY_STYLES) as [PropertyAvailability, typeof AVAILABILITY_STYLES[PropertyAvailability]][]).map(([key, style]) => {
+                  const Icon = style.icon;
+                  return (
+                    <DropdownListItem
+                      key={key}
+                      onSelect={() => onChangeStatus?.(key)}
+                      className={cn(consignacion.availability === key && 'bg-surface-muted dark:bg-ink')}
+                    >
+                      <Icon className={cn('w-4 h-4', style.text)} />
+                      <span className="text-fg dark:text-fg-subtle">{t(style.labelKey)}</span>
+                      {consignacion.availability === key && (
+                        <CheckCircle className="w-4 h-4 ml-auto text-primary" />
+                      )}
+                    </DropdownListItem>
+                  );
+                })}
+              </DropdownListContent>
+            </DropdownList>
 
             {/* More Actions Menu */}
-            <div className="relative ml-auto">
-              <button
-                onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="p-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-              >
-                <DotsThree className="w-5 h-5" weight="bold" />
-              </button>
-
-              {showMoreMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute top-full right-0 mt-2 w-48 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] z-[100]"
+            <DropdownList>
+              <DropdownListTrigger asChild>
+                <IconButton
+                  variant="outline"
+                  aria-label={t('inmobiliaria.consignaciones.header.moreActions')}
+                  className="ml-auto"
+                  icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                />
+              </DropdownListTrigger>
+              <DropdownListContent align="end" className="w-48">
+                <DropdownListItem onSelect={() => onRenew?.()}>
+                  <ArrowCounterClockwise className="w-4 h-4" />
+                  {t('inmobiliaria.consignaciones.header.renewConsignment')}
+                </DropdownListItem>
+                <DropdownListItem
+                  onSelect={() => onTerminate?.()}
+                  className="text-danger focus:text-danger"
                 >
-                  <button
-                    onClick={() => {
-                      onRenew?.();
-                      setShowMoreMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors rounded-t-xl"
-                  >
-                    <ArrowCounterClockwise className="w-4 h-4" />
-                    {t('inmobiliaria.consignaciones.header.renewConsignment')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onTerminate?.();
-                      setShowMoreMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-sm text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors rounded-b-xl"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    {t('inmobiliaria.consignaciones.header.terminateConsignment')}
-                  </button>
-                </motion.div>
-              )}
-            </div>
+                  <XCircle className="w-4 h-4" />
+                  {t('inmobiliaria.consignaciones.header.terminateConsignment')}
+                </DropdownListItem>
+              </DropdownListContent>
+            </DropdownList>
           </div>
         </div>
       </div>
-
-      {/* Click outside handlers */}
-      {(showStatusDropdown || showMoreMenu) && (
-        <div
-          className="fixed inset-0 z-[99]"
-          onClick={() => {
-            setShowStatusDropdown(false);
-            setShowMoreMenu(false);
-          }}
-        />
-      )}
     </div>
   );
 }

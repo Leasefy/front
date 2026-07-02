@@ -129,6 +129,20 @@ export interface WorkspaceStep {
   agentType?: AgentType;
 }
 
+/**
+ * "Estado de hoy" numeric snapshot the cobranza backend emits at the start of a
+ * turn (SSE `snapshot` event / one-shot `snapshot` field). Rendered as a
+ * `ChatDataCard` glance under the assistant reply. Mirrors the backend's numeric
+ * KPIs (drops `generatedAt`, which is display-irrelevant here).
+ */
+export interface ChatSnapshot {
+  deudoresActivos: number;
+  pagadoHoyCop: number;
+  llamadasHoy: number;
+  escalacionesPendientes: number;
+  enPrejuridico: number;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -146,6 +160,8 @@ export interface ChatMessage {
   decision?: PendingDecision;
   /** Structured response metadata for rich card display */
   responseMeta?: ResponseMeta;
+  /** "Estado de hoy" KPI snapshot from the backend (rendered as a data card). */
+  snapshot?: ChatSnapshot;
 }
 
 export interface Conversation {

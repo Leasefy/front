@@ -30,10 +30,10 @@ const KIND_PRESENTATION: Record<
 
 /** Acento por severidad (icon circle + dot). */
 const SEVERITY_STYLE: Record<InsightSeverity, { wrap: string; color: string; dot: string }> = {
-  critical: { wrap: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', color: 'text-[#C4503B] dark:text-[#E0664D]', dot: 'bg-[#C4503B]' },
-  warning: { wrap: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', color: 'text-[#B7791F] dark:text-[#D2992F]', dot: 'bg-[#B7791F]' },
-  info: { wrap: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', color: 'text-[#1A40FF] dark:text-[#5570FF]', dot: 'bg-[#1A40FF]' },
-  success: { wrap: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', color: 'text-[#2C7A53] dark:text-[#3EAE70]', dot: 'bg-[#2C7A53]' },
+  critical: { wrap: 'bg-danger-soft', color: 'text-danger', dot: 'bg-danger' },
+  warning: { wrap: 'bg-warning-soft', color: 'text-warning', dot: 'bg-warning' },
+  info: { wrap: 'bg-primary-soft', color: 'text-primary', dot: 'bg-primary' },
+  success: { wrap: 'bg-success-soft', color: 'text-success', dot: 'bg-success' },
 };
 
 interface InsightsPanelProps {
@@ -58,16 +58,16 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
     <section className={cn('rounded-xl border border-border bg-card p-6 space-y-5', className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
-            <Sparkle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="fill" />
+          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+            <Sparkle className="w-5 h-5 text-primary" weight="fill" />
           </div>
           <div>
-            <h2 className="text-h4 text-foreground">{t(k('label'))}</h2>
-            <p className="text-body-sm text-muted-foreground mt-0.5">{t(k('subtitle'))}</p>
+            <h2 className="text-base font-semibold text-fg">{t(k('label'))}</h2>
+            <p className="text-sm text-fg-muted mt-0.5">{t(k('subtitle'))}</p>
           </div>
         </div>
         {preview && (
-          <span className="flex-shrink-0 text-[10px] font-mono uppercase tracking-wide px-2 py-1 rounded-full bg-muted text-muted-foreground">
+          <span className="flex-shrink-0 text-[10px] font-medium uppercase tracking-wide px-2 py-1 rounded-full bg-muted text-muted-foreground">
             {t(k('previewBadge'))}
           </span>
         )}
@@ -75,11 +75,11 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
 
       {insights.length === 0 ? (
         <div className="rounded-xl bg-muted/30 py-10 px-6 text-center">
-          <div className="w-12 h-12 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto mb-3">
-            <CheckCircle className="w-6 h-6 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-3">
+            <CheckCircle className="w-6 h-6 text-success" />
           </div>
-          <p className="text-body-sm font-medium text-foreground">{t(k('emptyTitle'))}</p>
-          <p className="text-caption text-muted-foreground mt-0.5">{t(k('emptyDesc'))}</p>
+          <p className="text-sm font-medium text-fg">{t(k('emptyTitle'))}</p>
+          <p className="text-xs text-fg-muted mt-0.5">{t(k('emptyDesc'))}</p>
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -96,8 +96,8 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
                 <div className={cn('w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0', sev.wrap)}>
                   <Icon className={cn('w-[18px] h-[18px]', sev.color)} />
                 </div>
-                <p className="flex-1 text-body-sm text-foreground">{t(k(pres.titleKey), displayParams(ins))}</p>
-                <span className="flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] flex-shrink-0">
+                <p className="flex-1 text-sm text-fg">{t(k(pres.titleKey), displayParams(ins))}</p>
+                <span className="flex items-center gap-1 text-xs font-medium text-primary flex-shrink-0">
                   <span className="hidden sm:inline">{t(k(pres.actionKey))}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </span>

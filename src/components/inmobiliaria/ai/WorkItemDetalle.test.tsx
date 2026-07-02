@@ -125,12 +125,11 @@ describe('WorkItemDetalle — states', () => {
     expect(container.querySelector('[data-testid="caso-loading"]')).not.toBeNull()
   })
 
-  it('renders the error banner with the breadcrumb', () => {
+  it('renders the error banner', () => {
     render({ error: '500' })
     const err = container.querySelector('[data-testid="caso-error"]')
     expect(err).not.toBeNull()
     expect(err!.textContent).toContain('500')
-    expect(container.textContent).toContain('Cola de estudio')
   })
 
   it('renders the not-available state (NOT "Caso no encontrado") on 404/notAvailable', () => {

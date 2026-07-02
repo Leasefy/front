@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { SpinnerGap, WarningCircle, CheckCircle, Confetti, ArrowRight, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
+import { WarningCircle, CheckCircle, Confetti, ArrowRight, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
+import { MonoLabel } from '@leasefy/cadence';
 import { toast } from 'sonner';
 
 import { BackButton } from '@/components/ui/back-button';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { AuditTrail } from '@/components/contract/AuditTrail';
@@ -49,21 +52,22 @@ function SigningSuccess({ locale }: { locale: string }) {
       <div className="w-20 h-20 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto mb-6">
         <Confetti className="w-10 h-10 text-[#2C7A53] dark:text-[#3EAE70]" />
       </div>
-      <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-3">
+      <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
         {locale === 'es' ? '¡Contrato firmado exitosamente!' : 'Contract signed successfully!'}
       </h2>
-      <p className="text-neutral-500 dark:text-neutral-400 mb-8 max-w-sm mx-auto">
+      <p className="text-fg-muted dark:text-fg-subtle mb-8 max-w-sm mx-auto">
         {locale === 'es'
           ? 'Ambas partes han firmado. Tu contrato está activo y puedes descargarlo en cualquier momento.'
           : 'Both parties have signed. Your contract is active and you can download it anytime.'}
       </p>
-      <button
+      <Button
+        size="lg"
+        hideArrow
         onClick={() => router.push('/inquilino/contratos')}
-        className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 text-white rounded-xl text-sm font-semibold transition-colors"
       >
         {locale === 'es' ? 'Ver mis contratos' : 'View my contracts'}
         <ArrowRight className="w-4 h-4" />
-      </button>
+      </Button>
     </motion.div>
   );
 }
@@ -93,10 +97,10 @@ function ContractDocumentView({
   // Cuando el contrato ya tiene firma(s), priorizamos el PDF estampado via /pdf.
   if (signedPdfUrl) {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden bg-white">
+      <div className="rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface">
         <iframe
           src={signedPdfUrl}
-          className="w-full h-[720px] bg-white"
+          className="w-full h-[720px] bg-surface"
           title="Contrato"
         />
       </div>
@@ -108,10 +112,10 @@ function ContractDocumentView({
   }
   if (preview?.origin === 'UPLOADED_PDF') {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden bg-white">
+      <div className="rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface">
         <iframe
           src={preview.pdfUrl}
-          className="w-full h-[720px] bg-white"
+          className="w-full h-[720px] bg-surface"
           title="Contrato"
         />
       </div>
@@ -120,14 +124,14 @@ function ContractDocumentView({
   if (preview?.origin === 'GENERATED') {
     return (
       <div
-        className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white p-6 prose prose-sm max-w-none dark:prose-invert"
+        className="rounded-xl border border-border dark:border-border-strong bg-surface p-6 prose prose-sm max-w-none dark:prose-invert"
         {...sanitizeContractHtml(preview.html)}
       />
     );
   }
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-8 flex items-center justify-center">
-      <SpinnerGap className="w-6 h-6 animate-spin text-muted-foreground" />
+    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-8 flex items-center justify-center">
+      <Spinner size="md" variant="muted" />
     </div>
   );
 }
@@ -192,10 +196,10 @@ const BANNER_TONES: Record<StatusBannerTone, { container: string; iconBg: string
     text: 'text-[#C4503B] dark:text-[#E0664D]',
   },
   neutral: {
-    container: 'bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700',
-    iconBg: 'bg-neutral-100 dark:bg-neutral-800',
-    iconColor: 'text-neutral-500',
-    text: 'text-neutral-700 dark:text-neutral-300',
+    container: 'bg-surface-muted dark:bg-ink border-border dark:border-border-strong',
+    iconBg: 'bg-surface-muted dark:bg-ink',
+    iconColor: 'text-fg-muted',
+    text: 'text-fg dark:text-fg-subtle',
   },
 };
 
@@ -251,15 +255,18 @@ function ReadOnlyView({
             </Link>
           )}
           {canCancel && (
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={onCancelRequest}
               disabled={isCancelling}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[#C4503B] hover:text-[#C4503B] hover:underline disabled:opacity-50"
+              className="gap-1 px-0 text-xs text-[#C4503B] hover:text-[#C4503B]"
             >
               <XCircle className="w-3.5 h-3.5" />
               {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -372,7 +379,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-neutral-400" />
+        <Spinner size="lg" variant="muted" />
       </div>
     );
   }
@@ -384,13 +391,13 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a contratos' : 'Back to contracts'} />
           <div className="mt-8 text-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-4">
-              <WarningCircle className="w-8 h-8 text-neutral-400" />
+            <div className="w-16 h-16 rounded-xl bg-surface-muted dark:bg-ink flex items-center justify-center mx-auto mb-4">
+              <WarningCircle className="w-8 h-8 text-fg-subtle" />
             </div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+            <h2 className="text-lg font-semibold text-fg dark:text-white mb-2">
               {locale === 'es' ? 'Contrato no encontrado' : 'Contract not found'}
             </h2>
-            <p className="text-neutral-500 dark:text-neutral-400">
+            <p className="text-fg-muted dark:text-fg-subtle">
               {error || (locale === 'es'
                 ? 'No pudimos encontrar este contrato.'
                 : 'We couldn\'t find this contract.')}
@@ -431,12 +438,12 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+          <h1 className="text-2xl font-semibold text-fg dark:text-white">
             {isPendingTenant
               ? (locale === 'es' ? 'Firmar Contrato' : 'Sign Contract')
               : (locale === 'es' ? 'Contrato de Arrendamiento' : 'Rental Contract')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
             {activeContract.propertyAddress} — {activeContract.propertyCity}
           </p>
         </motion.div>
@@ -498,7 +505,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
               {chatHref && (
                 <Link
                   href={chatHref}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-neutral-900 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/40 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface dark:bg-ink border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/40 transition-colors"
                 >
                   <ChatCircle className="w-3.5 h-3.5" />
                   {locale === 'es' ? 'Abrir chat' : 'Open chat'}
@@ -537,15 +544,16 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                   />
 
                   {/* Pedir cambios — no-terminal, solicita al propietario que modifique el contrato */}
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setIsRejectModalOpen(true)}
                     disabled={isSigning || isRejecting || isCancelling}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-white dark:bg-[#1a1a1c] text-[#B7791F] dark:text-[#D2992F] hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/30 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-surface dark:bg-[#1a1a1c] text-[#B7791F] dark:text-[#D2992F] hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/30"
                   >
                     <PencilSimple className="w-4 h-4" />
                     {locale === 'es' ? 'Pedir cambios al propietario' : 'Request changes'}
-                  </button>
+                  </Button>
 
                   {/* Descargar PDF — disponible en cualquier momento para transparencia */}
                   <DownloadContractPdfButton
@@ -557,21 +565,24 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                   />
 
                   {/* Cancelar proceso (terminal) — último recurso */}
-                  <button
+                  <Button
                     type="button"
+                    variant="link"
+                    size="sm"
+                    hideArrow
                     onClick={() => setIsCancelModalOpen(true)}
                     disabled={isSigning || isRejecting || isCancelling}
-                    className="w-full text-xs font-medium text-[#C4503B] hover:text-[#C4503B] hover:underline inline-flex items-center justify-center gap-1 py-1 disabled:opacity-50"
+                    className="w-full py-1 text-xs text-[#C4503B] hover:text-[#C4503B]"
                   >
                     {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
-                  </button>
+                  </Button>
 
                   {/* Contract Info Card */}
-                  <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#222224] p-4">
-                    <h4 className="text-xs font-medium font-mono uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#222224] p-4">
+                    <MonoLabel className="block tracking-wider text-fg-muted dark:text-fg-subtle">
                       {locale === 'es' ? 'Tipo de contrato' : 'Contract type'}
-                    </h4>
-                    <p className="mt-1 font-medium text-neutral-900 dark:text-white">
+                    </MonoLabel>
+                    <p className="mt-1 font-medium text-fg dark:text-white">
                       {getContractTypeLabel(activeContract, locale as 'es' | 'en')}
                     </p>
                   </div>

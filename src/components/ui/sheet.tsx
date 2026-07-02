@@ -11,12 +11,12 @@ import {
   type SheetContentProps as DSSheetContentProps,
   SheetTitle as DSSheetTitle,
   SheetDescription as DSSheetDescription,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Sheet de @leasefy/ui que preserva la API local del mvp:
+ * ADAPTER fino sobre el Sheet de @leasefy/cadence que preserva la API local del mvp:
  * - SheetContent: `side` passthrough (el DS ya lo soporta),
  *   `hideCloseButton` → `hideClose`, overlay `z-[300] bg-black/60`,
  *   contrato de layout legacy (p-6 default, w-3/4 sm:max-w-sm en left/right,

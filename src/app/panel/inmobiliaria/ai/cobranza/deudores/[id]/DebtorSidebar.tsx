@@ -19,6 +19,7 @@ import * as React from 'react'
 import { useEffect, useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
+import { MonoLabel } from '@leasefy/cadence'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import type { DebtorDetailResponse } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { usePIIRevealContext, type PIIFieldKey } from '@/lib/context/PIIRevealContext'
@@ -98,11 +99,11 @@ export function DebtorSidebar({
       <h2 className="flex items-center gap-2.5">
         <span
           aria-hidden="true"
-          className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0"
+          className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
         />
-        <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500">
+        <MonoLabel className="text-neutral-400 dark:text-neutral-500">
           {t(`${NS}.detalle.contexto`)}
-        </span>
+        </MonoLabel>
       </h2>
 
       {/* Human case state — the headline of the context */}
@@ -117,7 +118,7 @@ export function DebtorSidebar({
 
       {/* Paused notice */}
       {data.isPaused && data.carterapausedUntil && (
-        <div className="rounded-md bg-[#B7791F]/10 dark:bg-[#B7791F]/20 border border-[#B7791F]/30 dark:border-[#B7791F]/40 px-3 py-2 text-xs text-[#B7791F] dark:text-[#D2992F]">
+        <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 text-xs text-warning">
           {t(`${NS}.detail.sidebar.paused`).replace(
             '{{date}}',
             new Date(data.carterapausedUntil).toLocaleDateString(locale),
@@ -132,7 +133,7 @@ export function DebtorSidebar({
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
               {t(`${NS}.detalle.saldoPendiente`)}
             </p>
-            <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] text-[#0B1220] dark:text-white tabular-nums">
+            <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] text-fg dark:text-white tabular-nums">
               {formatCurrency(kpis.totalOwed)}
             </p>
           </div>

@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Spinner as DSSpinner } from '@leasefy/ui';
+import { Spinner as DSSpinner } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 
 /**
- * ADAPTER fino sobre el Spinner de @leasefy/ui que preserva la API local:
+ * ADAPTER fino sobre el Spinner de @leasefy/cadence que preserva la API local:
  * - size: xs/sm/default/md/lg/xl/2xl → sm/md/lg del DS + override exacto de
  *   tamaño del icono ([&_svg]:size-N) por fidelidad con la escala legacy.
  * - variant: default (azul primary legacy), muted (= gris del DS), white,

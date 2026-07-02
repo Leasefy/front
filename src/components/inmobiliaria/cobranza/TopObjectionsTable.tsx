@@ -20,6 +20,14 @@
 import { useI18n } from '@/lib/i18n';
 import { SampleDataWatermark } from '@/components/data-display/SampleDataWatermark';
 import { STUB_TOP_OBJECTIONS } from '@/lib/fixtures/cobranza-analytics-stub';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -58,48 +66,46 @@ export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
   const showWatermark = !data.populated;
 
   const table = (
-    <table className="w-full text-sm text-left">
-      <thead>
-        <tr className="border-b border-neutral-200 dark:border-neutral-700">
-          <th className="pb-2 w-8 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide">
-            #
-          </th>
-          <th className="pb-2 pr-4 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide">
+    <Table className="text-left">
+      <TableHeader>
+        <TableRow className="border-b border-border">
+          <TableHead className="pb-2 w-8">#</TableHead>
+          <TableHead className="pb-2 pr-4">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.literal')}
-          </th>
-          <th className="pb-2 pr-4 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide text-right">
+          </TableHead>
+          <TableHead className="pb-2 pr-4 text-right">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.count')}
-          </th>
-          <th className="pb-2 font-medium text-neutral-600 dark:text-neutral-400 text-xs uppercase tracking-wide text-right">
+          </TableHead>
+          <TableHead className="pb-2 text-right">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.pct')}
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody className="divide-y divide-border-faint">
         {rows.map((row) => (
-          <tr
+          <TableRow
             key={row.rank}
-            className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
+            className="hover:bg-surface-hover transition-colors"
           >
-            <td className="py-2.5 pr-2 text-xs text-neutral-400 tabular-nums">{row.rank}</td>
-            <td className="py-2.5 pr-4 text-neutral-800 dark:text-neutral-200 max-w-[220px] truncate">
+            <TableCell className="py-2.5 pr-2 text-xs text-fg-subtle font-mono tabular-nums">{row.rank}</TableCell>
+            <TableCell className="py-2.5 pr-4 text-fg max-w-[220px] truncate">
               {row.literal}
-            </td>
-            <td className="py-2.5 pr-4 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
+            </TableCell>
+            <TableCell className="py-2.5 pr-4 text-right font-mono tabular-nums text-fg-muted">
               {row.count.toLocaleString()}
-            </td>
-            <td className="py-2.5 text-right tabular-nums text-neutral-500 dark:text-neutral-400">
+            </TableCell>
+            <TableCell className="py-2.5 text-right font-mono tabular-nums text-fg-subtle">
               {(row.pct * 100).toFixed(1)}%
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 
   return (
     <div className="relative overflow-x-auto">
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-3">
+      <p className="text-xs font-medium text-fg-subtle mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
       </p>
       <SampleDataWatermark show={showWatermark}>

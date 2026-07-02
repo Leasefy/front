@@ -22,7 +22,6 @@ import { useI18n } from '@/lib/i18n'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
 import { ThresholdEditor } from '@/components/inmobiliaria/cobranza/ThresholdEditor'
 import { ThresholdVersionsTable } from '@/components/inmobiliaria/cobranza/ThresholdVersionsTable'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 
 function ThresholdsContent() {
@@ -40,15 +39,6 @@ function ThresholdsContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/cobranza/reporte"
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.cobranza'), href: '/panel/inmobiliaria/ai/cobranza' },
-            { label: t('inmobiliaria.ai.cobranza.reporte.pageTitle'), href: '/panel/inmobiliaria/ai/cobranza/reporte' },
-            { label: t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle') },
-          ]}
-        />
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
         </h1>
@@ -67,7 +57,7 @@ function ThresholdsContent() {
       {isLoading && !active && <PageSkeleton variant="list" />}
 
       {error && (
-        <div className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D]">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}

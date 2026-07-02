@@ -30,19 +30,19 @@ export interface RiskFlagsProps {
  */
 const SEVERITY_STYLES = {
   low: {
-    dot: 'bg-muted-foreground',
-    text: 'text-muted-foreground',
-    icon: 'text-muted-foreground',
+    dot: 'bg-fg-muted',
+    text: 'text-fg-muted',
+    icon: 'text-fg-muted',
   },
   medium: {
-    dot: 'bg-[#B7791F]',
-    text: 'text-[#B7791F]',
-    icon: 'text-[#B7791F]',
+    dot: 'bg-warning',
+    text: 'text-warning',
+    icon: 'text-warning',
   },
   high: {
-    dot: 'bg-[#C4503B]',
-    text: 'text-[#C4503B]',
-    icon: 'text-[#C4503B]',
+    dot: 'bg-danger',
+    text: 'text-danger',
+    icon: 'text-danger',
   },
 } as const;
 
@@ -103,8 +103,8 @@ export function RiskFlags({
     >
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Warning className="h-4 w-4 text-[#B7791F]" />
-        <h4 className="text-sm font-medium text-foreground">Aspectos a considerar</h4>
+        <Warning className="h-4 w-4 text-warning" />
+        <h4 className="text-sm font-medium text-fg">Aspectos a considerar</h4>
       </div>
 
       {/* Flags List */}
@@ -133,11 +133,11 @@ export function RiskFlags({
                   )}
                 />
                 <div className="flex flex-col gap-1">
-                  <span className={cn('text-muted-foreground', styles.text)}>
+                  <span className={cn('text-fg-muted', styles.text)}>
                     {flag.message}
                   </span>
                   {flag.suggestion && (
-                    <span className="text-xs text-muted-foreground/80 italic">
+                    <span className="text-xs text-fg-subtle italic">
                       {flag.suggestion}
                     </span>
                   )}

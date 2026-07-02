@@ -27,6 +27,8 @@ import {
   ArrowSquareOut,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { Button, Badge } from '@/components/ui';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type {
@@ -202,49 +204,33 @@ function StepItem({
   );
 }
 
-/** Action button matching the ResponseCard pattern */
+/** Action button matching the ResponseCard pattern — Cadence Button */
 function ActionButton({ action }: { action: ResponseAction }) {
   const ActionIcon = ICON_MAP[action.icon];
-  const isLink = !!action.href;
+  // primary → DS primary pill (drops the old mono-uppercase anti-pattern);
+  // secondary → outline; ghost → ghost.
+  const variant =
+    action.variant === 'primary' ? 'default' : action.variant === 'secondary' ? 'outline' : 'ghost';
 
-  const baseClasses = cn(
-    'inline-flex items-center gap-2',
-    'px-4 py-2 rounded-xl',
-    'text-[13px] font-medium',
-    'transition-all duration-150',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1',
-    action.variant === 'primary' && [
-      'bg-primary text-white uppercase tracking-wide font-mono',
-      'hover:opacity-90 active:bg-primary',
-      '',
-    ],
-    action.variant === 'secondary' && [
-      'bg-neutral-100 dark:bg-neutral-800',
-      'text-foreground',
-      'border border-neutral-200 dark:border-neutral-700',
-      'hover:bg-neutral-200/80 dark:hover:bg-neutral-700',
-    ],
-    action.variant === 'ghost' && [
-      'text-muted-foreground',
-      'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-      'hover:text-foreground',
-    ]
+  const content = (
+    <>
+      {ActionIcon && <ActionIcon className="w-4 h-4" weight="duotone" />}
+      {action.label}
+    </>
   );
 
-  if (isLink) {
+  if (action.href) {
     return (
-      <a href={action.href} className={baseClasses}>
-        {ActionIcon && <ActionIcon className="w-4 h-4" weight="duotone" />}
-        {action.label}
-      </a>
+      <Button asChild variant={variant} hideArrow className="gap-2 rounded-xl">
+        <a href={action.href}>{content}</a>
+      </Button>
     );
   }
 
   return (
-    <button type="button" className={baseClasses}>
-      {ActionIcon && <ActionIcon className="w-4 h-4" weight="duotone" />}
-      {action.label}
-    </button>
+    <Button type="button" variant={variant} hideArrow className="gap-2 rounded-xl">
+      {content}
+    </Button>
   );
 }
 
@@ -300,23 +286,22 @@ function MiniChatInput({
           'disabled:opacity-50'
         )}
       />
-      <button
+      <IconButton
         type="button"
+        icon={<PaperPlaneTilt className="w-3.5 h-3.5" weight="fill" />}
         onClick={handleSend}
         disabled={disabled || isEmpty}
+        variant="ghost"
         className={cn(
           'flex-shrink-0',
           'w-7 h-7 rounded-md',
-          'flex items-center justify-center',
           'transition-all duration-150',
           disabled || isEmpty
             ? 'text-muted-foreground/40 cursor-not-allowed'
-            : 'text-primary hover:bg-primary-soft dark:hover:opacity-90/10 active:scale-95'
+            : 'text-primary hover:bg-primary-soft active:scale-95'
         )}
         aria-label={t('beta.workspace.sendMessage')}
-      >
-        <PaperPlaneTilt className="w-3.5 h-3.5" weight="fill" />
-      </button>
+      />
     </div>
   );
 }
@@ -447,20 +432,18 @@ export function WorkspaceView({
 
         {/* Close button (mobile) */}
         {onClose && (
-          <button
+          <IconButton
             type="button"
+            icon={<X className="w-4 h-4" weight="bold" />}
             onClick={onClose}
+            variant="ghost"
             className={cn(
               'flex-shrink-0 w-8 h-8 rounded-md ml-1',
-              'flex items-center justify-center',
               'text-muted-foreground hover:text-foreground',
-              'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-              'transition-colors duration-150'
+              'hover:bg-neutral-100 dark:hover:bg-neutral-800'
             )}
             aria-label={t('beta.workspace.close')}
-          >
-            <X className="w-4 h-4" weight="bold" />
-          </button>
+          />
         )}
       </div>
 
@@ -501,18 +484,12 @@ export function WorkspaceView({
               </span>
             </div>
             {totalSteps > 0 && (
-              <span
-                className={cn(
-                  'inline-flex items-center justify-center',
-                  'min-w-[36px] px-2 py-0.5',
-                  'rounded-full text-[11px] font-semibold',
-                  completedCount === totalSteps
-                    ? 'bg-success-soft text-success'
-                    : 'bg-primary-soft text-primary'
-                )}
+              <Badge
+                variant={completedCount === totalSteps ? 'success' : 'default'}
+                className="justify-center min-w-[36px] px-2 py-0.5 text-[11px] font-semibold tabular-nums"
               >
                 {completedCount}/{totalSteps}
-              </span>
+              </Badge>
             )}
           </div>
 
@@ -561,20 +538,14 @@ export function WorkspaceView({
                 </h2>
 
                 {/* Response type badge */}
-                <span
-                  className={cn(
-                    'inline-flex items-center',
-                    'px-2 py-0.5 rounded-full',
-                    'text-[10px] font-semibold uppercase tracking-wider',
-                    meta.type === 'actionable'
-                      ? 'bg-warning-soft text-warning'
-                      : 'bg-primary-soft text-primary'
-                  )}
+                <Badge
+                  variant={meta.type === 'actionable' ? 'warning' : 'default'}
+                  className="px-2 py-0.5 text-[10px] font-semibold"
                 >
                   {meta.type === 'actionable'
                     ? t('beta.workspace.typeActionable')
                     : t('beta.workspace.typeInformative')}
-                </span>
+                </Badge>
 
                 {/* Primary agent badge */}
                 {primaryAgent && (
@@ -605,21 +576,19 @@ export function WorkspaceView({
 
             {/* Close button (desktop) */}
             {onClose && (
-              <button
+              <IconButton
                 type="button"
+                icon={<X className="w-4 h-4" weight="bold" />}
                 onClick={onClose}
+                variant="ghost"
                 className={cn(
                   'hidden md:flex',
                   'flex-shrink-0 w-8 h-8 rounded-md',
-                  'items-center justify-center',
                   'text-muted-foreground hover:text-foreground',
-                  'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-                  'transition-colors duration-150'
+                  'hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 )}
                 aria-label={t('beta.workspace.close')}
-              >
-                <X className="w-4 h-4" weight="bold" />
-              </button>
+              />
             )}
           </div>
 
@@ -700,7 +669,7 @@ export function WorkspaceView({
                     'max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? [
-                          'bg-primary text-white uppercase tracking-wide font-mono',
+                          'bg-primary text-white',
                           'rounded-br-sm',
                         ]
                       : [

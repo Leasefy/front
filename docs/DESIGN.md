@@ -1,6 +1,12 @@
-# Leasefy Design System
+# Leasefy Design System — Cadence
 
-> **Read this BEFORE building or modifying any UI.** This is the source of truth for visual style, component patterns, and anti-patterns in `Leasefy/front`.
+> **Read this BEFORE building or modifying any UI.** This is the source of truth for visual style,
+> component patterns, and anti-patterns in `Leasefy/front`.
+>
+> This app now uses the **Cadence design system**, consumed via the shared **`@leasefy/cadence`**
+> Tailwind preset and the CSS variables in `src/app/globals.css` (already migrated to Cadence). The
+> canonical reference is
+> [`cadence/reference/Cadence Design System.dc.html`](../../cadence/reference/Cadence%20Design%20System.dc.html).
 >
 > Color details live in [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md) — this file references it instead of duplicating.
 
@@ -8,114 +14,129 @@
 
 ## 1. Design Principles
 
-The aesthetic is **Synapse AI-inspired**: clean, refined, sobrio. No flashy effects. Beauty comes from typography, spacing, and intentional composition — not from gradients, glow, or visual noise.
+Cadence is **editorial, warm, and refined**. Beauty comes from typography, generous whitespace, and a
+single confident accent — **cobalt `#1A40FF`** on a warm-neutral foundation. Display and body text are
+**Schibsted Grotesk**; every number, label, eyebrow, code, and ID is **JetBrains Mono**.
 
 ### Always
-- ✅ **Sobrio + warm**: neutral surfaces with one accent color (indigo) per moment
-- ✅ **Generous whitespace** — let elements breathe; density is the enemy
-- ✅ **Soft/rounded** — radius scale: 8/10/14/18/24/32px, prefer `rounded-xl` (14px) for cards/buttons
-- ✅ **Subtle elevation** — `shadow-sm`/`shadow-md` for floating feel; reserve heavier shadows for modals
-- ✅ **Phosphor icons only** (`@phosphor-icons/react`), named imports, weight defaults to `regular`
-- ✅ **WCAG AA** — verified contrasts (see `globals.css:308-319`); ratio ≥ 4.5:1 for normal text
-- ✅ **Dark mode parity** — every color/border has a `dark:` counterpart
+- ✅ **Warm neutral + one cobalt accent** — warm off-white surfaces, warm ink, a single accent per moment
+- ✅ **Generous whitespace** — editorial rhythm on a 4-pt scale; density is the enemy
+- ✅ **Soft, distinct radii** — scale `8 / 14 / 22 / 32 / 999`; **cards ≈ 22 (`rounded-lg`)**, **buttons are full pills (`rounded-full`, radius 999)**
+- ✅ **Whisper-soft elevation** — `flat` / `shadow-sm` / `shadow-md` for floating feel; reserve `shadow-lg` for overlays
+- ✅ **Schibsted Grotesk for text, JetBrains Mono for all numerals/labels** — tabular numbers by default
+- ✅ **Phosphor icons only** (`@phosphor-icons/react`), `Regular` default / `Fill` for active
+- ✅ **WCAG AA** — verified contrasts; ratio ≥ 4.5:1 for normal text
+- ✅ **Warm-dark parity** — every role token has a warm `dark:` counterpart (see `COLOR_SYSTEM.md`)
+- ✅ **Brand gradients on hero/brand surfaces** — Aurora / Spectrum / Dusk / Daylight, always with grain overlay
 
 ### Never
-- ❌ **No glass morphism** on content (only the `.glass` navbar class in `globals.css:745-747`)
-- ❌ **No gradients on bubbles / cards / buttons** — flat surfaces with one accent
-- ❌ **No heavy effects** — drop shadows beyond `shadow-xl`, neon glows, animated gradients
-- ❌ **No flashy colors** in agent UI / data dashboards — keep neutral, let data speak
-- ❌ **No purple-on-white** AI-generic gradients
-- ❌ **No raw Tailwind colors** that bypass our scales (`bg-red-500` instead of `bg-error-500` / `bg-rose-500`)
-- ❌ **No hardcoded hex** outside `globals.css` — always go through CSS vars / Tailwind tokens
-- ❌ **No `font-sans` on stat numbers** — use `text-numeric` / `stat-number` (DM Mono)
+- ❌ **No glass morphism on content** (only the floating public navbar may use it — §10.1)
+- ❌ **No second accent** — cobalt is the only brand hue; supporting hues are for charts only
+- ❌ **No uppercase button labels** — button text is **sentence case** (eyebrows/labels stay mono uppercase)
+- ❌ **No raw framework palette colors** that bypass the Cadence preset (`bg-blue-500` instead of `bg-primary`)
+- ❌ **No hardcoded hex** outside `globals.css` — always go through CSS vars / Cadence tokens
+- ❌ **No `font-sans` on numerals** — numbers use `font-mono` (JetBrains Mono), tabular
+- ❌ **No neon glow / heavy drop shadows** beyond `shadow-lg`; keep elevation whisper-soft
+- ❌ **No gradients on cards, buttons, or data UI** — gradients are for hero/brand surfaces only
+
+> **Reversed from the old Manus/Leasefy-UI rules:** gradients are now **encouraged** on hero/brand
+> surfaces, and primary buttons are now **pill-shaped + sentence case** (no longer uppercase).
 
 ---
 
 ## 2. Tokens — Quick Reference
 
-> Full color rules: [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md). Source of truth: `src/app/globals.css`.
+> Full color rules: [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md). Source of truth: `@leasefy/cadence` preset
+> + `src/app/globals.css`.
 
 ### Color Roles (Semantic — Prefer These)
 | Token | Use For |
 |---|---|
-| `bg-background` / `text-foreground` | Page bg + body text |
-| `bg-card` | Elevated surfaces (white in light, neutral-10 in dark) |
-| `bg-primary` / `text-primary-foreground` | CTAs, focus rings, links |
-| `bg-muted` / `text-muted-foreground` | Subdued bg + secondary text |
-| `bg-accent` / `text-accent-foreground` | Indigo-tinted highlight (selected, hover-emphasis) |
-| `border-border` / `border-input` | All borders + input outlines |
-| `bg-destructive` | Destructive actions only |
+| `bg-surface` / `text-fg` | Page bg (`#FBFAF9`) + body text (`#14130F`) |
+| `bg-surface-raised` | Elevated surfaces (white in light, `#1C1A16` in warm-dark) |
+| `bg-surface-sunken` | Wells, insets, subtle sections (`#F4F2EF`) |
+| `bg-primary` / `text-on-primary` | CTAs, focus rings, selected states (cobalt `#1A40FF`) |
+| `bg-surface-brand` | Cobalt-tinted highlight (`#EDF1FF`) — selected, hover-emphasis |
+| `text-fg-secondary` / `text-fg-muted` | Secondary (`#6E6A63`) / muted (`#726E68`) text |
+| `border-border` / `border-border-subtle` | Default (`#E5E2DC`) / hairline (`#ECEAE6`) borders |
+| `text-error` / `bg-error-bg` | Destructive / error states |
 
 ### Scales (When Roles Don't Fit)
-Indigo (CTA), Sand (warm ambient — NEVER for CTA), Neutral (text/bg/borders), Success / Warning / Error (sobered), plus extended: Emerald, Teal, Cyan, Violet, Purple, Amber, Orange, Blue, Rose, Slate. All scales 50→950 with `dark:` variants. Defined in `globals.css:22-203`.
+Primary cobalt (`primary-50…700`), warm Neutral (`neutral-50…950`), and feedback (`success` / `warning`
+/ `error` / `info`, each `fg`/`bg`). Supporting hues (cyan, green, amber, coral, violet, peach) are for
+charts/categorical data only. All resolve through CSS variables with warm-dark counterparts.
 
-### Radius (`globals.css:324-331`)
+### Radius
 ```
-sm: 6px    md: 10px   lg: 14px   xl: 18px   2xl: 24px   3xl: 32px   full: 9999px
+sm: 8px    md: 14px   lg: 22px   xl: 32px   pill/full: 999px
 ```
-- **Buttons / inputs**: `rounded-xl` (14px) — `button.tsx:11`
-- **Cards**: `rounded-xl` or `rounded-2xl`
-- **Pills / chips**: `rounded-full`
-- **Inputs (default)**: `rounded-md` (10px) — `input.tsx:11`
+- **Buttons / inputs (action)**: `rounded-full` (pill, radius 999)
+- **Cards**: `rounded-lg` (≈ 22px)
+- **Pills / chips / badges**: `rounded-full`
+- **Text inputs / small controls**: `rounded-md` (14px)
+- **Hero / large feature panels**: `rounded-xl` (32px)
 
-### Shadow (`globals.css:351-368`)
-- `shadow-subtle` / `shadow-sm` → resting cards
-- `shadow-elevated` / `shadow-md` → hover, dropdowns
-- `shadow-premium` / `shadow-lg` → modals (small)
-- `shadow-xl` / `shadow-2xl` → drawer / overlay panels
-- **Glow** (`shadow-glow-*`) → ONLY for dark product/landing pages
+### Elevation (whisper-soft)
+```
+flat   1px border, no shadow                         → resting cards, inputs
+sm     0 1px 2px rgba(20,19,15,.06)                  → raised cards, chips
+md     0 4px 16px rgba(20,19,15,.08)                 → hover, dropdowns, popovers
+lg     0 12px 36px rgba(20,19,15,.12)                → modals, drawers, overlays
+```
+No `shadow-xl`/neon. Brand gradients carry their own grain overlay, not a glow.
 
-### Spacing (4px grid)
-Tailwind defaults map cleanly. Prefer multiples of 4: `gap-2 gap-3 gap-4 gap-6 gap-8`. Section vertical rhythm: `.section-padding` = `py-16 md:py-20 lg:py-24` (`globals.css:618`).
+### Spacing (4-pt scale)
+```
+xs 4    sm 8    md 12   lg 16   xl 24   2xl 32   3xl 48   4xl 64   5xl 96
+```
+Prefer these steps for gap/padding/margins. Section vertical rhythm is generous — `2xl`→`4xl` between
+major blocks. Let elements breathe.
 
-### Z-Index Scale (`globals.css:218-228`)
+### Z-Index Scale
 ```
 dropdown: 10    sticky: 20    fixed: 30    modal-backdrop: 40
 modal: 50       popover: 60   tooltip: 70  toast: 80   max: 100
 ```
-**Drawers, modals → `z-50`.** Toaster is forced to `9999` via inline style in `inmobiliaria/layout.tsx:92`.
+**Drawers, modals → `z-50`.** Toaster sits above everything.
 
-### Motion (`globals.css:372-382`, `tailwind.config.ts:36-135`)
-- **Durations**: `duration-150` (micro), `duration-200` (default), `duration-300` (panels), `duration-500` (slow reveals)
-- **Easing**: `ease-out` (default), `cubic-bezier(0.32, 0.72, 0, 1)` (Apple-style spring for panels)
-- **Named animations**: `animate-fade-in`, `animate-fade-in-up`, `animate-slide-in-right`, `animate-panel-in`, `animate-page-in`, `animate-stagger-in`, `animate-content-reveal`
-- **Press feedback**: buttons use `active:scale-[0.97]` (`button.tsx:11`)
-- **Hover lift**: `hover-lift` class (`globals.css:839`) — `-translate-y-0.5 shadow-elevated`
+### Motion
+- **Durations**: `150ms` (micro), `200ms` (default), `300ms` (panels), `500ms` (slow reveals)
+- **Easing**: `ease-out` (default), `cubic-bezier(0.32, 0.72, 0, 1)` (spring for panels)
+- **Press feedback**: interactive controls use a subtle `active:scale-[0.98]`
+- **Hover lift**: `-translate-y-0.5` + upgrade to `shadow-md`
 
 ---
 
 ## 3. Typography
 
-**3-font system** loaded via `next/font` (`src/app/layout.tsx:2-23`):
+**2-font system** loaded via `next/font` in `src/app/layout.tsx`:
 
 | Font | Tailwind class | Use for |
 |---|---|---|
-| **Manrope** | `font-heading` | All h1–h6 (auto via `globals.css:582-584`), display text |
-| **DM Sans** | `font-sans` (default) | Body, paragraphs, labels, UI |
-| **Space Mono** | `font-mono` | Numbers, uppercase labels, button text, stat displays |
+| **Schibsted Grotesk** | `font-sans` (default) | All display + headings (h1–h6) + body, paragraphs, UI labels |
+| **JetBrains Mono** | `font-mono` | **All numerals**, labels, eyebrows, code, IDs, technical data — tabular by default |
 
-### Utility Classes (`globals.css:649-738`)
-| Class | Spec |
-|---|---|
-| `.text-display` | Manrope, 36→58px, extrabold, tracking -0.04em |
-| `.text-h1` | Manrope, 30→48px, bold, tracking -0.03em |
-| `.text-h2` | Manrope, 24→36px, bold, tracking -0.02em |
-| `.text-h3` | Manrope, 20→30px, semibold |
-| `.text-h4` | Manrope, 18→24px, semibold |
-| `.text-body-lg` | 18px, tracking -0.02em, leading-relaxed |
-| `.text-body` | 16px, leading-relaxed (default body) |
-| `.text-body-sm` | 14px |
-| `.text-caption` | 12px |
-| `.text-overline` | **DM Mono**, 12px, uppercase, tracking-widest |
-| `.text-label` | **DM Mono**, 11px, uppercase, tracking-wide |
-| `.stat-number` | **DM Mono**, 48→72px, tabular-nums |
-| `.text-numeric` | **DM Mono**, tabular-nums |
+### Type Roles
+| Role | Size / Line | Tracking | Weight | Font |
+|---|---|---|---|---|
+| `.text-display` | 64 / 68 | −3.5% | 600 | Schibsted |
+| `.text-h1` | 32 / 38 | −2.5% | 600 | Schibsted |
+| `.text-h2` / `.text-title` | 22 / 28 | −1.5% | 600 | Schibsted |
+| `.text-subtitle` | 18 / 26 | −1% | 500 | Schibsted |
+| `.text-eyebrow` | 12 (uppercase) | +10% | 500 | **Mono** |
+| `.text-body-lg` | 18 / 27 | — | 400 | Schibsted |
+| `.text-body` | 16 / 25 | — | 400 | Schibsted |
+| `.text-body-sm` | 14 / 21 | — | 400 | Schibsted |
+| `.text-caption` | 13 / 19 | — | 400 | Schibsted |
+| `.text-label` | 14 (mono) | — | 500 | **Mono** |
+| `.text-numeric` / `.stat-number` | tabular | — | 500 | **Mono** |
 
 ### Rules
-- Headings (h1–h6) get Manrope automatically — don't add `font-heading`
-- Numbers → always `text-numeric` or `.stat-number` (tabular alignment)
-- **Any uppercase label gets `font-mono`** — overlines, button text, badges
-- Body line-height: `leading-relaxed` (1.625); headings: `leading-tight` to `leading-snug`
+- Headings (h1–h6) use Schibsted Grotesk (`font-sans`) with the role's negative tracking — don't add a separate heading font.
+- **Numbers → always `font-mono` / `.text-numeric` / `.stat-number`** (JetBrains Mono, `tabular-nums`).
+- **Eyebrows, labels, overlines → mono UPPERCASE** with +10% tracking.
+- **Button labels → sentence case** in Schibsted Grotesk medium (NOT mono, NOT uppercase). This reverses the old Manus rule.
+- Body line-height follows the role table (≈ 1.5–1.55); display/headings are tight via negative tracking.
 
 ---
 
@@ -123,61 +144,63 @@ modal: 50       popover: 60   tooltip: 70  toast: 80   max: 100
 
 ### Buttons (`src/components/ui/button.tsx`)
 
-**Anatomy**: `rounded-xl`, `font-mono`, `uppercase`, `tracking-wide`, `active:scale-[0.97]`.
+**Anatomy**: `rounded-full` (pill), `font-sans` (Schibsted Grotesk) **medium**, **sentence case**, `active:scale-[0.98]`.
 
 ```tsx
-<Button>Iniciar sesión</Button>                          // default = bg-primary
+<Button>Iniciar sesión</Button>                          // default = bg-primary, white text
+<Button variant="secondary">Volver</Button>              // surface + hairline border
 <Button variant="outline">Cancelar</Button>
-<Button variant="secondary">Volver</Button>
 <Button variant="ghost">Cerrar</Button>
-<Button variant="destructive">Eliminar</Button>
+<Button variant="destructive">Eliminar</Button>          // text-error / error fill
 <Button variant="link">Ver más</Button>
-<Button size="sm" /* h-9 */ />
-<Button size="lg" /* h-12, hero CTAs */ />
-<Button size="icon" /* 40x40 */ />
-<Button isLoading>...</Button>                            // shows SpinnerGap
-<Button hideArrow>...</Button>                            // hides ArrowUpRight on default/white
+<Button size="sm" />
+<Button size="lg" /* hero CTAs */ />
+<Button size="icon" />
+<Button isLoading>...</Button>                            // shows Phosphor spinner
 ```
 
-- Default + white variants **auto-append `ArrowUpRight` icon** with hover translate
-- Primary buttons are **always uppercase + tracking-wide** — this is a hard rule
-- For inline ad-hoc buttons, copy the pattern (`button.tsx:11`); don't reinvent
+- **Primary**: cobalt `#1A40FF` background, white text; **hover `#1533D6`** (`primary-600`); pill radius.
+- **Secondary**: `bg-surface-raised` (white/surface) with a hairline `border-border`, pill radius.
+- Button labels are **sentence case** — this **reverses** the old "always uppercase + tracking-wide" rule.
+- Eyebrows / overlines / section labels remain **mono uppercase** — but those are not buttons.
+- For inline ad-hoc buttons, copy the primitive's pattern; don't reinvent.
 
 ### Inputs (`src/components/ui/input.tsx`)
 
 ```tsx
 <Input placeholder="tu@email.com" />
-// h-11, rounded-md, border-2 border-input, px-4, focus-visible:ring-4 ring-ring/5
+// h-11, rounded-md (14px), border border-border, px-4, focus: ring-2 ring-[#1A40FF]
 ```
 
-- Tall (h-11) by default; pair with h-12 buttons for visual rhythm
-- Border-2 (not 1) — heavier border is the Leasefy signature
-- Focus state: ring-4 with 5% alpha — subtle but unmistakable
+- Comfortable height (h-11); pair with `size="lg"` buttons for visual rhythm.
+- **Hairline border** (`border-border`, 1px) — Cadence is restrained, not heavy-bordered.
+- Focus state: cobalt ring (border.focus `#1A40FF`) — quiet but unmistakable.
 
-### Cards (`globals.css:777-814`)
+### Cards (`globals.css` card utilities)
 
 | Class | When |
 |---|---|
-| `.card-minimal` | Resting card with subtle shadow |
-| `.card-interactive` | Adds hover: lift + shadow upgrade |
-| `.card-premium` | Subtle dual-shadow, lifts on hover with accent border tint |
-| `.card-active` | Selected state with accent ring |
+| `.card` | Resting card — `bg-surface-raised`, `border-border`, `rounded-lg`, `shadow-sm` |
+| `.card-interactive` | Adds hover: lift + `shadow-md` |
+| `.card-brand` | Cobalt-tinted (`bg-surface-brand`) feature card |
+| `.card-active` | Selected state with cobalt ring |
 
 Inline pattern (most common):
 ```tsx
-<section className="rounded-2xl border border-border bg-card p-5 space-y-4">
+<section className="rounded-lg border border-border bg-surface-raised p-6 space-y-4 shadow-sm">
   ...
 </section>
 ```
 
-### Colored Icon Circles
-The **signature visual richness** of the design. Don't drop them.
+### Tinted Icon Tiles
+A restrained accent moment — **cobalt by default**, supporting hues only for true categories.
 ```tsx
-<div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-  <Robot className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+<div className="w-9 h-9 rounded-md bg-surface-brand flex items-center justify-center">
+  <Robot className="w-5 h-5 text-primary" />
 </div>
 ```
-Color rotation by domain: indigo (AI/actions), purple (matching), emerald (approved/contract), rose (errors/rejected), slate (docs/files), amber (warnings), blue (info).
+Default to `bg-surface-brand` + `text-primary` (cobalt). For categorical/chart contexts only, the
+supporting hues (cyan, green, amber, coral, violet, peach) may tile — but never as a rainbow of UI chrome.
 
 ### Drawers / Side Panels
 
@@ -203,12 +226,12 @@ if (!open || !mounted) return null;
 return createPortal(
   <>
     <div
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-[#14130F]/40 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
       aria-hidden="true"
     />
     <div
-      className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-background shadow-2xl flex flex-col animate-in slide-in-from-right duration-300"
+      className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-surface shadow-lg flex flex-col animate-in slide-in-from-right duration-300"
       role="dialog"
       aria-modal="true"
     >
@@ -226,38 +249,42 @@ return createPortal(
 );
 ```
 
-**Critical**: `createPortal` to `document.body` + `data-lenis-prevent` on scrollable body + `lenis.stop()` on open. Skipping any of these breaks the drawer in subtle ways (overlay not at top, scroll dead).
+**Critical**: `createPortal` to `document.body` + `data-lenis-prevent` on the scrollable body +
+`lenis.stop()` on open. Skipping any of these breaks the drawer in subtle ways (overlay not at top,
+scroll dead). Overlay scrim uses warm ink (`#14130F`) at 40%, not pure black.
 
 ### Sidebar / Layout
-The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use them as-is for any new panel page.
+The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
 - Sidebar: `lg:fixed lg:inset-y-0`, 240px wide, collapsible to 64px via `SidebarContext`
-- Header: `sticky top-0 z-30 bg-white dark:bg-card border-b`
+- Header: `sticky top-0 z-30 bg-surface-raised border-b border-border`
 - Main content offset: `lg:pl-[240px]` (or `lg:pl-16` when collapsed)
 
 ### Banners (state-colored info blocks)
 ```tsx
 {requiresManualReview && (
-  <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 flex items-start gap-2">
-    <WarningCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+  <div className="rounded-md bg-error-bg border border-border p-3 flex items-start gap-2">
+    <WarningCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
     <div>
-      <p className="text-xs font-semibold text-rose-700 dark:text-rose-400">Título</p>
-      <p className="text-xs text-rose-600 dark:text-rose-300 mt-0.5">Detalle</p>
+      <p className="text-sm font-medium text-error">Título</p>
+      <p className="text-body-sm text-fg-secondary mt-0.5">Detalle</p>
     </div>
   </div>
 )}
 ```
-Color follows severity: emerald (success), blue (info), amber (warning), rose (error), purple (special).
+Color follows severity via feedback tokens: `success` (positive), `info` (info), `warning` (caution),
+`error` (error). Use the `*-bg` tint as background and `*-fg` as text/icon.
 
-### Score / Progress Bars (`CandidateDrawer.tsx:913-931`)
+### Score / Progress Bars
 ```tsx
-<div className="h-1.5 bg-muted rounded-full overflow-hidden">
+<div className="h-1.5 bg-surface-sunken rounded-full overflow-hidden">
   <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${value}%` }} />
 </div>
 ```
-Color thresholds: ≥75 emerald, ≥50 amber, <50 rose.
+Color thresholds: ≥75 `bg-success-fg`, ≥50 `bg-warning-fg`, <50 `bg-error-fg`.
 
 ### Toaster (Sonner)
-Configured in `src/app/panel/inmobiliaria/layout.tsx:90-101` — `position="top-right"`, `borderRadius: 16px`, `boxShadow: 0 4px 24px rgba(0,0,0,0.08)`. Don't override per-toast.
+Configured in the panel layout — `position="top-right"`, `borderRadius: 22px` (`rounded-lg`),
+`boxShadow: 0 4px 16px rgba(20,19,15,.08)` (`shadow-md`). Don't override per-toast.
 
 ---
 
@@ -267,8 +294,9 @@ Configured in `src/app/panel/inmobiliaria/layout.tsx:90-101` — `position="top-
   ```ts
   import { X, Robot, Sparkle, ArrowClockwise, MagnifyingGlass } from '@phosphor-icons/react';
   ```
-- **Default weight**: `regular`. Use `weight="bold"` sparingly for emphasis
-- **Default size**: `w-4 h-4` (16px) inline with text, `w-5 h-5` (20px) standalone, `w-3.5 h-3.5` (14px) in chips
+- **SVG spec**: `viewBox="0 0 256 256"`, fill `currentColor` — Phosphor's native grid
+- **Weight**: `Regular` default; **`Fill` for active/selected** states. Use `Bold` sparingly for emphasis
+- **Sizes**: `16` (inline with text), `20` (standalone), `24` (feature/header). Map to `w-4 h-4` / `w-5 h-5` / `w-6 h-6`
 - **Color**: inherit (`currentColor`) — never hardcode fill
 - **Pair with text** when meaning isn't obvious; use `aria-hidden="true"` when decorative beside a label
 - **`flex-shrink-0`** when next to truncating text
@@ -285,23 +313,25 @@ Configured in `src/app/panel/inmobiliaria/layout.tsx:90-101` — `position="top-
 
 ## 7. Accessibility
 
-- **Focus**: global `*:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px }` (`globals.css:592-595`) — don't override per-component
-- **Skip link**: `.skip-link` (`globals.css:603-609`)
+- **Focus**: global `*:focus-visible { outline: 2px solid #1A40FF; outline-offset: 2px }` (cobalt, border.focus) — don't override per-component
+- **Skip link**: `.skip-link` utility
 - **Modals**: `role="dialog" aria-modal="true"`, focus trap optional but Escape-to-close mandatory
 - **Backdrop**: `aria-hidden="true"`
 - **Icon-only buttons**: must have `aria-label` or `title`
 - **Color**: never communicate state with color alone — pair with icon + text
+- **Gradients**: verify text contrast ≥ 4.5:1 against the lightest stop of any brand gradient
 
 ---
 
 ## 8. Lenis Smooth Scroll
 
-The site uses **Lenis** (Luxterra-style smooth scroll), configured in `src/components/providers/SmoothScroll.tsx`. Two rules:
+The site uses **Lenis** smooth scroll, configured in `src/components/providers/SmoothScroll.tsx`. Two rules:
 
 1. **For any modal / drawer / overlay**: call `lenis.stop()` on open, `lenis.start()` on close + cleanup
-2. **For any scrollable nested container** inside the modal/drawer: add `data-lenis-prevent` attribute + `overscrollBehavior: 'contain'`
+2. **For any scrollable nested container** inside the modal/drawer: add `data-lenis-prevent` + `overscrollBehavior: 'contain'`
 
-Failure mode: wheel events get hijacked, drawer body appears frozen. Both `PlanDetailSheet` and `CandidateDrawer` follow this pattern — copy it.
+Failure mode: wheel events get hijacked, drawer body appears frozen. Both `PlanDetailSheet` and
+`CandidateDrawer` follow this pattern — copy it.
 
 ---
 
@@ -309,108 +339,121 @@ Failure mode: wheel events get hijacked, drawer body appears frozen. Both `PlanD
 
 | ❌ Don't | ✅ Do |
 |---|---|
-| `bg-purple-600` raw | `bg-primary` or `bg-indigo-600` (after checking scale) |
-| `#5B5FEF` hardcoded | `hsl(var(--indigo-500))` or `text-indigo-500` |
-| Glass morphism on cards | Solid `bg-card` + subtle shadow |
-| Gradient backgrounds on buttons | Flat color with hover state |
-| `<button>Login</button>` (mixed case) | `<Button>INICIAR SESIÓN</Button>` (uppercase via component) |
+| `bg-blue-600` / `bg-indigo-600` raw | `bg-primary` (cobalt `#1A40FF`) |
+| `#5B5FEF` / "electric blue" hardcoded | `text-primary` / `var(--primary)` (`#1A40FF`) |
+| Second brand accent | One cobalt accent; supporting hues for charts only |
+| Glass morphism on cards | Solid `bg-surface-raised` + whisper `shadow-sm` |
+| **Uppercase button labels** | **Sentence case** in Schibsted Grotesk medium |
+| `rounded-xl` buttons | `rounded-full` pills (radius 999) |
+| `font-sans` on stat numbers | `font-mono` / `.text-numeric` / `.stat-number` (JetBrains Mono) |
+| Heavy `shadow-xl` / neon glow | Whisper elevation (`flat`/`sm`/`md`, max `lg`) |
+| Gradients on cards/buttons | Gradients on hero/brand surfaces only (with grain) |
 | Mounting modal inline without portal | `createPortal(content, document.body)` |
 | Drawer without `data-lenis-prevent` | Always add it to the scrollable body |
-| `sans-serif` for stat numbers | `font-mono` / `.text-numeric` / `.stat-number` |
 | Inline z-index numbers | Use `z-30 z-40 z-50` per semantic scale |
-| Mixed icon libraries | Phosphor only |
+| Mixed icon libraries | Phosphor only (`viewBox 0 0 256 256`) |
 | Color alone for state | Color + icon + text |
+
+> **Reversed from the old system:** uppercase buttons and "no gradients" are no longer rules — buttons
+> are sentence-case pills, and brand gradients are encouraged on hero surfaces.
 
 ---
 
 ## 10. Brand & Landing Patterns
 
-### 10.1 Floating Glass Navbar (Public Site)
+### 10.1 Floating Navbar (Public Site)
 The landing/marketing nav is a **floating pill** that sticks to the top:
 ```tsx
 <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-6 px-6 py-3
-                rounded-full bg-white/95 backdrop-blur-md shadow-elevated border border-border/40">
+                rounded-full bg-surface-raised/95 backdrop-blur-md shadow-md border border-border-subtle">
   <Logo />
-  <button className="px-5 py-2 rounded-full bg-muted text-foreground font-mono uppercase tracking-wide text-sm">
-    PUBLICAR INMUEBLE
+  <button className="px-5 py-2 rounded-full bg-surface-sunken text-fg font-sans text-sm">
+    Publicar inmueble
   </button>
-  {/* nav items: font-mono uppercase tracking-wide text-sm */}
+  {/* nav links: font-sans, sentence case, text-sm; eyebrow/utility labels may be mono uppercase */}
 </nav>
 ```
-- All nav items: **`font-mono uppercase tracking-wide text-sm`** (Space Mono)
-- The "PUBLICAR INMUEBLE" CTA is a soft pill on muted background (not primary indigo — primary lives elsewhere)
-- This is the ONLY place glass morphism is allowed (`.glass` class also acceptable for legacy)
+- Nav links: **Schibsted Grotesk (`font-sans`), sentence case** — not uppercase.
+- The "Publicar inmueble" CTA is a soft pill on a sunken surface (cobalt primary lives elsewhere).
+- This is the ONLY place glass/backdrop-blur on chrome is allowed.
 
 ### 10.2 Highlighted Word Treatment (Headlines)
-Signature Leasefy move: a key word inside a large heading is wrapped in a colored rounded pill.
+A signature move: a key word inside a large heading wrapped in a cobalt rounded pill.
 ```tsx
 <h1 className="text-display">
   Arrienda diferente. Arrienda{' '}
-  <span className="inline-block px-4 py-1 rounded-2xl bg-indigo-500 text-white font-mono uppercase">
-    SIMPLE
+  <span className="inline-block px-4 py-1 rounded-lg bg-primary text-on-primary">
+    simple
   </span>
 </h1>
 ```
-- The wrapped word uses **mono uppercase white-on-indigo** (or **white-on-near-black** for darker mood)
-- Always the LAST/punchline word of the headline
-- Padding `px-4 py-1`, radius `rounded-2xl`
-- Don't use for more than one word per heading
+- The wrapped word stays in **Schibsted Grotesk, sentence case** (display type — not mono, not uppercase).
+- White-on-cobalt (or white-on-warm-ink for a darker mood).
+- Always the LAST/punchline word; one word per heading. Padding `px-4 py-1`, radius `rounded-lg`.
 
 ### 10.3 Italic Display Heading (Legal / Long-Form)
 ```tsx
 <h1 className="text-display italic font-light">Términos y condiciones</h1>
 ```
-Reserved for: terms, privacy, legal-feel long-form. Pair with `<SectionLabel>LEGAL</SectionLabel>` above.
+Reserved for terms, privacy, legal long-form. Pair with `<SectionLabel>Legal</SectionLabel>` above.
 
 ### 10.4 Step Cards (Landing — "Cómo funciona")
 ```tsx
-<section className="rounded-2xl border border-border bg-card p-8 space-y-6">
+<section className="rounded-lg border border-border bg-surface-raised p-8 space-y-6 shadow-sm">
   <div className="flex items-start justify-between">
-    <span className="text-7xl font-light text-indigo-100 dark:text-indigo-900 font-mono leading-none">01</span>
-    <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
-      <Buildings className="w-6 h-6 text-indigo-600" />
+    <span className="text-7xl font-mono font-light text-primary-100 leading-none tabular-nums">01</span>
+    <div className="w-12 h-12 rounded-md bg-surface-brand flex items-center justify-center">
+      <Buildings className="w-6 h-6 text-primary" />
     </div>
   </div>
-  <h3 className="text-2xl font-mono uppercase tracking-tight">SUBE TU PORTAFOLIO</h3>
-  <p className="text-xs font-mono uppercase tracking-wider text-indigo-600">EN MINUTOS, NO SEMANAS</p>
-  <p className="text-body-sm text-muted-foreground">Body description...</p>
+  <h3 className="text-h2">Sube tu portafolio</h3>
+  <p className="text-eyebrow text-primary">En minutos, no semanas</p>
+  <p className="text-body-sm text-fg-secondary">Body description...</p>
 </section>
 ```
-Key moves: oversized light-color step number, icon in soft tinted rounded-square (top-right), monospace uppercase title, indigo uppercase subhead, normal body.
+Key moves: oversized **mono** light-cobalt step number (tabular), icon in a `surface-brand` tile,
+**Schibsted sentence-case title**, mono-uppercase cobalt eyebrow, normal body.
 
 ### 10.5 Social Proof Bar (Avatar Stack + Rating)
 ```tsx
-<div className="inline-flex items-center gap-4 px-5 py-2.5 rounded-full bg-black/70 backdrop-blur-sm">
+<div className="inline-flex items-center gap-4 px-5 py-2.5 rounded-full bg-surface-inverse/80 backdrop-blur-sm">
   <div className="flex -space-x-2">
     {avatars.map(a => <Avatar key={a.id} size="sm" ring="default" src={a.src} />)}
   </div>
   <div className="flex items-center gap-2 text-white">
     <Stars value={4.9} />
-    <span className="font-mono">4.9 <span className="opacity-70">(850+ reseñas)</span></span>
+    <span className="font-mono tabular-nums">4.9 <span className="opacity-70">(850+ reseñas)</span></span>
   </div>
 </div>
 ```
-Always on dark/black pill, white text, mono numerals.
+On a warm-ink (`surface-inverse`) pill, white text, **mono** numerals.
 
-### 10.6 Brand-Color Footer
-The site footer is **full-bleed `bg-indigo-500`** (primary):
-- All headings + links: `font-mono uppercase tracking-wide text-white`
-- Body links: `text-white/80 hover:text-white`
-- Subscribe input: `rounded-full bg-white/10 text-white placeholder:text-white/50` with inline white button
-- Divider: `border-white/20`
+### 10.6 Brand Gradient Hero / Footer
+Heroes and the footer may use a **brand gradient** (Aurora / Spectrum / Dusk / Daylight) with a grain
+overlay — this **reverses** the old "footer is flat indigo / no gradients" rule:
+```tsx
+<footer className="gradient-aurora gradient-grain text-white rounded-xl p-12">
+  {/* headings + links: font-sans, sentence case, text-white */}
+  {/* body links: text-white/80 hover:text-white */}
+  {/* subscribe input: rounded-full bg-white/10 text-white placeholder:text-white/60 */}
+  {/* divider: border-white/20 */}
+</footer>
+```
+- One gradient per surface; never on cards/buttons/data UI.
+- For a flat alternative, a full-bleed `bg-primary` (cobalt) footer is also acceptable.
+- Verify white-text contrast against the lightest gradient stop.
 
-This is the **only** place the primary color is used as a full background.
-
-### 10.7 Dark Product Preview Card (Landing Mockups)
+### 10.7 Dark Spotlight Card (Landing Mockups)
 For showing UI screenshots/mockups in a "spotlight" frame:
 ```tsx
-<div className="rounded-3xl bg-neutral-900 dark:bg-product-bg p-8 space-y-6 shadow-2xl">
-  <p className="font-mono uppercase tracking-wide text-white">INQUILINOS QUE PAGAN</p>
-  <p className="text-sm text-white/60">Scoring AI que predice...</p>
-  {/* Circular progress, score bars, avatar — all on dark */}
+<div className="rounded-xl bg-surface-inverse p-8 space-y-6 shadow-lg">
+  <p className="text-eyebrow text-white/80">Inquilinos que pagan</p>
+  <p className="text-body-sm text-white/60">Scoring AI que predice...</p>
+  {/* Circular progress, score bars, avatar — all on warm-dark */}
 </div>
 ```
-Use the `--product-bg`, `--product-bg-elevated`, `--product-bg-subtle`, `--product-border` tokens (defined in `globals.css:209-213`).
+Use the warm-dark surface (`surface.inverse` `#14130F` / raised `#1C1A16`, border `#312E27`); cobalt
+accent unchanged.
 
 ---
 
@@ -422,71 +465,73 @@ Use the `--product-bg`, `--product-bg-elevated`, `--product-bg-subtle`, `--produ
   icon={MagnifyingGlass}
   title="No encontramos propiedades"
   description="Intenta ajustar los filtros para ver más opciones."
-  action={{ label: 'LIMPIAR FILTROS', href: '/propiedades' }}
+  action={{ label: 'Limpiar filtros', href: '/propiedades' }}
 />
 ```
-- Container: `rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03]`, vertical padding `py-14 px-6 text-center`
-- Icon: in muted circle, centered above title
-- Title `text-foreground` semibold, description `text-muted-foreground`
-- Optional CTA = primary button (uppercase via Button component)
+- Container: `rounded-lg bg-surface-sunken`, vertical padding `py-14 px-6 text-center`
+- Icon: in a `surface-brand` circle, centered above the title
+- Title `text-fg` (h2/title), description `text-fg-secondary`
+- Optional CTA = primary pill button (sentence case)
 
 ### Error State (component: `src/components/ui/error-state.tsx`)
-Used as a centered card with **rose-tinted** icon circle:
+Centered card with an **error-tinted** icon circle:
 ```tsx
-<div className="max-w-md mx-auto rounded-2xl bg-card border border-border p-8 text-center space-y-4">
-  <div className="w-14 h-14 mx-auto rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
-    <WarningCircle className="w-7 h-7 text-rose-600 dark:text-rose-400" />
+<div className="max-w-md mx-auto rounded-lg bg-surface-raised border border-border p-8 text-center space-y-4 shadow-sm">
+  <div className="w-14 h-14 mx-auto rounded-full bg-error-bg flex items-center justify-center">
+    <WarningCircle className="w-7 h-7 text-error" />
   </div>
-  <h2 className="text-h4 font-semibold">Invitación inválida</h2>
-  <p className="text-body-sm text-muted-foreground">Token de invitación inválido o faltante.</p>
+  <h2 className="text-h2">Invitación inválida</h2>
+  <p className="text-body-sm text-fg-secondary">Token de invitación inválido o faltante.</p>
 </div>
 ```
 
 ### Loading State — Route Level
-Subtle, centered:
 ```tsx
 <div className="flex flex-col items-center justify-center min-h-screen gap-3">
   <Spinner size="md" variant="muted" />
-  <p className="text-sm text-muted-foreground">Verificando acceso...</p>
+  <p className="text-body-sm text-fg-muted">Verificando acceso...</p>
 </div>
 ```
 
 ### Loading State — Inline
 ```tsx
-<Spinner className="w-5 h-5 animate-spin text-muted-foreground" />
+<Spinner className="w-5 h-5 animate-spin text-fg-muted" />
 ```
-Skeleton class: `animate-pulse rounded-sm bg-muted` (use the `<Skeleton />` primitive at `src/components/ui/skeleton.tsx`).
+Skeleton class: `animate-pulse rounded-md bg-surface-sunken` (use the `<Skeleton />` primitive at
+`src/components/ui/skeleton.tsx`).
 
-### 404 (Next.js default — KEEP IT BLACK)
-The 404 page is pitch black with mono "404 | This page could not be found." — leave it as-is; it's intentional brand minimalism.
+### 404 (Next.js default — KEEP IT DARK)
+The 404 page is warm-ink (`surface.inverse`) with **JetBrains Mono** "404 | This page could not be
+found." — leave it as-is; it's intentional brand minimalism.
 
 ---
 
 ## 12. Badge System (component: `src/components/ui/badge.tsx`)
 
 ```tsx
-<Badge variant="default">Disponible</Badge>      // bg-primary (indigo-500)
-<Badge variant="secondary">Borrador</Badge>
-<Badge variant="destructive">Rechazado</Badge>
-<Badge variant="outline">Otro</Badge>
-<Badge variant="success">Aprobado</Badge>
-<Badge variant="warning">En revisión</Badge>
-<Badge variant="risk-a">A</Badge>                // green pill, white text
-<Badge variant="risk-b">B</Badge>                // blue
-<Badge variant="risk-c">C</Badge>                // amber (text-foreground)
-<Badge variant="risk-d">D</Badge>                // red
+<Badge variant="default">Disponible</Badge>      // bg-surface-brand, text-primary
+<Badge variant="secondary">Borrador</Badge>      // bg-surface-sunken, text-fg-secondary
+<Badge variant="destructive">Rechazado</Badge>   // bg-error-bg, text-error
+<Badge variant="outline">Otro</Badge>            // hairline border
+<Badge variant="success">Aprobado</Badge>        // bg-success-bg, text-success-fg
+<Badge variant="warning">En revisión</Badge>     // bg-warning-bg, text-warning-fg
+<Badge variant="risk-a">A</Badge>                // success
+<Badge variant="risk-b">B</Badge>                // info
+<Badge variant="risk-c">C</Badge>                // warning
+<Badge variant="risk-d">D</Badge>                // error
 ```
-All badges: `rounded-full px-3 py-1 text-xs font-semibold`. Risk badges use solid `bg-[hsl(var(--risk-x))]` for vibrancy.
+All badges: `rounded-full px-3 py-1`, label in **`font-mono` (JetBrains Mono)** medium — labels/IDs are
+mono. Risk badges use the feedback tokens (A→success, B→info, C→warning, D→error) for legibility.
 
 ### PlanStatusBadge (CRM-specific, `PlanStatusBadge.tsx`)
-Flat, no borders, light-100 bg + dark-800 text:
-- `new` → indigo-100 / indigo-800
-- `in_progress` → amber-100 / amber-800
-- `accepted` → emerald-100 / emerald-800
-- `rejected` → red-100 / red-800
-- `important` → rose-100 / rose-800
-- `pending` → neutral-100 / neutral-800
-- `completed` → emerald-100 / emerald-800
+Flat, no borders, `*-bg` tint + `*-fg` text:
+- `new` → `bg-surface-brand` / `text-primary`
+- `in_progress` → `bg-warning-bg` / `text-warning-fg`
+- `accepted` → `bg-success-bg` / `text-success-fg`
+- `rejected` → `bg-error-bg` / `text-error-fg`
+- `important` → `bg-error-bg` / `text-error-fg`
+- `pending` → `bg-surface-sunken` / `text-fg-secondary`
+- `completed` → `bg-success-bg` / `text-success-fg`
 
 Use **PlanStatusBadge** in CRM/list contexts; use **Badge** with `variant="risk-*"` for tenant scoring.
 
@@ -495,21 +540,23 @@ Use **PlanStatusBadge** in CRM/list contexts; use **Badge** with `variant="risk-
 ## 13. Section Label (component: `src/components/ui/section-label.tsx`)
 
 ```tsx
-<SectionLabel dotVariant="default">LEGAL</SectionLabel>
-<SectionLabel dotVariant="warning">PENDIENTE</SectionLabel>
-<SectionLabel dotVariant="info">INFORMACIÓN</SectionLabel>
-<SectionLabel dotVariant="success">APROBADO</SectionLabel>
+<SectionLabel dotVariant="default">Legal</SectionLabel>
+<SectionLabel dotVariant="warning">Pendiente</SectionLabel>
+<SectionLabel dotVariant="info">Información</SectionLabel>
+<SectionLabel dotVariant="success">Aprobado</SectionLabel>
 ```
-Renders: small colored dot + 12px mono uppercase tracking-wider muted text. Always above the section heading.
+Renders: a small colored dot + the **eyebrow** style (12px **mono UPPERCASE**, +10% tracking, `text-fg-muted`).
+The component uppercases the label — author it in sentence case. Always sits above the section heading.
 
 ---
 
 ## 14. Avatar (component: `src/components/ui/avatar.tsx`)
 
 Sizes: `xs` (24) / `sm` (32) / `default` (40) / `md` (48) / `lg` (56) / `xl` (64) / `2xl` (80).
-Ring variants: `none` / `default` (bg ring) / `primary` / `success` / `warning`.
+Ring variants: `none` / `default` (subtle ring) / `primary` (cobalt) / `success` / `warning`.
 
-Initials fallback uses uppercase text in default size for each scale. **Always specify size** — don't rely on default for new contexts.
+Initials fallback uses uppercase text per scale, in **JetBrains Mono**. **Always specify size** — don't
+rely on default for new contexts.
 
 Avatar stacks (overlapping):
 ```tsx
@@ -522,37 +569,37 @@ Avatar stacks (overlapping):
 
 ## 15. Search & Filter Patterns
 
-### AI Search Input (signature Leasefy pattern)
+### AI Search Input (signature pattern)
 ```tsx
-<div className="bg-card rounded-2xl shadow-sm border border-border p-2 flex items-center gap-3">
-  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
-    <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+<div className="bg-surface-raised rounded-lg shadow-sm border border-border p-2 flex items-center gap-3">
+  <div className="w-10 h-10 rounded-md bg-surface-brand flex items-center justify-center">
+    <Sparkle className="w-5 h-5 text-primary" weight="fill" />
   </div>
   <input
     type="text"
     placeholder="Describe el inmueble que buscas..."
-    className="flex-1 bg-transparent border-0 outline-none text-base placeholder:text-muted-foreground"
+    className="flex-1 bg-transparent border-0 outline-none text-base placeholder:text-fg-muted"
   />
-  <button className="w-10 h-10 rounded-xl bg-muted hover:bg-accent flex items-center justify-center">
-    <ArrowUp className="w-5 h-5" />
+  <button className="w-10 h-10 rounded-full bg-surface-sunken hover:bg-surface-brand flex items-center justify-center">
+    <ArrowUp className="w-5 h-5 text-fg" />
   </button>
 </div>
 ```
-- Hint text below: `text-xs text-muted-foreground` ("Pulsa Enter para buscar")
-- Sparkle icon in `weight="fill"` is the AI signature — don't use it for non-AI inputs
+- Hint text below: `text-caption text-fg-muted` ("Pulsa Enter para buscar")
+- `Sparkle` in `weight="fill"` is the AI signature — don't use it for non-AI inputs.
 
 ### Filter Pills
 ```tsx
-<button className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border bg-background hover:bg-muted text-sm">
+<button className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-border bg-surface hover:bg-surface-sunken text-sm">
   Ciudad
-  <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
+  <CaretDown className="w-3.5 h-3.5 text-fg-muted" />
 </button>
 ```
-All filters are pills with chevron-down. Active state: `border-foreground/30 bg-muted`.
+All filters are pills with chevron-down. Active state: `border-border-strong bg-surface-sunken`.
 
 ### Inline Sort Dropdown
 ```tsx
-<button className="inline-flex items-center gap-1.5 text-sm text-foreground hover:text-primary">
+<button className="inline-flex items-center gap-1.5 text-sm text-fg hover:text-primary">
   Recomendado <CaretDown className="w-3.5 h-3.5" />
 </button>
 ```
@@ -562,31 +609,31 @@ All filters are pills with chevron-down. Active state: `border-foreground/30 bg-
 ## 16. Money & Numeric Formatting
 
 - All COP: use `formatCurrency()` from `@/lib/format` — outputs `$2.500.000` (Colombian dot-as-thousands)
-- Always pair with `/mes` or unit suffix in `text-muted-foreground text-sm`:
+- Numerals are **JetBrains Mono, tabular** — pair with a unit suffix in `text-fg-muted text-sm`:
   ```tsx
-  <p className="text-foreground"><span className="font-mono tabular-nums">$2.500.000</span>
-     <span className="text-sm text-muted-foreground">/mes</span></p>
+  <p className="text-fg"><span className="font-mono tabular-nums">$2.500.000</span>
+     <span className="text-sm text-fg-muted">/mes</span></p>
   ```
-- Score values: `<span className="font-mono tabular-nums text-foreground">{score}</span><span className="text-sm text-muted-foreground">/100</span>`
+- Score values: `<span className="font-mono tabular-nums text-fg">{score}</span><span className="text-sm text-fg-muted">/100</span>`
 - Dates: `toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })` → "11 de abril de 2026"
 
 ---
 
 ## 17. Modal vs Drawer — Two Different Layers
 
-The codebase uses **two distinct overlay patterns** with **different z-indexes**:
+Two distinct overlay patterns with **different z-indexes**:
 
 | Pattern | Component | z-index | When |
 |---|---|---|---|
-| **Drawer (side panel)** | Custom (see `CandidateDrawer`, `PlanDetailSheet`) | `z-50` | Detail views, settings, long content with sections |
+| **Drawer (side panel)** | Custom (`CandidateDrawer`, `PlanDetailSheet`) | `z-50` | Detail views, settings, long sectioned content |
 | **Dialog (centered modal)** | `<Dialog>` from `dialog.tsx` (Radix-based) | `z-[300]` | Confirmations, short forms, alerts |
 
-⚠️ **Different z-indexes are intentional** — Dialog must sit above drawer because drawers can spawn confirmation dialogs.
+⚠️ **Different z-indexes are intentional** — Dialog must sit above the drawer because drawers can spawn confirmation dialogs.
 
 ### Dialog Pattern
 ```tsx
 <Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent /* rounded-2xl, max-w-lg, p-6, center via translate */>
+  <DialogContent /* rounded-lg, max-w-lg, p-6, center via translate, shadow-lg */>
     <DialogHeader>
       <DialogTitle>...</DialogTitle>
       <DialogDescription>...</DialogDescription>
@@ -599,7 +646,7 @@ The codebase uses **two distinct overlay patterns** with **different z-indexes**
   </DialogContent>
 </Dialog>
 ```
-The X close button is built-in (top-right, `absolute right-4 top-4`). Use the primitive — don't roll your own.
+The X close button is built-in (top-right). Use the primitive — don't roll your own.
 
 ---
 
@@ -611,13 +658,13 @@ Available at `src/components/ui/` — **check first before creating new componen
 |---|---|
 | `accordion` | Collapsible sections (Radix) |
 | `alert` / `alert-dialog` | Banners / confirm dialogs |
-| `animated-counter` | Counts up on view |
+| `animated-counter` | Counts up on view (mono tabular) |
 | `avatar` | User avatars with size/ring variants |
 | `back-button` | Standard back button |
-| `badge` | Status pills (10 variants incl. risk-a/b/c/d) |
+| `badge` | Status pills (incl. risk-a/b/c/d) |
 | `breadcrumb` | Navigation breadcrumbs |
-| `button` | Primary primitive (8 variants, 4 sizes) |
-| `card` | Card containers |
+| `button` | Primary primitive — pill, sentence case (variants + sizes) |
+| `card` | Card containers (`rounded-lg`, hairline border) |
 | `checkbox` | Checkbox input |
 | `collapsible` | Expand/collapse |
 | `dialog` | Centered modal (z-[300]) |
@@ -626,8 +673,8 @@ Available at `src/components/ui/` — **check first before creating new componen
 | `empty-state` | Empty list/page state |
 | `error-state` | Error display card |
 | `hover-card` | Hover-reveal info |
-| `input` | Text input (h-11, border-2) |
-| `kbd` | Keyboard shortcut display |
+| `input` | Text input (h-11, hairline border, cobalt focus) |
+| `kbd` | Keyboard shortcut display (mono) |
 | `label` | Form label |
 | `LockedFeatureOverlay` | Plan-gating overlay |
 | `not-found` | 404 component |
@@ -635,14 +682,14 @@ Available at `src/components/ui/` — **check first before creating new componen
 | `popover` | Floating popover |
 | `progress` | Linear progress bar |
 | `scroll-area` | Custom scrollbar |
-| `section-label` | Dot + uppercase mono label |
+| `section-label` | Dot + mono uppercase eyebrow |
 | `select` | Select dropdown |
 | `sheet` | Side sheet (alternative to custom drawer) |
 | `skeleton` | Loading skeleton |
 | `slider` | Range input |
-| `spinner` | Loading spinner (7 sizes, 6 variants) |
+| `spinner` | Loading spinner (sizes + variants) |
 | `switch` | Toggle switch |
-| `table` | Data table |
+| `table` | Data table (mono numerals, tabular) |
 | `tabs` | Tab navigation |
 | `textarea` | Multi-line input |
 | `toast` | Sonner-based toast |
@@ -650,21 +697,24 @@ Available at `src/components/ui/` — **check first before creating new componen
 | `tooltip` | Hover tooltip |
 | `visually-hidden` | Screen-reader-only |
 
-And `src/components/ui/plan/` (CRM-specific): `PlanActivityTimeline`, `PlanDetailSheet`, `PlanHeader`, `PlanProgressBar`, `PlanSidebar`, `PlanStatsCard`, `PlanStatusBadge`, `PlanTable`, `PlanTabs`, `SubscriptionBadge`.
+And `src/components/ui/plan/` (CRM-specific): `PlanActivityTimeline`, `PlanDetailSheet`, `PlanHeader`,
+`PlanProgressBar`, `PlanSidebar`, `PlanStatsCard`, `PlanStatusBadge`, `PlanTable`, `PlanTabs`,
+`SubscriptionBadge`.
 
 ---
 
 ## 19. When in Doubt
 
-1. Find a similar component already in the codebase — copy its pattern
+1. Find a similar component already in the codebase — copy its pattern.
 2. Canonical references for common needs:
+   - **Cadence foundation**: [`cadence/reference/Cadence Design System.dc.html`](../../cadence/reference/Cadence%20Design%20System.dc.html) + the `@leasefy/cadence` preset
+   - **Color**: [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md)
    - **Drawer**: `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/ui/plan/PlanDetailSheet.tsx`
    - **Form**: `src/components/auth/AuthForm.tsx`
    - **Layout**: `src/app/panel/inmobiliaria/layout.tsx` + `src/components/ui/plan/PlanSidebar.tsx` + `PlanHeader.tsx`
    - **Button**: `src/components/ui/button.tsx`
-   - **Banner**: `CandidateDrawer.tsx:578-592` (manual review banner)
-3. If still unsure, ask before inventing.
+3. If still unsure, ask before inventing — extend this doc, don't drift.
 
 ---
 
-*Last updated: 2026-05-12. Update this doc when patterns change — don't let it drift.*
+*Migrated to the Cadence design system (`@leasefy/cadence`). Update this doc when patterns change — don't let it drift.*

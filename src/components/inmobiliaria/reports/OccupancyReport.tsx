@@ -11,6 +11,16 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import type { OccupancyData } from '@/lib/data/mock-reports';
 
 interface OccupancyReportProps {
@@ -63,9 +73,9 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Occupancy by Zone - CSS Bar Chart */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-5">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-neutral-500" />
+          <MapPin className="w-4 h-4 text-fg-muted" />
           Ocupacion por zona
         </h3>
         <div className="space-y-3">
@@ -79,21 +89,19 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                     {zone.rented}/{zone.total} ({occupancyRate.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="h-2.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all duration-500',
-                      occupancyRate >= 90
-                        ? 'bg-[#2C7A53]'
-                        : occupancyRate >= 70
-                          ? 'bg-[#1A40FF]'
-                          : occupancyRate >= 50
-                            ? 'bg-[#B7791F]'
-                            : 'bg-[#C4503B]'
-                    )}
-                    style={{ width: `${occupancyRate}%` }}
-                  />
-                </div>
+                <Progress
+                  value={occupancyRate}
+                  size="default"
+                  variant={
+                    occupancyRate >= 90
+                      ? 'success'
+                      : occupancyRate >= 70
+                        ? 'default'
+                        : occupancyRate >= 50
+                          ? 'warning'
+                          : 'error'
+                  }
+                />
               </div>
             );
           })}
@@ -101,9 +109,9 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Monthly Occupancy Trend - CSS Dot/Bar Chart */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-5">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <TrendUp className="w-4 h-4 text-neutral-500" />
+          <TrendUp className="w-4 h-4 text-fg-muted" />
           Tendencia de ocupacion (12 meses)
         </h3>
         <div className="flex items-end gap-1.5 h-36">
@@ -122,10 +130,10 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                     className={cn(
                       'w-full rounded-t transition-all duration-300 group-hover:opacity-80',
                       m.occupancyRate >= 90
-                        ? 'bg-[#2C7A53] dark:bg-[#2C7A53]'
+                        ? 'bg-success dark:bg-success'
                         : m.occupancyRate >= 85
-                          ? 'bg-[#1A40FF] dark:bg-[#1A40FF]'
-                          : 'bg-[#B7791F] dark:bg-[#B7791F]'
+                          ? 'bg-primary dark:bg-primary'
+                          : 'bg-warning dark:bg-warning'
                     )}
                     style={{ height: `${height}%` }}
                   />
@@ -140,58 +148,51 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Property Table */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-        <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+        <div className="p-4 border-b border-border dark:border-strong">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <House className="w-4 h-4 text-neutral-500" />
+            <House className="w-4 h-4 text-fg-muted" />
             Detalle por propiedad
           </h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                <th className="text-left py-3 px-4 text-muted-foreground font-medium">Propiedad</th>
-                <th className="text-left py-3 px-4 text-muted-foreground font-medium">Zona</th>
-                <th className="text-left py-3 px-4 text-muted-foreground font-medium">Estado</th>
-                <th className="text-right py-3 px-4 text-muted-foreground font-medium">Dias vacante</th>
-                <th className="text-left py-3 px-4 text-muted-foreground font-medium">Inquilino</th>
-                <th className="text-right py-3 px-4 text-muted-foreground font-medium">Canon</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-faint dark:border-strong">
+                <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
+                <TableHead className="text-left py-3 px-4">Zona</TableHead>
+                <TableHead className="text-left py-3 px-4">Estado</TableHead>
+                <TableHead className="text-right py-3 px-4">Dias vacante</TableHead>
+                <TableHead className="text-left py-3 px-4">Inquilino</TableHead>
+                <TableHead className="text-right py-3 px-4">Canon</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {byProperty.map((prop) => (
-                <tr
+                <TableRow
                   key={prop.id}
-                  className="border-b border-neutral-50 dark:border-neutral-800/50 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
+                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30 transition-colors"
                 >
-                  <td className="py-2.5 px-4 font-medium text-foreground">{prop.title}</td>
-                  <td className="py-2.5 px-4 text-muted-foreground">{prop.zone}</td>
-                  <td className="py-2.5 px-4">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                        prop.status === 'rented'
-                          ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
-                          : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
-                      )}
-                    >
+                  <TableCell className="py-2.5 px-4 font-medium text-foreground">{prop.title}</TableCell>
+                  <TableCell className="py-2.5 px-4 text-muted-foreground">{prop.zone}</TableCell>
+                  <TableCell className="py-2.5 px-4">
+                    <Badge variant={prop.status === 'rented' ? 'success' : 'warning'}>
                       {prop.status === 'rented' ? 'Arrendado' : 'Vacante'}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4 text-right text-muted-foreground">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2.5 px-4 text-right text-muted-foreground">
                     {prop.daysVacant != null ? `${prop.daysVacant}d` : '-'}
-                  </td>
-                  <td className="py-2.5 px-4 text-muted-foreground">
+                  </TableCell>
+                  <TableCell className="py-2.5 px-4 text-muted-foreground">
                     {prop.tenant || '-'}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-medium text-foreground">
+                  </TableCell>
+                  <TableCell className="py-2.5 px-4 text-right font-medium text-foreground">
                     {formatCurrency(prop.rentAmount)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
@@ -204,20 +205,20 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
 
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   emerald: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   amber: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
   red: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
   },
 } as const;
 
@@ -236,7 +237,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-3">
         <div
           className={cn(

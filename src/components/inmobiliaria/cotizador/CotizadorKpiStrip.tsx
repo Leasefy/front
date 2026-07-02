@@ -1,6 +1,19 @@
 'use client'
 
-import { FileText, CheckCircle, ShieldStar, CurrencyDollar } from '@phosphor-icons/react'
+import {
+  FileText,
+  CheckCircle,
+  ShieldStar,
+  CurrencyDollar,
+  ShieldCheck,
+  Stack,
+  ShieldSlash,
+  Timer,
+  House,
+  Vault,
+} from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
+import { KpiCard } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
 
@@ -14,6 +27,15 @@ function formatCOP(value: number): string {
   return String(value)
 }
 
+/** t() with raw-key fallback so a missing key never renders the path. */
+function useTf() {
+  const { t } = useI18n()
+  return (key: string, fallback: string) => {
+    const r = t(key)
+    return r === key ? fallback : r
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -23,57 +45,120 @@ interface CotizadorKpiStripProps {
   isLoading?: boolean
 }
 
+/**
+ * Extended KPI fields (visión #4 — home con hasta 8 métricas). The backend
+ * currently returns the 4 base KPIs; these optional fields render ONLY when the
+ * backend starts emitting them (tolerant-degrade). We never hardcode 8 — the
+ * extended cards are conditional, so the grid shows 4 today and grows to 8 the
+ * moment the contract is extended, with no further front change. See notes.
+ */
+type ExtendedKpis = CotizadorOverviewResponse['kpis'] & {
+  asegurablesCount?: number
+  tasaAsegurabilidad?: number // 0.0–1.0
+  multiOpcionCount?: number
+  sinAseguradoraCount?: number
+  tiempoRespuestaSeconds?: number
+  arriendosCerrados?: number
+  valorAseguradoCop?: number
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStripProps) {
-  const { t } = useI18n()
+  const tf = useTf()
+  const k = kpis as ExtendedKpis | null
 
-  const cards = [
+  type Card = { label: string; value: string; Icon: Icon }
+
+  // Base KPIs (always rendered — current backend contract).
+  const cards: Card[] = [
     {
-      label: t('inmobiliaria.ai.cotizador.overview.kpis.quotesToday'),
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.quotesToday', 'Consultas hoy'),
       value: kpis ? String(kpis.quotesHoy) : '—',
       Icon: FileText,
-      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
     {
-      label: t('inmobiliaria.ai.cotizador.overview.kpis.approvalRate'),
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.approvalRate', 'Tasa de aprobación'),
       value: kpis ? `${(kpis.approvalRate * 100).toFixed(0)}%` : '—',
       Icon: CheckCircle,
-      iconColor: 'text-[#2C7A53]',
     },
     {
-      label: t('inmobiliaria.ai.cotizador.overview.kpis.primaPromedio'),
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.primaPromedio', 'Prima promedio/mes'),
       value: kpis ? `$${formatCOP(kpis.primaPromedioMonthlyCop)}` : '—',
       Icon: ShieldStar,
-      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
     {
-      label: t('inmobiliaria.ai.cotizador.overview.kpis.costPerQuote'),
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.costPerQuote', 'Costo por consulta'),
       value: kpis ? `$${formatCOP(kpis.costPerQuoteCop)}` : '—',
       Icon: CurrencyDollar,
-      iconColor: 'text-[#1A40FF]',
     },
   ]
 
+  // Extended KPIs — appended only when present on the payload. The grid wraps
+  // to a second row of up to 4 once these arrive (visión #4: home 8 metrics).
+  if (k && typeof k.asegurablesCount === 'number') {
+    cards.push({
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.asegurables', 'Asegurables'),
+      value: String(k.asegurablesCount),
+      Icon: ShieldCheck,
+    })
+  }
+  if (k && typeof k.tasaAsegurabilidad === 'number') {
+    cards.push({
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.tasaAsegurabilidad', 'Tasa de asegurabilidad'),
+      value: `${(k.tasaAsegurabilidad * 100).toFixed(0)}%`,
+      Icon: CheckCircle,
+    })
+  }
+  if (k && typeof k.multiOpcionCount === 'number') {
+    cards.push({
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.multiOpcion', 'Con varias opciones'),
+      value: String(k.multiOpcionCount),
+      Icon: Stack,
+    })
+  }
+  if (k && typeof k.sinAseguradoraCount === 'number') {
+    cards.push({
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.sinAseguradora', 'Sin aseguradora'),
+      value: String(k.sinAseguradoraCount),
+      Icon: ShieldSlash,
+    })
+  }
+  if (k && typeof k.tiempoRespuestaSeconds === 'number') {
+    const secs = k.tiempoRespuestaSeconds
+    const value = secs >= 60 ? `${(secs / 60).toFixed(1)}m` : `${Math.round(secs)}s`
+    cards.push({
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.tiempoRespuesta', 'Tiempo de respuesta'),
+      value,
+      Icon: Timer,
+    })
+  }
+  if (k && typeof k.arriendosCerrados === 'number') {
+    cards.push({
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.arriendosCerrados', 'Arriendos cerrados'),
+      value: String(k.arriendosCerrados),
+      Icon: House,
+    })
+  }
+  if (k && typeof k.valorAseguradoCop === 'number') {
+    cards.push({
+      label: tf('inmobiliaria.ai.cotizador.overview.kpis.valorAsegurado', 'Valor asegurado'),
+      value: `$${formatCOP(k.valorAseguradoCop)}`,
+      Icon: Vault,
+    })
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {cards.map(({ label, value, Icon, iconColor }) => (
-        <div
+      {cards.map(({ label, value, Icon }) => (
+        <KpiCard
           key={label}
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <Icon weight="duotone" className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{label}</p>
-          </div>
-          {isLoading ? (
-            <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse mt-1" />
-          ) : (
-            <p className="text-xl font-semibold text-neutral-900 dark:text-white mt-1">{value}</p>
-          )}
-        </div>
+          label={label}
+          value={isLoading ? '—' : value}
+          icon={<Icon weight="duotone" aria-hidden="true" />}
+        />
       ))}
     </div>
   )

@@ -44,21 +44,21 @@ import type { ArcoRequestRow } from '@/lib/hooks/cobranza/use-arco-requests'
 // ─── DOT COLOR MAP ─────────────────────────────────────────────────────────────
 
 const DOT_COLOR: Record<string, string> = {
-  resolved: 'bg-[#2C7A53]',
-  in_progress: 'bg-[#1A40FF]',
-  pending_email_verification: 'bg-[#B7791F]',
-  pending_admin_triage: 'bg-[#B7791F]',
-  pending_counsel_review: 'bg-[#B7791F]',
-  rejected: 'bg-[#C4503B]',
+  resolved: 'bg-success',
+  in_progress: 'bg-primary',
+  pending_email_verification: 'bg-warning',
+  pending_admin_triage: 'bg-warning',
+  pending_counsel_review: 'bg-warning',
+  rejected: 'bg-danger',
 }
 
 // ─── TYPE BADGE COLORS (same as inbox) ─────────────────────────────────────────
 
 const TYPE_COLORS: Record<ArcoRequestRow['type'], string> = {
-  acceso: 'text-[#1A40FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  acceso: 'text-primary bg-primary-soft',
   rectificacion: 'text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800',
-  cancelacion: 'text-[#B7791F] bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-  oposicion: 'text-[#C4503B] bg-[#F8EAE7] dark:bg-[#C4503B]/15',
+  cancelacion: 'text-warning bg-warning-soft',
+  oposicion: 'text-danger bg-danger-soft',
 }
 
 // ─── STATUS TIMELINE ────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
                 {/* Audit log chip — link to compliance audit filtered by this request */}
                 <Link
                   href={`/panel/inmobiliaria/ai/cobranza/compliance/audit?arco_request_id=${requestId}`}
-                  className="inline-flex items-center gap-1 text-xs text-[#1A40FF] hover:text-[#1A40FF] mt-0.5"
+                  className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline mt-0.5"
                 >
                   <ArrowSquareOut className="h-3 w-3" weight="regular" />
                   {t('inmobiliaria.ai.arco.detail.viewAudit')}
@@ -267,7 +267,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
 
       {/* Counsel gate inline Alert — D-36-05: NOT a redirect, NOT a toast */}
       {gateBlocked && (
-        <Alert className="bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 text-[#B7791F] dark:text-[#D2992F]">
+        <Alert className="bg-warning-soft border border-warning/30 text-warning">
           <AlertTitle>{t('inmobiliaria.ai.arco.counselGate.title')}</AlertTitle>
           <AlertDescription>{t('inmobiliaria.ai.arco.counselGate.description')}</AlertDescription>
         </Alert>
@@ -462,7 +462,7 @@ export default function ArcoDetailPage({ params }: ArcoDetailPageProps) {
       <div className="flex items-center gap-3">
         <Link
           href="/panel/inmobiliaria/ai/cobranza/arco"
-          className="text-xs text-[#1A40FF] hover:text-[#1A40FF]"
+          className="text-xs text-primary underline-offset-4 hover:underline"
         >
           ← {t('inmobiliaria.ai.arco.detail.backToInbox')}
         </Link>

@@ -12,6 +12,16 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import type { CollectionsData } from '@/lib/data/mock-reports';
 
 interface CollectionsReportProps {
@@ -63,20 +73,20 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
       </div>
 
       {/* Monthly Breakdown - Stacked CSS Bar Chart */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-5">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <ChartBar className="w-4 h-4 text-neutral-500" />
+          <ChartBar className="w-4 h-4 text-fg-muted" />
           Recaudo mensual vs esperado
         </h3>
 
         {/* Legend */}
         <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-[#2C7A53]" />
+            <div className="w-3 h-3 rounded-sm bg-success" />
             <span>Recaudado</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-[#C4503B]" />
+            <div className="w-3 h-3 rounded-sm bg-danger" />
             <span>En mora</span>
           </div>
         </div>
@@ -95,11 +105,11 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                 </span>
                 <div className="w-full flex-1 flex flex-col justify-end gap-px">
                   <div
-                    className="w-full bg-[#C4503B] dark:bg-[#C4503B]/60 rounded-t transition-all duration-300"
+                    className="w-full bg-danger dark:bg-danger/60 rounded-t transition-all duration-300"
                     style={{ height: `${latePct}%` }}
                   />
                   <div
-                    className="w-full bg-[#2C7A53] dark:bg-[#2C7A53] rounded-b transition-all duration-300"
+                    className="w-full bg-success dark:bg-success rounded-b transition-all duration-300"
                     style={{ height: `${collectedPct}%` }}
                   />
                 </div>
@@ -113,9 +123,9 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
       </div>
 
       {/* Mora Rate Trend */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-5">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <TrendUp className="w-4 h-4 text-neutral-500" />
+          <TrendUp className="w-4 h-4 text-fg-muted" />
           Tasa de mora mensual
         </h3>
         <div className="space-y-2">
@@ -124,31 +134,30 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
               <span className="w-20 text-muted-foreground text-xs shrink-0">
                 {m.month.split(' ')[0]}
               </span>
-              <div className="flex-1 h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all duration-500',
-                    m.moraRate <= 5
-                      ? 'bg-[#2C7A53]'
-                      : m.moraRate <= 8
-                        ? 'bg-[#1A40FF]'
-                        : m.moraRate <= 10
-                          ? 'bg-[#B7791F]'
-                          : 'bg-[#C4503B]'
-                  )}
-                  style={{ width: `${Math.min(m.moraRate * 5, 100)}%` }}
-                />
-              </div>
+              <Progress
+                value={Math.min(m.moraRate * 5, 100)}
+                size="xs"
+                variant={
+                  m.moraRate <= 5
+                    ? 'success'
+                    : m.moraRate <= 8
+                      ? 'default'
+                      : m.moraRate <= 10
+                        ? 'warning'
+                        : 'error'
+                }
+                className="flex-1"
+              />
               <span
                 className={cn(
                   'w-12 text-right text-xs font-medium',
                   m.moraRate <= 5
-                    ? 'text-[#2C7A53] dark:text-[#3EAE70]'
+                    ? 'text-success'
                     : m.moraRate <= 8
-                      ? 'text-[#1A40FF] dark:text-[#5570FF]'
+                      ? 'text-primary'
                       : m.moraRate <= 10
-                        ? 'text-[#B7791F] dark:text-[#D2992F]'
-                        : 'text-[#C4503B] dark:text-[#E0664D]'
+                        ? 'text-warning'
+                        : 'text-danger'
                 )}
               >
                 {m.moraRate}%
@@ -159,67 +168,58 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
       </div>
 
       {/* Top Delinquents Table */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-        <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+        <div className="p-4 border-b border-border dark:border-strong">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Warning className="w-4 h-4 text-[#C4503B]" />
+            <Warning className="w-4 h-4 text-danger" />
             Principales morosos
           </h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                <th className="text-left py-3 px-4 text-muted-foreground font-medium">Inquilino</th>
-                <th className="text-left py-3 px-4 text-muted-foreground font-medium">Propiedad</th>
-                <th className="text-right py-3 px-4 text-muted-foreground font-medium">Dias mora</th>
-                <th className="text-right py-3 px-4 text-muted-foreground font-medium">Monto</th>
-                <th className="text-right py-3 px-4 text-muted-foreground font-medium">Intentos</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-faint dark:border-strong">
+                <TableHead className="text-left py-3 px-4">Inquilino</TableHead>
+                <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
+                <TableHead className="text-right py-3 px-4">Dias mora</TableHead>
+                <TableHead className="text-right py-3 px-4">Monto</TableHead>
+                <TableHead className="text-right py-3 px-4">Intentos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {topDelinquents.map((d, i) => (
-                <tr
+                <TableRow
                   key={i}
-                  className="border-b border-neutral-50 dark:border-neutral-800/50 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
+                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30 transition-colors"
                 >
-                  <td className="py-2.5 px-4">
+                  <TableCell className="py-2.5 px-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                        <User className="w-3.5 h-3.5 text-neutral-500" />
+                      <div className="w-7 h-7 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
+                        <User className="w-3.5 h-3.5 text-fg-muted" />
                       </div>
                       <span className="font-medium text-foreground">{d.tenantName}</span>
                     </div>
-                  </td>
-                  <td className="py-2.5 px-4 text-muted-foreground">{d.propertyTitle}</td>
-                  <td className="py-2.5 px-4 text-right">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                        d.daysLate >= 30
-                          ? 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
-                          : d.daysLate >= 15
-                            ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
-                            : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
-                      )}
-                    >
+                  </TableCell>
+                  <TableCell className="py-2.5 px-4 text-muted-foreground">{d.propertyTitle}</TableCell>
+                  <TableCell className="py-2.5 px-4 text-right">
+                    <Badge variant={d.daysLate >= 30 ? 'destructive' : 'warning'} className="gap-1">
                       <Clock className="w-3 h-3" />
                       {d.daysLate}d
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-medium text-foreground">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2.5 px-4 text-right font-medium text-foreground">
                     {formatCurrency(d.amount)}
-                  </td>
-                  <td className="py-2.5 px-4 text-right">
+                  </TableCell>
+                  <TableCell className="py-2.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-1 text-muted-foreground">
                       <Phone className="w-3.5 h-3.5" />
                       {d.attempts}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
@@ -232,20 +232,20 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
 
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   emerald: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   red: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
   },
   violet: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
   },
 } as const;
 
@@ -264,7 +264,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-3">
         <div
           className={cn(

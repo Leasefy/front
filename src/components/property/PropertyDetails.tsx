@@ -3,6 +3,7 @@
 import { Heart, Bed, Bathtub, ArrowsOut, Buildings, MapPin, CurrencyDollar } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatArea } from '@/lib/format';
 import type { Property } from '@/lib/types/property';
@@ -80,7 +81,7 @@ export function PropertyDetails({
             onClick={onWishlistToggle}
             className={cn(
               'h-12 w-12 rounded-full flex-shrink-0',
-              isWishlisted && 'text-[#C4503B] hover:text-[#C4503B]'
+              isWishlisted && 'text-danger hover:text-danger'
             )}
             aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
           >
@@ -98,9 +99,9 @@ export function PropertyDetails({
       </div>
 
       {/* Price section */}
-      <div className="rounded-sm border bg-card p-4">
+      <Card className="rounded-lg p-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-foreground">
+          <span className="text-3xl font-bold text-foreground font-mono tabular-nums">
             {formatCurrency(monthlyRent)}
           </span>
           <span className="text-muted-foreground">/mes</span>
@@ -110,26 +111,26 @@ export function PropertyDetails({
           {adminFee > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Administración</span>
-              <span className="font-medium">{formatCurrency(adminFee)}</span>
+              <span className="font-medium font-mono tabular-nums">{formatCurrency(adminFee)}</span>
             </div>
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Depósito</span>
-            <span className="font-medium">{formatCurrency(deposit)}</span>
+            <span className="font-medium font-mono tabular-nums">{formatCurrency(deposit)}</span>
           </div>
           <div className="border-t pt-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total mensual estimado</span>
-              <span className="font-bold">
+              <span className="font-bold font-mono tabular-nums">
                 {formatCurrency(monthlyRent + adminFee)}
               </span>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Features section */}
-      <div className="rounded-sm border bg-card p-4">
+      <Card className="rounded-lg p-4">
         <h2 className="mb-4 font-semibold text-foreground">Características</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="flex items-center gap-3">
@@ -137,7 +138,7 @@ export function PropertyDetails({
               <Bed className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-lg font-semibold">{bedrooms}</p>
+              <p className="text-lg font-semibold font-mono tabular-nums">{bedrooms}</p>
               <p className="text-sm text-muted-foreground">
                 {bedrooms === 1 ? 'Habitación' : 'Habitaciones'}
               </p>
@@ -148,7 +149,7 @@ export function PropertyDetails({
               <Bathtub className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-lg font-semibold">{bathrooms}</p>
+              <p className="text-lg font-semibold font-mono tabular-nums">{bathrooms}</p>
               <p className="text-sm text-muted-foreground">
                 {bathrooms === 1 ? 'Baño' : 'Baños'}
               </p>
@@ -159,7 +160,7 @@ export function PropertyDetails({
               <ArrowsOut className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-lg font-semibold">{formatArea(area)}</p>
+              <p className="text-lg font-semibold font-mono tabular-nums">{formatArea(area)}</p>
               <p className="text-sm text-muted-foreground">Área</p>
             </div>
           </div>
@@ -169,17 +170,17 @@ export function PropertyDetails({
                 <Buildings className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-lg font-semibold">{floor}</p>
+                <p className="text-lg font-semibold font-mono tabular-nums">{floor}</p>
                 <p className="text-sm text-muted-foreground">Piso</p>
               </div>
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Amenities section */}
       {amenities.length > 0 && (
-        <div className="rounded-sm border bg-card p-4">
+        <Card className="rounded-lg p-4">
           <h2 className="mb-4 font-semibold text-foreground">Comodidades</h2>
           <div className="flex flex-wrap gap-2">
             {amenities.map((amenity) => (
@@ -188,14 +189,14 @@ export function PropertyDetails({
               </Badge>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Description section */}
-      <div className="rounded-sm border bg-card p-4">
+      <Card className="rounded-lg p-4">
         <h2 className="mb-4 font-semibold text-foreground">Descripción</h2>
         <p className="text-muted-foreground leading-relaxed">{description}</p>
-      </div>
+      </Card>
     </div>
   );
 }

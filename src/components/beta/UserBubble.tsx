@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { MessageBubble } from '@leasefy/cadence';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 
 interface UserBubbleProps {
@@ -9,24 +9,14 @@ interface UserBubbleProps {
 }
 
 /**
- * UserBubble - Clean right-aligned user message.
- * Simple gray background, no gradients, no effects.
+ * UserBubble — right-aligned user message on the real Cadence MessageBubble
+ * (role="user"). Content wrapped in a pre-wrap span so multi-line input keeps
+ * its line breaks (MessageBubble's inner pill doesn't pre-wrap by default).
  */
 export function UserBubble({ message, className }: UserBubbleProps) {
   return (
-    <div className={cn('flex justify-end', className)}>
-      <div
-        className={cn(
-          'max-w-[75%]',
-          'px-4 py-2.5',
-          'bg-neutral-100 dark:bg-neutral-800',
-          'rounded-xl',
-          'text-[14px] leading-relaxed text-foreground',
-          'whitespace-pre-wrap break-words'
-        )}
-      >
-        {message.content}
-      </div>
-    </div>
+    <MessageBubble role="user" className={className}>
+      <span className="block whitespace-pre-wrap break-words">{message.content}</span>
+    </MessageBubble>
   );
 }

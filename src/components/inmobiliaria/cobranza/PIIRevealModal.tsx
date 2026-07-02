@@ -19,6 +19,15 @@ import { useEffect, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { usePIIReveal } from '@/lib/hooks/cobranza/use-pii-reveal'
 import type { PIIFieldKey } from '@/lib/context/PIIRevealContext'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 void React
 
@@ -48,9 +57,7 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
     if (open) setLocalError(null)
   }, [open])
 
-  if (!open || !field) return null
-
-  const fieldLabel = FIELD_LABEL_ES[field]
+  const fieldLabel = field ? FIELD_LABEL_ES[field] : ''
 
   const handleConfirm = async () => {
     setLocalError(null)
@@ -63,60 +70,50 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="pii-reveal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+    <Dialog
+      open={open && field !== null}
+      onOpenChange={(o) => { if (!o) onClose() }}
     >
-      <button
-        type="button"
-        aria-label={t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
-        onClick={onClose}
-        className="absolute inset-0 bg-black/50"
-      />
-      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl p-6">
-        <h2
-          id="pii-reveal-title"
-          className="text-base font-semibold text-neutral-900 dark:text-white"
-        >
-          {t('inmobiliaria.ai.cobranza.detail.pii.modalTitle')}
-        </h2>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-          {`Vas a desenmascarar la ${fieldLabel} de ${debtorName || '—'}. ` +
-            t('inmobiliaria.ai.cobranza.detail.pii.modalBody')}
-        </p>
-        <p className="mt-3 text-xs text-[#B7791F] dark:text-[#D2992F]">
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {t('inmobiliaria.ai.cobranza.detail.pii.modalTitle')}
+          </DialogTitle>
+          <DialogDescription>
+            {`Vas a desenmascarar la ${fieldLabel} de ${debtorName || '—'}. ` +
+              t('inmobiliaria.ai.cobranza.detail.pii.modalBody')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <p className="text-xs text-warning">
           {t('inmobiliaria.ai.cobranza.detail.pii.auditNote')}
         </p>
 
         {(localError ?? error) && (
-          <p className="mt-3 text-xs text-[#C4503B] dark:text-[#E0664D]">
-            {localError ?? error}
-          </p>
+          <p className="text-xs text-danger">{localError ?? error}</p>
         )}
 
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            type="button"
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onClose}
             disabled={isMinting}
-            className="px-3 py-1.5 text-sm font-medium rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="sm"
+            hideArrow
             onClick={() => void handleConfirm()}
             disabled={isMinting}
-            className="px-3 py-1.5 text-sm font-medium rounded-sm bg-neutral-500 text-white hover:bg-[#6B6B6B] disabled:opacity-50"
           >
             {isMinting
               ? t('inmobiliaria.ai.cobranza.detail.pii.modalMinting')
               : t('inmobiliaria.ai.cobranza.detail.pii.modalConfirm')}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

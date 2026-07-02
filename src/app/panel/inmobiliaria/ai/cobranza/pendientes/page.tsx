@@ -19,8 +19,6 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowClockwise,
-  ArrowRight,
-  ChatCircleText,
   CheckCircle,
   Clock,
   Warning,
@@ -28,8 +26,9 @@ import {
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button, Spinner } from '@/components/ui'
+import { Chip } from '@leasefy/cadence'
 import {
   usePendientes,
   type PendienteCta,
@@ -49,21 +48,21 @@ const PRIORIDAD_TOKEN: Record<
   { bg: string; text: string; ring: string; labelKey: string }
 > = {
   alta: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    ring: 'ring-[#C4503B] dark:ring-[#C4503B]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    ring: 'ring-danger',
     labelKey: `${NS}.prioridadAlta`,
   },
   media: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-    ring: 'ring-[#B7791F] dark:ring-[#B7791F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    ring: 'ring-warning',
     labelKey: `${NS}.prioridadMedia`,
   },
   baja: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    ring: 'ring-[#2C7A53] dark:ring-[#2C7A53]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    ring: 'ring-success',
     labelKey: `${NS}.prioridadBaja`,
   },
 }
@@ -122,12 +121,6 @@ function parseLocalDate(dateStr: string): Date {
   return dateStr.length === 10 ? new Date(`${dateStr}T00:00:00`) : new Date(dateStr)
 }
 
-function chipClasses(active: boolean): string {
-  return active
-    ? 'bg-[#EEF1FF] text-[#1A40FF] border-[#1A40FF]/30 dark:bg-[#1A40FF]/15 dark:text-[#5570FF] dark:border-[#1A40FF]/40'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
-}
-
 // ── Card ─────────────────────────────────────────────────────────────────────
 
 function PendienteCard({ item }: { item: PendienteItem }) {
@@ -175,15 +168,15 @@ function PendienteCard({ item }: { item: PendienteItem }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span
-            className={`inline-flex items-center text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
+            className={`inline-flex items-center text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
           >
             {t(token.labelKey)}
           </span>
-          <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground truncate">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
             {t(GRUPO_KEY[item.grupo])}
           </span>
         </div>
-        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums shrink-0">
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums shrink-0">
           <Clock className="w-3 h-3" aria-hidden="true" />
           {relative(item.fecha, locale)}
         </span>
@@ -201,19 +194,14 @@ function PendienteCard({ item }: { item: PendienteItem }) {
 
       {/* Footer: acción sugerida + CTA */}
       <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5">
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {t(`${NS}.accionSugerida`)}
         </span>
-        <Link
-          href={item.href}
-          className="group inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition font-medium"
-        >
-          {t(CTA_KEY[item.cta])}
-          <ArrowRight
-            className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-            aria-hidden="true"
-          />
-        </Link>
+        <Button asChild size="sm">
+          <Link href={item.href}>
+            {t(CTA_KEY[item.cta])}
+          </Link>
+        </Button>
       </div>
     </li>
   )
@@ -242,7 +230,7 @@ function PendientesContent() {
     return (
       <main className="p-6 lg:p-8">
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" />
         </div>
       </main>
     )
@@ -253,16 +241,6 @@ function PendientesContent() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <MigaDePan
-            backHref={BASE}
-            icon={ChatCircleText}
-            className="mb-2"
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-              { label: t(`${NS}.pageTitle`) },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t(`${NS}.pageTitle`)}
           </h1>
@@ -281,19 +259,8 @@ function PendientesContent() {
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
-      {/* Header — patrón MigaDePan (cobranza overview) */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <MigaDePan
-            backHref={BASE}
-            icon={ChatCircleText}
-            className="mb-2"
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.cobranza.overview.title'), href: BASE },
-              { label: t(`${NS}.pageTitle`) },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t(`${NS}.pageTitle`)}
           </h1>
@@ -301,22 +268,24 @@ function PendientesContent() {
             {t(`${NS}.desc`)}
           </p>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
           aria-label="refresh"
+          className="shrink-0"
         >
           <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
           {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </button>
+        </Button>
       </header>
 
       {/* Error total — solo cuando ninguna fuente rindió datos */}
       {error && items.length === 0 && (
         <div
           role="alert"
-          className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2"
+          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -330,18 +299,17 @@ function PendientesContent() {
             const active = effectiveFilter === grupo
             const count = counts[grupo]
             return (
-              <button
+              <Chip
                 key={grupo}
-                type="button"
+                size="sm"
                 disabled={count === 0}
-                aria-pressed={active}
+                selected={active}
                 onClick={() => setGrupoFilter(active ? null : grupo)}
                 data-testid={`pendientes-chip-${grupo}`}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${chipClasses(active)}`}
               >
                 {t(GRUPO_KEY[grupo])}
-                <span className="tabular-nums font-mono">{count}</span>
-              </button>
+                <span className="tabular-nums">{count}</span>
+              </Chip>
             )
           })}
         </div>

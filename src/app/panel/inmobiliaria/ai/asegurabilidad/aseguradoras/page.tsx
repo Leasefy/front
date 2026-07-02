@@ -26,6 +26,7 @@ import { CarrierRegistryTable, type MergedCarrierRow } from '@/components/inmobi
 import type { OverrideFields } from '@/components/inmobiliaria/cotizador/CarrierOverridePopover'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui/button'
 
 // =============================================================================
 // Page
@@ -155,32 +156,38 @@ export default function AseguradorasPage() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.ai.cotizador.aseguradoras.title')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.ai.cotizador.aseguradoras.subtitle')}
           </p>
         </div>
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
+          hideArrow
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
+          className="shrink-0"
         >
           {t('inmobiliaria.ai.cotizador.aseguradoras.refresh')}
-        </button>
+        </Button>
       </header>
 
       {/* Error banner */}
       {error && !data && (
-        <div className="rounded-md bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm flex items-center justify-between gap-4">
+        <div className="rounded-xl bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
           <span>{t('inmobiliaria.ai.cotizador.aseguradoras.errorLoading')}</span>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="underline text-sm font-medium hover:no-underline"
+            className="shrink-0"
           >
             {t('inmobiliaria.ai.cotizador.aseguradoras.retry')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -196,7 +203,7 @@ export default function AseguradorasPage() {
 
       {/* Error toast — mutation failures */}
       {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D] px-4 py-3 text-sm">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-xl border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
           {errorToast}
         </div>
       )}

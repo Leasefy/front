@@ -6,12 +6,12 @@ import {
   PopoverTrigger,
   PopoverAnchor,
   PopoverContent as DSPopoverContent,
-} from "@leasefy/ui"
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Popover de @leasefy/ui.
+ * ADAPTER fino sobre el Popover de @leasefy/cadence.
  *
  * Popover / PopoverTrigger / PopoverAnchor son re-exports directos (misma API
  * Radix). PopoverContent envuelve el del DS para preservar el comportamiento

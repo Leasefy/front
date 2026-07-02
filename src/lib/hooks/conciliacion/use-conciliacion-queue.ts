@@ -52,8 +52,22 @@ export interface ConciliacionQueueItem {
   decidedBy: string | null
   decidedAt: string | null   // ISO
   createdAt: string          // ISO
+  // Exception taxonomy (Conciliación build C, additive). Present only once the
+  // case_type migration is applied; absent (undefined) until then — the queue
+  // route omits it fail-soft, so consumers must treat it as optional.
+  caseType?: ConciliacionCaseType | null
   movement: QueueMovement
 }
+
+/** The 7 exception taxonomies for the ?caseType= filter (closed set). */
+export type ConciliacionCaseType =
+  | 'parcial'
+  | 'duplicado'
+  | 'diferencia_monto'
+  | 'fuera_de_fecha'
+  | 'sin_identificar'
+  | 'multiple'
+  | 'comision'
 
 export interface ConciliacionQueueResponse {
   items: ConciliacionQueueItem[]
@@ -124,6 +138,10 @@ function deriveQueueSummary(items: ConciliacionQueueItem[]): ConciliacionSummary
 
 export interface ConciliacionQueueFilters {
   status?: 'suggested' | 'unidentified'
+  // Exception taxonomy filter (Conciliación build C, additive). Sent as
+  // ?caseType= on the queue GET. The backend fails soft (ignores the predicate
+  // if the column is missing), so an unmigrated backend simply returns all rows.
+  caseType?: ConciliacionCaseType
   page?: number
   pageSize?: number
 }
@@ -188,6 +206,7 @@ export function useConciliacionQueue(
 
     const url = new URL(`${agentUrl}/api/agency/${agencyId}/conciliacion/queue`)
     if (filters?.status) url.searchParams.set('status', filters.status)
+    if (filters?.caseType) url.searchParams.set('caseType', filters.caseType)
     if (filters?.page) url.searchParams.set('page', String(filters.page))
     if (filters?.pageSize) url.searchParams.set('pageSize', String(filters.pageSize))
 
@@ -206,7 +225,7 @@ export function useConciliacionQueue(
     } finally {
       setIsLoading(false)
     }
-  }, [agencyId, filters?.status, filters?.page, filters?.pageSize])
+  }, [agencyId, filters?.status, filters?.caseType, filters?.page, filters?.pageSize])
 
   useEffect(() => {
     if (!agencyId) { setIsLoading(false); return }

@@ -8,7 +8,6 @@ import {
   ChatCircleText,
   ClipboardText,
   CreditCard,
-  FileArrowUp,
   FolderOpen,
   UsersThree,
   Warning,
@@ -18,15 +17,17 @@ import { useI18n } from '@/lib/i18n'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
-import { CobranzaKpiStrip } from '@/components/inmobiliaria/cobranza/CobranzaKpiStrip'
+import { CobranzaExecKpiGrid } from '@/components/inmobiliaria/cobranza/CobranzaExecKpiGrid'
+import { CobranzaAtencionPreview } from '@/components/inmobiliaria/cobranza/CobranzaAtencionPreview'
 import { CobranzaWowBanner } from '@/components/inmobiliaria/cobranza/CobranzaWowBanner'
 import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
 import { CobranzaFunnelChart } from '@/components/inmobiliaria/cobranza/CobranzaFunnelChart'
 import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed'
 import { CobranzaNextActionsPanel } from '@/components/inmobiliaria/cobranza/CobranzaNextActionsPanel'
 import { CobranzaOverviewSkeleton } from '@/components/skeleton/panel/CobranzaOverviewSkeleton'
+import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan'
+import { Button } from '@/components/ui'
 import { CARTERA_STAGES, relativeTime } from '@/lib/cartera'
 import type { CarteraStage } from '@/lib/cartera'
 
@@ -49,7 +50,7 @@ export default function CobranzaOverviewPage() {
   const router = useRouter()
 
   // Data hook
-  const { data, isLoading, error } = useCarteraOverview()
+  const { data, isLoading, error, refetch } = useCarteraOverview()
 
   // Local state for realtime-prepended transitions
   const [realtimeTransitions, setRealtimeTransitions] = useState<StageTransitionEvent[]>([])
@@ -156,27 +157,11 @@ export default function CobranzaOverviewPage() {
           title={t('inmobiliaria.ai.cobranza.overview.empty.title')}
           description={t('inmobiliaria.ai.cobranza.overview.empty.description')}
         />
-        {/* Importar cartera — visible pero aún sin importador real (patrón avalúos):
-            el importador de /portafolio/importar solo carga propiedades, así que
-            la acción degrada a "próximamente" en vez de mentir con un link. */}
-        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-              <FileArrowUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-0.5">
-              <h2 className="text-base font-semibold text-foreground">
-                {t('inmobiliaria.ai.cobranza.overview.empty.cta.label')}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t(`${PAGES_NS}.importarNota`)}
-              </p>
-            </div>
-            <span className="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-muted text-muted-foreground text-xs font-mono uppercase tracking-wide">
-              {t(`${PAGES_NS}.importarProximamente`)}
-            </span>
-          </div>
-        </div>
+        {/* Importar cartera — ahora cableada al endpoint POST /cartera/import.
+            FAIL-SOFT: si el backend no está desplegado (404/red), el card
+            degrada a "Próximamente — requiere despliegue" sin romper. Tras un
+            import exitoso refrescamos el overview para salir del empty state. */}
+        <CobranzaImportCard onImported={() => void refetch()} />
       </main>
     )
   }
@@ -206,16 +191,6 @@ export default function CobranzaOverviewPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          {/* ← + miga de pan: volver al hub de agentes (patrón MigaDePan) */}
-          <MigaDePan
-            backHref="/panel/inmobiliaria/ai"
-            icon={ChatCircleText}
-            className="mb-2"
-            crumbs={[
-              { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-              { label: t('inmobiliaria.ai.cobranza.overview.title') },
-            ]}
-          />
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
             {t('inmobiliaria.ai.cobranza.overview.title')}
           </h1>
@@ -229,7 +204,7 @@ export default function CobranzaOverviewPage() {
             {relativeTime(data.generatedAt, locale)}
             {isConnected && (
               <span
-                className="inline-flex h-1.5 w-1.5 rounded-full bg-[#2C7A53] animate-ping"
+                className="inline-flex h-1.5 w-1.5 rounded-full bg-success animate-ping"
                 aria-hidden="true"
               />
             )}
@@ -264,18 +239,16 @@ export default function CobranzaOverviewPage() {
                 {t(`${PAGES_NS}.accionDesc`)}
               </p>
             </div>
-            <Link
-              href="/panel/inmobiliaria/ai/cobranza/escalaciones"
-              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.98] transition"
-              data-testid="cobranza-accion-cta"
-            >
-              {t('inmobiliaria.ai.nav.escalaciones')}
-              {(data?.kpis.escalacionesPendientes ?? 0) > 0 && (
-                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold">
-                  {data?.kpis.escalacionesPendientes}
-                </span>
-              )}
-            </Link>
+            <Button asChild hideArrow className="shrink-0" data-testid="cobranza-accion-cta">
+              <Link href="/panel/inmobiliaria/ai/cobranza/escalaciones">
+                {t('inmobiliaria.ai.nav.escalaciones')}
+                {(data?.kpis.escalacionesPendientes ?? 0) > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold">
+                    {data?.kpis.escalacionesPendientes}
+                  </span>
+                )}
+              </Link>
+            </Button>
           </div>
         </div>
 
@@ -290,12 +263,12 @@ export default function CobranzaOverviewPage() {
               return (
                 <li key={step.titleKey} className="space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
+                    <span className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
+                      <StepIcon className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
                     </span>
-                    <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                    <span className="text-xs font-medium text-muted-foreground">{i + 1}</span>
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground leading-tight">
+                  <p className="text-sm font-semibold text-foreground leading-tight">
                     {t(step.titleKey)}
                   </p>
                   <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
@@ -306,14 +279,13 @@ export default function CobranzaOverviewPage() {
         </div>
       </section>
 
-      {/* KPI Strip */}
-      <CobranzaKpiStrip
-        deudoresActivos={data?.kpis.deudoresActivos ?? 0}
-        pagadoHoyCop={data?.kpis.pagadoHoyCop ?? 0}
-        llamadasHoy={data?.kpis.llamadasHoy ?? 0}
-        escalacionesPendientes={data?.kpis.escalacionesPendientes ?? 0}
-        isLoading={isLoading}
-      />
+      {/* Fila ejecutiva de 8 métricas (visión #4) — superset del KPI strip de 4.
+          Solo 4 tienen fuente en el overview; las demás muestran "—" (sin inventar). */}
+      <CobranzaExecKpiGrid data={data} isLoading={isLoading} />
+
+      {/* Qué necesita tu atención hoy — preview top-5 de /pendientes (cross-link,
+          no duplica la lista completa). */}
+      <CobranzaAtencionPreview />
 
       {/* Stage cards — roving-tabindex tablist composite widget (D-38-13) */}
       <section
@@ -396,7 +368,7 @@ export default function CobranzaOverviewPage() {
 
         {/* Error state */}
         {error && !isLoading && (
-          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]">
+          <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
           </div>
         )}

@@ -22,6 +22,7 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -66,14 +67,14 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
       <Link
         href={href ?? '#'}
         className="group relative h-full rounded-xl p-5 flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(150deg, #0B1220 58%, #122457 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
+        style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
       >
         {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
         <div className="absolute -inset-x-1 top-[34%] h-[44%] text-white/[0.14] pointer-events-none">
           <BrandContour />
         </div>
         <div className="flex items-start justify-between">
-          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-white/55">{title}</span>
+          <MonoLabel className="text-[11px] font-medium text-white/55">{title}</MonoLabel>
           <div className="rounded-xl p-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}>
             <Icon weight="duotone" className="h-4 w-4 text-white/90" />
           </div>
@@ -103,40 +104,40 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
   const content = (
     <div
       className={cn(
-        'group relative h-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 flex flex-col transition-colors',
-        href && 'hover:bg-[rgba(0,0,0,0.04)] dark:hover:bg-white/[0.04]'
+        'group relative h-full rounded-xl border border-border bg-card p-5 flex flex-col transition-colors',
+        href && 'hover:bg-surface-hover'
       )}
     >
       <div className="flex items-start justify-between">
         <MonoLabel>{title}</MonoLabel>
-        <div className="rounded-xl p-2.5 bg-neutral-100 dark:bg-[#1f1f21] text-neutral-500 dark:text-neutral-400">
+        <div className="rounded-xl p-2.5 bg-surface-muted text-fg-muted">
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
       </div>
-      <p className="mt-3 font-heading text-[28px] font-semibold text-neutral-900 dark:text-white tracking-tight tabular-nums leading-none">
+      <p className="mt-3 font-heading text-2xl font-semibold text-fg tracking-tight tabular-nums leading-none">
         {value}
       </p>
       {subtitle && (
-        <p className="mt-1 font-sans text-[12px] text-neutral-500 dark:text-neutral-400">{subtitle}</p>
+        <p className="mt-1 text-xs text-fg-muted">{subtitle}</p>
       )}
       <div className="flex-1 min-h-[8px]" />
       {trend ? (
         <div className="mt-2.5 flex items-center gap-1">
           {trend.isPositive ? (
-            <TrendUp weight="bold" className="h-3 w-3 text-neutral-500" />
+            <TrendUp weight="bold" className="h-3 w-3 text-fg-muted" />
           ) : (
-            <TrendDown weight="bold" className="h-3 w-3 text-[#C4503B]" />
+            <TrendDown weight="bold" className="h-3 w-3 text-danger" />
           )}
-          <span className={cn('font-sans text-[11.5px] font-medium tabular-nums', trend.isPositive ? 'text-neutral-500' : 'text-[#C4503B]')}>
+          <span className={cn('text-xs font-medium tabular-nums', trend.isPositive ? 'text-fg-muted' : 'text-danger')}>
             {trend.isPositive ? '+' : ''}{trend.value}%
           </span>
-          <span className="font-sans text-[11.5px] text-neutral-400">{t('inmobiliaria.common.vsLastMonth')}</span>
+          <span className="text-xs text-fg-muted">{t('inmobiliaria.common.vsLastMonth')}</span>
         </div>
       ) : (
         <div className="h-5" />
       )}
       {href && (
-        <CaretRight className="absolute bottom-4 right-4 h-3.5 w-3.5 text-neutral-300 dark:text-neutral-600 group-hover:text-primary transition-colors" weight="bold" />
+        <CaretRight className="absolute bottom-4 right-4 h-3.5 w-3.5 text-fg-muted/50 group-hover:text-primary transition-colors" weight="bold" />
       )}
     </div>
   );
@@ -152,13 +153,13 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
  */
 function SecondaryStat({ icon: Icon, value, label }: { icon: React.ElementType; value: string | number; label: string }) {
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-3">
-        <div className="rounded-md p-2 bg-neutral-100 dark:bg-[#1f1f21] text-neutral-500 dark:text-neutral-400">
+        <div className="rounded-md p-2 bg-surface-muted text-fg-muted">
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
         <div>
-          <p className="font-heading text-[18px] font-semibold text-neutral-900 dark:text-white tabular-nums leading-none">{value}</p>
+          <p className="font-heading text-lg font-semibold text-fg tabular-nums leading-none">{value}</p>
           <MonoLabel className="mt-1 block">{label}</MonoLabel>
         </div>
       </div>
@@ -180,16 +181,16 @@ function QuickAction({ title, description, href, icon: Icon }: QuickActionProps)
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:bg-[rgba(0,0,0,0.04)] dark:hover:bg-white/[0.04] transition-colors"
+      className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 hover:bg-surface-hover transition-colors"
     >
-      <div className="rounded-md p-2.5 bg-neutral-100 dark:bg-[#1f1f21] text-neutral-500 dark:text-neutral-400">
+      <div className="rounded-md p-2.5 bg-surface-muted text-fg-muted">
         <Icon weight="duotone" className="h-5 w-5" />
       </div>
       <div className="flex-1">
-        <p className="font-sans font-medium text-neutral-900 dark:text-white">{title}</p>
-        <p className="text-[12px] text-neutral-500 dark:text-neutral-400">{description}</p>
+        <p className="text-sm font-medium text-fg">{title}</p>
+        <p className="text-xs text-fg-muted">{description}</p>
       </div>
-      <CaretRight className="h-3.5 w-3.5 text-neutral-300 group-hover:text-primary transition-colors" weight="bold" />
+      <CaretRight className="h-3.5 w-3.5 text-fg-muted/50 group-hover:text-primary transition-colors" weight="bold" />
     </Link>
   );
 }
@@ -201,8 +202,8 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
   const stageInfo = getPipelineStageInfo(item.stage);
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-[#1f1f21] p-3">
-      <div className="h-10 w-10 rounded-md bg-neutral-200 dark:bg-[#2a2a2c] overflow-hidden">
+    <div className="flex items-center gap-3 rounded-md border border-border bg-surface-muted p-3">
+      <div className="h-10 w-10 rounded-md bg-surface-muted overflow-hidden">
         {item.propertyThumbnail && (
           <img
             src={item.propertyThumbnail}
@@ -212,10 +213,10 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+        <p className="text-sm font-medium text-fg truncate">
           {item.candidateName}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+        <p className="text-xs text-fg-muted truncate">
           {item.propertyTitle}
         </p>
       </div>
@@ -232,18 +233,18 @@ function PipelineMiniCard({ item }: { item: PipelineItem }) {
 function AgentMiniCard({ agent, t }: { agent: Agente; t: (key: string, params?: Record<string, string | number>) => string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="h-9 w-9 rounded-full bg-neutral-100 dark:bg-[#2a2a2c] text-neutral-600 dark:text-neutral-300 flex items-center justify-center font-mono text-[11px] font-semibold">
+      <div className="h-9 w-9 rounded-full bg-surface-muted text-fg-muted flex items-center justify-center font-mono text-xs font-semibold">
         {agent.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+        <p className="text-sm font-medium text-fg truncate">
           {agent.name}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="text-xs text-fg-muted">
           {t('inmobiliaria.dashboard.team.closedThisMonth', { count: agent.metrics.closedThisMonth })}
         </p>
       </div>
-      <span className="font-heading text-sm font-semibold text-neutral-900 dark:text-white tabular-nums">
+      <span className="font-heading text-sm font-semibold text-fg tabular-nums">
         {formatCurrency(agent.metrics.commissionsThisMonth)}
       </span>
     </div>
@@ -291,18 +292,18 @@ function AgentSection({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 bg-neutral-400" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-neutral-500" />
             </span>
-            <h2 className="font-heading text-[15px] font-semibold text-neutral-900 dark:text-white tracking-tight">Agentes AI</h2>
+            <h2 className="text-base font-semibold text-fg tracking-tight">Agentes AI</h2>
           </div>
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">
+          <span className="text-sm text-fg-muted">
             {todayActions.length} {todayActions.length === 1 ? 'acción' : 'acciones'} hoy
             {escalations.length > 0 && (
-              <span className="text-[#C4503B] font-medium"> · {escalations.length} {escalations.length === 1 ? 'requiere' : 'requieren'} atención</span>
+              <span className="text-danger font-medium"> · {escalations.length} {escalations.length === 1 ? 'requiere' : 'requieren'} atención</span>
             )}
           </span>
         </div>
         <Link
           href="/panel/inmobiliaria/ai"
-          className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] transition-colors"
+          className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline transition-colors"
         >
           {t('inmobiliaria.common.viewAll')}
           <ArrowRight className="h-4 w-4" />
@@ -388,11 +389,11 @@ export default function InmobiliariaDashboardPage() {
       <div className="flex flex-col gap-1">
         <span className="inline-flex items-center gap-2 mb-1">
           <BrandDot />
-          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-primary">
+          <MonoLabel className="text-[11px] font-medium text-primary">
             {t('inmobiliaria.dashboard.title')}
-          </span>
+          </MonoLabel>
         </span>
-        <h1 className="font-heading text-[21px] font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="font-heading text-2xl font-semibold text-fg tracking-tight">
           {t('inmobiliaria.dashboard.subtitle')}
         </h1>
       </div>
@@ -446,15 +447,15 @@ export default function InmobiliariaDashboardPage() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pipeline Activity */}
-        <div className="lg:col-span-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="flex items-center gap-2 font-heading text-[15px] font-semibold text-neutral-900 dark:text-white tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.pipeline.title')}</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('inmobiliaria.dashboard.pipeline.subtitle')}</p>
+              <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.pipeline.title')}</h2>
+              <p className="text-sm text-fg-muted mt-0.5">{t('inmobiliaria.dashboard.pipeline.subtitle')}</p>
             </div>
             <Link
               href="/panel/inmobiliaria/pipeline"
-              className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF]"
+              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               {t('inmobiliaria.common.viewAll')}
               <ArrowRight className="h-4 w-4" />
@@ -468,25 +469,24 @@ export default function InmobiliariaDashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-xl bg-neutral-50/80 dark:bg-white/[0.03] py-10 px-6 text-center">
-              <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4">
-                <Kanban className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
-              </div>
-              <p className="text-sm text-muted-foreground">{t('inmobiliaria.dashboard.pipeline.empty')}</p>
-            </div>
+            <EmptyState
+              icon={Kanban}
+              title={t('inmobiliaria.dashboard.pipeline.empty')}
+              description="Los candidatos en proceso aparecerán aquí a medida que avancen en el pipeline."
+            />
           )}
         </div>
 
         {/* Team Performance */}
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
+        <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="flex items-center gap-2 font-heading text-[15px] font-semibold text-neutral-900 dark:text-white tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
+              <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.team.title')}</h2>
+              <p className="text-sm text-fg-muted mt-0.5">{t('inmobiliaria.dashboard.team.activeAgents', { count: activeAgents.length })}</p>
             </div>
             <Link
               href="/panel/inmobiliaria/agentes"
-              className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF]"
+              className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               {t('inmobiliaria.common.viewAllM')}
               <ArrowRight className="h-4 w-4" />
@@ -499,14 +499,14 @@ export default function InmobiliariaDashboardPage() {
             ))}
           </div>
 
-          <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-700">
+          <div className="mt-5 pt-4 border-t border-border">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.team.closedThisMonthLabel')}</span>
-              <span className="font-semibold text-neutral-900 dark:text-white">{kpis.closedThisMonth}</span>
+              <span className="text-fg-muted">{t('inmobiliaria.dashboard.team.closedThisMonthLabel')}</span>
+              <span className="font-semibold text-fg">{kpis.closedThisMonth}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.dashboard.team.avgDaysToClose')}</span>
-              <span className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })}</span>
+              <span className="text-fg-muted">{t('inmobiliaria.dashboard.team.avgDaysToClose')}</span>
+              <span className="font-semibold text-fg">{t('inmobiliaria.dashboard.team.days', { count: kpis.avgDaysToClose })}</span>
             </div>
           </div>
         </div>
@@ -514,7 +514,7 @@ export default function InmobiliariaDashboardPage() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="flex items-center gap-2 font-heading text-[15px] font-semibold text-neutral-900 dark:text-white tracking-tight mb-4"><BrandDot />{t('inmobiliaria.dashboard.quickActions.title')}</h2>
+        <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight mb-4"><BrandDot />{t('inmobiliaria.dashboard.quickActions.title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickAction
             title={t('inmobiliaria.dashboard.quickActions.newOwner')}
@@ -545,16 +545,16 @@ export default function InmobiliariaDashboardPage() {
 
       {/* Alerts Section */}
       {(pendingCobros.filter(c => c.status === 'late').length > 0 || pendingMaintenance.length > 0) && (
-        <div className="rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15 p-6">
+        <div className="rounded-xl border border-warning/30 bg-warning-soft p-6">
           <div className="flex items-start gap-4">
-            <div className="rounded-md p-2 bg-[#F8F0E0] dark:bg-[#B7791F]/15">
-              <Warning weight="duotone" className="h-5 w-5 text-[#B7791F] dark:text-[#D2992F]" />
+            <div className="rounded-md p-2 bg-warning-soft">
+              <Warning weight="duotone" className="h-5 w-5 text-warning" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-[#B7791F] dark:text-[#D2992F]">{t('inmobiliaria.dashboard.alerts.title')}</h3>
+              <h3 className="text-base font-semibold text-warning">{t('inmobiliaria.dashboard.alerts.title')}</h3>
               <div className="mt-2 space-y-2">
                 {pendingCobros.filter(c => c.status === 'late').length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-[#B7791F] dark:text-[#D2992F]">
+                  <div className="flex items-center gap-2 text-sm text-warning">
                     <CurrencyDollar className="h-4 w-4" />
                     <span>
                       {t('inmobiliaria.dashboard.alerts.latePayments', {
@@ -575,7 +575,7 @@ export default function InmobiliariaDashboardPage() {
                   </div>
                 )}
                 {pendingMaintenance.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-[#B7791F] dark:text-[#D2992F]">
+                  <div className="flex items-center gap-2 text-sm text-warning">
                     <Wrench className="h-4 w-4" />
                     <span>
                       {t('inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
@@ -595,15 +595,15 @@ export default function InmobiliariaDashboardPage() {
       )}
 
       {/* Financial Summary */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="flex items-center gap-2 font-heading text-[15px] font-semibold text-neutral-900 dark:text-white tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Febrero 2026</p>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
+            <p className="text-sm text-fg-muted mt-0.5">Febrero 2026</p>
           </div>
           <Link
             href="/panel/inmobiliaria/reportes"
-            className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF]"
+            className="flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
             {t('inmobiliaria.dashboard.financial.viewFullReports')}
             <ArrowRight className="h-4 w-4" />
@@ -613,31 +613,31 @@ export default function InmobiliariaDashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.expected')}</MonoLabel>
-            <p className="font-heading text-[20px] font-semibold text-neutral-900 dark:text-white tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.expectedRevenue)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.collected')}</MonoLabel>
-            <p className="font-heading text-[20px] font-semibold text-neutral-900 dark:text-white tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.collectedRevenue)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingLabel')}</MonoLabel>
-            <p className="font-heading text-[20px] font-semibold text-neutral-900 dark:text-white tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.pendingCollections)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.late')}</MonoLabel>
-            <p className="font-heading text-[20px] font-semibold text-[#C4503B] tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-semibold text-danger tabular-nums tracking-tight leading-none">
               {formatCurrency(kpis.lateCollections)}
             </p>
           </div>
           <div>
             <MonoLabel className="block mb-1.5">{t('inmobiliaria.dashboard.financial.pendingDispersions')}</MonoLabel>
-            <p className="font-heading text-[20px] font-semibold text-neutral-900 dark:text-white tabular-nums tracking-tight leading-none">
+            <p className="font-heading text-lg font-semibold text-fg tabular-nums tracking-tight leading-none">
               {kpis.pendingDispersions}
             </p>
           </div>
@@ -649,10 +649,10 @@ export default function InmobiliariaDashboardPage() {
             <MonoLabel>{t('inmobiliaria.dashboard.financial.collectionRate')}</MonoLabel>
             <span className="font-heading font-semibold text-neutral-900 dark:text-white tabular-nums">{kpis.collectionRate.toFixed(1)}%</span>
           </div>
-          <div className="h-2 rounded-full bg-neutral-100 dark:bg-[#1f1f21] overflow-hidden">
+          <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
             <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${kpis.collectionRate}%`, backgroundColor: '#1A40FF' }}
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${kpis.collectionRate}%` }}
             />
           </div>
         </div>

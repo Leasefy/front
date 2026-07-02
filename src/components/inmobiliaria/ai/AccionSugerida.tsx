@@ -16,13 +16,16 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { CheckCircle, Sparkle, XCircle } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 
 import type {
   AccionSugerida as AccionSugeridaModel,
   WorkItemAction,
 } from '@/lib/api/work-item'
 import { useI18n } from '@/lib/i18n'
-import { ACTION_KIND_CLS } from './ColaHumana'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { ACTION_KIND_VARIANT } from './ColaHumana'
 
 const WORKSPACE_NS = 'inmobiliaria.ai.workspace'
 
@@ -73,9 +76,11 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
       data-testid="accion-sugerida"
     >
       {/* Eyebrow */}
-      <p className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+      <p className="inline-flex items-center gap-1.5 text-muted-foreground">
         <Sparkle className="w-3.5 h-3.5" weight="duotone" aria-hidden="true" />
-        {t(`${WORKSPACE_NS}.accionSugerida.eyebrow`)}
+        <MonoLabel className="text-current tracking-wide">
+          {t(`${WORKSPACE_NS}.accionSugerida.eyebrow`)}
+        </MonoLabel>
       </p>
 
       {/* Suggestion */}
@@ -109,38 +114,42 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
               accion: pendingReasonAction.label.toLowerCase(),
             })}
           </label>
-          <textarea
+          <Textarea
             id="accion-sugerida-reason"
             value={reasonText}
             onChange={(e) => setReasonText(e.target.value)}
             rows={2}
-            className="w-full text-xs rounded-md border border-border bg-background px-2 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            className="w-full text-xs resize-none"
             placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
           />
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="destructive"
+              size="sm"
+              hideArrow
               disabled={
                 disabled ||
                 reasonText.trim().length === 0 ||
                 busyActionId !== null
               }
               onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
-              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-[#C4503B] text-white hover:opacity-90 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t(`${WORKSPACE_NS}.acciones.confirmar`)}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={() => {
                 setReasonForActionId(null)
                 setReasonText('')
               }}
-              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
             >
               {t(`${WORKSPACE_NS}.acciones.cancelar`)}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -149,18 +158,20 @@ export function AccionSugerida({ accion, actions, onAction, disabled }: AccionSu
       {actions.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {actions.map((action) => (
-            <button
+            <Button
               key={action.id}
               type="button"
+              variant={ACTION_KIND_VARIANT[action.kind]}
+              size="sm"
+              hideArrow
               disabled={disabled || busyActionId !== null}
               aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
               onClick={() => handleClick(action)}
-              className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md active:scale-[0.97] transition disabled:opacity-50 ${ACTION_KIND_CLS[action.kind]}`}
             >
               {action.kind === 'primary' && <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />}
               {action.kind === 'danger' && <XCircle className="w-3.5 h-3.5" aria-hidden="true" />}
               {action.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}

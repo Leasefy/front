@@ -6,10 +6,19 @@ import {
   MagnifyingGlass,
   Funnel,
   X,
-  CaretDown,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { IconButton, Chip } from '@leasefy/cadence';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
 export interface AgenteFiltersState {
@@ -41,7 +50,6 @@ export function AgenteFilters({
 }: AgenteFiltersProps) {
   const { t } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const ROLE_OPTIONS: { value: AgenteRole | 'all'; label: string }[] = [
     { value: 'all', label: t('inmobiliaria.agente.all') },
@@ -88,64 +96,46 @@ export function AgenteFilters({
     });
   };
 
-  // Get labels for current selections
-  const getRoleLabel = () => {
-    const option = ROLE_OPTIONS.find((o) => o.value === filters.role);
-    return option?.label || t('inmobiliaria.agente.all');
-  };
-
-  const getStatusLabel = () => {
-    const option = STATUS_OPTIONS.find((o) => o.value === filters.status);
-    return option?.label || t('inmobiliaria.agente.all');
-  };
-
-  const getSortLabel = () => {
-    const option = SORT_OPTIONS.find((o) => o.value === filters.sortBy);
-    return option?.label || t('inmobiliaria.agente.name');
-  };
-
   return (
     <div>
       {/* Search and Actions Bar */}
       <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+          <Input
             type="text"
             placeholder={t('inmobiliaria.agente.searchPlaceholder')}
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF] focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4"
           />
           {filters.search && (
-            <button
+            <IconButton
+              variant="ghost"
+              size="sm"
               onClick={() => updateFilter('search', '')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+              icon={<X className="w-4 h-4 text-muted-foreground" />}
+            />
           )}
         </div>
 
         {/* Filter Toggle */}
-        <button
+        <Chip
+          selected={showFilters || activeFiltersCount > 0}
           onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all',
-            showFilters || activeFiltersCount > 0
-              ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-              : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
-          )}
+          icon={<Funnel className="w-4 h-4" />}
+          aria-expanded={showFilters}
         >
-          <Funnel className="w-4 h-4" />
-          <span className="text-sm font-medium">{t('inmobiliaria.agente.filters')}</span>
+          {t('inmobiliaria.agente.filters')}
           {activeFiltersCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground tabular-nums text-xs font-semibold min-w-[20px] text-center">
               {activeFiltersCount}
             </span>
           )}
-        </button>
+        </Chip>
       </div>
 
       {/* Filters Panel */}
@@ -160,159 +150,87 @@ export function AgenteFilters({
             <div className="p-4 bg-muted/30">
               <div className="flex flex-wrap gap-4">
                 {/* Role Filter */}
-                <div className="relative">
+                <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-2">
                     {t('inmobiliaria.agente.role')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'role' ? null : 'role')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all min-w-[130px] justify-between',
-                      filters.role !== 'all'
-                        ? 'bg-[#1A40FF] text-white'
-                        : 'bg-background text-muted-foreground hover:bg-muted'
-                    )}
+                  <Select
+                    value={filters.role}
+                    onValueChange={(value) => updateFilter('role', value as AgenteRole | 'all')}
                   >
-                    <span>{getRoleLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'role' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-border bg-card z-20"
-                      >
-                        {ROLE_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => { updateFilter('role', option.value); setOpenDropdown(null); }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                              filters.role === option.value
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="min-w-[130px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Status Filter */}
-                <div className="relative">
+                <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-2">
                     {t('inmobiliaria.agente.status')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all min-w-[130px] justify-between',
-                      filters.status !== 'all'
-                        ? 'bg-[#1A40FF] text-white'
-                        : 'bg-background text-muted-foreground hover:bg-muted'
-                    )}
+                  <Select
+                    value={filters.status}
+                    onValueChange={(value) => updateFilter('status', value as AgenteStatus | 'all')}
                   >
-                    <span>{getStatusLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'status' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-border bg-card z-20"
-                      >
-                        {STATUS_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => { updateFilter('status', option.value); setOpenDropdown(null); }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                              filters.status === option.value
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="min-w-[130px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Sort Filter */}
-                <div className="relative">
+                <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-2">
                     {t('inmobiliaria.agente.sortBy')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'sortBy' ? null : 'sortBy')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all min-w-[130px] justify-between',
-                      filters.sortBy !== 'name'
-                        ? 'bg-[#1A40FF] text-white'
-                        : 'bg-background text-muted-foreground hover:bg-muted'
-                    )}
+                  <Select
+                    value={filters.sortBy}
+                    onValueChange={(value) => updateFilter('sortBy', value as AgenteFiltersState['sortBy'])}
                   >
-                    <span>{getSortLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'sortBy' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-40 p-2 rounded-xl border border-border bg-card z-20"
-                      >
-                        {SORT_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => { updateFilter('sortBy', option.value); setOpenDropdown(null); }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-md text-left text-sm transition-colors',
-                              filters.sortBy === option.value
-                                ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="min-w-[130px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               {/* Clear Filters */}
               {activeFiltersCount > 0 && (
-                <button
+                <Button
+                  variant="link"
+                  hideArrow
                   onClick={clearAllFilters}
-                  className="mt-4 text-sm text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+                  className="mt-4 px-0"
                 >
                   {t('inmobiliaria.agente.clearFilters')}
-                </button>
+                </Button>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Close dropdown on click outside */}
-      {openDropdown && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setOpenDropdown(null)}
-        />
-      )}
     </div>
   );
 }

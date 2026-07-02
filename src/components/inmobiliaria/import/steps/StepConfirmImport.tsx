@@ -9,6 +9,9 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { MonoLabel } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
 import type { ImportStepProps } from '../ImportWizard';
@@ -102,18 +105,19 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
         <div className="animate-scale-in">
-          <div className="w-20 h-20 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-            <CheckCircle className="w-12 h-12 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
+          {/* allowlist: success hero icon-circle (wraps Phosphor glyph), no text-label pill */}
+          <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center">
+            <CheckCircle className="w-12 h-12 text-success" weight="fill" />
           </div>
         </div>
 
         <div className="animate-fade-in-up space-y-2">
-          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+          <h2 className="text-2xl font-semibold text-fg dark:text-white">
             ¡Importación completada!
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400">
+          <p className="text-fg-muted dark:text-fg-subtle">
             Se importaron{' '}
-            <span className="font-semibold text-neutral-900 dark:text-white">
+            <span className="font-semibold text-fg dark:text-white">
               {state.importedCount} propiedades
             </span>{' '}
             a tu portafolio
@@ -121,15 +125,19 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         </div>
 
         <div className="flex items-center gap-3 animate-fade-in-up">
-          <button
+          <Button
             type="button"
+            size="lg"
+            hideArrow
             onClick={() => router.push('/panel/inmobiliaria/portafolio')}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1A40FF] text-white text-sm hover:opacity-90 transition-colors font-medium"
           >
             Ver portafolio
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="lg"
+            hideArrow
             onClick={() => {
               // Reset wizard state
               updateState({
@@ -149,10 +157,9 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
               // Redirect to step 1 — the wizard handles navigation
               router.push('/panel/inmobiliaria/portafolio/importar');
             }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium"
           >
             Importar más
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -162,25 +169,25 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
+        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
           Resumen de importación
         </h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">
           Revisa el resumen antes de ejecutar la importación.
         </p>
       </div>
 
       {/* Summary card */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-6 space-y-4">
+      <div className="rounded-xl border border-border dark:border-strong p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-            <FileArrowUp className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+            <FileArrowUp className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white">
+            <h3 className="font-semibold text-fg dark:text-white">
               {t('inmobiliaria.import.confirm.title')}
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
               {state.fileName}
             </p>
           </div>
@@ -189,31 +196,31 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-4 pt-2">
           {/* Properties to import */}
-          <div className="rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-4">
-            <p className="text-xs font-mono uppercase tracking-wide text-[#1A40FF] dark:text-[#5570FF] mb-1">
+          <div className="rounded-md bg-primary-soft p-4">
+            <MonoLabel className="block text-xs text-primary mb-1">
               {t('inmobiliaria.import.confirm.propertiesToImport')}
-            </p>
-            <p className="text-3xl font-bold text-[#1A40FF] dark:text-[#5570FF]">
+            </MonoLabel>
+            <p className="text-3xl font-bold text-primary">
               {importCount}
             </p>
           </div>
 
           {/* Excluded */}
-          <div className="rounded-md bg-neutral-50 dark:bg-neutral-800 p-4">
-            <p className="text-xs font-mono uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
+          <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
+            <MonoLabel className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.import.confirm.propertiesExcluded')}
-            </p>
-            <p className="text-3xl font-bold text-neutral-600 dark:text-neutral-300">
+            </MonoLabel>
+            <p className="text-3xl font-bold text-fg-muted dark:text-fg-subtle">
               {excludedCount}
             </p>
           </div>
 
           {/* AI suggestions accepted */}
-          <div className="rounded-md bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-4">
-            <p className="text-xs font-mono uppercase tracking-wide text-[#2C7A53] dark:text-[#3EAE70] mb-1">
+          <div className="rounded-md bg-success-soft p-4">
+            <MonoLabel className="block text-xs text-success mb-1">
               {t('inmobiliaria.import.confirm.suggestionsAccepted')}
-            </p>
-            <p className="text-3xl font-bold text-[#2C7A53] dark:text-[#3EAE70]">
+            </MonoLabel>
+            <p className="text-3xl font-bold text-success">
               {acceptedSuggestionsCount}
             </p>
           </div>
@@ -223,26 +230,26 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             className={cn(
               'rounded-md p-4',
               remainingErrorsCount > 0
-                ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15'
-                : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                ? 'bg-danger-soft'
+                : 'bg-success-soft'
             )}
           >
-            <p
+            <MonoLabel
               className={cn(
-                'text-xs font-mono uppercase tracking-wide mb-1',
+                'block text-xs mb-1',
                 remainingErrorsCount > 0
-                  ? 'text-[#C4503B] dark:text-[#E0664D]'
-                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                  ? 'text-danger'
+                  : 'text-success'
               )}
             >
               {t('inmobiliaria.import.confirm.remainingErrors')}
-            </p>
+            </MonoLabel>
             <p
               className={cn(
                 'text-3xl font-bold',
                 remainingErrorsCount > 0
-                  ? 'text-[#C4503B] dark:text-[#E0664D]'
-                  : 'text-[#2C7A53] dark:text-[#3EAE70]'
+                  ? 'text-danger'
+                  : 'text-success'
               )}
             >
               {remainingErrorsCount}
@@ -252,14 +259,14 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       </div>
 
       {/* Agent assignment note */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-white/[0.02] p-5">
         <div className="flex items-start gap-3">
-          <UserCircle className="w-5 h-5 text-neutral-400 dark:text-neutral-500 mt-0.5 flex-shrink-0" />
+          <UserCircle className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="font-semibold text-neutral-900 dark:text-white text-sm">
+            <h3 className="font-semibold text-fg dark:text-white text-sm">
               Asignación de agentes
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
               Las propiedades se importarán sin agente asignado. Podrás asignar agentes individualmente o en lote desde el portafolio después de importar.
             </p>
           </div>
@@ -269,23 +276,18 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       {/* Import progress bar (during import) */}
       {isImporting && (
         <div className="space-y-2">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.import.confirm.importing', {
               current: currentItem,
               total: importCount,
             })}
           </p>
-          <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-            {progress < 100 ? (
-              <div
-                className="h-full bg-[#1A40FF] rounded-full transition-all duration-150 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            ) : (
-              <div className="h-full bg-[#2C7A53] rounded-full w-full transition-colors duration-300" />
-            )}
-          </div>
-          <p className="text-xs text-right font-mono text-neutral-400 dark:text-neutral-500">
+          <Progress
+            value={progress}
+            size="xs"
+            variant={progress >= 100 ? 'success' : 'default'}
+          />
+          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
             {progress}%
           </p>
         </div>
@@ -293,22 +295,19 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
 
       {/* Import button */}
       <div className="flex justify-end">
-        <button
+        <Button
           type="button"
+          size="lg"
+          hideArrow
           onClick={handleImport}
           disabled={importCount === 0 || isImporting}
-          className={cn(
-            'inline-flex items-center gap-2 px-8 py-3 rounded-xl text-sm transition-all font-medium',
-            importCount > 0 && !isImporting
-              ? 'bg-[#1A40FF] text-white hover:opacity-90'
-              : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-          )}
+          className="gap-2"
         >
           <FileArrowUp className="w-4 h-4" />
           {isImporting
             ? 'Importando...'
             : t('inmobiliaria.import.confirm.importButton', { count: importCount })}
-        </button>
+        </Button>
       </div>
     </div>
   );

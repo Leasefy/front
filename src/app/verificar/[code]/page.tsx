@@ -66,7 +66,7 @@ export default function VerificarPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        <div className="rounded-[22px] bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 overflow-hidden">
           {status === 'loading' && (
             <div className="p-10 flex flex-col items-center gap-4">
               <div className="w-10 h-10 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
@@ -119,7 +119,7 @@ export default function VerificarPage() {
                     </span>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">
+                    <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
                       {evaluation.score.numericScore} / 100
                     </p>
                     <Badge variant={getRiskBadgeVariant(evaluation.score.level)} className="mt-1">

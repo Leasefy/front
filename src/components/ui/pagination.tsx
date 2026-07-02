@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Pagination — SHIM/ADAPTER sobre @leasefy/ui.
+ * Pagination — SHIM/ADAPTER sobre @leasefy/cadence.
  *
  * Dos piezas:
  *
@@ -21,7 +21,7 @@
  * PaginationItem, PaginationLink, PaginationButton, PaginationPrevious/Next/
  * First/Last, PaginationEllipsis) no tiene call sites en el mvp; si se
  * necesita de nuevo, recuperar la versión anterior del historial o componer
- * directamente sobre '@leasefy/ui'.
+ * directamente sobre '@leasefy/cadence'.
  */
 
 import * as React from 'react';
@@ -34,8 +34,8 @@ import {
   DotsThree,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { Pagination as DSTablePagination } from '@leasefy/ui';
-import type { PaginationProps as DSTablePaginationProps } from '@leasefy/ui';
+import { Pagination as DSTablePagination } from '@leasefy/cadence';
+import type { PaginationProps as DSTablePaginationProps } from '@leasefy/cadence';
 
 // ============================================================================
 // TablePagination — footer de tabla del DS + touch targets táctiles

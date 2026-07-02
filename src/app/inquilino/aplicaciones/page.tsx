@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
+import { SegmentedControl, IconButton } from '@leasefy/cadence';
 
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,9 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import type { Contract } from '@/lib/types/contract';
 
 const ITEMS_PER_PAGE = 4;
@@ -76,7 +80,7 @@ function displayStatusForApproved(contract: Contract | undefined, locale: string
     case 'expired':
       return {
         label: locale === 'es' ? 'Contrato expirado' : 'Contract expired',
-        color: 'bg-neutral-100 text-neutral-600',
+        color: 'bg-surface-muted text-fg-muted',
         icon: XCircle,
         progress: 100,
       };
@@ -140,7 +144,7 @@ export default function AplicacionesPage() {
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error } = useTenantApplications();
 
-  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [activeTab, setTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -190,7 +194,7 @@ export default function AplicacionesPage() {
     },
     withdrawn: {
       label: t('applications.withdrawn'),
-      color: 'bg-neutral-100 text-neutral-600',
+      color: 'bg-surface-muted text-fg-muted',
       icon: XCircle,
       progress: 100
     },
@@ -211,7 +215,7 @@ export default function AplicacionesPage() {
 
   // Reset page when changing tabs
   const handleTabChange = (tab: 'active' | 'completed') => {
-    setActiveTab(tab);
+    setTab(tab);
     setCurrentPage(1);
   };
 
@@ -219,7 +223,7 @@ export default function AplicacionesPage() {
   if (isOnboardingLoading || isAppsLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
   }
@@ -261,10 +265,10 @@ export default function AplicacionesPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
             {t('applications.title')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
             {t('applications.subtitle')}
           </p>
         </motion.header>
@@ -276,37 +280,37 @@ export default function AplicacionesPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
-          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <FileText className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+              <FileText className="w-5 h-5 text-fg dark:text-fg-subtle" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
+            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
               {activeApplications.length + completedApplications.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
           </div>
 
           <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <Clock className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
               {activeApplications.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('applications.active')}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{t('applications.active')}</p>
           </div>
 
-          <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
+          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
               <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
+            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
               {completedApplications.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
           </div>
         </motion.div>
 
@@ -317,74 +321,71 @@ export default function AplicacionesPage() {
           transition={{ delay: 0.2 }}
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
         >
-          {/* Tabs */}
-          <div className="flex items-center gap-2 p-1 bg-neutral-100 dark:bg-[#1a1a1c] rounded-full w-fit">
-            <button
-              onClick={() => handleTabChange('active')}
-              className={cn(
-                'px-5 py-2 text-sm font-medium rounded-full transition-all',
-                activeTab === 'active'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-              )}
-            >
-              {locale === 'es' ? 'En Proceso' : 'In Progress'}
-              {activeApplications.length > 0 && (
-                <span className={cn(
-                  'ml-2 px-2 py-0.5 text-xs rounded-full',
-                  activeTab === 'active' ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
-                )}>
-                  {activeApplications.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => handleTabChange('completed')}
-              className={cn(
-                'px-5 py-2 text-sm font-medium rounded-full transition-all',
-                activeTab === 'completed'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-              )}
-            >
-              {locale === 'es' ? 'Historial' : 'History'}
-              {completedApplications.length > 0 && (
-                <span className={cn(
-                  'ml-2 px-2 py-0.5 text-xs rounded-full',
-                  activeTab === 'completed' ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
-                )}>
-                  {completedApplications.length}
-                </span>
-              )}
-            </button>
-          </div>
+          {/* Tabs — Cadence SegmentedControl */}
+          <SegmentedControl
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label={locale === 'es' ? 'Filtrar aplicaciones' : 'Filter applications'}
+            options={[
+              {
+                value: 'active',
+                label: (
+                  <span className="inline-flex items-center">
+                    {locale === 'es' ? 'En Proceso' : 'In Progress'}
+                    {activeApplications.length > 0 && (
+                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
+                        {activeApplications.length}
+                      </Badge>
+                    )}
+                  </span>
+                ),
+              },
+              {
+                value: 'completed',
+                label: (
+                  <span className="inline-flex items-center">
+                    {locale === 'es' ? 'Historial' : 'History'}
+                    {completedApplications.length > 0 && (
+                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
+                        {completedApplications.length}
+                      </Badge>
+                    )}
+                  </span>
+                ),
+              },
+            ]}
+          />
 
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-neutral-100 dark:bg-[#1a1a1c] rounded-full w-fit">
-            <button
+          <div className="flex items-center gap-1 p-1 bg-surface-muted dark:bg-[#1a1a1c] rounded-full w-fit">
+            <IconButton
+              variant="ghost"
               onClick={() => setViewMode('list')}
+              aria-pressed={viewMode === 'list'}
               className={cn(
-                'p-2 rounded-full transition-all',
+                'p-2 rounded-full',
                 viewMode === 'list'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                  ? 'bg-surface dark:bg-[#2a2a2c] text-fg dark:text-white'
+                  : 'text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle'
               )}
               title={locale === 'es' ? 'Vista de lista' : 'List view'}
-            >
-              <ListBullets className="w-4 h-4" />
-            </button>
-            <button
+              aria-label={locale === 'es' ? 'Vista de lista' : 'List view'}
+              icon={<ListBullets className="w-4 h-4" />}
+            />
+            <IconButton
+              variant="ghost"
               onClick={() => setViewMode('grid')}
+              aria-pressed={viewMode === 'grid'}
               className={cn(
-                'p-2 rounded-full transition-all',
+                'p-2 rounded-full',
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                  ? 'bg-surface dark:bg-[#2a2a2c] text-fg dark:text-white'
+                  : 'text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle'
               )}
               title={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
-            >
-              <GridFour className="w-4 h-4" />
-            </button>
+              aria-label={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
+              icon={<GridFour className="w-4 h-4" />}
+            />
           </div>
         </motion.div>
 
@@ -415,7 +416,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden">
+                          <div className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden">
                             <div className="flex flex-col lg:flex-row">
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -443,53 +444,53 @@ export default function AplicacionesPage() {
                               <div className="flex-1 p-6">
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                                    <h3 className="text-lg font-semibold text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
                                       {application.property?.title || 'Propiedad'}
                                     </h3>
-                                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
+                                    <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1 flex items-center gap-1.5">
                                       <MapPin className="w-3.5 h-3.5" />
                                       {application.property?.neighborhood}, {application.property?.city}
                                     </p>
                                   </div>
                                   <div className="sm:text-right">
-                                    <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                                    <p className="text-2xl font-bold text-fg dark:text-white">
                                       {formatCurrency(application.property?.monthlyRent || 0)}
                                     </p>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">/mes</p>
+                                    <p className="text-xs text-fg-muted dark:text-fg-subtle">/mes</p>
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-neutral-100 dark:border-neutral-700">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint dark:border-border-strong">
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Código' : 'Code'}</p>
-                                    <p className="text-sm font-mono font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Código' : 'Code'}</p>
+                                    <p className="text-sm font-mono font-medium text-fg dark:text-white">
                                       {application.trackingCode}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Enviada' : 'Submitted'}</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Enviada' : 'Submitted'}</p>
+                                    <p className="text-sm font-medium text-fg dark:text-white">
                                       {formatShortDate(application.submittedAt)}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Actualizada' : 'Updated'}</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Actualizada' : 'Updated'}</p>
+                                    <p className="text-sm font-medium text-fg dark:text-white">
                                       {formatShortDate(application.updatedAt)}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Progreso' : 'Progress'}</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{status.progress}%</p>
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Progreso' : 'Progress'}</p>
+                                    <p className="text-sm font-medium text-fg dark:text-white">{status.progress}%</p>
                                   </div>
                                 </div>
 
                                 <div className="mt-4">
-                                  <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                                  <div className="flex items-center justify-between text-xs text-fg-muted dark:text-fg-subtle mb-2">
                                     <span>{locale === 'es' ? 'Progreso de aplicación' : 'Application progress'}</span>
                                     <span>{status.progress}% {locale === 'es' ? 'completado' : 'complete'}</span>
                                   </div>
-                                  <div className="h-2 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                  <div className="h-2 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
@@ -506,18 +507,18 @@ export default function AplicacionesPage() {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between mt-4 p-4 bg-neutral-50 dark:bg-[#2a2a2c] rounded-xl">
+                                <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted dark:bg-[#2a2a2c] rounded-xl">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1a1a1c] flex items-center justify-center">
-                                      <FileText className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                                    <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1a1a1c] flex items-center justify-center">
+                                      <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                                     </div>
                                     <div>
-                                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
+                                      <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
                                       <p className={cn(
                                         'text-sm font-semibold',
                                         application.status === 'needs_info'
                                           ? 'text-[#B7791F] dark:text-[#D2992F]'
-                                          : 'text-neutral-900 dark:text-white'
+                                          : 'text-fg dark:text-white'
                                       )}>
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
@@ -564,7 +565,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover: transition-all duration-300 overflow-hidden h-full flex flex-col">
+                          <div className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden h-full flex flex-col">
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
@@ -589,31 +590,31 @@ export default function AplicacionesPage() {
                             {/* Content */}
                             <div className="p-4 flex-1 flex flex-col">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors line-clamp-1 mb-1">
+                                <h3 className="font-semibold text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors line-clamp-1 mb-1">
                                   {application.property?.title || 'Propiedad'}
                                 </h3>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mb-3">
+                                <p className="text-sm text-fg-muted dark:text-fg-subtle flex items-center gap-1 mb-3">
                                   <MapPin className="w-3 h-3 flex-shrink-0" />
                                   <span className="truncate">{application.property?.neighborhood}, {application.property?.city}</span>
                                 </p>
 
                                 <div className="flex items-center justify-between mb-3">
-                                  <p className="text-lg font-bold text-neutral-900 dark:text-white">
+                                  <p className="text-lg font-bold text-fg dark:text-white">
                                     {formatCurrency(application.property?.monthlyRent || 0)}
-                                    <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">/mes</span>
+                                    <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/mes</span>
                                   </p>
-                                  <span className="text-xs font-mono text-neutral-400">
+                                  <span className="text-xs font-mono text-fg-subtle">
                                     {application.trackingCode}
                                   </span>
                                 </div>
 
                                 {/* Progress Bar */}
                                 <div className="mb-3">
-                                  <div className="flex items-center justify-between text-xs text-neutral-400 mb-1">
+                                  <div className="flex items-center justify-between text-xs text-fg-subtle mb-1">
                                     <span>{locale === 'es' ? 'Progreso' : 'Progress'}</span>
                                     <span>{status.progress}%</span>
                                   </div>
-                                  <div className="h-1.5 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                  <div className="h-1.5 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
@@ -632,8 +633,8 @@ export default function AplicacionesPage() {
                               </div>
 
                               {/* Footer */}
-                              <div className="pt-3 border-t border-neutral-100 dark:border-neutral-700 flex items-center justify-between">
-                                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                              <div className="pt-3 border-t border-border-faint dark:border-border-strong flex items-center justify-between">
+                                <span className="text-xs text-fg-muted dark:text-fg-subtle">
                                   {formatShortDate(application.updatedAt)}
                                 </span>
                                 <span className="flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
@@ -653,53 +654,58 @@ export default function AplicacionesPage() {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8">
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className={cn(
-                      'p-2 rounded-full transition-all',
+                      'p-2 rounded-full',
                       currentPage === 1
-                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
+                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
                     )}
-                  >
-                    <CaretLeft className="w-5 h-5" />
-                  </button>
+                    aria-label={locale === 'es' ? 'Página anterior' : 'Previous page'}
+                    icon={<CaretLeft className="w-5 h-5" />}
+                  />
 
                   <div className="flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
+                      <Button
                         key={page}
+                        variant="ghost"
+                        hideArrow
                         onClick={() => setCurrentPage(page)}
+                        aria-current={currentPage === page ? 'page' : undefined}
                         className={cn(
-                          'w-10 h-10 rounded-full text-sm font-medium transition-all',
+                          'w-10 h-10 rounded-full p-0 text-sm font-medium',
                           currentPage === page
-                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
+                            ? 'bg-ink dark:bg-surface text-white dark:text-fg'
+                            : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
                         )}
                       >
                         {page}
-                      </button>
+                      </Button>
                     ))}
                   </div>
 
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className={cn(
-                      'p-2 rounded-full transition-all',
+                      'p-2 rounded-full',
                       currentPage === totalPages
-                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
+                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
                     )}
-                  >
-                    <CaretRight className="w-5 h-5" />
-                  </button>
+                    aria-label={locale === 'es' ? 'Página siguiente' : 'Next page'}
+                    icon={<CaretRight className="w-5 h-5" />}
+                  />
                 </div>
               )}
 
               {/* Results info */}
-              <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mt-4">
+              <p className="text-center text-sm text-fg-muted dark:text-fg-subtle mt-4">
                 {locale === 'es'
                   ? `Mostrando ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} de ${currentApplications.length} aplicaciones`
                   : `Showing ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} of ${currentApplications.length} applications`}

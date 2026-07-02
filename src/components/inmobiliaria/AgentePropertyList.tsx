@@ -18,6 +18,7 @@ import {
   Wrench,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -42,26 +43,26 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
 const AVAILABILITY_CONFIG: Record<PropertyAvailability, { label: string; bg: string; text: string; icon: React.ElementType }> = {
   available: {
     label: 'Disponible',
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
     icon: CheckCircle,
   },
   rented: {
     label: 'Arrendado',
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
     icon: House,
   },
   in_process: {
     label: 'En proceso',
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
     icon: Timer,
   },
   maintenance: {
     label: 'Mantenimiento',
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
     icon: Wrench,
   },
 };
@@ -84,32 +85,33 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
   return (
     <div
       className={cn(
-        'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden',
+        'rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
         className
       )}
     >
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+        aria-expanded={isExpanded}
+        className="w-full flex items-center justify-between px-5 py-4 border-b border-faint dark:border-strong hover:bg-surface-muted dark:hover:bg-ink/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-            <Buildings className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
+            <Buildings className="w-4 h-4 text-primary" />
           </div>
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-neutral-900 dark:text-white">
+            <h3 className="font-semibold text-fg dark:text-white">
               {t('inmobiliaria.agente.assignedProperties')}
             </h3>
-            <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+            <span className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-xs font-medium text-fg-muted dark:text-fg-subtle">
               {consignaciones.length}
             </span>
           </div>
         </div>
         {isExpanded ? (
-          <CaretUp className="w-5 h-5 text-neutral-400" />
+          <CaretUp className="w-5 h-5 text-fg-subtle" />
         ) : (
-          <CaretDown className="w-5 h-5 text-neutral-400" />
+          <CaretDown className="w-5 h-5 text-fg-subtle" />
         )}
       </button>
 
@@ -134,10 +136,10 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                       <Link
                         key={consignacion.id}
                         href={`/panel/inmobiliaria/portafolio/${consignacion.id}`}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-[#141416] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors group"
+                        className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted dark:bg-[#14130F] hover:bg-surface-muted dark:hover:bg-ink transition-colors group"
                       >
                         {/* Thumbnail */}
-                        <div className="w-14 h-14 rounded-xl bg-neutral-200 dark:bg-neutral-700 overflow-hidden shrink-0">
+                        <div className="w-14 h-14 rounded-xl bg-surface-muted dark:bg-ink overflow-hidden shrink-0">
                           {consignacion.propertyThumbnail ? (
                             <img
                               src={consignacion.propertyThumbnail}
@@ -146,17 +148,17 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <PropertyIcon className="w-6 h-6 text-neutral-400" />
+                              <PropertyIcon className="w-6 h-6 text-fg-subtle" />
                             </div>
                           )}
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-neutral-900 dark:text-white truncate group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                          <h4 className="font-medium text-fg dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary transition-colors">
                             {consignacion.propertyTitle}
                           </h4>
-                          <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
                             <MapPin className="w-3.5 h-3.5 shrink-0" />
                             <span className="truncate">{consignacion.propertyZone}</span>
                           </div>
@@ -174,7 +176,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                             <AvailabilityIcon className="w-3 h-3" />
                             {availabilityLabels[consignacion.availability]}
                           </span>
-                          <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          <span className="text-sm font-semibold text-fg dark:text-white">
                             {formatCurrency(consignacion.monthlyRent)}
                           </span>
                         </div>
@@ -184,28 +186,30 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                 </>
               ) : (
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                    <Buildings className="w-6 h-6 text-neutral-400" />
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
+                    <Buildings className="w-6 h-6 text-fg-subtle" />
                   </div>
-                  <p className="text-neutral-600 dark:text-neutral-400 font-medium mb-1">
+                  <p className="text-fg-muted dark:text-fg-subtle font-medium mb-1">
                     {t('inmobiliaria.agente.noAssignedProperties')}
                   </p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-500">
+                  <p className="text-sm text-fg-muted dark:text-fg-muted">
                     {t('inmobiliaria.agente.noPropertiesInPortfolio')}
                   </p>
                 </div>
               )}
 
               {/* Assign Property Button */}
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={onAssignProperty}
                 disabled
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-400 dark:text-neutral-500 font-medium opacity-60 cursor-not-allowed"
+                className="w-full border-dashed gap-2"
                 title={t('inmobiliaria.agente.comingSoon')}
               >
                 <Plus className="w-4 h-4" />
                 {t('inmobiliaria.agente.assignProperty')}
-              </button>
+              </Button>
             </div>
           </motion.div>
         )}

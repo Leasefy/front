@@ -15,13 +15,32 @@ import {
   XCircle,
   ArrowCounterClockwise,
   Warning,
-  Spinner,
 } from '@phosphor-icons/react';
+import {
+  SegmentedControl,
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
-import { MigaDePan } from '@/components/inmobiliaria/ai/MigaDePan';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import {
@@ -33,25 +52,26 @@ import {
 // ── Summary card config ─────────────────────────────────────────────────────
 
 const RESUMEN_ITEMS = [
-  { key: 'conciliados',       dot: 'bg-[#2C7A53]',   field: 'conciliados'       },
-  { key: 'parciales',         dot: 'bg-[#B7791F]',   field: 'parciales'         },
+  { key: 'conciliados',       dot: 'bg-success-500', field: 'conciliados'       },
+  { key: 'parciales',         dot: 'bg-warning-500', field: 'parciales'         },
   { key: 'duplicados',        dot: 'bg-neutral-400', field: 'duplicados'        },
   { key: 'noIdentificados',   dot: 'bg-neutral-400', field: 'noIdentificados'   },
-  { key: 'diferencias',       dot: 'bg-[#C4503B]',   field: 'diferencias'       },
+  { key: 'diferencias',       dot: 'bg-error-500',   field: 'diferencias'       },
   { key: 'fueraFecha',        dot: 'bg-neutral-400', field: 'fueraDeFecha'      },
 ] as const;
 
 // ── Caso badge ──────────────────────────────────────────────────────────────
 
-const CASO_STYLES: Record<string, string> = {
-  conciliado:       'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-  parcial:          'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-  duplicado:        'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-  no_identificado:  'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-  diferencia_valor: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
-  fuera_de_fecha:   'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
-  confirmado:       'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
-  rechazado:        'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
+type CasoBadgeVariant = 'success' | 'warning' | 'neutral' | 'danger';
+const CASO_VARIANT: Record<string, CasoBadgeVariant> = {
+  conciliado:       'success',
+  parcial:          'warning',
+  duplicado:        'neutral',
+  no_identificado:  'neutral',
+  diferencia_valor: 'danger',
+  fuera_de_fecha:   'neutral',
+  confirmado:       'success',
+  rechazado:        'neutral',
 };
 
 /** Derive display caso from queue item fields */
@@ -104,36 +124,36 @@ function RejectDialog({ matchId: _matchId, onConfirm, onCancel, t, busy }: Rejec
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl p-6 space-y-4">
-        <h3 className="text-h4 text-foreground">{t(k('rejectDialogTitle'))}</h3>
-        <p className="text-body-sm text-muted-foreground">{t(k('rejectDialogDesc'))}</p>
-        <textarea
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/40"
+    <Dialog open onOpenChange={(o) => { if (!o && !busy) onCancel(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t(k('rejectDialogTitle'))}</DialogTitle>
+          <DialogDescription>{t(k('rejectDialogDesc'))}</DialogDescription>
+        </DialogHeader>
+        <Textarea
+          className="h-24 resize-none"
           placeholder={t(k('rejectReasonPlaceholder'))}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           aria-label={t(k('rejectReasonPlaceholder'))}
         />
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            disabled={busy}
-            className="h-9 px-4 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-          >
+        <DialogFooter>
+          <Button variant="ghost" onClick={onCancel} disabled={busy} hideArrow>
             {t(k('cancel'))}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive"
             onClick={() => { if (reason.trim()) onConfirm(reason.trim()); }}
             disabled={!reason.trim() || busy}
-            className="h-9 px-4 rounded-md bg-[#C4503B] text-white text-sm font-medium hover:bg-[#C4503B]/90 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            isLoading={busy}
+            hideArrow
+            className="gap-1.5"
           >
-            {busy && <Spinner className="w-3.5 h-3.5 animate-spin" />}
             {t(k('rejectConfirm'))}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -162,39 +182,48 @@ function RowActions({ item, onConfirm, onReject, onReverse, busy, t }: RowAction
     <div className="flex items-center gap-1.5">
       {isInQueue && (
         <>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onConfirm}
             disabled={busy}
             title={t(k('actionConfirm'))}
             aria-label={t(k('actionConfirm'))}
-            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#E8F3EC] text-[#2C7A53] hover:bg-[#2C7A53]/15 dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:hover:bg-[#2C7A53]/25 text-xs font-medium transition-colors disabled:opacity-50"
+            hideArrow
+            className="gap-1 text-success-700 hover:bg-success-50 hover:text-success-700 dark:text-success-500 dark:hover:bg-success-500/15"
           >
-            {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" weight="fill" />}
+            {busy ? <Spinner size="xs" variant="current" /> : <CheckCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionConfirm'))}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onReject}
             disabled={busy}
             title={t(k('actionReject'))}
             aria-label={t(k('actionReject'))}
-            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#F8EAE7] text-[#C4503B] hover:bg-[#C4503B]/15 dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:hover:bg-[#C4503B]/25 text-xs font-medium transition-colors disabled:opacity-50"
+            hideArrow
+            className="gap-1 text-error-700 hover:bg-error-50 hover:text-error-700 dark:text-error-500 dark:hover:bg-error-500/15"
           >
-            {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" weight="fill" />}
+            {busy ? <Spinner size="xs" variant="current" /> : <XCircle className="w-3.5 h-3.5" weight="fill" />}
             {t(k('actionReject'))}
-          </button>
+          </Button>
         </>
       )}
       {isConfirmed && (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onReverse}
           disabled={busy}
           title={t(k('actionReverse'))}
           aria-label={t(k('actionReverse'))}
-          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 text-xs font-medium transition-colors disabled:opacity-50"
+          hideArrow
+          className="gap-1 text-muted-foreground"
         >
-          {busy ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <ArrowCounterClockwise className="w-3.5 h-3.5" />}
+          {busy ? <Spinner size="xs" variant="current" /> : <ArrowCounterClockwise className="w-3.5 h-3.5" />}
           {t(k('actionReverse'))}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -206,13 +235,13 @@ function TableSkeleton() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
-        <tr key={i} className="border-b border-border last:border-0 animate-pulse">
+        <TableRow key={i} className="animate-pulse">
           {Array.from({ length: 8 }).map((_, j) => (
-            <td key={j} className="px-5 py-3.5">
+            <TableCell key={j} className="px-5 py-3.5">
               <div className="h-4 rounded bg-muted w-16" />
-            </td>
+            </TableCell>
           ))}
-        </tr>
+        </TableRow>
       ))}
     </>
   );
@@ -308,17 +337,8 @@ function ConciliacionContent() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header — subir extracto (abajo) ES la acción principal; sin CTA extra */}
       <header className="space-y-2">
-        <MigaDePan
-          backHref="/panel/inmobiliaria/ai/conciliacion"
-          icon={Bank}
-          crumbs={[
-            { label: t('inmobiliaria.nav.secAgentes'), href: '/panel/inmobiliaria/ai' },
-            { label: t('inmobiliaria.ai.workspace.agente.conciliacion'), href: '/panel/inmobiliaria/ai/conciliacion' },
-            { label: t(k('movimientosTitle')) },
-          ]}
-        />
-        <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
-        <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t(k('title'))}</h1>
+        <p className="text-sm text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
       </header>
 
       {/* Phase-honest banner */}
@@ -337,32 +357,19 @@ function ConciliacionContent() {
         on a later refresh of the queue below.
       */}
       <div id="upload" className="scroll-mt-24 rounded-xl border-2 border-dashed border-border bg-muted/20 p-5 space-y-4">
-        {/* Bank selector */}
+        {/* Bank selector — selector excluyente → SegmentedControl del DS */}
         <div className="flex items-center gap-2">
           <span className="text-caption text-muted-foreground">{t(k('uploadBankLabel'))}</span>
-          <div
-            className="inline-flex rounded-lg border border-border bg-background p-0.5"
-            role="group"
+          <SegmentedControl<IngestBank>
             aria-label={t(k('uploadBankLabel'))}
-          >
-            {(['bancolombia', 'davivienda'] as const).map((b) => (
-              <button
-                key={b}
-                type="button"
-                onClick={() => setBank(b)}
-                disabled={uploading}
-                aria-pressed={bank === b}
-                className={cn(
-                  'h-7 px-3 rounded-md text-xs font-medium transition-colors disabled:opacity-50',
-                  bank === b
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {t(k(b === 'bancolombia' ? 'bankBancolombia' : 'bankDavivienda'))}
-              </button>
-            ))}
-          </div>
+            value={bank}
+            onChange={setBank}
+            disabled={uploading}
+            options={[
+              { value: 'bancolombia', label: t(k('bankBancolombia')) },
+              { value: 'davivienda', label: t(k('bankDavivienda')) },
+            ]}
+          />
         </div>
 
         {/* Click-to-upload dropzone */}
@@ -371,13 +378,13 @@ function ConciliacionContent() {
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           aria-label={t(k('uploadTitle'))}
-          className="w-full rounded-xl border-2 border-dashed border-border bg-background/40 p-8 flex flex-col items-center justify-center gap-2 text-center transition-colors hover:border-[#1A40FF]/30 hover:bg-[#EEF1FF]/50 dark:hover:bg-[#1A40FF]/10 disabled:cursor-wait disabled:opacity-60"
+          className="w-full rounded-xl border-2 border-dashed border-border bg-background/40 p-8 flex flex-col items-center justify-center gap-2 text-center transition-colors hover:border-primary/30 hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center mb-1">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-1">
             {uploading ? (
-              <Spinner className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF] animate-spin" />
+              <Spinner size="md" variant="default" />
             ) : (
-              <UploadSimple className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" />
+              <UploadSimple className="w-6 h-6 text-primary" weight="duotone" />
             )}
           </div>
           <p className="text-body-sm font-medium text-foreground">
@@ -425,18 +432,21 @@ function ConciliacionContent() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 flex items-start gap-2.5">
-          <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5" weight="fill" />
+        <div className="rounded-xl border border-error-500/30 dark:border-error-500/40 bg-error-50 dark:bg-error-500/15 p-4 flex items-start gap-2.5">
+          <Warning className="w-5 h-5 text-error-700 dark:text-error-500 flex-shrink-0 mt-0.5" weight="fill" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-[#C4503B] dark:text-[#E0664D]">{t(k('errorTitle'))}</p>
-            <p className="text-xs text-[#C4503B]/90 dark:text-[#E0664D]/90 mt-0.5">{error}</p>
+            <p className="text-xs font-semibold text-error-700 dark:text-error-500">{t(k('errorTitle'))}</p>
+            <p className="text-xs text-error-700/90 dark:text-error-500/90 mt-0.5">{error}</p>
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => void refetch()}
-            className="h-7 px-2.5 rounded-md bg-[#C4503B]/10 dark:bg-[#C4503B]/20 text-[#C4503B] dark:text-[#E0664D] text-xs font-medium hover:bg-[#C4503B]/20 dark:hover:bg-[#C4503B]/30 transition-colors flex-shrink-0"
+            hideArrow
+            className="shrink-0"
           >
             {t(k('retry'))}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -448,49 +458,49 @@ function ConciliacionContent() {
               <ArrowsClockwise className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             <div>
-              <h2 className="text-h4 text-foreground">{t(k('movimientosTitle'))}</h2>
+              <h2 className="text-base font-semibold text-foreground">{t(k('movimientosTitle'))}</h2>
               <p className="text-caption text-muted-foreground mt-0.5">{t(k('movimientosDesc'))}</p>
             </div>
           </div>
           {!isLoading && !error && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => void refetch()}
               title={t(k('refresh'))}
               aria-label={t(k('refresh'))}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              hideArrow
+              className="text-muted-foreground"
             >
               <ArrowsClockwise className="w-4 h-4" />
-            </button>
+            </Button>
           )}
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow>
                 {COLUMNS.map((col) => (
-                  <th
-                    key={col}
-                    className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap"
-                  >
+                  <TableHead key={col} className="whitespace-nowrap">
                     {t(k(col))}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {isLoading && <TableSkeleton />}
 
               {!isLoading && !error && items.length === 0 && (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="p-0">
+                <TableRow>
+                  <TableCell colSpan={COLUMNS.length} className="p-0">
                     <EmptyState
                       icon={Bank}
                       title={t(k('emptyQueueTitle'))}
                       description={t(k('emptyQueueDesc'))}
                     />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
 
               {!isLoading && items.map((item) => {
@@ -503,42 +513,37 @@ function ConciliacionContent() {
                 const valorEsperado = item.matchedAmountCop ? fmtCop(item.matchedAmountCop) : '—';
 
                 return (
-                  <tr
+                  <TableRow
                     key={item.id}
                     className={cn(
-                      'border-b border-border last:border-0 transition-colors',
+                      'transition-colors',
                       isBusy ? 'opacity-60' : 'hover:bg-muted/30',
                     )}
                   >
-                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
+                    <TableCell className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
                       {dateStr}
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-xs max-w-[140px] truncate" title={ref}>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 font-mono text-xs max-w-[140px] truncate" title={ref}>
                       {ref}
-                    </td>
-                    <td className="px-5 py-3.5 text-xs max-w-[200px] truncate" title={tercero}>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 text-xs max-w-[200px] truncate" title={tercero}>
                       {tercero}
-                    </td>
-                    <td className="px-5 py-3.5 max-w-[160px] truncate text-muted-foreground" title={item.domain}>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 max-w-[160px] truncate text-muted-foreground" title={item.domain}>
                       {item.domain}
-                    </td>
-                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 tabular-nums whitespace-nowrap">
                       {valorBanco}
-                    </td>
-                    <td className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 tabular-nums whitespace-nowrap text-muted-foreground">
                       {valorEsperado}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
-                          CASO_STYLES[caso] ?? 'bg-muted text-muted-foreground',
-                        )}
-                      >
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5">
+                      <Badge variant={CASO_VARIANT[caso] ?? 'neutral'}>
                         {t(k(`caso_badge_${caso}`))}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5">
                       <RowActions
                         item={item}
                         onConfirm={() => void handleConfirm(item.id)}
@@ -547,12 +552,12 @@ function ConciliacionContent() {
                         busy={isBusy}
                         t={t}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
 

@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CaretLeft, House, Spinner } from '@phosphor-icons/react';
+import { House } from '@phosphor-icons/react';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { cn } from '@/lib/utils';
+import { Button, Input, Textarea, Spinner } from '@/components/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BackButton, SegmentedControl } from '@leasefy/cadence';
 import { COLOMBIAN_CITIES } from '@/lib/types/property';
 import type { PropertyType } from '@/lib/types/property';
 
@@ -17,9 +19,6 @@ const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
   { value: 'studio',    label: 'Estudio' },
   { value: 'room',      label: 'Habitación' },
 ];
-
-const inputClass =
-  'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 text-sm transition-all';
 
 function NuevaPropiedadContent() {
   const router = useRouter();
@@ -96,7 +95,7 @@ function NuevaPropiedadContent() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     );
   }
@@ -105,23 +104,20 @@ function NuevaPropiedadContent() {
     <div className="p-4 md:p-6 max-w-3xl space-y-6">
       {/* Header */}
       <div className="space-y-4">
-        <button
+        <BackButton
+          label="Volver a propiedades"
           onClick={() => router.push('/panel/inmobiliaria/propiedades')}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <CaretLeft className="w-4 h-4" />
-          Volver a propiedades
-        </button>
+        />
 
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-            <House className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+            <House className="w-6 h-6 text-primary" weight="duotone" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">
               Nueva propiedad
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-fg-muted">
               Registrá una nueva propiedad en el portafolio
             </p>
           </div>
@@ -131,146 +127,129 @@ function NuevaPropiedadContent() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* ── Información básica ────────────────────────── */}
         <section className="bg-card rounded-xl border border-border p-6 space-y-4">
-          <h2 className="font-semibold text-foreground">Información básica</h2>
+          <h2 className="text-base font-semibold text-fg">Información básica</h2>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Título *</label>
-            <input
+            <label className="text-sm font-medium text-fg">Título *</label>
+            <Input
               type="text"
               value={form.title}
               onChange={(e) => update('title', e.target.value)}
               placeholder="Ej: Apartamento moderno en Chapinero"
-              className={inputClass}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Descripción *</label>
-            <textarea
+            <label className="text-sm font-medium text-fg">Descripción *</label>
+            <Textarea
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               placeholder="Describí la propiedad..."
               rows={3}
-              className={cn(inputClass, 'resize-none')}
+              className="resize-none"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Tipo de inmueble *</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {PROPERTY_TYPES.map((pt) => (
-                <button
-                  key={pt.value}
-                  type="button"
-                  onClick={() => update('type', pt.value)}
-                  className={cn(
-                    'px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-center',
-                    form.type === pt.value
-                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
-                      : 'border-border text-muted-foreground hover:border-[#1A40FF]/30 hover:text-foreground'
-                  )}
-                >
-                  {pt.label}
-                </button>
-              ))}
-            </div>
+            <label className="text-sm font-medium text-fg">Tipo de inmueble *</label>
+            <SegmentedControl<PropertyType>
+              aria-label="Tipo de inmueble"
+              fullWidth
+              value={form.type}
+              onChange={(v) => update('type', v)}
+              options={PROPERTY_TYPES.map((pt) => ({ value: pt.value, label: pt.label }))}
+            />
           </div>
         </section>
 
         {/* ── Ubicación ─────────────────────────────────── */}
         <section className="bg-card rounded-xl border border-border p-6 space-y-4">
-          <h2 className="font-semibold text-foreground">Ubicación</h2>
+          <h2 className="text-base font-semibold text-fg">Ubicación</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Ciudad *</label>
-              <select
-                value={form.city}
-                onChange={(e) => update('city', e.target.value)}
-                className={inputClass}
-              >
-                <option value="">Seleccioná una ciudad</option>
-                {COLOMBIAN_CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <label className="text-sm font-medium text-fg">Ciudad *</label>
+              <Select value={form.city || undefined} onValueChange={(v) => update('city', v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccioná una ciudad" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOMBIAN_CITIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Barrio / Zona *</label>
-              <input
+              <label className="text-sm font-medium text-fg">Barrio / Zona *</label>
+              <Input
                 type="text"
                 value={form.neighborhood}
                 onChange={(e) => update('neighborhood', e.target.value)}
                 placeholder="Ej: Chapinero Alto"
-                className={inputClass}
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Dirección *</label>
-            <input
+            <label className="text-sm font-medium text-fg">Dirección *</label>
+            <Input
               type="text"
               value={form.address}
               onChange={(e) => update('address', e.target.value)}
               placeholder="Ej: Calle 53 #13-45"
-              className={inputClass}
             />
           </div>
         </section>
 
         {/* ── Características y precio ───────────────────── */}
         <section className="bg-card rounded-xl border border-border p-6 space-y-4">
-          <h2 className="font-semibold text-foreground">Características y precio</h2>
+          <h2 className="text-base font-semibold text-fg">Características y precio</h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Habitaciones *</label>
-              <input
+              <label className="text-sm font-medium text-fg">Habitaciones *</label>
+              <Input
                 type="number"
                 min="0"
                 value={form.bedrooms}
                 onChange={(e) => update('bedrooms', e.target.value)}
                 placeholder="0"
-                className={inputClass}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Baños *</label>
-              <input
+              <label className="text-sm font-medium text-fg">Baños *</label>
+              <Input
                 type="number"
                 min="0"
                 step="0.5"
                 value={form.bathrooms}
                 onChange={(e) => update('bathrooms', e.target.value)}
                 placeholder="0"
-                className={inputClass}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Área (m²) *</label>
-              <input
+              <label className="text-sm font-medium text-fg">Área (m²) *</label>
+              <Input
                 type="number"
                 min="1"
                 value={form.area}
                 onChange={(e) => update('area', e.target.value)}
                 placeholder="0"
-                className={inputClass}
               />
             </div>
 
             <div className="space-y-1.5 col-span-2 sm:col-span-1">
-              <label className="text-sm font-medium text-foreground">Canon mensual (COP) *</label>
-              <input
+              <label className="text-sm font-medium text-fg">Canon mensual (COP) *</label>
+              <Input
                 type="number"
                 min="1"
                 value={form.monthlyRent}
                 onChange={(e) => update('monthlyRent', e.target.value)}
                 placeholder="0"
-                className={inputClass}
               />
             </div>
           </div>
@@ -280,29 +259,28 @@ function NuevaPropiedadContent() {
         {isAdmin ? (
           <section className="bg-card rounded-xl border border-border p-6 space-y-4">
             <div>
-              <h2 className="font-semibold text-foreground">Asignar agente</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <h2 className="text-base font-semibold text-fg">Asignar agente</h2>
+              <p className="text-sm text-fg-muted mt-0.5">
                 Opcional. Podés asignarlo ahora o hacerlo desde la lista de propiedades.
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Email del agente</label>
-              <input
+              <label className="text-sm font-medium text-fg">Email del agente</label>
+              <Input
                 type="email"
                 value={form.agentEmail}
                 onChange={(e) => update('agentEmail', e.target.value)}
                 placeholder="agente@inmobiliaria.com"
-                className={inputClass}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-fg-muted">
                 El usuario debe tener rol de Agente en el sistema.
               </p>
             </div>
           </section>
         ) : (
-          <div className="rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 px-4 py-3">
-            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF]">
+          <div className="rounded-xl border border-primary/30 bg-primary-soft px-4 py-3">
+            <p className="text-sm text-primary">
               La propiedad quedará asignada a tu cuenta automáticamente.
             </p>
           </div>
@@ -310,34 +288,29 @@ function NuevaPropiedadContent() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-[#C4503B] dark:text-[#E0664D] text-sm">
+          <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-danger text-sm">
             {error}
           </div>
         )}
 
         {/* Submit */}
         <div className="flex items-center gap-3 pb-6">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            hideArrow
             onClick={() => router.push('/panel/inmobiliaria/propiedades')}
-            className="px-5 py-2.5 rounded-xl border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            hideArrow
+            isLoading={isSubmitting}
             disabled={!isValid || isSubmitting}
-            className="px-6 py-2.5 rounded-xl bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {isSubmitting ? (
-              <>
-                <Spinner className="w-4 h-4 animate-spin" />
-                Creando...
-              </>
-            ) : (
-              'Crear propiedad'
-            )}
-          </button>
+            {isSubmitting ? 'Creando...' : 'Crear propiedad'}
+          </Button>
         </div>
       </form>
     </div>

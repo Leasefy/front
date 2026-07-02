@@ -23,10 +23,10 @@ export function PaymentMethodSelector({
   return (
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-fg">
           Método de pago
         </label>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-fg-muted">
           Selecciona cómo deseas pagar
         </span>
       </div>
@@ -43,13 +43,13 @@ export function PaymentMethodSelector({
               disabled={isDisabled}
               type="button"
               className={cn(
-                'relative flex items-start gap-3 p-4 rounded-sm border text-left transition-all',
+                'relative flex items-start gap-3 p-4 rounded-[16px] border text-left transition-all',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 isSelected && method.enabled
-                  ? 'border-primary bg-primary/5'
+                  ? 'border-primary bg-primary-soft'
                   : method.enabled
-                  ? 'border-border hover:border-border hover:bg-muted'
-                  : 'border-border bg-muted opacity-60 cursor-not-allowed'
+                  ? 'border-border hover:border-border-strong hover:bg-surface-hover'
+                  : 'border-border bg-surface-muted opacity-60 cursor-not-allowed'
               )}
             >
               {/* Icon */}
@@ -68,27 +68,22 @@ export function PaymentMethodSelector({
                   <p
                     className={cn(
                       'font-medium',
-                      isDisabled ? 'text-muted-foreground' : 'text-foreground'
+                      isDisabled ? 'text-fg-muted' : 'text-fg'
                     )}
                   >
                     {method.name}
                   </p>
                   {method.fee && method.fee > 0 && (
-                    <span className="text-xs px-1.5 py-0.5 bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F] rounded">
+                    <span className="text-xs px-1.5 py-0.5 bg-warning-soft text-warning rounded-full font-mono tabular-nums">
                       +{method.fee}%
                     </span>
                   )}
                 </div>
-                <p
-                  className={cn(
-                    'text-xs mt-0.5',
-                    isDisabled ? 'text-muted-foreground' : 'text-muted-foreground'
-                  )}
-                >
+                <p className="text-xs mt-0.5 text-fg-muted">
                   {method.description}
                 </p>
                 {method.processingTime && method.enabled && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-fg-muted mt-1">
                     {method.processingTime}
                   </p>
                 )}
@@ -97,13 +92,13 @@ export function PaymentMethodSelector({
               {/* Check indicator */}
               {isSelected && (
                 <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" />
+                  <Check className="w-3 h-3 text-primary-fg" />
                 </div>
               )}
 
               {/* Coming soon badge */}
               {isDisabled && (
-                <span className="absolute top-3 right-3 text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">
+                <span className="absolute top-3 right-3 text-xs px-2 py-0.5 bg-surface-muted text-fg-muted rounded-full">
                   Próximamente
                 </span>
               )}
@@ -113,7 +108,7 @@ export function PaymentMethodSelector({
       </div>
 
       {/* Info note */}
-      <div className="flex items-start gap-2 p-3 bg-[#EEF1FF] rounded-sm text-xs text-[#1A40FF]">
+      <div className="flex items-start gap-2 p-3 bg-primary-soft rounded-[14px] text-xs text-primary">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
           Tu pago será procesado de forma segura. Recibirás confirmación por

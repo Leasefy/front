@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { MonoLabel } from "@leasefy/cadence";
 import { SectionLabel } from "@/components/ui/section-label";
 import { ArrowUpRight, MagnifyingGlass, ShieldCheck, ChartBar, ChartBarHorizontal } from '@phosphor-icons/react';
 
@@ -94,9 +95,9 @@ export function ServicesSection() {
                       <div className="w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/10">
                         <Icon className="w-3.5 h-3.5 text-white/80" strokeWidth={1.5} />
                       </div>
-                      <span className="text-[11px] font-mono font-normal text-white/60 tracking-wide uppercase">
+                      <MonoLabel className="text-[11px] font-normal text-white/60 tracking-wide">
                         {service.subtitle}
-                      </span>
+                      </MonoLabel>
                     </div>
 
                     {/* Title */}

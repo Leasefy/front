@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import type { ReminderConfig, ReminderType, ReminderTypeConfig } from '@/lib/types/reminders';
 
 // ============================================================================
@@ -38,8 +39,8 @@ const REMINDER_TYPE_META: ReminderTypeMeta[] = [
     descriptionKey: 'inmobiliaria.reminders.types.prePayment.description',
     descriptionFallback: 'Se envia {days} dias antes del vencimiento',
     daysLabel: 'Dias antes',
-    iconBg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    iconColor: 'text-[#1A40FF] dark:text-[#5570FF]',
+    iconBg: 'bg-primary-soft',
+    iconColor: 'text-primary',
   },
   {
     type: 'overdue',
@@ -49,8 +50,8 @@ const REMINDER_TYPE_META: ReminderTypeMeta[] = [
     descriptionKey: 'inmobiliaria.reminders.types.overdue.description',
     descriptionFallback: 'Se envia {days} dias despues del vencimiento',
     daysLabel: 'Dias despues',
-    iconBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
+    iconBg: 'bg-warning-soft',
+    iconColor: 'text-warning',
   },
   {
     type: 'escalation',
@@ -60,8 +61,8 @@ const REMINDER_TYPE_META: ReminderTypeMeta[] = [
     descriptionKey: 'inmobiliaria.reminders.types.escalation.description',
     descriptionFallback: 'Segundo aviso {days} dias despues del vencimiento',
     daysLabel: 'Dias despues',
-    iconBg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    iconColor: 'text-[#C4503B] dark:text-[#E0664D]',
+    iconBg: 'bg-danger-soft',
+    iconColor: 'text-danger',
   },
   {
     type: 'contract-expiry',
@@ -71,8 +72,8 @@ const REMINDER_TYPE_META: ReminderTypeMeta[] = [
     descriptionKey: 'inmobiliaria.reminders.types.contractExpiry.description',
     descriptionFallback: 'Alertas a 90, 60 y 30 dias',
     daysLabel: 'Dias antes',
-    iconBg: 'bg-neutral-100 dark:bg-neutral-800',
-    iconColor: 'text-neutral-600 dark:text-neutral-300',
+    iconBg: 'bg-surface-muted dark:bg-ink',
+    iconColor: 'text-fg-muted dark:text-fg-subtle',
   },
 ];
 
@@ -146,8 +147,8 @@ export function ReminderConfigPanel({ config, onConfigChange }: ReminderConfigPa
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+          <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+            <Bell className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">
@@ -234,19 +235,14 @@ export function ReminderConfigPanel({ config, onConfigChange }: ReminderConfigPa
               {/* Days input */}
               {meta.type !== 'contract-expiry' && (
                 <div className="flex items-center gap-2 shrink-0">
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     max={365}
                     value={typeConfig.days}
                     onChange={(e) => handleDaysChange(meta.type, parseInt(e.target.value, 10) || 1)}
                     disabled={isDisabled || !typeConfig.enabled}
-                    className={cn(
-                      'w-16 h-8 px-2 text-center text-sm font-medium rounded-md border border-border bg-background',
-                      'focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-neutral-600',
-                      'disabled:opacity-50 disabled:cursor-not-allowed',
-                      '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
-                    )}
+                    className="w-16 h-8 px-2 text-center text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {meta.daysLabel.toLowerCase()}

@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useCallback, useRef, useId } from 'react';
-import { Upload, File, X, Check, WarningCircle, SpinnerGap } from '@phosphor-icons/react';
+import { Upload, File, X, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 
 // ============================================================================
 // TextTs
@@ -221,19 +224,14 @@ export function DocumentUpload({
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {!isDeleting && <Check className="h-4 w-4 text-[#2C7A53]" />}
-            <button
-              type="button"
+            <IconButton
+              variant="ghost"
+              aria-label="Eliminar"
               onClick={handleRemove}
               disabled={isDeleting}
-              className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-[#C4503B] hover:bg-[#F8EAE7] transition-colors disabled:opacity-50 disabled:cursor-wait"
-            >
-              {isDeleting ? (
-                <SpinnerGap className="h-4 w-4 animate-spin" />
-              ) : (
-                <X className="h-4 w-4" />
-              )}
-              <span className="sr-only">Eliminar</span>
-            </button>
+              icon={isDeleting ? <Spinner size="xs" variant="current" /> : <X className="h-4 w-4" />}
+              className="h-8 w-8 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft disabled:opacity-50 disabled:cursor-wait"
+            />
           </div>
         </div>
       ) : (
@@ -272,29 +270,26 @@ export function DocumentUpload({
 
           {state === 'uploading' ? (
             <div className="flex flex-col items-center gap-2">
-              <SpinnerGap className="h-8 w-8 text-muted-foreground animate-spin" />
+              <Spinner size="lg" variant="muted" />
               <p className="text-sm text-muted-foreground">Subiendo...</p>
             </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
               <WarningCircle className="h-8 w-8 text-[#C4503B]" />
               <p className="text-sm text-[#C4503B]">{displayError}</p>
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   setState('idle');
                   setUploadError('');
                 }}
-                className={cn(
-                  'inline-flex items-center px-3 py-1.5 text-xs font-medium',
-                  'rounded-sm border border-border bg-card',
-                  'text-foreground/70 hover:text-foreground hover:border-border',
-                  'transition-colors'
-                )}
+                className="rounded-sm text-xs"
               >
                 Intentar de nuevo
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">

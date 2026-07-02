@@ -3,16 +3,21 @@
 import { FileXls, Desktop, Globe, DownloadSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { MonoLabel } from '@leasefy/cadence';
 import { downloadTemplate } from '../lib/parseFile';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportMethod } from '../lib/importTypes';
+
+type BadgeVariant = 'success' | 'warning' | 'secondary';
 
 interface MethodCard {
   method: ImportMethod;
   titleKey: string;
   descKey: string;
   badgeKey: string;
-  badgeColor: string;
+  badgeVariant: BadgeVariant;
   icon: React.ComponentType<{ className?: string }>;
   iconBg: string;
   disabled?: boolean;
@@ -24,9 +29,9 @@ const METHOD_CARDS: MethodCard[] = [
     titleKey: 'inmobiliaria.import.methods.excel.title',
     descKey: 'inmobiliaria.import.methods.excel.desc',
     badgeKey: 'inmobiliaria.import.methods.excel.badge',
-    badgeColor: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    badgeVariant: 'success',
     icon: FileXls,
-    iconBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
+    iconBg: 'bg-success-soft',
     disabled: false,
   },
   {
@@ -34,9 +39,9 @@ const METHOD_CARDS: MethodCard[] = [
     titleKey: 'inmobiliaria.import.methods.software.title',
     descKey: 'inmobiliaria.import.methods.software.desc',
     badgeKey: 'inmobiliaria.import.methods.software.badge',
-    badgeColor: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    badgeVariant: 'warning',
     icon: Desktop,
-    iconBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+    iconBg: 'bg-warning-soft',
     disabled: false,
   },
   {
@@ -44,9 +49,9 @@ const METHOD_CARDS: MethodCard[] = [
     titleKey: 'inmobiliaria.import.methods.portal.title',
     descKey: 'inmobiliaria.import.methods.portal.desc',
     badgeKey: 'inmobiliaria.import.methods.portal.badge',
-    badgeColor: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
+    badgeVariant: 'secondary',
     icon: Globe,
-    iconBg: 'bg-neutral-100 dark:bg-neutral-800',
+    iconBg: 'bg-surface-muted dark:bg-ink',
     disabled: false,
   },
 ];
@@ -66,10 +71,10 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
+        <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
           {t('inmobiliaria.import.title')}
         </h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.import.subtitle')}
         </p>
       </div>
@@ -81,17 +86,20 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
           const CardIcon = card.icon;
 
           return (
+            // allowlist: whole-card selectable button (rich icon-tile + badge + title + desc);
+            // Button/RadioCard can't host this layout — kept native with aria-pressed.
             <button
               key={card.method}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => handleSelect(card.method, card.disabled)}
               className={cn(
                 'animate-stagger-in text-left rounded-xl border-2 p-6 transition-all duration-200',
                 card.disabled
-                  ? 'opacity-60 cursor-not-allowed border-neutral-200 dark:border-neutral-700'
+                  ? 'opacity-60 cursor-not-allowed border-border dark:border-strong'
                   : isSelected
-                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 cursor-pointer'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 cursor-pointer'
+                    ? 'border-primary/30 bg-primary-soft cursor-pointer'
+                    : 'border-border dark:border-strong hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer'
               )}
               style={{ animationDelay: `${index * 80}ms` }}
               disabled={card.disabled}
@@ -103,33 +111,30 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               )}>
                 <CardIcon className={cn(
                   'w-6 h-6',
-                  card.method === 'excel' ? 'text-[#2C7A53] dark:text-[#3EAE70]' :
-                  card.method === 'software' ? 'text-[#B7791F] dark:text-[#D2992F]' :
-                  'text-neutral-500 dark:text-neutral-400'
+                  card.method === 'excel' ? 'text-success' :
+                  card.method === 'software' ? 'text-warning' :
+                  'text-fg-muted dark:text-fg-subtle'
                 )} />
               </div>
 
               {/* Badge */}
-              <span className={cn(
-                'inline-block text-xs font-mono uppercase tracking-wide px-2 py-0.5 rounded-sm mb-3',
-                card.badgeColor
-              )}>
+              <Badge variant={card.badgeVariant} className="mb-3">
                 {t(card.badgeKey)}
-              </span>
+              </Badge>
 
               {/* Title & Description */}
-              <h3 className="font-semibold text-neutral-900 dark:text-white text-base mb-1">
+              <h3 className="font-semibold text-fg dark:text-white text-base mb-1">
                 {t(card.titleKey)}
               </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              <p className="text-sm text-fg-muted dark:text-fg-subtle leading-relaxed">
                 {t(card.descKey)}
               </p>
 
               {/* Selected Indicator */}
               {isSelected && !card.disabled && (
-                <div className="mt-4 flex items-center gap-2 text-[#1A40FF] dark:text-[#5570FF]">
-                  <div className="w-2 h-2 rounded-full bg-[#1A40FF] dark:bg-[#5570FF]" />
-                  <span className="text-xs font-mono uppercase tracking-wide">Seleccionado</span>
+                <div className="mt-4 flex items-center gap-2 text-primary">
+                  <div className="w-2 h-2 rounded-full bg-primary dark:bg-primary" />
+                  <MonoLabel className="text-xs">Seleccionado</MonoLabel>
                 </div>
               )}
             </button>
@@ -139,14 +144,17 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
 
       {/* Download Template */}
       <div className="pt-2">
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
           type="button"
           onClick={handleDownloadTemplate}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium"
+          className="gap-2"
         >
           <DownloadSimple className="w-4 h-4" />
           {t('inmobiliaria.import.upload.downloadTemplate')}
-        </button>
+        </Button>
       </div>
     </div>
   );

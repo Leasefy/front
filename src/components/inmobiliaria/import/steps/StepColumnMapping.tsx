@@ -4,6 +4,16 @@ import { useCallback } from 'react';
 import { ArrowRight, Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { MonoLabel } from '@leasefy/cadence';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { autoMapColumns, type ColumnMapping } from '../lib/columnMapping';
 import { TARGET_FIELDS } from '../lib/importTypes';
 import type { ImportStepProps } from '../ImportWizard';
@@ -24,24 +34,24 @@ interface ConfidenceBadgeProps {
 
 function ConfidenceBadge({ level, label }: ConfidenceBadgeProps) {
   const colorMap: Record<ConfidenceLevel, string> = {
-    detected: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    probable: 'text-[#B7791F] dark:text-[#D2992F]',
-    unmapped: 'text-[#C4503B] dark:text-[#E0664D]',
-    manual: 'text-[#1A40FF] dark:text-[#5570FF]',
+    detected: 'text-success',
+    probable: 'text-warning',
+    unmapped: 'text-danger',
+    manual: 'text-primary',
   };
 
   const dotMap: Record<ConfidenceLevel, string> = {
-    detected: 'bg-[#2C7A53]',
-    probable: 'bg-[#B7791F]',
-    unmapped: 'bg-[#C4503B]',
-    manual: 'bg-[#1A40FF]',
+    detected: 'bg-success',
+    probable: 'bg-warning',
+    unmapped: 'bg-danger',
+    manual: 'bg-primary',
   };
 
   return (
-    <span className={cn('inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide', colorMap[level])}>
+    <MonoLabel className={cn('inline-flex items-center gap-1 text-xs', colorMap[level])}>
       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', dotMap[level])} />
       {label}
-    </span>
+    </MonoLabel>
   );
 }
 
@@ -105,33 +115,31 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
             {t('inmobiliaria.import.mapping.title')}
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
             {t('inmobiliaria.import.mapping.subtitle')}
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
           {/* Mapped summary badge */}
-          <span className={cn(
-            'text-xs font-mono uppercase tracking-wide px-2 py-1 rounded-sm',
-            mappedCount === totalCount
-              ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
-              : 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
-          )}>
+          <Badge variant={mappedCount === totalCount ? 'success' : 'warning'}>
             {t('inmobiliaria.import.mapping.mapped', { count: mappedCount, total: totalCount })}
-          </span>
+          </Badge>
 
           {/* Reset button */}
-          <button
+          <Button
             type="button"
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={handleReset}
-            className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors font-medium"
+            className="text-xs"
           >
             {t('inmobiliaria.import.mapping.reset')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -154,41 +162,47 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
               className={cn(
                 'animate-content-reveal flex items-center gap-4 p-3 rounded-md',
                 index % 2 === 0
-                  ? 'bg-neutral-50/50 dark:bg-neutral-800/30'
+                  ? 'bg-surface-muted/50 dark:bg-ink/30'
                   : 'bg-transparent'
               )}
               style={{ animationDelay: `${index * 40}ms` }}
             >
               {/* Source Column */}
               <div className="flex-1 min-w-0">
-                <span className="inline-block font-mono text-xs bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 px-2 py-1 rounded-sm truncate max-w-full">
+                <span className="inline-block font-mono text-xs bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle px-2 py-1 rounded-sm truncate max-w-full">
                   {mapping.sourceColumn}
                 </span>
                 {/* Sample values */}
                 {samples.length > 0 && (
-                  <p className="text-xs text-neutral-400 mt-1 truncate">
+                  <p className="text-xs text-fg-subtle mt-1 truncate">
                     {t('inmobiliaria.import.mapping.sampleValues')} {samples.join(', ')}
                   </p>
                 )}
               </div>
 
               {/* Arrow */}
-              <ArrowRight className="w-4 h-4 text-neutral-400 shrink-0" />
+              <ArrowRight className="w-4 h-4 text-fg-subtle shrink-0" />
 
               {/* Target Field Dropdown */}
               <div className="flex-1 min-w-0">
-                <select
-                  value={mapping.targetField ?? ''}
-                  onChange={(e) => handleMappingChange(mapping.sourceColumn, e.target.value || null)}
-                  className="w-full px-2 py-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF] truncate"
+                <Select
+                  value={mapping.targetField ?? '__ignore__'}
+                  onValueChange={(v) =>
+                    handleMappingChange(mapping.sourceColumn, v === '__ignore__' ? null : v)
+                  }
                 >
-                  <option value="">{t('inmobiliaria.import.mapping.ignore')}</option>
-                  {TARGET_FIELDS.map((field) => (
-                    <option key={field.key} value={field.key}>
-                      {field.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__ignore__">{t('inmobiliaria.import.mapping.ignore')}</SelectItem>
+                    {TARGET_FIELDS.map((field) => (
+                      <SelectItem key={field.key} value={field.key}>
+                        {field.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Confidence Badge */}
@@ -202,13 +216,13 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
 
       {/* Required Fields Warning */}
       {unmappedRequired.length > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40">
-          <Warning className="w-5 h-5 text-[#B7791F] shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-warning-soft border border-warning/30">
+          <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F] mb-1">
+            <p className="text-sm font-medium text-warning mb-1">
               {t('inmobiliaria.import.mapping.requiredMissing')}
             </p>
-            <ul className="text-sm text-[#B7791F] dark:text-[#D2992F] space-y-0.5">
+            <ul className="text-sm text-warning space-y-0.5">
               {unmappedRequired.map((field) => (
                 <li key={field.key}>• {field.label}</li>
               ))}

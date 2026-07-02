@@ -12,6 +12,7 @@ import {
   PencilSimple,
   MapPin,
 } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
@@ -43,18 +44,18 @@ export function AgenteCard({
   // Role badge colors
   const ROLE_COLORS: Record<AgenteRole, { bg: string; text: string; label: string }> = useMemo(() => ({
     agent: {
-      bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-      text: 'text-[#1A40FF] dark:text-[#5570FF]',
+      bg: 'bg-primary-soft',
+      text: 'text-primary',
       label: t('inmobiliaria.agentes.card.role.agent'),
     },
     coordinator: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      text: 'text-neutral-600 dark:text-neutral-300',
+      bg: 'bg-surface-muted',
+      text: 'text-fg-muted',
       label: t('inmobiliaria.agentes.card.role.coordinator'),
     },
     director: {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
       label: t('inmobiliaria.agentes.card.role.director'),
     },
   }), [t]);
@@ -62,18 +63,18 @@ export function AgenteCard({
   // Status badge colors
   const STATUS_COLORS: Record<AgenteStatus, { bg: string; text: string; label: string }> = useMemo(() => ({
     active: {
-      bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-      text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+      bg: 'bg-success-soft',
+      text: 'text-success',
       label: t('inmobiliaria.agentes.card.status.active'),
     },
     inactive: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      text: 'text-neutral-600 dark:text-neutral-400',
+      bg: 'bg-surface-muted',
+      text: 'text-fg-muted',
       label: t('inmobiliaria.agentes.card.status.inactive'),
     },
     on_leave: {
-      bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
       label: t('inmobiliaria.agentes.card.status.onLeave'),
     },
   }), [t]);
@@ -99,8 +100,8 @@ export function AgenteCard({
         className={cn(
           'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
           selected
-            ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 dark:border-[#1A40FF]/30'
-            : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
+            ? 'border-primary/30 bg-primary-soft'
+            : 'border-border bg-card hover:border-fg/20'
         )}
       >
         {/* Avatar */}
@@ -123,10 +124,10 @@ export function AgenteCard({
 
         {/* Agent info */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-neutral-900 dark:text-white truncate text-sm">
+          <p className="font-medium text-fg truncate text-sm">
             {agente.name}
           </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+          <p className="text-xs text-fg-muted truncate">
             {agente.email}
           </p>
         </div>
@@ -143,11 +144,11 @@ export function AgenteCard({
 
         {/* Selection indicator */}
         {selected && (
-          <div className="w-5 h-5 rounded-full bg-[#1A40FF] flex items-center justify-center shrink-0">
+          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="w-3 h-3 text-white"
+              className="w-3 h-3 text-primary-foreground"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -165,10 +166,10 @@ export function AgenteCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 group',
+        'w-full rounded-xl border bg-card overflow-hidden transition-all duration-200 group',
         selected
-          ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
-          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 hover:',
+          ? 'border-primary/30 ring-2 ring-primary/20'
+          : 'border-border hover:border-fg/20',
         onClick && 'cursor-pointer'
       )}
       onClick={onClick}
@@ -198,10 +199,10 @@ export function AgenteCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="font-semibold text-neutral-900 dark:text-white truncate">
+                <h3 className="text-base font-semibold text-fg truncate">
                   {agente.name}
                 </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
+                <p className="text-sm text-fg-muted truncate">
                   {agente.email}
                 </p>
               </div>
@@ -217,7 +218,7 @@ export function AgenteCard({
                 {role.label}
               </span>
               {agente.zone && (
-                <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+                <span className="flex items-center gap-1 text-xs text-fg-muted">
                   <MapPin className="w-3.5 h-3.5" />
                   {agente.zone}
                 </span>
@@ -231,45 +232,45 @@ export function AgenteCard({
       <div className="px-5 pb-4">
         <div className="grid grid-cols-2 gap-3">
           {/* Properties */}
-          <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
+          <div className="p-3 rounded-lg bg-surface-muted">
             <div className="flex items-center gap-2 mb-1">
-              <Buildings className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.properties')}</span>
+              <Buildings className="w-4 h-4 text-fg-muted" />
+              <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.properties')}</span>
             </div>
-            <p className="text-lg font-bold text-neutral-900 dark:text-white">
+            <p className="text-lg font-semibold font-mono tabular-nums text-fg">
               {agente.metrics.assignedProperties}
             </p>
           </div>
 
           {/* Active Leases */}
-          <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
+          <div className="p-3 rounded-lg bg-surface-muted">
             <div className="flex items-center gap-2 mb-1">
-              <Handshake className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.leases')}</span>
+              <Handshake className="w-4 h-4 text-fg-muted" />
+              <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.leases')}</span>
             </div>
-            <p className="text-lg font-bold text-neutral-900 dark:text-white">
+            <p className="text-lg font-semibold font-mono tabular-nums text-fg">
               {agente.metrics.activeLeases}
             </p>
           </div>
 
           {/* Closings this month */}
-          <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
+          <div className="p-3 rounded-lg bg-surface-muted">
             <div className="flex items-center gap-2 mb-1">
-              <ChartLineUp className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.closingsMonth')}</span>
+              <ChartLineUp className="w-4 h-4 text-fg-muted" />
+              <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.closingsMonth')}</span>
             </div>
-            <p className="text-lg font-bold text-neutral-900 dark:text-white">
+            <p className="text-lg font-semibold font-mono tabular-nums text-fg">
               {agente.metrics.closedThisMonth}
             </p>
           </div>
 
           {/* Commissions this month */}
-          <div className="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
+          <div className="p-3 rounded-lg bg-surface-muted">
             <div className="flex items-center gap-2 mb-1">
-              <CurrencyDollar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.agentes.card.commissions')}</span>
+              <CurrencyDollar className="w-4 h-4 text-fg-muted" />
+              <span className="text-xs text-fg-muted">{t('inmobiliaria.agentes.card.commissions')}</span>
             </div>
-            <p className="text-base font-bold text-neutral-900 dark:text-white truncate">
+            <p className="text-base font-semibold font-mono tabular-nums text-fg truncate">
               {formatCurrency(agente.metrics.commissionsThisMonth)}
             </p>
           </div>
@@ -278,9 +279,9 @@ export function AgenteCard({
 
       {/* Commission Split Pill */}
       <div className="px-5 pb-4">
-        <div className="flex items-center justify-between p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15">
-          <span className="text-sm text-[#1A40FF] dark:text-[#5570FF]">{t('inmobiliaria.agentes.card.commissionSplit')}</span>
-          <span className="text-lg font-bold text-[#1A40FF] dark:text-[#5570FF]">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-primary-soft">
+          <span className="text-sm text-primary">{t('inmobiliaria.agentes.card.commissionSplit')}</span>
+          <span className="text-lg font-semibold font-mono tabular-nums text-primary">
             {agente.commissionSplit}%
           </span>
         </div>
@@ -291,26 +292,28 @@ export function AgenteCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {onView && (
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={<Eye className="w-4 h-4" />}
                 onClick={(e) => { e.stopPropagation(); onView(); }}
-                className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 title={t('inmobiliaria.agentes.card.viewDetailTitle')}
-              >
-                <Eye className="w-4 h-4" />
-              </button>
+                aria-label={t('inmobiliaria.agentes.card.viewDetailTitle')}
+              />
             )}
             {onEdit && (
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={<PencilSimple className="w-4 h-4" />}
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 title={t('inmobiliaria.agentes.card.editTitle')}
-              >
-                <PencilSimple className="w-4 h-4" />
-              </button>
+                aria-label={t('inmobiliaria.agentes.card.editTitle')}
+              />
             )}
           </div>
           {onClick && (
-            <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-[#1A40FF] transition-colors">
+            <div className="flex items-center gap-1 text-sm text-fg-muted group-hover:text-primary transition-colors">
               {t('inmobiliaria.agentes.card.viewDetail')}
               <CaretRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>

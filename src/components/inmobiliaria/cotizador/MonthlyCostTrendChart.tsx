@@ -57,7 +57,7 @@ export function MonthlyCostTrendChart({ rows, isLoading = false }: MonthlyCostTr
 
   if (isLoading) {
     return (
-      <div className="h-[240px] w-full rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+      <div className="h-[240px] w-full rounded bg-surface-muted dark:bg-ink animate-pulse" />
     )
   }
 

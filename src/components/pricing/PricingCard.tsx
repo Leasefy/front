@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { Check, X, Sparkle } from '@phosphor-icons/react';
 import type { Plan, BillingCycle, PlanId } from '@/lib/types/subscription';
 
@@ -54,15 +55,13 @@ export function PricingCard({
   };
 
   return (
-    <div
+    <Card
       className={cn(
-        'p-6 flex flex-col',
-        'rounded-sm',
+        'p-6 flex flex-col relative text-card-foreground rounded-[20px]',
         'transition-all duration-300 ease-out',
         plan.highlighted
-          ? 'bg-card text-card-foreground border border-primary rounded-sm ring-1 ring-primary'
-          : 'bg-card text-card-foreground border border-border rounded-sm shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
-        'relative',
+          ? 'border-primary ring-1 ring-primary'
+          : 'shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
         className
       )}
     >
@@ -85,7 +84,7 @@ export function PricingCard({
       {/* Price */}
       <div className="text-center mb-6">
         <div className="flex items-baseline justify-center gap-1">
-          <span className={cn('text-3xl font-bold', 'text-foreground')}>
+          <span className={cn('text-3xl font-bold font-mono tabular-nums', 'text-foreground')}>
             {price === 0 ? 'Gratis' : formatCurrency(monthlyEquivalent)}
           </span>
           {price > 0 && <span className="text-muted-foreground">/mes</span>}
@@ -94,7 +93,7 @@ export function PricingCard({
         {/* Yearly billing note */}
         {billingCycle === 'yearly' && price > 0 && (
           <p className={cn('text-sm mt-1', 'text-muted-foreground')}>
-            Facturado anualmente ({formatCurrency(plan.price.yearly)})
+            Facturado anualmente (<span className="font-mono tabular-nums">{formatCurrency(plan.price.yearly)}</span>)
           </p>
         )}
 
@@ -104,7 +103,7 @@ export function PricingCard({
             variant="secondary"
             className="mt-2 bg-[#E8F3EC] text-[#2C7A53] hover:bg-[#E8F3EC]"
           >
-            Ahorras {yearlySavings}%
+            Ahorras <span className="font-mono tabular-nums">{yearlySavings}%</span>
           </Badge>
         )}
       </div>
@@ -139,6 +138,7 @@ export function PricingCard({
       {/* CTA Button */}
       <Button
         variant={plan.highlighted ? 'default' : 'outline'}
+        hideArrow
         className={cn(
           'w-full',
           isCurrentPlan && 'cursor-default'
@@ -159,7 +159,7 @@ export function PricingCard({
           Este es tu plan actual
         </p>
       )}
-    </div>
+    </Card>
   );
 }
 

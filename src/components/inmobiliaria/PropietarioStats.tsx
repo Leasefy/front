@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Badge } from '@/components/ui/badge';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
@@ -38,29 +39,29 @@ interface StatCardProps {
 
 const colorClasses = {
   indigo: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
-    icon: 'text-[#1A40FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
+    icon: 'text-primary',
   },
   emerald: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    icon: 'text-[#2C7A53]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    icon: 'text-success',
   },
   amber: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-    icon: 'text-[#B7791F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    icon: 'text-warning',
   },
   rose: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    icon: 'text-[#C4503B]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    icon: 'text-danger',
   },
   purple: {
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    text: 'text-neutral-600 dark:text-neutral-300',
-    icon: 'text-neutral-600 dark:text-neutral-300',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    icon: 'text-muted-foreground',
   },
 };
 
@@ -68,37 +69,37 @@ function StatCard({ icon: Icon, label, value, subValue, trend, color, warning }:
   const colors = colorClasses[color];
 
   return (
-    <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
+    <div className="p-4 rounded-xl border border-border bg-card">
       <div className="flex items-start justify-between mb-3">
         <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', colors.bg)}>
           <Icon className={cn('w-5 h-5', colors.icon)} />
         </div>
         {warning && (
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15">
-            <Warning className="w-3.5 h-3.5 text-[#B7791F] dark:text-[#D2992F]" />
-          </div>
+          <Badge variant="warning" aria-label="Atención requerida">
+            <Warning className="w-3.5 h-3.5" />
+          </Badge>
         )}
       </div>
 
       <div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{label}</p>
-        <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
+        <p className="text-xs text-muted-foreground mb-1">{label}</p>
+        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
         {subValue && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{subValue}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{subValue}</p>
         )}
       </div>
 
       {trend && (
         <div className="flex items-center gap-1 mt-2">
           {trend.positive ? (
-            <TrendUp className="w-3.5 h-3.5 text-[#2C7A53]" />
+            <TrendUp className="w-3.5 h-3.5 text-success" />
           ) : (
-            <TrendDown className="w-3.5 h-3.5 text-[#C4503B]" />
+            <TrendDown className="w-3.5 h-3.5 text-danger" />
           )}
           <span
             className={cn(
               'text-xs font-medium',
-              trend.positive ? 'text-[#2C7A53] dark:text-[#3EAE70]' : 'text-[#C4503B] dark:text-[#E0664D]'
+              trend.positive ? 'text-success' : 'text-danger'
             )}
           >
             {trend.value > 0 ? '+' : ''}{trend.value}% {trend.label}
@@ -131,24 +132,22 @@ export function PropietarioStats({
     return (
       <div className={cn('flex items-center gap-4', className)}>
         <div className="flex items-center gap-2">
-          <Buildings className="w-4 h-4 text-neutral-400" />
-          <span className="text-sm font-medium text-neutral-900 dark:text-white">
+          <Buildings className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">
             {propietario.propertyCount}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <CurrencyDollar className="w-4 h-4 text-neutral-400" />
-          <span className="text-sm font-medium text-neutral-900 dark:text-white">
+          <CurrencyDollar className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">
             {formatCurrency(propietario.totalMonthlyRent)}
           </span>
         </div>
         {hasPendingBalance && (
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15">
-            <Warning className="w-3 h-3 text-[#B7791F] dark:text-[#D2992F]" />
-            <span className="text-xs text-[#B7791F] dark:text-[#D2992F]">
-              {formatCurrency(propietario.pendingBalance)}
-            </span>
-          </div>
+          <Badge variant="warning" className="gap-1">
+            <Warning className="w-3 h-3" />
+            {formatCurrency(propietario.pendingBalance)}
+          </Badge>
         )}
       </div>
     );
@@ -157,36 +156,36 @@ export function PropietarioStats({
   if (variant === 'compact') {
     return (
       <div className={cn('grid grid-cols-2 sm:grid-cols-4 gap-3', className)}>
-        <div className="p-3 rounded-xl bg-neutral-50 dark:bg-[#141416]">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.stats.properties')}</p>
-          <p className="text-xl font-bold text-neutral-900 dark:text-white">
+        <div className="p-3 rounded-xl bg-muted/50">
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.properties')}</p>
+          <p className="text-xl font-semibold text-foreground">
             {propietario.propertyCount}
           </p>
         </div>
-        <div className="p-3 rounded-xl bg-neutral-50 dark:bg-[#141416]">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.stats.rented')}</p>
-          <p className="text-xl font-bold text-neutral-900 dark:text-white">
+        <div className="p-3 rounded-xl bg-muted/50">
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.rented')}</p>
+          <p className="text-xl font-semibold text-foreground">
             {propietario.activeLeases}
           </p>
         </div>
-        <div className="p-3 rounded-xl bg-neutral-50 dark:bg-[#141416]">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.stats.monthlyRent')}</p>
-          <p className="text-xl font-bold text-neutral-900 dark:text-white">
+        <div className="p-3 rounded-xl bg-muted/50">
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.monthlyRent')}</p>
+          <p className="text-xl font-semibold text-foreground">
             {formatCurrency(propietario.totalMonthlyRent)}
           </p>
         </div>
         <div className={cn(
           'p-3 rounded-xl',
           hasPendingBalance
-            ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15'
-            : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+            ? 'bg-warning-soft'
+            : 'bg-success-soft'
         )}>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.propietario.stats.pending')}</p>
+          <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietario.stats.pending')}</p>
           <p className={cn(
-            'text-xl font-bold',
+            'text-xl font-semibold',
             hasPendingBalance
-              ? 'text-[#B7791F] dark:text-[#D2992F]'
-              : 'text-[#2C7A53] dark:text-[#3EAE70]'
+              ? 'text-warning'
+              : 'text-success'
           )}>
             {hasPendingBalance ? formatCurrency(propietario.pendingBalance) : t('inmobiliaria.propietario.stats.upToDate')}
           </p>
@@ -250,15 +249,15 @@ export function PropietarioStats({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl border border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-[#F8F0E0] dark:bg-[#B7791F]/15"
+          className="p-4 rounded-xl border border-warning/30 bg-warning-soft"
         >
           <div className="flex items-start gap-3">
-            <Warning className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" />
+            <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-medium text-[#B7791F] dark:text-[#D2992F] mb-1">
+              <h4 className="text-base font-semibold text-warning mb-1">
                 {t('inmobiliaria.propietario.stats.attentionRequired')}
               </h4>
-              <ul className="text-sm text-[#B7791F] dark:text-[#D2992F] space-y-1">
+              <ul className="text-sm text-warning space-y-1">
                 {hasPendingBalance && (
                   <li className="flex items-center gap-2">
                     <ArrowRight className="w-3 h-3" />

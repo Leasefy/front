@@ -22,14 +22,14 @@
      * NOTE: token name kept as --indigo-* for backward compat; values are now
      * the Leasefy electric-blue scale. All `text-indigo-*`/`bg-indigo-*` across
      * mvp repaint automatically. */
-    --indigo-50:  231 100% 97%;   /* #EEF1FF */
-    --indigo-100: 228 100% 93%;   /* #DCE3FF */
-    --indigo-200: 228 100% 86%;   /* #B9C5FF */
-    --indigo-300: 229 100% 77%;   /* #8A9CFF */
-    --indigo-400: 230 100% 67%;   /* #5570FF */
+    --indigo-50:  231 100% 97%;   /* #edf1ff */
+    --indigo-100: 228 100% 93%;   /* #d6dfff */
+    --indigo-200: 228 100% 86%;   /* #adbeff */
+    --indigo-300: 229 100% 77%;   /* #7b95ff */
+    --indigo-400: 230 100% 67%;   /* #4a6bff */
     --indigo-500: 230 100% 55%;   /* #1A40FF — AZUL LEASEFY */
-    --indigo-600: 230 82% 46%;    /* #1535D6 */
-    --indigo-700: 230 82% 37%;    /* #1129AD */
+    --indigo-600: 230 82% 46%;    /* #1533d6 */
+    --indigo-700: 230 82% 37%;    /* #0c1f80 */
     --indigo-800: 231 81% 29%;    /* #0E2185 */
     --indigo-900: 231 81% 22%;    /* #0B1A66 */
     --indigo-950: 231 45% 12%;    /* near-black with blue tint */
@@ -48,16 +48,16 @@
 
     /* Neutral (Manus-measured grays — text ink #2F2F2F at 900) */
     --neutral-0:   0 0% 100%;     /* #FFFFFF */
-    --neutral-50:  0 0% 97%;      /* #F8F8F8 — canvas */
-    --neutral-100: 0 0% 95%;      /* #F1F1F1 */
-    --neutral-200: 0 0% 92%;      /* #EBEBEB — hairline border */
-    --neutral-300: 0 0% 88%;      /* #E0E0E0 */
-    --neutral-400: 0 0% 61%;      /* #9B9B9B — subtle */
-    --neutral-500: 0 0% 42%;      /* #6B6B6B — muted text */
-    --neutral-600: 0 0% 35%;      /* #595959 */
-    --neutral-700: 0 0% 28%;      /* #474747 */
-    --neutral-800: 0 0% 22%;      /* #383838 */
-    --neutral-900: 0 0% 13%;      /* #212121 — near-black ink (primary text, strong presence) */
+    --neutral-50:  40 33% 98%;      /* #fbfaf9 — canvas */
+    --neutral-100: 40 16% 95%;      /* #f4f2ef */
+    --neutral-200: 40 16% 88%;      /* #e5e2dc — hairline border */
+    --neutral-300: 38 13% 81%;      /* #d5d1ca */
+    --neutral-400: 39 9% 67%;      /* #726e68 — subtle */
+    --neutral-500: 40 5% 42%;      /* #6e6a63 — muted text */
+    --neutral-600: 38 5% 33%;      /* #4d4a45 */
+    --neutral-700: 38 6% 27%;      /* #474747 */
+    --neutral-800: 40 7% 16%;      /* #383838 */
+    --neutral-900: 42 14% 7%;      /* #212121 — near-black ink (primary text, strong presence) */
 
     /* Semantic (sobered — don't compete with Primary) */
     --success-50:  120 14% 95%;   /* #F2F7F2 */
@@ -308,7 +308,7 @@
     --plan-status-red: #C24B3A;
     --plan-status-red-bg: #FFF4F2;
     --plan-status-purple: #1A40FF; /* brand info blue — purple is off-brand */
-    --plan-status-purple-bg: #EEF1FF;
+    --plan-status-purple-bg: #edf1ff;
     --plan-status-blue: #3B82F6;
     --plan-status-blue-bg: #DBEAFE;
 
@@ -350,9 +350,12 @@
     /* --------------------------------------------------------
      * Semantic Colors (role tokens)
      * -------------------------------------------------------- */
-    --success: var(--success-500);
-    --warning: var(--warning-500);
-    --info: 217 91% 60%;
+    /* Full colors (not bare HSL triplets): the @leasefy/cadence preset consumes
+     * these as `var(--success)` directly (no hsl() wrapper), so they must be
+     * complete color values. Same brand green/amber/blue as the *-500 scale. */
+    --success: hsl(var(--success-500));
+    --warning: hsl(var(--warning-500));
+    --info: hsl(217 91% 60%);
 
     /* ========================================================
      * Shadow Scale
@@ -410,9 +413,9 @@
      *   font-heading → Satoshi Medium  (headings)
      *   font-mono    → Ubuntu Mono     (eyebrows/labels/tags — firma técnica)
      * ======================================================== */
-    --font-sans: var(--font-satoshi), system-ui, sans-serif;
-    --font-heading: var(--font-satoshi), system-ui, sans-serif;
-    --font-mono: var(--font-mono), ui-monospace, monospace;
+    --font-sans: var(--font-schibsted), system-ui, sans-serif;
+    --font-heading: var(--font-schibsted), system-ui, sans-serif;
+    --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
     /* Font Sizes */
     --text-xs: 0.75rem;       /* 12px */
@@ -548,10 +551,10 @@
     --plan-status-blue-bg: #0F1A2A;
 
     /* Neutral overrides for dark */
-    --neutral-0:   240 6% 10%;
-    --neutral-50:  240 6% 7%;
-    --neutral-100: 240 6% 14%;
-    --neutral-200: 240 6% 20%;
+    --neutral-0:   40 8% 11%;
+    --neutral-50:  42 14% 7%;
+    --neutral-100: 40 8% 14%;
+    --neutral-200: 40 8% 18%;
   }
 
   /* Lenis smooth scroll - Luxterra style */
@@ -1503,34 +1506,35 @@ select:-webkit-autofill:active {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
- * @leasefy/ui BRIDGE — vars que el design system resuelve y mvp no definía.
+ * @leasefy/cadence BRIDGE — vars que el design system resuelve y mvp no definía.
  * Los nombres que COLISIONAN (primary, ring, border, success, warning,
  * blue-N, font-mono) NO se tocan: mvp ya los define con los mismos valores
  * de marca y su tailwind.config gana en el merge.
  * Fuente de verdad: design-system/src/styles/tokens.css
  * ═══════════════════════════════════════════════════════════════════════════ */
 :root {
-  --bg: #f8f8f8;
+  --bg: #fbfaf9;
   --surface: #ffffff;
-  --surface-muted: #f1f1f1;
+  --surface-muted: #f4f2ef;
   --surface-hover: rgba(0, 0, 0, 0.04);
   --surface-pressed: rgba(0, 0, 0, 0.07);
   --surface-selected: rgba(0, 0, 0, 0.06);
-  --border-faint: #f0f0f0;
-  --border-strong: #e0e0e0;
-  --fg: #232529;
-  --fg-muted: #6b6b6b;
-  --fg-subtle: #9b9b9b;
-  --primary-hover: #1535d6;
+  --border-faint: #eceae6;
+  --border-strong: #d5d1ca;
+  --fg: #14130f;
+  --fg-muted: #6e6a63;
+  --fg-subtle: #726e68;
+  --primary-hover: #1533d6;
   --primary-fg: #ffffff;
-  --accent-soft: #eef1ff;
-  --success-soft: #e8f3ec;
-  --warning-soft: #f8f0e0;
-  --danger: #c4503b;
-  --danger-soft: #f8eae7;
+  --accent-soft: #edf1ff;
+  --success-soft: #e8f4ea;
+  --warning-soft: #fbf1dd;
+  --danger: #c0392b;
+  --danger-soft: #fbe9e6;
+  --info-soft: #e6f0fa;
   /* ink — Deep Navy brand surface */
-  --ink: #0b1220;
-  --ink-2: #122457;
+  --ink: #14130f;
+  --ink-2: #2a2824;
   --ink-fg: #ffffff;
   --ink-fg-muted: rgba(255, 255, 255, 0.62);
   --ink-fg-subtle: rgba(255, 255, 255, 0.45);
@@ -1541,21 +1545,60 @@ select:-webkit-autofill:active {
 }
 
 .dark {
-  --bg: #0e0e10;
-  --surface: #161618;
-  --surface-muted: #1f1f22;
+  --bg: #141310;
+  --surface: #1c1a16;
+  --surface-muted: #24221c;
   --surface-hover: rgba(255, 255, 255, 0.05);
   --surface-pressed: rgba(255, 255, 255, 0.08);
   --surface-selected: rgba(255, 255, 255, 0.07);
-  --border-faint: #1e1e21;
-  --border-strong: #34343c;
-  --fg: #ededee;
-  --fg-muted: #9a9a9d;
-  --fg-subtle: #67676c;
-  --primary-hover: #2d52ff;
+  --border-faint: #26241e;
+  --border-strong: #403c33;
+  --fg: #fbfaf9;
+  --fg-muted: #b3aea5;
+  --fg-subtle: #7e7a72;
+  --primary-hover: #3b5bff;
   --accent-soft: rgba(26, 64, 255, 0.16);
   --success-soft: rgba(62, 174, 112, 0.16);
   --warning-soft: rgba(210, 153, 47, 0.16);
   --danger: #e0664d;
   --danger-soft: rgba(224, 102, 77, 0.16);
+  --info-soft: rgba(42, 111, 176, 0.2);
+}
+
+/* ── Landing "nueva": seamless section bands ──────────────────────────────────
+   Handle uses #fbfaf9 (≈white). These fade the gray into white at the section
+   edges so adjacent white sections blend with no hard seam. Variants pick which
+   edges fade, so runs of adjacent gray sections stay continuous (no white pinch). */
+.lp-band        { background-image: linear-gradient(180deg, #fff 0%, #f4f2ef 6rem, #f4f2ef calc(100% - 6rem), #fff 100%); }
+.lp-band-top    { background-image: linear-gradient(180deg, #fff 0%, #f4f2ef 6rem, #f4f2ef 100%); }
+.lp-band-bottom { background-image: linear-gradient(180deg, #f4f2ef 0%, #f4f2ef calc(100% - 6rem), #fff 100%); }
+.lp-band-solid  { background-color: #f4f2ef; }
+
+/* ── Landing (NewsCatcher clone) animation keyframes ───────────────────────────
+   lpProgress  → tab/accordion progress hairline (fills 0→100% over the dwell)
+   lpMarquee*  → infinite tag-pill marquee (pause via animation-play-state)
+   lpMove*     → ambient gradient blobs behind hero/CTA (NewsCatcher signature) */
+@keyframes lpProgress { from { width: 0%; } to { width: 100%; } }
+@keyframes lpSheen {
+  0%   { transform: translateX(-120%) skewX(-12deg); opacity: 0; }
+  18%  { opacity: 0.85; }
+  60%, 100% { transform: translateX(320%) skewX(-12deg); opacity: 0; }
+}
+@keyframes lpMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes lpMarqueeReverse { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+@keyframes lpMoveCircle {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  50%  { transform: translate(6%, 4%) rotate(180deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+@keyframes lpMoveVertical {
+  0%, 100% { transform: translateY(-8%); }
+  50%      { transform: translateY(8%); }
+}
+@keyframes lpMoveHorizontal {
+  0%, 100% { transform: translateX(-6%) translateY(-4%); }
+  50%      { transform: translateX(6%) translateY(4%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="lpProgress"], [style*="lpMarquee"], [style*="lpMove"], [style*="lpSheen"] { animation: none !important; }
 }

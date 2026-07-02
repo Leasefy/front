@@ -34,7 +34,7 @@ function ArcoVerifyInner() {
       id="main-content"
       className="min-h-screen flex flex-col items-center justify-center py-16 px-4 bg-background"
     >
-      <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-8 text-center">
+      <div className="w-full max-w-md rounded-[22px] border border-neutral-200 bg-white p-8 text-center">
         <CheckCircle
           weight="duotone"
           className="h-12 w-12 text-[#2C7A53] mx-auto mb-4"

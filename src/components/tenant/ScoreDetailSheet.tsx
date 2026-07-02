@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork } from '@phosphor-icons/react';
+import { CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork, X } from '@phosphor-icons/react';
+import { ProgressRing, RiskBadge, IconButton, type RiskGrade } from '@leasefy/cadence';
 import {
   Sheet,
   SheetContent,
@@ -9,9 +10,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RISK_LEVELS, getRiskBadgeVariant } from '@/lib/types/risk-score';
 import type { RiskScore, RiskLevel } from '@/lib/types/risk-score';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -87,22 +86,20 @@ export function ScoreDetailSheet({
         hideCloseButton
       >
         {/* Header */}
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border dark:border-border-strong flex-shrink-0">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg font-semibold">
               {isPaid
                 ? (locale === 'es' ? 'Tu evaluación' : 'Your evaluation')
                 : (locale === 'es' ? 'Evaluación de inquilino' : 'Tenant evaluation')}
             </SheetTitle>
-            <button
+            <IconButton
+              variant="ghost"
               onClick={onClose}
-              className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            >
-              <span className="sr-only">Cerrar</span>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              className="w-8 h-8 rounded-md hover:bg-surface-muted dark:hover:bg-ink"
+              aria-label="Cerrar"
+              icon={<X className="w-4 h-4" />}
+            />
           </div>
           <SheetDescription className="sr-only">
             {locale === 'es' ? 'Detalle de evaluación de inquilino' : 'Tenant evaluation detail'}
@@ -129,7 +126,7 @@ export function ScoreDetailSheet({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-neutral-200 dark:border-neutral-800 px-6 py-4">
+        <div className="flex-shrink-0 border-t border-border dark:border-border-strong px-6 py-4">
           {!isPaid ? (
             <Button onClick={onPurchase} className="w-full" size="lg">
               {locale === 'es' ? 'Evaluar mi perfil' : 'Evaluate my profile'}
@@ -165,23 +162,23 @@ function LockedContent({ locale }: { locale: string }) {
           <div className="w-24 h-24 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mb-3">
             <span className="text-5xl font-bold text-[#2C7A53]">A</span>
           </div>
-          <p className="text-center text-lg font-semibold text-neutral-900 dark:text-white">92 / 100</p>
+          <p className="text-center text-lg font-semibold text-fg dark:text-white">92 / 100</p>
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center">
-            <Lock className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
+          <div className="w-14 h-14 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
+            <Lock className="w-7 h-7 text-fg-subtle dark:text-fg-muted" />
           </div>
         </div>
       </div>
 
       {/* Explanation */}
       <div>
-        <h3 className="text-base font-semibold text-foreground mb-2">
+        <h3 className="text-base font-semibold text-fg mb-2">
           {locale === 'es'
             ? '¿Qué es la evaluación de inquilino?'
             : 'What is the tenant evaluation?'}
         </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-sm text-fg-muted leading-relaxed">
           {locale === 'es'
             ? 'Obtén tu evaluación para compartir con propietarios e inmobiliarias. Un score verificable que demuestra tu confiabilidad como inquilino y acelera el proceso de aplicación.'
             : 'Get your evaluation to share with landlords and agencies. A verifiable score that demonstrates your reliability as a tenant and speeds up the application process.'}
@@ -210,7 +207,7 @@ function LockedContent({ locale }: { locale: string }) {
         ].map((benefit, i) => (
           <div key={i} className="flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-[#2C7A53] flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-foreground">
+            <p className="text-sm text-fg">
               {locale === 'es' ? benefit.es : benefit.en}
             </p>
           </div>
@@ -237,7 +234,6 @@ function UnlockedContent({
   onCopyCode: () => void;
   locale: string;
 }) {
-  const info = RISK_LEVELS[score.level];
   const colors = LEVEL_COLORS[score.level];
 
   return (
@@ -247,33 +243,31 @@ function UnlockedContent({
         <div className={cn('w-20 h-20 rounded-full flex items-center justify-center mb-3', colors.bg)}>
           <span className={cn('text-4xl font-bold', colors.text)}>{score.level}</span>
         </div>
-        <p className="text-2xl font-bold text-foreground">{score.numericScore} / 100</p>
-        <Badge variant={getRiskBadgeVariant(score.level)} className="mt-2">
-          {info.label}
-        </Badge>
+        <p className="text-2xl font-bold font-mono tabular-nums text-fg">{score.numericScore} / 100</p>
+        <RiskBadge grade={score.level} showLabel className="mt-2" />
       </div>
 
       {/* AI Explanation */}
-      <div className="rounded-xl bg-neutral-50 dark:bg-neutral-900 p-4">
-        <p className="text-sm text-muted-foreground leading-relaxed">{score.aiExplanation}</p>
+      <div className="rounded-xl bg-surface-muted dark:bg-ink p-4">
+        <p className="text-sm text-fg-muted leading-relaxed">{score.aiExplanation}</p>
       </div>
 
       {/* Category Breakdown */}
       <div>
-        <h4 className="text-sm font-semibold text-foreground mb-3">
+        <h4 className="text-sm font-semibold text-fg mb-3">
           {locale === 'es' ? 'Desglose por categoría' : 'Category breakdown'}
         </h4>
         <div className="space-y-4">
           {score.categories.map((cat) => (
             <div key={cat.name}>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm text-foreground">{cat.label}</span>
+                <span className="text-sm text-fg">{cat.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{Math.round(cat.weight * 100)}%</span>
-                  <span className="text-sm font-semibold text-foreground">{cat.score}</span>
+                  <span className="text-xs text-fg-muted">{Math.round(cat.weight * 100)}%</span>
+                  <span className="text-sm font-semibold text-fg">{cat.score}</span>
                 </div>
               </div>
-              <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+              <div className="h-2 rounded-full bg-surface-muted dark:bg-surface-muted overflow-hidden">
                 <div
                   className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
                   style={{ width: `${cat.score}%` }}
@@ -287,14 +281,14 @@ function UnlockedContent({
       {/* Drivers */}
       {score.drivers.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-foreground mb-3">
+          <h4 className="text-sm font-semibold text-fg mb-3">
             {locale === 'es' ? 'Factores positivos' : 'Positive factors'}
           </h4>
           <div className="space-y-2">
             {score.drivers.map((driver, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <CheckCircle className="w-4 h-4 text-[#2C7A53] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">{driver}</p>
+                <p className="text-sm text-fg-muted">{driver}</p>
               </div>
             ))}
           </div>
@@ -304,14 +298,14 @@ function UnlockedContent({
       {/* Flags */}
       {score.flags.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-foreground mb-3">
+          <h4 className="text-sm font-semibold text-fg mb-3">
             {locale === 'es' ? 'Puntos a considerar' : 'Points to consider'}
           </h4>
           <div className="space-y-2">
             {score.flags.map((flag) => (
               <div key={flag.id} className="flex items-start gap-2.5">
                 <WarningCircle className="w-4 h-4 text-[#B7791F] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">{flag.message}</p>
+                <p className="text-sm text-fg-muted">{flag.message}</p>
               </div>
             ))}
           </div>
@@ -321,23 +315,23 @@ function UnlockedContent({
       {/* Verification Code */}
       {verificationCode && (
         <div>
-          <h4 className="text-sm font-semibold text-foreground mb-2">
+          <h4 className="text-sm font-semibold text-fg mb-2">
             {locale === 'es' ? 'Código de verificación' : 'Verification code'}
           </h4>
           <button
             onClick={onCopyCode}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors"
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-surface-muted dark:bg-ink border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong transition-colors"
           >
-            <span className="font-mono text-lg font-semibold tracking-wider text-foreground">
+            <span className="font-mono text-lg font-semibold tracking-wider text-fg">
               {verificationCode}
             </span>
             {copiedCode ? (
               <Check className="w-4 h-4 text-[#2C7A53] flex-shrink-0" />
             ) : (
-              <Copy className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
             )}
           </button>
-          <p className="text-xs text-muted-foreground mt-1.5">
+          <p className="text-xs text-fg-muted mt-1.5">
             {locale === 'es'
               ? 'Cualquier persona puede verificar tu evaluación con este código.'
               : 'Anyone can verify your evaluation with this code.'}

@@ -30,6 +30,8 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
+import { MonoLabel } from '@leasefy/cadence'
+
 import type { AiHubResumenResponse } from '@/lib/api/agent-workspace'
 import type { AgenteId } from '@/lib/api/work-item'
 import { useI18n } from '@/lib/i18n'
@@ -179,7 +181,7 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
   if (error) {
     return (
       <div
-        className="rounded-xl border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 text-sm text-[#C4503B] dark:text-[#E0664D]"
+        className="rounded-xl border border-danger/30 bg-danger-soft text-danger"
         data-testid="equipo-agentes-error"
       >
         {t(`${NS}.error`, { error })}
@@ -219,9 +221,9 @@ export function EquipoAgentes({ data, isLoading, error, notAvailable }: EquipoAg
       {data.colas.map((cola) => (
         <div key={cola.rol} className="space-y-2" data-testid={`equipo-rol-${cola.rol}`}>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground">
+            <MonoLabel className="text-muted-foreground">
               {cola.label || rolLabel(t, cola.rol)}
-            </h3>
+            </MonoLabel>
             <span className="text-[11px] text-muted-foreground tabular-nums">
               {t(`${NS}.enColaCount`, { n: numberFormatter.format(cola.total) })}
             </span>

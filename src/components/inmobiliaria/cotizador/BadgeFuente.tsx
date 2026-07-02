@@ -60,34 +60,25 @@ interface VariantMeta {
 }
 
 const VARIANT_META: Record<FuenteVariant, VariantMeta> = {
-  // Neutro con ámbar muy desaturado — "guía, todavía no es veredicto".
+  // Ámbar desaturado — "guía, todavía no es veredicto".
   estimado: {
     labelKey: 'estimado',
     tooltipKey: 'estimadoTooltip',
     Icon: Sparkle,
-    cls:
-      'border-[#B7791F]/25 dark:border-[#B7791F]/35 ' +
-      'bg-[#FBF4E6] dark:bg-[#B7791F]/15 ' +
-      'text-[#8A5A12] dark:text-[#E0B560]',
+    cls: 'border-warning/25 bg-warning-soft text-warning',
   },
   // Verde desaturado — señal real positiva.
   confirmado: {
     labelKey: 'confirmado',
     tooltipKey: 'confirmadoTooltip',
     Icon: SealCheck,
-    cls:
-      'border-[#2C7A53]/30 dark:border-[#2C7A53]/40 ' +
-      'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 ' +
-      'text-[#2C7A53] dark:text-[#3EAE70]',
+    cls: 'border-success/30 bg-success-soft text-success',
   },
   // Neutro mudo — sin tooltip (es autoexplicativo).
   manual: {
     labelKey: 'manual',
     Icon: UserFocus,
-    cls:
-      'border-neutral-200 dark:border-neutral-700 ' +
-      'bg-neutral-100 dark:bg-neutral-800/60 ' +
-      'text-neutral-600 dark:text-neutral-300',
+    cls: 'border-border bg-surface-muted text-fg-muted',
   },
 }
 
@@ -108,7 +99,7 @@ export function BadgeFuente({ stubMode, fuente, hideIcon = false, className }: B
     <span
       className={[
         'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5',
-        'text-[11px] font-medium leading-none whitespace-nowrap',
+        'text-xs font-medium leading-none whitespace-nowrap',
         meta.cls,
         className ?? '',
       ]
@@ -130,7 +121,7 @@ export function BadgeFuente({ stubMode, fuente, hideIcon = false, className }: B
       <Tooltip>
         {/* asChild + tabIndex hace el badge enfocable por teclado para abrir el tooltip. */}
         <TooltipTrigger asChild>
-          <span tabIndex={0} className="cursor-help outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF]/40 rounded-full">
+          <span tabIndex={0} className="cursor-help outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full">
             {pill}
           </span>
         </TooltipTrigger>

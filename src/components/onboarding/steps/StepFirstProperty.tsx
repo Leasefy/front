@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion'
 import { Buildings, House, Couch, Door, DoorOpen, MapPin, CurrencyDollar, Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
 import { useOnboarding } from '@/lib/context/OnboardingContext'
 import { COLOMBIAN_CITIES } from '@/lib/types/property'
@@ -139,33 +141,21 @@ export function StepFirstProperty() {
         <label className="block text-sm font-semibold text-neutral-700 mb-2">
           Ciudad *
         </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <MapPin className="h-5 w-5 text-neutral-400" />
-          </div>
-          <select
-            value={draft.propertyCity || ''}
-            onChange={(e) => updateDraft({ propertyCity: e.target.value })}
-            className={cn(
-              'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white appearance-none',
-              'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
-              draft.propertyCity ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
-            )}
+        <Select value={draft.propertyCity || ''} onValueChange={(v) => updateDraft({ propertyCity: v })}>
+          <SelectTrigger
+            className={cn('relative h-12 pl-12 rounded-xl', draft.propertyCity && 'border-primary/30 bg-primary-soft/30')}
           >
-            <option value="">Selecciona una ciudad</option>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
+              <MapPin className="h-5 w-5" />
+            </span>
+            <SelectValue placeholder="Selecciona una ciudad" />
+          </SelectTrigger>
+          <SelectContent>
             {COLOMBIAN_CITIES.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
+              <SelectItem key={city} value={city}>{city}</SelectItem>
             ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
+          </SelectContent>
+        </Select>
       </motion.div>
 
       {/* Address */}
@@ -178,18 +168,12 @@ export function StepFirstProperty() {
           Dirección o barrio
           <span className="font-normal text-neutral-400 ml-1">(opcional)</span>
         </label>
-        <input
+        <Input
           type="text"
           value={draft.propertyAddress || ''}
           onChange={(e) => updateDraft({ propertyAddress: e.target.value })}
           placeholder="Ej: Chapinero Alto, Calle 72"
-          className={cn(
-            'w-full px-4 py-4 text-base rounded-xl border bg-white',
-            'transition-all duration-200',
-            'placeholder:text-neutral-400',
-            'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
-            draft.propertyAddress ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
-          )}
+          className={cn('h-12 rounded-xl', draft.propertyAddress && 'border-primary/30 bg-primary-soft/30')}
         />
       </motion.div>
 
@@ -206,19 +190,13 @@ export function StepFirstProperty() {
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <span className="text-neutral-500 font-medium">$</span>
           </div>
-          <input
+          <Input
             type="text"
             inputMode="numeric"
             value={formatPrice(draft.rentPrice)}
             onChange={(e) => updateDraft({ rentPrice: parsePrice(e.target.value) })}
             placeholder="2.500.000"
-            className={cn(
-              'w-full pl-10 pr-16 py-4 text-base rounded-xl border bg-white',
-              'transition-all duration-200',
-              'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30',
-              draft.rentPrice ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/30' : 'border-neutral-200'
-            )}
+            className={cn('h-12 pl-10 pr-16 rounded-xl', draft.rentPrice && 'border-primary/30 bg-primary-soft/30')}
           />
           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
             <span className="text-neutral-400 text-sm">/mes</span>

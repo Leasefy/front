@@ -35,6 +35,7 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button, Spinner } from '@/components/ui'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -194,31 +195,33 @@ function EscalacionesContent() {
 
       {/* Header — DESIGN.md §3 typography */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
           </h1>
           {lastUpdated && (
-            <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
+            <p className="text-xs text-muted-foreground tabular-nums">
               {lastUpdated}
             </p>
           )}
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
           onClick={() => void mutate()}
-          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-sm border border-border text-foreground hover:bg-muted active:scale-[0.97] transition font-medium"
           aria-label="refresh"
+          className="shrink-0"
         >
           <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
           {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </button>
+        </Button>
       </div>
 
       {/* Loading state — DESIGN.md §11 */}
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" />
         </div>
       )}
 
@@ -226,7 +229,7 @@ function EscalacionesContent() {
       {error && !data && (
         <div
           role="alert"
-          className="rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 p-3 text-sm text-[#C4503B] dark:text-[#E0664D] flex items-center gap-2"
+          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -248,11 +251,11 @@ function EscalacionesContent() {
               <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
                 <h2
                   id={`column-${col.key}-heading`}
-                  className="text-xs font-mono uppercase tracking-wide text-muted-foreground"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
                 >
                   {col.label}
                 </h2>
-                <span className="text-xs text-muted-foreground tabular-nums font-mono">
+                <span className="text-xs text-muted-foreground tabular-nums">
                   {col.items.length}
                 </span>
               </div>

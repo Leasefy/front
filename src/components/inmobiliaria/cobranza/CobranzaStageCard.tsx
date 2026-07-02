@@ -89,22 +89,22 @@ export const CobranzaStageCard = React.forwardRef<
         </p>
 
         {/* Stage code + day range — secondary, muted */}
-        <p className={`font-mono text-[10px] tracking-widest uppercase mt-0.5 ${colors.text} opacity-60`}>
+        <p className={`text-xs tracking-wide uppercase mt-0.5 ${colors.text} opacity-60`}>
           {stage}
           {dayRange ? ` · ${dayRange}` : ''}
         </p>
 
         {/* Count */}
         {isLoading ? (
-          <div className="h-8 w-12 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse mt-2" />
+          <div className="h-8 w-12 rounded bg-surface-muted animate-pulse mt-2" />
         ) : (
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white mt-2">
+          <p className="text-3xl font-bold text-fg mt-2 font-mono tabular-nums">
             {count}
           </p>
         )}
 
         {/* Avg days */}
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+        <p className="text-xs text-fg-subtle mt-1">
           {avgDaysInStage} {t('inmobiliaria.ai.cobranza.overview.stages.avgDays')}
         </p>
 
@@ -112,18 +112,18 @@ export const CobranzaStageCard = React.forwardRef<
         <div className="flex items-center gap-1 mt-1.5">
           {weeklyDelta > 0 ? (
             <>
-              <ArrowUp size={12} className="text-[#C4503B]" />
-              <span className="text-xs text-[#C4503B]">+{weeklyDelta}</span>
+              <ArrowUp size={12} className="text-danger" />
+              <span className="text-xs text-danger font-mono tabular-nums">+{weeklyDelta}</span>
             </>
           ) : weeklyDelta < 0 ? (
             <>
-              <ArrowDown size={12} className="text-[#2C7A53]" />
-              <span className="text-xs text-[#2C7A53]">{weeklyDelta}</span>
+              <ArrowDown size={12} className="text-success" />
+              <span className="text-xs text-success font-mono tabular-nums">{weeklyDelta}</span>
             </>
           ) : (
             <>
-              <Minus size={12} className="text-neutral-400" />
-              <span className="text-xs text-neutral-400">0</span>
+              <Minus size={12} className="text-fg-subtle" />
+              <span className="text-xs text-fg-subtle font-mono tabular-nums">0</span>
             </>
           )}
         </div>

@@ -14,6 +14,8 @@
 
 import { ArrowDown, ArrowSquareOut, ArrowsClockwise, SealCheck, WarningCircle } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { WompiPayButton } from '@/components/avaluo/WompiPayButton'
 import { TERMINAL_STATUSES, STATUS_BADGE } from '@/lib/types/avaluo'
 import type { AvaluoStatusResponse } from '@/lib/types/avaluo'
@@ -34,10 +36,10 @@ interface AvaluoEstadoCardProps {
 
 function EstadoSkeleton() {
   return (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-6 w-32 rounded-full bg-muted" />
-      <div className="h-4 w-48 rounded bg-muted" />
-      <div className="h-10 w-40 rounded-md bg-muted" />
+    <div className="space-y-4">
+      <Skeleton className="h-6 w-32 rounded-full" />
+      <Skeleton className="h-4 w-48 rounded-[8px]" />
+      <Skeleton className="h-10 w-40 rounded-full" />
     </div>
   )
 }
@@ -54,9 +56,9 @@ export function AvaluoEstadoCard({
   // While loading and no data yet — show skeleton
   if (isLoading && !statusData) {
     return (
-      <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+      <Card className="rounded-[22px] p-6 space-y-4">
         <EstadoSkeleton />
-      </section>
+      </Card>
     )
   }
 
@@ -104,11 +106,11 @@ export function AvaluoEstadoCard({
     )
   } else if (status === 'rechazado') {
     cta = (
-      <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-        <WarningCircle className="w-5 h-5 text-destructive flex-none mt-0.5" />
+      <div className="flex items-start gap-3 rounded-[14px] border border-danger/20 bg-danger-soft p-4">
+        <WarningCircle className="w-5 h-5 text-danger flex-none mt-0.5" />
         <div className="space-y-1">
-          <p className="text-sm font-medium text-destructive">Avalúo rechazado</p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-sm font-medium text-danger">Avalúo rechazado</p>
+          <p className="text-xs text-fg-muted leading-relaxed">
             No fue posible procesar tu solicitud. Si crees que esto es un error,
             contáctanos a{' '}
             <a href="mailto:avaluos@leasefy.co" className="underline">
@@ -121,7 +123,7 @@ export function AvaluoEstadoCard({
     )
   } else {
     cta = (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-fg-muted">
         <SealCheck className="w-4 h-4 flex-none" />
         <span>Estamos procesando tu avalúo</span>
       </div>
@@ -129,7 +131,7 @@ export function AvaluoEstadoCard({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6 space-y-5">
+    <Card className="rounded-[22px] p-6 space-y-5">
       {/* Status badge */}
       <div className="flex items-center gap-3">
         <Badge variant={badge.variant as React.ComponentProps<typeof Badge>['variant']}>
@@ -139,12 +141,14 @@ export function AvaluoEstadoCard({
 
       {/* Last updated */}
       {statusData.updatedAt && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-fg-muted">
           Última actualización:{' '}
-          {new Date(statusData.updatedAt).toLocaleString('es-CO', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          })}
+          <span className="font-mono tabular-nums">
+            {new Date(statusData.updatedAt).toLocaleString('es-CO', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}
+          </span>
         </p>
       )}
 
@@ -153,11 +157,11 @@ export function AvaluoEstadoCard({
 
       {/* Auto-refresh hint for non-terminal states */}
       {!isTerminal && (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <p className="flex items-center gap-1.5 text-xs text-fg-muted">
           <ArrowsClockwise className="w-3.5 h-3.5" />
           Se actualiza automáticamente
         </p>
       )}
-    </section>
+    </Card>
   )
 }

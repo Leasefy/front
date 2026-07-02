@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Check, SpinnerGap, Rocket, User, House, Shield, Clock, Lightning, Info, Eye, SealCheck } from '@phosphor-icons/react'
+import { ArrowLeft, Check, Rocket, User, House, Shield, Clock, Lightning, Info, Eye, SealCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useTenantOnboarding, TENANT_ONBOARDING_STEPS } from '@/lib/context/TenantOnboardingContext'
@@ -143,9 +143,9 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
   }
 
   return (
-    <div className="min-h-screen w-full bg-neutral-50 dark:bg-[#0f0f10]">
+    <div className="min-h-screen w-full bg-bg">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/80 dark:bg-[#1a1a1c]/80 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
+      <header className="sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -154,25 +154,27 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
             </Link>
 
             {/* Progress - Mobile */}
-            <div className="sm:hidden text-sm text-neutral-500 dark:text-neutral-400">
+            <div className="sm:hidden text-sm font-mono tabular-nums text-fg-muted">
               {t.stepOf} {currentStep} {t.of} {totalSteps}
             </div>
 
             {/* Skip button */}
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
               onClick={handleSkip}
-              className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+              hideArrow
+              className="text-fg-muted hover:text-fg"
             >
               {t.skip}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Mobile Progress Bar */}
-        <div className="sm:hidden h-1 bg-neutral-100 dark:bg-neutral-800">
+        <div className="sm:hidden h-1 bg-surface-muted">
           <motion.div
-            className="h-full bg-[#1A40FF]"
+            className="h-full bg-primary"
             animate={{ width: `${progressPercentage}%` }}
             transition={{ duration: 0.3 }}
           />
@@ -201,27 +203,27 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                       className={cn(
                         'w-full flex items-start gap-4 p-4 rounded-xl text-left transition-all duration-200',
                         isCurrent
-                          ? 'bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700'
+                          ? 'bg-surface border border-border'
                           : isCompleted
-                          ? 'hover:bg-white/50 dark:hover:bg-[#1a1a1c]/50'
+                          ? 'hover:bg-surface-muted'
                           : 'opacity-50 cursor-not-allowed'
                       )}
                     >
-                      {/* Step Number/Check */}
+                      {/* Step Number/Check — Cadence: cobalt active, success done, mono numeral */}
                       <div
                         className={cn(
                           'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
                           isCurrent
-                            ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
+                            ? 'bg-primary text-primary-fg'
                             : isCompleted
-                            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
-                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
+                            ? 'bg-success-soft text-success'
+                            : 'bg-surface-muted text-fg-subtle'
                         )}
                       >
                         {isCompleted && !isCurrent ? (
-                          <Check className="w-5 h-5" strokeWidth={2.5} />
+                          <Check className="w-5 h-5" weight="bold" />
                         ) : (
-                          <span className="text-sm font-semibold">{step}</span>
+                          <span className="text-sm font-mono font-semibold tabular-nums">{step}</span>
                         )}
                       </div>
 
@@ -231,13 +233,13 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                           className={cn(
                             'font-medium text-sm',
                             isCurrent
-                              ? 'text-neutral-900 dark:text-white'
-                              : 'text-neutral-600 dark:text-neutral-400'
+                              ? 'text-fg'
+                              : 'text-fg-muted'
                           )}
                         >
                           {t.steps[step - 1].label}
                         </p>
-                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                        <p className="text-xs text-fg-subtle mt-0.5">
                           {t.steps[step - 1].description}
                         </p>
                       </div>
@@ -247,8 +249,8 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
               </nav>
 
               {/* Auto-save indicator */}
-              <div className="mt-6 flex items-center gap-2 text-neutral-400 dark:text-neutral-500 px-4">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
+              <div className="mt-6 flex items-center gap-2 text-fg-muted px-4">
+                <div className="w-1.5 h-1.5 rounded-full bg-success" />
                 <span className="text-xs">{t.autoFloppyDisk}</span>
               </div>
             </div>
@@ -256,9 +258,9 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
 
           {/* Center Column - Form */}
           <div className="flex-1 max-w-xl">
-            <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+            <div className="bg-surface rounded-[22px] border border-border overflow-hidden">
               {/* Step Header */}
-              <div className="px-6 sm:px-8 pt-8 pb-6 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="px-6 sm:px-8 pt-8 pb-6 border-b border-border-faint">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`header-${currentStep}`}
@@ -273,19 +275,19 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                           className={cn(
                             'h-1.5 flex-1 rounded-full transition-colors',
                             step === currentStep
-                              ? 'bg-[#1A40FF]'
+                              ? 'bg-primary'
                               : step < currentStep
-                              ? 'bg-[#2C7A53]'
-                              : 'bg-neutral-200 dark:bg-neutral-700'
+                              ? 'bg-success'
+                              : 'bg-border'
                           )}
                         />
                       ))}
                     </div>
 
-                    <h1 className="text-xl sm:text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+                    <h1 className="text-xl sm:text-2xl font-semibold text-fg tracking-tight">
                       {t.stepTitle[currentStep - 1]}
                     </h1>
-                    <p className="text-neutral-500 dark:text-neutral-400 mt-1">
+                    <p className="text-fg-muted mt-1">
                       {t.stepSubtitle[currentStep - 1]}
                     </p>
                   </motion.div>
@@ -308,23 +310,19 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
               </div>
 
               {/* Footer Compass */}
-              <div className="px-6 sm:px-8 py-5 bg-neutral-50 dark:bg-[#0f0f10] border-t border-neutral-100 dark:border-neutral-800">
+              <div className="px-6 sm:px-8 py-5 bg-bg border-t border-border-faint">
                 <div className="flex items-center justify-between">
                   {/* Back button */}
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
                     onClick={prevStep}
                     disabled={isFirstStep || isSubmitting}
-                    className={cn(
-                      'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium',
-                      'rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-white dark:hover:bg-[#1a1a1c]',
-                      'transition-all duration-200',
-                      (isFirstStep || isSubmitting) && 'opacity-0 pointer-events-none'
-                    )}
+                    hideArrow
+                    className={cn((isFirstStep || isSubmitting) && 'opacity-0 pointer-events-none')}
                   >
                     <ArrowLeft className="h-4 w-4" />
                     {t.back}
-                  </button>
+                  </Button>
 
                   {/* Next/Submit button */}
                   {isSubmitting ? (
@@ -363,13 +361,13 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-[#EEF1FF] dark:bg-[#1A40FF]/12 rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6"
+                  className="bg-primary-soft rounded-[14px] border border-primary/30 p-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                      <Info className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF]" />
+                    <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center">
+                      <Info className="w-4 h-4 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-neutral-900 dark:text-white text-sm">
+                    <h3 className="font-semibold text-fg text-sm">
                       {whyContent.title}
                     </h3>
                   </div>
@@ -377,10 +375,10 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
                   <div className="space-y-4">
                     {whyContent.points.map((point, index) => (
                       <div key={index} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-md bg-white dark:bg-[#1a1a1c] flex items-center justify-center flex-shrink-0">
-                          <point.icon className="w-3.5 h-3.5 text-[#1A40FF] dark:text-[#5570FF]" />
+                        <div className="w-6 h-6 rounded-lg bg-surface flex items-center justify-center flex-shrink-0">
+                          <point.icon className="w-3.5 h-3.5 text-primary" />
                         </div>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                        <p className="text-sm text-fg-muted leading-relaxed">
                           {point.text}
                         </p>
                       </div>
@@ -391,8 +389,8 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
 
               {/* Trust badge */}
               <div className="mt-6 flex items-center gap-3 px-2">
-                <Shield className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <Shield className="w-5 h-5 text-success" />
+                <p className="text-xs text-fg-muted">
                   {locale === 'es'
                     ? 'Datos protegidos con encriptación de nivel bancario'
                     : 'Data protected with bank-level encryption'}

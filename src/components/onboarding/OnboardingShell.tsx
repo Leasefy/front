@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Check, SpinnerGap, Rocket, User, House, Users, CreditCard, X, Shield, Money, SealCheck, Question, CaretRight } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, Check, Rocket, User, House, Users, CreditCard, X, Shield, Money, SealCheck, Question, CaretRight } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { useOnboarding, ONBOARDING_STEPS } from '@/lib/context/OnboardingContext'
 
 interface OnboardingShellProps {
@@ -92,9 +95,9 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen bg-bg">
       {/* Top Header */}
-      <header className="sticky top-0 z-20 bg-white border-b border-neutral-200">
+      <header className="sticky top-0 z-20 bg-surface border-b border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -104,43 +107,47 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
 
             {/* Desktop: Step indicator + Skip */}
             <div className="hidden lg:flex items-center gap-6">
-              <span className="text-sm text-neutral-500">
+              <span className="text-sm font-mono tabular-nums text-fg-muted">
                 Paso {currentStep} de {totalSteps}
               </span>
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="sm"
                 onClick={handleSkip}
-                className="text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+                hideArrow
+                className="text-fg-muted hover:text-fg"
               >
                 Saltar por ahora
-              </button>
+              </Button>
             </div>
 
             {/* Mobile: Close button */}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleSkip}
-              className="lg:hidden p-2 -mr-2 text-neutral-400 hover:text-neutral-600 transition-colors"
+              aria-label="Cerrar"
+              className="lg:hidden -mr-2 text-fg-muted"
             >
               <X className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Mobile Progress Bar */}
-      <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-3">
+      <div className="lg:hidden bg-surface border-b border-border px-4 py-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-[#1A40FF]">
+          <span className="text-xs font-mono tabular-nums font-medium text-primary">
             Paso {currentStep} de {totalSteps}
           </span>
-          <span className="text-xs text-neutral-500">
+          <span className="text-xs text-fg-muted">
             {steps[currentStep - 1]?.label}
           </span>
         </div>
-        <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-border rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-[#1A40FF]"
+            className="h-full bg-primary"
             animate={{ width: `${(currentStep / totalSteps) * 100}%` }}
             transition={{ duration: 0.3 }}
           />
@@ -150,18 +157,18 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
       {/* Main Layout */}
       <div className="max-w-7xl mx-auto lg:flex lg:gap-0 min-h-[calc(100dvh-64px)]">
         {/* Left Sidebar - Step Compass */}
-        <aside className="hidden lg:block w-72 xl:w-80 bg-white border-r border-neutral-200 p-6 xl:p-8">
+        <aside className="hidden lg:block w-72 xl:w-80 bg-surface border-r border-border p-6 xl:p-8">
           {/* Progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <MonoLabel className="text-fg-muted tracking-wider">
                 Progreso
-              </span>
-              <span className="text-xs font-semibold text-[#1A40FF]">{progressPercentage}%</span>
+              </MonoLabel>
+              <span className="text-xs font-mono tabular-nums font-semibold text-primary">{progressPercentage}%</span>
             </div>
-            <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-[#1A40FF]"
+                className="h-full bg-primary"
                 animate={{ width: `${progressPercentage}%` }}
                 transition={{ duration: 0.3 }}
               />
@@ -187,23 +194,23 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
                     'w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all duration-200',
                     isClickable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
                     isCurrent
-                      ? 'bg-[#EEF1FF] border border-[#1A40FF]/30'
-                      : 'hover:bg-neutral-50'
+                      ? 'bg-primary-soft border border-primary/30'
+                      : 'hover:bg-surface-muted'
                   )}
                 >
                   {/* Step indicator */}
                   <div
                     className={cn(
-                      'w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 transition-colors',
+                      'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
                       isCompleted && !isCurrent
-                        ? 'bg-[#2C7A53] text-white'
+                        ? 'bg-success text-white'
                         : isCurrent
-                        ? 'bg-[#1A40FF] text-white'
-                        : 'bg-neutral-100 text-neutral-400'
+                        ? 'bg-primary text-primary-fg'
+                        : 'bg-surface-muted text-fg-subtle'
                     )}
                   >
                     {isCompleted && !isCurrent ? (
-                      <Check className="w-4 h-4" strokeWidth={2.5} />
+                      <Check className="w-4 h-4" weight="bold" />
                     ) : (
                       <Icon className="w-4 h-4" />
                     )}
@@ -215,22 +222,22 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
                       className={cn(
                         'text-sm font-medium',
                         isCurrent
-                          ? 'text-[#1A40FF]'
+                          ? 'text-primary'
                           : isCompleted
-                          ? 'text-[#2C7A53]'
-                          : 'text-neutral-700'
+                          ? 'text-success'
+                          : 'text-fg'
                       )}
                     >
                       {stepContent?.label}
                     </p>
-                    <p className="text-xs text-neutral-500 mt-0.5 truncate">
+                    <p className="text-xs text-fg-muted mt-0.5 truncate">
                       {stepContent?.description}
                     </p>
                   </div>
 
                   {/* Arrow for current */}
                   {isCurrent && (
-                    <CaretRight className="w-4 h-4 text-[#1A40FF] flex-shrink-0 mt-1" />
+                    <CaretRight className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
                   )}
                 </button>
               )
@@ -238,10 +245,10 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
           </nav>
 
           {/* Help link */}
-          <div className="mt-8 pt-6 border-t border-neutral-100">
+          <div className="mt-8 pt-6 border-t border-border-faint">
             <Link
               href="/ayuda"
-              className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+              className="flex items-center gap-2 text-sm text-fg-muted hover:text-fg transition-colors"
             >
               <Question className="w-4 h-4" />
               ¿Necesitas ayuda?
@@ -259,10 +266,10 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
               animate={{ opacity: 1, y: 0 }}
               className="mb-8"
             >
-              <p className="text-xs font-semibold text-[#1A40FF] uppercase tracking-wider mb-2">
+              <MonoLabel className="block mb-2 text-primary tracking-wider tabular-nums">
                 Paso {currentStep} de {totalSteps}
-              </p>
-              <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">
+              </MonoLabel>
+              <h1 className="text-2xl lg:text-3xl font-semibold text-fg tracking-tight">
                 {stepDescriptions[currentStep - 1]}
               </h1>
             </motion.div>
@@ -281,23 +288,18 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
             </AnimatePresence>
 
             {/* Compass */}
-            <div className="flex items-center justify-between mt-10 pt-8 border-t border-neutral-100">
+            <div className="flex items-center justify-between mt-10 pt-8 border-t border-border-faint">
               {/* Back button */}
-              <button
-                type="button"
+              <Button
+                variant="outline"
                 onClick={prevStep}
                 disabled={isFirstStep || isSubmitting}
-                className={cn(
-                  'inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium',
-                  'rounded-md border border-neutral-200 bg-white',
-                  'text-neutral-600 hover:text-neutral-900 hover:border-neutral-300',
-                  'transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed',
-                  isFirstStep && 'invisible'
-                )}
+                hideArrow
+                className={cn(isFirstStep && 'invisible')}
               >
                 <ArrowLeft className="h-4 w-4" />
                 Atrás
-              </button>
+              </Button>
 
               {/* Next/Submit button */}
               <span
@@ -306,20 +308,14 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
                   if (!canProceed && !isSubmitting) setDisabledHint(true)
                 }}
               >
-                <button
-                  type="button"
+                <Button
                   onClick={handleNext}
                   disabled={!canProceed || isSubmitting}
-                  className={cn(
-                    'inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold',
-                    'rounded-md bg-neutral-900 text-white',
-                    'hover:bg-neutral-800 transition-all duration-200',
-                    'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none'
-                  )}
+                  hideArrow
                 >
                   {isSubmitting ? (
                     <>
-                      <SpinnerGap className="h-4 w-4 animate-spin" />
+                      <Spinner size="xs" variant="current" />
                       Guardando...
                     </>
                   ) : isLastStep ? (
@@ -333,27 +329,27 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
-                </button>
+                </Button>
               </span>
             </div>
 
             {/* Disabled-CTA hint */}
             {disabledHint && !canProceed && (
-              <p role="status" className="mt-3 text-xs text-[#B7791F] text-right">
+              <p role="status" className="mt-3 text-xs text-warning text-right">
                 Completa los campos obligatorios para continuar
               </p>
             )}
 
             {/* Auto-save indicator */}
-            <div className="flex items-center justify-center gap-2 mt-6 text-neutral-400">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
+            <div className="flex items-center justify-center gap-2 mt-6 text-fg-muted">
+              <div className="w-1.5 h-1.5 rounded-full bg-success" />
               <p className="text-xs">Tu progreso se guarda automáticamente</p>
             </div>
           </div>
         </main>
 
         {/* Right Sidebar - Why we need this */}
-        <aside className="hidden xl:block w-80 bg-neutral-50 p-8">
+        <aside className="hidden xl:block w-80 bg-surface-muted p-8">
           <motion.div
             key={`why-${currentStep}`}
             initial={{ opacity: 0 }}
@@ -362,11 +358,11 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
           >
             {/* Why section */}
             <div className="mb-8">
-              <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-                <Question className="w-4 h-4 text-[#1A40FF]" />
+              <h3 className="text-sm font-semibold text-fg mb-3 flex items-center gap-2">
+                <Question className="w-4 h-4 text-primary" />
                 ¿Por qué lo necesitamos?
               </h3>
-              <p className="text-sm text-neutral-600 leading-relaxed">
+              <p className="text-sm text-fg-muted leading-relaxed">
                 {whyContent[currentStep - 1]}
               </p>
             </div>
@@ -376,26 +372,26 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
               {benefits.map((benefit, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200"
+                  className="flex items-center gap-3 p-3 bg-surface rounded-[14px] border border-border"
                 >
-                  <div className="w-9 h-9 rounded-md bg-[#EEF1FF] flex items-center justify-center flex-shrink-0">
-                    <benefit.icon className="w-4 h-4 text-[#1A40FF]" />
+                  <div className="w-9 h-9 rounded-lg bg-primary-soft flex items-center justify-center flex-shrink-0">
+                    <benefit.icon className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900">{benefit.label}</p>
-                    <p className="text-xs text-neutral-500">{benefit.desc}</p>
+                    <p className="text-sm font-medium text-fg">{benefit.label}</p>
+                    <p className="text-xs text-fg-muted">{benefit.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Trust badge */}
-            <div className="mt-8 p-4 bg-[#E8F3EC] rounded-xl border border-[#2C7A53]/30">
+            {/* Trust badge — Cadence success tones */}
+            <div className="mt-8 p-4 bg-success-soft rounded-[14px] border border-success/30">
               <div className="flex items-center gap-2 mb-2">
-                <Shield className="w-4 h-4 text-[#2C7A53]" />
-                <p className="text-sm font-medium text-[#2C7A53]">Datos seguros</p>
+                <Shield className="w-4 h-4 text-success" />
+                <p className="text-sm font-medium text-success">Datos seguros</p>
               </div>
-              <p className="text-xs text-[#2C7A53]">
+              <p className="text-xs text-success">
                 Tu información está encriptada y nunca se comparte sin tu permiso.
               </p>
             </div>

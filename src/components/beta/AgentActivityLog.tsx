@@ -1,5 +1,6 @@
 'use client';
 
+import { MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -38,28 +39,28 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const STATUS_DOT: Record<string, string> = {
-  completed: 'bg-[#2C7A53]',
-  failed: 'bg-[#C4503B]',
-  running: 'bg-[#1A40FF] animate-pulse',
+  completed: 'bg-success',
+  failed: 'bg-danger',
+  running: 'bg-primary animate-pulse',
   dispatching: 'bg-neutral-400 animate-pulse',
 };
 
 const AGENT_COLOR_BG: Record<string, string> = {
-  emerald: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-  blue: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-  amber: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
+  emerald: 'bg-success-soft',
+  blue: 'bg-primary-soft',
+  amber: 'bg-warning-soft',
   purple: 'bg-neutral-100 dark:bg-neutral-800',
   pink: 'bg-neutral-100 dark:bg-neutral-800',
-  indigo: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
+  indigo: 'bg-primary-soft',
 };
 
 const AGENT_COLOR_TEXT: Record<string, string> = {
-  emerald: 'text-[#2C7A53] dark:text-[#3EAE70]',
-  blue: 'text-[#1A40FF] dark:text-[#5570FF]',
-  amber: 'text-[#B7791F] dark:text-[#D2992F]',
+  emerald: 'text-success',
+  blue: 'text-primary',
+  amber: 'text-warning',
   purple: 'text-neutral-600 dark:text-neutral-300',
   pink: 'text-neutral-600 dark:text-neutral-300',
-  indigo: 'text-[#1A40FF] dark:text-[#5570FF]',
+  indigo: 'text-primary',
 };
 
 // ============================================================================
@@ -100,7 +101,7 @@ function AgentExecutionRow({ agent }: { agent: AgentExecution }) {
         ) : agent.status === 'completed' ? (
           <CheckCircle className="w-3.5 h-3.5 shrink-0" weight="fill" />
         ) : agent.status === 'failed' ? (
-          <XCircle className="w-3.5 h-3.5 shrink-0 text-[#C4503B]" weight="fill" />
+          <XCircle className="w-3.5 h-3.5 shrink-0 text-danger" weight="fill" />
         ) : AgentIcon ? (
           <AgentIcon className="w-3.5 h-3.5 shrink-0" weight="duotone" />
         ) : null}
@@ -139,11 +140,11 @@ function ActivityItem({ entry, onNavigate }: ActivityItemProps) {
         'w-full text-left p-3 rounded-xl',
         'border transition-colors',
         isActive
-          ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/30 hover:bg-[#EEF1FF]/50 dark:hover:bg-[#1A40FF]/5'
+          ? 'border-primary/30 hover:bg-primary-soft'
           : hasFailed
-          ? 'border-[#C4503B]/30 dark:border-[#C4503B]/30 hover:bg-[#F8EAE7]/50 dark:hover:bg-[#C4503B]/5'
+          ? 'border-danger/30 hover:bg-danger-soft'
           : allCompleted
-          ? 'border-[#2C7A53]/30 dark:border-[#2C7A53]/30 hover:bg-[#E8F3EC]/50 dark:hover:bg-[#2C7A53]/5'
+          ? 'border-success/30 hover:bg-success-soft'
           : 'border-neutral-200 dark:border-border hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
       )}
     >
@@ -203,9 +204,9 @@ export function AgentActivityLog() {
       {/* Active executions */}
       {active.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#1A40FF] dark:text-[#5570FF] mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-primary">
             {t('beta.agents.active')} ({active.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {active.map((entry) => (
               <ActivityItem
@@ -221,9 +222,9 @@ export function AgentActivityLog() {
       {/* Finished executions */}
       {finished.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-muted-foreground">
             {t('beta.agents.recent')} ({finished.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {finished.map((entry) => (
               <ActivityItem

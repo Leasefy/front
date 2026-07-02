@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, CreditCard, Shield, Envelope, Globe, Moon, CaretRight, Check, Crown, SpinnerGap, Monitor, Warning, TrashSimple, Download, Laptop, Lock, Eye, FileText, ArrowCounterClockwise, Tag, ArrowUpRight } from '@phosphor-icons/react';
+import { Bell, CreditCard, Shield, Envelope, Globe, Moon, Check, Crown, Monitor, Warning, TrashSimple, Download, Laptop, Lock, Eye, FileText, ArrowCounterClockwise, Tag, ArrowUpRight } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
@@ -25,6 +25,16 @@ import { PaymentAccountsSection } from '@/components/settings/PaymentAccountsSec
 import { TeamManagementSection } from '@/components/settings/TeamManagementSection';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import type { NotificationSettings } from '@/lib/api/settings.service';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // ============================================================================
 // Main Component
@@ -388,21 +398,21 @@ export default function ConfiguracionPage() {
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.preferences.languageDesc')}</p>
                     </div>
                   </div>
-                  <div className="relative">
-                    <select
-                      value={locale}
-                      onChange={(e) => {
-                        setLocale(e.target.value as Locale);
-                        toast.success(e.target.value === 'en' ? 'Language changed to English' : 'Idioma cambiado a Español');
-                      }}
-                      aria-label={t('landlordSettings.preferences.languageDesc')}
-                      className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all cursor-pointer"
-                    >
-                      <option value="es">Español</option>
-                      <option value="en">English</option>
-                    </select>
-                    <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
-                  </div>
+                  <Select
+                    value={locale}
+                    onValueChange={(v) => {
+                      setLocale(v as Locale);
+                      toast.success(v === 'en' ? 'Language changed to English' : 'Idioma cambiado a Español');
+                    }}
+                  >
+                    <SelectTrigger className="w-44" aria-label={t('landlordSettings.preferences.languageDesc')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </motion.section>
@@ -487,13 +497,14 @@ export default function ConfiguracionPage() {
                     </p>
                   </div>
                 )}
-                <button
+                <Button
+                  variant="destructive"
+                  hideArrow
                   onClick={() => setShowDeleteModal(true)}
                   disabled={hasCriticalBlockers}
-                  className="px-5 py-2.5 border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] rounded-xl text-sm font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 hover:border-[#C4503B]/30 dark:hover:border-[#C4503B]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('landlordSettings.dangerZone.deleteAccount')}
-                </button>
+                </Button>
               </div>
             </motion.section>
           </div>
@@ -505,49 +516,49 @@ export default function ConfiguracionPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.currentPassword')}</label>
-            <input
+            <Input
               type="password"
               value={passwordForm.current}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder="••••••••"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.newPassword')}</label>
-            <input
+            <Input
               type="password"
               value={passwordForm.new}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder={t('landlordSettings.modals.changePassword.minChars')}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('landlordSettings.modals.changePassword.confirmPassword')}</label>
-            <input
+            <Input
               type="password"
               value={passwordForm.confirm}
               onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 dark:focus:border-[#1A40FF]/30 transition-all"
               placeholder={t('landlordSettings.modals.changePassword.repeatPassword')}
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowPasswordModal(false)}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1"
             >
               {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={handlePasswordChange}
               disabled={isLoading || !passwordForm.current || !passwordForm.new || !passwordForm.confirm}
-              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              isLoading={isLoading}
+              className="flex-1"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
               {isLoading ? t('landlordSettings.modals.changePassword.updating') : t('landlordSettings.modals.changePassword.changeButton')}
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsModal>
@@ -569,12 +580,14 @@ export default function ConfiguracionPage() {
             <span className="px-3 py-1.5 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-xs font-medium rounded-full">{t('landlordSettings.modals.sessions.current')}</span>
           </div>
           {/* Close all sessions (signs out everywhere) */}
-          <button
+          <Button
+            variant="destructive"
+            hideArrow
             onClick={handleCloseAllSessions}
-            className="w-full py-3 border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] text-sm font-medium rounded-xl hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 transition-colors"
+            className="w-full"
           >
             {t('landlordSettings.modals.sessions.closeAll')}
-          </button>
+          </Button>
         </div>
       </SettingsModal>
 
@@ -603,20 +616,23 @@ export default function ConfiguracionPage() {
             {t('landlordSettings.modals.downloadData.emailNote')}
           </p>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => setShowDownloadModal(false)}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1"
             >
               {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={handleDownloadData}
               disabled={isLoading}
-              className="flex-1 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              className="flex-1"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isLoading ? <Spinner size="sm" variant="current" /> : <Download className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.downloadData.processing') : t('landlordSettings.modals.downloadData.requestData')}
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsModal>
@@ -639,32 +655,35 @@ export default function ConfiguracionPage() {
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               {t('landlordSettings.modals.deleteAccount.typeToConfirm')} <span className="font-bold text-[#C4503B] dark:text-[#E0664D]">{t('landlordSettings.modals.deleteAccount.confirmWord')}</span> {t('landlordSettings.modals.deleteAccount.toConfirm')}
             </label>
-            <input
+            <Input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30 dark:focus:border-[#C4503B]/30 transition-all"
               placeholder={t('landlordSettings.modals.deleteAccount.confirmWord')}
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              hideArrow
               onClick={() => {
                 setShowDeleteModal(false);
                 setDeleteConfirmText('');
               }}
-              className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+              className="flex-1"
             >
               {t('landlordSettings.modals.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="destructive"
+              hideArrow
               onClick={handleDeleteAccount}
               disabled={isLoading || deleteConfirmText !== t('landlordSettings.modals.deleteAccount.confirmWord')}
-              className="flex-1 py-3 bg-[#C4503B] text-white text-sm font-medium rounded-xl hover:bg-[#C4503B] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              className="flex-1"
             >
-              {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <TrashSimple className="w-4 h-4" />}
+              {isLoading ? <Spinner size="sm" variant="current" /> : <TrashSimple className="w-4 h-4" />}
               {isLoading ? t('landlordSettings.modals.deleteAccount.deleting') : t('landlordSettings.modals.deleteAccount.deleteButton')}
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsModal>

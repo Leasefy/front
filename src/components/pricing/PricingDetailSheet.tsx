@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { X, CheckCircle, Buildings, Users, Lightning } from '@phosphor-icons/react';
+import { MonoLabel, IconButton } from '@leasefy/cadence';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   Sheet,
@@ -88,7 +89,7 @@ export function PricingDetailSheet({
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col overflow-hidden p-0 sm:max-w-lg bg-white dark:bg-[#0f0f10]"
+        className="flex w-full flex-col overflow-hidden p-0 sm:max-w-lg bg-surface dark:bg-ink"
         hideCloseButton
       >
         {/* Header */}
@@ -101,13 +102,13 @@ export function PricingDetailSheet({
               {plan.description}
             </SheetDescription>
           </div>
-          <button
+          <IconButton
+            variant="ghost"
             onClick={onClose}
-            className="flex items-center justify-center w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+            className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
             aria-label="Cerrar"
-          >
-            <X className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
-          </button>
+            icon={<X className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />}
+          />
         </SheetHeader>
 
         {/* Scrollable body */}
@@ -116,17 +117,17 @@ export function PricingDetailSheet({
             {/* Price badge */}
             <div className="flex items-baseline gap-2">
               {isEnterprise ? (
-                <span className="text-[28px] font-heading font-bold text-foreground">{plan.price}</span>
+                <span className="text-[28px] font-mono font-bold tabular-nums text-foreground">{plan.price}</span>
               ) : plan.price === '0' ? (
-                <span className="text-[32px] font-heading font-bold text-foreground">Gratis</span>
+                <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">Gratis</span>
               ) : plan.price === '1%' ? (
                 <>
-                  <span className="text-[32px] font-heading font-bold text-foreground">1%</span>
+                  <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">1%</span>
                   {plan.period && <span className="text-muted-foreground text-[14px]">{plan.period}</span>}
                 </>
               ) : (
                 <>
-                  <span className="text-[32px] font-heading font-bold text-foreground">${plan.price}</span>
+                  <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">${plan.price}</span>
                   {plan.period && <span className="text-muted-foreground text-[14px]">{plan.period}</span>}
                 </>
               )}
@@ -136,14 +137,14 @@ export function PricingDetailSheet({
             <div className="flex gap-3">
               <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
                 <Buildings className="w-4 h-4 text-primary" />
-                <span className="text-[13px] font-semibold text-foreground">
+                <span className="text-[13px] font-semibold font-mono tabular-nums text-foreground">
                   {plan.limits.properties === 'ilimitadas' ? '∞' : plan.limits.properties}
                 </span>
                 <span className="text-[11px] text-muted-foreground">propiedades</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/50 rounded-md">
                 <Users className="w-4 h-4 text-primary" />
-                <span className="text-[13px] font-semibold text-foreground">
+                <span className="text-[13px] font-semibold font-mono tabular-nums text-foreground">
                   {plan.limits.users === 'ilimitados' ? '∞' : plan.limits.users}
                 </span>
                 <span className="text-[11px] text-muted-foreground">usuarios</span>
@@ -172,9 +173,9 @@ export function PricingDetailSheet({
             <div className="space-y-5">
               {plan.featureGroups.map((group) => (
                 <div key={group.category}>
-                  <h4 className="text-[13px] font-mono uppercase text-muted-foreground mb-3">
+                  <MonoLabel className="block text-[13px] text-muted-foreground mb-3">
                     {group.category}
-                  </h4>
+                  </MonoLabel>
                   <ul className="space-y-3">
                     {group.items.map((item) => (
                       <li key={item.name} className="flex items-start gap-2.5">
@@ -195,9 +196,9 @@ export function PricingDetailSheet({
             {/* Add-ons */}
             {plan.addons.length > 0 && (
               <div>
-                <h4 className="text-[13px] font-mono uppercase text-muted-foreground mb-3">
+                <MonoLabel className="block text-[13px] text-muted-foreground mb-3">
                   Extras disponibles
-                </h4>
+                </MonoLabel>
                 <div className="space-y-3">
                   {plan.addons.map((addon) => (
                     <div key={addon.label} className="flex items-start justify-between gap-4 p-3 rounded-md bg-muted/30">
@@ -205,7 +206,7 @@ export function PricingDetailSheet({
                         <span className="text-[13px] font-medium text-foreground">{addon.label}</span>
                         <p className="text-[12px] text-muted-foreground mt-0.5">{addon.description}</p>
                       </div>
-                      <span className="text-[13px] font-semibold text-foreground whitespace-nowrap">{addon.price}</span>
+                      <span className="text-[13px] font-semibold font-mono tabular-nums text-foreground whitespace-nowrap">{addon.price}</span>
                     </div>
                   ))}
                 </div>
@@ -218,12 +219,12 @@ export function PricingDetailSheet({
         <div className="flex-shrink-0 border-t border-neutral-100 dark:border-white/10 px-5 py-4">
           {isEnterprise ? (
             <a href="mailto:ventas@leasefy.co" className="block">
-              <Button className="w-full rounded-xl" variant="default">
+              <Button className="w-full" variant="default" hideArrow>
                 Solicitar cotización
               </Button>
             </a>
           ) : (
-            <Button className="w-full rounded-xl" variant="default" onClick={handleSelect}>
+            <Button className="w-full" variant="default" hideArrow onClick={handleSelect}>
               Seleccionar plan
             </Button>
           )}

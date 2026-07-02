@@ -1,25 +1,24 @@
 'use client'
 
 /**
- * AgentIntroModal — per-agent presentation card (same Relume/Givingli format
- * as PanelTour via FeatureAnnouncementCard).
+ * AgentIntroModal — per-agent presentation card, rendered with the cadence
+ * §Novedades `<FeatureAnnouncement>` (grainy aurora hero + glass Leasefy pill +
+ * intro copy + "Empezar" CTA). Brand-photo hero was retired in favour of the
+ * cadence aurora (Nico's call).
  *
  * The FIRST time the user enters an agent's workspace
  * (/panel/inmobiliaria/ai/<agente>/…) a centered announcement presents that
  * agent: what it does and how to work with it. Dismissal persists per agent in
- * localStorage (any close — X, backdrop, Escape or CTA — marks it as seen).
+ * localStorage (any close — backdrop, Escape or the CTA — marks it as seen).
  *
- * Each agent uses a DISTINCT brand image from public/images/features/
- * (pool leasefy-brand-01..16; PanelTour uses 02/09/15 — see assignments below).
- *
- * A11y mirrors PanelTour: Escape dismisses, autoFocus on the CTA (inside the
- * shared card), focus restoration on close, no dangerouslySetInnerHTML.
+ * A11y: role=dialog + aria-label, Escape dismisses, focus lands on the dialog
+ * on open and is restored on close.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { FeatureAnnouncement } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
-import { FeatureAnnouncementCard } from './FeatureAnnouncementCard'
 
 export interface AgentIntroConfig {
   /** Agent id — also the localStorage suffix + i18n block name. */
@@ -114,6 +113,7 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
   const [mounted, setMounted] = useState(false)
   const [visibleId, setVisibleId] = useState<string | null>(null)
   const prevFocusRef = useRef<HTMLElement | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   const agent = AGENT_INTROS.find((a) => pathname.startsWith(a.pathPrefix)) ?? null
 
@@ -146,9 +146,10 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
     }, 0)
   }, [visibleId])
 
-  // Escape dismisses.
+  // Escape dismisses; focus lands on the dialog when it opens.
   useEffect(() => {
     if (!visibleId) return
+    const raf = requestAnimationFrame(() => dialogRef.current?.focus())
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -156,36 +157,38 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
       }
     }
     document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('keydown', handler)
+    }
   }, [visibleId, dismiss])
 
   if (!mounted || !visibleId || !agent || visibleId !== agent.id) return null
 
-  const titleId = `agent-intro-${agent.id}-title`
-  const descId = `agent-intro-${agent.id}-desc`
-
   return createPortal(
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/55 motion-reduce:transition-none"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/55 p-4 motion-reduce:transition-none"
       onClick={dismiss}
     >
-      <FeatureAnnouncementCard
-        title={t(agent.titleKey)}
-        description={t(agent.descriptionKey)}
-        image={agent.image}
-        newBadge={t('common.new')}
-        titleId={titleId}
-        descId={descId}
-        currentStep={0}
-        total={1}
-        primaryLabel={t('inmobiliaria.ai.tour.finish')}
-        dismissLabel={t('inmobiliaria.ai.tour.dismiss')}
-        onNext={dismiss}
-        onDismiss={dismiss}
-        style={{ width: 560, maxWidth: 'calc(100vw - 2rem)' }}
-        centered
-        onCardClick={(e) => e.stopPropagation()}
-      />
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t(agent.titleKey)}
+        className="outline-none"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <FeatureAnnouncement
+          appName="Leasefy"
+          appInitial="L"
+          title={t(agent.titleKey)}
+          description={t(agent.descriptionKey)}
+          ctaLabel={t('inmobiliaria.ai.tour.finish')}
+          onCta={dismiss}
+          className="max-w-[calc(100vw-2rem)]"
+        />
+      </div>
     </div>,
     document.body,
   )

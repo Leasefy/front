@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { BriefingCardSkeleton } from './BetaSkeletons';
@@ -58,19 +58,15 @@ export function BriefingHistory() {
         {briefings.map((briefing) => {
           const isActive = briefing.id === activeBriefingId;
           return (
-            <button
+            <Button
               key={briefing.id}
+              variant={isActive ? 'default' : 'secondary'}
+              hideArrow
               onClick={() => selectBriefing(briefing.id)}
-              className={cn(
-                'px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap',
-                'transition-colors duration-150',
-                isActive
-                  ? 'bg-[#1A40FF] text-white'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-muted-foreground hover:bg-neutral-200 dark:hover:bg-neutral-700'
-              )}
+              className="px-2.5 py-1 h-auto rounded-full text-xs font-medium whitespace-nowrap"
             >
               {getDateLabel(briefing.date)}
-            </button>
+            </Button>
           );
         })}
       </div>

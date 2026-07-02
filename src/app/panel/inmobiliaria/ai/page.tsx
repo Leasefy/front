@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   GitMerge,
 } from '@phosphor-icons/react';
+import { MonoLabel, StatusBadge } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
@@ -104,13 +105,9 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">{name}</h1>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[11px] font-medium text-[#2C7A53] dark:text-[#3EAE70]">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-[#2C7A53]" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#2C7A53]" />
-              </span>
+            <StatusBadge tone="success" pulse>
               {locale === 'es' ? 'Activo' : 'Active'}
-            </span>
+            </StatusBadge>
           </div>
           <p className="text-neutral-500 dark:text-neutral-400 mt-0.5">{description}</p>
         </div>
@@ -262,9 +259,9 @@ export default function AIAgentsPage() {
             <Robot weight="duotone" className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <MonoLabel className="text-[11px] text-neutral-500 dark:text-neutral-400">
               {locale === 'es' ? 'Agentes IA · Equipo' : 'AI Agents · Team'}
-            </span>
+            </MonoLabel>
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
               {locale === 'es' ? 'Equipo de agentes' : 'Agent team'}
             </h1>
@@ -342,21 +339,30 @@ export default function AIAgentsPage() {
             {locale === 'es' ? 'Agentes Activos' : 'Active Agents'}
           </h2>
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2C7A53] opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2C7A53]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
           </span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Existing agents: TenantScoring + SmartMatching */}
           {activeAgents
             .filter((a) => a.id === 'tenant-scoring' || a.id === 'smart-matching')
-            .map((agent) => (
-              <AIAgentCard
-                key={agent.id}
-                agent={agent}
-                metrics={agent.id === 'tenant-scoring' ? scoringMetrics : matchingMetrics}
-              />
-            ))}
+            .map((agent) =>
+              agent.id === 'tenant-scoring' ? (
+                // Estudio del inquilino — click-through to the bespoke Tier-B workspace
+                <div
+                  key={agent.id}
+                  className="relative cursor-pointer"
+                  onClick={() => router.push('/panel/inmobiliaria/ai/estudio')}
+                  data-testid="estudio-agent-card"
+                  data-tour-target="estudio-card"
+                >
+                  <AIAgentCard agent={agent} metrics={scoringMetrics} />
+                </div>
+              ) : (
+                <AIAgentCard key={agent.id} agent={agent} metrics={matchingMetrics} />
+              ),
+            )}
 
           {/* Cobranza card — click-through to analytics (D-37-03b per-card layout) */}
           {cobranzaAgent && (

@@ -3,10 +3,12 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, Pencil, Upload, Buildings, FileText } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Button, Input, Spinner } from '@/components/ui';
+import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { useRouter } from 'next/navigation';
 import { settingsApi } from '@/lib/api/settings.service';
@@ -360,12 +362,14 @@ export default function PropietarioPerfilPage() {
             <div className="rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden">
               <div className="relative bg-[#EEF1FF] dark:bg-[#1A40FF]/12 h-28">
                 {editingSection !== 'avatar' && (
-                  <button
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
                     onClick={() => { setAvatarPreview(savedAvatar); setEditingSection('avatar'); }}
-                    className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
+                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                    className="absolute top-3 right-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white"
+                    icon={<Pencil className="w-4 h-4" />}
+                  />
                 )}
               </div>
               <div className="px-6 pb-6">
@@ -385,9 +389,14 @@ export default function PropietarioPerfilPage() {
                     )}
                   </div>
                   {editingSection === 'avatar' && (
-                    <button onClick={handleAvatarClick} className="absolute bottom-1 right-1 p-2.5 bg-[#1A40FF] rounded-xl text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors">
-                      <Camera className="w-4 h-4" />
-                    </button>
+                    <IconButton
+                      variant="solid"
+                      size="sm"
+                      onClick={handleAvatarClick}
+                      aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                      className="absolute bottom-1 right-1 bg-[#1A40FF] text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100"
+                      icon={<Camera className="w-4 h-4" />}
+                    />
                   )}
                 </div>
 
@@ -410,9 +419,14 @@ export default function PropietarioPerfilPage() {
                             <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}</p>
                           </div>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }} className="p-2 text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 rounded-md transition-colors">
-                          <TrashSimple className="w-4 h-4" />
-                        </button>
+                        <IconButton
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveAvatar(); }}
+                          aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
+                          className="text-neutral-400 hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30"
+                          icon={<TrashSimple className="w-4 h-4" />}
+                        />
                       </div>
                     ) : (
                       <>
@@ -429,8 +443,7 @@ export default function PropietarioPerfilPage() {
                 )}
 
                 {editingSection === 'avatar' ? (
-                  <input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)}
-                    className="w-full px-3 py-2 text-lg font-semibold rounded-md border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
+                  <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} className="text-lg font-semibold" />
                 ) : (
                   <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{fullName}</h2>
                 )}
@@ -440,14 +453,13 @@ export default function PropietarioPerfilPage() {
 
                 {editingSection === 'avatar' && (
                   <div className="flex items-center gap-2 mt-4">
-                    <button onClick={handleCancelEdit} className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-xl transition-colors">
+                    <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit} className="flex-1 justify-center">
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
-                    </button>
-                    <button onClick={() => handleSave('avatar')} disabled={isSaving}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50">
-                      {isSaving ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <FloppyDisk className="w-4 h-4" />}
+                    </Button>
+                    <Button size="sm" hideArrow onClick={() => handleSave('avatar')} disabled={isSaving} className="flex-1 justify-center gap-2">
+                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-4 h-4" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
@@ -522,21 +534,19 @@ export default function PropietarioPerfilPage() {
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
                 {editingSection !== 'personal' ? (
-                  <button onClick={() => setEditingSection('personal')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors">
+                  <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('personal')} className="gap-1.5">
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+                    <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit}>
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
-                    </button>
-                    <button onClick={() => handleSave('personal')} disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50">
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                    </Button>
+                    <Button size="sm" hideArrow onClick={() => handleSave('personal')} disabled={isSaving} className="gap-1.5">
+                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -544,8 +554,7 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Nombre completo' : 'Full name'}</label>
                   {editingSection === 'personal' ? (
-                    <input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
+                    <Input type="text" value={fullName} onChange={(e) => handleNameChange(e.target.value)} />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
@@ -565,8 +574,7 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Email</label>
                   {editingSection === 'personal' ? (
-                    <input type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
+                    <Input type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Envelope className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
@@ -578,8 +586,7 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Teléfono' : 'Phone'}</label>
                   {editingSection === 'personal' ? (
-                    <input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
+                    <Input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
@@ -591,8 +598,7 @@ export default function PropietarioPerfilPage() {
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Fecha de nacimiento' : 'Date of birth'}</label>
                   {editingSection === 'personal' ? (
-                    <input type="date" value={formData.birthDate} onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
+                    <Input type="date" value={formData.birthDate} onChange={(e) => handleInputChange('birthDate', e.target.value)} />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
@@ -606,8 +612,7 @@ export default function PropietarioPerfilPage() {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Dirección' : 'Address'}</label>
                   {editingSection === 'personal' ? (
-                    <input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all" />
+                    <Input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
                       <MapPin className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
@@ -623,29 +628,26 @@ export default function PropietarioPerfilPage() {
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}</h3>
                 {editingSection !== 'emergency' ? (
-                  <button onClick={() => setEditingSection('emergency')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors">
+                  <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('emergency')} className="gap-1.5">
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+                    <Button variant="ghost" size="sm" hideArrow onClick={handleCancelEdit}>
                       {locale === 'es' ? 'Cancelar' : 'Cancel'}
-                    </button>
-                    <button onClick={() => handleSave('emergency')} disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-md text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50">
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                    </Button>
+                    <Button size="sm" hideArrow onClick={() => handleSave('emergency')} disabled={isSaving} className="gap-1.5">
+                      {isSaving ? <Spinner size="sm" variant="current" /> : <FloppyDisk className="w-3.5 h-3.5" />}
                       {locale === 'es' ? 'Guardar' : 'Save'}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}</label>
                 {editingSection === 'emergency' ? (
-                  <input type="text" value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1A40FF]/20 focus:border-[#1A40FF]/30 transition-all"
+                  <Input type="text" value={emergencyContactDisplay} onChange={(e) => handleEmergencyContactChange(e.target.value)}
                     placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'} />
                 ) : (
                   <div className="flex items-center gap-3 px-4 py-3 bg-neutral-50 dark:bg-white/5 rounded-xl">
@@ -665,10 +667,9 @@ export default function PropietarioPerfilPage() {
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
                 {locale === 'es' ? 'Estas acciones son irreversibles. Por favor, procede con precaución.' : 'These actions are irreversible. Please proceed with caution.'}
               </p>
-              <button onClick={handleOpenDeleteModal}
-                className="px-4 py-2.5 border border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] rounded-full text-sm font-medium hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30 transition-colors">
+              <Button variant="destructive" hideArrow onClick={handleOpenDeleteModal}>
                 {locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -708,8 +709,8 @@ export default function PropietarioPerfilPage() {
                     ))}
                   </ul>
                   <div className="flex gap-3">
-                    <button onClick={handleCloseDeleteModal} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Cancelar' : 'Cancel'}</button>
-                    <button onClick={() => setDeleteStep(2)} className="flex-1 px-4 py-2.5 bg-[#C4503B] text-white rounded-xl text-sm font-medium hover:bg-[#C4503B] transition-colors">{locale === 'es' ? 'Continuar' : 'Continue'}</button>
+                    <Button variant="outline" hideArrow onClick={handleCloseDeleteModal} className="flex-1 justify-center">{locale === 'es' ? 'Cancelar' : 'Cancel'}</Button>
+                    <Button variant="destructive" hideArrow onClick={() => setDeleteStep(2)} className="flex-1 justify-center">{locale === 'es' ? 'Continuar' : 'Continue'}</Button>
                   </div>
                 </div>
               </>
@@ -718,21 +719,25 @@ export default function PropietarioPerfilPage() {
               <>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/10">
                   <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</h3>
-                  <button onClick={handleCloseDeleteModal} className="p-2 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" /></button>
+                  <IconButton variant="ghost" size="sm" onClick={handleCloseDeleteModal} aria-label={locale === 'es' ? 'Cerrar' : 'Close'} icon={<X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />} />
                 </div>
                 <div className="p-6">
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
                     {locale === 'es' ? <>Para confirmar, escribe <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">ELIMINAR</span>:</> : <>To confirm, type <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">DELETE</span>:</>}
                   </p>
-                  <input type="text" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())} placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#C4503B]/20 focus:border-[#C4503B]/30 transition-all font-mono text-center tracking-widest" />
+                  <Input type="text" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())} placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
+                    className="font-mono text-center tracking-widest focus-visible:ring-[#C4503B]/30" />
                   <div className="flex gap-3 mt-6">
-                    <button onClick={() => setDeleteStep(1)} className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">{locale === 'es' ? 'Volver' : 'Back'}</button>
-                    <button onClick={handleDeleteAccount} disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
-                      className={cn('flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
-                        (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE') ? 'bg-[#C4503B] text-white hover:bg-[#C4503B]' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed')}>
-                      {isDeleting ? <><SpinnerGap className="w-4 h-4 animate-spin" />{locale === 'es' ? 'Eliminando...' : 'Deleting...'}</> : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
-                    </button>
+                    <Button variant="outline" hideArrow onClick={() => setDeleteStep(1)} className="flex-1 justify-center">{locale === 'es' ? 'Volver' : 'Back'}</Button>
+                    <Button
+                      variant="destructive"
+                      hideArrow
+                      onClick={handleDeleteAccount}
+                      disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
+                      className="flex-1 justify-center gap-2"
+                    >
+                      {isDeleting ? <><Spinner size="sm" variant="current" />{locale === 'es' ? 'Eliminando...' : 'Deleting...'}</> : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
+                    </Button>
                   </div>
                 </div>
               </>

@@ -26,14 +26,16 @@ import {
   XCircle,
   Warning,
   Question,
-  Spinner,
   Clock,
   Info,
 } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Spinner as DSSpinner } from '@/components/ui/spinner'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import { formatPrimaCop, formatLatency } from '@/lib/cotizador/verdict-derive'
+import { BadgeFuente } from './BadgeFuente'
 
 // ---------------------------------------------------------------------------
 // Status visual tokens (mirrors CarrierCard palette for consistency)
@@ -45,35 +47,35 @@ function statusTokens(status: Status): { text: string; dot: string; chip: string
   switch (status) {
     case 'approved':
       return {
-        text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-        dot: 'bg-[#2C7A53]',
-        chip: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
+        text: 'text-success',
+        dot: 'bg-success',
+        chip: 'bg-success-soft text-success',
       }
     case 'conditional':
       return {
-        text: 'text-[#B7791F] dark:text-[#D2992F]',
-        dot: 'bg-[#B7791F]',
-        chip: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]',
+        text: 'text-warning',
+        dot: 'bg-warning',
+        chip: 'bg-warning-soft text-warning',
       }
     case 'rejected':
       return {
-        text: 'text-[#C4503B] dark:text-[#E0664D]',
-        dot: 'bg-[#C4503B]',
-        chip: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]',
+        text: 'text-danger',
+        dot: 'bg-danger',
+        chip: 'bg-danger-soft text-danger',
       }
     case 'pending':
       return {
-        text: 'text-[#1A40FF] dark:text-[#5570FF]',
-        dot: 'bg-[#1A40FF]',
-        chip: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]',
+        text: 'text-primary',
+        dot: 'bg-primary',
+        chip: 'bg-primary-soft text-primary',
       }
     case 'stub':
     case 'error':
     default:
       return {
-        text: 'text-neutral-600 dark:text-neutral-300',
-        dot: 'bg-neutral-400',
-        chip: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+        text: 'text-fg-muted',
+        dot: 'bg-fg-muted',
+        chip: 'bg-surface-muted text-fg-muted',
       }
   }
 }
@@ -82,47 +84,60 @@ function StatusIcon({ status }: { status: Status }) {
   const cls = 'w-4 h-4 shrink-0'
   switch (status) {
     case 'approved':
-      return <CheckCircle weight="fill" className={cn(cls, 'text-[#2C7A53]')} />
+      return <CheckCircle weight="fill" className={cn(cls, 'text-success')} />
     case 'conditional':
-      return <Info weight="fill" className={cn(cls, 'text-[#B7791F]')} />
+      return <Info weight="fill" className={cn(cls, 'text-warning')} />
     case 'rejected':
-      return <XCircle weight="fill" className={cn(cls, 'text-[#C4503B]')} />
+      return <XCircle weight="fill" className={cn(cls, 'text-danger')} />
     case 'error':
-      return <Warning weight="fill" className={cn(cls, 'text-neutral-500')} />
+      return <Warning weight="fill" className={cn(cls, 'text-fg-muted')} />
     case 'stub':
-      return <Question weight="fill" className={cn(cls, 'text-neutral-500')} />
+      return <Question weight="fill" className={cn(cls, 'text-fg-muted')} />
     case 'pending':
-      return <Spinner weight="bold" className={cn(cls, 'text-[#1A40FF] animate-spin')} />
+      return <DSSpinner size="sm" variant="default" className="shrink-0" />
     default:
       return null
   }
 }
 
 // ---------------------------------------------------------------------------
-// Estimado badge (honesty contract)
+// Optional richer-verdict fields (only rendered when a real portal supplies
+// them — CarrierState does not declare them today, so we read defensively).
 // ---------------------------------------------------------------------------
 
-function EstimadoBadge({ isStub }: { isStub: boolean }) {
-  const { t } = useI18n()
-  // While stub_mode is true → "Estimado · Prevalidación Leasefy". When the
-  // backend connects to real insurer portals (isStub=false) → "Confirmado".
-  const label = isStub
-    ? t('inmobiliaria.ai.cotizador.detail.fuente.estimado')
-    : t('inmobiliaria.ai.cotizador.detail.fuente.confirmado')
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
-        isStub
-          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400'
-          : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]',
-      )}
-      title={isStub ? t('inmobiliaria.ai.cotizador.detail.fuente.estimadoTooltip') : undefined}
-    >
-      <span aria-hidden="true" className={cn('w-1 h-1 rounded-full', isStub ? 'bg-neutral-400' : 'bg-[#2C7A53]')} />
-      {label}
-    </span>
-  )
+interface CarrierExtras {
+  cobertura?: string | null      // human cobertura summary (e.g. "Daño + arrendamiento")
+  vigencia?: string | null       // human vigencia (e.g. "12 meses")
+  confianzaPct?: number | null   // 0..100 backend confidence
+}
+
+function carrierExtras(carrier: CarrierState): CarrierExtras {
+  const c = carrier as CarrierState & {
+    cobertura?: unknown
+    vigencia?: unknown
+    vigenciaMeses?: unknown
+    confianza?: unknown
+    confianzaPct?: unknown
+  }
+  const cobertura = typeof c.cobertura === 'string' && c.cobertura.trim() ? c.cobertura.trim() : null
+  // vigencia may arrive as a string or a months number.
+  let vigencia: string | null = null
+  if (typeof c.vigencia === 'string' && c.vigencia.trim()) vigencia = c.vigencia.trim()
+  else if (typeof c.vigenciaMeses === 'number' && Number.isFinite(c.vigenciaMeses)) {
+    vigencia = String(c.vigenciaMeses)
+  }
+  // confianza may arrive as 0..1 or 0..100; normalize to a percent.
+  let confianzaPct: number | null = null
+  const rawConf =
+    typeof c.confianzaPct === 'number'
+      ? c.confianzaPct
+      : typeof c.confianza === 'number'
+        ? c.confianza
+        : null
+  if (rawConf != null && Number.isFinite(rawConf)) {
+    confianzaPct = rawConf <= 1 ? Math.round(rawConf * 100) : Math.round(rawConf)
+  }
+  return { cobertura, vigencia, confianzaPct }
 }
 
 // ---------------------------------------------------------------------------
@@ -184,33 +199,33 @@ export function CarrierCardExpandible({
       {/* Key facts grid */}
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
         <div>
-          <dt className="text-[11px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+          <dt className="text-xs uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.matriz.colCosto')}
             {/* matriz.colCosto = "Costo estimado" (existing key) */}
           </dt>
-          <dd className="mt-0.5 font-medium text-neutral-800 dark:text-neutral-100">
+          <dd className="mt-0.5 font-medium text-fg">
             {prima ? (
               <span className="font-mono tabular-nums">
                 {prima}
-                <span className="ml-1 text-xs font-normal text-neutral-400">/mes</span>
+                <span className="ml-1 text-xs font-normal text-fg-muted">/mes</span>
               </span>
             ) : (
-              <span className="text-neutral-400">—</span>
+              <span className="text-fg-muted">—</span>
             )}
           </dd>
         </div>
         <div>
-          <dt className="text-[11px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+          <dt className="text-xs uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.matriz.colTiempo')}
           </dt>
-          <dd className="mt-0.5 flex items-center gap-1 font-medium text-neutral-800 dark:text-neutral-100">
+          <dd className="mt-0.5 flex items-center gap-1 font-medium text-fg">
             {tiempo ? (
               <>
-                <Clock weight="regular" className="w-3.5 h-3.5 text-neutral-400" />
+                <Clock weight="regular" className="w-3.5 h-3.5 text-fg-muted" />
                 <span className="tabular-nums">{tiempo}</span>
               </>
             ) : (
-              <span className="text-neutral-400">—</span>
+              <span className="text-fg-muted">—</span>
             )}
           </dd>
         </div>
@@ -219,16 +234,16 @@ export function CarrierCardExpandible({
       {/* Condiciones (conditional / approved-with-conditions) */}
       {carrier.condiciones.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[11px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+          <p className="text-xs uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.carrier.condicionesTitle')}
           </p>
           <ul className="space-y-1">
             {carrier.condiciones.map((c, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-300"
+                className="flex items-start gap-2 text-sm text-fg-muted"
               >
-                <span aria-hidden="true" className="mt-1.5 w-1 h-1 rounded-full bg-[#B7791F]/60 shrink-0" />
+                <span aria-hidden="true" className="mt-1.5 w-1 h-1 rounded-full bg-warning/60 shrink-0" />
                 {c}
               </li>
             ))}
@@ -239,26 +254,26 @@ export function CarrierCardExpandible({
       {/* Motivo de rechazo / error */}
       {carrier.motivoRechazo && (
         <div className="space-y-1">
-          <p className="text-[11px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+          <p className="text-xs uppercase tracking-wide text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.carrier.motivoRechazoTitle')}
           </p>
-          <p className="text-[13px] text-[#C4503B] dark:text-[#E0664D]">{carrier.motivoRechazo}</p>
+          <p className="text-sm text-danger">{carrier.motivoRechazo}</p>
         </div>
       )}
 
       {/* Derived "por qué" */}
-      <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800/40 px-3 py-2.5">
-        <p className="text-[11px] uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+      <div className="rounded-lg bg-surface-muted px-3 py-2.5">
+        <p className="text-xs uppercase tracking-wide text-fg-muted">
           {t('inmobiliaria.ai.cotizador.detail.carrierCard.porQueTitle')}
         </p>
-        <p className="mt-1 text-[13px] text-neutral-600 dark:text-neutral-300 leading-relaxed">
+        <p className="mt-1 text-sm text-fg-muted leading-relaxed">
           {porQue(t, carrier)}
         </p>
       </div>
 
       {/* Estimado disclaimer line (only on priced results) */}
       {isPriced && carrier.isStub && (
-        <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
+        <p className="text-xs text-fg-muted leading-relaxed">
           {t('inmobiliaria.ai.cotizador.detail.matriz.estimadoDisclaimer')}
         </p>
       )}
@@ -266,21 +281,22 @@ export function CarrierCardExpandible({
       {/* Actions — coherent placeholders, no invented endpoints */}
       <div className="flex flex-wrap items-center gap-2 pt-1">
         {carrier.condiciones.length > 0 && (
-          <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+          <span className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.cotizador.detail.carrierCard.condicionesVisibleHint')}
           </span>
         )}
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
           disabled
           title={t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
-          className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 px-3 py-1.5 text-[12px] font-medium text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
         >
           {t('inmobiliaria.ai.cotizador.detail.carrierCard.avanzarAction')}
           <span className="text-[10px] font-normal opacity-70">
             · {t('inmobiliaria.ai.cotizador.detail.carrierCard.proximamente')}
           </span>
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -291,17 +307,20 @@ export function CarrierCardExpandible({
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      {/* Collapsible card-header disclosure toggle (rich icon+name+status-chip+price
+          row with AnimatePresence-style reveal) — Cadence Accordion can't host this
+          header; kept native with aria-expanded per playbook disclosure allowlist. */}
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-surface-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <StatusIcon status={carrier.status} />
-          <span className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
+          <span className="font-medium text-fg truncate">
             {carrier.carrier}
           </span>
           <span
@@ -319,11 +338,11 @@ export function CarrierCardExpandible({
               {prima}
             </span>
           )}
-          {isPriced && <EstimadoBadge isStub={carrier.isStub} />}
+          {isPriced && <BadgeFuente stubMode={carrier.isStub} />}
           <CaretDown
             weight="bold"
             className={cn(
-              'w-4 h-4 text-neutral-400 transition-transform duration-200',
+              'w-4 h-4 text-fg-muted transition-transform duration-200',
               open && 'rotate-180',
             )}
           />
@@ -333,7 +352,7 @@ export function CarrierCardExpandible({
       {open && (
         <div
           id={panelId}
-          className="border-t border-neutral-200/80 dark:border-neutral-800 px-4 py-4"
+          className="border-t border-border px-4 py-4"
         >
           {detail}
         </div>

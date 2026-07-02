@@ -25,6 +25,7 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
+import { Badge, Button } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
@@ -83,30 +84,23 @@ function AvaluosSala() {
               </p>
             </div>
             {AVALUO_URL ? (
-              <a
-                href={AVALUO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 inline-flex items-center gap-2 px-5 h-10 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] active:scale-[0.98] transition"
-                data-testid="avaluos-solicitar-cta"
-              >
-                {t(`${PAGES_NS}.solicitarCta`)}
-                <ArrowSquareOut className="w-4 h-4" aria-hidden="true" />
-              </a>
+              <Button asChild hideArrow className="shrink-0" data-testid="avaluos-solicitar-cta">
+                <a href={AVALUO_URL} target="_blank" rel="noopener noreferrer">
+                  {t(`${PAGES_NS}.solicitarCta`)}
+                  <ArrowSquareOut className="w-4 h-4" aria-hidden="true" />
+                </a>
+              </Button>
             ) : (
-              <span
-                className="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-muted text-muted-foreground text-[11px] font-mono uppercase tracking-[0.08em]"
-                data-testid="avaluos-solicitar-pendiente"
-              >
+              <Badge variant="secondary" className="shrink-0" data-testid="avaluos-solicitar-pendiente">
                 {t(`${PAGES_NS}.solicitarProximamente`)}
-              </span>
+              </Badge>
             )}
           </div>
         </div>
 
         {/* Cómo funciona — el viaje del avalúo en 4 pasos */}
         <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="avaluos-como-funciona">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="text-base font-semibold text-foreground">
             {t(`${PAGES_NS}.comoFunciona.title`)}
           </h2>
           <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -118,9 +112,9 @@ function AvaluosSala() {
                     <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
                       <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
                     </span>
-                    <span className="text-[11px] font-mono text-muted-foreground">{i + 1}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground leading-tight">
+                  <p className="text-sm font-semibold text-foreground leading-tight">
                     {t(step.titleKey)}
                   </p>
                   <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>

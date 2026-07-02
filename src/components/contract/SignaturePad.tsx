@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { PencilSimple, Eraser } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export interface SignaturePadProps {
   /**
@@ -60,19 +61,22 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-foreground inline-flex items-center gap-1.5">
-          <PencilSimple className="w-3.5 h-3.5 text-[#1A40FF] dark:text-[#5570FF]" />
-          Dibujá tu firma {signerName && <span className="text-muted-foreground">({signerName})</span>}
+        <label className="text-xs font-medium text-fg inline-flex items-center gap-1.5">
+          <PencilSimple className="w-3.5 h-3.5 text-primary" />
+          Dibujá tu firma {signerName && <span className="text-fg-muted">({signerName})</span>}
         </label>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={handleClear}
           disabled={disabled || isEmpty}
-          className="text-xs font-medium text-muted-foreground hover:text-foreground inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="text-xs gap-1 text-fg-muted hover:text-fg"
         >
           <Eraser className="w-3.5 h-3.5" />
           Borrar
-        </button>
+        </Button>
       </div>
 
       {/* El canvas SIEMPRE va con fondo blanco (como una hoja de papel), independiente
@@ -82,10 +86,10 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
       <div
         ref={containerRef}
         className={cn(
-          'relative rounded-xl border-2 border-dashed bg-white overflow-hidden transition-colors',
+          'relative rounded-xl border-2 border-dashed bg-surface overflow-hidden transition-colors',
           isEmpty
-            ? 'border-neutral-300 dark:border-neutral-600'
-            : 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40',
+            ? 'border-border dark:border-border-strong'
+            : 'border-primary/30',
           disabled && 'opacity-50 pointer-events-none'
         )}
         style={{ height: canvasSize.height }}
@@ -105,14 +109,14 @@ export function SignaturePad({ onChange, signerName, disabled = false, className
         )}
         {isEmpty && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-xs text-neutral-500 select-none">
+            <p className="text-xs text-fg-muted select-none">
               Firmá acá con el mouse, dedo o stylus
             </p>
           </div>
         )}
       </div>
 
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[11px] text-fg-muted">
         Tu firma se va a estampar en el PDF final junto con tu nombre, fecha y certificado de autenticidad.
       </p>
     </div>

@@ -18,14 +18,33 @@
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FileArrowUp, Users } from '@phosphor-icons/react'
+import { Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button, Input } from '@/components/ui'
+import {
+  Chip,
+  Badge,
+  RangeSlider,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@leasefy/cadence'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 
 void React
 
@@ -36,20 +55,11 @@ const DAYS_MIN_DEFAULT = 0
 const DAYS_MAX_DEFAULT = 90
 
 // Tailwind tokens for days-in-stage badge — D-31 spec: green ≤3, amber 4-7, red ≥8
-function daysBadgeClasses(days: number): string {
-  if (days <= 3) {
-    return 'bg-[#E8F3EC] text-[#2C7A53] ring-1 ring-[#2C7A53]/30 dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] dark:ring-[#2C7A53]/40'
-  }
-  if (days <= 7) {
-    return 'bg-[#F8F0E0] text-[#B7791F] ring-1 ring-[#B7791F]/30 dark:bg-[#B7791F]/15 dark:text-[#D2992F] dark:ring-[#B7791F]/40'
-  }
-  return 'bg-[#F8EAE7] text-[#C4503B] ring-1 ring-[#C4503B]/30 dark:bg-[#C4503B]/15 dark:text-[#E0664D] dark:ring-[#C4503B]/40'
-}
-
-function stageChipClasses(active: boolean): string {
-  return active
-    ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]'
+// (semantic status tints vía tokens del DS — contrato §8)
+function daysBadgeVariant(days: number): 'success' | 'warning' | 'danger' {
+  if (days <= 3) return 'success'
+  if (days <= 7) return 'warning'
+  return 'danger'
 }
 
 export default function DeudoresListClient() {
@@ -170,27 +180,11 @@ export default function DeudoresListClient() {
           title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
           description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
         />
-        {/* Importar cartera — visible pero aún sin importador real (patrón avalúos):
-            el importador de /portafolio/importar solo carga propiedades, así que
-            la acción degrada a "próximamente" en vez de mentir con un link. */}
-        <div className="rounded-lg border border-border bg-card p-5 max-w-3xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-md bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20 flex items-center justify-center shrink-0">
-              <FileArrowUp className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" weight="duotone" aria-hidden="true" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-0.5">
-              <h2 className="text-base font-semibold text-foreground">
-                {t('inmobiliaria.ai.cobranza.deudores.empty.cta.label')}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t('inmobiliaria.ai.workspace.pages.cobranza.importarNota')}
-              </p>
-            </div>
-            <span className="shrink-0 inline-flex items-center px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-label">
-              {t('inmobiliaria.ai.workspace.pages.cobranza.importarProximamente')}
-            </span>
-          </div>
-        </div>
+        {/* Importar cartera — cableada al endpoint POST /cartera/import.
+            FAIL-SOFT: si el backend no está desplegado (404/red), el card
+            degrada a "Próximamente — requiere despliegue" sin romper. Tras un
+            import exitoso refrescamos la lista para salir del empty state. */}
+        <CobranzaImportCard onImported={() => void refetch()} />
       </main>
     )
   }
@@ -228,19 +222,15 @@ export default function DeudoresListClient() {
         </legend>
         <div className="flex flex-wrap gap-2">
           {CARTERA_STAGES.map((s) => (
-            <button
+            <Chip
               key={s}
-              type="button"
+              size="sm"
+              selected={stages.includes(s)}
               onClick={() => toggleStage(s)}
-              aria-pressed={stages.includes(s)}
               data-testid={`stage-chip-${s}`}
-              className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                stageChipClasses(stages.includes(s))
-              }
             >
               {s}
-            </button>
+            </Chip>
           ))}
         </div>
       </fieldset>
@@ -252,20 +242,14 @@ export default function DeudoresListClient() {
         </legend>
         <div className="flex flex-wrap gap-2">
           {CHANNELS.map((c) => (
-            <button
+            <Chip
               key={c}
-              type="button"
+              size="sm"
+              selected={channels.includes(c)}
               onClick={() => toggleChannel(c)}
-              aria-pressed={channels.includes(c)}
-              className={
-                'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                (channels.includes(c)
-                  ? 'bg-[#6B6B6B] text-white border-[#6B6B6B]'
-                  : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-[#6B6B6B]')
-              }
             >
               {t(`inmobiliaria.ai.cobranza.deudores.channels.${c}` as Parameters<typeof t>[0])}
-            </button>
+            </Chip>
           ))}
         </div>
       </fieldset>
@@ -281,36 +265,29 @@ export default function DeudoresListClient() {
             <span>—</span>
             <span>{daysMax}</span>
           </div>
-          <div className="flex gap-2">
-            <input
-              type="range"
-              min={DAYS_MIN_DEFAULT}
-              max={DAYS_MAX_DEFAULT}
-              value={daysMin}
-              onChange={(e) => setDaysMin(Math.min(Number(e.target.value), daysMax))}
-              className="flex-1"
-              aria-label="days-min"
-            />
-            <input
-              type="range"
-              min={DAYS_MIN_DEFAULT}
-              max={DAYS_MAX_DEFAULT}
-              value={daysMax}
-              onChange={(e) => setDaysMax(Math.max(Number(e.target.value), daysMin))}
-              className="flex-1"
-              aria-label="days-max"
-            />
-          </div>
+          <RangeSlider
+            min={DAYS_MIN_DEFAULT}
+            max={DAYS_MAX_DEFAULT}
+            value={[daysMin, daysMax]}
+            onValueChange={([lo, hi]) => {
+              setDaysMin(lo)
+              setDaysMax(hi)
+            }}
+            showLabels={false}
+            aria-label="days-in-stage"
+          />
         </div>
       </fieldset>
 
-      <button
-        type="button"
+      <Button
+        variant="link"
+        size="sm"
         onClick={clearFilters}
-        className="text-xs font-medium text-[#6B6B6B] dark:text-[#6B6B6B] hover:underline"
+        hideArrow
+        className="px-0 h-auto"
       >
         {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-      </button>
+      </Button>
     </div>
   )
 
@@ -340,41 +317,30 @@ export default function DeudoresListClient() {
           >
             {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => setFiltersDrawerOpen(true)}
-            className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
           >
             {t('inmobiliaria.ai.cobranza.deudores.openFilters')}
-          </button>
+          </Button>
         </div>
 
-        {/* Mobile drawer */}
-        {filtersDrawerOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex items-end" role="dialog" aria-modal="true">
-            <button
-              type="button"
-              aria-label={t('inmobiliaria.ai.cobranza.deudores.closeFilters')}
-              onClick={() => setFiltersDrawerOpen(false)}
-              className="absolute inset-0 bg-black/40"
-            />
-            <div className="relative w-full bg-white dark:bg-neutral-900 rounded-t-xl p-5 max-h-[80vh] overflow-y-auto overscroll-contain">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
-                  {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setFiltersDrawerOpen(false)}
-                  className="text-sm text-neutral-500"
-                >
-                  {t('inmobiliaria.ai.cobranza.deudores.closeFilters')}
-                </button>
-              </div>
+        {/* Mobile drawer → Cadence Sheet (bottom) */}
+        <Sheet open={filtersDrawerOpen} onOpenChange={setFiltersDrawerOpen}>
+          <SheetContent
+            side="bottom"
+            className="md:hidden max-h-[80vh] overflow-y-auto overscroll-contain rounded-t-xl"
+          >
+            <SheetHeader>
+              <SheetTitle>{t('inmobiliaria.ai.cobranza.deudores.filters.title')}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
               <FiltersPanel />
             </div>
-          </div>
-        )}
+          </SheetContent>
+        </Sheet>
 
         {/* Main content */}
         <section className="flex-1 min-w-0">
@@ -384,16 +350,15 @@ export default function DeudoresListClient() {
               <label htmlFor="debtor-search" className="sr-only">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.search.label')}
               </label>
-              <input
+              <Input
                 id="debtor-search"
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('inmobiliaria.ai.cobranza.deudores.filters.search.placeholder')}
-                className="w-full px-3 py-2 text-sm rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
               />
               {searchHint && (
-                <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-1">{searchHint}</p>
+                <p className="text-xs text-warning mt-1">{searchHint}</p>
               )}
             </div>
             <span
@@ -406,78 +371,67 @@ export default function DeudoresListClient() {
 
           {/* Error */}
           {error && (
-            <div className="rounded-md border border-[#C4503B]/30 dark:border-[#C4503B]/40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 p-4 mb-4 flex items-center justify-between">
-              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+            <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+              <p className="text-sm text-danger">
                 {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
               </p>
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={() => void refetch()}
-                className="text-sm font-medium px-3 py-1.5 rounded-sm bg-[#C4503B] text-white hover:bg-[#C4503B]"
+                className="shrink-0"
               >
                 {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
-              </button>
+              </Button>
             </div>
           )}
 
           {/* md+ table */}
           <div className="hidden md:block overflow-x-auto overscroll-contain rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-neutral-50 dark:[&_th]:bg-neutral-950">
-              <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.name')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.stage')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.phone')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.email')}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                    {t('inmobiliaria.ai.cobranza.deudores.columns.channel')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <Table stickyHeader className="min-w-full text-sm">
+              <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+                <TableRow>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.name')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.stage')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.phone')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.email')}</TableHead>
+                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.channel')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading && pages.length === 0 && (
                   Array.from({ length: 5 }, (_, i) => (
-                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                    <TableRow key={`skeleton-${i}`} className="animate-pulse">
                       {Array.from({ length: 7 }, (_, j) => (
-                        <td key={j} className="px-3 py-3">
+                        <TableCell key={j} className="px-3 py-3">
                           <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   ))
                 )}
                 {!isLoading && pages.length === 0 && !error && (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-12 text-center">
+                  <TableRow>
+                    <TableCell colSpan={7} className="px-3 py-12 text-center">
                       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
                         {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                       </p>
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        hideArrow
                         onClick={clearFilters}
-                        className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                       >
                         {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-                      </button>
-                    </td>
-                  </tr>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 )}
                 {pages.map((d) => (
-                  <tr
+                  <TableRow
                     key={d.id}
                     onClick={() => navigateToDebtor(d.id)}
                     role="link"
@@ -485,42 +439,37 @@ export default function DeudoresListClient() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') navigateToDebtor(d.id)
                     }}
-                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
+                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <td className="px-3 py-2.5 text-neutral-900 dark:text-white whitespace-nowrap">
+                    <TableCell className="px-3 py-2.5 text-neutral-900 dark:text-white whitespace-nowrap">
                       {d.fullName}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span className="text-xs font-semibold text-[#6B6B6B] dark:text-[#6B6B6B]">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
+                      <span className="text-xs font-semibold text-foreground">
                         {d.currentStage}
                       </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                          daysBadgeClasses(d.daysInStage)
-                        }
-                      >
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
+                      <Badge variant={daysBadgeVariant(d.daysInStage)}>
                         {d.daysInStage}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <Mask field="cedula" value={d.cedulaMasked} />
-                    </td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <Mask field="phone" value={d.phoneMasked} />
-                    </td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <Mask field="email" value={d.emailMasked} />
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-neutral-500 dark:text-neutral-400">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-xs text-neutral-500 dark:text-neutral-400">
                       {d.channel}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* sm cards (mirrors LlamadasTab md+/sm pattern) */}
@@ -530,13 +479,14 @@ export default function DeudoresListClient() {
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
                   {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                 </p>
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
                   onClick={clearFilters}
-                  className="text-xs font-medium px-3 py-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-                </button>
+                </Button>
               </div>
             ) : (
               <ul className="space-y-2">
@@ -545,25 +495,20 @@ export default function DeudoresListClient() {
                     <button
                       type="button"
                       onClick={() => navigateToDebtor(d.id)}
-                      className="w-full min-h-11 text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B]"
+                      className="w-full min-h-11 text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                           {d.fullName}
                         </p>
-                        <span className="text-xs font-semibold text-[#6B6B6B] dark:text-[#6B6B6B] shrink-0">
+                        <span className="text-xs font-semibold text-foreground shrink-0">
                           {d.currentStage}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span
-                          className={
-                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                            daysBadgeClasses(d.daysInStage)
-                          }
-                        >
+                        <Badge variant={daysBadgeVariant(d.daysInStage)}>
                           {d.daysInStage} {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
-                        </span>
+                        </Badge>
                         <Mask field="cedula" value={d.cedulaMasked} />
                       </div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5">

@@ -16,11 +16,11 @@ import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 
 // Risk level colors for badge
 const RISK_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
-  A: { bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15', text: 'text-[#2C7A53] dark:text-[#3EAE70]' },
-  B: { bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15', text: 'text-[#1A40FF] dark:text-[#5570FF]' },
-  C: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]' },
-  D: { bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15', text: 'text-[#B7791F] dark:text-[#D2992F]' },
-  E: { bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15', text: 'text-[#C4503B] dark:text-[#E0664D]' },
+  A: { bg: 'bg-success-soft', text: 'text-success' },
+  B: { bg: 'bg-primary-soft', text: 'text-primary' },
+  C: { bg: 'bg-warning-soft', text: 'text-warning' },
+  D: { bg: 'bg-warning-soft', text: 'text-warning' },
+  E: { bg: 'bg-danger-soft', text: 'text-danger' },
 };
 
 // Overdue warning thresholds
@@ -61,7 +61,7 @@ export function PipelineCard({
     .slice(0, 2)
     .toUpperCase();
 
-  // Extract stage color classes (e.g., "bg-[#EEF1FF]" -> "blue")
+  // Extract stage color classes (e.g., "bg-primary-soft" -> "blue")
   const stageColor = stageInfo?.color?.split(' ')[0]?.replace('bg-', '').replace('-100', '') || 'neutral';
 
   return (
@@ -71,10 +71,10 @@ export function PipelineCard({
       animate={isDragging ? { scale: 1.02, boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.2)' } : { scale: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       className={cn(
-        'w-full rounded-xl border bg-white dark:bg-[#1a1a1c] overflow-hidden transition-all duration-200 cursor-pointer group',
+        'w-full rounded-xl border bg-card overflow-hidden transition-all duration-200 cursor-pointer group',
         isDragging
-          ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
-          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600',
+          ? 'border-primary/30 ring-2 ring-primary/20'
+          : 'border-border hover:border-primary/30',
       )}
       onClick={() => onClick?.(item)}
       {...dragHandleProps}
@@ -83,7 +83,7 @@ export function PipelineCard({
       <div
         className={cn(
           'h-1.5',
-          stageInfo?.color?.split(' ')[0] || 'bg-neutral-200'
+          stageInfo?.color?.split(' ')[0] || 'bg-surface-muted'
         )}
       />
 
@@ -101,27 +101,27 @@ export function PipelineCard({
               />
             </div>
           ) : (
-            <div className="w-12 h-12 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-              <HouseLine className="w-6 h-6 text-neutral-400" />
+            <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
+              <HouseLine className="w-6 h-6 text-muted-foreground" />
             </div>
           )}
 
           {/* Property Info */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm text-neutral-900 dark:text-white truncate">
+            <h4 className="font-medium text-sm text-foreground truncate">
               {item.propertyTitle}
             </h4>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {item.propertyAddress}
             </p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-white mt-0.5">
-              {formatCurrency(item.monthlyRent)}<span className="text-xs font-normal text-neutral-400">/{t('inmobiliaria.pipeline.month')}</span>
+            <p className="text-sm font-semibold text-foreground mt-0.5">
+              {formatCurrency(item.monthlyRent)}<span className="text-xs font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
             </p>
           </div>
         </div>
 
         {/* Candidate Section */}
-        <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-neutral-100 dark:border-neutral-800">
+        <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-border">
           {/* Candidate Avatar */}
           {item.candidateAvatar ? (
             <img
@@ -130,8 +130,8 @@ export function PipelineCard({
               className="w-8 h-8 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
-              <span className="text-xs font-semibold text-[#1A40FF] dark:text-[#5570FF]">
+            <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+              <span className="text-xs font-semibold text-primary">
                 {initials}
               </span>
             </div>
@@ -140,7 +140,7 @@ export function PipelineCard({
           {/* Candidate Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+              <p className="text-sm font-medium text-foreground truncate">
                 {item.candidateName}
               </p>
               {/* Risk Score Badge */}
@@ -154,7 +154,7 @@ export function PipelineCard({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Phone className="w-3 h-3" />
               <span className="truncate">{item.candidatePhone}</span>
             </div>
@@ -167,10 +167,10 @@ export function PipelineCard({
           <div className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs',
             daysCritical
-              ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+              ? 'bg-danger-soft text-danger'
               : daysWarning
-                ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
-                : 'bg-neutral-50 dark:bg-neutral-800/50 text-neutral-600 dark:text-neutral-400'
+                ? 'bg-warning-soft text-warning'
+                : 'bg-muted text-muted-foreground'
           )}>
             <Clock className="w-3.5 h-3.5" />
             <span>
@@ -184,8 +184,8 @@ export function PipelineCard({
             <div className={cn(
               'flex items-start gap-2 px-2.5 py-1.5 rounded-md text-xs',
               isOverdue
-                ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
-                : 'bg-neutral-50 dark:bg-neutral-800/50 text-neutral-600 dark:text-neutral-400'
+                ? 'bg-danger-soft text-danger'
+                : 'bg-muted text-muted-foreground'
             )}>
               <CalendarCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -205,17 +205,17 @@ export function PipelineCard({
         </div>
 
         {/* Footer - Stage Badge */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
           {/* Stage Badge */}
           <span className={cn(
             'px-2 py-1 rounded-full text-[10px] font-medium',
-            stageInfo?.color || 'bg-neutral-100 text-neutral-600'
+            stageInfo?.color || 'bg-muted text-muted-foreground'
           )}>
             {stageInfo?.labelEs || item.stage}
           </span>
 
           {/* Assigned Agent (small text) */}
-          <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <User className="w-3 h-3" />
             <span className="truncate max-w-[80px]">{t('inmobiliaria.pipeline.agent')} #{item.agenteId.slice(-3)}</span>
           </div>

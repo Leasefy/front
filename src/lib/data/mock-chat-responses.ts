@@ -7,7 +7,7 @@
  * Will be replaced by real Claude API calls in Phase 24.
  */
 
-import type { ResponseMeta } from '@/lib/types/beta-chat';
+import type { ResponseMeta, ChatSnapshot } from '@/lib/types/beta-chat';
 
 // ============================================================================
 // Response Map
@@ -404,4 +404,38 @@ export function getMockResponseMeta(userMessage: string): ResponseMeta {
   }
 
   return FALLBACK_META;
+}
+
+/** Demo "estado de hoy" snapshot for cartera/cobranza-flavored queries. */
+const MOCK_SNAPSHOT: ChatSnapshot = {
+  deudoresActivos: 47,
+  pagadoHoyCop: 8_420_000,
+  llamadasHoy: 23,
+  escalacionesPendientes: 5,
+  enPrejuridico: 3,
+};
+
+const SNAPSHOT_KEYWORDS = [
+  'cartera',
+  'cobranza',
+  'cobro',
+  'mora',
+  'deudor',
+  'pago',
+  'recaud',
+  'estado',
+  'hoy',
+  'resumen',
+];
+
+/**
+ * Returns a demo KPI snapshot when the query is cobranza/cartera-flavored, so
+ * the `ChatDataCard` glance is demoable on the local mock path (agent :4000
+ * down). Real turns get their snapshot from the backend SSE/JSON.
+ */
+export function getMockSnapshot(userMessage: string): ChatSnapshot | null {
+  const normalized = userMessage.toLowerCase();
+  return SNAPSHOT_KEYWORDS.some((kw) => normalized.includes(kw))
+    ? MOCK_SNAPSHOT
+    : null;
 }

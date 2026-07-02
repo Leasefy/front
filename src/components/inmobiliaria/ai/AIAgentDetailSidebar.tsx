@@ -24,6 +24,7 @@ import {
   Robot,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AIAgentDefinition } from '@/lib/types/ai-agents';
@@ -99,10 +100,10 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
         { textEs: 'Propiedad sin aplicantes por +14 días', textEn: 'No applicants for 14+ days' },
       ];
 
-  const accentColor = 'text-neutral-600 dark:text-neutral-400';
-  const accentBg = 'bg-neutral-50';
-  const accentBorder = 'border-neutral-200';
-  const accentDot = 'bg-[#2C7A53]';
+  const accentColor = 'text-fg-muted';
+  const accentBg = 'bg-surface-muted';
+  const accentBorder = 'border-border';
+  const accentDot = 'bg-success';
 
   const content = (
     <div
@@ -111,12 +112,12 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
       onWheel={(e) => e.stopPropagation()}
     >
       <div
-        className="absolute inset-0 bg-black/30"
+        className="absolute inset-0 bg-[rgba(20,19,15,0.32)]"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="absolute top-0 right-0 bottom-0 w-full max-w-[460px] bg-white flex flex-col overflow-hidden">
+      <div className="absolute top-0 right-0 bottom-0 w-full max-w-[460px] bg-surface flex flex-col overflow-hidden">
         <div
           className="flex-1 overflow-y-auto overscroll-none"
           style={{ WebkitOverflowScrolling: 'touch' }}
@@ -125,9 +126,11 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
           <div className={cn('px-6 pt-6 pb-6', accentBg)}>
             <div className="flex items-start justify-between mb-5">
               <div className="flex items-center gap-2">
-                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider', accentBg, accentColor)} style={{ border: `1px solid` }}>
+                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border bg-surface', accentColor)}>
                   <Robot weight="bold" className="h-2.5 w-2.5" />
-                  Agente AI
+                  <MonoLabel className={cn('text-[10px] tracking-[0.1em]', accentColor)}>
+                    Agente AI
+                  </MonoLabel>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="relative flex h-1.5 w-1.5">
@@ -137,22 +140,23 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
                   <span className={cn('text-[11px] font-medium', accentColor)}>Activo</span>
                 </span>
               </div>
-              <button
+              <IconButton
+                variant="ghost"
                 onClick={onClose}
-                className="rounded-md p-1.5 hover:bg-black/5 transition-colors -mr-1"
-              >
-                <X weight="bold" className="h-4 w-4 text-neutral-500" />
-              </button>
+                aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
+                className="-mr-1 text-fg-muted"
+                icon={<X weight="bold" />}
+              />
             </div>
 
             <div className="flex items-center gap-4">
-              <div className={cn('rounded-xl p-3', 'bg-white')} style={{ border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div className="rounded-[14px] p-3 bg-surface border border-border-faint shadow-xs">
                 <AgentIcon weight="duotone" className={cn('h-7 w-7', accentColor)} />
               </div>
               <div>
-                <h2 className="text-[20px] font-semibold text-neutral-900 tracking-tight leading-tight">{name}</h2>
+                <h2 className="text-[20px] font-semibold text-fg tracking-tight leading-tight">{name}</h2>
                 {detail && (
-                  <p className="mt-1 text-[13px] text-neutral-500 leading-relaxed">
+                  <p className="mt-1 text-[13px] text-fg-subtle leading-relaxed">
                     {locale === 'es' ? detail.taglineEs : detail.taglineEn}
                   </p>
                 )}
@@ -160,14 +164,14 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
             </div>
 
             {/* Quick stats */}
-            <div className="flex items-center gap-4 mt-5 pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border-faint">
               {(isScoring
                 ? [{ val: '< 3 min', label: 'Tiempo avg' }, { val: '94%', label: 'Precisión' }, { val: '3%', label: 'Escala a humano' }]
                 : [{ val: '87%', label: 'Compat. avg' }, { val: '31%', label: 'Conversión' }, { val: '24h', label: 'Re-escaneo' }]
               ).map((s) => (
                 <div key={s.label} className="flex-1 text-center">
-                  <p className="text-[18px] font-semibold text-neutral-900">{s.val}</p>
-                  <p className="text-[10px] text-neutral-500 mt-0.5">{s.label}</p>
+                  <p className="text-[18px] font-semibold font-mono tabular-nums text-fg">{s.val}</p>
+                  <p className="text-[10px] text-fg-subtle mt-0.5">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -178,9 +182,9 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
 
             {/* ── Pipeline ── */}
             <div>
-              <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-4">
+              <MonoLabel className="mb-4 block text-fg-subtle">
                 {locale === 'es' ? 'Cómo funciona' : 'How it works'}
-              </p>
+              </MonoLabel>
 
               {pipeline.map((step, i) => {
                 const StepIcon = step.icon;
@@ -188,19 +192,16 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
                 return (
                   <div key={i} className="flex gap-3 relative">
                     {!isLast && (
-                      <div className="absolute left-[15px] top-[34px] bottom-0 w-px bg-neutral-200" />
+                      <div className="absolute left-[15px] top-[34px] bottom-0 w-px bg-border" />
                     )}
                     <div className="relative z-10 flex-shrink-0">
-                      <div
-                        className="h-[30px] w-[30px] rounded-md bg-white flex items-center justify-center"
-                        style={{ border: '1px solid rgba(0,0,0,0.1)' }}
-                      >
+                      <div className="h-[30px] w-[30px] rounded-[10px] bg-surface border border-border-faint flex items-center justify-center">
                         <StepIcon weight="duotone" className={cn('h-3.5 w-3.5', accentColor)} />
                       </div>
                     </div>
                     <div className={cn('flex-1 min-w-0', !isLast && 'pb-4')}>
-                      <p className="text-[13px] font-medium text-neutral-900">{step.label}</p>
-                      <p className="text-[12px] text-neutral-500 mt-0.5 leading-relaxed">{step.desc}</p>
+                      <p className="text-[13px] font-medium text-fg">{step.label}</p>
+                      <p className="text-[12px] text-fg-subtle mt-0.5 leading-relaxed">{step.desc}</p>
                     </div>
                   </div>
                 );
@@ -208,36 +209,36 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-neutral-100" />
+            <div className="h-px bg-border-faint" />
 
             {/* ── Triggers ── */}
             <div>
-              <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+              <MonoLabel className="mb-3 block text-fg-subtle">
                 {locale === 'es' ? 'Se activa cuando' : 'Activates when'}
-              </p>
+              </MonoLabel>
               <div className="space-y-2">
                 {triggers.map((trigger, i) => (
                   <div key={i} className="flex items-start gap-2.5">
-                    <Lightning weight="fill" className="h-3.5 w-3.5 text-neutral-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-[13px] text-neutral-700 leading-relaxed">{trigger}</p>
+                    <Lightning weight="fill" className="h-3.5 w-3.5 text-fg-subtle mt-0.5 flex-shrink-0" />
+                    <p className="text-[13px] text-fg-muted leading-relaxed">{trigger}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-neutral-100" />
+            <div className="h-px bg-border-faint" />
 
             {/* ── Escalation ── */}
             <div>
-              <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+              <MonoLabel className="mb-3 block text-fg-subtle">
                 {locale === 'es' ? 'Escala a tu equipo cuando' : 'Escalates to your team when'}
-              </p>
+              </MonoLabel>
               <div className="space-y-2">
                 {escalation.map((item, i) => (
                   <div key={i} className="flex items-start gap-2.5">
-                    <ShieldWarning weight="fill" className="h-3.5 w-3.5 text-neutral-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-[13px] text-neutral-700 leading-relaxed">
+                    <ShieldWarning weight="fill" className="h-3.5 w-3.5 text-fg-subtle mt-0.5 flex-shrink-0" />
+                    <p className="text-[13px] text-fg-muted leading-relaxed">
                       {locale === 'es' ? item.textEs : item.textEn}
                     </p>
                   </div>
@@ -246,16 +247,16 @@ export function AIAgentDetailSidebar({ agent, onClose }: AIAgentDetailSidebarPro
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-neutral-100" />
+            <div className="h-px bg-border-faint" />
 
             {/* ── Impact ── */}
-            <div className={cn('rounded-xl p-4', accentBg)} style={{ border: `1px solid rgba(0,0,0,0.06)` }}>
-              <p className="text-[14px] font-semibold text-neutral-900">
+            <div className={cn('rounded-[16px] p-4 border border-border-faint', accentBg)}>
+              <p className="text-[14px] font-semibold text-fg">
                 {isScoring
                   ? (locale === 'es' ? 'Evaluación que tomaba 2-5 días → resultado en menos de 3 minutos' : 'Evaluation that took 2-5 days → result in under 3 minutes')
                   : (locale === 'es' ? 'Cada candidato que aplica a 1 propiedad descubre 3 más de tu portafolio' : 'Every candidate who applies to 1 property discovers 3 more from your portfolio')}
               </p>
-              <p className="text-[12px] text-neutral-500 mt-1.5 leading-relaxed">
+              <p className="text-[12px] text-fg-subtle mt-1.5 leading-relaxed">
                 {isScoring
                   ? (locale === 'es' ? 'Sin errores humanos · Sin sesgos · Con explicación completa y código de verificación' : 'No human errors · No bias · With full explanation and verification code')
                   : (locale === 'es' ? 'Automático · Proactivo · Sin intervención manual' : 'Automatic · Proactive · No manual intervention')}

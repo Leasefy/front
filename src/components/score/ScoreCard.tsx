@@ -77,8 +77,8 @@ export function ScoreCard({
         <div className="flex items-center gap-4">
           <LevelBadge level={score.level} size="md" />
           <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground">
-              Score: <span className="font-semibold text-foreground">{score.numericScore}/100</span>
+            <span className="text-sm text-fg-muted">
+              Score: <span className="font-semibold text-fg font-mono tabular-nums">{score.numericScore}/100</span>
             </span>
             <span className={cn('text-sm font-medium', colors.text)}>
               {label}
@@ -104,15 +104,15 @@ export function ScoreCard({
       <div className="flex flex-col items-center text-center mb-6">
         <LevelBadge level={score.level} size="lg" />
         <div className="mt-3">
-          <div className="text-2xl font-semibold text-foreground">
+          <div className="text-2xl font-semibold text-fg font-mono tabular-nums">
             {score.numericScore}
-            <span className="text-lg text-muted-foreground">/100</span>
+            <span className="text-lg text-fg-muted">/100</span>
           </div>
           <div className={cn('text-sm font-medium mt-1', colors.text)}>
             {label}
           </div>
           {candidateName && (
-            <div className="text-xs text-muted-foreground mt-2">
+            <div className="text-xs text-fg-subtle mt-2">
               {candidateName}
             </div>
           )}
@@ -121,12 +121,12 @@ export function ScoreCard({
 
       {/* Key drivers */}
       {score.drivers.length > 0 && (
-        <div className="border-t border-border/50 pt-4">
+        <div className="border-t border-border-faint pt-4">
           <ul className="space-y-2">
             {score.drivers.slice(0, 4).map((driver, index) => (
               <li key={index} className="flex items-start gap-2 text-sm">
                 <Check className={cn('h-4 w-4 mt-0.5 shrink-0', colors.textLight)} />
-                <span className="text-muted-foreground">{driver}</span>
+                <span className="text-fg-muted">{driver}</span>
               </li>
             ))}
           </ul>

@@ -24,26 +24,26 @@ export function OnboardingChecklist() {
   if (!isAdmin || isComplete) return null;
 
   return (
-    <div className="rounded-xl border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20 p-6">
+    <div className="rounded-xl border border-primary/30 bg-primary-soft/50 dark:bg-primary/20 p-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <h2 className="text-base font-semibold text-fg dark:text-white">
             Configura tu agencia
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
             Completa estos pasos para aprovechar al máximo Leasefy
           </p>
         </div>
-        <span className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] shrink-0">
+        <span className="text-sm font-medium text-primary shrink-0">
           {completionPercent}% completado
         </span>
       </div>
 
       {/* Progress Bar */}
-      <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden mb-5">
+      <div className="h-1.5 rounded-full bg-surface-muted dark:bg-ink overflow-hidden mb-5">
         <div
-          className="h-full rounded-full bg-[#1A40FF] transition-all duration-500"
+          className="h-full rounded-full bg-primary transition-all duration-500"
           style={{ width: `${completionPercent}%` }}
         />
       </div>
@@ -56,13 +56,13 @@ export function OnboardingChecklist() {
             {step.completed ? (
               <CheckCircle
                 weight="fill"
-                className="h-5 w-5 text-[#2C7A53] shrink-0"
+                className="h-5 w-5 text-success shrink-0"
                 aria-hidden="true"
               />
             ) : (
               <Circle
                 weight="regular"
-                className="h-5 w-5 text-neutral-400 dark:text-neutral-500 shrink-0"
+                className="h-5 w-5 text-fg-subtle dark:text-fg-muted shrink-0"
                 aria-hidden="true"
               />
             )}
@@ -72,8 +72,8 @@ export function OnboardingChecklist() {
               className={cn(
                 'flex-1 text-sm',
                 step.completed
-                  ? 'text-neutral-400 dark:text-neutral-500 line-through'
-                  : 'text-neutral-700 dark:text-neutral-300'
+                  ? 'text-fg-subtle dark:text-fg-muted line-through'
+                  : 'text-fg dark:text-fg-subtle'
               )}
             >
               {step.label}
@@ -83,7 +83,7 @@ export function OnboardingChecklist() {
             {step.action && !step.completed && (
               <Link
                 href={step.action.href}
-                className="shrink-0 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] hover:underline"
+                className="shrink-0 text-xs font-medium text-primary hover:text-primary dark:hover:text-primary hover:underline"
               >
                 {step.action.label}
               </Link>

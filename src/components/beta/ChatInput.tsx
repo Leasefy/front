@@ -420,7 +420,7 @@ export function ChatInput({
                     "relative before:absolute before:-inset-1.5 before:content-['']",
                     'transition-all duration-150',
                     listening
-                      ? 'bg-primary text-white shadow-[0_0_0_4px_rgba(26,64,255,0.14)]'
+                      ? 'bg-primary text-primary-fg shadow-[0_0_0_4px_rgba(26,64,255,0.14)]'
                       : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-500 dark:hover:bg-neutral-800'
                   )}
                   aria-label={listening ? t('beta.chat.voiceStop') : t('beta.chat.voiceButton')}

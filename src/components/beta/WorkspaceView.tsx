@@ -669,7 +669,7 @@ export function WorkspaceView({
                     'max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? [
-                          'bg-primary text-white',
+                          'bg-primary text-primary-fg',
                           'rounded-br-sm',
                         ]
                       : [

@@ -76,7 +76,7 @@ export function WizardProgress({
                       'w-10 h-10 rounded-sm flex items-center justify-center transition-all duration-300',
                       'border-2',
                       isCompleted
-                        ? 'bg-primary border-primary text-white'
+                        ? 'bg-primary border-primary text-primary-fg'
                         : isCurrent
                         ? 'bg-card border-primary text-primary'
                         : 'bg-card border-border text-muted-foreground'
@@ -146,7 +146,7 @@ export function WizardProgress({
                 className={cn(
                   'w-8 h-8 rounded-sm flex items-center justify-center text-xs font-medium transition-all',
                   isCompleted
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-primary-fg'
                     : isCurrent
                     ? 'bg-primary/10 text-primary border border-primary'
                     : 'bg-muted text-muted-foreground',

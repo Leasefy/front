@@ -291,7 +291,7 @@
     /* --------------------------------------------------------
      * PLan CRM Namespace (separate system, hex values)
      * -------------------------------------------------------- */
-    --plan-page-bg: #F7F8FA;
+    --plan-page-bg: #FBFAF9;  /* = cadence bg / sidebar (bg-bg) — shell unificado (body = sidebar = header) */
     --plan-card-bg: #FFFFFF;
     --plan-accent: #D4F934;
     --plan-accent-dark: #a8c929;
@@ -1557,6 +1557,9 @@ select:-webkit-autofill:active {
   --fg-muted: #b3aea5;
   --fg-subtle: #7e7a72;
   --primary-hover: #3b5bff;
+  /* Dark primary = light periwinkle fill → text must be dark ink (not white).
+     Was missing here, so it inherited :root's #fff → white text on periwinkle. */
+  --primary-fg: #14130f;
   --accent-soft: rgba(26, 64, 255, 0.16);
   --success-soft: rgba(62, 174, 112, 0.16);
   --warning-soft: rgba(210, 153, 47, 0.16);

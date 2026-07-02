@@ -283,7 +283,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                     status === 'completed'
                       ? 'bg-success text-white'
                       : status === 'current'
-                        ? 'bg-primary text-white uppercase tracking-wide font-mono ring-4 ring-primary/30'
+                        ? 'bg-primary text-primary-fg uppercase tracking-wide font-mono ring-4 ring-primary/30'
                         : 'bg-surface-muted dark:bg-ink text-fg-subtle'
                   )}>
                     {status === 'completed' ? (

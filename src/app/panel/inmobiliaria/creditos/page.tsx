@@ -111,7 +111,7 @@ function CreditosContent() {
             className="mb-8"
           />
         ) : balance ? (
-          <section className="rounded-xl bg-primary p-6 text-white mb-8">
+          <section className="rounded-xl bg-primary p-6 text-primary-fg mb-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-white/70 font-medium mb-2">

@@ -534,7 +534,7 @@ export default function PanelPage() {
                   </p>
                   <Link
                     href="/publicar?from=panel"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-full hover:opacity-90 transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-fg text-sm font-medium rounded-full hover:opacity-90 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     {t('landlord.dashboard.publishProperty')}
@@ -862,7 +862,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
             </Link>
             <Link
               href="/panel/visitas"
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-primary text-white rounded-xl hover:opacity-90 transition-colors"
+              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-xl hover:opacity-90 transition-colors"
             >
               {t('landlord.dashboard.manageVisit')}
             </Link>
@@ -997,7 +997,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
         footerActions={selected?.href ? (
           <Link
             href={selected.href}
-            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-primary text-white rounded-xl hover:opacity-90 transition-colors"
+            className="block w-full text-center text-sm font-medium px-4 py-2.5 bg-primary text-primary-fg rounded-xl hover:opacity-90 transition-colors"
           >
             {actionLabel}
           </Link>

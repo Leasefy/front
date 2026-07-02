@@ -255,8 +255,12 @@ scroll dead). Overlay scrim uses warm ink (`#14130F`) at 40%, not pure black.
 
 ### Sidebar / Layout
 The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
+- **Unified shell background:** sidebar, page body, and header all share the cadence page bg
+  `bg-bg` (`#FBFAF9`). Separation comes from hairline borders (`border-r` / `border-b`), not a
+  bg-color step. Cards/KPIs sit on white (`bg-surface-raised`) for elevation against the shell.
+  (Body is driven by `--plan-page-bg` = `#FBFAF9`; header uses `bg-bg`.)
 - Sidebar: `lg:fixed lg:inset-y-0`, 240px wide, collapsible to 64px via `SidebarContext`
-- Header: `sticky top-0 z-30 bg-surface-raised border-b border-border`
+- Header: `sticky top-0 z-30 bg-bg border-b border-border`
 - Main content offset: `lg:pl-[240px]` (or `lg:pl-16` when collapsed)
 
 ### Banners (state-colored info blocks)

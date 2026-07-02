@@ -75,7 +75,7 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaL
         {/* Skip to chat link - visible only on focus for screen readers */}
         <a
           href="#beta-chat-main"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-md focus:text-sm focus:font-medium"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-fg focus:rounded-md focus:text-sm focus:font-medium"
         >
           {t('beta.a11y.skipToChat')}
         </a>

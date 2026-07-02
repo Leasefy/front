@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Toaster } from '@/components/ui/toast';
 import {
   SquaresFour,
@@ -43,7 +43,6 @@ import { cn } from '@/lib/utils';
 import { MobileNavBar } from '@/components/layout/MobileNavBar';
 import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/CommandPaletteContext';
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
-import { CommandPaletteTrigger } from '@/components/inmobiliaria/CommandPaletteTrigger';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 
 /** Registers the global ⌘K keyboard shortcut for the command palette. */
@@ -86,6 +85,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
   const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole } = usePermissionsContext();
+  const { open: openCommandPalette } = useCommandPalette();
+  const router = useRouter();
 
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
@@ -261,8 +262,22 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           title: t('inmobiliaria.common.title'),
           href: '/panel/inmobiliaria',
         }}
-        showUpgrade={false}
-        aboveNav={<CommandPaletteTrigger className="w-full rounded-xl" />}
+        // cadence §Navigation: workspace switcher + search-opens-⌘K + footer cards
+        workspaceName={t('inmobiliaria.common.title')}
+        workspaces={[
+          {
+            id: 'current',
+            name: t('inmobiliaria.common.title'),
+            description: 'Panel de tu inmobiliaria',
+            active: true,
+          },
+        ]}
+        onSearchClick={openCommandPalette}
+        searchPlaceholder="Buscar"
+        showInvite
+        onInvite={() => router.push('/panel/inmobiliaria/agentes')}
+        showUpgrade
+        upgradeHref="/panel/inmobiliaria/configuracion"
       />
 
       {/* Main content area */}

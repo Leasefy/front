@@ -253,7 +253,7 @@ export function PlanDetailSheet({
                     className={cn(
                       'flex items-center justify-center gap-2 px-3 py-2 rounded-sm text-sm font-medium transition-colors',
                       action.variant === 'primary'
-                        ? 'bg-primary text-white hover:bg-primary/90'
+                        ? 'bg-primary text-primary-fg hover:bg-primary/90'
                         : action.variant === 'danger'
                           ? 'bg-plan-status-red-bg text-[#C4503B] hover:bg-[#F8EAE7]'
                           : 'bg-muted text-plan-primary hover:bg-muted'

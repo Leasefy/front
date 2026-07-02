@@ -418,8 +418,8 @@ function DocumentosContent() {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
-                <TabsTrigger key={tab.id} value={tab.id} className="group gap-2">
-                  <Icon className="w-4 h-4" />
+                <TabsTrigger key={tab.id} value={tab.id} className="group inline-flex items-center gap-2 whitespace-nowrap">
+                  <Icon className="w-4 h-4 shrink-0" />
                   {tab.label}
                   {tab.count !== undefined && (
                     <span className="px-1.5 py-0.5 text-xs rounded-full tabular-nums bg-muted-foreground/20 group-data-[state=active]:bg-primary-soft group-data-[state=active]:text-primary">

@@ -412,8 +412,8 @@ function ConfiguracionContent() {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
-            <TabsTrigger key={tab.id} value={tab.id} className="gap-2">
-              <Icon className="w-4 h-4" />
+            <TabsTrigger key={tab.id} value={tab.id} className="inline-flex items-center gap-2 whitespace-nowrap">
+              <Icon className="w-4 h-4 shrink-0" />
               <span>{tab.label}</span>
             </TabsTrigger>
           );

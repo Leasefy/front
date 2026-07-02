@@ -415,7 +415,7 @@ export function RecordatorioConfig({
             </Button>
             <Button
               type="button"
-              className="flex-1 bg-primary hover:opacity-90 text-white"
+              className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
               onClick={handleSave}
               disabled={!isValid || isSaving}
             >

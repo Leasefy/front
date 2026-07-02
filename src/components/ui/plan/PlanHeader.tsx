@@ -271,7 +271,7 @@ export function PlanHeader({
   };
 
   return (
-    <header className={cn('sticky top-0 z-30 bg-white dark:bg-card border-b border-neutral-200 dark:border-border', className)}>
+    <header className={cn('sticky top-0 z-30 bg-bg dark:bg-card border-b border-neutral-200 dark:border-border', className)}>
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Left: mobile menu trigger + MagnifyingGlass */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -902,7 +902,7 @@ export function PlanHeader({
                     <div
                       className={cn(
                         'w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm flex-shrink-0 cursor-pointer',
-                        !notification.read ? 'bg-primary text-white uppercase tracking-wide font-mono' : 'bg-muted text-plan-secondary'
+                        !notification.read ? 'bg-primary text-primary-fg uppercase tracking-wide font-mono' : 'bg-muted text-plan-secondary'
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >

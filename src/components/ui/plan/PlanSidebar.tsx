@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -20,7 +20,15 @@ import {
 // composed AROUND these (the primitive does not model them — see ## Gaps in
 // CADENCE-COMPONENTS.md). Expanded leaf rows + group labels ARE the real
 // components so they inherit the DS hover/active/focus states.
-import { SidebarSection, SidebarItem } from '@leasefy/cadence';
+import {
+  SidebarSection,
+  SidebarItem,
+  SidebarWorkspaceSwitcher,
+  SidebarSearch,
+  SidebarInviteCard,
+  SidebarUpgradeButton,
+  type SidebarWorkspace,
+} from '@leasefy/cadence';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobile sidebar opener — module-level pub-sub.
@@ -84,11 +92,28 @@ export interface PlanSidebarProps {
   upgradeHref?: string;
   upgradeLabel?: string;
   profileCompletion?: ProfileCompletionConfig;
-  /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger). */
+  /** Optional element rendered between the logo and the nav (e.g. ⌘K trigger).
+   *  Used as the search-slot fallback when `onSearchClick` is not provided. */
   aboveNav?: React.ReactNode;
   /** When true, the nav list is replaced by a skeleton placeholder (e.g. while
    *  permissions load) so permission-gated items never flash in then disappear. */
   loading?: boolean;
+  // ── cadence §Navigation composition (workspace switcher + search + footer) ──
+  /** Opens the command palette when the cadence SidebarSearch is clicked. When
+   *  set, SidebarSearch replaces the `aboveNav` slot. */
+  onSearchClick?: () => void;
+  /** Placeholder for the cadence SidebarSearch field. */
+  searchPlaceholder?: string;
+  /** Workspace name shown in the header switcher (defaults to `logo.title`). */
+  workspaceName?: string;
+  /** Workspaces listed in the header switcher dropdown. */
+  workspaces?: SidebarWorkspace[];
+  /** Fired when a workspace row is chosen. */
+  onWorkspaceSelect?: (id: string) => void;
+  /** Show the "Invita a tu equipo" footer card (cadence §Navigation). */
+  showInvite?: boolean;
+  /** Handler for the invite-card button. */
+  onInvite?: () => void;
 }
 
 interface NavItemComponentProps {
@@ -294,6 +319,13 @@ interface SidebarContentProps {
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
   loading?: boolean;
+  onSearchClick?: () => void;
+  searchPlaceholder?: string;
+  workspaceName?: string;
+  workspaces?: SidebarWorkspace[];
+  onWorkspaceSelect?: (id: string) => void;
+  showInvite?: boolean;
+  onInvite?: () => void;
 }
 
 function SidebarContent({
@@ -303,11 +335,22 @@ function SidebarContent({
   onCollapse,
   onItemClick,
   showCollapseButton = true,
+  showUpgrade = false,
+  upgradeHref,
+  upgradeLabel,
   profileCompletion,
   aboveNav,
   loading = false,
+  onSearchClick,
+  searchPlaceholder,
+  workspaceName,
+  workspaces,
+  onWorkspaceSelect,
+  showInvite = false,
+  onInvite,
 }: SidebarContentProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
 
   const isActive = (item: NavItem) => {
@@ -343,24 +386,48 @@ function SidebarContent({
         </button>
       )}
 
-      {/* Logo */}
-      <div className={cn(
-        'h-[60px] flex items-center',
-        isCollapsed ? 'justify-center px-2' : 'px-5'
-      )}>
-        <Link href="/" className="flex items-center" onClick={onItemClick}>
-          {isCollapsed ? (
+      {/* Header — cadence §Navigation workspace switcher (expanded) or the
+          brand mark on the collapsed rail. */}
+      {isCollapsed ? (
+        <div className="h-[60px] flex items-center justify-center px-2">
+          <Link href={logo?.href ?? '/'} className="flex items-center" onClick={onItemClick}>
             <LeasefyMark variant="tile" size={32} />
-          ) : (
+          </Link>
+        </div>
+      ) : workspaceName || (workspaces && workspaces.length > 0) ? (
+        <div className="px-3 pt-3">
+          <SidebarWorkspaceSwitcher
+            name={workspaceName ?? logo?.title ?? 'Leasefy'}
+            workspaces={workspaces}
+            onSelect={onWorkspaceSelect}
+          />
+        </div>
+      ) : (
+        // Fallback for layouts that don't opt into the switcher — original brand logo.
+        <div className="h-[60px] flex items-center px-5">
+          <Link href={logo?.href ?? '/'} className="flex items-center" onClick={onItemClick}>
             <LeasefyLogo orientation="horizontal" size={30} tone="auto" />
-          )}
-        </Link>
-      </div>
+          </Link>
+        </div>
+      )}
 
-      {/* ⌘K / above-nav slot */}
-      {aboveNav && !isCollapsed && (
+      {/* Search — cadence SidebarSearch opens the command palette (⌘K).
+          Falls back to the aboveNav slot for layouts that don't wire it. */}
+      {!isCollapsed && (onSearchClick || aboveNav) && (
         <div className="px-3 pb-1">
-          {aboveNav}
+          {onSearchClick ? (
+            <SidebarSearch
+              readOnly
+              placeholder={searchPlaceholder ?? 'Buscar'}
+              className="cursor-pointer"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSearchClick();
+              }}
+            />
+          ) : (
+            aboveNav
+          )}
         </div>
       )}
 
@@ -474,20 +541,41 @@ function SidebarContent({
         );
       })()}
 
-      {/* Help Link */}
-      <div className="px-3 pb-3">
-        <Link
-          href="/ayuda"
-          onClick={onItemClick}
-          className={cn(
-            'flex items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors',
-            isCollapsed && 'justify-center px-2'
+      {/* Footer — cadence §Navigation: invite card + upgrade CTA, then Help.
+          Collapsed rail shows only the Help icon. */}
+      {isCollapsed ? (
+        <div className="px-2 pb-3">
+          <Link
+            href="/ayuda"
+            onClick={onItemClick}
+            title="Ayuda"
+            className="flex items-center justify-center px-2.5 py-2.5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+          >
+            <Question className="w-[18px] h-[18px]" />
+          </Link>
+        </div>
+      ) : (
+        <div className="px-3 pb-3 space-y-2.5">
+          {showInvite && <SidebarInviteCard onInvite={onInvite} />}
+          {showUpgrade && (
+            <SidebarUpgradeButton
+              label={upgradeLabel ?? 'Upgrade'}
+              onClick={() => {
+                if (upgradeHref) router.push(upgradeHref);
+                onItemClick?.();
+              }}
+            />
           )}
-        >
-          <Question className="w-[18px] h-[18px]" />
-          {!isCollapsed && <span>Ayuda</span>}
-        </Link>
-      </div>
+          <Link
+            href="/ayuda"
+            onClick={onItemClick}
+            className="flex items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+          >
+            <Question className="w-[18px] h-[18px]" />
+            <span>Ayuda</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -503,6 +591,13 @@ export function PlanSidebar({
   profileCompletion,
   aboveNav,
   loading = false,
+  onSearchClick,
+  searchPlaceholder,
+  workspaceName,
+  workspaces,
+  onWorkspaceSelect,
+  showInvite = false,
+  onInvite,
 }: PlanSidebarProps) {
   const { isCollapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -540,6 +635,13 @@ export function PlanSidebar({
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
           loading={loading}
+          onSearchClick={onSearchClick}
+          searchPlaceholder={searchPlaceholder}
+          workspaceName={workspaceName}
+          workspaces={workspaces}
+          onWorkspaceSelect={onWorkspaceSelect}
+          showInvite={showInvite}
+          onInvite={onInvite}
         />
       </aside>
 
@@ -564,6 +666,27 @@ export function PlanSidebar({
             profileCompletion={profileCompletion}
             aboveNav={aboveNav}
             loading={loading}
+            onSearchClick={
+              onSearchClick
+                ? () => {
+                    setMobileOpen(false);
+                    onSearchClick();
+                  }
+                : undefined
+            }
+            searchPlaceholder={searchPlaceholder}
+            workspaceName={workspaceName}
+            workspaces={workspaces}
+            onWorkspaceSelect={onWorkspaceSelect}
+            showInvite={showInvite}
+            onInvite={
+              onInvite
+                ? () => {
+                    setMobileOpen(false);
+                    onInvite();
+                  }
+                : undefined
+            }
           />
         </SheetContent>
       </Sheet>

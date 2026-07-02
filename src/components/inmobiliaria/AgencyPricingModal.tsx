@@ -145,7 +145,7 @@ export function AgencyPricingModal({
                   onClick={() => setSelectedPlan(plan.id)}
                 >
                   {plan.popular && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-white uppercase tracking-wide font-mono text-[10px] font-semibold px-3 py-1 rounded-full">
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-fg uppercase tracking-wide font-mono text-[10px] font-semibold px-3 py-1 rounded-full">
                       Mas popular
                     </span>
                   )}

@@ -183,7 +183,7 @@ export function ExportButton({
             sizeConfig.button,
             disabled
               ? 'bg-surface-muted dark:bg-ink text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-              : 'bg-primary hover:opacity-90 text-white',
+              : 'bg-primary hover:opacity-90 text-primary-fg',
             className
           )}
         >

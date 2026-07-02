@@ -992,7 +992,7 @@ export default function CobranzaConfiguracionPage() {
           </Button>
           <Button
             size="sm"
-            className="min-h-[44px] bg-primary hover:opacity-90 text-white"
+            className="min-h-[44px] bg-primary hover:opacity-90 text-primary-fg"
             disabled={!isDirty || isSaving}
             onClick={() => setSaveDialogOpen(true)}
           >

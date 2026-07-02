@@ -255,7 +255,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
         <div className="flex flex-wrap items-center gap-2">
           <a
             href={`mailto:${agente.email}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-medium hover:opacity-90 transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-fg font-medium hover:opacity-90 transition-colors"
           >
             <Envelope className="w-4 h-4" />
             Email

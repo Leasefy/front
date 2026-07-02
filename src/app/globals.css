@@ -536,7 +536,7 @@
     --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 8px 16px -4px rgba(0, 0, 0, 0.25);
 
     /* PLan CRM Namespace */
-    --plan-page-bg: #111112;
+    --plan-page-bg: #141310;  /* dark: = sidebar bg (--bg) — shell unificado (body = sidebar = header) */
     --plan-card-bg: #18181B;
     --plan-border: #2E2E33;
     --plan-text-primary: #F2F2F2;

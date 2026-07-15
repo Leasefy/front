@@ -228,12 +228,12 @@ export function MfaSetupSection() {
     return (
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5 text-fg-muted" />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticacion de dos factores</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Cargando...</p>
+            <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
+            <p className="text-xs text-fg-subtle">Cargando...</p>
           </div>
         </div>
         <Spinner size="sm" variant="muted" />
@@ -247,11 +247,11 @@ export function MfaSetupSection() {
       <>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+            <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticacion de dos factores</p>
+              <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <Badge variant="success">
                   <Check className="w-3 h-3" />
@@ -277,11 +277,11 @@ export function MfaSetupSection() {
           title="Desactivar 2FA"
         >
           <div className="space-y-4">
-            <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-xl flex gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center flex-shrink-0">
-                <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
+            <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex gap-3">
+              <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
+                <Warning className="w-5 h-5 text-danger" />
               </div>
-              <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">
+              <p className="text-sm text-danger">
                 Al desactivar 2FA tu cuenta sera menos segura. Solo necesitaras tu contrasena para iniciar sesion.
               </p>
             </div>
@@ -316,18 +316,18 @@ export function MfaSetupSection() {
     return (
       <div className="px-6 py-4 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
             <Shield className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">Configurar 2FA</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Escanea el codigo QR con tu app de autenticacion</p>
+            <p className="text-sm font-medium text-fg">Configurar 2FA</p>
+            <p className="text-xs text-fg-subtle">Escanea el codigo QR con tu app de autenticacion</p>
           </div>
         </div>
 
         {/* QR Code */}
         <div className="flex justify-center py-2">
-          <div className="p-4 bg-white rounded-xl border border-neutral-100 dark:border-neutral-700">
+          <div className="p-4 bg-white rounded-xl border border-border">
             <img
               src={enrollData.qrCode}
               alt="Codigo QR para autenticacion"
@@ -337,10 +337,10 @@ export function MfaSetupSection() {
         </div>
 
         {/* Secret key for manual entry */}
-        <div className="p-3 bg-neutral-50 dark:bg-[#1f1f21] rounded-xl">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">O ingresa este codigo manualmente:</p>
+        <div className="p-3 bg-surface-muted rounded-xl">
+          <p className="text-xs text-fg-subtle mb-1">O ingresa este codigo manualmente:</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs font-mono text-neutral-900 dark:text-white break-all select-all">
+            <code className="flex-1 text-xs font-mono text-fg break-all select-all">
               {enrollData.secret}
             </code>
             <IconButton
@@ -348,7 +348,7 @@ export function MfaSetupSection() {
               aria-label="Copiar código"
               title="Copiar codigo"
               onClick={handleCopySecret}
-              icon={<Copy className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />}
+              icon={<Copy className="w-4 h-4 text-fg-subtle" />}
               className="p-1.5 rounded-md flex-shrink-0"
             />
           </div>
@@ -356,7 +356,7 @@ export function MfaSetupSection() {
 
         {/* Code input */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-fg-muted mb-2">
             Ingresa el codigo de 6 digitos
           </label>
           <Input
@@ -394,7 +394,7 @@ export function MfaSetupSection() {
               handleVerifyCode();
             }}
             disabled={isLoading || code.length !== 6}
-            className="flex-1 rounded-xl bg-[#2C7A53] text-white hover:bg-[#2C7A53]"
+            className="flex-1 rounded-xl bg-success text-white hover:bg-success"
           >
             {isLoading ? <Spinner size="xs" variant="current" /> : <ShieldCheck className="w-4 h-4" />}
             {isLoading ? 'Verificando...' : 'Verificar'}
@@ -406,14 +406,14 @@ export function MfaSetupSection() {
 
   // Idle state - not enrolled
   return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+    <div className="flex items-center justify-between px-6 py-4 hover:bg-surface-hover transition-colors">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
-          <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+        <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
+          <ShieldCheck className="w-5 h-5 text-fg-muted" />
         </div>
         <div>
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticacion de dos factores</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">Capa extra de seguridad para tu cuenta</p>
+          <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
+          <p className="text-xs text-fg-subtle">Capa extra de seguridad para tu cuenta</p>
         </div>
       </div>
       <Button
@@ -422,7 +422,7 @@ export function MfaSetupSection() {
         hideArrow
         onClick={handleStartEnroll}
         disabled={isLoading}
-        className="rounded-md text-xs bg-[#2C7A53] text-white hover:bg-[#2C7A53]"
+        className="rounded-md text-xs bg-success text-white hover:bg-success"
       >
         {isLoading ? <Spinner size="xs" variant="current" /> : <Shield className="w-3.5 h-3.5" />}
         {isLoading ? 'Cargando...' : 'Activar'}

@@ -29,24 +29,24 @@ interface ScoreDetailSheetProps {
 
 const LEVEL_COLORS: Record<RiskLevel, { bg: string; text: string; bar: string }> = {
   A: {
-    bg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    bar: 'bg-[#2C7A53]',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    bar: 'bg-success',
   },
   B: {
-    bg: 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15',
-    text: 'text-[#1A40FF] dark:text-[#5570FF]',
-    bar: 'bg-[#1A40FF]',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
+    bar: 'bg-primary',
   },
   C: {
-    bg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
-    bar: 'bg-[#B7791F]',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    bar: 'bg-warning',
   },
   D: {
-    bg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
-    bar: 'bg-[#C4503B]',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    bar: 'bg-danger',
   },
 };
 
@@ -86,7 +86,7 @@ export function ScoreDetailSheet({
         hideCloseButton
       >
         {/* Header */}
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border dark:border-border-strong flex-shrink-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg font-semibold">
               {isPaid
@@ -96,7 +96,7 @@ export function ScoreDetailSheet({
             <IconButton
               variant="ghost"
               onClick={onClose}
-              className="w-8 h-8 rounded-md hover:bg-surface-muted dark:hover:bg-ink"
+              className="w-8 h-8 rounded-md hover:bg-surface-muted"
               aria-label="Cerrar"
               icon={<X className="w-4 h-4" />}
             />
@@ -126,7 +126,7 @@ export function ScoreDetailSheet({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-border dark:border-border-strong px-6 py-4">
+        <div className="flex-shrink-0 border-t border-border px-6 py-4">
           {!isPaid ? (
             <Button onClick={onPurchase} className="w-full" size="lg">
               {locale === 'es' ? 'Evaluar mi perfil' : 'Evaluate my profile'}
@@ -159,14 +159,14 @@ function LockedContent({ locale }: { locale: string }) {
       {/* Blurred decorative score */}
       <div className="relative flex flex-col items-center py-8">
         <div className="blur-md select-none pointer-events-none">
-          <div className="w-24 h-24 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mb-3">
-            <span className="text-5xl font-bold text-[#2C7A53]">A</span>
+          <div className="w-24 h-24 rounded-full bg-success-soft flex items-center justify-center mb-3">
+            <span className="text-5xl font-bold text-success">A</span>
           </div>
-          <p className="text-center text-lg font-semibold text-fg dark:text-white">92 / 100</p>
+          <p className="text-center text-lg font-semibold text-fg">92 / 100</p>
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
-            <Lock className="w-7 h-7 text-fg-subtle dark:text-fg-muted" />
+          <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center">
+            <Lock className="w-7 h-7 text-fg-subtle" />
           </div>
         </div>
       </div>
@@ -206,7 +206,7 @@ function LockedContent({ locale }: { locale: string }) {
           },
         ].map((benefit, i) => (
           <div key={i} className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-[#2C7A53] flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
             <p className="text-sm text-fg">
               {locale === 'es' ? benefit.es : benefit.en}
             </p>
@@ -248,7 +248,7 @@ function UnlockedContent({
       </div>
 
       {/* AI Explanation */}
-      <div className="rounded-xl bg-surface-muted dark:bg-ink p-4">
+      <div className="rounded-xl bg-surface-muted p-4">
         <p className="text-sm text-fg-muted leading-relaxed">{score.aiExplanation}</p>
       </div>
 
@@ -267,7 +267,7 @@ function UnlockedContent({
                   <span className="text-sm font-semibold text-fg">{cat.score}</span>
                 </div>
               </div>
-              <div className="h-2 rounded-full bg-surface-muted dark:bg-surface-muted overflow-hidden">
+              <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
                 <div
                   className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
                   style={{ width: `${cat.score}%` }}
@@ -287,7 +287,7 @@ function UnlockedContent({
           <div className="space-y-2">
             {score.drivers.map((driver, i) => (
               <div key={i} className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-[#2C7A53] flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-fg-muted">{driver}</p>
               </div>
             ))}
@@ -304,7 +304,7 @@ function UnlockedContent({
           <div className="space-y-2">
             {score.flags.map((flag) => (
               <div key={flag.id} className="flex items-start gap-2.5">
-                <WarningCircle className="w-4 h-4 text-[#B7791F] flex-shrink-0 mt-0.5" />
+                <WarningCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-fg-muted">{flag.message}</p>
               </div>
             ))}
@@ -320,13 +320,13 @@ function UnlockedContent({
           </h4>
           <button
             onClick={onCopyCode}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-surface-muted dark:bg-ink border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong transition-colors"
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-surface-muted border border-border hover:border-border-strong transition-colors"
           >
             <span className="font-mono text-lg font-semibold tracking-wider text-fg">
               {verificationCode}
             </span>
             {copiedCode ? (
-              <Check className="w-4 h-4 text-[#2C7A53] flex-shrink-0" />
+              <Check className="w-4 h-4 text-success flex-shrink-0" />
             ) : (
               <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
             )}

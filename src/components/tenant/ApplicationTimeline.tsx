@@ -30,12 +30,12 @@ const EVENT_ICONS: Record<ApplicationEventType, React.ElementType> = {
  */
 const EVENT_COLORS: Record<ApplicationEventType, string> = {
   created: 'text-fg-muted bg-surface-muted',
-  submitted: 'text-[#1A40FF] bg-[#EEF1FF]',
-  documents_verified: 'text-[#1A40FF] bg-[#EEF1FF]',
-  under_review: 'text-[#1A40FF] bg-[#EEF1FF]',
-  pre_approved: 'text-[#B7791F] bg-[#F8F0E0]',
-  approved: 'text-[#2C7A53] bg-[#E8F3EC]',
-  rejected: 'text-[#C4503B] bg-[#F8EAE7]',
+  submitted: 'text-primary bg-primary-soft',
+  documents_verified: 'text-primary bg-primary-soft',
+  under_review: 'text-primary bg-primary-soft',
+  pre_approved: 'text-warning bg-warning-soft',
+  approved: 'text-success bg-success-soft',
+  rejected: 'text-danger bg-danger-soft',
   withdrawn: 'text-fg-muted bg-surface-muted',
 };
 
@@ -44,12 +44,12 @@ const EVENT_COLORS: Record<ApplicationEventType, string> = {
  */
 const EVENT_LINE_COLORS: Record<ApplicationEventType, string> = {
   created: 'bg-surface-muted',
-  submitted: 'bg-[#EEF1FF]',
-  documents_verified: 'bg-[#EEF1FF]',
-  under_review: 'bg-[#EEF1FF]',
-  pre_approved: 'bg-[#F8F0E0]',
-  approved: 'bg-[#E8F3EC]',
-  rejected: 'bg-[#F8EAE7]',
+  submitted: 'bg-primary-soft',
+  documents_verified: 'bg-primary-soft',
+  under_review: 'bg-primary-soft',
+  pre_approved: 'bg-warning-soft',
+  approved: 'bg-success-soft',
+  rejected: 'bg-danger-soft',
   withdrawn: 'bg-surface-muted',
 };
 

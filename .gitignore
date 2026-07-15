@@ -54,3 +54,12 @@ next-env.d.ts
 
 # Playwright MCP scratch output
 .playwright-mcp/
+
+# Loose screenshots / design-iteration captures in the repo root.
+# App assets belong in public/ (served by Next); root images are never served.
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+/*.gif
+/*.avif

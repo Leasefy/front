@@ -38,7 +38,7 @@ const ESTADO_BAR_CLS: Record<WorkItemEstado, string> = {
   ejecutando: 'bg-primary',
   resuelto: 'bg-success',
   rechazado: 'bg-danger',
-  fallo: 'bg-[#A23A28]',
+  fallo: 'bg-danger',
 }
 
 const numberFormatter = new Intl.NumberFormat('es-CO')

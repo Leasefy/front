@@ -169,7 +169,7 @@ export default function CompletarPage({ params }: CompletarPageProps) {
           <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la aplicación.'}</p>
           <a
             href={`/inquilino/aplicaciones/${applicationId}`}
-            className="text-[#1A40FF] hover:underline text-sm"
+            className="text-primary hover:underline text-sm"
           >
             ← Volver al detalle
           </a>
@@ -227,15 +227,15 @@ function UpdateWizardContent({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-surface dark:bg-[#1a1a1c] rounded-xl p-8 max-w-md w-full text-center"
+          className="bg-surface rounded-xl p-8 max-w-md w-full text-center"
         >
-          <div className="w-16 h-16 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="w-16 h-16 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-8 h-8 text-success" />
           </div>
-          <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
+          <h2 className="text-2xl font-semibold text-fg mb-3">
             ¡Información actualizada!
           </h2>
-          <p className="text-fg-muted dark:text-fg-subtle mb-8">
+          <p className="text-fg-muted mb-8">
             La inmobiliaria fue notificada de que completaste la información solicitada.
             Revisarán tu solicitud a la brevedad.
           </p>
@@ -271,23 +271,23 @@ function SubmissionErrorBanner({ message }: { message: string }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
-    <div className="sticky top-0 z-40 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border-b border-[#C4503B]/30 dark:border-[#C4503B]/40">
+    <div className="sticky top-0 z-40 bg-danger-soft border-b border-danger/30">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-start gap-3">
-        <WarningCircle className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D] flex-shrink-0 mt-0.5" />
+        <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#C4503B] dark:text-[#E0664D]">
+          <p className="text-sm font-semibold text-danger">
             No pudimos completar tu solicitud
           </p>
-          <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-0.5 break-words">
+          <p className="text-xs text-danger mt-0.5 break-words">
             {message}
           </p>
         </div>
         <IconButton
           variant="ghost"
           onClick={() => setDismissed(true)}
-          className="flex-shrink-0 w-7 h-7 rounded-sm hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/60"
+          className="flex-shrink-0 w-7 h-7 rounded-sm hover:bg-danger-soft"
           aria-label="Cerrar"
-          icon={<X className="w-4 h-4 text-[#C4503B] dark:text-[#E0664D]" />}
+          icon={<X className="w-4 h-4 text-danger" />}
         />
       </div>
     </div>

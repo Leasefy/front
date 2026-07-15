@@ -26,11 +26,11 @@ export default function IntegrationsMarquee() {
           <div className="flex justify-center">
             <EyebrowPill>Se conecta con tu stack</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-7 text-fg`}>
             Funciona con{" "}
-            <span className="text-neutral-400">lo que ya usas</span>.
+            <span className="text-fg-subtle">lo que ya usas</span>.
           </h2>
-          <p className="mx-auto mt-7 max-w-xl text-base leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-7 max-w-xl text-base leading-relaxed text-fg-muted md:text-lg">
             Pagos, scoring, comunicación y los CRMs del sector. Leasefy se
             integra sin cambiar tu forma de trabajar.
           </p>
@@ -38,16 +38,16 @@ export default function IntegrationsMarquee() {
 
         {/* Logo cloud — hairline grid of cells, quiet wordmarks (no invented logos) */}
         <Reveal delay={0.15} className="mt-14">
-          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white sm:grid-cols-4 md:divide-x md:divide-y md:divide-neutral-200">
+          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-surface sm:grid-cols-4 md:divide-x md:divide-y md:divide-border">
             {TOOLS.map((tool) => (
               <div
                 key={tool.name}
-                className="group flex min-h-[120px] flex-col items-center justify-center gap-2 border-b border-r border-neutral-200 px-6 py-8 text-center transition-colors hover:bg-neutral-50 md:border-0"
+                className="group flex min-h-[120px] flex-col items-center justify-center gap-2 border-b border-r border-border px-6 py-8 text-center transition-colors hover:bg-surface-muted md:border-0"
               >
-                <span className="text-[18px] font-medium tracking-tight text-neutral-700 transition-colors group-hover:text-neutral-950 md:text-[19px]">
+                <span className="text-[18px] font-medium tracking-tight text-fg-muted transition-colors group-hover:text-fg md:text-[19px]">
                   {tool.name}
                 </span>
-                <MonoLabel className="text-[10px] tracking-[0.14em] text-neutral-400">
+                <MonoLabel className="text-[10px] tracking-[0.14em] text-fg-subtle">
                   {tool.kind}
                 </MonoLabel>
               </div>

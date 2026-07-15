@@ -77,11 +77,11 @@ export function StepPayments() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pb-2"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-[#F8F0E0] mb-4">
-          <CreditCard className="w-8 h-8 text-[#B7791F]" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-warning-soft mb-4">
+          <CreditCard className="w-8 h-8 text-warning" />
         </div>
-        <h3 className="text-2xl font-bold text-neutral-900">Configura tus cobros</h3>
-        <p className="text-neutral-500 mt-2 max-w-md mx-auto">
+        <h3 className="text-2xl font-bold text-fg">Configura tus cobros</h3>
+        <p className="text-fg-subtle mt-2 max-w-md mx-auto">
           Define cómo quieres recibir los pagos de tus inquilinos.
         </p>
       </motion.div>
@@ -91,7 +91,7 @@ export function StepPayments() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="flex items-start gap-3 p-4 rounded-xl bg-[#EEF1FF] border border-[#1A40FF]/30"
+        className="flex items-start gap-3 p-4 rounded-xl bg-primary-soft border border-[#1A40FF]/30"
       >
         <Info className="w-5 h-5 text-[#1A40FF] flex-shrink-0 mt-0.5" />
         <div>
@@ -108,14 +108,14 @@ export function StepPayments() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <label className="block text-sm font-semibold text-neutral-700 mb-2">
+        <label className="block text-sm font-semibold text-fg-muted mb-2">
           Banco para depósitos
         </label>
         <Select value={draft.bankName || ''} onValueChange={(v) => updateDraft({ bankName: v })}>
           <SelectTrigger
             className={cn('relative h-12 pl-12 rounded-xl', draft.bankName && 'border-primary/30 bg-primary-soft/30')}
           >
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none">
               <Buildings className="h-5 w-5" />
             </span>
             <SelectValue placeholder="Selecciona tu banco" />
@@ -134,7 +134,7 @@ export function StepPayments() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
       >
-        <label className="block text-sm font-semibold text-neutral-700 mb-2">
+        <label className="block text-sm font-semibold text-fg-muted mb-2">
           Número de cuenta
         </label>
         <Input
@@ -148,7 +148,7 @@ export function StepPayments() {
             draft.bankAccount && 'border-primary/30 bg-primary-soft/30'
           )}
         />
-        <p className="text-xs text-neutral-400 mt-2">
+        <p className="text-xs text-fg-subtle mt-2">
           Tu información bancaria está protegida y encriptada.
         </p>
       </motion.div>
@@ -159,7 +159,7 @@ export function StepPayments() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <label className="block text-sm font-semibold text-neutral-700 mb-3">
+        <label className="block text-sm font-semibold text-fg-muted mb-3">
           Métodos de pago que aceptas
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -178,15 +178,15 @@ export function StepPayments() {
                 className={cn(
                   'relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200',
                   isSelected
-                    ? 'border-[#1A40FF]/30 bg-[#EEF1FF]'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300'
+                    ? 'border-[#1A40FF]/30 bg-primary-soft'
+                    : 'border-border bg-surface hover:border-border-strong'
                 )}
               >
                 {/* Selection indicator */}
                 <div
                   className={cn(
                     'absolute top-2 right-2 w-4 h-4 rounded-full border flex items-center justify-center transition-all',
-                    isSelected ? 'border-[#1A40FF]/30 bg-[#1A40FF]' : 'border-neutral-300'
+                    isSelected ? 'border-[#1A40FF]/30 bg-[#1A40FF]' : 'border-border-strong'
                   )}
                 >
                   {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
@@ -195,7 +195,7 @@ export function StepPayments() {
                 <div
                   className={cn(
                     'w-9 h-9 rounded-md flex items-center justify-center transition-colors',
-                    isSelected ? 'bg-[#1A40FF] text-white' : 'bg-neutral-100 text-neutral-500'
+                    isSelected ? 'bg-[#1A40FF] text-white' : 'bg-surface-muted text-fg-subtle'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -204,7 +204,7 @@ export function StepPayments() {
                   <p
                     className={cn(
                       'text-xs font-semibold',
-                      isSelected ? 'text-[#1A40FF]' : 'text-neutral-700'
+                      isSelected ? 'text-[#1A40FF]' : 'text-fg-muted'
                     )}
                   >
                     {method.label}
@@ -223,8 +223,8 @@ export function StepPayments() {
         transition={{ delay: 0.25 }}
       >
         <div className="flex items-center gap-2 mb-3">
-          <Calendar className="w-4 h-4 text-neutral-500" />
-          <label className="text-sm font-semibold text-neutral-700">
+          <Calendar className="w-4 h-4 text-fg-subtle" />
+          <label className="text-sm font-semibold text-fg-muted">
             Día preferido de cobro
           </label>
         </div>
@@ -241,7 +241,7 @@ export function StepPayments() {
                   'w-12 h-12 rounded-xl border font-semibold transition-all duration-200',
                   isSelected
                     ? 'border-[#1A40FF]/30 bg-[#1A40FF] text-white'
-                    : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
+                    : 'border-border bg-surface text-fg-muted hover:border-border-strong'
                 )}
               >
                 {day}
@@ -249,7 +249,7 @@ export function StepPayments() {
             )
           })}
         </div>
-        <p className="text-xs text-neutral-400 mt-2">
+        <p className="text-xs text-fg-subtle mt-2">
           Día del mes en que prefieres recibir el pago del arriendo.
         </p>
       </motion.div>
@@ -259,10 +259,10 @@ export function StepPayments() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="p-4 rounded-xl bg-[#E8F3EC] border border-[#2C7A53]/30"
+          className="p-4 rounded-xl bg-success-soft border border-success/30"
         >
-          <p className="text-sm font-medium text-[#2C7A53] mb-2">Resumen de cobros</p>
-          <ul className="text-xs text-[#2C7A53] space-y-1">
+          <p className="text-sm font-medium text-success mb-2">Resumen de cobros</p>
+          <ul className="text-xs text-success space-y-1">
             {draft.bankName && (
               <li>• Depósitos en {draft.bankName}</li>
             )}

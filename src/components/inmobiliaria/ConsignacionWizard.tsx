@@ -171,6 +171,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         city:         formData.propertyCity ?? '',
         neighborhood: formData.propertyZone ?? '',
         address:      formData.propertyAddress ?? '',
+        latitude:     formData.propertyLatitude,
+        longitude:    formData.propertyLongitude,
         monthlyRent:  formData.monthlyRent ?? 0,
         bedrooms:     0, // wizard doesn't collect this — update after creation
         bathrooms:    0,

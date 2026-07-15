@@ -45,12 +45,12 @@ export default function ArchitectureSection() {
           <div className="flex justify-center">
             <EyebrowPill>La plataforma</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-7 text-fg`}>
             Una plataforma.{" "}
-            <span className="text-neutral-400">Tres capas</span> para operar
+            <span className="text-fg-subtle">Tres capas</span> para operar
             mejor.
           </h2>
-          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">
             Leasefy no es un módulo más: es un sistema completo que cubre el
             ciclo entero del arriendo, de la solicitud a la retención.
           </p>
@@ -58,41 +58,41 @@ export default function ArchitectureSection() {
 
         {/* 3 capas — thin shared borders, Handle capabilities grid */}
         <Reveal delay={0.15} className="mt-14">
-          <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-neutral-200 md:grid-cols-3 md:divide-x md:divide-neutral-200">
+          <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border md:grid-cols-3 md:divide-x md:divide-border">
             {LAYERS.map((layer) => (
               <div
                 key={layer.name}
-                className="group flex min-h-[340px] flex-col p-8 transition-colors hover:bg-neutral-50/70"
+                className="group flex min-h-[340px] flex-col p-8 transition-colors hover:bg-surface-muted/70"
               >
                 <div className="flex items-start justify-between">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                     <layer.icon className="h-6 w-6" weight="duotone" />
                   </span>
-                  <span className="font-mono text-[12px] tabular-nums text-neutral-300">
+                  <span className="font-mono text-[12px] tabular-nums text-fg-subtle">
                     {layer.num}
                   </span>
                 </div>
-                <h3 className="mt-6 font-heading text-xl font-medium tracking-tight text-neutral-950">
+                <h3 className="mt-6 font-heading text-xl font-medium tracking-tight text-fg">
                   {layer.name}
                 </h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-neutral-500">
+                <p className="mt-2 text-[15px] leading-relaxed text-fg-muted">
                   {layer.lead}
                 </p>
                 <ul className="mt-4 flex flex-wrap gap-1.5">
                   {layer.items.map((it) => (
                     <li
                       key={it}
-                      className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-[12px] text-neutral-600"
+                      className="rounded-full border border-border bg-surface px-2.5 py-1 text-[12px] text-fg-muted"
                     >
                       {it}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-auto flex items-baseline gap-2 border-t border-neutral-200 pt-5">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
+                <div className="mt-auto flex items-baseline gap-2 border-t border-border pt-5">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-fg-subtle">
                     Resultado
                   </span>
-                  <p className="text-[15px] leading-relaxed text-neutral-950">
+                  <p className="text-[15px] leading-relaxed text-fg">
                     <span className="font-medium text-primary">
                       {layer.resultLabel}
                     </span>

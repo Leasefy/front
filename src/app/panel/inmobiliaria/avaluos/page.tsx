@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/data-display/EmptyState';
 import { STATUS_BADGE } from '@/lib/types/avaluo';
 import type { AvaluoStatus } from '@/lib/types/avaluo';
+import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url';
 
 // ---------------------------------------------------------------------------
 // Local type — AvaluoListItem
@@ -64,7 +65,7 @@ export default function AvaluosListPage() {
         </div>
 
         <Button asChild hideArrow className="shrink-0">
-          <Link href="/panel/inmobiliaria/avaluos/nuevo">Solicitar avalúo</Link>
+          <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">Solicitar avalúo</a>
         </Button>
       </div>
 

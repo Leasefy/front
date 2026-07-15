@@ -369,18 +369,18 @@ export default function CobranzaConfiguracionPage() {
 
         {/* ─── Section 1: Cadencia de contacto ─────────────────────────────── */}
         <section
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4"
+          className="rounded-xl border border-border bg-surface p-6 space-y-4"
           aria-labelledby="section-cadencia"
         >
           <div>
             <h2 id="section-cadencia" className="text-xl font-semibold text-foreground">
               {t('inmobiliaria.ai.policies.cadencia.title')}
             </h2>
-            <p className="text-sm text-neutral-500 mt-1">
+            <p className="text-sm text-fg-muted mt-1">
               {t('inmobiliaria.ai.policies.cadencia.description')}
             </p>
           </div>
-          <div className="border-t border-neutral-100 dark:border-neutral-800" />
+          <div className="border-t border-border-faint" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* maxCallsPerWeek */}
             <div className="space-y-1">
@@ -465,18 +465,18 @@ export default function CobranzaConfiguracionPage() {
 
         {/* ─── Section 2: Negociación ──────────────────────────────────────── */}
         <section
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4"
+          className="rounded-xl border border-border bg-surface p-6 space-y-4"
           aria-labelledby="section-negociacion"
         >
           <div>
             <h2 id="section-negociacion" className="text-xl font-semibold text-foreground">
               {t('inmobiliaria.ai.policies.negociacion.title')}
             </h2>
-            <p className="text-sm text-neutral-500 mt-1">
+            <p className="text-sm text-fg-muted mt-1">
               {t('inmobiliaria.ai.policies.negociacion.description')}
             </p>
           </div>
-          <div className="border-t border-neutral-100 dark:border-neutral-800" />
+          <div className="border-t border-border-faint" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* maxDiscountTier */}
             <div className="space-y-1">
@@ -533,18 +533,18 @@ export default function CobranzaConfiguracionPage() {
 
         {/* ─── Section 3: Escalación ───────────────────────────────────────── */}
         <section
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4"
+          className="rounded-xl border border-border bg-surface p-6 space-y-4"
           aria-labelledby="section-escalacion"
         >
           <div>
             <h2 id="section-escalacion" className="text-xl font-semibold text-foreground">
               {t('inmobiliaria.ai.policies.escalacion.title')}
             </h2>
-            <p className="text-sm text-neutral-500 mt-1">
+            <p className="text-sm text-fg-muted mt-1">
               {t('inmobiliaria.ai.policies.escalacion.description')}
             </p>
           </div>
-          <div className="border-t border-neutral-100 dark:border-neutral-800" />
+          <div className="border-t border-border-faint" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* maxDaysBeforeEscalation */}
             <div className="space-y-1">
@@ -596,18 +596,18 @@ export default function CobranzaConfiguracionPage() {
 
         {/* ─── Section 4: Compliance ───────────────────────────────────────── */}
         <section
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4"
+          className="rounded-xl border border-border bg-surface p-6 space-y-4"
           aria-labelledby="section-compliance"
         >
           <div>
             <h2 id="section-compliance" className="text-xl font-semibold text-foreground">
               {t('inmobiliaria.ai.policies.compliance.title')}
             </h2>
-            <p className="text-sm text-neutral-500 mt-1">
+            <p className="text-sm text-fg-muted mt-1">
               {t('inmobiliaria.ai.policies.compliance.description')}
             </p>
           </div>
-          <div className="border-t border-neutral-100 dark:border-neutral-800" />
+          <div className="border-t border-border-faint" />
           <div className="space-y-2">
             {/* verifyRneBeforeCall — LOCKED (T-36-11-04) */}
             <Tooltip>
@@ -692,7 +692,7 @@ export default function CobranzaConfiguracionPage() {
 
         {/* ─── Simulator result card ────────────────────────────────────────── */}
         {simulatorOpen && (
-          <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/30 p-5 space-y-4">
+          <div className="rounded-xl border border-border bg-surface-muted p-5 space-y-4">
             {/* Header row */}
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -700,7 +700,7 @@ export default function CobranzaConfiguracionPage() {
                   {t('inmobiliaria.ai.policies.simulator.title')}
                 </h3>
                 {/* MANDATORY disclaimer caption — D-36-08, T-36-11-04 */}
-                <p className="text-xs text-neutral-500 mt-1">
+                <p className="text-xs text-fg-muted mt-1">
                   {t('inmobiliaria.ai.policies.simulator.disclaimer')}
                 </p>
               </div>
@@ -709,7 +709,7 @@ export default function CobranzaConfiguracionPage() {
                 size="sm"
                 onClick={() => setSimulatorOpen(false)}
                 aria-label={t('inmobiliaria.ai.policies.simulator.dismiss')}
-                className="text-neutral-400 hover:text-neutral-600"
+                className="text-fg-subtle hover:text-fg-muted"
                 icon={<X className="h-4 w-4" />}
               />
             </div>
@@ -731,33 +731,33 @@ export default function CobranzaConfiguracionPage() {
                   <div className="text-3xl font-semibold text-primary">
                     {simulatorData.flipped_count}
                   </div>
-                  <div className="text-sm text-neutral-700 dark:text-neutral-300">
+                  <div className="text-sm text-fg-muted">
                     {t('inmobiliaria.ai.policies.simulator.flippedLabel')}
                   </div>
                   {simulatorData.data_source_note && (
-                    <div className="mt-2 text-xs text-neutral-600 dark:text-neutral-400 italic">
+                    <div className="mt-2 text-xs text-fg-muted italic">
                       {simulatorData.data_source_note}
                     </div>
                   )}
                 </div>
 
                 {/* By-stage breakdown table */}
-                <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-700">
+                <div className="overflow-x-auto rounded-md border border-border">
                   <Table className="min-w-full text-sm">
-                    <TableHeader className="bg-neutral-50 dark:bg-neutral-800/50">
+                    <TableHeader className="bg-surface-muted">
                       <TableRow>
                         <TableHead>{t('inmobiliaria.ai.policies.simulator.colDecision')}</TableHead>
                         <TableHead className="text-right">{t('inmobiliaria.ai.policies.simulator.colCurrent')}</TableHead>
                         <TableHead className="text-right">{t('inmobiliaria.ai.policies.simulator.colProposed')}</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody className="bg-white dark:bg-[#1a1a1c]">
+                    <TableBody className="bg-surface">
                       {Object.entries(simulatorData.by_stage).map(([stage, count]) => (
                         <TableRow key={stage}>
-                          <TableCell className="px-4 py-2 text-neutral-700 dark:text-neutral-300 capitalize">
+                          <TableCell className="px-4 py-2 text-fg-muted capitalize">
                             {stage}
                           </TableCell>
-                          <TableCell className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600 dark:text-neutral-400">
+                          <TableCell className="px-4 py-2 text-right font-mono tabular-nums text-fg-muted">
                             —
                           </TableCell>
                           <TableCell className="px-4 py-2 text-right font-mono tabular-nums text-danger">
@@ -804,9 +804,9 @@ export default function CobranzaConfiguracionPage() {
           </h2>
 
           {versionsLoading && !versionsData && (
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-6 animate-pulse">
-              <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-full mb-2" />
-              <div className="h-4 bg-neutral-100 dark:bg-neutral-800 rounded w-3/4" />
+            <div className="rounded-xl border border-border p-6 animate-pulse">
+              <div className="h-4 bg-surface-muted rounded w-full mb-2" />
+              <div className="h-4 bg-surface-muted rounded w-3/4" />
             </div>
           )}
 
@@ -818,10 +818,10 @@ export default function CobranzaConfiguracionPage() {
           )}
 
           {versions.length > 0 && (
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+            <div className="rounded-xl border border-border overflow-hidden">
               {/* Versions sorted DESC by versionNumber — hook guarantees DESC order */}
               <Table className="min-w-full">
-                <TableHeader className="bg-neutral-50 dark:bg-neutral-800/50">
+                <TableHeader className="bg-surface-muted">
                   <TableRow>
                     <TableHead>{t('inmobiliaria.ai.policies.history.version')}</TableHead>
                     <TableHead>{t('inmobiliaria.ai.policies.history.savedBy')}</TableHead>
@@ -842,13 +842,13 @@ export default function CobranzaConfiguracionPage() {
                         className={
                           isActive
                             ? 'bg-success-soft'
-                            : 'bg-white dark:bg-[#1a1a1c]'
+                            : 'bg-surface'
                         }
                       >
                         <TableCell className="px-4 py-3">
                           <span className="flex items-center gap-2">
                             <span
-                              className={`font-mono text-xs ${isActive ? 'font-semibold text-foreground' : 'text-neutral-600 dark:text-neutral-400'}`}
+                              className={`font-mono text-xs ${isActive ? 'font-semibold text-foreground' : 'text-fg-muted'}`}
                             >
                               v{version.versionNumber}
                             </span>
@@ -859,13 +859,13 @@ export default function CobranzaConfiguracionPage() {
                             )}
                           </span>
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300">
+                        <TableCell className="px-4 py-3 text-sm text-fg-muted">
                           {version.createdByMemberId}
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-xs font-mono tabular-nums text-neutral-500">
+                        <TableCell className="px-4 py-3 text-xs font-mono tabular-nums text-fg-muted">
                           {new Date(version.createdAt).toLocaleString()}
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-neutral-500 italic">
+                        <TableCell className="px-4 py-3 text-sm text-fg-muted italic">
                           {version.changeDescription ?? '—'}
                         </TableCell>
                         <TableCell className="px-4 py-3">
@@ -972,7 +972,7 @@ export default function CobranzaConfiguracionPage() {
       </main>
 
       {/* ─── Sticky save footer ───────────────────────────────────────────── */}
-      <div className="sticky bottom-0 z-20 bg-white dark:bg-[#1a1a1c] border-t border-neutral-200 dark:border-neutral-700 py-3 px-6 flex items-center justify-between">
+      <div className="sticky bottom-0 z-20 bg-surface border-t border-border py-3 px-6 flex items-center justify-between">
         <div>
           {isDirty && (
             <span className="text-xs text-warning">

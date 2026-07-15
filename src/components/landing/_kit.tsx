@@ -52,7 +52,7 @@ export function ProgressLine({
   className?: string;
 }) {
   return (
-    <span className={cn("block h-px w-full overflow-hidden bg-neutral-200", className)}>
+    <span className={cn("block h-px w-full overflow-hidden bg-border-faint", className)}>
       {active && (
         <span
           key={cycleKey}
@@ -83,8 +83,8 @@ export const lpBody = "text-base md:text-lg leading-relaxed text-muted-foregroun
 export function PageRails() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-[1] hidden md:block">
-      <div className="absolute inset-y-0 left-[52px] border-l border-dashed border-neutral-400/30" />
-      <div className="absolute inset-y-0 right-[52px] border-r border-dashed border-neutral-400/30" />
+      <div className="absolute inset-y-0 left-[52px] border-l border-dashed border-border-faint/30" />
+      <div className="absolute inset-y-0 right-[52px] border-r border-dashed border-border-faint/30" />
     </div>
   );
 }

@@ -86,18 +86,18 @@ export function KPICard({
     },
     warning: {
       bg: 'bg-card',
-      icon: 'bg-[#F8F0E0] text-[#B7791F]',
-      value: 'text-[#B7791F]',
+      icon: 'bg-warning-soft text-warning',
+      value: 'text-warning',
     },
     success: {
       bg: 'bg-card',
-      icon: 'bg-[#E8F3EC] text-[#2C7A53]',
-      value: 'text-[#2C7A53]',
+      icon: 'bg-success-soft text-success',
+      value: 'text-success',
     },
     info: {
       bg: 'bg-card',
-      icon: 'bg-[#EEF1FF] text-[#1A40FF]',
-      value: 'text-[#1A40FF]',
+      icon: 'bg-primary-soft text-primary',
+      value: 'text-primary',
     },
   };
 
@@ -141,7 +141,7 @@ export function KPICard({
         <div
           className={cn(
             'absolute top-5 right-5 flex items-center gap-1 text-xs font-medium',
-            trend.isPositive ? 'text-[#2C7A53]' : 'text-[#C4503B]'
+            trend.isPositive ? 'text-success' : 'text-danger'
           )}
         >
           {trend.isPositive ? (

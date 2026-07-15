@@ -351,9 +351,9 @@ export function ChatInput({
             'px-5 pt-5 pb-4',
             'rounded-[28px]',
             'bg-card',
-            'border border-neutral-200/90 dark:border-neutral-700/80',
+            'border border-border',
             'shadow-[0_12px_50px_-12px_rgba(16,24,64,0.18)] dark:shadow-[0_12px_50px_-12px_rgba(0,0,0,0.6)]',
-            'focus-within:border-neutral-300 dark:focus-within:border-neutral-500',
+            'focus-within:border-border-strong',
             'focus-within:shadow-[0_18px_64px_-12px_rgba(16,24,64,0.24)] dark:focus-within:shadow-[0_18px_64px_-12px_rgba(0,0,0,0.7)]',
             'transition-all duration-200'
           )}
@@ -366,7 +366,7 @@ export function ChatInput({
               <span
                 className={cn(
                   'flex-1 truncate text-[16px] leading-relaxed',
-                  liveTranscript ? 'text-foreground' : 'text-neutral-400 dark:text-neutral-500'
+                  liveTranscript ? 'text-foreground' : 'text-fg-subtle'
                 )}
               >
                 {liveTranscript || t('beta.chat.listening')}
@@ -386,7 +386,7 @@ export function ChatInput({
                 'bg-transparent',
                 'text-[16px] leading-relaxed',
                 'text-foreground',
-                'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
+                'placeholder:text-fg-subtle',
                 'focus:outline-none',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
@@ -401,7 +401,7 @@ export function ChatInput({
                 {t('beta.chat.listening')}
               </span>
             ) : (
-              <span className="inline-flex select-none items-center gap-1.5 pl-0.5 text-[12.5px] font-medium text-neutral-400 dark:text-neutral-500">
+              <span className="inline-flex select-none items-center gap-1.5 pl-0.5 text-[12.5px] font-medium text-fg-subtle">
                 <Sparkle className="h-3.5 w-3.5 text-primary/70" weight="fill" />
                 Leasefy AI
               </span>
@@ -421,7 +421,7 @@ export function ChatInput({
                     'transition-all duration-150',
                     listening
                       ? 'bg-primary text-primary-fg shadow-[0_0_0_4px_rgba(26,64,255,0.14)]'
-                      : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-500 dark:hover:bg-neutral-800'
+                      : 'text-fg-subtle hover:bg-surface-muted hover:text-fg-muted'
                   )}
                   aria-label={listening ? t('beta.chat.voiceStop') : t('beta.chat.voiceButton')}
                   aria-pressed={listening}
@@ -440,8 +440,8 @@ export function ChatInput({
                   "relative before:absolute before:-inset-1.5 before:content-['']",
                   'transition-all duration-150',
                   isDisabled || listening
-                    ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
-                    : 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95'
+                    ? 'bg-surface-muted text-fg-subtle cursor-not-allowed'
+                    : 'bg-foreground text-background hover:bg-foreground/90 active:scale-95'
                 )}
                 aria-label={t('beta.chat.sendButton')}
               />
@@ -462,10 +462,10 @@ export function ChatInput({
             'relative flex items-end gap-2',
             'px-4 py-2',
             'rounded-xl',
-            'bg-white dark:bg-neutral-900',
-            'border border-neutral-200 dark:border-neutral-700',
+            'bg-surface',
+            'border border-border',
             'shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',
-            'focus-within:border-neutral-400 dark:focus-within:border-neutral-500',
+            'focus-within:border-border-strong',
             'focus-within:shadow-[0_2px_20px_rgba(0,0,0,0.06)] dark:focus-within:shadow-[0_2px_20px_rgba(0,0,0,0.3)]',
             'transition-all duration-200'
           )}
@@ -484,7 +484,7 @@ export function ChatInput({
               'bg-transparent',
               'text-[15px] leading-relaxed',
               'text-foreground',
-              'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
+              'placeholder:text-fg-subtle',
               'focus:outline-none',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'py-1.5'
@@ -504,8 +504,8 @@ export function ChatInput({
               "relative before:absolute before:-inset-1.5 before:content-['']",
               'transition-all duration-150',
               isDisabled
-                ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
-                : 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 active:scale-95'
+                ? 'bg-surface-muted text-fg-subtle cursor-not-allowed'
+                : 'bg-foreground text-background hover:bg-foreground/90 active:scale-95'
             )}
             aria-label={t('beta.chat.sendButton')}
           />

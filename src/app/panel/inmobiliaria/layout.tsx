@@ -276,7 +276,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         loading={permissionsLoading}
         logo={{
           title: t('inmobiliaria.common.title'),
-          href: '/panel/inmobiliaria',
+          href: '/',
         }}
         // cadence §Navigation: workspace switcher + search-opens-⌘K + footer cards
         workspaceName={t('inmobiliaria.common.title')}

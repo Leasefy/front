@@ -67,7 +67,7 @@ export default function ArriendoPage() {
   // Loading state
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" />
       </div>
     );
@@ -76,7 +76,7 @@ export default function ArriendoPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -87,7 +87,7 @@ export default function ArriendoPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <ErrorState description={error} onRetry={refetch} />
         </div>
@@ -96,7 +96,7 @@ export default function ArriendoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -105,10 +105,10 @@ export default function ArriendoPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('rental.title')}
           </h1>
-          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
+          <p className="mt-1 text-fg-muted">
             {locale === 'es' ? 'Gestiona tus contratos de arriendo activos' : 'Manage your active rental contracts'}
           </p>
         </motion.header>
@@ -121,43 +121,43 @@ export default function ArriendoPage() {
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
           {/* Active Leases */}
-          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <House className="w-5 h-5 text-fg dark:text-fg-subtle" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <House className="w-5 h-5 text-fg-subtle" />
             </div>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Arriendos activos' : 'Active rentals'}</p>
-            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Arriendos activos' : 'Active rentals'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {activeLeases.length}
             </p>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Contratos vigentes' : 'Current contracts'}
             </p>
           </div>
 
           {/* Total Monthly */}
-          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <CreditCard className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CreditCard className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">{locale === 'es' ? 'Total mensual' : 'Monthly total'}</p>
-            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
+            <p className="text-sm text-primary mb-1">{locale === 'es' ? 'Total mensual' : 'Monthly total'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {formatCurrency(totalMonthlyRent)}
             </p>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Arriendo + administración' : 'Rent + admin fee'}
             </p>
           </div>
 
           {/* Status */}
-          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-success" />
             </div>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Estado general' : 'Overall status'}</p>
-            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Estado general' : 'Overall status'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {locale === 'es' ? 'Al día' : 'Up to date'}
             </p>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Todos los pagos al día' : 'All payments up to date'}
             </p>
           </div>
@@ -170,8 +170,8 @@ export default function ArriendoPage() {
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-fg dark:text-white">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
-            <span className="text-sm text-fg-muted dark:text-fg-subtle">
+            <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
+            <span className="text-sm text-fg-muted">
               {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
             </span>
           </div>
@@ -191,7 +191,7 @@ export default function ArriendoPage() {
                     transition={{ delay: 0.3 + index * 0.1 }}
                   >
                     <Link href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden">
+                      <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden">
                         <div className="flex flex-col lg:flex-row">
                           {/* Image */}
                           <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -209,8 +209,8 @@ export default function ArriendoPage() {
                               <span className={cn(
                                 'px-3 py-1.5 text-xs font-medium rounded-full',
                                 lease.status === 'ending_soon'
-                                  ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
-                                  : 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+                                  ? 'bg-warning-soft text-warning'
+                                  : 'bg-success-soft text-success'
                               )}>
                                 {lease.status === 'ending_soon' ? (locale === 'es' ? 'Termina pronto' : 'Ending soon') : t('common.active')}
                               </span>
@@ -221,45 +221,45 @@ export default function ArriendoPage() {
                           <div className="flex-1 p-6">
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                               <div>
-                                <h3 className="text-lg font-semibold text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                                <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
                                   {lease.propertyTitle}
                                 </h3>
-                                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1 flex items-center gap-1.5">
+                                <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
                                   <MapPin className="w-3.5 h-3.5" />
                                   {lease.propertyAddress}
                                 </p>
                               </div>
                               <div className="sm:text-right">
-                                <p className="text-2xl font-bold text-fg dark:text-white">
+                                <p className="text-2xl font-bold text-fg">
                                   {formatCurrency(lease.monthlyRent + (lease.adminFee ?? 0))}
                                 </p>
-                                <p className="text-xs text-fg-muted dark:text-fg-subtle">/mes</p>
+                                <p className="text-xs text-fg-muted">/mes</p>
                               </div>
                             </div>
 
                             {/* Contract Info Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint dark:border-border-strong">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint">
                               <div>
                                 <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
-                                <p className="text-sm font-medium text-fg dark:text-white">
+                                <p className="text-sm font-medium text-fg">
                                   {formatCurrency(lease.monthlyRent)}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Administración' : 'Admin fee'}</p>
-                                <p className="text-sm font-medium text-fg dark:text-white">
+                                <p className="text-sm font-medium text-fg">
                                   {formatCurrency(lease.adminFee ?? 0)}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
-                                <p className="text-sm font-medium text-fg dark:text-white">
+                                <p className="text-sm font-medium text-fg">
                                   {locale === 'es' ? `Día ${lease.paymentDay}` : `Day ${lease.paymentDay}`}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Vencimiento' : 'Expiration'}</p>
-                                <p className="text-sm font-medium text-fg dark:text-white">
+                                <p className="text-sm font-medium text-fg">
                                   {formatShortDate(lease.endDate)}
                                 </p>
                               </div>
@@ -267,42 +267,42 @@ export default function ArriendoPage() {
 
                             {/* Contract Progress */}
                             <div className="mt-4">
-                              <div className="flex items-center justify-between text-xs text-fg-muted dark:text-fg-subtle mb-2">
+                              <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
                                   {formatDate(lease.startDate)}
                                 </span>
                                 <span>{formatDate(lease.endDate)}</span>
                               </div>
-                              <div className="h-2 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
+                              <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                                 <div
                                   className={cn(
                                     "h-full rounded-full transition-all duration-500",
-                                    daysRemaining < 30 ? "bg-[#B7791F]" : "bg-[#2C7A53]"
+                                    daysRemaining < 30 ? "bg-warning" : "bg-success"
                                   )}
                                   style={{ width: `${leaseProgress}%` }}
                                 />
                               </div>
-                              <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1.5 text-right">
+                              <p className="text-xs text-fg-muted mt-1.5 text-right">
                                 {t('dashboard.daysRemaining', { days: daysRemaining })}
                               </p>
                             </div>
 
                             {/* Next Payment */}
                             {nextPayment && (
-                              <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted dark:bg-[#222224] rounded-xl">
+                              <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted rounded-xl">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+                                  <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+                                    <Clock className="w-5 h-5 text-fg-muted" />
                                   </div>
                                   <div>
-                                    <p className="text-xs text-fg-muted dark:text-fg-subtle">{t('dashboard.nextPayment')}</p>
-                                    <p className="text-sm font-semibold text-fg dark:text-white">
+                                    <p className="text-xs text-fg-muted">{t('dashboard.nextPayment')}</p>
+                                    <p className="text-sm font-semibold text-fg">
                                       {formatCurrency(nextPayment.amount)} · {formatShortDate(nextPayment.dueDate)}
                                     </p>
                                   </div>
                                 </div>
-                                <span className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                                <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
                                   <ArrowUpRight className="w-4 h-4" />
                                 </span>

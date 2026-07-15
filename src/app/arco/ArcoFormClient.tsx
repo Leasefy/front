@@ -94,22 +94,22 @@ export function ArcoFormClient() {
 
   const descriptionColorClass =
     description.length >= 1000
-      ? 'text-[#C4503B]'
+      ? 'text-danger'
       : description.length >= 900
-        ? 'text-[#B7791F]'
-        : 'text-neutral-500';
+        ? 'text-warning'
+        : 'text-fg-subtle';
 
   return (
-    <div className="w-full max-w-xl rounded-[22px] border border-neutral-200 bg-white p-8">
+    <div className="w-full max-w-xl rounded-[22px] border border-border bg-surface p-8">
       {/* Card header */}
       <div className="text-center mb-8">
-        <p className="text-xl font-semibold font-heading text-neutral-900 mb-2">
+        <p className="text-xl font-semibold font-heading text-fg mb-2">
           Leasefy
         </p>
-        <h1 className="text-3xl font-semibold font-heading text-neutral-900 mb-3">
+        <h1 className="text-3xl font-semibold font-heading text-fg mb-3">
           {t('inmobiliaria.ai.arco.public.title')}
         </h1>
-        <p className="text-sm text-neutral-500 max-w-sm mx-auto">
+        <p className="text-sm text-fg-subtle max-w-sm mx-auto">
           {t('inmobiliaria.ai.arco.public.subtitle')}
         </p>
       </div>
@@ -121,13 +121,13 @@ export function ArcoFormClient() {
             weight="duotone"
             className="h-12 w-12 text-[#1A40FF] mx-auto"
           />
-          <h2 className="text-xl font-semibold text-neutral-900">
+          <h2 className="text-xl font-semibold text-fg">
             {t('inmobiliaria.ai.arco.public.successTitle')}
           </h2>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-fg-subtle">
             {t('inmobiliaria.ai.arco.public.successBody', { email: submittedEmail })}
           </p>
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-fg-subtle">
             {t('inmobiliaria.ai.arco.public.successNote')}
           </p>
           <button
@@ -161,7 +161,7 @@ export function ArcoFormClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="arco-name"
-              className="text-xs font-normal text-neutral-700"
+              className="text-xs font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.nombreLabel')}
             </label>
@@ -180,7 +180,7 @@ export function ArcoFormClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="arco-cedula"
-              className="text-xs font-normal text-neutral-700"
+              className="text-xs font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.cedulaLabel')}
             </label>
@@ -194,7 +194,7 @@ export function ArcoFormClient() {
               onChange={(e) => handleCedulaChange(e.target.value)}
               autoComplete="off"
             />
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-fg-subtle">
               {t('inmobiliaria.ai.arco.public.cedulaHint')}
             </p>
           </div>
@@ -203,7 +203,7 @@ export function ArcoFormClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="arco-email"
-              className="text-xs font-normal text-neutral-700"
+              className="text-xs font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.emailLabel')}
             </label>
@@ -221,7 +221,7 @@ export function ArcoFormClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="arco-type"
-              className="text-xs font-normal text-neutral-700"
+              className="text-xs font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.tipoLabel')}
             </label>
@@ -250,7 +250,7 @@ export function ArcoFormClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="arco-description"
-              className="text-xs font-normal text-neutral-700"
+              className="text-xs font-normal text-fg-muted"
             >
               {t('inmobiliaria.ai.arco.public.descripcionLabel')}
             </label>
@@ -287,7 +287,7 @@ export function ArcoFormClient() {
           </Button>
 
           {/* Legal footer */}
-          <p className="text-xs text-neutral-400 text-center mt-6">
+          <p className="text-xs text-fg-subtle text-center mt-6">
             {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
             <Link
               href="/privacidad"
@@ -302,7 +302,7 @@ export function ArcoFormClient() {
 
       {/* Legal footer always shown in success state too */}
       {submitted && (
-        <p className="text-xs text-neutral-400 text-center mt-6">
+        <p className="text-xs text-fg-subtle text-center mt-6">
           {t('inmobiliaria.ai.arco.public.legalFooter')}{' '}
           <Link
             href="/privacidad"

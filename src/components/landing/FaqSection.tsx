@@ -56,11 +56,11 @@ export default function FaqSection() {
           {/* Left — sticky header + CTA */}
           <Reveal className="self-start lg:sticky lg:top-28">
             <EyebrowPill>Preguntas frecuentes</EyebrowPill>
-            <h2 className={`${lpHeading} mt-6 text-neutral-950`}>
+            <h2 className={`${lpHeading} mt-6 text-fg`}>
               ¿Tienes preguntas?{" "}
-              <span className="text-neutral-400">Aquí van las respuestas.</span>
+              <span className="text-fg-subtle">Aquí van las respuestas.</span>
             </h2>
-            <p className="mt-6 max-w-sm text-base leading-relaxed text-neutral-500 md:text-lg">
+            <p className="mt-6 max-w-sm text-base leading-relaxed text-fg-muted md:text-lg">
               ¿Necesitas más detalle? Habla con nuestro equipo y te resolvemos
               lo que falte.
             </p>
@@ -81,7 +81,7 @@ export default function FaqSection() {
                 return (
                   <div
                     key={faq.question}
-                    className="border-b border-neutral-200 first:border-t"
+                    className="border-b border-border first:border-t"
                   >
                     <button
                       type="button"
@@ -89,14 +89,14 @@ export default function FaqSection() {
                       aria-expanded={isOpen}
                       className="group flex w-full items-center justify-between gap-6 py-6 text-left"
                     >
-                      <span className="font-heading text-lg font-medium tracking-[-0.01em] text-neutral-950 md:text-xl">
+                      <span className="font-heading text-lg font-medium tracking-[-0.01em] text-fg md:text-xl">
                         {faq.question}
                       </span>
                       <span
                         className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${
                           isOpen
-                            ? "border-neutral-950 bg-neutral-950 text-white"
-                            : "border-neutral-200 text-neutral-950 group-hover:bg-neutral-50"
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border text-fg group-hover:bg-surface-muted"
                         }`}
                       >
                         <Plus
@@ -115,7 +115,7 @@ export default function FaqSection() {
                           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                           className="overflow-hidden"
                         >
-                          <p className="pb-6 pr-12 leading-relaxed text-neutral-500">
+                          <p className="pb-6 pr-12 leading-relaxed text-fg-muted">
                             {faq.answer}
                           </p>
                         </motion.div>

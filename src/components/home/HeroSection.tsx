@@ -67,25 +67,25 @@ export function HeroSection() {
           </span>
 
           {/* Headline */}
-          <h1 className="font-heading text-[40px] md:text-[58px] font-semibold leading-[1.04] tracking-[-0.03em] text-neutral-900">
+          <h1 className="font-heading text-[40px] md:text-[58px] font-semibold leading-[1.04] tracking-[-0.03em] text-fg">
             De buscar a vivir.
           </h1>
-          <p className="mt-5 text-[16px] md:text-[18px] leading-relaxed text-neutral-500">
+          <p className="mt-5 text-[16px] md:text-[18px] leading-relaxed text-fg-muted">
             Encuentra, evalúa y arrienda con IA. Sin papeleo, sin incertidumbre, sin esperas.
           </p>
 
           {/* Search — clean Manus surface (hairline, not glass) */}
-          <div className="mt-9 rounded-xl border border-neutral-200 bg-white p-2.5 text-left transition-colors focus-within:border-neutral-300">
+          <div className="mt-9 rounded-xl border border-border-faint bg-white p-2.5 text-left transition-colors focus-within:border-border-strong">
             <div className="flex items-start gap-3 px-2 pt-1.5">
               <Sparkle
                 weight={isSearching ? "fill" : "regular"}
-                className={`mt-0.5 h-5 w-5 flex-shrink-0 ${isSearching ? "text-primary animate-pulse" : "text-neutral-400"}`}
+                className={`mt-0.5 h-5 w-5 flex-shrink-0 ${isSearching ? "text-primary animate-pulse" : "text-fg-subtle"}`}
               />
               <textarea
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Describe tu próximo arriendo: 2 hab en Chapinero, estudio amoblado cerca al centro…"
-                className="flex-1 resize-none bg-transparent py-0.5 text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none min-h-[48px]"
+                className="flex-1 resize-none bg-transparent py-0.5 text-base text-fg placeholder:text-fg-subtle focus:outline-none min-h-[48px]"
                 disabled={isSearching}
                 rows={2}
                 onKeyDown={(e) => {
@@ -97,7 +97,7 @@ export function HeroSection() {
               />
             </div>
             <div className="flex items-center justify-between gap-2 px-1 pt-1">
-              <MonoLabel className="text-[10.5px] tracking-[0.06em] text-neutral-400 pl-1">
+              <MonoLabel className="text-[10.5px] tracking-[0.06em] text-fg-subtle pl-1">
                 Búsqueda con IA
               </MonoLabel>
               <Button
@@ -120,7 +120,7 @@ export function HeroSection() {
               ? THINKING_STEPS.map((step, i) => (
                   <MonoLabel
                     key={step}
-                    className={`rounded-full border border-neutral-200 bg-surface px-3 py-1.5 text-[10.5px] tracking-[0.06em] text-neutral-600 transition-all duration-300 ${
+                    className={`rounded-full border border-border-faint bg-surface px-3 py-1.5 text-[10.5px] tracking-[0.06em] text-fg-muted transition-all duration-300 ${
                       i <= searchStep ? "opacity-100" : "opacity-0 pointer-events-none"
                     }`}
                   >
@@ -138,7 +138,7 @@ export function HeroSection() {
                       setQuery(s);
                       startSearch(s);
                     }}
-                    className="text-[12.5px] text-neutral-600"
+                    className="text-[12.5px] text-fg-muted"
                   >
                     {s}
                   </Button>
@@ -146,13 +146,13 @@ export function HeroSection() {
           </div>
 
           {/* Trust stats — mono labels, Satoshi numbers */}
-          <div className="mt-12 flex items-center justify-center divide-x divide-neutral-200">
+          <div className="mt-12 flex items-center justify-center divide-x divide-border-faint">
             {STATS.map((s) => (
               <div key={s.label} className="px-6 first:pl-0 last:pr-0">
-                <p className="font-mono text-[24px] font-semibold tabular-nums leading-none text-neutral-900">
+                <p className="font-mono text-[24px] font-semibold tabular-nums leading-none text-fg">
                   {s.value}
                 </p>
-                <MonoLabel className="mt-1.5 block text-[10.5px] tracking-[0.06em] text-neutral-400">
+                <MonoLabel className="mt-1.5 block text-[10.5px] tracking-[0.06em] text-fg-subtle">
                   {s.label}
                 </MonoLabel>
               </div>
@@ -162,7 +162,7 @@ export function HeroSection() {
       </div>
 
       {/* Hairline base — whitespace separates, this just anchors the section */}
-      <div className="border-b border-neutral-200" />
+      <div className="border-b border-border-faint" />
     </section>
   );
 }

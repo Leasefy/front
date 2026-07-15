@@ -1568,6 +1568,17 @@ select:-webkit-autofill:active {
   --info-soft: rgba(42, 111, 176, 0.2);
 }
 
+/* ── Admin panel scope (see src/app/admin/layout.tsx) ─────────────────────────
+   The nest-brandbook admin theme is fixed paper/ink (no light/dark toggle) and
+   must never leak into the customer app. tailwind.config.ts's `bg`/`fg` DEFAULT
+   keys now point at these SAME --bg/--fg vars cadence uses everywhere else, so
+   this override — scoped to .admin-scope — is what gives /admin its own look;
+   outside this class, bg-bg/text-fg fall through to cadence's theme-aware pair. */
+.admin-scope {
+  --bg: #F7F7F5;
+  --fg: #0A1B2E;
+}
+
 /* ── Landing "nueva": seamless section bands ──────────────────────────────────
    Handle uses #fbfaf9 (≈white). These fade the gray into white at the section
    edges so adjacent white sections blend with no hard seam. Variants pick which

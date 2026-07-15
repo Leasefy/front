@@ -26,7 +26,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.06 }}
-          className={`${lpDisplay} mx-auto mt-8 max-w-[15ch] text-balance text-center text-neutral-950`}
+          className={`${lpDisplay} mx-auto mt-8 max-w-[15ch] text-balance text-center text-fg`}
         >
           Tu inmobiliaria, operando en piloto automático.
         </motion.h1>
@@ -36,7 +36,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.14 }}
-          className="mx-auto mt-7 max-w-[54ch] text-balance text-center text-[17px] leading-relaxed text-neutral-500 md:text-lg"
+          className="mx-auto mt-7 max-w-[54ch] text-balance text-center text-[17px] leading-relaxed text-fg-muted md:text-lg"
         >
           La plataforma de agentes AI hecha para inmobiliarias. Automatiza matching, evaluación de
           inquilinos, asegurabilidad, cobros y conciliación —de punta a punta, en todos los canales.

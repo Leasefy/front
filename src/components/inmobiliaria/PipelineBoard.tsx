@@ -322,15 +322,17 @@ function DroppableColumn({
       {isMounted && isSidebarOpen && createPortal(
         <>
           {/* Backdrop */}
+          {/* Drawer layer = z-[300] (misma capa que <Sheet>/<Drawer>). Antes z-[9998/9999],
+              que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17. */}
           <div
-            className="fixed inset-0 bg-black/60 z-[9998]"
+            className="fixed inset-0 bg-black/60 z-[300]"
             onClick={() => setIsSidebarOpen(false)}
             style={{ touchAction: 'none' }}
           />
 
           {/* Sidebar */}
           <div
-            className="fixed top-0 right-0 w-full sm:w-[420px] bg-card z-[9999]"
+            className="fixed top-0 right-0 w-full sm:w-[420px] bg-card z-[300]"
             style={{ height: '100dvh' }}
           >
             {/* Header - Fixed height */}

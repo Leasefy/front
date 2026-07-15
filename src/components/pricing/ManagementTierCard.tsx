@@ -76,8 +76,8 @@ export function ManagementTierCard({
         <ul className="mb-6 flex-1 space-y-2.5">
           {tier.features.map((feature, index) => (
             <li key={index} className="flex items-start gap-2.5">
-              <div className="mt-0.5 w-4 h-4 rounded-full bg-[#E8F3EC] flex items-center justify-center flex-shrink-0">
-                <Check className="h-2.5 w-2.5 text-[#2C7A53]" strokeWidth={3} />
+              <div className="mt-0.5 w-4 h-4 rounded-full bg-success-soft flex items-center justify-center flex-shrink-0">
+                <Check className="h-2.5 w-2.5 text-success" strokeWidth={3} />
               </div>
               <span className="text-[13px] text-sand-800 leading-snug">{feature}</span>
             </li>
@@ -88,7 +88,7 @@ export function ManagementTierCard({
         <div className="mb-4 flex items-center gap-2 text-[12px] text-sand-600">
           <div className="flex -space-x-1">
             {[...Array(3)].map((_, i) => (
-              <Star key={i} className="w-3.5 h-3.5 text-[#B7791F] fill-[#B7791F]" />
+              <Star key={i} className="w-3.5 h-3.5 text-warning fill-warning" />
             ))}
           </div>
           <span>+2,400 propietarios confían en nosotros</span>
@@ -110,14 +110,14 @@ export function ManagementTierCard({
   return (
     <div
       className={cn(
-        'relative flex flex-col rounded-[20px] border bg-surface border-neutral-200 p-6 transition-all hover:border-neutral-300',
+        'relative flex flex-col rounded-[20px] border bg-surface border-border-faint p-6 transition-all hover:border-border-strong',
         className
       )}
     >
       {/* Icon */}
       <div className="mb-4">
-        <div className="w-10 h-10 rounded-md bg-neutral-100 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-neutral-500" />
+        <div className="w-10 h-10 rounded-md bg-surface-muted flex items-center justify-center">
+          <Shield className="w-5 h-5 text-fg-muted" />
         </div>
       </div>
 
@@ -128,7 +128,7 @@ export function ManagementTierCard({
       </div>
 
       {/* Pricing */}
-      <div className="mb-6 p-4 -mx-1 rounded-[18px] bg-neutral-50 border border-neutral-100">
+      <div className="mb-6 p-4 -mx-1 rounded-[18px] bg-surface-muted border border-border-faint">
         <div className="flex items-baseline gap-1.5">
           <span className="text-[40px] font-mono font-bold tabular-nums text-foreground tracking-tight">
             {tier.feePercentage}%
@@ -144,8 +144,8 @@ export function ManagementTierCard({
       <ul className="mb-6 flex-1 space-y-2.5">
         {tier.features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2.5">
-            <div className="mt-0.5 w-4 h-4 rounded-full bg-[#E8F3EC] flex items-center justify-center flex-shrink-0">
-              <Check className="h-2.5 w-2.5 text-[#2C7A53]" strokeWidth={3} />
+            <div className="mt-0.5 w-4 h-4 rounded-full bg-success-soft flex items-center justify-center flex-shrink-0">
+              <Check className="h-2.5 w-2.5 text-success" strokeWidth={3} />
             </div>
             <span className="text-[13px] text-muted-foreground leading-snug">{feature}</span>
           </li>
@@ -157,7 +157,7 @@ export function ManagementTierCard({
         onClick={() => onSelect?.(tier.id)}
         variant="outline"
         hideArrow
-        className="w-full h-11 hover:bg-neutral-50"
+        className="w-full h-11 hover:bg-surface-muted"
       >
         Comenzar
       </Button>

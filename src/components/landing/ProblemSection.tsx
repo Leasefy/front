@@ -88,23 +88,23 @@ export default function ProblemSection() {
       <div className="container-platform">
         <Reveal>
           <EyebrowPill>Realidad actual</EyebrowPill>
-          <h2 className={`${lpHeading} mt-6 max-w-4xl text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-6 max-w-4xl text-fg`}>
             La operación de arriendos todavía corre en WhatsApp, Excel, correos y llamadas.
           </h2>
-          <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-fg-muted md:text-lg">
             Herramientas fragmentadas y trabajo manual: crecer significa sumar más personas.
           </p>
         </Reveal>
 
         <Reveal delay={0.1} className="mt-16">
-          <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-2 md:grid-cols-4 md:gap-y-0 md:divide-x md:divide-neutral-200">
+          <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-2 md:grid-cols-4 md:gap-y-0 md:divide-x md:divide-border">
             {COLS.map((c) => (
               <div key={c.title} className="md:px-7 md:first:pl-0 md:last:pr-0">
                 <LineArt variant={c.art} />
-                <h3 className="mt-7 font-heading text-lg font-medium tracking-tight text-neutral-950">
+                <h3 className="mt-7 font-heading text-lg font-medium tracking-tight text-fg">
                   {c.title}
                 </h3>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-500">{c.body}</p>
+                <p className="mt-2.5 text-[15px] leading-relaxed text-fg-muted">{c.body}</p>
               </div>
             ))}
           </div>

@@ -80,7 +80,7 @@ function StatusGlyph({ estado }: { estado: Estado }) {
       </span>
     )
   }
-  return <span className="w-5 h-5 shrink-0 rounded-full border-2 border-neutral-200" />
+  return <span className="w-5 h-5 shrink-0 rounded-full border-2 border-border" />
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ export default function ConciliacionProcesarPage() {
         <div className="flex items-center justify-between gap-4">
           <Link
             href="/panel/inmobiliaria/conciliacion-ia"
-            className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors"
+            className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Conciliación IA
@@ -153,16 +153,16 @@ export default function ConciliacionProcesarPage() {
           <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
             <div className="space-y-1.5">
               <Eyebrow>El equipo en acción</Eyebrow>
-              <p className="text-[13px] text-neutral-500">
+              <p className="text-[13px] text-fg-muted">
                 El trabajo pasa de un especialista al siguiente. Gabriela coordina el cierre.
               </p>
             </div>
-            <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-neutral-100 text-[13px] font-semibold tabular-nums text-neutral-600">
+            <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-surface-muted text-[13px] font-semibold tabular-nums text-fg-muted">
               {PIPELINE.length}
             </span>
           </div>
 
-          <ul className="divide-y divide-neutral-100">
+          <ul className="divide-y divide-border-faint">
             {PIPELINE.map((s, i) => {
               const meta = ESTADO_META[s.estado]
               return (
@@ -178,7 +178,7 @@ export default function ConciliacionProcesarPage() {
                   {/* Nombre · trabajo · resultado */}
                   <span className="flex-1 min-w-0">
                     <span className="block text-[14px] font-medium text-[#14130f]">{s.nombre}</span>
-                    <span className="block text-[12.5px] text-neutral-500 leading-snug">{s.trabajo}</span>
+                    <span className="block text-[12.5px] text-fg-muted leading-snug">{s.trabajo}</span>
                     <span className="block mt-1 text-[12.5px] font-medium text-[#14130f] tabular-nums truncate">
                       {s.resultado}
                     </span>

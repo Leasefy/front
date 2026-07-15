@@ -238,11 +238,11 @@ export default function EvaluacionPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-surface rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
-                        <Shield className="w-4 h-4 text-[#2C7A53]" />
+                      <div className="w-9 h-9 rounded-md bg-success-soft flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-success" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Sin antecedentes</p>
@@ -414,14 +414,14 @@ export default function EvaluacionPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-4 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-[#E8F3EC] flex items-center justify-center">
-                        <Fingerprint className="w-5 h-5 text-[#2C7A53]" />
+                  <div className="bg-surface rounded-xl p-4 w-[200px] border border-border-faint">
+                    <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border-faint">
+                      <div className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center">
+                        <Fingerprint className="w-5 h-5 text-success" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Identidad</p>
-                        <p className="text-[10px] text-[#2C7A53]">✓ Verificada</p>
+                        <p className="text-[10px] text-success">✓ Verificada</p>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -431,19 +431,19 @@ export default function EvaluacionPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Registraduría</span>
-                        <span className="text-[10px] text-[#2C7A53] flex items-center gap-1">
+                        <span className="text-[10px] text-success flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> Válida
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Biometría</span>
-                        <span className="text-[10px] text-[#2C7A53] flex items-center gap-1">
+                        <span className="text-[10px] text-success flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> Match
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#2C7A53] rounded-full flex items-center justify-center">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-success rounded-full flex items-center justify-center">
                     <Check className="w-3.5 h-3.5 text-white" />
                   </div>
                 </div>
@@ -469,10 +469,10 @@ export default function EvaluacionPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[220px] border border-neutral-100">
+                  <div className="bg-surface rounded-xl p-4 w-[220px] border border-border-faint">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Referencias verificadas</span>
-                      <span className="text-[10px] text-[#2C7A53] font-medium">3/3</span>
+                      <span className="text-[10px] text-success font-medium">3/3</span>
                     </div>
                     <div className="space-y-2.5">
                       {[
@@ -488,13 +488,13 @@ export default function EvaluacionPage() {
                             <p className="text-[10px] font-medium text-foreground truncate">{ref.name}</p>
                             <div className="flex gap-0.5">
                               {[...Array(ref.rating)].map((_, j) => (
-                                <svg key={j} className="w-2.5 h-2.5 text-[#B7791F] fill-current" viewBox="0 0 20 20">
+                                <svg key={j} className="w-2.5 h-2.5 text-warning fill-current" viewBox="0 0 20 20">
                                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                 </svg>
                               ))}
                             </div>
                           </div>
-                          <CheckCircle className="w-3.5 h-3.5 text-[#2C7A53] flex-shrink-0" />
+                          <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" />
                         </div>
                       ))}
                     </div>
@@ -570,7 +570,7 @@ export default function EvaluacionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-surface rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <span className="text-[11px] font-mono font-normal text-foreground/30 uppercase tracking-wider mb-4 block">Paso 02</span>
@@ -586,7 +586,7 @@ export default function EvaluacionPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Datos personales', 'Info laboral', 'Referencias', 'Autorización'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -599,7 +599,7 @@ export default function EvaluacionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-surface rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <span className="text-[11px] font-mono font-normal text-foreground/30 uppercase tracking-wider mb-4 block">Paso 03</span>
@@ -615,7 +615,7 @@ export default function EvaluacionPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['DataCrédito', 'Registraduría', 'Policía', 'Score IA'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -718,7 +718,7 @@ export default function EvaluacionPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.4 }}
-              className="mt-10 p-6 bg-muted/50 rounded-xl max-w-5xl mx-auto border border-neutral-200"
+              className="mt-10 p-6 bg-muted/50 rounded-xl max-w-5xl mx-auto border border-border-faint"
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>

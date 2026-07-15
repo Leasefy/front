@@ -162,8 +162,13 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
     )
   }
 
-  // needsOnboarding or not authenticated - will redirect (handled in effect)
-  if (needsOnboarding || !effectiveIsAuthenticated) {
+  // needsOnboarding or not authenticated - will redirect (handled in effect).
+  // Mirrors the effect's pathname exemption above (line ~85): a
+  // needsOnboarding user already on an /onboarding/* page (e.g. the
+  // auth-first agency wizard) is NOT redirected by the effect, so this
+  // render guard must not block their children either — otherwise it's a
+  // dead-end "Redirigiendo..." spinner that never actually redirects.
+  if ((needsOnboarding && !pathname.startsWith('/onboarding')) || !effectiveIsAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

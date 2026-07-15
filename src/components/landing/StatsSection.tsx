@@ -62,7 +62,7 @@ export default function StatsSection() {
           <div className="flex justify-center">
             <EyebrowPill>El impacto</EyebrowPill>
           </div>
-          <h2 className="mx-auto mt-7 max-w-4xl font-heading text-[clamp(2.2rem,5vw,4rem)] font-medium leading-[1.04] tracking-[-0.04em] text-neutral-950">
+          <h2 className="mx-auto mt-7 max-w-4xl font-heading text-[clamp(2.2rem,5vw,4rem)] font-medium leading-[1.04] tracking-[-0.04em] text-fg">
             Qué cambia cuando los agentes trabajan
           </h2>
         </Reveal>
@@ -75,10 +75,10 @@ export default function StatsSection() {
           >
             {STATS.map((s) => (
               <div key={s.k}>
-                <p className="font-heading text-[clamp(3.25rem,7vw,5.5rem)] font-medium leading-none tracking-[-0.04em] text-neutral-950">
+                <p className="font-heading text-[clamp(3.25rem,7vw,5.5rem)] font-medium leading-none tracking-[-0.04em] text-fg">
                   <StatNumber target={s.target} suffix={s.suffix} start={inView} />
                 </p>
-                <p className="mt-5 max-w-[24ch] text-[14px] leading-relaxed text-neutral-500">
+                <p className="mt-5 max-w-[24ch] text-[14px] leading-relaxed text-fg-muted">
                   {s.k}
                 </p>
               </div>

@@ -103,7 +103,7 @@ export default function ConciliacionLotePage() {
       <div className="mx-auto max-w-[1240px] space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
-          <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors">
+          <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Conciliación IA
           </Link>
@@ -112,11 +112,11 @@ export default function ConciliacionLotePage() {
 
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <FileArrowDown className="w-4 h-4 text-neutral-400" weight="bold" />
+            <FileArrowDown className="w-4 h-4 text-fg-subtle" weight="bold" />
             <MonoLabel className="tracking-[0.08em]">Lote Bancolombia .360</MonoLabel>
           </div>
           <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#14130f]">16 de junio · 120 movimientos</h1>
-          <p className="text-[13px] text-neutral-500">Cargado hoy 8:03 a.m. · valor total {fmt(284_700_000)}</p>
+          <p className="text-[13px] text-fg-muted">Cargado hoy 8:03 a.m. · valor total {fmt(284_700_000)}</p>
         </div>
 
         {/* Resumen — barra apilada */}
@@ -131,7 +131,7 @@ export default function ConciliacionLotePage() {
             {SEGMENTOS.map((s) => (
               <div key={s.key} className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                <dt className="text-[12.5px] text-neutral-500">{s.label}</dt>
+                <dt className="text-[12.5px] text-fg-muted">{s.label}</dt>
                 <dd className="text-[12.5px] font-medium text-[#14130f] tabular-nums">{s.count}</dd>
               </div>
             ))}
@@ -223,34 +223,34 @@ export default function ConciliacionLotePage() {
                 className="group gap-1.5 whitespace-nowrap"
               >
                 {t.label}
-                <span className="font-mono text-[10.5px] tabular-nums text-neutral-400 group-data-[state=active]:text-neutral-500">{t.count}</span>
+                <span className="font-mono text-[10.5px] tabular-nums text-fg-subtle group-data-[state=active]:text-fg-muted">{t.count}</span>
               </TabsTrigger>
             ))}
           </TabsList>
 
           <TabsContent value={tab} className="mt-0">
           {/* Column header */}
-          <div className="hidden sm:grid grid-cols-[96px_1fr_130px_1fr_96px_110px] gap-3 px-5 py-2 border-b border-neutral-100 bg-neutral-50/60">
+          <div className="hidden sm:grid grid-cols-[96px_1fr_130px_1fr_96px_110px] gap-3 px-5 py-2 border-b border-border-faint bg-surface-muted/60">
             {['Referencia', 'Pagador', 'Valor', 'Coincidencia', 'Confianza', ''].map((h, i) => (
               <MonoLabel key={i} className="text-[10px] tracking-[0.08em]">{h}</MonoLabel>
             ))}
           </div>
 
           {/* Rows */}
-          <ul className="divide-y divide-neutral-100">
+          <ul className="divide-y divide-border-faint">
             {visibles.map((m) => {
               const conciliadoAuto = aprobadas && m.tab === 'alta'
               const cb = m.confianza != null ? band(m.confianza) : null
               return (
                 <li key={m.ref} className="grid grid-cols-2 sm:grid-cols-[96px_1fr_130px_1fr_96px_110px] gap-2 sm:gap-3 sm:items-center px-5 py-3">
-                  <span className="font-mono text-[12px] text-neutral-500">{m.ref}</span>
+                  <span className="font-mono text-[12px] text-fg-muted">{m.ref}</span>
                   <span className="min-w-0">
                     <span className="block text-[13.5px] font-medium text-[#14130f] truncate">{m.pagador}</span>
-                    {m.nota && <span className="block text-[11.5px] text-neutral-400 truncate">{m.nota}</span>}
+                    {m.nota && <span className="block text-[11.5px] text-fg-subtle truncate">{m.nota}</span>}
                   </span>
                   <span className="text-[13.5px] font-medium text-[#14130f] tabular-nums">{fmt(m.valor)}</span>
-                  <span className="text-[12.5px] text-neutral-600 truncate">
-                    {m.match ?? <span className="text-neutral-400">Sin coincidencia</span>}
+                  <span className="text-[12.5px] text-fg-muted truncate">
+                    {m.match ?? <span className="text-fg-subtle">Sin coincidencia</span>}
                   </span>
                   <span>
                     {cb ? (
@@ -259,7 +259,7 @@ export default function ConciliacionLotePage() {
                         {m.confianza}%
                       </span>
                     ) : (
-                      <span className="text-[12.5px] text-neutral-400">—</span>
+                      <span className="text-[12.5px] text-fg-subtle">—</span>
                     )}
                   </span>
                   <span className="justify-self-start sm:justify-self-end">
@@ -284,7 +284,7 @@ export default function ConciliacionLotePage() {
             })}
           </ul>
 
-          <p className="px-5 py-3 text-[11.5px] text-neutral-400 border-t border-neutral-100">
+          <p className="px-5 py-3 text-[11.5px] text-fg-subtle border-t border-border-faint">
             Vista previa — muestra representativa del lote de {TOTAL} movimientos.
           </p>
           </TabsContent>
@@ -297,15 +297,15 @@ export default function ConciliacionLotePage() {
             Revisar solo excepciones
           </Button>
           <Button variant="outline" hideArrow>
-            <FileArrowDown className="w-4 h-4 text-neutral-500" weight="bold" />
+            <FileArrowDown className="w-4 h-4 text-fg-muted" weight="bold" />
             Descargar reporte
           </Button>
           <Button variant="outline" hideArrow>
-            <ArrowsClockwise className="w-4 h-4 text-neutral-500" weight="bold" />
+            <ArrowsClockwise className="w-4 h-4 text-fg-muted" weight="bold" />
             Reprocesar con reglas
           </Button>
           <Button variant="outline" hideArrow className="ml-auto">
-            <LockSimple className="w-4 h-4 text-neutral-500" weight="bold" />
+            <LockSimple className="w-4 h-4 text-fg-muted" weight="bold" />
             Cerrar lote
           </Button>
         </div>

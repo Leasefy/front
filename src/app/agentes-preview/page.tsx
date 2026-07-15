@@ -10,8 +10,8 @@ export const metadata = {
 
 function VariantLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border-y border-neutral-200 bg-neutral-100">
-      <div className="container-platform py-3 text-[12px] font-mono uppercase tracking-widest text-neutral-500">
+    <div className="border-y border-border bg-surface-muted">
+      <div className="container-platform py-3 text-[12px] font-mono uppercase tracking-widest text-fg-subtle">
         {children}
       </div>
     </div>

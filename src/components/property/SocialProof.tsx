@@ -57,7 +57,7 @@ export function SocialProofBanner({ propertyId, className }: SocialProofProps) {
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
       {/* Live viewers - Chip style */}
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-100 border border-border rounded-full">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-surface-muted border border-border rounded-full">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success-500))]"></span>
@@ -68,7 +68,7 @@ export function SocialProofBanner({ propertyId, className }: SocialProofProps) {
       </div>
 
       {/* Views today - Chip style */}
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 border border-border rounded-full text-[12px] text-muted-foreground">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-[12px] text-muted-foreground">
         <Eye className="w-3.5 h-3.5" />
         <span><span className="font-mono tabular-nums">{stats.viewsToday}</span> visitas hoy</span>
       </div>

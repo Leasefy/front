@@ -136,8 +136,8 @@ function PSEMockContent() {
       <PSEShell>
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <SpinnerGap className="w-12 h-12 animate-spin text-[#008B5E]" />
-          <p className="text-[15px] font-medium text-gray-700">Procesando tu pago...</p>
-          <p className="text-sm text-gray-500">No cerrés esta ventana</p>
+          <p className="text-[15px] font-medium text-fg-muted">Procesando tu pago...</p>
+          <p className="text-sm text-fg-subtle">No cerrés esta ventana</p>
         </div>
       </PSEShell>
     );
@@ -148,14 +148,14 @@ function PSEMockContent() {
     return (
       <PSEShell>
         <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#E8F3EC] flex items-center justify-center">
-            <CheckCircle className="w-9 h-9 text-[#2C7A53]" weight="fill" />
+          <div className="w-16 h-16 rounded-full bg-success-soft flex items-center justify-center">
+            <CheckCircle className="w-9 h-9 text-success" weight="fill" />
           </div>
-          <h2 className="text-xl font-bold text-gray-800">¡Pago aprobado!</h2>
-          <p className="text-sm text-gray-500 max-w-xs">
+          <h2 className="text-xl font-bold text-fg">¡Pago aprobado!</h2>
+          <p className="text-sm text-fg-subtle max-w-xs">
             Tu suscripción al plan <strong>{planName}</strong> fue activada exitosamente.
           </p>
-          <p className="text-xs text-gray-400">Redirigiendo a tu panel...</p>
+          <p className="text-xs text-fg-subtle">Redirigiendo a tu panel...</p>
         </div>
       </PSEShell>
     );
@@ -166,15 +166,15 @@ function PSEMockContent() {
     return (
       <PSEShell>
         <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#F8EAE7] flex items-center justify-center">
-            <XCircle className="w-9 h-9 text-[#C4503B]" weight="fill" />
+          <div className="w-16 h-16 rounded-full bg-danger-soft flex items-center justify-center">
+            <XCircle className="w-9 h-9 text-danger" weight="fill" />
           </div>
-          <h2 className="text-xl font-bold text-gray-800">{pseError.title}</h2>
-          <p className="text-sm text-gray-500 max-w-xs">{pseError.description}</p>
+          <h2 className="text-xl font-bold text-fg">{pseError.title}</h2>
+          <p className="text-sm text-fg-subtle max-w-xs">{pseError.description}</p>
           <div className="flex gap-3 mt-2">
             <button
               onClick={() => router.back()}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm border border-border rounded-md text-fg-muted hover:bg-surface-muted transition-colors"
             >
               Volver al checkout
             </button>
@@ -194,19 +194,19 @@ function PSEMockContent() {
   return (
     <PSEShell>
       {/* Merchant info */}
-      <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6">
+      <div className="bg-surface-muted border border-border rounded-md p-4 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-0.5">Pago a</p>
-            <p className="text-base font-bold text-gray-800">Leasify</p>
-            <p className="text-sm text-gray-600 mt-0.5">Plan {planName}</p>
+            <p className="text-xs text-fg-subtle uppercase tracking-wide font-medium mb-0.5">Pago a</p>
+            <p className="text-base font-bold text-fg">Leasify</p>
+            <p className="text-sm text-fg-muted mt-0.5">Plan {planName}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-0.5">Total</p>
-            <p className="text-xl font-bold text-gray-800">
+            <p className="text-xs text-fg-subtle uppercase tracking-wide font-medium mb-0.5">Total</p>
+            <p className="text-xl font-bold text-fg">
               {amount > 0 ? formatCurrency(amount) : '—'}
             </p>
-            <p className="text-xs text-gray-400">{cycle === 'MONTHLY' ? 'mensual' : 'anual'}</p>
+            <p className="text-xs text-fg-subtle">{cycle === 'MONTHLY' ? 'mensual' : 'anual'}</p>
           </div>
         </div>
       </div>
@@ -218,14 +218,14 @@ function PSEMockContent() {
       >
         {/* Bank */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            <Bank className="inline w-4 h-4 mr-1 text-gray-500" />
+          <label className="block text-sm font-medium text-fg-muted mb-1.5">
+            <Bank className="inline w-4 h-4 mr-1 text-fg-subtle" />
             Entidad bancaria
           </label>
           <select
             value={bankCode}
             onChange={(e) => setBankCode(e.target.value)}
-            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+            className="w-full h-11 px-3 rounded-md border border-border bg-surface text-[14px] text-fg focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
           >
             <option value="">Seleccioná tu banco</option>
             {banks.map((b) => (
@@ -237,14 +237,14 @@ function PSEMockContent() {
         {/* Document */}
         <div className="grid grid-cols-5 gap-2">
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              <IdentificationCard className="inline w-4 h-4 mr-1 text-gray-500" />
+            <label className="block text-sm font-medium text-fg-muted mb-1.5">
+              <IdentificationCard className="inline w-4 h-4 mr-1 text-fg-subtle" />
               Tipo
             </label>
             <select
               value={docType}
               onChange={(e) => setDocType(e.target.value as PSEDocumentType)}
-              className="w-full h-11 px-2 rounded-md border border-gray-300 bg-white text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+              className="w-full h-11 px-2 rounded-md border border-border bg-surface text-[13px] text-fg focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
             >
               {DOC_TYPES.map((d) => (
                 <option key={d.value} value={d.value}>{d.value}</option>
@@ -252,59 +252,59 @@ function PSEMockContent() {
             </select>
           </div>
           <div className="col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Número de documento</label>
+            <label className="block text-sm font-medium text-fg-muted mb-1.5">Número de documento</label>
             <input
               value={docNumber}
               onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, ''))}
               placeholder="1234567890"
               maxLength={12}
-              className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+              className="w-full h-11 px-3 rounded-md border border-border bg-surface text-[14px] text-fg focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
             />
           </div>
         </div>
 
         {/* Holder name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            <User className="inline w-4 h-4 mr-1 text-gray-500" />
+          <label className="block text-sm font-medium text-fg-muted mb-1.5">
+            <User className="inline w-4 h-4 mr-1 text-fg-subtle" />
             Nombre del titular
           </label>
           <input
             value={holderName}
             onChange={(e) => setHolderName(e.target.value)}
             placeholder="Juan García"
-            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+            className="w-full h-11 px-3 rounded-md border border-border bg-surface text-[14px] text-fg focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
           />
         </div>
 
         {/* Phone (optional) */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            <Phone className="inline w-4 h-4 mr-1 text-gray-500" />
+          <label className="block text-sm font-medium text-fg-muted mb-1.5">
+            <Phone className="inline w-4 h-4 mr-1 text-fg-subtle" />
             Teléfono celular
-            <span className="text-gray-400 font-normal ml-1">(opcional)</span>
+            <span className="text-fg-subtle font-normal ml-1">(opcional)</span>
           </label>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
             placeholder="3001234567"
             maxLength={10}
-            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-[14px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
+            className="w-full h-11 px-3 rounded-md border border-border bg-surface text-[14px] text-fg focus:outline-none focus:ring-2 focus:ring-[#008B5E]/40 focus:border-[#008B5E]"
           />
         </div>
 
         {/* Form error */}
         {formError && (
-          <div className="flex items-center gap-2 p-3 rounded-md bg-[#F8EAE7] border border-[#C4503B]/30">
-            <Warning className="w-4 h-4 text-[#C4503B] shrink-0" />
-            <p className="text-sm text-[#C4503B]">{formError}</p>
+          <div className="flex items-center gap-2 p-3 rounded-md bg-danger-soft border border-danger/30">
+            <Warning className="w-4 h-4 text-danger shrink-0" />
+            <p className="text-sm text-danger">{formError}</p>
           </div>
         )}
 
         {/* Mock outcome hint */}
-        <div className="p-3 rounded-md bg-[#F8F0E0] border border-[#B7791F]/30">
-          <p className="text-xs text-[#B7791F] font-medium mb-1">Comportamiento del simulador</p>
-          <p className="text-xs text-[#B7791F]">
+        <div className="p-3 rounded-md bg-warning-soft border border-warning/30">
+          <p className="text-xs text-warning font-medium mb-1">Comportamiento del simulador</p>
+          <p className="text-xs text-warning">
             El resultado depende del <strong>último dígito</strong> del documento:
             &nbsp;<strong>0</strong> → fondos insuficientes · <strong>1</strong> → rechazo banco · <strong>9</strong> → pendiente · <strong>cualquier otro</strong> → éxito ✓
           </p>
@@ -315,7 +315,7 @@ function PSEMockContent() {
           <button
             type="button"
             onClick={() => submit(true)}
-            className="flex-1 h-12 rounded-md border-2 border-[#C4503B]/30 text-[#C4503B] text-sm font-semibold hover:bg-[#F8EAE7] transition-colors"
+            className="flex-1 h-12 rounded-md border-2 border-danger/30 text-danger text-sm font-semibold hover:bg-danger-soft transition-colors"
           >
             Rechazar pago
           </button>
@@ -332,7 +332,7 @@ function PSEMockContent() {
       {/* Back link */}
       <button
         onClick={() => router.back()}
-        className="mt-6 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors mx-auto"
+        className="mt-6 flex items-center gap-1.5 text-xs text-fg-subtle hover:text-fg-muted transition-colors mx-auto"
       >
         <ArrowLeft className="w-3 h-3" />
         Volver al checkout
@@ -344,7 +344,7 @@ function PSEMockContent() {
 // ─── Shell / layout que simula la UI de PSE ─────────────────────────────────
 function PSEShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-start py-8 px-4">
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-start py-8 px-4">
       {/* PSE Header */}
       <div className="w-full max-w-md mb-4">
         <div className="bg-[#008B5E] rounded-t-xl px-6 py-4 flex items-center justify-between">
@@ -357,9 +357,9 @@ function PSEShell({ children }: { children: React.ReactNode }) {
               <p className="text-white/70 text-[11px]">Pagos Seguros en Línea</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#B7791F]/20 border border-[#B7791F]/30">
-            <Warning className="w-3 h-3 text-[#B7791F]" weight="fill" />
-            <span className="text-[#B7791F] text-[10px] font-bold uppercase tracking-wide">Simulación</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-warning/20 border border-warning/30">
+            <Warning className="w-3 h-3 text-warning" weight="fill" />
+            <span className="text-warning text-[10px] font-bold uppercase tracking-wide">Simulación</span>
           </div>
         </div>
 
@@ -371,12 +371,12 @@ function PSEShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-md bg-white rounded-b-xl border border-gray-200 px-6 py-6">
+      <div className="w-full max-w-md bg-surface rounded-b-xl border border-border px-6 py-6">
         {children}
       </div>
 
       {/* Footer */}
-      <p className="mt-6 text-xs text-gray-400 text-center max-w-sm">
+      <p className="mt-6 text-xs text-fg-subtle text-center max-w-sm">
         Esta es una simulación del portal PSE para pruebas. No se realizan cobros reales.
       </p>
     </div>
@@ -386,7 +386,7 @@ function PSEShell({ children }: { children: React.ReactNode }) {
 export default function PSEMockPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center">
         <SpinnerGap className="w-8 h-8 animate-spin text-[#008B5E]" />
       </div>
     }>

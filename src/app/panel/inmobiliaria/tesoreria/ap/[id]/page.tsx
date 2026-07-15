@@ -78,9 +78,9 @@ const STATUS_COLORS: Record<
     border: 'border-danger/30',
   },
   void: {
-    text: 'text-neutral-600 dark:text-neutral-400',
-    bg: 'bg-neutral-100 dark:bg-neutral-800',
-    border: 'border-neutral-200 dark:border-neutral-700',
+    text: 'text-fg-muted',
+    bg: 'bg-surface-muted',
+    border: 'border-border',
   },
 };
 
@@ -217,8 +217,8 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       <div className="p-6 lg:p-8 space-y-4">
         <BackNav t={t} k={k} />
         <div className="max-w-sm mx-auto text-center py-16 space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Receipt className="w-8 h-8 text-neutral-400" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-surface-muted flex items-center justify-center">
+            <Receipt className="w-8 h-8 text-fg-subtle" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">
@@ -253,8 +253,8 @@ function ApBillDetailContent({ billId }: { billId: string }) {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-            <Receipt className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+            <Receipt className="w-5 h-5 text-fg-muted" />
           </div>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-fg">

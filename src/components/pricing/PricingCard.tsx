@@ -101,7 +101,7 @@ export function PricingCard({
         {billingCycle === 'yearly' && yearlySavings > 0 && (
           <Badge
             variant="secondary"
-            className="mt-2 bg-[#E8F3EC] text-[#2C7A53] hover:bg-[#E8F3EC]"
+            className="mt-2 bg-success-soft text-success hover:bg-success-soft"
           >
             Ahorras <span className="font-mono tabular-nums">{yearlySavings}%</span>
           </Badge>
@@ -113,7 +113,7 @@ export function PricingCard({
         {plan.features.map((feature) => (
           <li key={feature.id} className="flex items-start gap-3">
             {feature.included ? (
-              <Check className="w-5 h-5 text-[#2C7A53] shrink-0 mt-0.5" />
+              <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
             ) : (
               <X className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
             )}
@@ -128,7 +128,7 @@ export function PricingCard({
                 <span className="text-muted-foreground"> ({feature.limit})</span>
               )}
               {feature.included && feature.limit === 'unlimited' && (
-                <span className="text-[#2C7A53] text-xs ml-1">(ilimitado)</span>
+                <span className="text-success text-xs ml-1">(ilimitado)</span>
               )}
             </span>
           </li>

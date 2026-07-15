@@ -921,7 +921,7 @@ export default function PropietariosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
@@ -1069,10 +1069,10 @@ export default function PropietariosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-neutral-400" />
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-border-faint">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-faint">
+                      <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center">
+                        <Users className="w-5 h-5 text-fg-subtle" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Candidato #1</p>
@@ -1082,15 +1082,15 @@ export default function PropietariosPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Ingresos</span>
-                        <span className="text-[10px] text-neutral-300">— — —</span>
+                        <span className="text-[10px] text-fg-subtle">— — —</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Historial</span>
-                        <span className="text-[10px] text-neutral-300">— — —</span>
+                        <span className="text-[10px] text-fg-subtle">— — —</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Score</span>
-                        <span className="text-[10px] text-neutral-300">— — —</span>
+                        <span className="text-[10px] text-fg-subtle">— — —</span>
                       </div>
                     </div>
                   </div>
@@ -1120,7 +1120,7 @@ export default function PropietariosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[220px] border border-neutral-100">
+                  <div className="bg-white rounded-xl p-4 w-[220px] border border-border-faint">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground bg-[#F8F0E0] px-2 py-0.5 rounded">Cuenta de arriendo</span>
                       <span className="text-[10px] text-muted-foreground">2024</span>
@@ -1145,7 +1145,7 @@ export default function PropietariosPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="h-px bg-surface-muted my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Deuda acumulada:</span>
                       <span className="text-[12px] text-[#C4503B] font-bold">$5.0M</span>
@@ -1223,7 +1223,7 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
@@ -1238,7 +1238,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['PSE y tarjeta', 'Recordatorios', 'Reporte mensual'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1251,7 +1251,7 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -1266,7 +1266,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Firma electrónica', 'Plantillas legales', 'Descarga PDF'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}

@@ -94,13 +94,13 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
-            Presupuesto mensual <span className="text-[#C4503B]">*</span>
+          <label className="block text-sm font-medium text-fg-muted mb-3">
+            Presupuesto mensual <span className="text-danger">*</span>
           </label>
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <CurrencyDollar className="h-5 w-5 text-neutral-400" />
+                <CurrencyDollar className="h-5 w-5 text-fg-subtle" />
               </div>
               <Input
                 type="text"
@@ -115,7 +115,7 @@ export function StepHousingPreferences() {
             </div>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <CurrencyDollar className="h-5 w-5 text-neutral-400" />
+                <CurrencyDollar className="h-5 w-5 text-fg-subtle" />
               </div>
               <Input
                 type="text"
@@ -137,7 +137,7 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+          <label className="block text-sm font-medium text-fg-muted mb-3">
             Ciudades de interés
           </label>
           <div className="flex flex-wrap gap-2 mb-3">
@@ -152,7 +152,7 @@ export function StepHousingPreferences() {
                     'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                     isSelected
                       ? 'bg-[#1A40FF] text-white'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                      : 'bg-surface-muted text-fg-muted hover:bg-surface-hover'
                   )}
                 >
                   {city}
@@ -187,7 +187,7 @@ export function StepHousingPreferences() {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <MapPin className="h-5 w-5 text-neutral-400" />
+                <MapPin className="h-5 w-5 text-fg-subtle" />
               </div>
               <Input
                 type="text"
@@ -217,12 +217,12 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <label htmlFor="moveInDate" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label htmlFor="moveInDate" className="block text-sm font-medium text-fg-muted mb-2">
             ¿Cuándo planeas mudarte?
           </label>
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <Calendar className="h-5 w-5 text-neutral-400" />
+              <Calendar className="h-5 w-5 text-fg-subtle" />
             </div>
             <Input
               type="date"
@@ -241,7 +241,7 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+          <label className="block text-sm font-medium text-fg-muted mb-3">
             ¿Tienes mascotas?
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -252,10 +252,10 @@ export function StepHousingPreferences() {
                 'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
                 !draft.hasPets
                   ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
+                  : 'border-border hover:border-border-strong bg-surface'
               )}
             >
-              <span className={cn('text-sm font-semibold', !draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-700 dark:text-neutral-300')}>
+              <span className={cn('text-sm font-semibold', !draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
                 No tengo mascotas
               </span>
             </button>
@@ -266,11 +266,11 @@ export function StepHousingPreferences() {
                 'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
                 draft.hasPets
                   ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
+                  : 'border-border hover:border-border-strong bg-surface'
               )}
             >
-              <PawPrint className={cn('h-5 w-5', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-500 dark:text-neutral-400')} />
-              <span className={cn('text-sm font-semibold', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-700 dark:text-neutral-300')}>
+              <PawPrint className={cn('h-5 w-5', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-subtle')} />
+              <span className={cn('text-sm font-semibold', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
                 Sí, tengo mascotas
               </span>
             </button>
@@ -299,7 +299,7 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+          <label className="block text-sm font-medium text-fg-muted mb-3">
             Amenidades importantes para ti
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -316,11 +316,11 @@ export function StepHousingPreferences() {
                     'flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200',
                     isSelected
                       ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
+                      : 'border-border hover:border-border-strong bg-surface'
                   )}
                 >
-                  <Icon className={cn('h-5 w-5', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-500 dark:text-neutral-400')} />
-                  <span className={cn('text-xs font-medium text-center', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-neutral-600 dark:text-neutral-400')}>
+                  <Icon className={cn('h-5 w-5', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-subtle')} />
+                  <span className={cn('text-xs font-medium text-center', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
                     {amenity.label}
                   </span>
                 </button>
@@ -334,7 +334,7 @@ export function StepHousingPreferences() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-sm text-[#B7791F] dark:text-[#D2992F] bg-[#F8F0E0] dark:bg-[#B7791F]/15 px-4 py-3 rounded-xl"
+          className="text-sm text-warning bg-warning-soft px-4 py-3 rounded-xl"
         >
           Ingresa tu presupuesto mínimo y máximo para continuar
         </motion.p>

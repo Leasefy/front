@@ -626,7 +626,7 @@ function ReportesContent() {
           <div className="space-y-4">
             {favoriteReports.length > 0 && !filters.favoritesOnly && (
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-neutral-400" />
+                <FileText className="w-5 h-5 text-fg-subtle" />
                 <h2 className="text-base font-semibold text-fg">
                   {t('inmobiliaria.reportes.otherReports')}
                 </h2>

@@ -19,8 +19,8 @@ export interface PlanStatsCardProps {
 }
 
 const variantClasses = {
-  default: 'bg-white dark:bg-card border-plan-border',
-  accent: 'bg-[#EEF1FF] border-[#1A40FF]/30',
+  default: 'bg-surface border-plan-border',
+  accent: 'bg-primary/10 border-primary/30',
   muted: 'bg-muted border-plan-border',
 };
 

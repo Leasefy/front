@@ -49,13 +49,13 @@ function SigningSuccess({ locale }: { locale: string }) {
       animate={{ opacity: 1, scale: 1 }}
       className="max-w-lg mx-auto text-center py-16"
     >
-      <div className="w-20 h-20 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto mb-6">
-        <Confetti className="w-10 h-10 text-[#2C7A53] dark:text-[#3EAE70]" />
+      <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
+        <Confetti className="w-10 h-10 text-success" />
       </div>
-      <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
+      <h2 className="text-2xl font-semibold text-fg mb-3">
         {locale === 'es' ? '¡Contrato firmado exitosamente!' : 'Contract signed successfully!'}
       </h2>
-      <p className="text-fg-muted dark:text-fg-subtle mb-8 max-w-sm mx-auto">
+      <p className="text-fg-muted mb-8 max-w-sm mx-auto">
         {locale === 'es'
           ? 'Ambas partes han firmado. Tu contrato está activo y puedes descargarlo en cualquier momento.'
           : 'Both parties have signed. Your contract is active and you can download it anytime.'}
@@ -97,7 +97,7 @@ function ContractDocumentView({
   // Cuando el contrato ya tiene firma(s), priorizamos el PDF estampado via /pdf.
   if (signedPdfUrl) {
     return (
-      <div className="rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface">
+      <div className="rounded-xl border border-border overflow-hidden bg-surface">
         <iframe
           src={signedPdfUrl}
           className="w-full h-[720px] bg-surface"
@@ -112,7 +112,7 @@ function ContractDocumentView({
   }
   if (preview?.origin === 'UPLOADED_PDF') {
     return (
-      <div className="rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface">
+      <div className="rounded-xl border border-border overflow-hidden bg-surface">
         <iframe
           src={preview.pdfUrl}
           className="w-full h-[720px] bg-surface"
@@ -124,13 +124,13 @@ function ContractDocumentView({
   if (preview?.origin === 'GENERATED') {
     return (
       <div
-        className="rounded-xl border border-border dark:border-border-strong bg-surface p-6 prose prose-sm max-w-none dark:prose-invert"
+        className="rounded-xl border border-border bg-surface p-6 prose prose-sm max-w-none dark:prose-invert"
         {...sanitizeContractHtml(preview.html)}
       />
     );
   }
   return (
-    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-8 flex items-center justify-center">
+    <div className="rounded-xl border border-border bg-surface p-8 flex items-center justify-center">
       <Spinner size="md" variant="muted" />
     </div>
   );
@@ -178,28 +178,28 @@ function readOnlyBanner(status: Contract['status'], locale: string): { tone: Sta
 
 const BANNER_TONES: Record<StatusBannerTone, { container: string; iconBg: string; iconColor: string; text: string }> = {
   emerald: {
-    container: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 border-[#2C7A53]/30 dark:border-[#2C7A53]/40',
-    iconBg: 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15',
-    iconColor: 'text-[#2C7A53] dark:text-[#3EAE70]',
-    text: 'text-[#2C7A53] dark:text-[#3EAE70]',
+    container: 'bg-success-soft border-success/30',
+    iconBg: 'bg-success-soft',
+    iconColor: 'text-success',
+    text: 'text-success',
   },
   amber: {
-    container: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 border-[#B7791F]/30 dark:border-[#B7791F]/40',
-    iconBg: 'bg-[#F8F0E0] dark:bg-[#B7791F]/15',
-    iconColor: 'text-[#B7791F] dark:text-[#D2992F]',
-    text: 'text-[#B7791F] dark:text-[#D2992F]',
+    container: 'bg-warning-soft border-warning/30',
+    iconBg: 'bg-warning-soft',
+    iconColor: 'text-warning',
+    text: 'text-warning',
   },
   rose: {
-    container: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 border-[#C4503B]/30 dark:border-[#C4503B]/40',
-    iconBg: 'bg-[#F8EAE7] dark:bg-[#C4503B]/15',
-    iconColor: 'text-[#C4503B] dark:text-[#E0664D]',
-    text: 'text-[#C4503B] dark:text-[#E0664D]',
+    container: 'bg-danger-soft border-danger/30',
+    iconBg: 'bg-danger-soft',
+    iconColor: 'text-danger',
+    text: 'text-danger',
   },
   neutral: {
-    container: 'bg-surface-muted dark:bg-ink border-border dark:border-border-strong',
-    iconBg: 'bg-surface-muted dark:bg-ink',
+    container: 'bg-surface-muted border-border',
+    iconBg: 'bg-surface-muted',
     iconColor: 'text-fg-muted',
-    text: 'text-fg dark:text-fg-subtle',
+    text: 'text-fg-muted',
   },
 };
 
@@ -248,7 +248,7 @@ function ReadOnlyView({
           {chatHref && (
             <Link
               href={chatHref}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
             >
               <ChatCircle className="w-3.5 h-3.5" />
               {locale === 'es' ? 'Abrir chat con el propietario' : 'Open chat with landlord'}
@@ -262,7 +262,7 @@ function ReadOnlyView({
               hideArrow
               onClick={onCancelRequest}
               disabled={isCancelling}
-              className="gap-1 px-0 text-xs text-[#C4503B] hover:text-[#C4503B]"
+              className="gap-1 px-0 text-xs text-danger hover:text-danger"
             >
               <XCircle className="w-3.5 h-3.5" />
               {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
@@ -378,7 +378,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" variant="muted" />
       </div>
     );
@@ -387,17 +387,17 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   // Error or not found
   if (error || !activeContract) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a contratos' : 'Back to contracts'} />
           <div className="mt-8 text-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-surface-muted dark:bg-ink flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-4">
               <WarningCircle className="w-8 h-8 text-fg-subtle" />
             </div>
-            <h2 className="text-lg font-semibold text-fg dark:text-white mb-2">
+            <h2 className="text-lg font-semibold text-fg mb-2">
               {locale === 'es' ? 'Contrato no encontrado' : 'Contract not found'}
             </h2>
-            <p className="text-fg-muted dark:text-fg-subtle">
+            <p className="text-fg-muted">
               {error || (locale === 'es'
                 ? 'No pudimos encontrar este contrato.'
                 : 'We couldn\'t find this contract.')}
@@ -411,7 +411,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   // Success state after signing
   if (signedSuccess) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <SigningSuccess locale={locale} />
         </div>
@@ -420,7 +420,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Back */}
         <motion.div
@@ -438,12 +438,12 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <h1 className="text-2xl font-semibold text-fg dark:text-white">
+          <h1 className="text-2xl font-semibold text-fg">
             {isPendingTenant
               ? (locale === 'es' ? 'Firmar Contrato' : 'Sign Contract')
               : (locale === 'es' ? 'Contrato de Arrendamiento' : 'Rental Contract')}
           </h1>
-          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
+          <p className="mt-1 text-fg-muted">
             {activeContract.propertyAddress} — {activeContract.propertyCity}
           </p>
         </motion.div>
@@ -490,13 +490,13 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="mb-6 rounded-xl px-5 py-4 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-between gap-3 flex-wrap"
+              className="mb-6 rounded-xl px-5 py-4 bg-primary-soft border border-primary/30 flex items-center justify-between gap-3 flex-wrap"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center flex-shrink-0">
-                  <WarningCircle className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+                  <WarningCircle className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-sm font-medium text-[#1A40FF] dark:text-[#5570FF]">
+                <p className="text-sm font-medium text-primary">
                   {locale === 'es'
                     ? 'Revisá el contrato y firmá. El propietario firmará después para cerrar el proceso.'
                     : 'Review the contract and sign. The landlord will sign next to close the process.'}
@@ -505,7 +505,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
               {chatHref && (
                 <Link
                   href={chatHref}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface dark:bg-ink border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/40 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface border border-primary/30 text-primary text-xs font-medium hover:bg-primary-soft transition-colors"
                 >
                   <ChatCircle className="w-3.5 h-3.5" />
                   {locale === 'es' ? 'Abrir chat' : 'Open chat'}
@@ -549,7 +549,7 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                     variant="outline"
                     onClick={() => setIsRejectModalOpen(true)}
                     disabled={isSigning || isRejecting || isCancelling}
-                    className="w-full border-[#B7791F]/30 dark:border-[#B7791F]/40 bg-surface dark:bg-[#1a1a1c] text-[#B7791F] dark:text-[#D2992F] hover:bg-[#F8F0E0] dark:hover:bg-[#B7791F]/30"
+                    className="w-full border-warning/30 bg-surface text-warning hover:bg-warning-soft"
                   >
                     <PencilSimple className="w-4 h-4" />
                     {locale === 'es' ? 'Pedir cambios al propietario' : 'Request changes'}
@@ -572,31 +572,31 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
                     hideArrow
                     onClick={() => setIsCancelModalOpen(true)}
                     disabled={isSigning || isRejecting || isCancelling}
-                    className="w-full py-1 text-xs text-[#C4503B] hover:text-[#C4503B]"
+                    className="w-full py-1 text-xs text-danger hover:text-danger"
                   >
                     {locale === 'es' ? 'Cancelar contrato' : 'Cancel contract'}
                   </Button>
 
                   {/* Contract Info Card */}
-                  <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#222224] p-4">
-                    <MonoLabel className="block tracking-wider text-fg-muted dark:text-fg-subtle">
+                  <div className="rounded-xl border border-border bg-surface p-4">
+                    <MonoLabel className="block tracking-wider text-fg-muted">
                       {locale === 'es' ? 'Tipo de contrato' : 'Contract type'}
                     </MonoLabel>
-                    <p className="mt-1 font-medium text-fg dark:text-white">
+                    <p className="mt-1 font-medium text-fg">
                       {getContractTypeLabel(activeContract, locale as 'es' | 'en')}
                     </p>
                   </div>
 
                   {/* Landlord signed info */}
                   {activeContract.landlordSignature && (
-                    <div className="rounded-xl border border-[#2C7A53]/30 dark:border-[#2C7A53]/40 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 p-4">
+                    <div className="rounded-xl border border-success/30 bg-success-soft p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
-                        <span className="text-xs font-medium text-[#2C7A53] dark:text-[#3EAE70]">
+                        <CheckCircle className="w-4 h-4 text-success" />
+                        <span className="text-xs font-medium text-success">
                           {locale === 'es' ? 'Propietario ya firmó' : 'Landlord already signed'}
                         </span>
                       </div>
-                      <p className="text-sm text-[#2C7A53] dark:text-[#3EAE70] font-medium">
+                      <p className="text-sm text-success font-medium">
                         {activeContract.landlordName}
                       </p>
                     </div>

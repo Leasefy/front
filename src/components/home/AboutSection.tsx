@@ -80,7 +80,7 @@ function RiskVisual() {
             {[
               { label: "Historial pago", score: 95, color: "bg-success-500" },
               { label: "Estabilidad", score: 88, color: "bg-primary" },
-              { label: "Referencias", score: 92, color: "bg-[#1A40FF]" },
+              { label: "Referencias", score: 92, color: "bg-primary" },
             ].map((item, i) => (
               <motion.div
                 key={item.label}
@@ -164,7 +164,7 @@ function MagnifyingGlassVisual() {
             <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center ${
               item.match >= 90
                 ? "bg-success-50 text-success-600"
-                : "bg-neutral-100 text-foreground"
+                : "bg-surface-muted text-foreground"
             }`}>
               <span className="text-[14px] font-heading font-bold leading-none">{item.match}</span>
               <span className="text-[7px] opacity-60">%</span>
@@ -274,7 +274,7 @@ function ContractVisual() {
         </div>
 
         {/* Signature area */}
-        <div className="px-5 py-4 bg-neutral-50/50 border-t border-border">
+        <div className="px-5 py-4 bg-surface-muted/50 border-t border-border">
           <div className="h-12 flex items-center justify-center rounded-xl border-2 border-dashed border-border bg-white">
             {!signed ? (
               <motion.div
@@ -343,8 +343,8 @@ function TransparencyVisual() {
   const items = [
     { label: "Canon", amount: "$2.8M", pct: 82, colorClass: "bg-foreground" },
     { label: "Admin", amount: "$280K", pct: 8, colorClass: "bg-primary" },
-    { label: "Seguro", amount: "$196K", pct: 6, colorClass: "bg-[#1A40FF]" },
-    { label: "Fee", amount: "$140K", pct: 4, colorClass: "bg-[#1A40FF]" },
+    { label: "Seguro", amount: "$196K", pct: 6, colorClass: "bg-primary" },
+    { label: "Fee", amount: "$140K", pct: 4, colorClass: "bg-primary" },
   ];
 
   return (
@@ -456,10 +456,10 @@ function BentoCard({
   const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   const bg = dark
-    ? "bg-[#1A40FF] hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
+    ? "bg-primary hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
     : outline
       ? "bg-white hover:"
-      : "bg-neutral-50 hover:";
+      : "bg-surface hover:";
 
   const borderStyle = dark
     ? "1px solid rgba(255,255,255,0.06)"
@@ -494,7 +494,7 @@ function BentoCard({
    ================================================================ */
 export function AboutSection() {
   return (
-    <section className="bg-neutral-50 pt-12 lg:pt-16 pb-24 lg:pb-32 relative">
+    <section className="bg-surface-muted pt-12 lg:pt-16 pb-24 lg:pb-32 relative">
       <div className="container-platform relative z-10">
         <div className="mb-14 lg:mb-20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">

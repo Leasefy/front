@@ -30,7 +30,7 @@ export default function NCProcessCells() {
     <section className="bg-white py-24 md:py-32">
       <div className="container-platform">
         <Reveal>
-          <h2 className={`${lpHeading} mx-auto max-w-[18ch] text-center text-neutral-950`}>
+          <h2 className={`${lpHeading} mx-auto max-w-[18ch] text-center text-fg`}>
             Tus agentes operan de
             <br className="hidden sm:block" /> punta a punta
           </h2>
@@ -46,7 +46,7 @@ export default function NCProcessCells() {
             <motion.span
               key={edge}
               aria-hidden
-              className={`pointer-events-none absolute ${edge} left-0 h-px w-full origin-left bg-neutral-200`}
+              className={`pointer-events-none absolute ${edge} left-0 h-px w-full origin-left bg-border-faint`}
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true, margin: "-80px" }}
@@ -62,7 +62,7 @@ export default function NCProcessCells() {
             <motion.span
               key={pos}
               aria-hidden
-              className={`pointer-events-none absolute -top-2 -bottom-2 w-px bg-neutral-200 ${pos}`}
+              className={`pointer-events-none absolute -top-2 -bottom-2 w-px bg-border-faint ${pos}`}
               initial={{ scaleY: 0 }}
               whileInView={{ scaleY: 1 }}
               viewport={{ once: true, margin: "-80px" }}
@@ -71,7 +71,7 @@ export default function NCProcessCells() {
             />
           ))}
 
-          <div className="grid grid-cols-1 divide-y divide-neutral-200 md:grid-cols-2 md:divide-x md:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-2 md:divide-x md:divide-y-0">
             {CELLS.map((cell, i) => (
               <motion.div
                 key={cell.n}
@@ -79,17 +79,17 @@ export default function NCProcessCells() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.55, delay: 0.1 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
-                className="group flex min-h-[200px] flex-col items-center justify-center p-10 text-center transition-colors duration-300 hover:bg-neutral-50/70 md:p-14"
+                className="group flex min-h-[200px] flex-col items-center justify-center p-10 text-center transition-colors duration-300 hover:bg-surface-muted/70 md:p-14"
               >
                 <div className="flex items-baseline justify-center gap-3">
-                  <span className="font-mono text-[13px] text-neutral-400 transition-colors group-hover:text-primary">
+                  <span className="font-mono text-[13px] text-fg-subtle transition-colors group-hover:text-primary">
                     {cell.n}
                   </span>
-                  <span className="font-heading text-xl font-medium text-neutral-950 transition-colors group-hover:text-primary">
+                  <span className="font-heading text-xl font-medium text-fg transition-colors group-hover:text-primary">
                     {cell.title}
                   </span>
                 </div>
-                <p className="mt-4 max-w-[32ch] text-[15px] leading-relaxed text-neutral-500">
+                <p className="mt-4 max-w-[32ch] text-[15px] leading-relaxed text-fg-muted">
                   {cell.body}
                 </p>
               </motion.div>

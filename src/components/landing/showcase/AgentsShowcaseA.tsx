@@ -98,14 +98,14 @@ const OUTCOMES: Record<AgentId, { icon: Icon; text: string }> = {
 
 function PreviewHead({ icon: I, title, live }: { icon: Icon; title: string; live?: string }) {
   return (
-    <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+    <div className="flex items-center justify-between border-b border-border-faint px-5 py-4">
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-[0_6px_16px_-6px_rgba(26,64,255,0.6)]">
           <I className="h-[18px] w-[18px]" weight="fill" />
         </span>
         <div className="leading-tight">
-          <p className="font-heading text-[15px] font-semibold text-neutral-950">{title}</p>
-          <p className="text-[11px] text-neutral-400">Actividad en vivo</p>
+          <p className="font-heading text-[15px] font-semibold text-fg">{title}</p>
+          <p className="text-[11px] text-fg-subtle">Actividad en vivo</p>
         </div>
       </div>
       {live && (
@@ -123,7 +123,7 @@ function PreviewHead({ icon: I, title, live }: { icon: Icon; title: string; live
 
 function Bar({ pct, tone = "primary" }: { pct: number; tone?: "primary" | "success" }) {
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${pct}%` }}
@@ -136,7 +136,7 @@ function Bar({ pct, tone = "primary" }: { pct: number; tone?: "primary" | "succe
 
 function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "success" | "warning" }) {
   const map = {
-    neutral: "bg-neutral-100 text-neutral-600",
+    neutral: "bg-surface-muted text-fg-muted",
     success: "bg-success-50 text-success-700",
     warning: "bg-warning-50 text-warning-700",
   } as const;
@@ -159,15 +159,15 @@ function CobranzaPreview() {
     <div>
       <PreviewHead icon={Coins} title="Agente de cobranza" live="En vivo" />
       <div className="p-5">
-        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-neutral-400">
+        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-fg-subtle">
           Promesas de pago · hoy
         </MonoLabel>
         <div className="space-y-2">
           {rows.map((r) => (
-            <div key={r.name} className="flex items-center justify-between rounded-xl border border-neutral-100 px-4 py-3">
+            <div key={r.name} className="flex items-center justify-between rounded-xl border border-border-faint px-4 py-3">
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-neutral-950">{r.name}</p>
-                <p className="font-mono text-[12px] tabular-nums text-neutral-500">{r.amount}</p>
+                <p className="truncate text-[13px] font-medium text-fg">{r.name}</p>
+                <p className="font-mono text-[12px] tabular-nums text-fg-muted">{r.amount}</p>
               </div>
               <Pill tone={r.tone}>{r.state}</Pill>
             </div>
@@ -188,7 +188,7 @@ function AsegurabilidadPreview() {
     <div>
       <PreviewHead icon={Umbrella} title="Asegurabilidad" live="Apto" />
       <div className="p-5">
-        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-neutral-400">
+        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-fg-subtle">
           Comparativa de aseguradoras
         </MonoLabel>
         <div className="space-y-2">
@@ -196,14 +196,14 @@ function AsegurabilidadPreview() {
             <div
               key={o.name}
               className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
-                o.best ? "border-primary/30 bg-indigo-50/40" : "border-neutral-100"
+                o.best ? "border-primary/30 bg-indigo-50/40" : "border-border-faint"
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className="text-[13px] font-medium text-neutral-950">{o.name}</span>
+                <span className="text-[13px] font-medium text-fg">{o.name}</span>
                 {o.best && <Pill tone="success">Recomendada</Pill>}
               </div>
-              <span className="font-mono text-[13px] tabular-nums text-neutral-700">{o.prima}</span>
+              <span className="font-mono text-[13px] tabular-nums text-fg-muted">{o.prima}</span>
             </div>
           ))}
         </div>
@@ -224,8 +224,8 @@ function EstudioPreview() {
       <div className="p-5">
         <div className="mb-5 flex items-end justify-between">
           <div>
-            <MonoLabel className="block text-[11px] tracking-[0.14em] text-neutral-400">Score</MonoLabel>
-            <p className="font-mono text-4xl tabular-nums leading-none text-neutral-950">847</p>
+            <MonoLabel className="block text-[11px] tracking-[0.14em] text-fg-subtle">Score</MonoLabel>
+            <p className="font-mono text-4xl tabular-nums leading-none text-fg">847</p>
           </div>
           <Pill tone="success">Bajo riesgo</Pill>
         </div>
@@ -233,8 +233,8 @@ function EstudioPreview() {
           {signals.map((s) => (
             <div key={s.label}>
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[12px] text-neutral-600">{s.label}</span>
-                <span className="font-mono text-[12px] tabular-nums text-neutral-400">{s.pct}%</span>
+                <span className="text-[12px] text-fg-muted">{s.label}</span>
+                <span className="font-mono text-[12px] tabular-nums text-fg-subtle">{s.pct}%</span>
               </div>
               <Bar pct={s.pct} tone="success" />
             </div>
@@ -250,24 +250,24 @@ function MatchingPreview() {
     <div>
       <PreviewHead icon={Path} title="Matching" live="3 compatibles" />
       <div className="p-5">
-        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-neutral-400">
+        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-fg-subtle">
           Solicitud → Inmueble
         </MonoLabel>
-        <div className="rounded-2xl border border-neutral-100 p-4">
+        <div className="rounded-2xl border border-border-faint p-4">
           <div className="flex items-center gap-3 text-[13px]">
             <div className="flex-1">
-              <p className="font-medium text-neutral-950">Familia Pérez</p>
-              <p className="font-mono text-[11px] text-neutral-500">$2.0M · Chapinero · 3 hab</p>
+              <p className="font-medium text-fg">Familia Pérez</p>
+              <p className="font-mono text-[11px] text-fg-muted">$2.0M · Chapinero · 3 hab</p>
             </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-neutral-300" weight="bold" />
+            <ArrowRight className="h-4 w-4 shrink-0 text-fg-subtle" weight="bold" />
             <div className="flex-1 text-right">
-              <p className="font-medium text-neutral-950">Apto 704</p>
-              <p className="font-mono text-[11px] text-neutral-500">$1.95M · Chapinero</p>
+              <p className="font-medium text-fg">Apto 704</p>
+              <p className="font-mono text-[11px] text-fg-muted">$1.95M · Chapinero</p>
             </div>
           </div>
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-[12px] text-neutral-600">Compatibilidad</span>
+              <span className="text-[12px] text-fg-muted">Compatibilidad</span>
               <span className="font-mono text-[13px] font-semibold tabular-nums text-primary">94%</span>
             </div>
             <Bar pct={94} />
@@ -288,17 +288,17 @@ function ConciliacionPreview() {
     <div>
       <PreviewHead icon={ArrowsClockwise} title="Conciliación" live="Cuadrado" />
       <div className="p-5">
-        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-neutral-400">
+        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-fg-subtle">
           Pagos cruzados con contratos
         </MonoLabel>
         <div className="space-y-2">
           {rows.map((r) => (
-            <div key={r.ref} className="flex items-center justify-between rounded-xl border border-neutral-100 px-4 py-3">
+            <div key={r.ref} className="flex items-center justify-between rounded-xl border border-border-faint px-4 py-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <CheckCircle className="h-4 w-4 shrink-0 text-success-500" weight="fill" />
-                <span className="truncate text-[12px] text-neutral-600">{r.ref}</span>
+                <span className="truncate text-[12px] text-fg-muted">{r.ref}</span>
               </div>
-              <span className="font-mono text-[12px] tabular-nums text-neutral-950">{r.amount}</span>
+              <span className="font-mono text-[12px] tabular-nums text-fg">{r.amount}</span>
             </div>
           ))}
         </div>
@@ -312,13 +312,13 @@ function AvaluosPreview() {
     <div>
       <PreviewHead icon={HouseLine} title="Avalúos" live="Estimado" />
       <div className="p-5">
-        <MonoLabel className="block text-[11px] tracking-[0.14em] text-neutral-400">
+        <MonoLabel className="block text-[11px] tracking-[0.14em] text-fg-subtle">
           Valor de arriendo · Apto 704
         </MonoLabel>
-        <p className="mt-1 font-mono text-4xl tabular-nums leading-none text-neutral-950">$1.98M</p>
-        <p className="mt-2 text-[12px] text-neutral-500">Banda estimada según 12 comparables</p>
+        <p className="mt-1 font-mono text-4xl tabular-nums leading-none text-fg">$1.98M</p>
+        <p className="mt-2 text-[12px] text-fg-muted">Banda estimada según 12 comparables</p>
         <div className="mt-5">
-          <div className="relative h-2 w-full rounded-full bg-neutral-100">
+          <div className="relative h-2 w-full rounded-full bg-surface-muted">
             <div className="absolute inset-y-0 left-[22%] right-[18%] rounded-full bg-indigo-50" />
             <motion.span
               initial={{ left: "22%" }}
@@ -327,7 +327,7 @@ function AvaluosPreview() {
               className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary shadow"
             />
           </div>
-          <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-neutral-400">
+          <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-fg-subtle">
             <span>$1.7M</span>
             <span>$2.3M</span>
           </div>
@@ -342,16 +342,16 @@ function PagosPreview() {
     <div>
       <PreviewHead icon={Wallet} title="Pagos" live="Procesado" />
       <div className="p-5">
-        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-neutral-400">
+        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-fg-subtle">
           Desembolso a propietario
         </MonoLabel>
-        <div className="rounded-2xl border border-neutral-100 p-4">
+        <div className="rounded-2xl border border-border-faint p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-neutral-950">Laura Mendoza</span>
+            <span className="text-[13px] font-medium text-fg">Laura Mendoza</span>
             <Pill tone="success">Enviado</Pill>
           </div>
-          <p className="mt-3 font-mono text-3xl tabular-nums leading-none text-neutral-950">$1.840.000</p>
-          <div className="mt-4 space-y-1.5 text-[11px] tracking-wide text-neutral-400">
+          <p className="mt-3 font-mono text-3xl tabular-nums leading-none text-fg">$1.840.000</p>
+          <div className="mt-4 space-y-1.5 text-[11px] tracking-wide text-fg-subtle">
             <MonoLabel className="block">Recaudo $2.000.000 · admin -$160.000</MonoLabel>
             <MonoLabel className="block">Cuenta ····4821 · Bancolombia</MonoLabel>
           </div>
@@ -366,19 +366,19 @@ function RetencionPreview() {
     <div>
       <PreviewHead icon={CalendarCheck} title="Retención" live="2 por vencer" />
       <div className="p-5">
-        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-neutral-400">
+        <MonoLabel className="mb-3 block text-[11px] tracking-[0.14em] text-fg-subtle">
           Contratos por vencer
         </MonoLabel>
         <div className="space-y-2">
-          <div className="rounded-xl border border-neutral-100 px-4 py-3">
+          <div className="rounded-xl border border-border-faint px-4 py-3">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-medium text-neutral-950">Apto 502 · C. Ramírez</span>
+              <span className="text-[13px] font-medium text-fg">Apto 502 · C. Ramírez</span>
               <Pill tone="warning">28 días</Pill>
             </div>
-            <p className="mt-1 text-[12px] text-neutral-500">Propietario en riesgo de retiro</p>
+            <p className="mt-1 text-[12px] text-fg-muted">Propietario en riesgo de retiro</p>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-indigo-50/40 px-4 py-3">
-            <span className="text-[13px] font-medium text-neutral-950">Iniciar renovación</span>
+            <span className="text-[13px] font-medium text-fg">Iniciar renovación</span>
             <ArrowRight className="h-4 w-4 text-primary" weight="bold" />
           </div>
         </div>
@@ -441,15 +441,15 @@ export default function AgentsShowcaseA() {
         <Reveal>
           <EyebrowPill>Agentes AI</EyebrowPill>
           <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <h2 className={`${lpHeading} max-w-3xl text-neutral-950`}>
+            <h2 className={`${lpHeading} max-w-3xl text-fg`}>
               Un agente para cada momento del arriendo.
             </h2>
-            <p className="hidden shrink-0 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-[13px] text-neutral-500 md:inline-flex">
+            <p className="hidden shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-[13px] text-fg-muted md:inline-flex">
               <Sparkle className="h-4 w-4 text-primary" weight="fill" />
               8 agentes · 1 plataforma
             </p>
           </div>
-          <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-fg-muted md:text-lg">
             Ocho agentes especializados que operan tu inmobiliaria de punta a punta —del primer
             contacto al pago al propietario. Elige uno y mira cómo trabaja.
           </p>
@@ -473,7 +473,7 @@ export default function AgentsShowcaseA() {
                     transition={{ layout: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } }}
                     className={`group relative flex w-full items-start gap-4 overflow-hidden rounded-2xl border px-4 py-3.5 text-left transition-colors ${
                       isActive
-                        ? "border-neutral-200/80 bg-white shadow-[0_12px_32px_-18px_rgba(15,23,42,0.25)]"
+                        ? "border-border/80 bg-surface shadow-[0_12px_32px_-18px_rgba(15,23,42,0.25)]"
                         : "border-transparent hover:bg-white/70"
                     }`}
                   >
@@ -487,7 +487,7 @@ export default function AgentsShowcaseA() {
 
                     <span
                       className={`mt-0.5 font-mono text-[12px] tabular-nums transition-colors ${
-                        isActive ? "text-primary" : "text-neutral-300 group-hover:text-neutral-400"
+                        isActive ? "text-primary" : "text-fg-subtle group-hover:text-fg-muted"
                       }`}
                     >
                       {String(i + 1).padStart(2, "0")}
@@ -497,7 +497,7 @@ export default function AgentsShowcaseA() {
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all ${
                         isActive
                           ? "bg-primary text-white shadow-[0_8px_20px_-8px_rgba(26,64,255,0.7)]"
-                          : "bg-white text-neutral-400 ring-1 ring-neutral-200 group-hover:text-primary"
+                          : "bg-surface text-fg-subtle ring-1 ring-border group-hover:text-primary"
                       }`}
                     >
                       <I className="h-5 w-5" weight={isActive ? "fill" : "regular"} />
@@ -507,7 +507,7 @@ export default function AgentsShowcaseA() {
                       <span className="flex items-center gap-2">
                         <span
                           className={`font-heading text-[15px] font-semibold transition-colors ${
-                            isActive ? "text-neutral-950" : "text-neutral-700"
+                            isActive ? "text-fg" : "text-fg-muted"
                           }`}
                         >
                           {a.name}
@@ -529,7 +529,7 @@ export default function AgentsShowcaseA() {
                             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                             className="block overflow-hidden"
                           >
-                            <span className="mt-1 block text-[13px] leading-snug text-neutral-500">
+                            <span className="mt-1 block text-[13px] leading-snug text-fg-muted">
                               {a.desc}
                             </span>
                           </motion.span>
@@ -554,8 +554,8 @@ export default function AgentsShowcaseA() {
                   }}
                 />
 
-                <div className="rounded-[26px] border border-neutral-200/70 bg-white/70 p-3 backdrop-blur-sm">
-                  <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_30px_70px_-30px_rgba(15,23,42,0.28)]">
+                <div className="rounded-[26px] border border-border/70 bg-surface/70 p-3 backdrop-blur-sm">
+                  <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_30px_70px_-30px_rgba(15,23,42,0.28)]">
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={active}
@@ -567,12 +567,12 @@ export default function AgentsShowcaseA() {
                         <Preview />
 
                         {/* outcome strip */}
-                        <div className="flex items-center justify-between gap-3 border-t border-neutral-100 bg-neutral-50/60 px-5 py-3.5">
-                          <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-neutral-600">
+                        <div className="flex items-center justify-between gap-3 border-t border-border-faint bg-surface-muted/60 px-5 py-3.5">
+                          <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-fg-muted">
                             <OutcomeIcon className="h-4 w-4 shrink-0 text-success-500" weight="fill" />
                             <span className="truncate">{outcome.text}</span>
                           </span>
-                          <span className="shrink-0 rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-neutral-400 ring-1 ring-neutral-200">
+                          <span className="shrink-0 rounded-full bg-surface px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-fg-subtle ring-1 ring-border">
                             Automático
                           </span>
                         </div>
@@ -595,7 +595,7 @@ export default function AgentsShowcaseA() {
                         className={`block h-1.5 rounded-full transition-all ${
                           i === activeIndex
                             ? "w-6 bg-primary"
-                            : "w-1.5 bg-neutral-300 group-hover/dot:bg-neutral-400"
+                            : "w-1.5 bg-fg-subtle group-hover/dot:bg-fg-muted"
                         }`}
                       />
                     </button>

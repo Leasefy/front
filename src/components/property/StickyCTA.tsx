@@ -247,7 +247,7 @@ export function StickyCTA({
                     'h-10 w-10',
                     isWishlisted
                       ? 'border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10'
-                      : 'hover:bg-neutral-100 text-muted-foreground'
+                      : 'hover:bg-surface-muted text-muted-foreground'
                   )}
                   aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                 >
@@ -258,7 +258,7 @@ export function StickyCTA({
                 type="button"
                 size="icon"
                 variant="outline"
-                className="h-10 w-10 hover:bg-neutral-100 text-muted-foreground"
+                className="h-10 w-10 hover:bg-surface-muted text-muted-foreground"
                 aria-label="Compartir"
               >
                 <ShareNetwork className="w-[18px] h-[18px]" />
@@ -496,7 +496,7 @@ export function StickyCTA({
         </div>
 
         {/* Activity footer */}
-        <div className="px-6 py-3.5 bg-neutral-50 dark:from-white/[0.02] dark:to-white/[0.04] border-t border-border">
+        <div className="px-6 py-3.5 bg-surface-muted border-t border-border">
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-[hsl(var(--success-500))] animate-pulse" />
             <span>Última postulación hace <span className="font-semibold text-foreground">12 minutos</span></span>
@@ -528,7 +528,7 @@ export function MobileStickyCTA({
   }, [propertyId]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
+    <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
       {stats && stats.demandLevel !== 'media' && (
         <div className="px-4 py-2 bg-primary text-primary-foreground text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
           <TrendUp className="w-3.5 h-3.5" />

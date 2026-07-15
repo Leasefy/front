@@ -38,6 +38,26 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      # @leasefy/cadence is a `file:../cadence` dependency — the private sibling
+      # repo Leasefy/cadence. CI only checks out `front`, so cadence must exist at
+      # ../cadence BEFORE install or `pnpm install` fails with ENOENT (same failure
+      # mode `fix/ci-provision-design-system` fixed for the old @leasefy/ui stub).
+      # Its built `dist/` is committed, so a shallow clone covers the JS itself —
+      # but unlike the old @leasefy/ui stub, cadence's dist/index.js imports real
+      # runtime deps (clsx, tailwind-merge, radix, sonner, phosphor-icons) that are
+      # NOT bundled, so cadence's own node_modules must be populated too or tsc/
+      # vitest fail to resolve them. --ignore-scripts skips esbuild's postinstall
+      # (blocked by pnpm's default build-script policy) — safe here since we only
+      # consume cadence's prebuilt dist, never build it in this workflow.
+      # Requires a `CADENCE_REPO_TOKEN` secret with read access to Leasefy/cadence
+      # (the default GITHUB_TOKEN is scoped to `front` only and cannot read it).
+      - name: Provide @leasefy/cadence (sibling design-system repo)
+        run: |
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
+            ../cadence
+          pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts
+
       - name: Install dependencies
         # --frozen-lockfile fails if pnpm-lock.yaml is out of sync with package.json.
         # The `postinstall` runs `prisma generate`, which only needs the committed
@@ -93,6 +113,15 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      # See the `test` job: @leasefy/cadence = file:../cadence (private sibling
+      # repo, real runtime deps not bundled in dist/). Needs CADENCE_REPO_TOKEN.
+      - name: Provide @leasefy/cadence (sibling design-system repo)
+        run: |
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
+            ../cadence
+          pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

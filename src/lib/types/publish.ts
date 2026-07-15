@@ -143,6 +143,13 @@ export interface PropertyDraft {
   city: string;
   neighborhood: string;
   address: string;
+  /** Real coordinates from AddressAutocomplete (LocationIQ), when the user picked a suggestion. */
+  latitude?: number;
+  longitude?: number;
+  /** LocationIQ place_id for the selected suggestion — kept for debugging/analytics, not sent to the backend. */
+  geocodePlaceId?: string;
+  /** Where the published coordinates came from — set on submit by resolvePropertyCoordinates(). */
+  coordsSource?: 'geocoded' | 'city';
 
   // Step 3: Details
   bedrooms: number;
@@ -244,6 +251,10 @@ export const initialPropertyDraft: PropertyDraft = {
   city: '',
   neighborhood: '',
   address: '',
+  latitude: undefined,
+  longitude: undefined,
+  geocodePlaceId: undefined,
+  coordsSource: undefined,
   bedrooms: 1,
   bathrooms: 1,
   area: 50,

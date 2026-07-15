@@ -128,7 +128,7 @@ export default function ConciliacionExcepcionPage() {
       <div className="mx-auto max-w-[1240px] space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
-          <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors">
+          <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Conciliación IA
           </Link>
@@ -137,13 +137,13 @@ export default function ConciliacionExcepcionPage() {
 
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Coins className="w-4 h-4 text-neutral-400" weight="fill" />
+            <Coins className="w-4 h-4 text-fg-subtle" weight="fill" />
             <MonoLabel className="tracking-[0.08em]">Revisión de excepción</MonoLabel>
           </div>
           <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#14130f]">
             Pago de {fmt(VALOR_MOV)} sin identificar
           </h1>
-          <p className="text-[13px] text-neutral-500">Nicolás encontró 3 contratos posibles. Necesita que confirmes el correcto.</p>
+          <p className="text-[13px] text-fg-muted">Nicolás encontró 3 contratos posibles. Necesita que confirmes el correcto.</p>
         </div>
 
         {/* ── 3 columnas ─────────────────────────────────────────────────── */}
@@ -153,15 +153,15 @@ export default function ConciliacionExcepcionPage() {
             <Eyebrow>Movimiento bancario</Eyebrow>
             <div className="mt-4 mb-4">
               <p className="text-[26px] font-semibold tracking-[-0.01em] text-[#14130f] tabular-nums leading-none">{fmt(VALOR_MOV)}</p>
-              <p className="mt-1.5 text-[12.5px] text-neutral-500">“TRANSFERENCIA JUAN P.”</p>
+              <p className="mt-1.5 text-[12.5px] text-fg-muted">“TRANSFERENCIA JUAN P.”</p>
             </div>
-            <dl className="space-y-3 border-t border-neutral-100 pt-4">
+            <dl className="space-y-3 border-t border-border-faint pt-4">
               {MOV.map((m) => {
                 const MIcon = m.icon
                 return (
                   <div key={m.label} className="flex items-center gap-2.5">
-                    <MIcon className="w-4 h-4 text-neutral-400 shrink-0" weight="bold" />
-                    <dt className="text-[12.5px] text-neutral-500 w-[72px] shrink-0">{m.label}</dt>
+                    <MIcon className="w-4 h-4 text-fg-subtle shrink-0" weight="bold" />
+                    <dt className="text-[12.5px] text-fg-muted w-[72px] shrink-0">{m.label}</dt>
                     <dd className={`text-[12.5px] font-medium text-[#14130f] min-w-0 truncate ${m.mono ? 'font-mono' : ''}`}>{m.value}</dd>
                   </div>
                 )
@@ -174,7 +174,7 @@ export default function ConciliacionExcepcionPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Eyebrow>Posibles coincidencias</Eyebrow>
-                <p className="mt-1.5 text-[13px] text-neutral-500">Ordenadas por confianza del motor de Nicolás.</p>
+                <p className="mt-1.5 text-[13px] text-fg-muted">Ordenadas por confianza del motor de Nicolás.</p>
               </div>
             </div>
 
@@ -189,13 +189,13 @@ export default function ConciliacionExcepcionPage() {
                       type="button"
                       onClick={() => setSel(c.id)}
                       aria-pressed={isSel}
-                      className="w-full rounded-xl border bg-white p-4 text-left transition-all"
+                      className="w-full rounded-xl border bg-surface p-4 text-left transition-all"
                       style={{ borderColor: isSel ? BLUE : 'rgba(0,0,0,0.10)', boxShadow: isSel ? `0 0 0 1px ${BLUE}` : 'none' }}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] font-medium text-neutral-400">#{c.contrato}</span>
+                            <span className="font-mono text-[11px] font-medium text-fg-subtle">#{c.contrato}</span>
                             <span className="text-[14px] font-medium text-[#14130f] truncate">{c.inquilino}</span>
                             {isReco && (
                               <StatusBadge tone="neutral" dot={false} className="text-[9px]">
@@ -204,7 +204,7 @@ export default function ConciliacionExcepcionPage() {
                               </StatusBadge>
                             )}
                           </div>
-                          <p className="text-[12.5px] text-neutral-500 mt-0.5">{c.inmueble} · canon {fmt(c.canon)}</p>
+                          <p className="text-[12.5px] text-fg-muted mt-0.5">{c.inmueble} · canon {fmt(c.canon)}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="inline-flex items-center gap-1.5 h-6 px-2 rounded-md text-[12px] font-medium tabular-nums" style={{ background: cb.soft, color: cb.fg }}>
@@ -221,7 +221,7 @@ export default function ConciliacionExcepcionPage() {
 
                       {/* Razones del match — solo en el seleccionado */}
                       {isSel && (
-                        <ul className="mt-3.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 border-t border-neutral-100 pt-3.5">
+                        <ul className="mt-3.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border-faint pt-3.5">
                           {c.razones.map((r, i) => {
                             const negativa = isNegativa(r)
                             return (
@@ -231,7 +231,7 @@ export default function ConciliacionExcepcionPage() {
                                 ) : (
                                   <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" weight="bold" style={{ color: '#2C7A53' }} />
                                 )}
-                                <span className="text-[12.5px] text-neutral-600 leading-snug">{r}</span>
+                                <span className="text-[12.5px] text-fg-muted leading-snug">{r}</span>
                               </li>
                             )
                           })}
@@ -246,10 +246,10 @@ export default function ConciliacionExcepcionPage() {
             {/* Historial del contrato seleccionado */}
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-3">
-                <ClockCounterClockwise className="w-4 h-4 text-neutral-400" weight="bold" />
+                <ClockCounterClockwise className="w-4 h-4 text-fg-subtle" weight="bold" />
                 <MonoLabel className="text-[10.5px] tracking-[0.08em]">Historial del contrato #{candidato.contrato}</MonoLabel>
               </div>
-              <ul className="divide-y divide-neutral-100">
+              <ul className="divide-y divide-border-faint">
                 {historial.map((h, i) => {
                   const aTiempo = h.estado === 'A tiempo'
                   return (
@@ -268,7 +268,7 @@ export default function ConciliacionExcepcionPage() {
 
           {/* ── DERECHA: recomendación IA ────────────────────────────────── */}
           <aside className="lg:sticky lg:top-6">
-            <section className="rounded-2xl border-2 bg-white overflow-hidden" style={{ borderColor: conciliado ? '#CBE3D5' : BLUE }}>
+            <section className="rounded-2xl border-2 bg-surface overflow-hidden" style={{ borderColor: conciliado ? '#CBE3D5' : BLUE }}>
               {!conciliado ? (
                 <div className="p-5 space-y-4">
                   <div className="flex items-center gap-1.5">
@@ -279,9 +279,9 @@ export default function ConciliacionExcepcionPage() {
                   </div>
 
                   <div>
-                    <p className="text-[13px] text-neutral-500">{isReco ? 'Conciliar con' : 'Estás viendo'}</p>
+                    <p className="text-[13px] text-fg-muted">{isReco ? 'Conciliar con' : 'Estás viendo'}</p>
                     <p className="text-[17px] font-semibold text-[#14130f] leading-tight">Contrato #{candidato.contrato}</p>
-                    <p className="text-[13px] text-neutral-600">{candidato.inquilino} · {candidato.inmueble}</p>
+                    <p className="text-[13px] text-fg-muted">{candidato.inquilino} · {candidato.inmueble}</p>
                     {!isReco && (
                       <Button
                         type="button"
@@ -313,7 +313,7 @@ export default function ConciliacionExcepcionPage() {
 
                   {/* Motivos */}
                   <div>
-                    <p className="text-[12px] font-medium text-neutral-500 mb-1.5">Por qué</p>
+                    <p className="text-[12px] font-medium text-fg-muted mb-1.5">Por qué</p>
                     <ul className="space-y-1.5">
                       {candidato.razones.slice(0, 3).map((r, i) => (
                         <li key={i} className="flex items-start gap-1.5">
@@ -322,7 +322,7 @@ export default function ConciliacionExcepcionPage() {
                           ) : (
                             <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" weight="bold" style={{ color: '#2C7A53' }} />
                           )}
-                          <span className="text-[12.5px] text-neutral-600 leading-snug">{r}</span>
+                          <span className="text-[12.5px] text-fg-muted leading-snug">{r}</span>
                         </li>
                       ))}
                     </ul>
@@ -335,7 +335,7 @@ export default function ConciliacionExcepcionPage() {
                   </div>
 
                   {difValor !== 0 && (
-                    <p className="text-[12px] text-neutral-500">
+                    <p className="text-[12px] text-fg-muted">
                       Diferencia con el canon: <span className="font-medium tabular-nums" style={{ color: '#8A5A12' }}>{difValor > 0 ? '+' : ''}{fmt(difValor)}</span>
                     </p>
                   )}
@@ -348,11 +348,11 @@ export default function ConciliacionExcepcionPage() {
                     </Button>
                     <div className="grid grid-cols-2 gap-2">
                       <Button type="button" variant="outline" hideArrow className="w-full">
-                        <PencilSimple className="w-3.5 h-3.5 text-neutral-500" weight="bold" />
+                        <PencilSimple className="w-3.5 h-3.5 text-fg-muted" weight="bold" />
                         Editar
                       </Button>
                       <Button type="button" variant="outline" hideArrow className="w-full">
-                        <Coins className="w-3.5 h-3.5 text-neutral-500" weight="bold" />
+                        <Coins className="w-3.5 h-3.5 text-fg-muted" weight="bold" />
                         Parcial
                       </Button>
                     </div>
@@ -365,7 +365,7 @@ export default function ConciliacionExcepcionPage() {
                 <div className="p-6 text-center space-y-2">
                   <CheckCircle className="w-10 h-10 mx-auto" weight="fill" style={{ color: '#2C7A53' }} />
                   <p className="text-[15px] font-semibold text-[#14130f]">Pago conciliado</p>
-                  <p className="text-[12.5px] text-neutral-500 leading-relaxed">
+                  <p className="text-[12.5px] text-fg-muted leading-relaxed">
                     {fmt(VALOR_MOV)} aplicado al contrato #{candidato.contrato} ({candidato.inquilino}). Actualicé la cartera y cerré la excepción.
                   </p>
                   <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-1.5 mt-1 text-[13px] font-medium" style={{ color: BLUE }}>

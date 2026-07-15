@@ -408,6 +408,33 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description existingTenantId supplied without a valid AGENT_API_KEY (REQ-1115) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description existingTenantId matches no agencies row (REQ-1114) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description existingTenantId already has a COMPLETED onboarding session (REQ-1114) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Database unavailable (stub-mode without DATABASE_URL) */
                 503: {
                     headers: {
@@ -1191,6 +1218,844 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/onboarding/session/{sessionId}/agency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * JWT onboarding wizard step 1: agency (legal entity)
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null AND session.completedAt === null. Shares business logic with POST /onboarding/{token}/agency via the agency-core step handler.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OnboardingSessionAgencyRequest"];
+                };
+            };
+            responses: {
+                /** @description Agency persisted, current_step advanced */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionAgencyResponse"];
+                    };
+                };
+                /** @description Malformed body (Zod) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description State-machine violation */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onboarding/session/{sessionId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * JWT onboarding wizard step 2: invited members
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/members via the members-core step handler.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OnboardingSessionMembersRequest"];
+                };
+            };
+            responses: {
+                /** @description Members persisted with hashed invite tokens */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionMembersResponse"];
+                    };
+                };
+                /** @description Malformed body (Zod) or OWNER role attempted */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description State-machine violation */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onboarding/session/{sessionId}/payment-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * JWT onboarding wizard step 3: payment provider + sealed credentials
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/payment-provider via the payment-provider-core step handler. Raw credentials are NEVER logged or echoed back to the client.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OnboardingSessionPaymentProviderRequest"];
+                };
+            };
+            responses: {
+                /** @description Payment provider persisted (sealed) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionPaymentProviderResponse"];
+                    };
+                };
+                /** @description Malformed body (Zod) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description State-machine violation */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onboarding/session/{sessionId}/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * JWT onboarding wizard step 4: per-agency negotiation policy
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/policy via the policy-core step handler.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OnboardingSessionPolicyRequest"];
+                };
+            };
+            responses: {
+                /** @description Policy drafted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionPolicyResponse"];
+                    };
+                };
+                /** @description Malformed body / out-of-range values */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description State-machine violation */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onboarding/session/{sessionId}/habeas-data/presign-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * JWT onboarding wizard step 5a: mint presigned S3 PUT URL for HBD PDF
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/presign-url. Does NOT mutate the draft.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OnboardingSessionHabeasDataPresignRequest"];
+                };
+            };
+            responses: {
+                /** @description Presigned URL minted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionHabeasDataPresignResponse"];
+                    };
+                };
+                /** @description Malformed body / oversized / wrong contentType */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description State-machine violation */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onboarding/session/{sessionId}/habeas-data/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * JWT onboarding wizard step 5b: confirm HBD PDF upload + persist metadata
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/confirm.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OnboardingSessionHabeasDataConfirmRequest"];
+                };
+            };
+            responses: {
+                /** @description HBD metadata persisted, cursor advanced */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionHabeasDataConfirmResponse"];
+                    };
+                };
+                /** @description Malformed body / s3Key prefix mismatch */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description State-machine violation */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onboarding/session/{sessionId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * JWT onboarding wizard step 6: atomic 4-table tenant commit
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/complete via runCompleteTransaction (complete-core). Idempotent — re-POSTs after completion return the existing tenant.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Tenant created (or returned existing on idempotent re-POST) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionCompleteResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description State-machine violation OR missing draft sections */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"] | components["schemas"]["OnboardingSessionCompleteMissingSteps"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Transaction failed (e.g. OWNER-singleton constraint hit) */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/onboarding/session/{sessionId}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * JWT onboarding wizard: fetch current draft/step state (read-only)
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null AND session.completedAt === null (same gate as the mutating step routes). READ-ONLY: does not mutate the session/draft and does not count as a wizard step. Lets the SPA rehydrate {sessionId, currentStep, nextStep, draft} on browser refresh, mirroring GET /onboarding/{token}/resume for the magic-link family.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current draft/step state returned, unchanged */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OnboardingSessionResumeResponse"];
+                    };
+                };
+                /** @description Missing/invalid Supabase JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Session expired */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/policy": {
         parameters: {
             query?: never;
@@ -1371,7 +2236,376 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/cartera/overview": {
+    "/api/agency/{agencyId}/members/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Self-merge JSONB preferences for the calling member (XR-08, T-38-03-04)
+         * @description JSONB merge writes the request body into agency_members.preferences for the JWT-resolved caller. Path uses the literal token `me` — no :memberId param accepted. Identity comes exclusively from the JWT email claim; another member's row cannot be targeted.
+         */
+        patch: operations["patchAgencyMemberPreferences"];
+        trace?: never;
+    };
+    "/api/agency/:agencyId/cobranza/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Template list */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            category: "stage" | "whatsapp" | "objection";
+                            channel: string;
+                            stage: string;
+                            language: string;
+                            tone_variant: string;
+                            body_draft: string | null;
+                            body_published: string | null;
+                            wa_submission_status: string | null;
+                            token_count: number;
+                            updated_at: string;
+                        }[];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description DB unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/:agencyId/cobranza/templates/:id/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        body: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated template */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            category: "stage" | "whatsapp" | "objection";
+                            channel: string;
+                            stage: string;
+                            language: string;
+                            tone_variant: string;
+                            body_draft: string | null;
+                            body_published: string | null;
+                            wa_submission_status: string | null;
+                            token_count: number;
+                            updated_at: string;
+                        };
+                    };
+                };
+                /** @description Bad request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description DB unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/:agencyId/cobranza/templates/:id/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Published template */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            category: "stage" | "whatsapp" | "objection";
+                            channel: string;
+                            stage: string;
+                            language: string;
+                            tone_variant: string;
+                            body_draft: string | null;
+                            body_published: string | null;
+                            wa_submission_status: string | null;
+                            token_count: number;
+                            updated_at: string;
+                        };
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description Unknown variables in body_draft */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                            unknowns: string[];
+                        };
+                    };
+                };
+                /** @description DB unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/:agencyId/cobranza/templates/:id/wa-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current WA submission status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            status: string | null;
+                            rejection_reason?: string | null;
+                        };
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description DB unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -1379,14 +2613,84 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Cobranza overview aggregate (Phase 29)
-         * @description Returns the four KPI blocks + 7 stage rows + last 25 transitions + next 10 undispatched cadence contacts for the cobranza overview page (29-07). All debtor names are redacted to "FirstName I." (PII guard). Enforces cobranza:view permission from permissions-matrix.ts.
-         *
-         *     XR-01: Client (29-07) must also subscribe to Supabase Realtime channel 'agent:cartera_stage_transitions' filtered by tenant_id for live transition feed.
+         * Unified agency search (trigram + hash-prefix)
+         * @description Server-side fuzzy search across debtors, vendors, bills, and quotes for the command palette. Uses pg_trgm similarity for text and the existing cedula_hash_prefix8 LIKE path for cédula lookups. PII is masked in responses.
          */
-        get: operations["getCarteraOverview"];
+        get: operations["getAgencySearch"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current (latest) policy snapshot for the agency */
+        get: operations["getAgencyPolicyVersion"];
+        /** Save a new policy snapshot (INSERT-only — never updates existing rows) */
+        put: operations["putAgencyPolicyVersion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/policies/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List policy versions for the agency, sorted DESC by version_number (cursor-paginated) */
+        get: operations["getAgencyPolicyVersionHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/policies/rollback/{version_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rollback policy to a historical version (inserts a new version row — never modifies source) */
+        post: operations["rollbackAgencyPolicyVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/policies/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deterministic SQL backtest of proposed policy against last 30 days of calls
+         * @description Returns { flipped_count, by_stage, by_outcome } from a deterministic SQL backtest. Sub-second response (pure SQL, no async job). NOTE: When calls.state_log is NULL (current state), flipped_count is 0 (no threshold comparisons possible). by_outcome shows raw call distribution.
+         */
+        post: operations["postAgencyPolicyImpact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1410,6 +2714,50 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/aseguradoras/registry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Carrier registry + tenant overrides (Phase 35)
+         * @description Returns the merged GLOBAL carrier registry alongside the tenant's own override values. NULL override fields mean "inherit from global". Enforces cotizador:view permission. Override rows are tenant-scoped via withTenantScope (RLS FORCE). Global registry rows use RLS USING(true) — no tenant scope needed.
+         */
+        get: operations["getAgencyCotizadorAseguradorasRegistry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/aseguradoras/{carrier}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upsert per-tenant carrier override (Phase 35)
+         * @description Creates or updates a per-tenant cotizador carrier override row. Triple-gate: (1) RBAC cotizador:configure-carrier → 403, (2) carrier+route must exist in global registry → 404, (3) upsert + fail-soft audit_log write. agencyId is read from JWT context only (T-35-05). Carrier name validated against VALID_CARRIERS before any DB access (T-35-04).
+         */
+        put: operations["putAgencyCotizadorCarrierOverride"];
+        post?: never;
+        /**
+         * Delete per-tenant carrier override (Phase 35)
+         * @description Removes the per-tenant cotizador carrier override row (idempotent via deleteMany). Triple-gate: (1) RBAC cotizador:configure-carrier → 403, (2) carrier+route must exist in global registry → 404, (3) deleteMany + fail-soft audit_log write. Returns 204 (no body). agencyId read from JWT context only (T-35-05).
+         */
+        delete: operations["deleteAgencyCotizadorCarrierOverride"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1476,6 +2824,15 @@ export interface paths {
                         "application/json": components["schemas"]["AgencyCotizadorQuoteError"];
                     };
                 };
+                /** @description Parent quote not found or belongs to a different tenant (D-33-09) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyCotizadorQuoteError"];
+                    };
+                };
                 /** @description ARCO blocklist — data subject has objected (D-26-09) */
                 451: {
                     headers: {
@@ -1522,6 +2879,377 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cotizador/ask-why": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask why a quote verdict would change under a hypothetical variable */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["AgencyAskWhyBody"];
+                };
+            };
+            responses: {
+                /** @description Counterfactual reasoning trace returned */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyResponse"];
+                    };
+                };
+                /** @description Validation error (variable not in enum, malformed body) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyError"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyError"];
+                    };
+                };
+                /** @description Forbidden — agency mismatch or missing ask-why permission */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyError"];
+                    };
+                };
+                /** @description Quote not found (cross-tenant or unknown id) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyError"];
+                    };
+                };
+                /** @description Daily ask-why cap exceeded (D-33-05) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyCapError"];
+                    };
+                };
+                /** @description Stub-mode — auth backend offline */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/ask-why/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get daily ask-why usage counter for this agency */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Daily ask-why usage counter */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyUsageResponse"];
+                    };
+                };
+                /** @description Missing or invalid bearer token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyUsageError"];
+                    };
+                };
+                /** @description Forbidden — agency mismatch */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyUsageError"];
+                    };
+                };
+                /** @description Stub-mode — auth backend offline */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AgencyAskWhyUsageError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/aseguradoras/{carrier}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Per-carrier deep-dive KPIs + sparkline + approval buckets (Phase 35)
+         * @description Aggregated per-carrier analytics for the cotizador deep-dive page (COTI-UI-07). Returns latency p95 KPI, error rate 24h, approval rate 30d, cost per quote 30d, hourly latency sparkline (last 30d), daily error rate, and approval rate by canon range buckets. Requires cotizador:view permission.
+         */
+        get: operations["getCarrierDeepDive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/aseguradoras/{carrier}/recent-quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paginated last-50 quotes for a carrier (Phase 35)
+         * @description Returns paginated last-50 quotes for a specific carrier filtered by tenant. PII: cédula exposed as cedulaHashPrefix8 (8-char prefix) only — never the full 64-char hash (T-35-04). Requires cotizador:view permission.
+         */
+        get: operations["getCarrierRecentQuotes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/aseguradoras/{carrier}/sla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SLA state + breach windows for a carrier (Phase 35)
+         * @description Returns the current SLA state (derived in-process from getState()) and the last 30d breach windows (consecutive cotizador_sla_metrics buckets above threshold). No cotizador_sla_state table is read or created. Requires cotizador:view permission.
+         */
+        get: operations["getCarrierSla"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/insights/approval-rate-monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Approval rate by carrier per month (last 12 months) */
+        get: operations["getAgencyCotizadorInsightsApprovalRateMonthly"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/insights/prima-distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prima price distribution percentiles by canon range + carrier (approved, last 12 months) */
+        get: operations["getAgencyCotizadorInsightsPrimaDistribution"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/insights/assumptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Global cotizador assumption registry (read-only) */
+        get: operations["getAgencyCotizadorInsightsAssumptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/insights/monthly-cost-trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Monthly cost breakdown by category (last 12 months) */
+        get: operations["getAgencyCotizadorInsightsMonthlyCostTrend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/costos/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cost dashboard summary — KPIs, 4-source totals, forecast (Phase 35)
+         * @description Returns KPIs (costPerQuoteUsd, monthlyBurnUsd, forecast30dUsd), 4-source cost totals (anthropicTotal, carrierApiTotal, sekureCommissionTotal, datacreditoTotal), and costSources registry rows with populated flag. Tenant from JWT only (agencyId from c.get("agencyId") — T-35-08). Forecast: trailing 7-day daily avg × 30. Null when <7 distinct days (T-35-09). Requires cotizador:view.
+         */
+        get: operations["getAgencyCotosCostSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/costos/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cost dashboard time-series (Phase 35)
+         * @description Returns time-series rows grouped by day (default), carrier, or source. Used by the monthly trend chart and per-source breakdown table. Tenant from JWT only — T-35-08. group_by=source unpivots in application code (no extra JOIN). Requires cotizador:view.
+         */
+        get: operations["getAgencyCotosCostSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cotizador/quote/{quoteId}/verdict.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cotizador verdict PDF — server-rendered via @react-pdf/renderer renderToBuffer (D-38-09)
+         * @description Returns the verdict PDF for the calling agency's quote. Rendered server-side from the same React component used previously in the client renderer. T-38-03-02: logo URL is from process.env.APP_URL, never from request inputs. 404 on cross-tenant quoteId.
+         */
+        get: operations["getAgencyCotizadorVerdictPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza overview aggregate (Phase 29)
+         * @description Returns the four KPI blocks + 7 stage rows + last 25 transitions + next 10 undispatched cadence contacts for the cobranza overview page (29-07). All debtor names are redacted to "FirstName I." (PII guard). Enforces cobranza:view permission from permissions-matrix.ts.
+         *
+         *     XR-01: Client (29-07) must also subscribe to Supabase Realtime channel 'agent:cartera_stage_transitions' filtered by tenant_id for live transition feed.
+         */
+        get: operations["getCarteraOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/debtors": {
         parameters: {
             query?: never;
@@ -1534,26 +3262,6 @@ export interface paths {
          * @description Returns a filterable, cursor-paginated list of debtors for the cobranza operator UI. Supports multi-select stage and channel filters, days-in-stage range, name LIKE, and cédula-hash-prefix lookup. PII (cédula, phone, email) is masked in responses; reveal is gated by 31-04. Requires cobranza:view from permissions-matrix.ts.
          */
         get: operations["getCobranzaDebtorsList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/calls/{callId}/audio": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Stream Vapi call recording (Phase 31, range-byte proxy)
-         * @description Agency-JWT-gated range-byte proxy that fetches a fresh Vapi signed URL per request and streams the underlying audio bytes to the client. The Vapi signed URL never reaches the client. Supports RFC 7233 Range requests (200 full body / 206 partial content). cache-control: no-store (T-31-PII).
-         */
-        get: operations["getCobranzaCallAudio"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1722,6 +3430,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agency-wide cobranza calls list ("Llamadas" page)
+         * @description Returns a cursor-paginated, filterable list of cobranza calls across ALL debtors in the agency. Supports outcome, channel, direction, and date-range filters. PII is masked in all responses — debtor name (first 2 / last 3 chars), cédula (maskCedula), and phone (maskPhone) are masked; full values require the reveal-pii endpoint (31-04). Requires cobranza:view.
+         */
+        get: operations["getCobranzaAgencyCallsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/calls/{callId}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Vapi call recording (Phase 31, range-byte proxy)
+         * @description Agency-JWT-gated range-byte proxy that fetches a fresh Vapi signed URL per request and streams the underlying audio bytes to the client. The Vapi signed URL never reaches the client. Supports RFC 7233 Range requests (200 full body / 206 partial content). cache-control: no-store (T-31-PII).
+         */
+        get: operations["getCobranzaCallAudio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/reveal-pii": {
         parameters: {
             query?: never;
@@ -1827,6 +3575,402 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/escalations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Kanban payload (open + assigned + resolved-last-7d) for cobranza escalations */
+        get: operations["listCobranzaEscalations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/escalations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Escalation detail with linked call + assignee email */
+        get: operations["getCobranzaEscalationDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/escalations/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Self-claim an escalation (D-34-02) */
+        post: operations["claimCobranzaEscalation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/escalations/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin assigns an escalation to a tenant member (D-34-02) */
+        post: operations["assignCobranzaEscalation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/escalations/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve an escalation (assignee or admin); escalated-to-legal cascades to S3 (D-34-RES-A5) */
+        post: operations["resolveCobranzaEscalation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/compliance/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compliance overview (Ley 2300 + Habeas Data SLA + retention + sparkline) */
+        get: operations["getCobranzaComplianceOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/compliance/ley-2300/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ley 2300 outside-hours attempts (outbound skips + inbound out-of-hours) */
+        get: operations["getCobranzaLey2300Attempts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/compliance/opt-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Opt-out registry with acknowledgment status */
+        get: operations["getCobranzaOptOutRegistry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/compliance/opt-out/{eventId}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge an opt-out request (writes opt_out_acknowledged event) */
+        post: operations["acknowledgeCobranzaOptOutRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filtered, PII-redacted forensic audit log (D-34-08, 4 filters combinable) */
+        get: operations["getCobranzaAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/compliance/audit-log.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compliance audit log CSV export (PII-masked, server-rendered, BOM-prefixed)
+         * @description Returns a text/csv document with the audit_log rows for the calling agency, optionally narrowed by ISO datetime from/to and an action substring (kind). Cédulas, phones, and emails inside entity_id and payload JSON are server-side masked using the canonical `12•••67` format (first 2 + last 2 retained). UTF-8 BOM prefix so Excel opens the file in the correct encoding. cobranza:view permission required.
+         */
+        get: operations["getAgencyCobranzaAuditLogCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/daily-report/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's daily operator report (1h cache via build-daily-report) */
+        get: operations["getCobranzaDailyReportToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/daily-report/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daily report history (date-sorted cache entries, max 90 days) */
+        get: operations["getCobranzaDailyReportHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/daily-report/history.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daily report history as CSV (max 90 days) */
+        get: operations["getCobranzaDailyReportHistoryCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/daily-report/thresholds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active threshold version (DEFAULTS when no row exists) */
+        get: operations["getCobranzaDailyReportThresholds"];
+        /** Edit thresholds (writes new version + audit row; OWNER+ADMIN only) */
+        put: operations["putCobranzaDailyReportThresholds"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/daily-report/thresholds/rollback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Roll back to a previous threshold version (writes new row + audit) */
+        post: operations["rollbackCobranzaDailyReportThresholds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/daily-report/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Self subscription preferences (per JWT memberUserId) */
+        get: operations["getCobranzaDailyReportSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update self subscription (hardcoded user_id; ignores body user_id) */
+        patch: operations["patchCobranzaDailyReportSubscription"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/analytics/agency-gate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Page-wide analytics gate — calls_30d >= 5 threshold check (real impl) */
+        get: operations["getAgencyCobranzaAnalyticsAgencyGate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/analytics/recovery-rate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recovery rate dual-line chart (# deudores + % COP recovered per stage, configurable window) */
+        get: operations["getAgencyCobranzaAnalyticsRecoveryRate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/analytics/top-objections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Top 10 debtor objection literals last 30d (debtor_memos.last_objection_literal) */
+        get: operations["getAgencyCobranzaAnalyticsTopObjections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/analytics/cadence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cadence effectiveness: channel-mix × outcome + 24×7 heatmap (last 30d) */
+        get: operations["getAgencyCobranzaAnalyticsCadence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/analytics/cost-per-peso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Voice cost KPI (COP/peso recovered) + 90d sparkline (real impl) */
+        get: operations["getAgencyCobranzaAnalyticsCostPerPeso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/analytics/top-scripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Top scripts by conversion lift (Plan 38-03-05 — real impl, D-38-14) */
+        get: operations["getAgencyCobranzaAnalyticsTopScripts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/pagos": {
         parameters: {
             query?: never;
@@ -1847,7 +3991,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/experiments": {
+    "/api/agency/{agencyId}/cobranza/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza inbox — conversation threads grouped by triage label
+         * @description Returns open conversation threads grouped into the 7 vision labels (nuevas respuestas, promesas, pagos reportados, solicitudes de acuerdo, disputas, sin entender, requiere humano) plus an "otros" catch-all, each with a count. Read-only — never auto-responds (T-323). Fail-soft: degrades to empty groups (200) if the inbox tables are not yet migrated.
+         */
+        get: operations["getCobranzaInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/inbox/{threadId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza inbox — single thread with its messages
+         * @description Returns one conversation thread and its messages (oldest → newest). Cross-tenant threadId returns 404 (least-disclosure). Read-only — never auto-responds (T-323). Fail-soft: returns 404 if the inbox tables are not yet migrated.
+         */
+        get: operations["getCobranzaInboxThread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/inbox/{threadId}/read": {
         parameters: {
             query?: never;
             header?: never;
@@ -1857,87 +4041,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create an A/B experiment for an agency (OWNER/ADMIN)
-         * @description Creates an Experiment + its ExperimentVariant rows in a single transaction. Variant parameter_overrides must (a) only use the {max_discount_pct, max_term_months, prompt_variant_id} allowlist (D-08, .strict() Zod + DB CHECK), (b) NOT exceed the agency policy ceilings (D-07). Overlapping running experiments on the same targetMetric WARN (201 with warnings[]) — they do not block.
+         * Cobranza inbox — mark a thread read
+         * @description Clears the unread flag on a thread. Benign read-state operation (no debtor contact, no outbound message) — requires only cobranza:view and takes NO automated cobranza action (T-323). Cross-tenant threadId returns 404. Fail-soft: returns a 200 no-op acknowledgment if the inbox tables are not yet migrated.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    agencyId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CreateExperimentRequest"];
-                };
-            };
-            responses: {
-                /** @description Experiment created (with optional warnings[]) */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ExperimentResponse"];
-                    };
-                };
-                /** @description Malformed body, unknown override key, variant exceeds policy ceiling, or duplicate experimentKey */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Missing / invalid bearer JWT */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description agencyId mismatch / no membership / insufficient role */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Agency policy row missing (tenant not yet onboarded) */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Database unavailable (stub mode) */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
+        post: operations["markCobranzaInboxThreadRead"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/experiments/{experimentKey}": {
+    "/api/agency/{agencyId}/cobranza/promises": {
         parameters: {
             query?: never;
             header?: never;
@@ -1945,68 +4059,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an experiment + variants by key (any agency role)
-         * @description Returns the experiment row plus its variants array. RLS narrows the lookup to the calling tenant, so a foreign experimentKey appears as 404 (never 200/403 leakage). VIEWER role is allowed — read access is open to all members of the agency.
+         * Histórico agency-wide de promesas de pago (PII enmascarada)
+         * @description Returns the tenant-scoped histórico of payment promises with a derived display status (activa|incumplida|parcial|por_vencer|cumplida) computed from the persisted status + dueDate. Filters: ?status (persisted), ?debtorId, ?from/?to (dueDate bounds). Offset-paginated. Debtor PII (cédula/phone/email) is masked. Fail-soft: returns an empty list (200) if the table is not yet migrated — never 500.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    agencyId: string;
-                    experimentKey: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Experiment + variants */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ExperimentResponse"];
-                    };
-                };
-                /** @description Missing / invalid bearer JWT */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description agencyId mismatch / no membership */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Experiment not found for this tenant */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Database unavailable (stub mode) */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["listCobranzaPromises"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2015,7 +4071,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/experiments/{experimentKey}/status": {
+    "/api/agency/{agencyId}/cobranza/agreements/propose": {
         parameters: {
             query?: never;
             header?: never;
@@ -2024,98 +4080,18 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Propone (borrador) un acuerdo de pago reutilizando el motor de payment-plans
+         * @description Computes a DRAFT payment-plan agreement by reusing the existing payment-plans engine (computeOffer) — same per-stage ceilings + Math.min(tier, agencyMaxDiscountPct) clamp (triple-gate authority). This endpoint does NOT approve, activate, persist a live plan, mint a payment link, contact the debtor, or change the debtor stage (T-323/Ley 2300 — approval is a separate human action through the payment-plans flow). Stages S4/S5/SX → 400 (no negotiation surface). Fail-soft: if the agency policy / debtor cannot be read it degrades to a 200 compute-only draft (agencyMaxDiscountPct defaults to 0).
+         */
+        post: operations["proposeCobranzaAgreement"];
         delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Transition an experiment lifecycle status (OWNER/ADMIN)
-         * @description Validates the requested transition against the lifecycle state machine. Allowed: draft→running|paused, running→paused|completed, paused→running|draft|completed. completed is terminal (D-11). Pre-transition to `running` re-asserts SUM(variants.trafficPct)===100. `started_at` is set on first `running`; `ended_at` is set on `completed`. Body is .strict() — extra keys (e.g. traffic_pct) are rejected at the Zod boundary (Pitfall 5).
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    agencyId: string;
-                    experimentKey: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PatchExperimentStatusRequest"];
-                };
-            };
-            responses: {
-                /** @description Status updated; returns the refreshed experiment */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ExperimentResponse"];
-                    };
-                };
-                /** @description Unknown body key (Zod .strict) or traffic invariant broken at transition to running */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Missing / invalid bearer JWT */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description agencyId mismatch / no membership / insufficient role */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Experiment not found for this tenant */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Transition not allowed by the lifecycle state machine */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Database unavailable (stub mode) */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
+        patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/experiments/{experimentKey}/report": {
+    "/api/agency/{agencyId}/cobranza/recovery": {
         parameters: {
             query?: never;
             header?: never;
@@ -2123,61 +4099,512 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Per-arm KPI + significance report for an experiment
-         * @description Aggregates per-variant KPIs (assignments, kept/broken promises, completion rate, recovered COP, compliance flag rate) via the SQL function `agent.experiment_outcomes()` (SECURITY INVOKER → RLS inherits from withTenantScope). Computes pairwise significance vs control with Bonferroni-corrected alpha (α/(k-1)): ztest2prop for binary target metrics (kept_promise_rate, completion_rate), Welch two-sample t-test for continuous (recovered_cop_per_call). Emits a guardrail.breaches[] entry for any arm whose complianceFlagRate exceeds the control rate by more than 2 standard deviations of a proportion. Auto-stop is forbidden by D-08 — breaches surface in the response for the operator to act on. OPERATOR is allowed; VIEWER is not (D-02).
+         * Cobranza recovery-outcomes aggregate (Resultados screen)
+         * @description Aggregates recovery KPIs for the Resultados screen from existing data (PaymentPromise / PaymentPlan / Escalation / Payment / daily-report cache) plus the RecoveryOutcome table where populated. Each metric is computed independently and returns null when its source signal is unavailable so the UI renders "—" instead of a fabricated number. Read-only; nothing is automated (T-323 / Ley 2300). Fail-soft: returns 200 with null metrics when the underlying tables are not yet migrated — never 500.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    agencyId: string;
-                    experimentKey: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Report (or zero-shape skeleton when prisma is null in stub mode) */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ExperimentReportResponse"];
-                    };
-                };
-                /** @description Missing / invalid bearer JWT */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description agencyId mismatch / no membership / insufficient role */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Experiment not found for this tenant */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["getCobranzaRecovery"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/owner-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List owner mora reports (optionally filtered by status).
+         * @description Returns the owner-report rows for the calling tenant, newest first. Optional ?status filter. Fail-soft: empty list (200) when the table is not yet migrated. Requires cobranza:view.
+         */
+        get: operations["listCobranzaOwnerReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/owner-reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single owner mora report.
+         * @description Returns one owner-report row scoped to the calling tenant. Cross-tenant or missing id returns 404 (no existence oracle). Fail-soft: 404 when the table is not yet migrated. Requires cobranza:view.
+         */
+        get: operations["getCobranzaOwnerReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/owner-reports/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compose a draft owner mora report from real cartera data.
+         * @description Reads days-in-mora, overdue amount, gestiones count and the latest payment promise for the given debtor, composes a Spanish narrative, and persists a new OwnerReport with status="draft". NEVER sends anything to the owner — sending is gated behind the human approve endpoint (T-323 / Ley 2300). Requires cobranza:intervene.
+         */
+        post: operations["generateCobranzaOwnerReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/owner-reports/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Human-approve an owner mora report (T-323 gated).
+         * @description Transitions a draft report to "pending_approval" (default) or to "sent" (markAsSent=true, operator confirms physical delivery). Records approvedByUserId; stamps sentAt ONLY on explicit markAsSent. No automated send side-effect. Requires cobranza:approve (OWNER/ADMIN only).
+         */
+        post: operations["approveCobranzaOwnerReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/owner-reports/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Owner mora report PDF (not yet implemented).
+         * @description Reserved endpoint for the owner-report PDF export. Returns 501 until the PDF template ships. The report is validated to exist + belong to the tenant first (404 otherwise). Requires cobranza:view.
+         */
+        get: operations["getCobranzaOwnerReportPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List cobranza disputes (controversias) — optional ?status filter
+         * @description Returns the tenant-scoped list of disputes, newest first. Optional ?status filter (open|in_review|resolved). Fail-soft: if the disputes table is not yet migrated, returns an empty list (200, never 500).
+         */
+        get: operations["listCobranzaDisputes"];
+        put?: never;
+        /**
+         * Open a cobranza dispute (controversia)
+         * @description Opens a dispute against a debtor (status=open). Does NOT pause/stop cobranza automatically (T-323) — it only records the controversia and, fail-soft, drops an Escalation reason="dispute" into the human queue. Fail-soft: if the disputes table is not yet migrated, returns 200 with dispute=null + persisted=false (never 500).
+         */
+        post: operations["openCobranzaDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/disputes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single cobranza dispute
+         * @description Returns one dispute by id. Cross-tenant ids return 404 (least-disclosure). Fail-soft: if the disputes table is not yet migrated, returns 404.
+         */
+        get: operations["getCobranzaDispute"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/disputes/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a cobranza dispute (HUMAN-only, T-323)
+         * @description Marks a dispute resolved with an outcome (procedente|improcedente|parcial), a resolutionNote, and the resolvedByUserId of the human operator. This is human-gated per T-323/Ley 2300 — there is no automated resolution path. Resolving does NOT auto-reactivate cobranza; the response carries a recommendation for a human to act on. Fail-soft: returns 404 if the dispute/table is absent.
+         */
+        post: operations["resolveCobranzaDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/pagos/{paymentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza payment detail (self-report / verify metadata, PII masked)
+         * @description Detail of ONE payment for the /pagos/[paymentId] screen. PII masked. cobranza:view required. Cross-tenant paymentId returns 404 (T-15-06). Fail-soft to 200 { payment: null } if the cobranza-UX migration is not yet applied.
+         */
+        get: operations["getCobranzaPaymentDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/pagos/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Self-report a payment (sets status="self_reported", never approved)
+         * @description The inquilino (or an operator on their behalf) reports a payment: sets status="self_reported", selfReportedAt, selfReportedBy, comprobanteUrl. NEVER marks approved — human verification is a separate step (T-323). cobranza:act required. Additive: does NOT touch the provider-webhook flow.
+         */
+        post: operations["reportCobranzaPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/pagos/{paymentId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Human verify a self-reported payment (approve / reject — T-323, never auto)
+         * @description Operator confirms a payment → status="approved" + verifiedAt + verifiedByUserId. Or rejects → restores the previous status + audit note. Verification is ALWAYS human (T-323/Resolución SIC 2024); there is no automated path that sets verifiedAt. cobranza:act required.
+         */
+        post: operations["verifyCobranzaPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/pagos/abono": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registrar un ABONO / pago parcial humano-iniciado (idempotente, T-323)
+         * @description Records a manual partial payment (abono) the operator already collected: creates an approved Payment row, recomputes the debtor saldo additively, and (if an open PaymentPromise exists) links it and marks it kept / partially_kept. Idempotent via idempotency_key. cobranza:act required. Requires confirm=true (explicit human action — T-323/Resolución SIC 2024). Does NOT touch the provider-webhook reconciler, contact the debtor, mint a payment link, or change the cartera stage. Fail-soft to 503 if the cobranza-UX migration is not yet applied — never 500.
+         */
+        post: operations["registerCobranzaAbono"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/judicializado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark/unmark a debtor as judicializado (in judicial process) — approve-grade, OWNER/ADMIN */
+        post: operations["setCobranzaDebtorJudicializado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/cartera-final": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark/unmark a debtor as cartera final (terminated contract with balance) — approve-grade, OWNER/ADMIN */
+        post: operations["setCobranzaDebtorCarteraFinal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/primary-contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Designate/undesignate a debtor as the primary contact among co-deudores — operator-grade */
+        post: operations["setCobranzaDebtorPrimaryContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/case-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobranza debtor derived case state (16-state vision)
+         * @description Derives the operator-facing 16-state case state from the cartera stage (S0..SX) plus the live status of the latest promise / payment / dispute / escalation. Pure read+derive — no new schema, nothing persisted. Requires cobranza:view. Cross-tenant debtorId returns 404 (T-15-06 least-disclosure).
+         */
+        get: operations["getCobranzaDebtorCaseState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/codeudor/contactar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manually contact the codeudor / fiador (cobranza:approve — OWNER/ADMIN)
+         * @description Invokes the guarded codeudor contact flow for a delinquent debtor. MANUAL ONLY, behind cobranza:approve (T-323 human gate) and gated by AgencyPolicy.contactCodeudorEnabled (default OFF ⇒ 200 with contacted=false, reason=codeudor_disabled). Reuses the existing Ley 2300 / Habeas Data / certified-fence guardrails via the channel senders. Never auto-contacts.
+         */
+        post: operations["postCobranzaCodeudorContactar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/autonomy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the cobranza autonomy level
+         * @description Returns the per-agency cobranza autonomy level (AgencyPolicy.autonomyLevel). NULL / unmigrated column degrades to the app-layer default ('automatico_completo' = current behavior) with isDefault=true. cobranza:view.
+         */
+        get: operations["getCobranzaAutonomy"];
+        /**
+         * Set the cobranza autonomy level (cobranza:approve — OWNER/ADMIN)
+         * @description Sets the per-agency cobranza autonomy level. Writes an audit_log row (actorType="user") in the same transaction as the update. Requires cobranza:approve (OWNER / ADMIN). Tightening the dial only ever ADDS human oversight — it never grants new automated actions (T-323).
+         */
+        put: operations["putCobranzaAutonomy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/cadence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the per-agency cadence calendar (cobranza:view)
+         * @description Returns the agency cadence-calendar override (AgencyPolicy.cadenceConfig) plus the effective calendar the cron would use right now. When no valid override is set, `source="default"` and `effectiveConfig` echoes the hardcoded system calendar. Fail-soft when the column is unmigrated.
+         */
+        get: operations["getCobranzaCadenceConfig"];
+        /**
+         * Set / clear the per-agency cadence calendar (cobranza:approve)
+         * @description Persists the per-agency cadence-calendar override to AgencyPolicy.cadenceConfig. Send `cadenceConfig: null` to clear the override (cron reverts to the hardcoded default). The body is validated with the SAME schema the orchestrator applies. Writes an audit_log row in the same transaction. OWNER/ADMIN only (cobranza:approve). T-323: configuring the plan never sends anything.
+         */
+        put: operations["putCobranzaCadenceConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk-import cartera debtors (CSV/XLSX-as-CSV or JSON rows, idempotent)
+         * @description Imports debtors (+ optional opening obligación amount) from a CSV upload, CSV text, or a JSON rows payload. Debtors are created/updated IDEMPOTENTLY, deduplicated by the per-tenant cédula-hash prefix (D-31-13) — re-importing the same file updates instead of duplicating. Returns { creados, actualizados, omitidos, errores[] }. cobranza:act required. Additive: never contacts the debtor, never starts a cadence (T-323). Processed inline, capped at 2000 rows. Fail-soft to an empty summary if a required migration is not yet applied. XLSX must be exported to CSV.
+         */
+        post: operations["importCartera"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/landing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** AI Hub cross-agent landing KPIs (cobranza + cotizador) */
+        get: operations["getAgencyAiHubLanding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI chat home — one turn (F1b: Q&A + agent dispatch)
+         * @description The agency backoffice AI chat. Answers the inmobiliaria over its real "today" snapshot, suggests where to act, and may dispatch one specialist (cobranza/cotizador/estudio/matching) whose work is returned in dispatches[]. Any agency member may use it (tenant-scoped). F1c adds SSE streaming.
+         */
+        post: operations["postAiHubChat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/chat/approvals/{approvalId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI chat home — resolve a pending binding-action approval (F2 learning signal)
+         * @description Records the operator's approve/reject decision for a binding action the chat proposed this/earlier turn (correlated by the approval id). Flips the stored knowledge item's outcome so the chat learns whether its proposals are accepted. Does NOT execute the binding action — that stays gated in the agent’s frente. Requires OPERATOR+ (a decision/write).
+         */
+        post: operations["postAiHubChatApprovalResolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/chat/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * AI chat home — list/refresh the self-learning lesson pool (F3)
+         * @description Mines candidate lessons from the agency chat history, merges them into the stored pool (keeping prior human certify/reject decisions), and returns the full pool. Only certified lessons are ever used by the chat, and only when enabled — this endpoint is for reviewing/curating. Any agency member.
+         */
+        get: operations["getAiHubChatLessons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/chat/lessons/{lessonId}/certify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI chat home — certify/reject a learned lesson (F3 fence)
+         * @description Records a human's certify/reject decision for a mined lesson. Certifying passes the fail-closed fence (needs sufficient evidence + a recommendation); rejecting is always allowed. Only certified lessons are ever used by the chat. Requires OPERATOR+ (a decision/write) — VIEWER may list but not certify.
+         */
+        post: operations["postAiHubChatLessonCertify"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2684,6 +5111,1322 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/experiments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an A/B experiment for an agency (OWNER/ADMIN)
+         * @description Creates an Experiment + its ExperimentVariant rows in a single transaction. Variant parameter_overrides must (a) only use the {max_discount_pct, max_term_months, prompt_variant_id} allowlist (D-08, .strict() Zod + DB CHECK), (b) NOT exceed the agency policy ceilings (D-07). Overlapping running experiments on the same targetMetric WARN (201 with warnings[]) — they do not block.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateExperimentRequest"];
+                };
+            };
+            responses: {
+                /** @description Experiment created (with optional warnings[]) */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ExperimentResponse"];
+                    };
+                };
+                /** @description Malformed body, unknown override key, variant exceeds policy ceiling, or duplicate experimentKey */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing / invalid bearer JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description agencyId mismatch / no membership / insufficient role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Agency policy row missing (tenant not yet onboarded) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable (stub mode) */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/experiments/{experimentKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an experiment + variants by key (any agency role)
+         * @description Returns the experiment row plus its variants array. RLS narrows the lookup to the calling tenant, so a foreign experimentKey appears as 404 (never 200/403 leakage). VIEWER role is allowed — read access is open to all members of the agency.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                    experimentKey: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Experiment + variants */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ExperimentResponse"];
+                    };
+                };
+                /** @description Missing / invalid bearer JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description agencyId mismatch / no membership */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Experiment not found for this tenant */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable (stub mode) */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/experiments/{experimentKey}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Transition an experiment lifecycle status (OWNER/ADMIN)
+         * @description Validates the requested transition against the lifecycle state machine. Allowed: draft→running|paused, running→paused|completed, paused→running|draft|completed. completed is terminal (D-11). Pre-transition to `running` re-asserts SUM(variants.trafficPct)===100. `started_at` is set on first `running`; `ended_at` is set on `completed`. Body is .strict() — extra keys (e.g. traffic_pct) are rejected at the Zod boundary (Pitfall 5).
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                    experimentKey: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PatchExperimentStatusRequest"];
+                };
+            };
+            responses: {
+                /** @description Status updated; returns the refreshed experiment */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ExperimentResponse"];
+                    };
+                };
+                /** @description Unknown body key (Zod .strict) or traffic invariant broken at transition to running */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing / invalid bearer JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description agencyId mismatch / no membership / insufficient role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Experiment not found for this tenant */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Transition not allowed by the lifecycle state machine */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Database unavailable (stub mode) */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/experiments/{experimentKey}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Per-arm KPI + significance report for an experiment
+         * @description Aggregates per-variant KPIs (assignments, kept/broken promises, completion rate, recovered COP, compliance flag rate) via the SQL function `agent.experiment_outcomes()` (SECURITY INVOKER → RLS inherits from withTenantScope). Computes pairwise significance vs control with Bonferroni-corrected alpha (α/(k-1)): ztest2prop for binary target metrics (kept_promise_rate, completion_rate), Welch two-sample t-test for continuous (recovered_cop_per_call). Emits a guardrail.breaches[] entry for any arm whose complianceFlagRate exceeds the control rate by more than 2 standard deviations of a proportion. Auto-stop is forbidden by D-08 — breaches surface in the response for the operator to act on. OPERATOR is allowed; VIEWER is not (D-02).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    agencyId: string;
+                    experimentKey: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Report (or zero-shape skeleton when prisma is null in stub mode) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ExperimentReportResponse"];
+                    };
+                };
+                /** @description Missing / invalid bearer JWT */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description agencyId mismatch / no membership / insufficient role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Experiment not found for this tenant */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/vendors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List vendors for an agency (bankAccountNumber masked)
+         * @description Returns all vendors for the agency. bankAccountNumber is masked to last-4 digits in the list response (T-40-07 PII redaction).
+         */
+        get: operations["listApVendors"];
+        put?: never;
+        /**
+         * Create a vendor in the AP vendor master
+         * @description Creates a Vendor row scoped to the agency (tenant). 409 on duplicate (tenantId, documentNumber). Gate 3 (ap:view) checked before DB access (T-40-03).
+         */
+        post: operations["createApVendor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/vendors/{vendorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update a vendor — bank-detail change triggers re-approval + audit (T-40-02)
+         * @description Updates vendor fields. If documentNumber, bankName, bankAccountNumber, or bankAccountType changes: writes audit_log FIRST (T-40-02 BEC guard), then updates vendor, then flips all pending_approval/approved VendorBills → pending_approval — all in a single withTenantScope transaction.
+         */
+        put: operations["updateApVendor"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/matrix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the current (latest) AP approval matrix for the agency
+         * @description Returns the latest saved matrix version, or the DEFAULT_AP_MATRIX seed when no version exists yet (version_number: 0). Requires ap:view.
+         */
+        get: operations["getApApprovalMatrix"];
+        /**
+         * Save a new AP approval matrix version (INSERT-only — never updates existing rows)
+         * @description Creates a new matrix version row. versionNumber increments monotonically. matrix_json must be a non-null plain object (not array/null) — D-40-06, T-40-01. OWNER and ADMIN only.
+         */
+        put: operations["putApApprovalMatrix"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/matrix/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all AP approval matrix versions for the agency, sorted DESC by version_number
+         * @description Returns the full version history. matrix_json excluded from list for bandwidth; fetch specific version via GET /ap/matrix on demand. Requires ap:view.
+         */
+        get: operations["getApApprovalMatrixVersionHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/matrix/rollback/{version_number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rollback AP matrix to a historical version (inserts a new version row — source row is untouched)
+         * @description Inserts a new matrix version copying the target version matrixJson. Source row is never modified. OWNER and ADMIN only.
+         */
+        post: operations["rollbackApApprovalMatrix"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List VendorBills for an agency (filterable by status + vendorId) */
+        get: operations["listApBills"];
+        put?: never;
+        /** Create a VendorBill (status: pending_approval) */
+        post: operations["createApBill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/bills/{billId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a VendorBill by ID (404 on cross-tenant) */
+        get: operations["getApBill"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/cost-centers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get resolved cost centers for an agency (ERP or local fallback) */
+        get: operations["getApCostCenters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/aging": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * AP aging report — unpaid bills bucketed by dueDate (America/Bogota)
+         * @description Returns 5 buckets: corriente (not yet due), 1-30 days past due, 31-60, 61-90, and 90+ days past due. Excludes paid/void/rejected bills. Amounts in COP. Timezone: America/Bogota (DST-aware).
+         */
+        get: operations["getApAging"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/bills/{billId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve an AP vendor bill (triple-gate: Zod / tenant-404 / tier-perm + SoD)
+         * @description Tier resolved server-side from the AP matrix (T-40-01). Gate 3: hasApApproveL2/L3 checked before any DB write. SoD: creator cannot self-approve (T-40-06). Audit-first $transaction (T-40-04). Fail-soft ERP push post-commit (D-40-03).
+         */
+        post: operations["approveApBill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/bills/{billId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject an AP vendor bill (triple-gate: Zod / tenant-404 / tier-perm + SoD)
+         * @description Same triple-gate as approve. Body.reason is required (min 1 char). Tier resolved server-side; client tier never trusted (T-40-01). Audit-first $transaction with action=ap_bill_reject (T-40-04).
+         */
+        post: operations["rejectApBill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/payment-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an AP payment run (server-generated idempotencyKey, T-40-05)
+         * @description Creates an ApPaymentRun with a SERVER-GENERATED idempotencyKey. Each approved VendorBill in billIds is attached as a scheduled ApPayment. OWNER/ADMIN only (T-40-06 SoD). Audit-first $transaction (T-40-04).
+         */
+        post: operations["createApPaymentRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ap/payment-runs/{runId}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute an AP payment run (mark-paid + reconcile, T-40-05)
+         * @description Marks each scheduled ApPayment status="marked_paid", sets VendorBill.status="paid", calls the record-only disburse() seam (D-40-08/09), and reconciles to ERP. Re-executing a completed run returns 200 {idempotent:true} (T-40-05). Bills already in status="paid" are skipped (per-bill guard, T-40-05). OWNER/ADMIN only (T-40-06 SoD).
+         */
+        post: operations["executeApPaymentRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review queue — paginated suggested matches for human review
+         * @description Returns ReconciliationMatch rows with status=suggested, scoped to the agency tenant. Ordered by createdAt DESC. Includes linked BankMovement fields. VIEWER can access (read-only). T-41-04/05/06 enforced on write paths (see confirm/reject/reverse).
+         */
+        get: operations["getConciliacionQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/queue/{matchId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Human confirms a suggested match — applies as confirmed (audit-first, T-41-04)
+         * @description Fetches the match (tenant-scoped 404 guard), validates status=suggested, then executes audit-first $transaction: auditLog.create BEFORE ReconciliationMatch.update BEFORE BankMovement.update. Requires cobranza:intervene (OWNER/ADMIN/OPERATOR).
+         */
+        post: operations["confirmConciliacionMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/queue/{matchId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Human rejects a suggested match — returns movement to unmatched
+         * @description Validates status === suggested, then audit-first $transaction: auditLog.create BEFORE ReconciliationMatch.update (status=rejected) BEFORE BankMovement.update (status=unmatched). Reason required. T-41-04.
+         */
+        post: operations["rejectConciliacionMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/queue/{matchId}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse (un-reconcile) a confirmed or auto match (D-41-07, audit-first)
+         * @description Calls unreconcile() from apply-match.ts: audit-first $transaction, idempotent (repeat calls on an already-reversed match return 200). Requires OWNER/ADMIN only (higher privilege — reversal is a financial correction).
+         */
+        post: operations["reverseConciliacionMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Conciliación daily report — movement/match counts, fraud flags, backlog aging
+         * @description Computed daily summary for the reconciliation pipeline: day-window movement status counts, match decisions split auto/suggested (shadow mode lands suggestions in the review queue — D-41-04/05), Layer-1 vs LLM split, controlled-vocabulary fraud flags from suggestion reasons, unidentified backlog aging, and pending review-queue size. Read-only; VIEWER can access (same posture as the conciliación queue GET).
+         */
+        get: operations["getConciliacionDailyReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a bank statement CSV — persists movements and enqueues a reconciliation run
+         * @description Parses a Bancolombia or Davivienda statement export, persists the rows as bank_movements (idempotent — re-uploading the same file is a no-op), writes an audit_log row, and enqueues conciliacion/run.requested so Layer-1/Layer-2 matching runs over the freshly ingested window. The reconciliation run still SUGGESTS only (shadow mode) — nothing auto-confirms. Requires OWNER/ADMIN/OPERATOR.
+         */
+        post: operations["ingestConciliacionStatement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshot del portafolio administrado (propietarios, inmuebles, contratos, mora, mantenimiento, …). */
+        get: operations["getRetencionSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/scores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Score de Riesgo de Retiro 0–100 por propietario e inmueble (con causa raíz y confianza). */
+        get: operations["getRetencionScores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/bandeja": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bandeja de riesgos priorizada — casos de fuga ordenados por ingreso en riesgo, con filtros y facetas. */
+        get: operations["getRetencionBandeja"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/propietarios/{ownerId}/perfil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perfil 360 del propietario (salud, inmuebles, financiero, interacciones, casos, mantenimiento, contratos + diagnóstico). */
+        get: operations["getRetencionOwnerProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/inmuebles/{propertyId}/perfil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perfil 360 del inmueble (datos clave, días vacío, rentabilidad, tickets, comparables + diagnóstico del agente). */
+        get: operations["getRetencionPropertyProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/casos/{caseId}/plan-propuesto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan de retención propuesto para un caso (on-the-fly, playbook por causa raíz). */
+        get: operations["getRetencionProposedPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/casos/{caseId}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Materializa el plan de un caso en tareas internas (idempotente; OWNER/ADMIN/OPERATOR). */
+        post: operations["materializeRetencionPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/planes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista los planes de retención persistidos (filtros: estado, propietario). */
+        get: operations["listRetencionPlanes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/planes/{planId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Un plan de retención persistido con sus tareas. */
+        get: operations["getRetencionPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Actualiza el estado/resultado/seguimiento de un plan (OWNER/ADMIN/OPERATOR). */
+        patch: operations["patchRetencionPlan"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/planes/{planId}/tareas/{taskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Actualiza el estado/resultado de una tarea del plan (OWNER/ADMIN/OPERATOR). */
+        patch: operations["patchRetencionTask"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dashboard de retención: cards, lo más urgente y estado del portafolio. */
+        get: operations["getRetencionDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/casos/{caseId}/mensaje": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Borrador de mensaje al propietario por causa raíz (revisión humana; no se envía). */
+        get: operations["getRetencionMensaje"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/casos/{caseId}/guardrails": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Evaluación de guardrails del caso (consistencia financiera, escalamiento jurídico, recomendación de retención). */
+        get: operations["getRetencionGuardrails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cola de revisión: decisiones autónomas del sweep proactivo (filtros: reviewableOnly, caso, límite). */
+        get: operations["listRetencionDecisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/decisions/{decisionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Marca una decisión autónoma como revisada por un humano (upheld|overridden|escalated; OWNER/ADMIN/OPERATOR). */
+        patch: operations["reviewRetencionDecision"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/propietarios/{ownerId}/consentimiento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consentimiento de contacto de retención del propietario (fail-closed: sin fila = no autoriza). */
+        get: operations["getRetencionOwnerConsent"];
+        /** Registra la autorización del propietario para contacto de retención (OWNER/ADMIN; acto de gobierno legal). */
+        put: operations["putRetencionOwnerConsent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Config del agente (fuentes activas + umbrales de riesgo). */
+        get: operations["getRetencionConfig"];
+        /** Actualiza la config del agente (OWNER/ADMIN). */
+        put: operations["putRetencionConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/responsables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Responsables por rol (ejecutivo de propietario, mantenimiento, financiero, jurídico, gerente). */
+        get: operations["getRetencionResponsables"];
+        /** Asigna un responsable a un rol (OWNER/ADMIN). */
+        put: operations["putRetencionResponsable"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Multi-aseguradora quote pipeline. Default: synchronous JSON response. Opt-in: when `?stream=1`, the response Content-Type is text/event-stream and the body is an SSE-framed stream of events whose payloads are the SSE* component schemas (`SSECarrierStart`, `SSECarrierVerdict`, `SSECarrierError`, `SSEPartialRanking`, `SSERecovery`, `SSEFinalVerdict`, `SSEHeartbeat`). */
+        post: operations["cotizadorQuoteCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/quote/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Server-Sent Events stream — subscribe / reconnect to a quote session started by POST /api/cotizador/quote. Supports Last-Event-ID re-sync over the anchored 12h TTL window (D-24-10). The response is a text/event-stream wire; event payloads conform to the SSE* component schemas (discriminated by the SSE `event:` field). */
+        get: operations["cotizadorStreamSubscribe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/quote/{id}/re-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Interactive re-quote (D-24-09/D-24-11/D-24-12/D-24-18/D-24-20). PATCH a subset of {canon_mensual_cop, codeudores, tipo_inmueble}; only the affected carriers re-run (data-driven via cotizador_assumption_registry). Regenerates reasoning_trace_es every call. Returns 429 when the session budget cap is reached. */
+        post: operations["cotizadorReQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/cohort-taxonomy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin read of the cotizador_cohort_taxonomy table (D-24-13). Read-only by design — the leasefy_admin RLS policy guards writes. Deterministic ordering by cohortId ASC. */
+        get: operations["cotizadorCohortTaxonomyList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/policy-outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a real-world policy lifecycle outcome (D-25-01, D-25-02, D-25-03). Append-only event log linked to the originating quote_id. Idempotency-Key header required — retries with the same key return 200 with the original row. */
+        post: operations["cotizadorPolicyOutcomeCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/carrier-events/{carrier}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Per-carrier direct webhook. HMAC-SHA256 verification via X-Carrier-Signature (CARRIER_WEBHOOK_SECRET_{CARRIER} env var). Returns 501 — implementation deferred to Phase 27. Contract is locked here so Phase 27 can add parser logic without touching auth plumbing (D-25-02, 25-06). */
+        post: operations["cotizadorCarrierWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/sla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-tenant SLA metric read (D-25-09, D-25-10). Returns hourly metric rows for the requesting tenant. Tenant isolation enforced via withTenantScope + FORCE RLS (T-25-10-02 — cross-tenant UUID returns only the GUC-scoped rows). */
+        get: operations["cotizadorSlaList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-tenant cost read (D-25-14). Returns cost aggregates for the requesting tenant. group_by=tenant excluded (caller is already scoped to one tenant). Tenant isolation via withTenantScope + FORCE RLS. */
+        get: operations["cotizadorCostsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/carriers/{carrier}/reset-degradation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin manual reset of a carrier's degraded state (D-25-07 escape hatch). Returns prior state so operators can audit what was cleared. Auth: COTIZADOR_ADMIN_API_KEY header (not bearerAuth — admin shared secret). */
+        post: operations["cotizadorAdminResetDegradation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/sla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cross-tenant SLA rollup (leasefy_admin, D-25-11). System-actor query — no withTenantScope (admin sees all tenants). Returns at most 500 rows; capped=true when truncated. */
+        get: operations["cotizadorAdminSlaList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cross-tenant cost aggregates (leasefy_admin). Admin-scoped — no withTenantScope. Optional tenant_id filter narrows to a single tenant. group_by=tenant available (unlike the per-tenant endpoint which excludes it). */
+        get: operations["cotizadorAdminCostsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/drift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Drift reports per (tenant, carrier) (D-25-12). Admin-scoped — no withTenantScope. Compares predicted verdicts against ground-truth outcomes to surface accuracy degradation. */
+        get: operations["cotizadorAdminDriftList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Acceso (Habeas Data Ley 1581/2012): enqueue an asynchronous export of all cotizador* rows associated with the data subject's cedula_hash. Returns 202 Accepted with a job_id; poll GET /api/cotizador/arco/jobs/{job_id} for the presigned S3 export URL (24h TTL). Two-key counsel gate (D-26-11). */
+        get: operations["cotizadorArcoAcceso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/rectify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rectificación (Habeas Data Ley 1581/2012): enqueue a correction of a cedula_hash-derived column. Only fields in ARCO_RECTIFIABLE_FIELDS may be corrected (D-26-12). Returns 202 Accepted. Idempotency-Key required (D-26-10). */
+        post: operations["cotizadorArcoRectificacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/delete-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Cancelación (Habeas Data Ley 1581/2012): enqueue a hard DELETE of all cotizador* rows for this cedula_hash within the tenant (D-26-08). FK CASCADE reaps children. Returns 202 Accepted. Idempotency-Key required. */
+        delete: operations["cotizadorArcoCancelacion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/object": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Oposición (Habeas Data Ley 1581/2012): enqueue an objection that triggers defense-in-depth blocklist enforcement (D-26-09 layers 1+2+3). Subsequent POST /api/cotizador/quote for this cedula_hash returns 451 Unavailable For Legal Reasons. Returns 202 Accepted. Idempotency-Key required. */
+        post: operations["cotizadorArcoOposicion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/arco/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned S3 URL, 24h TTL). Two-key counsel gate applies here too. */
+        get: operations["cotizadorArcoJobStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2793,6 +6536,7 @@ export interface components {
             magicLinkSentTo: string;
             /** @enum {string} */
             nextStep: "agency";
+            emailSent: boolean;
         };
         OnboardingStartRequest: {
             /** @example Inmobiliaria San Pedro S.A.S. */
@@ -2804,6 +6548,16 @@ export interface components {
             contactEmail: string;
             /** @example +57 300 000 0000 */
             contactPhone?: string;
+            /**
+             * Format: uuid
+             * @description Anchor this session to a tenant already provisioned by back (server-to-server only — requires AGENT_API_KEY).
+             */
+            existingTenantId?: string;
+            /**
+             * Format: uuid
+             * @description Real Supabase sub of the operator who triggered provisioning. Consumed only inside the existingTenantId anchor block.
+             */
+            startedByUserId?: string;
         };
         OnboardingResumeResponse: {
             /** Format: uuid */
@@ -3015,6 +6769,177 @@ export interface components {
             error: string;
             missingSteps: string[];
         };
+        OnboardingSessionAgencyResponse: {
+            /** Format: uuid */
+            sessionId: string;
+            /** @enum {string} */
+            currentStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete";
+            /** @enum {string|null} */
+            nextStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete" | null;
+            draft: {
+                [key: string]: unknown;
+            };
+        };
+        OnboardingSessionStepConflict: {
+            error: string;
+            /** @enum {string|null} */
+            requiredStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete" | null;
+        };
+        OnboardingSessionAgencyAddress: {
+            calle: string;
+            ciudad: string;
+            departamento: string;
+            codigoPostal?: string;
+        };
+        OnboardingSessionAgencyRequest: {
+            legalName: string;
+            nit: string;
+            address: components["schemas"]["OnboardingSessionAgencyAddress"];
+            /** Format: email */
+            primaryContactEmail: string;
+            primaryContactPhone: string;
+            /** @enum {string} */
+            billingModel: "standard" | "performance" | "hybrid";
+            /** Format: uuid */
+            tenantId?: string;
+        };
+        OnboardingSessionInviteToken: {
+            /** Format: email */
+            email: string;
+            rawToken: string;
+        };
+        OnboardingSessionMembersResponse: {
+            /** Format: uuid */
+            sessionId: string;
+            /** @enum {string} */
+            currentStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete";
+            /** @enum {string|null} */
+            nextStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete" | null;
+            draft: {
+                [key: string]: unknown;
+            };
+            inviteTokens: components["schemas"]["OnboardingSessionInviteToken"][];
+        };
+        OnboardingSessionMemberInput: {
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            role: "ADMIN" | "OPERATOR" | "VIEWER";
+        };
+        OnboardingSessionMembersRequest: {
+            members: components["schemas"]["OnboardingSessionMemberInput"][];
+            /** Format: uuid */
+            tenantId?: string;
+        };
+        OnboardingSessionPaymentProviderResponse: {
+            /** Format: uuid */
+            sessionId: string;
+            /** @enum {string} */
+            currentStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete";
+            /** @enum {string|null} */
+            nextStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete" | null;
+            draft: {
+                [key: string]: unknown;
+            };
+        };
+        OnboardingSessionPaymentCredentials: {
+            apiKey: string;
+            eventSecret: string;
+            publicKey?: string;
+        };
+        OnboardingSessionPaymentProviderRequest: {
+            /** @enum {string} */
+            provider: "wompi" | "bold";
+            credentials: components["schemas"]["OnboardingSessionPaymentCredentials"];
+            /** Format: uuid */
+            tenantId?: string;
+        };
+        OnboardingSessionPolicyResponse: {
+            /** Format: uuid */
+            sessionId: string;
+            /** @enum {string} */
+            currentStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete";
+            /** @enum {string|null} */
+            nextStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete" | null;
+            draft: {
+                [key: string]: unknown;
+            };
+        };
+        OnboardingSessionPolicyRequest: {
+            allowedPaymentPlans?: number[];
+            negotiationMaxAttempts?: number;
+            maxDiscountPct?: number;
+            maxPlanMonths?: number;
+            minPaymentCop?: number;
+            autoEscalateAfterDays?: number;
+            allowHardshipPath?: boolean;
+            /** @enum {string} */
+            crmProvider?: "wasi" | "domus" | "webprop" | "sinco";
+            /** @enum {string} */
+            erpProvider?: "alegra" | "alegra_full" | "siigo_full" | "world_office";
+            /** Format: uuid */
+            tenantId?: string;
+        };
+        OnboardingSessionHabeasDataPresignResponse: {
+            presignedUrl: string;
+            s3Key: string;
+            expiresIn: number;
+        };
+        OnboardingSessionHabeasDataPresignRequest: {
+            fileName: string;
+            /** @enum {string} */
+            contentType: "application/pdf";
+            fileSize: number;
+            /** Format: uuid */
+            tenantId?: string;
+        };
+        OnboardingSessionHabeasDataConfirmResponse: {
+            /** Format: uuid */
+            sessionId: string;
+            /** @enum {string} */
+            currentStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete";
+            /** @enum {string|null} */
+            nextStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete" | null;
+            draft: {
+                [key: string]: unknown;
+            };
+        };
+        OnboardingSessionHabeasDataConfirmRequest: {
+            s3Key: string;
+            sha256: string;
+            signedByFullName: string;
+            signedByCedula: string;
+            /** @example 2026-01 */
+            contractVersion?: string;
+            /** Format: uuid */
+            tenantId?: string;
+        };
+        OnboardingSessionCompleteResponse: {
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            agencyId: string;
+            /** Format: uuid */
+            sessionId: string;
+            /** @enum {string} */
+            status: "COMPLETED";
+            dashboardUrl: string;
+        };
+        OnboardingSessionCompleteMissingSteps: {
+            error: string;
+            missingSteps: string[];
+        };
+        OnboardingSessionResumeResponse: {
+            /** Format: uuid */
+            sessionId: string;
+            /** @enum {string} */
+            currentStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete";
+            /** @enum {string|null} */
+            nextStep: "start" | "agency" | "members" | "payment_provider" | "policy" | "habeas_data" | "complete" | null;
+            draft: {
+                [key: string]: unknown;
+            };
+        };
         AgencyPolicyResponse: {
             /** Format: uuid */
             tenantId: string;
@@ -3138,6 +7063,353 @@ export interface components {
         MemberPermissionsError: {
             error: string;
         };
+        PatchAgencyMemberPreferencesResponse: {
+            preferences: {
+                [key: string]: unknown;
+            };
+        };
+        PatchAgencyMemberPreferencesError: {
+            error: string;
+        };
+        PatchAgencyMemberPreferencesBody: {
+            panel_tour_dismissed_v1?: boolean;
+        };
+        SearchResult: {
+            /** @enum {string} */
+            type: "debtor" | "vendor" | "bill" | "quote";
+            /** Format: uuid */
+            id: string;
+            title: string;
+            subtitle: string | null;
+            badges: string[];
+            ref: string | null;
+            score: number;
+        };
+        SearchResponse: {
+            results: components["schemas"]["SearchResult"][];
+            byType: {
+                debtor?: components["schemas"]["SearchResult"][];
+                vendor?: components["schemas"]["SearchResult"][];
+                bill?: components["schemas"]["SearchResult"][];
+                quote?: components["schemas"]["SearchResult"][];
+            };
+            generatedAt: string;
+            q: string;
+        };
+        SearchError: {
+            error: string;
+        };
+        CotizadorOverviewKpis: {
+            quotesHoy: number;
+            approvalRate: number;
+            primaPromedioMonthlyCop: number;
+            costPerQuoteCop: number;
+        };
+        CotizadorOverviewLastQuoteRow: {
+            /** Format: uuid */
+            id: string;
+            cedulaHashPrefix8: string;
+            canonCop: number;
+            ciudad: string;
+            createdAt: string;
+            /** @enum {string} */
+            status: "pending" | "partial" | "final" | "error";
+            approvedCount: number;
+            totalCarriers: number;
+        };
+        CotizadorOverviewCarrierStatus: {
+            name: string;
+            route: string;
+            mode: string;
+            enabled: boolean;
+            /** @enum {string} */
+            slaState: "healthy" | "degraded" | "breached";
+            lastVerdictAt: string | null;
+        };
+        CotizadorOverviewResponse: {
+            kpis: components["schemas"]["CotizadorOverviewKpis"];
+            lastQuotes: components["schemas"]["CotizadorOverviewLastQuoteRow"][];
+            carriers: components["schemas"]["CotizadorOverviewCarrierStatus"][];
+            generatedAt: string;
+        };
+        CotizadorOverviewError: {
+            error: string;
+        };
+        CotizadorAseguradoraRegistryRow: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            route: string;
+            mode: string;
+            enabled: boolean;
+            maxCanonCop: number | null;
+            priority: number;
+            breachP95LatencyMs: number;
+            breachErrorRate: string;
+            breachMinAttempts: number;
+            /** @enum {string} */
+            breachStatus: "healthy" | "degraded" | "breached" | "unknown";
+            createdAt: string;
+            updatedAt: string;
+        };
+        CotizadorTenantAseguradoraOverrideRow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            name: string;
+            route: string | null;
+            enabled: boolean | null;
+            mode: string | null;
+            maxCanonCop: number | null;
+            priority: number | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        CotizadorAseguradorasRegistryResponse: {
+            global: components["schemas"]["CotizadorAseguradoraRegistryRow"][];
+            overrides: components["schemas"]["CotizadorTenantAseguradoraOverrideRow"][];
+        };
+        CotizadorAseguradorasRegistryError: {
+            error: string;
+        };
+        PutCarrierOverrideResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            name: string;
+            route: string | null;
+            enabled: boolean | null;
+            mode: string | null;
+            maxCanonCop: number | null;
+            priority: number | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        CarrierOverrideError: {
+            error: string;
+        };
+        PutCarrierOverrideBody: {
+            /**
+             * @default direct
+             * @enum {string}
+             */
+            route: "direct" | "sekure";
+            enabled?: boolean | null;
+            priority?: number | null;
+            mode?: string | null;
+            maxCanonCop?: number | null;
+        };
+        AgencyCotizadorQuoteResponse: {
+            /** Format: uuid */
+            quoteId: string;
+            cedulaHash: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AgencyCotizadorQuoteError: {
+            error: string;
+        };
+        AgencyCotizadorQuoteArcoError: {
+            reason: string;
+            cedulaHash: string;
+        };
+        AgencyCotizadorQuoteBody: {
+            cedulaHash: string;
+            nombre: string;
+            ciudad: string;
+            canonCop: number;
+            /** @enum {string} */
+            tipoInmueble: "apartamento" | "casa" | "oficina" | "local";
+            codeudoresCount: number;
+            /** Format: uuid */
+            re_quote_of?: string;
+        };
+        AgencyCotizadorQuoteDetailResponse: {
+            /** Format: uuid */
+            quoteId: string;
+            cedulaHashPrefix8: string;
+            canonCop: number;
+            ciudad: string;
+            tipoInmueble: string;
+            status: string;
+            createdAt: string;
+            completedAt: string | null;
+            /** Format: uuid */
+            reQuoteOf: string | null;
+        };
+        AgencyCotizadorQuoteDetailError: {
+            error: string;
+        };
+        AgencyAskWhyResponse: {
+            reasoning_trace_es: string;
+            cost_usd: number;
+            /** @enum {string} */
+            variable_changed: "canon" | "ciudad" | "tipo" | "codeudores";
+        };
+        AgencyAskWhyError: {
+            error: string;
+        };
+        AgencyAskWhyCapError: {
+            /** @enum {string} */
+            error: "daily_ask_why_cap_exceeded";
+            cap: number;
+            used: number;
+            /** Format: date-time */
+            resets_at: string;
+        };
+        AgencyAskWhyBody: {
+            /** Format: uuid */
+            quote_id: string;
+        } & ({
+            /** @enum {string} */
+            variable: "canon";
+            new_value: number;
+        } | {
+            /** @enum {string} */
+            variable: "ciudad";
+            new_value: string;
+        } | {
+            /** @enum {string} */
+            variable: "tipo";
+            /** @enum {string} */
+            new_value: "apartamento" | "casa" | "oficina" | "local";
+        } | {
+            /** @enum {string} */
+            variable: "codeudores";
+            new_value: number;
+        });
+        AgencyAskWhyUsageResponse: {
+            used_today: number;
+            daily_cap: number;
+            /** Format: date-time */
+            resets_at: string;
+        };
+        AgencyAskWhyUsageError: {
+            error: string;
+        };
+        CarrierDeepDiveResponse: {
+            kpis: {
+                latencyP95Ms: number;
+                errorRate24h: number;
+                approvalRate30d: number;
+                costPerQuoteUsd30d: number;
+            };
+            sparkline: {
+                hour: string;
+                p95LatencyMs: number;
+            }[];
+            errorRateDaily: {
+                day: string;
+                errorRate: number;
+            }[];
+            approvalByCanon: {
+                canonRange: string;
+                approvalRatePct: number;
+                total: number;
+            }[];
+        };
+        CarrierDeepDiveError: {
+            error: string;
+        };
+        CarrierRecentQuotesResponse: {
+            quotes: {
+                /** Format: uuid */
+                id: string;
+                createdAt: string;
+                cedulaHashPrefix8: string;
+                canonMensualCop: string;
+                verdict: string;
+                primaMensualCop: string | null;
+                latencyMs: number;
+                /** Format: uuid */
+                quoteRequestId: string;
+            }[];
+            nextCursor: string | null;
+        };
+        CarrierSlaResponse: {
+            currentState: {
+                /** @enum {string} */
+                state: "healthy" | "degraded" | "breached";
+                healthy: boolean;
+                reason: string | null;
+                since: string | null;
+                p95Ms: number | null;
+                errorRate: number | null;
+            };
+            breachWindows: {
+                start: string;
+                end: string;
+                maxP95Ms: number;
+                maxErrorRate: number;
+            }[];
+        };
+        CotizadorInsightsApprovalRateMonthlyRow: {
+            carrier: string;
+            month: string;
+            approval_rate_pct: number;
+        };
+        CotizadorInsightsPrimaDistributionRow: {
+            carrier: string;
+            canon_range: string;
+            p25: number;
+            p50: number;
+            p75: number;
+            min_val: number;
+            max_val: number;
+            n: number;
+        };
+        CotizadorInsightsAssumptionRow: {
+            id: string;
+            carrier: string;
+            statement: string;
+            source: string;
+            status: string;
+            validatedAt: string | null;
+            validationEvidence?: unknown;
+            factorsUsed: string[];
+            carrierKey: string;
+            createdAt: string;
+        };
+        CotizadorInsightsMonthlyCostTrendRow: {
+            month: string;
+            anthropic: string;
+            carrier_api: string;
+            sekure_commission: string;
+            datacredito: string;
+            total: string;
+        };
+        CostSourceRegistryRow: {
+            source: string;
+            populated: boolean;
+            computationStrategyNote: string | null;
+        };
+        CostosSummaryResponse: {
+            costPerQuoteUsd: number;
+            monthlyBurnUsd: number;
+            forecast30dUsd: number | null;
+            forecastNullReason?: string;
+            anthropicTotal: string;
+            carrierApiTotal: string;
+            sekureCommissionTotal: string;
+            datacreditoTotal: string;
+            costSources: components["schemas"]["CostSourceRegistryRow"][];
+            generatedAt: string;
+        };
+        CostosError: {
+            error: string;
+        };
+        CostSeriesResponse: {
+            /** @enum {string} */
+            groupBy: "day" | "carrier" | "source";
+            from: string;
+            to: string;
+            rows: unknown[];
+        };
+        CobranzaCotizadorPdfError: {
+            error: string;
+        };
         CarteraOverviewKpis: {
             deudoresActivos: number;
             pagadoHoyCop: number;
@@ -3188,78 +7460,9 @@ export interface components {
         CarteraOverviewError: {
             error: string;
         };
-        CotizadorOverviewKpis: {
-            quotesHoy: number;
-            approvalRate: number;
-            primaPromedioMonthlyCop: number;
-            costPerQuoteCop: number;
-        };
-        CotizadorOverviewLastQuoteRow: {
-            /** Format: uuid */
-            id: string;
-            cedulaHashPrefix8: string;
-            canonCop: number;
-            ciudad: string;
-            createdAt: string;
-            /** @enum {string} */
-            status: "pending" | "partial" | "final" | "error";
-            approvedCount: number;
-            totalCarriers: number;
-        };
-        CotizadorOverviewCarrierStatus: {
-            name: string;
-            route: string;
-            mode: string;
-            enabled: boolean;
-            /** @enum {string} */
-            slaState: "healthy" | "degraded" | "breached";
-            lastVerdictAt: string | null;
-        };
-        CotizadorOverviewResponse: {
-            kpis: components["schemas"]["CotizadorOverviewKpis"];
-            lastQuotes: components["schemas"]["CotizadorOverviewLastQuoteRow"][];
-            carriers: components["schemas"]["CotizadorOverviewCarrierStatus"][];
-            generatedAt: string;
-        };
-        CotizadorOverviewError: {
-            error: string;
-        };
-        AgencyCotizadorQuoteResponse: {
-            /** Format: uuid */
-            quoteId: string;
-            cedulaHash: string;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        AgencyCotizadorQuoteError: {
-            error: string;
-        };
-        AgencyCotizadorQuoteArcoError: {
-            reason: string;
-            cedulaHash: string;
-        };
-        AgencyCotizadorQuoteBody: {
-            cedulaHash: string;
-            nombre: string;
-            ciudad: string;
-            canonCop: number;
-            /** @enum {string} */
-            tipoInmueble: "apartamento" | "casa" | "oficina" | "local";
-            codeudoresCount: number;
-        };
-        AgencyCotizadorQuoteDetailResponse: {
-            /** Format: uuid */
-            quoteId: string;
-            cedulaHashPrefix8: string;
-            canonCop: number;
-            ciudad: string;
-            tipoInmueble: string;
-            status: string;
-            createdAt: string;
-            completedAt: string | null;
-        };
-        AgencyCotizadorQuoteDetailError: {
-            error: string;
+        CobranzaDebtorListItemAttempts: {
+            total: number;
+            lastAttemptAt: string | null;
         };
         CobranzaDebtorListItem: {
             /** Format: uuid */
@@ -3275,6 +7478,7 @@ export interface components {
             channel: string;
             isPaused: boolean;
             carteraPausedUntil: string | null;
+            attempts: components["schemas"]["CobranzaDebtorListItemAttempts"];
         };
         CobranzaDebtorListResponse: {
             items: components["schemas"]["CobranzaDebtorListItem"][];
@@ -3284,17 +7488,34 @@ export interface components {
         CobranzaDebtorListError: {
             error: string;
         };
-        CobranzaCallAudioError: {
-            error: string;
-        };
         CobranzaDebtorDetailNextAction: {
             plannedFor: string;
             channel: string;
             templateName: string | null;
         } | null;
+        CobranzaDebtorDetailContactAttempts: {
+            total: number;
+            lastAttemptAt: string | null;
+            /** @enum {string|null} */
+            lastChannel: "voice" | "whatsapp" | "email" | "sms" | null;
+            byChannel: {
+                voice: number;
+                whatsapp: number;
+                email: number;
+                sms: number;
+            };
+        };
+        CobranzaDebtorDetailRecommendedNextStep: {
+            action: string | null;
+            label: string | null;
+            reason: string | null;
+            basedOnCallAt: string | null;
+        };
         CobranzaDebtorDetailSidebar: {
             nextAction: components["schemas"]["CobranzaDebtorDetailNextAction"];
             contactAttemptsCount: number;
+            contactAttempts: components["schemas"]["CobranzaDebtorDetailContactAttempts"];
+            recommendedNextStep: components["schemas"]["CobranzaDebtorDetailRecommendedNextStep"];
         };
         CobranzaDebtorDetailKpis: {
             totalOwed: number;
@@ -3315,6 +7536,7 @@ export interface components {
             fiadorCedulaMasked: string | null;
             carterapausedUntil: string | null;
             isPaused: boolean;
+            creditBalanceCop: number | null;
             sidebar: components["schemas"]["CobranzaDebtorDetailSidebar"];
             kpis: components["schemas"]["CobranzaDebtorDetailKpis"];
             generatedAt: string;
@@ -3498,6 +7720,34 @@ export interface components {
         CobranzaCallTranscriptError: {
             error: string;
         };
+        CobranzaAgencyCallListItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            debtorId: string;
+            debtorNameMasked: string;
+            debtorCedulaMasked: string;
+            debtorPhoneMasked: string;
+            channel: string;
+            direction: string;
+            outcome: string | null;
+            durationSeconds: number | null;
+            initiatedAt: string;
+            endedAt: string | null;
+            qaScore: number | null;
+            complianceFlagsCount: number;
+        };
+        CobranzaAgencyCallsListResponse: {
+            calls: components["schemas"]["CobranzaAgencyCallListItem"][];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaAgencyCallsListError: {
+            error: string;
+        };
+        CobranzaCallAudioError: {
+            error: string;
+        };
         CobranzaRevealPiiResponse: {
             token: string;
             expires_at: string;
@@ -3554,6 +7804,290 @@ export interface components {
                 variables: string[];
             }[];
         };
+        CobranzaEscalationCard: {
+            id: string;
+            debtor_id: string;
+            call_id: string | null;
+            urgency: string;
+            status: string;
+            reason: string;
+            assignee_user_id: string | null;
+            created_at: string;
+            resolved_at: string | null;
+        };
+        CobranzaEscalationsList: {
+            open: components["schemas"]["CobranzaEscalationCard"][];
+            assigned: components["schemas"]["CobranzaEscalationCard"][];
+            resolved: components["schemas"]["CobranzaEscalationCard"][];
+            resolvedNextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaEscalationError: {
+            error: string;
+        };
+        CobranzaEscalationDetail: {
+            id: string;
+            urgency: string;
+            status: string;
+            reason: string;
+            state_trace_json?: unknown;
+            debtor_id: string;
+            linked_call_id: string | null;
+            assignee_user_id: string | null;
+            assignee_email: string | null;
+            created_at: string;
+            assigned_at: string | null;
+            resolved_at: string | null;
+            resolution_category: string | null;
+            resolution_text: string | null;
+        };
+        CobranzaEscalationClaimOk: {
+            id: string;
+            assignee_user_id: string;
+            assigned_at: string;
+            status: string;
+        };
+        CobranzaEscalationsClaimBody: Record<string, never>;
+        CobranzaEscalationAssignOk: {
+            id: string;
+            assignee_user_id: string;
+            assigned_at: string;
+            status: string;
+        };
+        CobranzaEscalationsAssignBody: {
+            /** Format: uuid */
+            assignee_user_id: string;
+        };
+        CobranzaEscalationResolveOk: {
+            id: string;
+            resolved_at: string;
+            resolution_category: string;
+            cascaded_to_legal: boolean;
+        };
+        CobranzaEscalationsResolveBody: {
+            /** @enum {string} */
+            category: "compromise" | "customer-rejected" | "escalated-to-legal" | "false-positive" | "other";
+            resolution_text: string;
+        };
+        CobranzaComplianceOverview: {
+            ley_2300: {
+                weekly_outside_hours_count: number;
+                target: number;
+            };
+            habeas_data: {
+                open_requests: {
+                    id: string;
+                    debtor_id: string;
+                    timestamp: string;
+                    remaining_days: number;
+                    /** @enum {string} */
+                    color: "green" | "yellow" | "red" | "red-pulse";
+                }[];
+            };
+            retention: {
+                compliance_pct: number;
+                target: number;
+            };
+            sparkline: {
+                daily_buckets_30d: {
+                    date: string;
+                    flag_rate_pct: number;
+                }[];
+            };
+            generated_at: string;
+        };
+        CobranzaComplianceError: {
+            error: string;
+        };
+        CobranzaLey2300Attempts: {
+            entries: {
+                id: string;
+                debtor_id: string;
+                event_type: string;
+                channel: string | null;
+                timestamp: string;
+            }[];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaOptOutRegistry: {
+            entries: {
+                id: string;
+                debtor_id: string;
+                timestamp: string;
+                acknowledged_at: string | null;
+            }[];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaOptOutAcknowledgeOk: {
+            eventId: string;
+            acknowledgedAt: string;
+            debtorId: string;
+        };
+        CobranzaOptOutAcknowledgeBody: Record<string, never>;
+        CobranzaAuditLogPage: {
+            entries: {
+                id: string;
+                action: string;
+                actor_type: string;
+                actor_id: string | null;
+                entity_type: string | null;
+                entity_id: string | null;
+                ip: string | null;
+                user_agent: string | null;
+                occurred_at: string;
+                details?: unknown;
+            }[];
+            nextCursor: string | null;
+            generatedAt: string;
+        };
+        CobranzaAuditLogError: {
+            error: string;
+        };
+        CobranzaAuditLogCsvError: {
+            error: string;
+        };
+        CobranzaDailyReportError: {
+            error: string;
+        };
+        CobranzaDailyReportHistory: {
+            entries: {
+                report_date: string;
+                computed_at: string;
+                summary: {
+                    [key: string]: unknown;
+                };
+                alerts_count: number;
+            }[];
+            days: number;
+        };
+        CobranzaDailyReportThresholds: {
+            version: number | null;
+            top_n_debtors_in_report: number;
+            mora_dias_bucket_boundaries: number[];
+            pkr_pct_alert_below: number;
+            indice_morosidad_pct_alert_above: number;
+            compliance_violations_critical_at_least: number;
+            calls_outside_window_critical_at_least: number;
+            is_rollback_of_version?: number | null;
+            created_at?: string | null;
+        };
+        CobranzaDailyReportThresholdsBody: {
+            top_n_debtors_in_report: number;
+            mora_dias_bucket_boundaries: number[];
+            pkr_pct_alert_below: number;
+            indice_morosidad_pct_alert_above: number;
+            compliance_violations_critical_at_least: number;
+            calls_outside_window_critical_at_least: number;
+        };
+        CobranzaDailyReportThresholdsRollbackBody: {
+            to_version: number;
+        };
+        CobranzaDailyReportSubscription: {
+            email_enabled: boolean;
+            whatsapp_enabled: boolean;
+            updated_at?: string | null;
+        };
+        CobranzaDailyReportSubscriptionPatch: {
+            email_enabled?: boolean;
+            whatsapp_enabled?: boolean;
+        };
+        CobranzaAnalyticsAgencyGate: {
+            populated: boolean;
+            calls_30d: number;
+        };
+        CobranzaRecoveryLineRow: {
+            stage: string;
+            bucket_date: string;
+            pct_n: number;
+            pct_cop: number;
+            debtors_recovered_count: number;
+            debtors_in_stage_count: number;
+            recovered_cop: string;
+            total_cop_in_stage: string;
+        };
+        CobranzaRecoveryResponse: {
+            /** @enum {boolean} */
+            populated: true;
+            rows: components["schemas"]["CobranzaRecoveryLineRow"][];
+        } | {
+            /** @enum {boolean} */
+            populated: false;
+            /** @enum {string} */
+            reason: "agency-gate" | "insufficient-buckets";
+        };
+        CobranzaTopObjectionsRow: {
+            rank: number;
+            literal: string;
+            count: number;
+            pct: number;
+        };
+        CobranzaTopObjectionsResponse: {
+            populated: boolean;
+            /** @enum {string} */
+            reason?: "agency-gate" | "insufficient-objections";
+            objections: components["schemas"]["CobranzaTopObjectionsRow"][];
+        };
+        CobranzaAnalyticsCadenceChannelMixRow: {
+            channel: string;
+            outcome: string;
+            count: number;
+            pct: number;
+        };
+        CobranzaAnalyticsCadenceHeatmapCell: {
+            hour: number;
+            day_of_week: number;
+            call_count: number;
+            positive_outcome_pct: number;
+        };
+        CobranzaAnalyticsCadenceResponse: {
+            populated: boolean;
+            reason?: string;
+            channelMix?: {
+                populated: boolean;
+                reason?: string;
+                rows: components["schemas"]["CobranzaAnalyticsCadenceChannelMixRow"][];
+            };
+            heatmap?: {
+                populated: boolean;
+                reason?: string;
+                cells: components["schemas"]["CobranzaAnalyticsCadenceHeatmapCell"][];
+            };
+        };
+        CobranzaCostPerPesoSparklinePoint: {
+            /** @example 2026-04-01 */
+            day: string;
+            cost_per_peso: number | null;
+        };
+        CobranzaAnalyticsCostPerPeso: {
+            populated: boolean;
+            reason?: string;
+            cost_per_peso?: number | null;
+            numerator_usd_voice?: number | null;
+            denominator_cop_paid?: number | null;
+            sparkline_90d?: components["schemas"]["CobranzaCostPerPesoSparklinePoint"][];
+        };
+        CobranzaAnalyticsTopScriptRow: {
+            /** Format: uuid */
+            scriptTemplateId: string;
+            scriptTemplateName: string;
+            stage: string;
+            outcomes: {
+                [key: string]: number;
+            };
+            totalCalls: number;
+            conversionRate: number;
+            lift: number;
+        };
+        CobranzaAnalyticsTopScripts: {
+            populated: boolean;
+            /** @enum {string} */
+            reason?: "no-data" | "below-threshold";
+            rows: components["schemas"]["CobranzaAnalyticsTopScriptRow"][];
+            /** @example 2026-05-31T00:00:00.000Z */
+            data_since: string;
+        };
         CobranzaPaymentFunnelRow: {
             /** Format: uuid */
             id: string;
@@ -3594,117 +8128,660 @@ export interface components {
         CobranzaPaymentFunnelError: {
             error: string;
         };
-        /** @enum {string} */
-        TargetMetric: "kept_promise_rate" | "recovered_cop_per_call" | "completion_rate";
-        ExperimentVariantResponse: {
+        CobranzaInboxThreadSummary: {
             /** Format: uuid */
             id: string;
-            variantKey: string;
-            trafficPct: number;
-            parameterOverrides: {
-                [key: string]: unknown;
-            };
+            /** Format: uuid */
+            debtorId: string;
+            channel: string;
+            label: string | null;
+            status: string;
+            unread: boolean;
+            requiresAction: boolean;
+            lastMessageAt: string;
+            lastMessagePreview: string | null;
             createdAt: string;
         };
-        ExperimentResponse: {
+        CobranzaInboxGroup: {
+            label: string;
+            title: string;
+            count: number;
+            threads: components["schemas"]["CobranzaInboxThreadSummary"][];
+        };
+        CobranzaInboxResponse: {
+            groups: components["schemas"]["CobranzaInboxGroup"][];
+            totalThreads: number;
+            totalUnread: number;
+            generatedAt: string;
+        };
+        CobranzaInboxError: {
+            error: string;
+        };
+        CobranzaInboxMessage: {
             /** Format: uuid */
             id: string;
-            experimentKey: string;
+            direction: string;
+            channel: string;
+            body: string;
+            classification: string | null;
+            occurredAt: string;
+            createdAt: string;
+        };
+        CobranzaInboxThreadDetailResponse: {
+            thread: components["schemas"]["CobranzaInboxThreadSummary"];
+            messages: components["schemas"]["CobranzaInboxMessage"][];
+        };
+        CobranzaInboxMarkReadResponse: {
+            ok: boolean;
             /** Format: uuid */
-            tenantId: string | null;
+            threadId: string;
+            unread: boolean;
+        };
+        CobranzaPromiseItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            debtorId: string;
+            /** Format: uuid */
+            callId: string | null;
+            debtorName: string;
+            cedulaMasked: string;
+            phoneMasked: string;
+            emailMasked: string | null;
+            amount: number;
+            dueDate: string;
+            channel: string | null;
+            conditions: string | null;
             status: string;
-            targetMetric: components["schemas"]["TargetMetric"];
-            guardrailMetric: string;
-            hypothesis: string;
-            /** Format: email */
-            ownerEmail: string;
-            minSamplePerArm: number;
-            attributionWindowDays: number;
-            alpha: number;
-            power: number;
-            mdeAbs: number;
-            startedAt: string | null;
-            endedAt: string | null;
+            /** @enum {string} */
+            derivedStatus: "activa" | "incumplida" | "parcial" | "por_vencer" | "cumplida";
+            createdAt: string;
+            resolvedAt: string | null;
+        };
+        CobranzaPromisesListResponse: {
+            items: components["schemas"]["CobranzaPromiseItem"][];
+            total: number;
+            limit: number;
+            offset: number;
+            generatedAt: string;
+        };
+        CobranzaPromiseError: {
+            error: string;
+        };
+        CobranzaAgreementProposalInstallment: {
+            number: number;
+            dueDate: string;
+            amountCop: number;
+        };
+        CobranzaAgreementProposeResponse: {
+            /** @enum {boolean} */
+            isDraft: true;
+            /** Format: uuid */
+            debtorId: string;
+            /** @enum {string} */
+            stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            discountAppliedPct: number;
+            /** @enum {string} */
+            discountKind: "intereses_total" | "intereses_parcial" | "none";
+            discountAmountCop: number;
+            effectiveTotalCop: number;
+            initialAmountCop: number;
+            installments: components["schemas"]["CobranzaAgreementProposalInstallment"][];
+            agreementText: string;
+            agencyMaxDiscountPct: number;
+            /** @enum {boolean} */
+            requiresHumanApproval: true;
+            generatedAt: string;
+        };
+        CobranzaAgreementProposeBody: {
+            /** Format: uuid */
+            debtorId: string;
+            /** @enum {string} */
+            stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            totalDueCop: number;
+            interestsCop: number;
+        };
+        CobranzaRecoveryError: {
+            error: string;
+        };
+        CobranzaOwnerReport: {
+            /** Format: uuid */
+            id: string;
+            propertyId: string | null;
+            ownerId: string | null;
+            ownerName: string | null;
+            debtorId: string | null;
+            period: string;
+            daysInMora: number | null;
+            overdueAmount: number | null;
+            gestionesCount: number;
+            narrative: string;
+            /** @enum {string} */
+            status: "draft" | "pending_approval" | "sent";
+            pdfUrl: string | null;
+            approvedByUserId: string | null;
+            sentAt: string | null;
+            createdAt: string;
+        };
+        CobranzaOwnerReportList: {
+            reports: components["schemas"]["CobranzaOwnerReport"][];
+            total: number;
+            generatedAt: string;
+        };
+        CobranzaOwnerReportError: {
+            error: string;
+        };
+        CobranzaOwnerReportGenerateBody: {
+            /** Format: uuid */
+            debtorId: string;
+            period?: string;
+            ownerName?: string;
+            propertyId?: string;
+            /** Format: uuid */
+            ownerId?: string;
+        };
+        CobranzaOwnerReportApproveBody: {
+            markAsSent?: boolean;
+        };
+        CobranzaDispute: {
+            id: string;
+            debtor_id: string;
+            payment_id: string | null;
+            reason: string;
+            disputed_amount: number | null;
+            evidence_url: string | null;
+            status: string;
+            outcome: string | null;
+            opened_by_user_id: string | null;
+            opened_at: string;
+            resolved_by_user_id: string | null;
+            resolved_at: string | null;
+            resolution_note: string | null;
+            created_at: string;
+        };
+        CobranzaDisputesList: {
+            disputes: components["schemas"]["CobranzaDispute"][];
+            generatedAt: string;
+        };
+        CobranzaDisputeError: {
+            error: string;
+        };
+        CobranzaDisputeOpenOk: {
+            dispute: components["schemas"]["CobranzaDispute"] & (Record<string, never> | null);
+            escalationCreated: boolean;
+            persisted: boolean;
+        };
+        CobranzaDisputeOpenBody: {
+            /** Format: uuid */
+            debtorId: string;
+            reason: string;
+            disputedAmount?: number;
+            /** Format: uri */
+            evidenceUrl?: string;
+            /** Format: uuid */
+            paymentId?: string;
+        };
+        CobranzaDisputeResolveOk: {
+            id: string;
+            status: string;
+            outcome: string;
+            resolved_at: string;
+            resolved_by_user_id: string;
+            recommendation: string;
+            persisted: boolean;
+        };
+        CobranzaDisputeResolveBody: {
+            /** @enum {string} */
+            outcome: "procedente" | "improcedente" | "parcial";
+            resolutionNote: string;
+            /** Format: uuid */
+            resolvedByUserId: string;
+        };
+        CobranzaPaymentDetail: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            debtorId: string;
+            amount: number;
+            status: string;
+            paymentMethod: string | null;
+            paymentProvider: string | null;
+            paidAt: string | null;
+            createdAt: string;
+            selfReportedAt: string | null;
+            selfReportedBy: string | null;
+            comprobanteUrl: string | null;
+            verifiedAt: string | null;
+            verifiedByUserId: string | null;
+            debtor: {
+                /** Format: uuid */
+                id: string;
+                fullName: string;
+                cedulaMasked: string;
+                phoneMasked: string;
+                emailMasked: string | null;
+            };
+        } | null;
+        CobranzaPaymentDetailResponse: {
+            payment: components["schemas"]["CobranzaPaymentDetail"];
+            generatedAt: string;
+        };
+        CobranzaPaymentVerifyError: {
+            error: string;
+        };
+        CobranzaPaymentReportOk: {
+            /** @enum {boolean} */
+            ok: true;
+            /** Format: uuid */
+            paymentId: string;
+            status: string;
+        };
+        CobranzaPaymentReportBody: {
+            /**
+             * Format: uuid
+             * @description The existing Payment to self-report.
+             */
+            payment_id: string;
+            /**
+             * Format: uri
+             * @description Optional URL of the uploaded comprobante (receipt).
+             */
+            comprobante_url?: string | null;
+            /** @description Optional free-text note recorded in the audit trail only. */
+            note?: string;
+        };
+        CobranzaPaymentVerifyOk: {
+            /** @enum {boolean} */
+            ok: true;
+            /** Format: uuid */
+            paymentId: string;
+            status: string;
+            /** @enum {string} */
+            action: "approve" | "reject";
+        };
+        CobranzaPaymentVerifyBody: {
+            /**
+             * @description approve → status="approved" + verified metadata; reject → restore prior status + audit note. ALWAYS human (T-323).
+             * @enum {string}
+             */
+            action: "approve" | "reject";
+            /** @description Required for reject (rejection reason); optional for approve. Recorded in the audit trail. */
+            note?: string;
+        };
+        CobranzaAbonoLinkedPromise: {
+            /** Format: uuid */
+            id: string;
+            amount: number;
+            statusBefore: string;
+            statusAfter: string;
+        } | null;
+        CobranzaAbonoOk: {
+            /** @enum {boolean} */
+            ok: true;
+            /** Format: uuid */
+            paymentId: string;
+            /** Format: uuid */
+            debtorId: string;
+            amount: number;
+            status: string;
+            idempotentReplay: boolean;
+            saldoBefore: number;
+            abonoAmount: number;
+            saldoAfter: number;
+            linkedPromise: components["schemas"]["CobranzaAbonoLinkedPromise"];
+            appliedAmount: number;
+            excessAmount: number;
+            isOverpayment: boolean;
+            creditBalanceAfter: number | null;
+            generatedAt: string;
+        };
+        CobranzaAbonoError: {
+            error: string;
+        };
+        CobranzaAbonoBody: {
+            /**
+             * Format: uuid
+             * @description The debtor the abono is registered against.
+             */
+            debtor_id: string;
+            /**
+             * @description Partial payment (abono) amount, > 0. Persisted at Decimal(15,2) scale.
+             * @example 150000
+             */
+            amount: number;
+            /** @description Client-minted idempotency key (e.g. a UUID per button-press). A replay with the same key returns the original abono — no duplicate row. */
+            idempotency_key: string;
+            /** @description Optional human-readable method label (e.g. "transferencia", "efectivo"). Defaults to "manual_abono". */
+            payment_method?: string;
+            /**
+             * Format: uuid
+             * @description Optional explicit PaymentPromise to link the abono to. When omitted, the most recent OPEN promise for the debtor (if any) is used.
+             */
+            promise_id?: string | null;
+            /** @description Optional free-text note recorded in the audit trail only. */
+            note?: string;
+            /**
+             * @description Must be true — explicit human confirmation that this payment was collected (T-323/Resolución SIC 2024). No automated path may register an abono.
+             * @enum {boolean}
+             */
+            confirm: true;
+        };
+        CobranzaCaseFlagOk: {
+            /** @enum {boolean} */
+            ok: true;
+            value: boolean;
+        };
+        CobranzaCaseFlagError: {
+            error: string;
+        };
+        CobranzaCaseFlagBody: {
+            value: boolean;
+            reason?: string;
+        };
+        CobranzaDebtorCaseStateResponse: {
+            /** Format: uuid */
+            debtorId: string;
+            /** @enum {string} */
+            caseState: "por_vencer" | "vencido_reciente" | "en_gestion_automatica" | "esperando_respuesta" | "promesa_activa" | "promesa_cumplida" | "promesa_incumplida" | "pago_reportado" | "pago_parcial" | "acuerdo_activo" | "acuerdo_incumplido" | "en_disputa" | "requiere_humano" | "prejuridico_sugerido" | "escalado" | "cerrado_recuperado" | "cerrado_no_recuperado";
+            reason: string;
+            signals: {
+                /** @enum {string|null} */
+                stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX" | null;
+                promiseStatus: string | null;
+                paymentStatus: string | null;
+                disputeStatus: string | null;
+                escalationStatus: string | null;
+                escalationUrgency: string | null;
+            };
+            generatedAt: string;
+        };
+        CobranzaDebtorCaseStateError: {
+            error: string;
+        };
+        CobranzaCodeudorContactResult: {
+            contacted: boolean;
+            /**
+             * @description Channel used when contacted=true; null otherwise.
+             * @enum {string|null}
+             */
+            channel: "sms" | "whatsapp" | null;
+            /** @description Block reason when contacted=false (codeudor_disabled | no_fiador | no_fiador_contact | judicializado | schedule_blocked | frequency_cap | opted_out | channel_disabled | prohibited_copy | send_failed | feature_not_provisioned | debtor_not_found | empty_body). Null when contacted. */
+            reason: string | null;
+        };
+        CobranzaCodeudorError: {
+            error: string;
+        };
+        CobranzaCodeudorContactBody: {
+            /**
+             * @description Contact channel for the codeudor.
+             * @default sms
+             * @example sms
+             * @enum {string}
+             */
+            channel: "sms" | "whatsapp";
+            /**
+             * @description Already-composed, template-derived message body. The certified T-323 fence is a backstop, not the composer — pass approved template copy.
+             * @example Buenas tardes. Le escribimos en su calidad de codeudor del contrato de arrendamiento. Comuníquese con nuestra oficina para ponerse al día.
+             */
+            body: string;
+            /** @description Operator-entered fiador contact data. Required because there is no fiador-phone column in the schema; a human supplies it. */
+            fiadorContact: {
+                /**
+                 * @description Operator-entered fiador phone (E.164, with or without +).
+                 * @example +573001234567
+                 */
+                phone: string;
+                /**
+                 * @description Optional fiador display name.
+                 * @example María Pérez
+                 */
+                name?: string;
+            };
+        };
+        CobranzaAutonomyResponse: {
+            /** Format: uuid */
+            agencyId: string;
+            /**
+             * @description How much of the cobranza loop runs unattended. 'sugerir' / 'aprobar' require human approval before any outbound contact; 'automatico_controlado' / 'automatico_completo' auto-dispatch under the existing Ley 2300 / Habeas Data guardrails.
+             * @example aprobar
+             * @enum {string}
+             */
+            autonomyLevel: "sugerir" | "aprobar" | "automatico_controlado" | "automatico_completo";
+            requiresHumanApproval: boolean;
+            isDefault: boolean;
+        };
+        CobranzaAutonomyError: {
+            error: string;
+        };
+        CobranzaAutonomyPutBody: {
+            /**
+             * @description How much of the cobranza loop runs unattended. 'sugerir' / 'aprobar' require human approval before any outbound contact; 'automatico_controlado' / 'automatico_completo' auto-dispatch under the existing Ley 2300 / Habeas Data guardrails.
+             * @example aprobar
+             * @enum {string}
+             */
+            autonomyLevel: "sugerir" | "aprobar" | "automatico_controlado" | "automatico_completo";
+        };
+        CobranzaCadenceEntry: {
+            /** @example -7 */
+            dayOffset: number;
+            /**
+             * @example whatsapp
+             * @enum {string}
+             */
+            channel: "voice" | "whatsapp" | "email";
+            /** @example pre_due_t_minus_7 */
+            reason: string;
+            /** @example false */
+            retryUntilConnect?: boolean;
+        };
+        CobranzaCadenceConfig: {
+            S0: components["schemas"]["CobranzaCadenceEntry"][];
+            S1: components["schemas"]["CobranzaCadenceEntry"][];
+            S2: components["schemas"]["CobranzaCadenceEntry"][];
+            S3: components["schemas"]["CobranzaCadenceEntry"][];
+            S4: components["schemas"]["CobranzaCadenceEntry"][];
+            S5: components["schemas"]["CobranzaCadenceEntry"][];
+            SX: components["schemas"]["CobranzaCadenceEntry"][];
+        } | null;
+        CobranzaCadenceGetResponse: {
+            cadenceConfig: components["schemas"]["CobranzaCadenceConfig"];
+            /** @enum {string} */
+            source: "agency" | "default";
+            effectiveConfig: components["schemas"]["CobranzaCadenceConfig"] & Record<string, never>;
+            generatedAt: string;
+        };
+        CobranzaCadenceError: {
+            error: string;
+        };
+        CobranzaCadencePutResponse: {
+            cadenceConfig: components["schemas"]["CobranzaCadenceConfig"];
+            /** @enum {string} */
+            source: "agency" | "default";
+            updatedAt: string;
+        };
+        CobranzaCadencePutBody: {
+            cadenceConfig: components["schemas"]["CobranzaCadenceConfig"];
+        };
+        CarteraImportErrorEntry: {
+            /** @description 0-based index of the failing row within the submitted batch. */
+            rowIndex: number;
+            error: string;
+        };
+        CarteraImportSummary: {
+            creados: number;
+            actualizados: number;
+            omitidos: number;
+            errores: components["schemas"]["CarteraImportErrorEntry"][];
+            totalRecibidos: number;
+            /** @description True when the batch exceeded MAX_ROWS (2000) and was truncated. */
+            truncado: boolean;
+            source: string;
+            generatedAt: string;
+        };
+        CarteraImportError: {
+            error: string;
+        };
+        CarteraImportBody: {
+            /**
+             * @description Optional hint. JSON rows or CSV text. XLSX → export to CSV.
+             * @enum {string}
+             */
+            format?: "json" | "csv";
+            /** @description Array of row objects keyed by header (cedula/nombre/telefono/email/monto/...). */
+            rows?: {
+                [key: string]: unknown;
+            }[];
+            /** @description Raw CSV text (first line = header). Alternative to rows[]. */
+            csv?: string;
+        };
+        CarteraImportMultipart: {
+            file?: unknown;
+        };
+        AiHubLandingResponse: {
+            cobranza: {
+                permitted: boolean;
+                heroKpi: {
+                    label: string;
+                    value: string;
+                    populated: boolean;
+                } | null;
+                secondaryKpi: {
+                    label: string;
+                    value: string | number;
+                } | null;
+                lastActivityAt: string | null;
+            };
+            cotizador: {
+                permitted: boolean;
+                heroKpi: {
+                    label: string;
+                    value: string;
+                    populated: boolean;
+                } | null;
+                secondaryKpi: {
+                    label: string;
+                    value: string | number;
+                } | null;
+                lastActivityAt: string | null;
+            };
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        AiHubChatPendingApproval: {
+            id: string;
+            /** @enum {string} */
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos";
+            actionType: string;
+            title: string;
+            description: string;
+            payloadPreview: {
+                [key: string]: string;
+            };
+            options: {
+                id: string;
+                label: string;
+                description: string;
+                /** @enum {string} */
+                recommendation: "recommended" | "neutral" | "not_recommended";
+            }[];
+            /** @enum {boolean} */
+            requiresApproval: true;
+        };
+        AiHubChatDispatch: {
+            /** @enum {string} */
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos";
+            taskDescription: string;
+            /** @enum {string} */
+            status: "completed" | "failed";
+            summary: string;
+            nextStep?: string;
+            pendingApproval?: components["schemas"]["AiHubChatPendingApproval"];
+        };
+        AiHubChatSnapshot: {
+            deudoresActivos: number;
+            pagadoHoyCop: number;
+            llamadasHoy: number;
+            escalacionesPendientes: number;
+            enPrejuridico: number;
+            generatedAt: string;
+        } | null;
+        AiHubChatResponse: {
+            responseText: string;
+            suggestedActions: {
+                label: string;
+                /** @enum {string} */
+                target: "cobranza" | "cotizador" | "estudio" | "matching" | "pagos" | "conciliacion" | "avaluo" | "cartera";
+            }[];
+            dispatches: components["schemas"]["AiHubChatDispatch"][];
+            pendingApprovals: components["schemas"]["AiHubChatPendingApproval"][];
+            snapshot: components["schemas"]["AiHubChatSnapshot"];
+            generatedAt: string;
+        };
+        AiHubChatError: {
+            error: string;
+        };
+        AiHubChatRequest: {
+            message: string;
+            history?: {
+                /** @enum {string} */
+                role: "user" | "assistant";
+                content: string;
+            }[];
+        };
+        AiHubChatApprovalResolveResponse: {
+            approvalId: string;
+            /** @enum {string} */
+            outcome: "approved" | "rejected";
+            knowledgeUpdated: boolean;
+            semanticUpdated: boolean;
+            resolvedAt: string;
+        };
+        AiHubChatApprovalResolveRequest: {
+            /** @enum {string} */
+            outcome: "approved" | "rejected";
+        };
+        AiHubChatLesson: {
+            id: string;
+            /** @enum {string} */
+            kind: "routing" | "approval";
+            pattern: {
+                /** @enum {string|null} */
+                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | null;
+                tags: string[];
+            };
+            recommendation: string;
+            /** @enum {string} */
+            status: "candidate" | "certified" | "rejected";
+            evidence: {
+                support: number;
+                approved?: number;
+                rejected?: number;
+                lastSeen: string;
+                sampleQuestion: string;
+            };
             createdAt: string;
             updatedAt: string;
-            variants: components["schemas"]["ExperimentVariantResponse"][];
-            warnings?: string[];
         };
-        /** @default {} */
-        ExperimentVariantOverrides: {
-            max_discount_pct?: number;
-            max_term_months?: number;
-            /** Format: uuid */
-            prompt_variant_id?: string;
+        AiHubChatLessonsResponse: {
+            lessons: components["schemas"]["AiHubChatLesson"][];
+            enabled: boolean;
+            generatedAt: string;
         };
-        ExperimentVariantInput: {
-            variantKey: string;
-            trafficPct: number;
-            parameterOverrides?: components["schemas"]["ExperimentVariantOverrides"];
+        AiHubChatLessonsError: {
+            error: string;
         };
-        CreateExperimentRequest: {
-            experimentKey: string;
-            hypothesis: string;
-            /** Format: email */
-            ownerEmail: string;
-            targetMetric: components["schemas"]["TargetMetric"];
-            /** @default compliance_flag_rate */
-            guardrailMetric: string;
-            minSamplePerArm: number;
-            /** @default 30 */
-            attributionWindowDays: number;
-            /** @default 0.05 */
-            alpha: number;
-            /** @default 0.8 */
-            power: number;
-            /** @default 0.05 */
-            mdeAbs: number;
-            variants: components["schemas"]["ExperimentVariantInput"][];
-        };
-        PatchExperimentStatusRequest: {
+        AiHubChatLessonCertifyResponse: {
+            lessonId: string;
             /** @enum {string} */
-            status: "draft" | "running" | "paused" | "completed";
+            decision: "certified" | "rejected";
+            found: boolean;
+            applied: boolean;
+            reason: string;
+            resolvedAt: string;
         };
-        ExperimentReportVariant: {
-            variantKey: string;
-            n: number;
-            keptPromises: number;
-            brokenPromises: number;
-            completionRate: number;
-            recoveredCopSum: number;
-            complianceFlagRate: number;
-        };
-        ExperimentReportSignificance: {
-            metric: string;
-            z: number | null;
-            t: number | null;
-            pValue: number | null;
-            ci95: [
-                number,
-                number
-            ] | null;
-            significant: boolean;
-            bonferroniAlpha: number;
-        };
-        ExperimentReportGuardrailBreach: {
-            variantKey: string;
-            complianceFlagRate: number;
-            controlRate: number;
-            sigmasOver: number;
-        };
-        ExperimentReportResponse: {
-            experimentKey: string;
-            status: string;
-            attributionWindowDays: number;
-            targetMetric: string;
-            variants: components["schemas"]["ExperimentReportVariant"][];
-            significance: {
-                [key: string]: components["schemas"]["ExperimentReportSignificance"];
-            };
-            guardrail: {
-                breaches: components["schemas"]["ExperimentReportGuardrailBreach"][];
-            };
-            warnings?: string[];
+        AiHubChatLessonCertifyRequest: {
+            /** @enum {string} */
+            decision: "certified" | "rejected";
         };
         /** @enum {string} */
         CarteraStage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
@@ -3952,6 +9029,774 @@ export interface components {
         CarteraDailyReportError: {
             error: string;
         };
+        /** @enum {string} */
+        TargetMetric: "kept_promise_rate" | "recovered_cop_per_call" | "completion_rate";
+        ExperimentVariantResponse: {
+            /** Format: uuid */
+            id: string;
+            variantKey: string;
+            trafficPct: number;
+            parameterOverrides: {
+                [key: string]: unknown;
+            };
+            createdAt: string;
+        };
+        ExperimentResponse: {
+            /** Format: uuid */
+            id: string;
+            experimentKey: string;
+            /** Format: uuid */
+            tenantId: string | null;
+            status: string;
+            targetMetric: components["schemas"]["TargetMetric"];
+            guardrailMetric: string;
+            hypothesis: string;
+            /** Format: email */
+            ownerEmail: string;
+            minSamplePerArm: number;
+            attributionWindowDays: number;
+            alpha: number;
+            power: number;
+            mdeAbs: number;
+            startedAt: string | null;
+            endedAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+            variants: components["schemas"]["ExperimentVariantResponse"][];
+            warnings?: string[];
+        };
+        /** @default {} */
+        ExperimentVariantOverrides: {
+            max_discount_pct?: number;
+            max_term_months?: number;
+            /** Format: uuid */
+            prompt_variant_id?: string;
+        };
+        ExperimentVariantInput: {
+            variantKey: string;
+            trafficPct: number;
+            parameterOverrides?: components["schemas"]["ExperimentVariantOverrides"];
+        };
+        CreateExperimentRequest: {
+            experimentKey: string;
+            hypothesis: string;
+            /** Format: email */
+            ownerEmail: string;
+            targetMetric: components["schemas"]["TargetMetric"];
+            /** @default compliance_flag_rate */
+            guardrailMetric: string;
+            minSamplePerArm: number;
+            /** @default 30 */
+            attributionWindowDays: number;
+            /** @default 0.05 */
+            alpha: number;
+            /** @default 0.8 */
+            power: number;
+            /** @default 0.05 */
+            mdeAbs: number;
+            variants: components["schemas"]["ExperimentVariantInput"][];
+        };
+        PatchExperimentStatusRequest: {
+            /** @enum {string} */
+            status: "draft" | "running" | "paused" | "completed";
+        };
+        ExperimentReportVariant: {
+            variantKey: string;
+            n: number;
+            keptPromises: number;
+            brokenPromises: number;
+            completionRate: number;
+            recoveredCopSum: number;
+            complianceFlagRate: number;
+        };
+        ExperimentReportSignificance: {
+            metric: string;
+            z: number | null;
+            t: number | null;
+            pValue: number | null;
+            ci95: [
+                number,
+                number
+            ] | null;
+            significant: boolean;
+            bonferroniAlpha: number;
+        };
+        ExperimentReportGuardrailBreach: {
+            variantKey: string;
+            complianceFlagRate: number;
+            controlRate: number;
+            sigmasOver: number;
+        };
+        ExperimentReportResponse: {
+            experimentKey: string;
+            status: string;
+            attributionWindowDays: number;
+            targetMetric: string;
+            variants: components["schemas"]["ExperimentReportVariant"][];
+            significance: {
+                [key: string]: components["schemas"]["ExperimentReportSignificance"];
+            };
+            guardrail: {
+                breaches: components["schemas"]["ExperimentReportGuardrailBreach"][];
+            };
+            warnings?: string[];
+        };
+        ApVendorResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            name: string;
+            documentNumber: string;
+            bankName: string | null;
+            bankAccountNumber: string | null;
+            bankAccountType: string | null;
+            bankAccountHolder: string | null;
+            email: string | null;
+            phone: string | null;
+            createdAt: string;
+        };
+        ApVendorsError: {
+            error: string;
+        };
+        ApCreateVendorRequest: {
+            name: string;
+            documentNumber: string;
+            bankName?: string;
+            bankAccountNumber?: string;
+            /** @enum {string} */
+            bankAccountType?: "corriente" | "ahorros" | "nequi" | "daviplata";
+            bankAccountHolder?: string;
+            /** Format: email */
+            email?: string;
+            phone?: string;
+        };
+        ApVendorListItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            name: string;
+            documentNumber: string;
+            bankName: string | null;
+            bankAccountNumber: string | null;
+            bankAccountType: string | null;
+            bankAccountHolder: string | null;
+            email: string | null;
+            phone: string | null;
+            createdAt: string;
+        };
+        ApUpdateVendorRequest: {
+            name?: string;
+            documentNumber?: string;
+            bankName?: string;
+            bankAccountNumber?: string;
+            /** @enum {string} */
+            bankAccountType?: "corriente" | "ahorros" | "nequi" | "daviplata";
+            bankAccountHolder?: string;
+            /** Format: email */
+            email?: string;
+            phone?: string;
+        };
+        ApBillResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            vendorId: string;
+            invoiceNumber: string;
+            amountCop: string;
+            baseGravableCop: string | null;
+            ivaCop: string | null;
+            costCenterCode: string;
+            issuedAt: string;
+            dueDate: string;
+            status: string;
+            createdBy: string;
+            approvedBy: string | null;
+            approvedAt: string | null;
+        };
+        ApBillsError: {
+            error: string;
+        };
+        ApCreateBillRequest: {
+            /** Format: uuid */
+            vendorId: string;
+            invoiceNumber: string;
+            amountCop: number;
+            baseGravableCop?: number;
+            ivaCop?: number;
+            retentionCodes?: {
+                [key: string]: unknown;
+            };
+            costCenterCode: string;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: date-time */
+            dueDate: string;
+        };
+        ApAgingResponse: {
+            asOf: string;
+            buckets: {
+                corriente: {
+                    totalAmountCop: number;
+                    billCount: number;
+                };
+                dias_1_30: {
+                    totalAmountCop: number;
+                    billCount: number;
+                };
+                dias_31_60: {
+                    totalAmountCop: number;
+                    billCount: number;
+                };
+                dias_61_90: {
+                    totalAmountCop: number;
+                    billCount: number;
+                };
+                dias_90_plus: {
+                    totalAmountCop: number;
+                    billCount: number;
+                };
+            };
+        };
+        ApAgingError: {
+            error: string;
+        };
+        RetencionPortfolioSnapshot: {
+            agencyId: string;
+            computedAt: string;
+            owners: unknown[];
+            properties: unknown[];
+            leases: unknown[];
+            ownerPayouts: unknown[];
+            tenantArrears: unknown[];
+            maintenance: unknown[];
+            renewals: unknown[];
+            ownerComms: unknown[];
+            coverage: {
+                sources: {
+                    [key: string]: string;
+                };
+                counts: {
+                    [key: string]: number;
+                };
+                fixturesUsed: boolean;
+            };
+        };
+        RetencionError: {
+            error: string;
+        };
+        RetencionScores: {
+            scores: unknown[];
+            generatedAt: string;
+            diagnostics: {
+                orphanProperties: number;
+            };
+        };
+        RetencionBandeja: {
+            cases: unknown[];
+            facets: {
+                [key: string]: unknown;
+            };
+            generatedAt: string;
+            diagnostics: {
+                [key: string]: unknown;
+            };
+        };
+        RetencionOwnerProfile: {
+            profile: {
+                [key: string]: unknown;
+            };
+            generatedAt: string;
+            coverage: {
+                [key: string]: unknown;
+            };
+            diagnostics: {
+                [key: string]: unknown;
+            };
+        };
+        RetencionPropertyProfile: {
+            profile: {
+                [key: string]: unknown;
+            };
+            generatedAt: string;
+            coverage: {
+                [key: string]: unknown;
+            };
+            diagnostics: {
+                [key: string]: unknown;
+            };
+        };
+        RetencionProposedPlan: {
+            plan?: unknown;
+            note?: string;
+        };
+        RetencionPlanMaterialized: {
+            plan: {
+                [key: string]: unknown;
+            };
+            tasks: unknown[];
+            created: boolean;
+        };
+        RetencionPlanesList: {
+            planes: {
+                [key: string]: unknown;
+            }[];
+        };
+        RetencionPlanWithTasks: {
+            plan: {
+                [key: string]: unknown;
+            };
+            tasks: unknown[];
+        };
+        RetencionPlanPatch: {
+            /** @enum {string} */
+            status?: "activo" | "logrado" | "perdido" | "cancelado";
+            actualResult?: string | null;
+            nextFollowUpAt?: string | null;
+        };
+        RetencionTaskPatch: {
+            /** @enum {string} */
+            status?: "pendiente" | "en_progreso" | "completada" | "cancelada";
+            result?: string | null;
+            /** Format: uuid */
+            assigneeMemberId?: string | null;
+            dueDate?: string | null;
+        };
+        RetencionDashboard: {
+            cards: {
+                [key: string]: unknown;
+            };
+            urgent: unknown[];
+            state: string;
+            generatedAt: string;
+        };
+        RetencionMensaje: {
+            draft?: unknown;
+            blocked: boolean;
+            blockReason: string | null;
+            guard: {
+                [key: string]: unknown;
+            };
+        };
+        RetencionGuardrails: {
+            guard: {
+                [key: string]: unknown;
+            };
+        };
+        RetencionDecisionRow: {
+            id: string;
+            caseId: string;
+            ownerId: string | null;
+            decisionType: string;
+            tier: number;
+            reviewable: boolean;
+            reviewedBy: string | null;
+            reviewedAt: string | null;
+            reviewOutcome: string | null;
+            createdAt: string;
+        };
+        RetencionDecisionsList: {
+            decisions: components["schemas"]["RetencionDecisionRow"][];
+        };
+        RetencionDecisionReviewResult: {
+            decision: components["schemas"]["RetencionDecisionRow"];
+            alreadyReviewed: boolean;
+        };
+        RetencionDecisionReviewPatch: {
+            /** @enum {string} */
+            reviewOutcome: "upheld" | "overridden" | "escalated";
+            reviewedBy?: string | null;
+        };
+        RetencionConsent: {
+            optOutChannels: string[];
+            consentRetentionContact: boolean;
+            consentRecording: boolean;
+            lastInboundAt: string | null;
+            consentGrantedBy: string | null;
+            consentGrantedAt: string | null;
+        };
+        RetencionConsentPut: {
+            consentRetentionContact: boolean;
+            consentRecording?: boolean;
+        };
+        RetencionConfig: {
+            dataSources: {
+                [key: string]: boolean;
+            };
+            thresholds: {
+                vacancyDays: number;
+                noContactDays: number;
+                ownerPaymentLateDays: number;
+                maintenanceCount: number;
+                maintenanceWindowDays: number;
+                terminationRequestCritical: boolean;
+                autonomyTier?: number;
+            };
+            updatedAt: string | null;
+        };
+        RetencionConfigPatch: {
+            dataSources?: {
+                [key: string]: boolean;
+            };
+            thresholds?: {
+                vacancyDays?: number;
+                noContactDays?: number;
+                ownerPaymentLateDays?: number;
+                maintenanceCount?: number;
+                maintenanceWindowDays?: number;
+                terminationRequestCritical?: boolean;
+                autonomyTier?: number;
+            };
+        };
+        RetencionResponsable: {
+            /** @enum {string} */
+            role: "ejecutivo_propietario" | "mantenimiento" | "financiero" | "juridico" | "gerente_escalamiento";
+            memberId: string | null;
+            name: string | null;
+            email: string | null;
+        };
+        RetencionResponsablesList: {
+            responsables: components["schemas"]["RetencionResponsable"][];
+        };
+        RetencionResponsablePut: {
+            /** @enum {string} */
+            role: "ejecutivo_propietario" | "mantenimiento" | "financiero" | "juridico" | "gerente_escalamiento";
+            /** Format: uuid */
+            memberId?: string | null;
+            name?: string | null;
+            /** Format: email */
+            email?: string | null;
+        };
+        /** @description Per-carrier quote result (Phase 20 D-20-15 8-carrier set). */
+        AseguradoraQuote: {
+            /** @enum {string} */
+            aseguradora: "sura" | "solidaria" | "mapfre" | "bolivar" | "estado" | "equidad" | "mundial" | "zurich";
+            /** @enum {string} */
+            status: "approved" | "conditional" | "rejected" | "error";
+            prima_mensual_cop: number | null;
+            condiciones: string[];
+            motivo_rechazo: string | null;
+            latency_ms: number;
+            raw_excerpt: {
+                [key: string]: unknown;
+            } | null;
+            stub_mode: boolean;
+            error: {
+                /** @enum {string} */
+                code: "timeout" | "transport" | "auth" | "rate_limit" | "parse";
+                message: string;
+            } | null;
+        };
+        /** @description Phase 24 D-24-13/D-24-16 cohort-taxonomy match. null when no taxonomy row matched the candidate predicate OR when confidence < threshold (D-24-16). The field is ALWAYS present on the synchronous response and on the SSEFinalVerdict event (additive contract — Phase 22/23 byte-for-byte compat preserved otherwise). */
+        CohortInsights: {
+            cohort_id: string;
+            label_es: string;
+            confidence: number;
+        } | null;
+        /** @description Recovery via alternate-path guidance (vs counterfactual). */
+        RecoveryAltPath: {
+            /** @enum {string} */
+            type: "alt_path";
+            advice_es: string;
+        };
+        /** @description Counterfactual recovery payload (D-23-09). */
+        RecoveryCounterfactual: {
+            /** @enum {string} */
+            type: "counterfactual";
+            what_ifs: {
+                [key: string]: unknown;
+            }[];
+            selected_levers_log: {
+                selected_levers: string[];
+                rationale_per_lever: {
+                    [key: string]: string;
+                };
+            };
+            fallback_message_es: string | null;
+        };
+        /** @description Recovery output discriminated by `type`. */
+        Recovery: components["schemas"]["RecoveryAltPath"] | components["schemas"]["RecoveryCounterfactual"];
+        /** @description Carrier currently in degraded mode (D-25-09). Present in POST /api/cotizador/quote 200 response when ≥1 carrier is degraded. */
+        DegradedCarrier: {
+            carrier: string;
+            reason: string;
+            /** Format: date-time */
+            since_iso: string;
+        };
+        /** @description Synchronous POST /api/cotizador/quote response (default — no stream). Phase 24 additively introduces cohort_insights; Phase 25 v1.1 additively introduces optional degraded_carriers. All other fields are byte-identical to Phase 23. */
+        CotizadorQuoteResponse: {
+            /** @enum {string} */
+            asegurabilidad: "yes" | "partial" | "no";
+            aseguradoras_consultadas: components["schemas"]["AseguradoraQuote"][];
+            mejor_opcion: components["schemas"]["AseguradoraQuote"] & (Record<string, never> | null);
+            alternativas: components["schemas"]["AseguradoraQuote"][];
+            stub_mode?: boolean;
+            cached: boolean;
+            /** Format: uuid */
+            quoteRequestId: string;
+            reasoning_trace_es: string | null;
+            cohort_insights: components["schemas"]["CohortInsights"];
+            recovery?: components["schemas"]["Recovery"];
+            /** @description Carriers currently in degraded mode (D-25-09). Present only when ≥1 carrier is degraded. Consumers that ignore unknown fields are unaffected (additive contract). Field is never in required[] — existing Phase 22/23 callers stay byte-for-byte compatible. */
+            degraded_carriers?: components["schemas"]["DegradedCarrier"][];
+        };
+        /** @description Standard error shape across the cotizador surface. */
+        CotizadorErrorResponse: {
+            /** @enum {boolean} */
+            success: false;
+            error: string;
+        };
+        /** @description POST /api/cotizador/quote body. cedula is HASHED at the server boundary (sha256(cedula | tenant_salt)) — raw cedula NEVER persisted (Habeas Data). */
+        CotizadorQuoteRequest: {
+            cedula: string;
+            ciudad: string;
+            canon_mensual_cop: number;
+            /** @enum {string} */
+            tipo_inmueble: "apartamento" | "casa" | "local";
+            /** Format: uuid */
+            tenant_id: string;
+            /** @default 0 */
+            codeudores: number;
+        };
+        /** @description SSE event `carrier.start`: emitted at fan-out start, once per carrier. The producer side writes the event to `cotizador_quote_stream_events` and the SSE wire atomically. */
+        SSECarrierStart: {
+            carrier: string;
+            started_at_ms: number;
+        };
+        /** @description SSE event `carrier.verdict`: emitted when a carrier returns a successful response (approved / conditional / rejected / error). prima_mensual_cop is non-null only when verdict === "approved". */
+        SSECarrierVerdict: {
+            carrier: string;
+            /** @enum {string} */
+            verdict: "approved" | "conditional" | "rejected" | "error";
+            prima_mensual_cop: number | null;
+            condiciones?: string[];
+        };
+        /** @description SSE event `carrier.error`: emitted when a carrier dispatch fails (timeout, transport, parse). Structurally distinct from SSECarrierVerdict (D-24-05 mutual exclusion): error_code + retryable required, no verdict / prima_mensual_cop fields. */
+        SSECarrierError: {
+            carrier: string;
+            error_code: string;
+            message: string;
+            retryable: boolean;
+        };
+        /** @description SSE event `agent.partial_ranking`: emitted once after the fan-out completes, before the final verdict + recovery + trace narration step. Carries the deterministic ranking + accepting count so the UI can render an interim view while the trace is being generated. */
+        SSEPartialRanking: {
+            ranked_carriers: {
+                carrier: string;
+                total_score: number;
+            }[];
+            accepting_count: number;
+        };
+        /** @description SSE event `agent.recovery`: emitted on rejection before agent.final_verdict. type discriminates the payload shape (alt_path | counterfactual). */
+        SSERecovery: {
+            /** @enum {string} */
+            type: "alt_path" | "counterfactual";
+            payload?: unknown;
+        };
+        /** @description SSE event `agent.final_verdict`: the TERMINAL event on the stream. D-24-02: reasoning_trace_es lives ONLY here. cohort_insights is the Phase 24 D-24-13/D-24-16 cohort match output (null when no taxonomy row matched or confidence below threshold). */
+        SSEFinalVerdict: {
+            /** @enum {string} */
+            asegurabilidad: "yes" | "partial" | "no";
+            mejor_opcion: {
+                carrier: string;
+                prima_mensual_cop: number;
+            } | null;
+            reasoning_trace_es: string | null;
+            cohort_insights: {
+                cohort_id: string;
+                label_es: string;
+                confidence: number;
+            } | null;
+            failed_carriers: string[];
+        };
+        /** @description SSE event `agent.heartbeat`: emitted every 5s during fan-out idle intervals so idle proxies do not disconnect. awaiting carries the set of carrier names still pending. */
+        SSEHeartbeat: {
+            elapsed_ms: number;
+            awaiting: string[];
+        };
+        /** @description Discriminated union over the 7 Phase 24 SSE event payload shapes. The SSE event type (carrier.start, carrier.verdict, carrier.error, agent.partial_ranking, agent.recovery, agent.final_verdict, agent.heartbeat) lives in the SSE `event:` field; this schema describes the payload (the SSE `data:` field). */
+        SSEEventPayload: components["schemas"]["SSECarrierStart"] | components["schemas"]["SSECarrierVerdict"] | components["schemas"]["SSECarrierError"] | components["schemas"]["SSEPartialRanking"] | components["schemas"]["SSERecovery"] | components["schemas"]["SSEFinalVerdict"] | components["schemas"]["SSEHeartbeat"];
+        /** @description Aggregate verdict across all consulted carriers. mejor_opcion is null on full rejection. */
+        QuoteVerdict: {
+            /** @enum {string} */
+            asegurabilidad: "yes" | "partial" | "no";
+            aseguradoras_consultadas: components["schemas"]["AseguradoraQuote"][];
+            mejor_opcion: components["schemas"]["AseguradoraQuote"] & (Record<string, never> | null);
+            alternativas: components["schemas"]["AseguradoraQuote"][];
+            stub_mode?: boolean;
+        };
+        /** @description POST /api/cotizador/quote/{id}/re-quote 200 response. delta_carriers + retained_carriers surface the D-24-11 selective re-run scope; session_cost_accumulator_usd reports the POST-increment value (D-24-20 session budget cap). */
+        CotizadorReQuoteResponse: {
+            /** @enum {boolean} */
+            success: true;
+            verdict: components["schemas"]["QuoteVerdict"];
+            reasoning_trace_es: string | null;
+            cohort_insights: components["schemas"]["CohortInsights"];
+            delta_carriers: string[];
+            retained_carriers: string[];
+            session_cost_accumulator_usd: number;
+            /** Format: uuid */
+            quoteRequestId: string;
+        };
+        /** @description POST /api/cotizador/quote/{id}/re-quote body (D-24-09/D-24-11). PATCH semantics — at LEAST one of canon_mensual_cop, codeudores, tipo_inmueble must be present. Empty bodies return 400. */
+        CotizadorReQuoteRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+            canon_mensual_cop?: number;
+            codeudores?: number;
+            /** @enum {string} */
+            tipo_inmueble?: "apartamento" | "casa" | "local";
+        };
+        /** @description A single row of cotizador_cohort_taxonomy (D-24-13). matchPredicate is the JSON predicate (z-score range + categorical filters) the cohort evaluator matches against the candidate features. */
+        CohortTaxonomyRow: {
+            cohortId: string;
+            labelEs: string;
+            matchPredicate: {
+                [key: string]: unknown;
+            };
+            descriptionEs: string;
+            syntheticStats: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description GET /api/admin/cotizador/cohort-taxonomy 200 response. Ordered by cohortId ASC for deterministic consumption. */
+        CotizadorCohortTaxonomyResponse: {
+            /** @enum {boolean} */
+            success: true;
+            cohort_taxonomy: components["schemas"]["CohortTaxonomyRow"][];
+        };
+        /** @description Standard error response shape for Phase 25 endpoints. */
+        Phase25ErrorResponse: {
+            /** @enum {boolean} */
+            success: false;
+            error: string;
+        };
+        /** @description POST /api/cotizador/policy-outcome body. source_actor is hardcoded server-side to "inmobiliaria_relay" — callers cannot forge carrier_direct source (D-25-02, T-25-05-03). observed_at is the caller-supplied event time; recorded_at is the server-side ingest time. */
+        PolicyOutcomeRequest: {
+            /** Format: uuid */
+            quote_id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** @enum {string} */
+            outcome_type: "policy_emitted" | "policy_cancelled" | "rejected_second_review" | "claim_filed" | "other";
+            outcome_payload?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            source_actor: "inmobiliaria_relay";
+            /** Format: date-time */
+            observed_at: string;
+        };
+        /** @description Per-carrier, per-hour SLA metric row. Computed by the cotizador fan-out instrumentation (D-25-09). */
+        SlaMetric: {
+            /** Format: uuid */
+            tenant_id: string;
+            carrier: string;
+            /** Format: date-time */
+            hour_bucket_start: string;
+            n_attempts: number;
+            n_errors: number;
+            p50_latency_ms: number;
+            p95_latency_ms: number;
+            p99_latency_ms: number;
+        };
+        /** @description Per-quote cost breakdown. Cost fields are serialized as strings in the actual response to preserve Decimal precision; this schema documents the numeric shape for codegen consumers (D-25-14). */
+        CotizadorCostRow: {
+            /** Format: uuid */
+            quote_id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            anthropic_cost_usd: number;
+            carrier_api_cost_usd: number;
+            sekure_commission_usd: number;
+            datacredito_cost_usd: number;
+            total_cost_usd: number;
+            /** Format: date-time */
+            computed_at: string;
+        };
+        /** @description Drift report row: predicted vs observed outcome accuracy for a (tenant, carrier) pair over a computation window (D-25-12). */
+        DriftReport: {
+            /** Format: uuid */
+            tenant_id: string;
+            carrier: string;
+            /** Format: date-time */
+            window_start: string;
+            /** Format: date-time */
+            window_end: string;
+            n_outcomes: number;
+            accuracy_pct: number;
+            /**
+             * @description null when no breach threshold is exceeded.
+             * @enum {string|null}
+             */
+            breach_severity: "low" | "medium" | "high" | "critical" | null;
+            /** Format: date-time */
+            computed_at: string;
+        };
+        /** @description 200 echo on idempotent replay (D-26-10 / T-26-06-03). Returned when Idempotency-Key matches an existing job for the same tenant. Original job_id returned. */
+        ArcoJobIdempotentEcho: {
+            /** Format: uuid */
+            job_id: string;
+            status_url: string;
+            /** @enum {boolean} */
+            duplicate: true;
+        };
+        /** @description 202 Accepted response for ARCO action endpoints (D-26-10). The job is enqueued asynchronously via Inngest. Poll GET /api/cotizador/arco/jobs/{job_id} for status. */
+        ArcoJobAccepted: {
+            /** Format: uuid */
+            job_id: string;
+            status_url: string;
+            estimated_completion: string;
+        };
+        /** @description Standard ARCO error response. */
+        ArcoErrorResponse: {
+            error: string;
+        };
+        /** @description Two-key counsel gate block (D-26-11). Returned when COTIZADOR_ARCO_ENABLED is unset or the compliance_acknowledgments ACK row is absent. Contact compliance@leasefy.co. */
+        Arco503Response: {
+            /** @enum {boolean} */
+            pending_counsel_review: true;
+            /** @enum {string} */
+            contact: "compliance@leasefy.co";
+        };
+        ArcoFieldNotRectifiable: {
+            /** @enum {string} */
+            error: "field_not_rectifiable";
+            field: string;
+            allowlist: string[];
+        };
+        /** @description Rectificación request body. Raw cédula keys (cedula, cedula_raw) are blocked at Zod refine (T-26-06-01). */
+        ArcoRectifyRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+            /** @description Field name to rectify. Must be in ARCO_RECTIFIABLE_FIELDS (consent_authorization_id, name_correction, address_correction). D-26-12: carrier verdicts, drift deltas, recalibration outcomes are NOT rectifiable. */
+            field: string;
+            corrected_value: string;
+        };
+        /** @description Cancelación body. Only tenant_id is required — the cedula_hash comes from the X-Cotizador-Data-Subject-Cedula-Hash header (T-26-06-01). */
+        ArcoCancelacionRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+        };
+        /** @description Oposición body. reason is optional — the data subject may omit it. Raw cédula keys are blocked (T-26-06-01). */
+        ArcoOposicionRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+            reason?: string;
+        };
+        /** @description Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a presigned S3 URL (24h TTL) for Acceso exports; null for other actions. error_message is non-null only on failed status. */
+        ArcoJobStatus: {
+            /** @enum {string} */
+            status: "pending" | "running" | "completed" | "failed";
+            /** Format: date-time */
+            requested_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            result_uri: string | null;
+            error_message: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -4010,7 +9855,132 @@ export interface operations {
             };
         };
     };
-    getCarteraOverview: {
+    patchAgencyMemberPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchAgencyMemberPreferencesBody"];
+            };
+        };
+        responses: {
+            /** @description Updated preferences blob */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatchAgencyMemberPreferencesResponse"];
+                };
+            };
+            /** @description Body has unknown keys or invalid types */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatchAgencyMemberPreferencesError"];
+                };
+            };
+            /** @description Cross-tenant or missing membership */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatchAgencyMemberPreferencesError"];
+                };
+            };
+            /** @description Member row not found in this tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatchAgencyMemberPreferencesError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatchAgencyMemberPreferencesError"];
+                };
+            };
+        };
+    };
+    getAgencySearch: {
+        parameters: {
+            query: {
+                q: string;
+                types?: string;
+                limit?: number;
+                cedulaPrefix?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ranked search results, grouped by type. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+            /** @description Missing or invalid query parameters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchError"];
+                };
+            };
+            /** @description agencyId mismatch or insufficient role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchError"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchError"];
+                };
+            };
+        };
+    };
+    getAgencyPolicyVersion: {
         parameters: {
             query?: never;
             header?: never;
@@ -4021,13 +9991,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Cobranza overview aggregate — 4 KPIs + 7 stages + transitions + next actions */
+            /** @description Latest policy snapshot or empty state */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraOverviewResponse"];
+                    "application/json": {
+                        id?: string | null;
+                        version_number: number;
+                        policy_json: {
+                            [key: string]: unknown;
+                        } | null;
+                        created_by_member_id?: string | null;
+                        created_at?: string | null;
+                        change_description?: string | null;
+                    };
                 };
             };
             /** @description Missing / invalid bearer JWT */
@@ -4036,25 +10015,364 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraOverviewError"];
+                    "application/json": {
+                        error: string;
+                    };
                 };
             };
-            /** @description agencyId mismatch (T-15-06) / insufficient permissions (cobranza:view required) */
+            /** @description Forbidden — cobranza:view required */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraOverviewError"];
+                    "application/json": {
+                        error: string;
+                    };
                 };
             };
-            /** @description Database unavailable (stub mode) */
+            /** @description Database unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CarteraOverviewError"];
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    putAgencyPolicyVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    policy_json: {
+                        [key: string]: unknown;
+                    };
+                    change_description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description New policy version created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        version_number: number;
+                        created_at: string;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:intervene required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Invalid policy_json (must be a non-null plain object) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyPolicyVersionHistory: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Version history page (policy_json excluded for bandwidth; fetch on demand) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        versions: {
+                            id: string;
+                            version_number: number;
+                            created_by_member_id: string;
+                            created_at: string;
+                            change_description: string | null;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    rollbackAgencyPolicyVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rollback version created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        version_number: number;
+                        rolled_back_from: number;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:intervene required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Target version not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Target version has corrupt policy_json */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    postAgencyPolicyImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    proposed_policy: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Impact simulation result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        flipped_count: number;
+                        by_stage: {
+                            [key: string]: number;
+                        };
+                        by_outcome: {
+                            [key: string]: number;
+                        };
+                        data_source_note?: string;
+                    };
+                };
+            };
+            /** @description Invalid request body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description proposed_policy must be a non-null plain object */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
                 };
             };
         };
@@ -4104,6 +10422,195 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CotizadorOverviewError"];
+                };
+            };
+        };
+    };
+    getAgencyCotizadorAseguradorasRegistry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Merged carrier registry with global rows and tenant override rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAseguradorasRegistryResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAseguradorasRegistryError"];
+                };
+            };
+            /** @description agencyId mismatch (T-15-06) / insufficient permissions (cotizador:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAseguradorasRegistryError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAseguradorasRegistryError"];
+                };
+            };
+        };
+    };
+    putAgencyCotizadorCarrierOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutCarrierOverrideBody"];
+            };
+        };
+        responses: {
+            /** @description Override upserted — returns the full override row */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PutCarrierOverrideResponse"];
+                };
+            };
+            /** @description Invalid carrier name (not in VALID_CARRIERS set) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Forbidden — cotizador:configure-carrier required (OWNER/ADMIN only) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Carrier+route combination not found in global registry */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+        };
+    };
+    deleteAgencyCotizadorCarrierOverride: {
+        parameters: {
+            query?: {
+                route?: "direct" | "sekure";
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Override deleted (or did not exist — idempotent) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid carrier name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Forbidden — cotizador:configure-carrier required (OWNER/ADMIN only) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Carrier+route combination not found in global registry */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierOverrideError"];
                 };
             };
         };
@@ -4163,6 +10670,570 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgencyCotizadorQuoteDetailError"];
+                };
+            };
+        };
+    };
+    getCarrierDeepDive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-carrier deep-dive aggregate payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveResponse"];
+                };
+            };
+            /** @description Unknown carrier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+            /** @description Insufficient permissions (cotizador:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+        };
+    };
+    getCarrierRecentQuotes: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated recent quotes — cedulaHashPrefix8 only */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierRecentQuotesResponse"];
+                };
+            };
+            /** @description Unknown carrier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+            /** @description Insufficient permissions (cotizador:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+        };
+    };
+    getCarrierSla: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current SLA state + breach windows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierSlaResponse"];
+                };
+            };
+            /** @description Unknown carrier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+            /** @description Insufficient permissions (cotizador:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarrierDeepDiveError"];
+                };
+            };
+        };
+    };
+    getAgencyCotizadorInsightsApprovalRateMonthly: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Carrier × month approval rates for last 12 months */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        rows: components["schemas"]["CotizadorInsightsApprovalRateMonthlyRow"][];
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cotizador:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCotizadorInsightsPrimaDistribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Percentile distribution (p25/p50/p75) for approved quotes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        rows: components["schemas"]["CotizadorInsightsPrimaDistributionRow"][];
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cotizador:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCotizadorInsightsAssumptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All assumption registry rows (GLOBAL table, USING true) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        assumptions: components["schemas"]["CotizadorInsightsAssumptionRow"][];
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cotizador:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCotizadorInsightsMonthlyCostTrend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SUM of cost columns per month for last 12 months */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        rows: components["schemas"]["CotizadorInsightsMonthlyCostTrendRow"][];
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cotizador:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCotosCostSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cost dashboard summary payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostosSummaryResponse"];
+                };
+            };
+            /** @description Forbidden — cotizador:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostosError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostosError"];
+                };
+            };
+        };
+    };
+    getAgencyCotosCostSeries: {
+        parameters: {
+            query?: {
+                group_by?: "day" | "carrier" | "source";
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cost series rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostSeriesResponse"];
+                };
+            };
+            /** @description Forbidden — cotizador:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostosError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostosError"];
+                };
+            };
+        };
+    };
+    getAgencyCotizadorVerdictPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF binary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Forbidden — cotizador:view required or cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCotizadorPdfError"];
+                };
+            };
+            /** @description Quote not found in calling tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCotizadorPdfError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCotizadorPdfError"];
+                };
+            };
+        };
+    };
+    getCarteraOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cobranza overview aggregate — 4 KPIs + 7 stages + transitions + next actions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewError"];
+                };
+            };
+            /** @description agencyId mismatch (T-15-06) / insufficient permissions (cobranza:view required) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraOverviewError"];
                 };
             };
         };
@@ -4230,83 +11301,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaDebtorListError"];
-                };
-            };
-        };
-    };
-    getCobranzaCallAudio: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                callId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Full audio body (no Range header sent). */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "audio/*": string;
-                };
-            };
-            /** @description Partial content (RFC 7233 Range satisfied). */
-            206: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "audio/*": string;
-                };
-            };
-            /** @description Missing / invalid bearer JWT */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaCallAudioError"];
-                };
-            };
-            /** @description cobranza:view required */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaCallAudioError"];
-                };
-            };
-            /** @description Call not found, cross-tenant, or recording purged */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaCallAudioError"];
-                };
-            };
-            /** @description Upstream Vapi metadata/byte fetch failed */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaCallAudioError"];
-                };
-            };
-            /** @description Database unavailable (stub mode) */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaCallAudioError"];
                 };
             };
         };
@@ -4774,7 +11768,9 @@ export interface operations {
     };
     getCobranzaCallTranscript: {
         parameters: {
-            query?: never;
+            query?: {
+                redacted?: "true" | "false";
+            };
             header?: never;
             path: {
                 agencyId: string;
@@ -4827,6 +11823,149 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaCallTranscriptError"];
+                };
+            };
+        };
+    };
+    getCobranzaAgencyCallsList: {
+        parameters: {
+            query?: {
+                outcome?: string;
+                channel?: string;
+                direction?: string;
+                from?: string;
+                to?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calls list page with optional nextCursor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAgencyCallsListResponse"];
+                };
+            };
+            /** @description Invalid cursor or date filter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAgencyCallsListError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAgencyCallsListError"];
+                };
+            };
+            /** @description cobranza:view permission required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAgencyCallsListError"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAgencyCallsListError"];
+                };
+            };
+        };
+    };
+    getCobranzaCallAudio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Full audio body (no Range header sent). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/*": string;
+                };
+            };
+            /** @description Partial content (RFC 7233 Range satisfied). */
+            206: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/*": string;
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description Call not found, cross-tenant, or recording purged */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description Upstream Vapi metadata/byte fetch failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCallAudioError"];
                 };
             };
         };
@@ -5258,6 +12397,1380 @@ export interface operations {
             };
         };
     };
+    listCobranzaEscalations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Kanban payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationsList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+        };
+    };
+    getCobranzaEscalationDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Escalation detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Escalation not found (also returned for cross-tenant ids — no existence leak) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+        };
+    };
+    claimCobranzaEscalation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaEscalationsClaimBody"];
+            };
+        };
+        responses: {
+            /** @description Claimed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationClaimOk"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Escalation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Already resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Audit-first or DB transaction failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+        };
+    };
+    assignCobranzaEscalation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaEscalationsAssignBody"];
+            };
+        };
+        responses: {
+            /** @description Assigned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationAssignOk"];
+                };
+            };
+            /** @description Validation error or target lacks permission */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Escalation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Already resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Audit-first or DB transaction failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+        };
+    };
+    resolveCobranzaEscalation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaEscalationsResolveBody"];
+            };
+        };
+        responses: {
+            /** @description Resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationResolveOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Forbidden (not the assignee, not admin, or missing force-stage for legal cascade) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Escalation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Already resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Audit-first or DB transaction failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaEscalationError"];
+                };
+            };
+        };
+    };
+    getCobranzaComplianceOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated overview payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceOverview"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+        };
+    };
+    getCobranzaLey2300Attempts: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated attempts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaLey2300Attempts"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+        };
+    };
+    getCobranzaOptOutRegistry: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated opt-out requests + ack status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOptOutRegistry"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+        };
+    };
+    acknowledgeCobranzaOptOutRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaOptOutAcknowledgeBody"];
+            };
+        };
+        responses: {
+            /** @description Acknowledged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOptOutAcknowledgeOk"];
+                };
+            };
+            /** @description Forbidden — cobranza:configure required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Opt-out event not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Audit-first tx failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaComplianceError"];
+                };
+            };
+        };
+    };
+    getCobranzaAuditLog: {
+        parameters: {
+            query?: {
+                actor?: string;
+                action?: string;
+                from?: string;
+                to?: string;
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Filtered audit log page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAuditLogPage"];
+                };
+            };
+            /** @description Invalid filter or cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAuditLogError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAuditLogError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAuditLogError"];
+                };
+            };
+        };
+    };
+    getAgencyCobranzaAuditLogCsv: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                kind?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Streamed CSV export */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Invalid query params */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAuditLogCsvError"];
+                };
+            };
+            /** @description Forbidden — cobranza:view required or cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAuditLogCsvError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAuditLogCsvError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daily report payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportHistory: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportHistory"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportHistoryCsv: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportThresholds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Threshold row or DEFAULTS */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportThresholds"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    putCobranzaDailyReportThresholds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaDailyReportThresholdsBody"];
+            };
+        };
+        responses: {
+            /** @description New version row */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportThresholds"];
+                };
+            };
+            /** @description Invalid body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Unauthorized — no resolvable principal */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Forbidden — cobranza:edit-thresholds required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Threshold write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    rollbackCobranzaDailyReportThresholds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaDailyReportThresholdsRollbackBody"];
+            };
+        };
+        responses: {
+            /** @description Rollback applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportThresholds"];
+                };
+            };
+            /** @description to_version not found */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Unauthorized — no resolvable principal */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Rollback failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscription row or defaults */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportSubscription"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    patchCobranzaDailyReportSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaDailyReportSubscriptionPatch"];
+            };
+        };
+        responses: {
+            /** @description Updated subscription */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportSubscription"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Upsert failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getAgencyCobranzaAnalyticsAgencyGate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agency gate result with calls_30d count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAnalyticsAgencyGate"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCobranzaAnalyticsRecoveryRate: {
+        parameters: {
+            query?: {
+                window_days?: number | null;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recovery rate response (populated: true with rows, or populated: false with reason) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRecoveryResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCobranzaAnalyticsTopObjections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top objections response (populated: true with objections, or populated: false with reason) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaTopObjectionsResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCobranzaAnalyticsCadence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cadence analytics payload with channel-mix and heatmap datasets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAnalyticsCadenceResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCobranzaAnalyticsCostPerPeso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cost-per-peso KPI with 90d sparkline */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAnalyticsCostPerPeso"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyCobranzaAnalyticsTopScripts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top-scripts response — populated rows OR per-widget gate reason */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAnalyticsTopScripts"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     getCobranzaPaymentsFunnel: {
         parameters: {
             query?: {
@@ -5321,6 +13834,2046 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaPaymentFunnelError"];
+                };
+            };
+        };
+    };
+    getCobranzaInbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Threads grouped by triage label with counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description cobranza:view permission required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+        };
+    };
+    getCobranzaInboxThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                threadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Thread + messages */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxThreadDetailResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description cobranza:view permission required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description Thread not found (also for cross-tenant threadId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+        };
+    };
+    markCobranzaInboxThreadRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                threadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Thread marked read (or no-op ack if not yet migrated) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxMarkReadResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description cobranza:view permission required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description Thread not found (also for cross-tenant threadId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInboxError"];
+                };
+            };
+        };
+    };
+    listCobranzaPromises: {
+        parameters: {
+            query?: {
+                status?: "open" | "kept" | "broken" | "partially_kept";
+                debtorId?: string;
+                from?: string;
+                to?: string;
+                limit?: number;
+                offset?: number | null;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Promises list (empty list when table not yet migrated, PII masked) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromisesListResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+        };
+    };
+    proposeCobranzaAgreement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAgreementProposeBody"];
+            };
+        };
+        responses: {
+            /** @description Calculated agreement proposal (draft — not persisted/active) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAgreementProposeResponse"];
+                };
+            };
+            /** @description Validation error OR stage in {S4,S5,SX} (no negotiation surface) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+            /** @description Debtor not found (also returned for cross-tenant debtorId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPromiseError"];
+                };
+            };
+        };
+    };
+    getCobranzaRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recovery aggregate (metrics that are not computable are null) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRecoveryResponse"] & {
+                        recoveredValueCop: number | null;
+                        /** @enum {string|null} */
+                        recoveredValueSource: "recovery_outcomes" | "payments" | null;
+                        casesClosed: number | null;
+                        casesManaged: number | null;
+                        avgRecoveryDays: number | null;
+                        responseRatePct: number | null;
+                        promisesKept: number | null;
+                        promisesTotal: number | null;
+                        agreementsKept: number | null;
+                        agreementsTotal: number | null;
+                        casesEscalated: number | null;
+                        moraReducedPct: number | null;
+                        moraWindowDays: number;
+                        generatedAt: string;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRecoveryError"];
+                };
+            };
+            /** @description cobranza:view permission required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRecoveryError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaRecoveryError"];
+                };
+            };
+        };
+    };
+    listCobranzaOwnerReports: {
+        parameters: {
+            query?: {
+                status?: "draft" | "pending_approval" | "sent";
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Owner reports list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportList"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaOwnerReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Owner report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReport"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Not found (also cross-tenant / unmigrated) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+        };
+    };
+    generateCobranzaOwnerReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaOwnerReportGenerateBody"];
+            };
+        };
+        responses: {
+            /** @description Draft report created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReport"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description cobranza:intervene required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Debtor not found in tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Database unavailable or table not yet migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+        };
+    };
+    approveCobranzaOwnerReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaOwnerReportApproveBody"];
+            };
+        };
+        responses: {
+            /** @description Report approved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReport"];
+                };
+            };
+            /** @description Validation error or invalid transition */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description cobranza:approve required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Not found (also cross-tenant / unmigrated) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaOwnerReportPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Not found (also cross-tenant / unmigrated) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description PDF export not yet implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaOwnerReportError"];
+                };
+            };
+        };
+    };
+    listCobranzaDisputes: {
+        parameters: {
+            query?: {
+                status?: "open" | "in_review" | "resolved";
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dispute list (empty list when table not yet migrated) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputesList"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+        };
+    };
+    openCobranzaDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaDisputeOpenBody"];
+            };
+        };
+        responses: {
+            /** @description Dispute opened (or fail-soft when table not yet migrated) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeOpenOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Debtor not found (also returned for cross-tenant debtorId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+        };
+    };
+    getCobranzaDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dispute detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDispute"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Dispute not found (also returned for cross-tenant ids and when the table is not yet migrated) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+        };
+    };
+    resolveCobranzaDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaDisputeResolveBody"];
+            };
+        };
+        responses: {
+            /** @description Dispute resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeResolveOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Dispute not found (also returned for cross-tenant ids and when the table is not yet migrated) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Dispute already resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDisputeError"];
+                };
+            };
+        };
+    };
+    getCobranzaPaymentDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                paymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Payment detail (PII masked), or { payment: null } when missing/unmigrated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentDetailResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Payment not found (also for cross-tenant paymentId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+        };
+    };
+    reportCobranzaPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaPaymentReportBody"];
+            };
+        };
+        responses: {
+            /** @description Payment self-reported */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentReportOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Payment not found (also for cross-tenant paymentId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Payment already approved — cannot self-report over a verified payment */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Database unavailable or schema not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+        };
+    };
+    verifyCobranzaPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                paymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaPaymentVerifyBody"];
+            };
+        };
+        responses: {
+            /** @description Payment verified (approved) or rejected (status restored) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyOk"];
+                };
+            };
+            /** @description Validation error (e.g. reject without a note) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Payment not found (also for cross-tenant paymentId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Payment is not in a verifiable state (not self-reported) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+            /** @description Database unavailable or schema not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaPaymentVerifyError"];
+                };
+            };
+        };
+    };
+    registerCobranzaAbono: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAbonoBody"];
+            };
+        };
+        responses: {
+            /** @description Abono registered (or idempotent replay of the original). Saldo recomputed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAbonoOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAbonoError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAbonoError"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAbonoError"];
+                };
+            };
+            /** @description Debtor not found (also returned for cross-tenant debtorId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAbonoError"];
+                };
+            };
+            /** @description Audit-first write failed — abono not applied */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAbonoError"];
+                };
+            };
+            /** @description Database unavailable or schema not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAbonoError"];
+                };
+            };
+        };
+    };
+    setCobranzaDebtorJudicializado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaCaseFlagBody"];
+            };
+        };
+        responses: {
+            /** @description Flag updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Debtor not found (also returned for cross-tenant debtorId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Audit-first write failed — flag not applied */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Database unavailable or column not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+        };
+    };
+    setCobranzaDebtorCarteraFinal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaCaseFlagBody"];
+            };
+        };
+        responses: {
+            /** @description Flag updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Debtor not found (also returned for cross-tenant debtorId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Audit-first write failed — flag not applied */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Database unavailable or column not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+        };
+    };
+    setCobranzaDebtorPrimaryContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaCaseFlagBody"];
+            };
+        };
+        responses: {
+            /** @description Flag updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Debtor not found (also returned for cross-tenant debtorId) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Audit-first write failed — flag not applied */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+            /** @description Database unavailable or column not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCaseFlagError"];
+                };
+            };
+        };
+    };
+    getCobranzaDebtorCaseState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Derived case state + the signals that produced it. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCaseStateResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCaseStateError"];
+                };
+            };
+            /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCaseStateError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCaseStateError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorCaseStateError"];
+                };
+            };
+        };
+    };
+    postCobranzaCodeudorContactar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaCodeudorContactBody"];
+            };
+        };
+        responses: {
+            /** @description Contact outcome. contacted=true on success; contacted=false with a reason when a guardrail / flag / fiador-presence check blocked it. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCodeudorContactResult"];
+                };
+            };
+            /** @description Malformed body / params */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCodeudorError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCodeudorError"];
+                };
+            };
+            /** @description agencyId mismatch / no membership / cobranza:approve required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCodeudorError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCodeudorError"];
+                };
+            };
+        };
+    };
+    getCobranzaAutonomy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current autonomy level */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyResponse"];
+                };
+            };
+            /** @description agencyId not a UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description agencyId mismatch / no membership / cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description Policy row not found (tenant has not completed onboarding) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+        };
+    };
+    putCobranzaAutonomy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAutonomyPutBody"];
+            };
+        };
+        responses: {
+            /** @description Updated autonomy level */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyResponse"];
+                };
+            };
+            /** @description Malformed body / unknown autonomy level */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description agencyId mismatch / no membership / cobranza:approve required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description Policy row not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) or autonomy-level column not yet provisioned */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAutonomyError"];
+                };
+            };
+        };
+    };
+    getCobranzaCadenceConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cadence config + effective calendar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadenceGetResponse"];
+                };
+            };
+            /** @description Forbidden — cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+        };
+    };
+    putCobranzaCadenceConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaCadencePutBody"];
+            };
+        };
+        responses: {
+            /** @description Persisted cadence config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadencePutResponse"];
+                };
+            };
+            /** @description Malformed body / invalid cadence config */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+            /** @description Forbidden — cobranza:approve required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+            /** @description Policy row not found (tenant has not completed onboarding) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+            /** @description Database unavailable, or cadence_config column not migrated yet */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+        };
+    };
+    importCartera: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarteraImportBody"];
+                "multipart/form-data": components["schemas"]["CarteraImportMultipart"];
+            };
+        };
+        responses: {
+            /** @description Import summary (also returned with empty counts when unmigrated) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraImportSummary"];
+                };
+            };
+            /** @description Malformed body / no rows */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraImportError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraImportError"];
+                };
+            };
+            /** @description cobranza:act required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraImportError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraImportError"];
+                };
+            };
+        };
+    };
+    getAgencyAiHubLanding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description AI hub landing payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubLandingResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    postAiHubChat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiHubChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Chat answer + suggested actions + today snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatError"];
+                };
+            };
+            /** @description agencyId mismatch (T-15-06) / not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatError"];
+                };
+            };
+        };
+    };
+    postAiHubChatApprovalResolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                approvalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiHubChatApprovalResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Decision recorded (knowledge item flipped where present) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatApprovalResolveResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatError"];
+                };
+            };
+            /** @description agencyId mismatch / insufficient role (VIEWER cannot resolve) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatError"];
+                };
+            };
+        };
+    };
+    getAiHubChatLessons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The refreshed lesson pool + whether re-use is enabled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLessonsResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLessonsError"];
+                };
+            };
+            /** @description agencyId mismatch / not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLessonsError"];
+                };
+            };
+        };
+    };
+    postAiHubChatLessonCertify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                lessonId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AiHubChatLessonCertifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Decision recorded (applied unless the fence blocked a certify) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLessonCertifyResponse"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLessonsError"];
+                };
+            };
+            /** @description agencyId mismatch / insufficient role (VIEWER cannot certify) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubChatLessonsError"];
                 };
             };
         };
@@ -6170,6 +16723,3479 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CarteraDailyReportError"];
+                };
+            };
+        };
+    };
+    listApVendors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Vendor list (bankAccountNumber masked) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        vendors: components["schemas"]["ApVendorListItem"][];
+                    };
+                };
+            };
+            /** @description ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+        };
+    };
+    createApVendor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApCreateVendorRequest"];
+            };
+        };
+        responses: {
+            /** @description Vendor created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorResponse"];
+                };
+            };
+            /** @description ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+            /** @description Vendor with this document number already exists in this agency */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+        };
+    };
+    updateApVendor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApUpdateVendorRequest"];
+            };
+        };
+        responses: {
+            /** @description Vendor updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        vendor: components["schemas"]["ApVendorResponse"];
+                        flippedBillCount: number;
+                    };
+                };
+            };
+            /** @description ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+            /** @description Vendor not found or cross-tenant (T-40-03) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApVendorsError"];
+                };
+            };
+        };
+    };
+    getApApprovalMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Latest matrix snapshot (or default seed) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id?: string | null;
+                        version_number: number;
+                        matrix_json: {
+                            [key: string]: unknown;
+                        };
+                        created_by?: string | null;
+                        created_at?: string | null;
+                        change_description?: string | null;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    putApApprovalMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    matrix_json?: unknown;
+                    change_description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description New matrix version created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        version_number: number;
+                        created_at: string;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — OWNER or ADMIN required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Invalid matrix_json (must be a non-null plain object) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getApApprovalMatrixVersionHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Version history (matrix_json excluded for bandwidth) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        versions: {
+                            id: string;
+                            version_number: number;
+                            created_by: string;
+                            created_at: string;
+                            change_description: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    rollbackApApprovalMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                version_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rollback version created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        version_number: number;
+                        rolled_back_from: number;
+                    };
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — OWNER or ADMIN required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Target version not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Target version has corrupt matrix_json */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    listApBills: {
+        parameters: {
+            query?: {
+                status?: string;
+                vendorId?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bill list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        bills: components["schemas"]["ApBillResponse"][];
+                    };
+                };
+            };
+            /** @description ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+        };
+    };
+    createApBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApCreateBillRequest"];
+            };
+        };
+        responses: {
+            /** @description Bill created with status pending_approval */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillResponse"];
+                };
+            };
+            /** @description Invalid costCenterCode */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        validCodes: string[];
+                    };
+                };
+            };
+            /** @description Unauthorized — no resolvable principal */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+            /** @description ap:create-bill required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+            /** @description Bill with this invoiceNumber already exists for this vendor+tenant */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+        };
+    };
+    getApBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                billId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bill detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillResponse"];
+                };
+            };
+            /** @description ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+            /** @description Bill not found or cross-tenant (T-40-03) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+        };
+    };
+    getApCostCenters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cost center list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        costCenters: {
+                            code: string;
+                            name: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+            /** @description Service unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApBillsError"];
+                };
+            };
+        };
+    };
+    getApAging: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aging buckets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApAgingResponse"];
+                };
+            };
+            /** @description ap:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApAgingError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApAgingError"];
+                };
+            };
+        };
+    };
+    approveApBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                billId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Bill approved — approval stamped and ERP sync attempted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        billId: string;
+                        /** @enum {string} */
+                        requiredTier: "auto" | "l2" | "l3";
+                    };
+                };
+            };
+            /** @description Zod validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized — no resolvable principal */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — tier permission insufficient or SoD violation */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Bill not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Bill is not pending approval (terminal-status guard) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Approval transaction failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    rejectApBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                billId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Bill rejected — rejection stamped */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        billId: string;
+                        /** @enum {string} */
+                        requiredTier: "auto" | "l2" | "l3";
+                    };
+                };
+            };
+            /** @description Zod validation error (missing reason) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized — no resolvable principal */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — tier permission insufficient or SoD violation */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Bill not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Bill is not pending approval (terminal-status guard) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Rejection transaction failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    createApPaymentRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    billIds: string[];
+                    /** Format: date-time */
+                    scheduledFor?: string;
+                    /** Format: uuid */
+                    idempotencyKey?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Payment run created — bills scheduled for disbursement */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        runId: string;
+                        /** Format: uuid */
+                        idempotencyKey: string;
+                        scheduledPayments: number;
+                    };
+                };
+            };
+            /** @description Zod validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized — no resolvable principal */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — OWNER/ADMIN role required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description One or more bills not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description One or more bills are not in approved status */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Transaction failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    executeApPaymentRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Run executed (or already-completed idempotent no-op) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        runId: string;
+                        /** @enum {boolean} */
+                        idempotent: true;
+                        message: string;
+                    } | {
+                        /** Format: uuid */
+                        runId: string;
+                        executed: number;
+                        skipped: number;
+                    };
+                };
+            };
+            /** @description Zod validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized — no resolvable principal */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden — OWNER/ADMIN role required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Payment run not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Run is in failed state — cannot re-execute */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Execute transaction failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getConciliacionQueue: {
+        parameters: {
+            query?: {
+                status?: "suggested";
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated match queue */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            [key: string]: unknown;
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    confirmConciliacionMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                matchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Match confirmed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        matchId: string;
+                        /** @enum {string} */
+                        status: "confirmed";
+                    };
+                };
+            };
+            /** @description Match not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Match not in queue (already confirmed/rejected/auto) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Transaction failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    rejectConciliacionMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                matchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Match rejected — movement returned to unmatched */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        matchId: string;
+                        /** @enum {string} */
+                        status: "rejected";
+                    };
+                };
+            };
+            /** @description Match not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Match not in rejectable state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Transaction failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    reverseConciliacionMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                matchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Match reversed — movement returned to unmatched */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        matchId: string;
+                    };
+                };
+            };
+            /** @description Match not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cannot reverse in current state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getConciliacionDailyReport: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conciliación daily report for the requested Bogotá day */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        tenantId: string;
+                        date: string;
+                        generatedAt: string;
+                        movements: {
+                            total: number;
+                            matched: number;
+                            suggested: number;
+                            unmatched: number;
+                            ignored: number;
+                        };
+                        matches: {
+                            total: number;
+                            auto: number;
+                            suggested: number;
+                            confirmed: number;
+                            rejected: number;
+                            byLayer: {
+                                deterministic: number;
+                                llm: number;
+                            };
+                        };
+                        matchRatePct: number | null;
+                        fraudFlags: {
+                            /** @enum {string} */
+                            flag: "posible_lapping" | "monto_subumbral" | "duplicado_ventana" | "beneficiario_inusual" | "referencia_dudosa" | "lote_anomalo";
+                            count: number;
+                            movementIds: string[];
+                        }[];
+                        backlog: {
+                            unmatchedTotal: number;
+                            unmatchedOver7Days: number;
+                            oldestUnmatchedAt: string | null;
+                        };
+                        pendingReviewQueue: number;
+                    };
+                };
+            };
+            /** @description Invalid query (date must be YYYY-MM-DD) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    ingestConciliacionStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Which Colombian bank CSV export format to parse.
+                     * @enum {string}
+                     */
+                    bank: "bancolombia" | "davivienda";
+                    /** @description Decoded UTF-8 content of the bank statement CSV (the file text). */
+                    csvContent: string;
+                    /** @description Optional inclusive window start (ISO date/datetime). Rows outside [from, to] are not persisted. Defaults to 90 days before `to`. */
+                    from?: string;
+                    /** @description Optional inclusive window end (ISO date/datetime). Defaults to now. */
+                    to?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Statement ingested; reconciliation run enqueued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        created: number;
+                        skipped: number;
+                        processed: number;
+                        runEnqueued: boolean;
+                    };
+                };
+            };
+            /** @description Invalid date window (from/to not parseable) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getRetencionSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Portfolio snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPortfolioSnapshot"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionScores: {
+        parameters: {
+            query?: {
+                subjectType?: "owner" | "property";
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scores de retiro */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionScores"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionBandeja: {
+        parameters: {
+            query?: {
+                tab?: "critico" | "alto" | "medio" | "renovaciones" | "vacancia" | "mantenimiento" | "finanzas" | "comunicacion" | "recuperados" | "perdidos";
+                state?: "saludable" | "riesgo_medio" | "alto_riesgo" | "critico";
+                cause?: "financialHealth" | "communicationHealth" | "vacancy" | "maintenance" | "contractual" | "canon" | "explicitSignals";
+                executive?: string;
+                city?: string;
+                minValue?: number | null;
+                dueBefore?: string;
+                sort?: "expectedLoss" | "incomeAtRisk" | "score" | "dueDate";
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bandeja de riesgos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionBandeja"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionOwnerProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                ownerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil del propietario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionOwnerProfile"];
+                };
+            };
+            /** @description Retención no habilitada o propietario inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionPropertyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                propertyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil del inmueble */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPropertyProfile"];
+                };
+            };
+            /** @description Retención no habilitada o inmueble inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionProposedPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan propuesto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionProposedPlan"];
+                };
+            };
+            /** @description Retención no habilitada o caso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    materializeRetencionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan existente (ya materializado) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPlanMaterialized"];
+                };
+            };
+            /** @description Plan creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPlanMaterialized"];
+                };
+            };
+            /** @description Retención no habilitada o caso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Caso sin plan (saludable) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description No persistible (migración pendiente) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    listRetencionPlanes: {
+        parameters: {
+            query?: {
+                status?: "activo" | "logrado" | "perdido" | "cancelado";
+                ownerId?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Planes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPlanesList"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPlanWithTasks"];
+                };
+            };
+            /** @description Retención no habilitada o plan inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    patchRetencionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetencionPlanPatch"];
+            };
+        };
+        responses: {
+            /** @description Plan actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPlanWithTasks"];
+                };
+            };
+            /** @description Retención no habilitada o plan inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Transición inválida o falta resultado */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description No persistible (migración pendiente) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    patchRetencionTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                planId: string;
+                taskId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetencionTaskPatch"];
+            };
+        };
+        responses: {
+            /** @description Tarea actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionPlanWithTasks"];
+                };
+            };
+            /** @description Retención no habilitada, plan o tarea inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Transición inválida */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description No persistible (migración pendiente) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionDashboard"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionMensaje: {
+        parameters: {
+            query?: {
+                channel?: "whatsapp" | "email" | "guion";
+                tone?: "neutral" | "formal";
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Borrador + guard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionMensaje"];
+                };
+            };
+            /** @description Retención no habilitada o caso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionGuardrails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Guardrails */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionGuardrails"];
+                };
+            };
+            /** @description Retención no habilitada o caso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    listRetencionDecisions: {
+        parameters: {
+            query?: {
+                reviewableOnly?: boolean | null;
+                caseId?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Decisiones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionDecisionsList"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    reviewRetencionDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                decisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetencionDecisionReviewPatch"];
+            };
+        };
+        responses: {
+            /** @description Decisión revisada (o ya revisada — idempotente) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionDecisionReviewResult"];
+                };
+            };
+            /** @description Retención no habilitada o decisión inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description No persistible (migración pendiente) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionOwnerConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                ownerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consentimiento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionConsent"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    putRetencionOwnerConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                ownerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetencionConsentPut"];
+            };
+        };
+        responses: {
+            /** @description Consentimiento registrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionConsent"];
+                };
+            };
+            /** @description Retención no habilitada o propietario inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description No persistible (migración pendiente) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionConfig"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    putRetencionConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetencionConfigPatch"];
+            };
+        };
+        responses: {
+            /** @description Config actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionConfig"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description No persistible (migración pendiente) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getRetencionResponsables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Responsables */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionResponsablesList"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    putRetencionResponsable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetencionResponsablePut"];
+            };
+        };
+        responses: {
+            /** @description Responsable asignado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionResponsable"];
+                };
+            };
+            /** @description Retención no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+            /** @description No persistible (migración pendiente) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    cotizadorQuoteCreate: {
+        parameters: {
+            query?: {
+                stream?: "1";
+            };
+            header: {
+                "x-cotizador-consent": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CotizadorQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Synchronous quote verdict (when `?stream=1` omitted). v1.1: additively includes optional degraded_carriers[] field (D-25-09). When `?stream=1` is set, the response is a Server-Sent Events stream. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorQuoteResponse"];
+                };
+            };
+            /** @description Invalid body, missing/malformed consent header, or invalid query. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description D-07 production allowlist gate — tenant not enabled for cotizador. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description G5 runtime PII leak — incident logged. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Orchestration failure or guardrail block. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorStreamSubscribe: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+            };
+            header?: {
+                "last-event-id"?: string;
+                "x-tenant-id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-Sent Events stream. Content-Type: text/event-stream. The body is an SSE-framed sequence whose `data:` field carries a JSON payload matching one of the `SSE*` component schemas. The terminal event is `agent.final_verdict`; the server closes the stream deterministically thereafter (T-24-08-C — no indefinite keep-alive). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SSEEventPayload"];
+                };
+            };
+            /** @description Missing/malformed tenant_id or Last-Event-ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Quote not found (cross-tenant + missing both return 404). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Session expired (anchored 12h TTL — D-24-10). */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorReQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CotizadorReQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Merged re-quote verdict + delta scope + post-increment session cost. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorReQuoteResponse"];
+                };
+            };
+            /** @description Invalid JSON body or empty/all-undefined partial. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Session not found (cross-tenant returns 404 — no existence leak). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Session expired (anchored 12h TTL — D-24-10). */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description G9 session budget cap exceeded (D-24-20) — violation_type `g9_session_budget_cap_exceeded`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Orchestration failure or guardrail block. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorCohortTaxonomyList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cohort taxonomy rows (ordered by cohortId ASC). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorCohortTaxonomyResponse"];
+                };
+            };
+            /** @description Missing or invalid `Authorization: Bearer <COTIZADOR_ADMIN_API_KEY>`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorPolicyOutcomeCreate: {
+        parameters: {
+            query?: never;
+            header: {
+                "idempotency-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent duplicate — original row returned. Retries with the same Idempotency-Key return this shape (Stripe/Wompi convention). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {boolean} */
+                        duplicate: true;
+                    };
+                };
+            };
+            /** @description Outcome recorded (new INSERT). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {boolean} */
+                        duplicate: false;
+                    };
+                };
+            };
+            /** @description Missing Idempotency-Key header, invalid JSON body, or Zod validation failure. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description quote_id not found or cross-tenant isolation (T-25-05-01 — no existence leak). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorCarrierWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-carrier-signature": string;
+            };
+            path: {
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description HMAC mismatch or missing X-Carrier-Signature header. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        error: "invalid_signature";
+                    };
+                };
+            };
+            /** @description Carrier not in AseguradoraName registry (T-25-06-03). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        error: "unknown_carrier";
+                    };
+                };
+            };
+            /** @description CARRIER_WEBHOOK_SECRET_{CARRIER} env var missing — not silent accept-all (T-25-06-02). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        error: "webhook_not_configured";
+                    };
+                };
+            };
+            /** @description Contract locked — implementation deferred to Phase 27. Valid signature + known carrier. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "accepted";
+                        /** @enum {string} */
+                        processing: "deferred-to-phase-27";
+                    };
+                };
+            };
+        };
+    };
+    cotizadorSlaList: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                from?: string;
+                to?: string;
+                carrier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SLA metrics for tenant. Returns at most 500 rows ordered by hour_bucket_start ASC. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        sla: components["schemas"]["SlaMetric"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorCostsList: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                from?: string;
+                to?: string;
+                group_by?: "carrier" | "day";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-quote costs for tenant. Cost fields serialized as strings for Decimal precision. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        costs: components["schemas"]["CotizadorCostRow"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminResetDegradation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Carrier degradation state cleared. prior_state reflects state before the reset. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        carrier: string;
+                        /** Format: date-time */
+                        reset_at: string;
+                        prior_state: {
+                            degraded: boolean;
+                            /** Format: date-time */
+                            degraded_since: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. Auth: admin shared-secret header (T-25-14-03). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Forbidden — caller does not have leasefy_admin role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Unknown carrier — not in AseguradoraName registry. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminSlaList: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                from?: string;
+                to?: string;
+                carrier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cross-tenant SLA rollups (leasefy_admin). Returns at most 500 rows; capped=true when truncated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        sla: components["schemas"]["SlaMetric"][];
+                        row_count: number;
+                        capped: boolean;
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Forbidden — caller does not have leasefy_admin role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminCostsList: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                from?: string;
+                to?: string;
+                group_by?: "carrier" | "tenant" | "day";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cross-tenant cost aggregates (leasefy_admin). Cost fields serialized as strings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        costs: components["schemas"]["CotizadorCostRow"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminDriftList: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                from?: string;
+                to?: string;
+                carrier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Drift reports per (tenant, carrier) within the requested window. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        drift: components["schemas"]["DriftReport"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorArcoAcceso: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Idempotent replay — existing job for this (cedula_hash, tenant_id) returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Acceso job enqueued. Poll status_url for the export URI. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing or malformed X-Cotizador-Data-Subject-Cedula-Hash header, or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied (D-26-11) or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoRectificacion: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+                "idempotency-key": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoRectifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay — existing job returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Rectificación job enqueued. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Field not in ARCO_RECTIFIABLE_FIELDS (D-26-12). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoFieldNotRectifiable"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoCancelacion: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+                "idempotency-key": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoCancelacionRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay — existing job returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Cancelación job enqueued. Hard DELETE runs asynchronously. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoOposicion: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+                "idempotency-key": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoOposicionRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay — existing job returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Oposición job enqueued. Blocklist enforcement activates asynchronously. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoJobStatus: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job status. result_uri is null except for completed Acceso jobs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobStatus"];
+                };
+            };
+            /** @description Invalid job_id (not a UUID) or missing/invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Job not found. Cross-tenant jobs return 404 (no existence leak — T-26-06-02). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
                 };
             };
         };

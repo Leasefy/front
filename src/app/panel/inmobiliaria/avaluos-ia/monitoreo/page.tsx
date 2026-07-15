@@ -171,7 +171,7 @@ export default function MonitoreoPage() {
                     <span className="text-fg-muted">Esperado a hoy</span>
                     <span className="font-medium text-fg tabular-nums">~14 visitas</span>
                   </div>
-                  <div className="h-2.5 rounded-full bg-neutral-100 overflow-hidden">
+                  <div className="h-2.5 rounded-full bg-surface-muted overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: '100%', background: '#E2E5EA' }} />
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export default function MonitoreoPage() {
                     <span className="text-fg-muted">Real</span>
                     <span className="font-medium tabular-nums text-warning">0 visitas</span>
                   </div>
-                  <div className="h-2.5 rounded-full bg-neutral-100 overflow-hidden">
+                  <div className="h-2.5 rounded-full bg-surface-muted overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: '3%', background: '#B7791F' }} />
                   </div>
                 </div>
@@ -285,7 +285,7 @@ export default function MonitoreoPage() {
                             <span className="relative inline-flex w-2.5 h-2.5 rounded-full" style={{ background: BLUE }} />
                           </span>
                         ) : (
-                          <span className="inline-flex w-5 h-5 rounded-full border-2 border-neutral-200 shrink-0" />
+                          <span className="inline-flex w-5 h-5 rounded-full border-2 border-border shrink-0" />
                         )}
                         {!last && <span className="w-px flex-1 my-1" style={{ background: t.state === 'done' ? '#2C7A53' : '#E5E7EB', minHeight: 18 }} />}
                       </div>

@@ -65,7 +65,7 @@ export function OnboardingSuccess() {
   }, [router])
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
       {/* Subtle background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-[#1A40FF]/50 to-transparent rounded-full blur-3xl" />
@@ -77,7 +77,7 @@ export function OnboardingSuccess() {
         transition={{ duration: 0.5 }}
         className="relative z-10 max-w-lg w-full"
       >
-        <div className="bg-white rounded-xl shadow-neutral-200/50 border border-neutral-100 overflow-hidden">
+        <div className="bg-surface rounded-xl shadow-sm border border-border-faint overflow-hidden">
           {/* Success animation */}
           <div className="pt-12 pb-8 px-8 text-center">
             {/* Check animation */}
@@ -104,7 +104,7 @@ export function OnboardingSuccess() {
                 transition={{ delay: 0.6 }}
                 className="absolute -top-2 -right-2"
               >
-                <Star className="w-7 h-7 text-[#B7791F] fill-[#B7791F]" />
+                <Star className="w-7 h-7 text-warning fill-warning" />
               </motion.div>
             </motion.div>
 
@@ -113,7 +113,7 @@ export function OnboardingSuccess() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#EEF1FF] rounded-full text-sm font-medium text-[#1A40FF] mt-6"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-soft rounded-full text-sm font-medium text-primary mt-6"
             >
               <Confetti className="w-4 h-4" />
               Cuenta configurada
@@ -124,7 +124,7 @@ export function OnboardingSuccess() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="text-3xl font-bold text-neutral-900 tracking-tight mt-4"
+              className="text-3xl font-bold text-fg tracking-tight mt-4"
             >
               ¡Todo listo!
             </motion.h1>
@@ -133,7 +133,7 @@ export function OnboardingSuccess() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="text-neutral-500 mt-3 max-w-sm mx-auto"
+              className="text-fg-subtle mt-3 max-w-sm mx-auto"
             >
               Tu cuenta está configurada. Ahora puedes completar tu primera propiedad y comenzar a recibir inquilinos verificados.
             </motion.p>
@@ -144,17 +144,17 @@ export function OnboardingSuccess() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="px-8 py-6 bg-neutral-50 border-t border-neutral-100"
+            className="px-8 py-6 bg-surface-muted border-t border-border-faint"
           >
-            <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-fg-muted mb-4 flex items-center gap-2">
               <Rocket className="w-4 h-4 text-[#1A40FF]" />
               Próximos pasos
             </h3>
             <div className="space-y-3">
               {[
-                { icon: Buildings, text: 'Completar fotos y descripción de tu propiedad', color: 'bg-[#EEF1FF] text-[#1A40FF]' },
-                { icon: House, text: 'Publicar tu anuncio', color: 'bg-[#F8F0E0] text-[#B7791F]' },
-                { icon: Users, text: 'Recibir y evaluar candidatos', color: 'bg-[#E8F3EC] text-[#2C7A53]' },
+                { icon: Buildings, text: 'Completar fotos y descripción de tu propiedad', color: 'bg-primary-soft text-primary' },
+                { icon: House, text: 'Publicar tu anuncio', color: 'bg-warning-soft text-warning' },
+                { icon: Users, text: 'Recibir y evaluar candidatos', color: 'bg-success-soft text-success' },
               ].map((item, index) => (
                 <motion.div
                   key={index}
@@ -169,7 +169,7 @@ export function OnboardingSuccess() {
                   )}>
                     <item.icon className="h-4 w-4" />
                   </div>
-                  <span className="text-sm text-neutral-700">{item.text}</span>
+                  <span className="text-sm text-fg-muted">{item.text}</span>
                 </motion.div>
               ))}
             </div>
@@ -196,7 +196,7 @@ export function OnboardingSuccess() {
               <ArrowRight className="w-4 h-4" />
             </Link>
 
-            <p className="text-center text-xs text-neutral-400 pt-2">
+            <p className="text-center text-xs text-fg-subtle pt-2">
               Redirigiendo automáticamente en <span className="font-semibold text-[#1A40FF]">{countdown}</span> segundos...
             </p>
           </motion.div>

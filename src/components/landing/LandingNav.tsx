@@ -18,7 +18,7 @@ export default function LandingNav() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-neutral-200/70 bg-white/85 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-surface/85 backdrop-blur-md">
       <div className="container-platform">
         <div className="relative flex h-[64px] items-center justify-between">
           {/* Logo */}
@@ -32,7 +32,7 @@ export default function LandingNav() {
               <Link
                 key={l.href}
                 href={l.href}
-                className="font-mono text-[12px] uppercase tracking-[0.1em] text-neutral-950 transition-colors hover:text-primary"
+                className="font-mono text-[12px] uppercase tracking-[0.1em] text-fg transition-colors hover:text-primary"
               >
                 {l.label}
               </Link>
@@ -41,10 +41,10 @@ export default function LandingNav() {
 
           {/* Right: lang + CTAs */}
           <div className="hidden items-center gap-4 lg:flex">
-            <div className="flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.06em] text-neutral-400">
-              <button className="text-neutral-950">ES</button>
+            <div className="flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.06em] text-fg-subtle">
+              <button className="text-fg">ES</button>
               <span>/</span>
-              <button className="hover:text-neutral-700">EN</button>
+              <button className="hover:text-fg-muted">EN</button>
             </div>
             <LpButton href="/auth?mode=login" variant="light" size="default">
               Ingresar
@@ -70,19 +70,19 @@ export default function LandingNav() {
 
       {/* Mobile menu */}
       {open && (
-        <div className="border-t border-neutral-200 bg-white lg:hidden">
+        <div className="border-t border-border bg-surface lg:hidden">
           <div className="container-platform flex flex-col gap-1 py-4">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="py-2.5 font-mono text-[13px] uppercase tracking-[0.08em] text-neutral-700"
+                className="py-2.5 font-mono text-[13px] uppercase tracking-[0.08em] text-fg-muted"
               >
                 {l.label}
               </Link>
             ))}
-            <div className="mt-3 border-t border-neutral-200 pt-4">
+            <div className="mt-3 border-t border-border pt-4">
               <LpButton href="/auth?mode=register" variant="primary" className="w-full">
                 Contáctanos
               </LpButton>

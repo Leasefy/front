@@ -98,10 +98,10 @@ export default function ComparisonSection() {
           <div className="flex justify-center">
             <EyebrowPill>Por qué Leasefy</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-7 text-fg`}>
             Una plataforma completa, no herramientas sueltas.
           </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-fg-muted md:text-lg">
             Un equipo grande puede cubrir toda la operación —pero a un costo alto. Mira qué
             tanto cubre cada enfoque.
           </p>
@@ -125,8 +125,8 @@ export default function ComparisonSection() {
                     onClick={() => setIdx(i)}
                     className={`group relative overflow-hidden rounded-xl border p-5 pl-6 text-left transition-all duration-300 ${
                       on
-                        ? "border-neutral-300 bg-white shadow-[0_8px_24px_-16px_rgba(16,24,64,0.35)]"
-                        : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50/60"
+                        ? "border-border-strong bg-surface shadow-[0_8px_24px_-16px_rgba(16,24,64,0.35)]"
+                        : "border-border hover:border-border-strong hover:bg-surface-muted/60"
                     }`}
                   >
                     {/* left accent bar */}
@@ -137,18 +137,18 @@ export default function ComparisonSection() {
                     />
                     <span className="flex items-center gap-2.5">
                       <I
-                        className={`h-4 w-4 shrink-0 transition-colors ${on ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"}`}
+                        className={`h-4 w-4 shrink-0 transition-colors ${on ? "text-primary" : "text-fg-subtle group-hover:text-fg-muted"}`}
                         weight={on ? "fill" : "regular"}
                       />
                       <MonoLabel
                         className={`text-[11px] tracking-[0.12em] transition-colors ${
-                          on ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
+                          on ? "text-primary" : "text-fg-subtle group-hover:text-fg-muted"
                         }`}
                       >
                         {d.label}
                       </MonoLabel>
                     </span>
-                    <span className="mt-2 block text-[13px] leading-relaxed text-neutral-500">
+                    <span className="mt-2 block text-[13px] leading-relaxed text-fg-muted">
                       {d.desc}
                     </span>
                     <ProgressLine
@@ -156,7 +156,7 @@ export default function ComparisonSection() {
                       duration={DWELL}
                       paused={paused}
                       cycleKey={idx}
-                      className="mt-4 bg-neutral-200/70"
+                      className="mt-4 bg-border-faint/70"
                     />
                   </button>
                 );
@@ -164,9 +164,9 @@ export default function ComparisonSection() {
             </div>
 
             {/* ── bars panel ─────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-neutral-200 p-5 md:p-7">
+            <div className="rounded-2xl border border-border p-5 md:p-7">
               {/* panel header — dynamic takeaway per dimension */}
-              <div className="flex items-start gap-3 border-b border-neutral-100 pb-5">
+              <div className="flex items-start gap-3 border-b border-border-faint pb-5">
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] bg-indigo-50 text-primary">
                   <active.icon className="h-4 w-4" weight="fill" />
                 </span>
@@ -179,7 +179,7 @@ export default function ComparisonSection() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, ease: EASE }}
-                    className="mt-1 text-[14px] leading-snug text-neutral-700 md:text-[15px]"
+                    className="mt-1 text-[14px] leading-snug text-fg-muted md:text-[15px]"
                   >
                     {active.takeaway}
                   </motion.p>
@@ -200,12 +200,12 @@ export default function ComparisonSection() {
                     >
                       <div className="flex w-36 shrink-0 items-center gap-2.5 md:w-52">
                         <I
-                          className={`h-[18px] w-[18px] shrink-0 ${r.leasefy ? "text-primary" : "text-neutral-400"}`}
+                          className={`h-[18px] w-[18px] shrink-0 ${r.leasefy ? "text-primary" : "text-fg-subtle"}`}
                           weight={r.leasefy ? "fill" : "regular"}
                         />
                         <span
                           className={`truncate text-[13px] md:text-[13.5px] ${
-                            r.leasefy ? "font-medium text-neutral-950" : "text-neutral-600"
+                            r.leasefy ? "font-medium text-fg" : "text-fg-muted"
                           }`}
                         >
                           {r.name}
@@ -217,7 +217,7 @@ export default function ComparisonSection() {
                         )}
                       </div>
 
-                      <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                      <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-surface-muted">
                         <motion.div
                           key={dim + r.name}
                           initial={{ width: 0 }}
@@ -248,7 +248,7 @@ export default function ComparisonSection() {
 
                       <span
                         className={`w-11 shrink-0 text-right font-mono text-[13px] tabular-nums ${
-                          r.leasefy ? "font-medium text-primary" : "text-neutral-700"
+                          r.leasefy ? "font-medium text-primary" : "text-fg-muted"
                         }`}
                       >
                         <CountUp value={pct} delay={delay} />
@@ -258,7 +258,7 @@ export default function ComparisonSection() {
                 })}
               </div>
 
-              <MonoLabel className="mt-5 block px-3 text-[10px] tracking-[0.12em] text-neutral-400">
+              <MonoLabel className="mt-5 block px-3 text-[10px] tracking-[0.12em] text-fg-subtle">
                 Comparación ilustrativa de enfoques · no es un benchmark
               </MonoLabel>
             </div>

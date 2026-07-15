@@ -259,11 +259,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       {/* Header */}
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-2xl font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.planes.title')}
           </h1>
-          <div className="mt-1 flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-            <span className="font-medium text-neutral-800 dark:text-neutral-200">
+          <div className="mt-1 flex items-center gap-2 text-sm text-fg-muted">
+            <span className="font-medium text-fg">
               {plan.debtor.nombreMasked || '—'}
             </span>
             <span>·</span>
@@ -278,10 +278,10 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
       </header>
 
       {/* Comparison panel */}
-      <section className="overflow-hidden rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+      <section className="overflow-hidden rounded-md border border-border bg-surface">
         <div className="overflow-x-auto overscroll-contain">
         <Table className="w-full text-sm">
-          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+          <TableHeader className="bg-surface-muted">
             <TableRow>
               <TableHead>{t('inmobiliaria.ai.cobranza.planes.comparisonHeader.campo')}</TableHead>
               <TableHead>{t('inmobiliaria.ai.cobranza.planes.comparisonHeader.propuesto')}</TableHead>
@@ -290,48 +290,48 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+              <TableCell className="px-4 py-3 text-fg-muted">
                 {t('inmobiliaria.ai.cobranza.planes.comparison.descuento')}
               </TableCell>
               <TableCell
                 className={`px-4 py-3 font-medium ${
                   isMaxDiscountExceeded
                     ? 'text-danger'
-                    : 'text-neutral-900 dark:text-neutral-100'
+                    : 'text-fg'
                 }`}
               >
                 {plan.proposed.discount}%
               </TableCell>
-              <TableCell className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+              <TableCell className="px-4 py-3 text-fg-muted">
                 {maxDiscount}%
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+              <TableCell className="px-4 py-3 text-fg-muted">
                 {t('inmobiliaria.ai.cobranza.planes.comparison.cuotas')}
               </TableCell>
-              <TableCell className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">
+              <TableCell className="px-4 py-3 font-medium text-fg">
                 {plan.proposed.cuotas}
               </TableCell>
-              <TableCell className="px-4 py-3 text-neutral-500">—</TableCell>
+              <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+              <TableCell className="px-4 py-3 text-fg-muted">
                 {t('inmobiliaria.ai.cobranza.planes.comparison.monto')}
               </TableCell>
-              <TableCell className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">
+              <TableCell className="px-4 py-3 font-medium text-fg">
                 {formatCop(plan.proposed.montoPorCuota)}
               </TableCell>
-              <TableCell className="px-4 py-3 text-neutral-500">—</TableCell>
+              <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
+              <TableCell className="px-4 py-3 text-fg-muted">
                 {t('inmobiliaria.ai.cobranza.planes.comparison.fecha')}
               </TableCell>
-              <TableCell className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">
+              <TableCell className="px-4 py-3 font-medium text-fg">
                 {plan.proposed.fechaPrimerPago || '—'}
               </TableCell>
-              <TableCell className="px-4 py-3 text-neutral-500">—</TableCell>
+              <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -425,9 +425,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
       {/* Rechazar inline form */}
       {rechazarOpen && (
-        <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <section className="space-y-3 rounded-md border border-border bg-surface p-4">
           <div className="space-y-1">
-            <span className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+            <span className="block text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.cobranza.planes.rechazarForm.reasonLabel')}
             </span>
             <Select
@@ -487,11 +487,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
       {/* Modificar inline form */}
       {modificarOpen && (
-        <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <section className="space-y-3 rounded-md border border-border bg-surface p-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+            <label className="block text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.cobranza.planes.modificarForm.descuento')}{' '}
-              <span className="ml-1 text-neutral-500 dark:text-neutral-400">
+              <span className="ml-1 text-fg-muted">
                 {modDiscount}%
               </span>
             </label>
@@ -506,12 +506,12 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               className="mt-2"
               aria-label={t('inmobiliaria.ai.cobranza.planes.modificarForm.descuento')}
             />
-            <div className="mt-1 flex justify-between text-xs text-neutral-500">
+            <div className="mt-1 flex justify-between text-xs text-fg-muted">
               <span>0%</span>
               <span>{maxDiscount}%</span>
             </div>
           </div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+          <label className="block text-sm font-medium text-fg-muted">
             {t('inmobiliaria.ai.cobranza.planes.modificarForm.cuotas')}
             <NumberInput
               min={1}
@@ -522,7 +522,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               className="mt-1 block w-full"
             />
           </label>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+          <label className="block text-sm font-medium text-fg-muted">
             {t('inmobiliaria.ai.cobranza.planes.modificarForm.monto')}
             <NumberInput
               min={1}
@@ -531,7 +531,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
               className="mt-1 block w-full"
             />
           </label>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+          <label className="block text-sm font-medium text-fg-muted">
             {t('inmobiliaria.ai.cobranza.planes.modificarForm.fecha')}
             <Input
               type="date"

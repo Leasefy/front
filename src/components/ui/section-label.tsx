@@ -13,9 +13,9 @@ interface SectionLabelProps {
 // feedback hues (amber/info-blue/green). Square 2px corner like the DS Eyebrow.
 const dotColors: Record<DotVariant, string> = {
   default: 'bg-primary',
-  warning: 'bg-[#A8730F]',
-  info: 'bg-[#2A6FB0]',
-  success: 'bg-[#3F8A53]',
+  warning: 'bg-warning',
+  info: 'bg-info',
+  success: 'bg-success',
 };
 
 /**

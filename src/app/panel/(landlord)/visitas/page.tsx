@@ -433,7 +433,7 @@ export default function VisitasPage() {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
-          <Buildings className="w-4 h-4 text-neutral-400" />
+          <Buildings className="w-4 h-4 text-fg-subtle" />
           <span className="text-sm text-fg-muted truncate max-w-[200px]">
             {row.propertyTitle}
           </span>
@@ -626,7 +626,7 @@ export default function VisitasPage() {
       content: (
         <div className="p-4 bg-surface-muted rounded-xl">
           <div className="flex items-start gap-3">
-            <Chat className="w-4 h-4 text-neutral-400 mt-0.5 flex-shrink-0" />
+            <Chat className="w-4 h-4 text-fg-subtle mt-0.5 flex-shrink-0" />
             <p className="text-sm text-fg-muted italic">
               &ldquo;{visit.candidateMessage}&rdquo;
             </p>

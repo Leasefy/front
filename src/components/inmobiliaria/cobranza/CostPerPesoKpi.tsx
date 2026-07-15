@@ -68,7 +68,7 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
 
   // Loading skeleton
   if (isLoading) {
-    return <div className="animate-pulse h-32 bg-neutral-100 dark:bg-neutral-800 rounded-md" />;
+    return <div className="animate-pulse h-32 bg-surface-muted rounded-md" />;
   }
 
   // Branch A — agency-gate: return null, page handles the display
@@ -102,10 +102,10 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
     >
       <p className="text-3xl font-bold tabular-nums">
         {formattedUsd}{' '}
-        <span className="text-base font-normal text-neutral-500">por</span>{' '}
+        <span className="text-base font-normal text-fg-muted">por</span>{' '}
         {formattedCop}
       </p>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 mb-3">
+      <p className="text-xs text-fg-muted mt-1 mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.subtitle')}
       </p>
       <ResponsiveContainer width="100%" height={120}>

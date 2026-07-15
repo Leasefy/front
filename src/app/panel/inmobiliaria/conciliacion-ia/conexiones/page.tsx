@@ -75,21 +75,21 @@ function ConexionCard({ c }: { c: Conexion }) {
   const inner = (
     <>
       <div className="flex items-start gap-3">
-        <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-neutral-100 text-neutral-600 shrink-0">
+        <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-surface-muted text-fg-muted shrink-0">
           <CIcon className="w-5 h-5" weight="duotone" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="text-[14px] font-semibold text-[#14130f]">{c.modulo}</span>
-            {c.href && <ArrowRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-[#1A40FF] group-hover:translate-x-0.5 transition-all" weight="bold" />}
+            {c.href && <ArrowRight className="w-3.5 h-3.5 text-fg-subtle group-hover:text-[#1A40FF] group-hover:translate-x-0.5 transition-all" weight="bold" />}
           </div>
-          <p className="mt-1 text-[12.5px] text-neutral-500 leading-snug">{c.ejemplo}</p>
+          <p className="mt-1 text-[12.5px] text-fg-muted leading-snug">{c.ejemplo}</p>
         </div>
       </div>
       <div className="mt-3.5"><TipoChip tipo={c.tipo} /></div>
     </>
   )
-  const cls = 'group block rounded-xl border border-neutral-200/80 bg-white p-4 transition-colors hover:border-neutral-300'
+  const cls = 'group block rounded-xl border border-border bg-surface p-4 transition-colors hover:border-border-strong'
   return c.href ? <Link href={c.href} className={cls}>{inner}</Link> : <div className={cls}>{inner}</div>
 }
 
@@ -97,7 +97,7 @@ export default function ConciliacionConexionesPage() {
   return (
     <div className="p-6 lg:p-8">
       <div className="mx-auto max-w-[1240px] space-y-7">
-        <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors">
+        <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Conciliación IA
         </Link>
@@ -146,7 +146,7 @@ export default function ConciliacionConexionesPage() {
         <section className="space-y-4">
           <div>
             <Eyebrow>Entra · de dónde saca los datos</Eyebrow>
-            <p className="mt-1.5 text-[13px] text-neutral-500">El equipo arranca con lo que ya está en tu Leasefy y en el banco.</p>
+            <p className="mt-1.5 text-[13px] text-fg-muted">El equipo arranca con lo que ya está en tu Leasefy y en el banco.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {ENTRADAS.map((c) => <ConexionCard key={c.modulo} c={c} />)}
@@ -157,7 +157,7 @@ export default function ConciliacionConexionesPage() {
         <section className="space-y-4">
           <div>
             <Eyebrow accent>Sale · qué deja al día cuando concilia</Eyebrow>
-            <p className="mt-1.5 text-[13px] text-neutral-500">Cada pago conciliado mueve el resto de la operación por ti.</p>
+            <p className="mt-1.5 text-[13px] text-fg-muted">Cada pago conciliado mueve el resto de la operación por ti.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {SALIDAS.map((c) => <ConexionCard key={c.modulo} c={c} />)}

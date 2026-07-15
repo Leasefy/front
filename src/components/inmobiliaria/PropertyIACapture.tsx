@@ -27,6 +27,7 @@ import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { COLOMBIAN_CITIES } from '@/lib/types/property';
 import type { PropertyType } from '@/lib/types/property';
 import {
@@ -59,6 +60,10 @@ interface ReviewForm {
   city: string;
   neighborhood: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
+  geocodePlaceId?: string;
+  coordsSource?: 'geocoded' | 'city';
   monthlyRent: string;
   bedrooms: string;
   bathrooms: string;
@@ -258,6 +263,22 @@ export function PropertyIACapture() {
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
+  const updateLocation = (partial: PropertyLocationValue) => {
+    formEditedRef.current = true;
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...(partial.address !== undefined ? { address: partial.address } : {}),
+            latitude: partial.latitude,
+            longitude: partial.longitude,
+            geocodePlaceId: partial.geocodePlaceId,
+            coordsSource: partial.coordsSource,
+          }
+        : prev,
+    );
+  };
+
   const isValid =
     !!form &&
     !!form.title &&
@@ -290,6 +311,10 @@ export function PropertyIACapture() {
       };
       if (Number(form.adminFee) > 0) payload.adminFee = Number(form.adminFee);
       if (Number(form.stratum) > 0) payload.stratum = Number(form.stratum);
+      if (typeof form.latitude === 'number' && typeof form.longitude === 'number') {
+        payload.latitude = form.latitude;
+        payload.longitude = form.longitude;
+      }
 
       const property = await propertiesApi.create(payload);
 
@@ -373,7 +398,13 @@ export function PropertyIACapture() {
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg">{t(k('fAddress'))} *</label>
-            <Input type="text" value={form.address} onChange={(e) => updateForm('address', e.target.value)} />
+            <PropertyLocationField
+              address={form.address}
+              city={form.city}
+              latitude={form.latitude}
+              longitude={form.longitude}
+              onChange={updateLocation}
+            />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">

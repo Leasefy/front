@@ -42,15 +42,15 @@ const STATUS_DOT: Record<string, string> = {
   completed: 'bg-success',
   failed: 'bg-danger',
   running: 'bg-primary animate-pulse',
-  dispatching: 'bg-neutral-400 animate-pulse',
+  dispatching: 'bg-fg-subtle animate-pulse',
 };
 
 const AGENT_COLOR_BG: Record<string, string> = {
   emerald: 'bg-success-soft',
   blue: 'bg-primary-soft',
   amber: 'bg-warning-soft',
-  purple: 'bg-neutral-100 dark:bg-neutral-800',
-  pink: 'bg-neutral-100 dark:bg-neutral-800',
+  purple: 'bg-surface-muted',
+  pink: 'bg-surface-muted',
   indigo: 'bg-primary-soft',
 };
 
@@ -58,8 +58,8 @@ const AGENT_COLOR_TEXT: Record<string, string> = {
   emerald: 'text-success',
   blue: 'text-primary',
   amber: 'text-warning',
-  purple: 'text-neutral-600 dark:text-neutral-300',
-  pink: 'text-neutral-600 dark:text-neutral-300',
+  purple: 'text-fg-muted',
+  pink: 'text-fg-muted',
   indigo: 'text-primary',
 };
 
@@ -145,7 +145,7 @@ function ActivityItem({ entry, onNavigate }: ActivityItemProps) {
           ? 'border-danger/30 hover:bg-danger-soft'
           : allCompleted
           ? 'border-success/30 hover:bg-success-soft'
-          : 'border-neutral-200 dark:border-border hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+          : 'border-border hover:bg-surface-muted'
       )}
     >
       {/* Conversation title + timestamp */}

@@ -1,10 +1,11 @@
 'use client';
 
-import { MapPin, Buildings, Check, Compass } from '@phosphor-icons/react';
+import { Buildings, Check, Compass } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { CITIES } from '@/lib/types/publish';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { PropertyLocationField } from '@/components/publicar/PropertyLocationField';
 import { cn } from '@/lib/utils';
 
 export function StepLocation() {
@@ -87,22 +88,20 @@ export function StepLocation() {
         )}
       </div>
 
-      {/* Address */}
+      {/* Address — autocomplete when possible, always usable as free text */}
       <div className="space-y-2">
         <Label htmlFor="address" className="text-base font-medium text-fg">
           Dirección completa
         </Label>
-        <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle z-10" />
-          <Input
-            id="address"
-            type="text"
-            placeholder="Calle 123 #45-67, Apto 101"
-            value={draft.address}
-            onChange={(e) => updateDraft({ address: e.target.value })}
-            className="pl-10 h-12 text-base"
-          />
-        </div>
+        <PropertyLocationField
+          id="address"
+          placeholder="Calle 123 #45-67, Apto 101"
+          address={draft.address}
+          city={draft.city}
+          latitude={draft.latitude}
+          longitude={draft.longitude}
+          onChange={updateDraft}
+        />
         <p className="text-xs text-fg-muted flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-success" />
           La dirección exacta solo será visible para inquilinos confirmados

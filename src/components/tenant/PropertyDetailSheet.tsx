@@ -95,32 +95,32 @@ export function PropertyDetailSheet({
       <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <SheetContent
           side="right"
-          className="flex w-full flex-col overflow-hidden p-0 sm:max-w-xl bg-surface dark:bg-[#0f0f10]"
+          className="flex w-full flex-col overflow-hidden p-0 sm:max-w-xl bg-surface"
           hideCloseButton
         >
           {/* Custom Header */}
-          <SheetHeader className="flex-shrink-0 flex flex-row items-center justify-between px-5 py-4 border-b border-border-faint dark:border-white/10">
+          <SheetHeader className="flex-shrink-0 flex flex-row items-center justify-between px-5 py-4 border-b border-border-faint">
             <div>
-              <SheetTitle className="text-lg font-semibold text-fg dark:text-white">
+              <SheetTitle className="text-lg font-semibold text-fg">
                 Detalle de propiedad
               </SheetTitle>
-              <SheetDescription className="text-sm text-fg-muted dark:text-fg-subtle">
+              <SheetDescription className="text-sm text-fg-muted">
                 {property.neighborhood}, {property.city}
               </SheetDescription>
             </div>
             <IconButton
               variant="ghost"
               onClick={onClose}
-              className="w-9 h-9 rounded-full bg-surface-muted dark:bg-ink"
+              className="w-9 h-9 rounded-full bg-surface-muted"
               aria-label="Cerrar"
-              icon={<X className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />}
+              icon={<X className="w-5 h-5 text-fg-muted" />}
             />
           </SheetHeader>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
             {/* Hero Image */}
-            <div className="relative aspect-video bg-surface-muted dark:bg-ink">
+            <div className="relative aspect-video bg-surface-muted">
               <Image
                 src={property.thumbnailUrl}
                 alt={property.title}
@@ -139,7 +139,7 @@ export function PropertyDetailSheet({
                 size="sm"
                 hideArrow
                 onClick={() => handleOpenGallery(0)}
-                className="absolute bottom-4 right-4 bg-surface/90 dark:bg-ink/90 backdrop-blur-sm"
+                className="absolute bottom-4 right-4 bg-surface/90 backdrop-blur-sm"
               >
                 <Camera className="w-4 h-4" />
                 Ver {property.images.length} fotos
@@ -165,7 +165,7 @@ export function PropertyDetailSheet({
             <div className="p-5 space-y-5">
               {/* Match Data Section */}
               {matchData && (
-                <div className="flex items-center gap-3 p-3 bg-surface-muted dark:bg-[#1a1a1c] border border-border dark:border-border-strong rounded-xl">
+                <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border rounded-xl">
                   <div
                     className={cn(
                       'flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg',
@@ -177,23 +177,23 @@ export function PropertyDetailSheet({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-fg dark:text-white">
+                      <span className="text-sm font-medium text-fg">
                         Compatibilidad
                       </span>
                       <span
                         className={cn(
                           'text-[10px] font-medium px-2 py-0.5 rounded-full',
                           matchData.acceptanceProbability === 'alta'
-                            ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+                            ? 'bg-success-soft text-success'
                             : matchData.acceptanceProbability === 'media'
-                              ? 'bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F]'
-                              : 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 text-[#C4503B] dark:text-[#E0664D]'
+                              ? 'bg-warning-soft text-warning'
+                              : 'bg-danger-soft text-danger'
                         )}
                       >
                         {getAcceptanceProbabilityLabel(matchData.acceptanceProbability)}
                       </span>
                     </div>
-                    <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5 truncate">
+                    <p className="text-xs text-fg-muted mt-0.5 truncate">
                       {matchData.recommendation}
                     </p>
                   </div>
@@ -201,7 +201,7 @@ export function PropertyDetailSheet({
               )}
 
               {/* Location */}
-              <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
+              <div className="flex items-center gap-1.5 text-sm text-fg-muted">
                 <MapPin className="w-4 h-4" />
                 <span>
                   {property.neighborhood}, {property.city}
@@ -209,20 +209,20 @@ export function PropertyDetailSheet({
               </div>
 
               {/* Title */}
-              <h2 className="text-xl font-semibold text-fg dark:text-white leading-tight">
+              <h2 className="text-xl font-semibold text-fg leading-tight">
                 {property.title}
               </h2>
 
               {/* Price */}
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-fg dark:text-white">
+                <span className="text-2xl font-bold text-fg">
                   {formatCurrency(property.monthlyRent)}
                 </span>
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">
+                <span className="text-sm text-fg-muted">
                   /mes
                 </span>
                 {property.adminFee > 0 && (
-                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
+                  <span className="text-sm text-fg-muted">
                     (+{formatCurrency(property.adminFee)} admin)
                   </span>
                 )}
@@ -230,27 +230,27 @@ export function PropertyDetailSheet({
 
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-2">
-                <div className="flex flex-col items-center p-3 bg-surface-muted dark:bg-[#1a1a1c] border border-border dark:border-border-strong rounded-xl">
-                  <ArrowsOut className="w-5 h-5 text-fg-muted dark:text-fg-subtle mb-1.5" />
-                  <span className="text-sm font-semibold text-fg dark:text-white">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                  <ArrowsOut className="w-5 h-5 text-fg-muted mb-1.5" />
+                  <span className="text-sm font-semibold text-fg">
                     {formatArea(property.area)}
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted dark:bg-[#1a1a1c] border border-border dark:border-border-strong rounded-xl">
-                  <Bed className="w-5 h-5 text-fg-muted dark:text-fg-subtle mb-1.5" />
-                  <span className="text-sm font-semibold text-fg dark:text-white">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                  <Bed className="w-5 h-5 text-fg-muted mb-1.5" />
+                  <span className="text-sm font-semibold text-fg">
                     {property.bedrooms} hab
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted dark:bg-[#1a1a1c] border border-border dark:border-border-strong rounded-xl">
-                  <Bathtub className="w-5 h-5 text-fg-muted dark:text-fg-subtle mb-1.5" />
-                  <span className="text-sm font-semibold text-fg dark:text-white">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                  <Bathtub className="w-5 h-5 text-fg-muted mb-1.5" />
+                  <span className="text-sm font-semibold text-fg">
                     {property.bathrooms} baño
                   </span>
                 </div>
-                <div className="flex flex-col items-center p-3 bg-surface-muted dark:bg-[#1a1a1c] border border-border dark:border-border-strong rounded-xl">
-                  <House className="w-5 h-5 text-fg-muted dark:text-fg-subtle mb-1.5" />
-                  <span className="text-sm font-semibold text-fg dark:text-white truncate text-center text-[13px]">
+                <div className="flex flex-col items-center p-3 bg-surface-muted border border-border rounded-xl">
+                  <House className="w-5 h-5 text-fg-muted mb-1.5" />
+                  <span className="text-sm font-semibold text-fg truncate text-center text-[13px]">
                     {typeLabels[property.type]}
                   </span>
                 </div>
@@ -258,10 +258,10 @@ export function PropertyDetailSheet({
 
               {/* Description */}
               <div>
-                <h3 className="text-sm font-semibold text-fg dark:text-white mb-2">
+                <h3 className="text-sm font-semibold text-fg mb-2">
                   Descripción
                 </h3>
-                <p className="text-sm text-fg-muted dark:text-fg-subtle leading-relaxed">
+                <p className="text-sm text-fg-muted leading-relaxed">
                   {property.description}
                 </p>
               </div>
@@ -270,13 +270,13 @@ export function PropertyDetailSheet({
               <PropertyAccordion
                 property={property}
                 defaultOpen={['amenities', 'costs']}
-                className="[&_[data-radix-accordion-trigger]]:hover:bg-surface-muted dark:[&_[data-radix-accordion-trigger]]:hover:bg-ink"
+                className="[&_[data-radix-accordion-trigger]]:hover:bg-surface-muted"
               />
 
               {/* Gallery Thumbnails */}
               {property.images.length > 1 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-fg dark:text-white mb-3">
+                  <h3 className="text-sm font-semibold text-fg mb-3">
                     Galería
                   </h3>
                   <div className="grid grid-cols-4 gap-2">
@@ -307,20 +307,20 @@ export function PropertyDetailSheet({
               )}
 
               {/* Location Card */}
-              <div className="bg-surface-muted dark:bg-[#1a1a1c] border border-border dark:border-border-strong rounded-xl p-4">
+              <div className="bg-surface-muted border border-border rounded-xl p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 rounded-xl">
-                      <MapPin className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+                    <div className="flex items-center justify-center w-10 h-10 bg-primary-soft rounded-xl">
+                      <MapPin className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-fg dark:text-white">
+                      <h3 className="text-sm font-semibold text-fg">
                         Ubicación
                       </h3>
-                      <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+                      <p className="text-sm text-fg-muted mt-0.5">
                         {property.neighborhood}, {property.city}
                       </p>
-                      <p className="text-xs text-fg-subtle dark:text-fg-muted mt-0.5">
+                      <p className="text-xs text-fg-subtle mt-0.5">
                         {property.address}
                       </p>
                     </div>
@@ -331,7 +331,7 @@ export function PropertyDetailSheet({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary transition-colors"
                   >
                     Ver en Maps
                     <ArrowSquareOut className="w-3 h-3" />
@@ -345,14 +345,14 @@ export function PropertyDetailSheet({
           </div>
 
           {/* Sticky Footer */}
-          <div className="flex-shrink-0 border-t border-border-faint dark:border-white/10 bg-surface dark:bg-[#0f0f10] p-4">
+          <div className="flex-shrink-0 border-t border-border-faint bg-surface p-4">
             <div className="flex items-center gap-3">
               {/* Price */}
               <div className="flex-1 min-w-0">
-                <span className="text-lg font-bold text-fg dark:text-white">
+                <span className="text-lg font-bold text-fg">
                   {formatCurrency(property.monthlyRent)}
                 </span>
-                <span className="text-sm text-fg-muted dark:text-fg-subtle">
+                <span className="text-sm text-fg-muted">
                   /mes
                 </span>
               </div>
@@ -364,8 +364,8 @@ export function PropertyDetailSheet({
                 className={cn(
                   'w-12 h-12 rounded-xl border',
                   wishlisted
-                    ? 'bg-[#F8EAE7] dark:bg-[#C4503B]/15 border-[#C4503B]/30 dark:border-[#C4503B]/40'
-                    : 'bg-surface-muted dark:bg-ink border-border dark:border-border-strong hover:bg-surface-muted dark:hover:bg-surface-muted'
+                    ? 'bg-danger-soft border-danger/30'
+                    : 'bg-surface-muted border-border hover:bg-surface-muted'
                 )}
                 aria-label={wishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                 icon={
@@ -373,8 +373,8 @@ export function PropertyDetailSheet({
                     className={cn(
                       'w-5 h-5 transition-colors',
                       wishlisted
-                        ? 'fill-[#C4503B] text-[#C4503B]'
-                        : 'text-fg-muted dark:text-fg-subtle'
+                        ? 'fill-danger text-danger'
+                        : 'text-fg-muted'
                     )}
                   />
                 }
@@ -383,7 +383,7 @@ export function PropertyDetailSheet({
               {/* Apply Button */}
               <Link
                 href={`/aplicar/${property.id}`}
-                className="flex items-center justify-center gap-2 h-12 px-6 bg-[#1A40FF] hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 h-12 px-6 bg-primary hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors"
               >
                 Aplicar a propiedad
                 <CaretRight className="w-4 h-4" />

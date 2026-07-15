@@ -358,7 +358,7 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="md:col-span-6 bg-neutral-50 rounded-xl p-8 h-[280px] flex flex-col justify-between"
+                className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-[#F8EAE7] flex items-center justify-center mb-4">
@@ -387,7 +387,7 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="md:col-span-6 bg-neutral-50 rounded-xl p-8 h-[280px] flex flex-col justify-between"
+                className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-[#F8F0E0] flex items-center justify-center mb-4">

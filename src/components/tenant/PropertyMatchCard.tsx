@@ -138,9 +138,9 @@ export function PropertyMatchCard({
         className={cn(
           'absolute top-3 right-3 text-[10px] font-medium px-2 py-1 rounded-sm border backdrop-blur-sm',
           'bg-surface/90',
-          acceptanceProbability === 'alta' ? 'text-[#2C7A53] border-[#2C7A53]/30' :
-          acceptanceProbability === 'media' ? 'text-[#B7791F] border-[#B7791F]/30' :
-          'text-[#C4503B] border-[#C4503B]/30'
+          acceptanceProbability === 'alta' ? 'text-success border-success/30' :
+          acceptanceProbability === 'media' ? 'text-warning border-warning/30' :
+          'text-danger border-danger/30'
         )}
       >
         {getAcceptanceProbabilityLabel(acceptanceProbability)}
@@ -211,7 +211,7 @@ export function PropertyMatchCard({
 
         {/* Recommendation - fixed height with line clamp */}
         <div className="flex items-start gap-2 mt-3 p-2.5 bg-surface-muted/50 rounded-sm min-h-[52px]">
-          <Check className="w-4 h-4 text-[#2C7A53] flex-shrink-0 mt-0.5" />
+          <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
           <p className="text-xs text-plan-secondary line-clamp-2">{recommendation}</p>
         </div>
 

@@ -203,7 +203,7 @@ export default async function BlogArticlePage({ params }: Props) {
                   <Link
                     key={r.slug}
                     href={r.href}
-                    className="group block overflow-hidden border border-faint"
+                    className="group block overflow-hidden border border-border-faint"
                   >
                     <div className="relative h-[200px] overflow-hidden">
                       <Image
@@ -217,19 +217,19 @@ export default async function BlogArticlePage({ params }: Props) {
 
                     <div className="p-5">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[11px] font-medium text-[#1A40FF] tracking-wide uppercase">
+                        <span className="text-[11px] font-medium text-primary tracking-wide uppercase">
                           {r.category}
                         </span>
                         <span className="text-[11px] text-muted-foreground">{r.readTime}</span>
                       </div>
 
-                      <h3 className="text-[15px] font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-[#1A40FF] transition-colors duration-300 mb-2">
+                      <h3 className="text-[15px] font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 mb-2">
                         {r.title}
                       </h3>
 
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-muted-foreground/70">{r.date}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-[#1A40FF] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                       </div>
                     </div>
                   </Link>

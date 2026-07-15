@@ -79,7 +79,7 @@ function MatchMock() {
           <motion.div
             key={c.name}
             variants={rise}
-            className="rounded-lg border border-neutral-200 bg-white p-3"
+            className="rounded-lg border border-border bg-surface p-3"
           >
             <MonoLabel className="text-[10px] tracking-[0.12em] text-fg-subtle">
               Solicitud
@@ -93,8 +93,8 @@ function MatchMock() {
               </span>
             </div>
             <div className="mt-3 space-y-1.5">
-              <span className="block h-1.5 w-full rounded-full bg-neutral-100" />
-              <span className="block h-1.5 w-3/4 rounded-full bg-neutral-100" />
+              <span className="block h-1.5 w-full rounded-full bg-surface-muted" />
+              <span className="block h-1.5 w-3/4 rounded-full bg-surface-muted" />
             </div>
           </motion.div>
         ))}
@@ -135,7 +135,7 @@ function CarteraMock() {
           Recaudado 82%
         </MonoLabel>
       </motion.div>
-      <motion.div variants={rise} className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-100">
+      <motion.div variants={rise} className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
         <motion.span
           className="block h-full rounded-full bg-primary"
           initial={{ width: 0 }}
@@ -148,9 +148,9 @@ function CarteraMock() {
           <motion.div
             key={r.name}
             variants={rise}
-            className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3.5 py-3"
+            className="flex items-center justify-between rounded-lg border border-border bg-surface px-3.5 py-3"
           >
-            <span className="text-[13px] text-neutral-700">{r.name}</span>
+            <span className="text-[13px] text-fg-muted">{r.name}</span>
             <MonoLabel
               className={`rounded-[4px] px-2 py-0.5 text-[10px] font-medium tracking-wide ${toneCls[r.tone]}`}
             >
@@ -178,7 +178,7 @@ function EstudioMock() {
           <MonoLabel className="text-[10px] tracking-[0.12em] text-fg-subtle">
             Estudio · J. Ramírez
           </MonoLabel>
-          <p className="mt-1 font-heading text-[26px] font-medium leading-none text-neutral-950">
+          <p className="mt-1 font-heading text-[26px] font-medium leading-none text-fg">
             Riesgo bajo
           </p>
         </div>
@@ -194,10 +194,10 @@ function EstudioMock() {
         ].map((b) => (
           <div key={b.label}>
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-neutral-500">{b.label}</span>
-              <span className="font-mono text-[11px] tabular-nums text-neutral-700">{b.pct}%</span>
+              <span className="text-[12px] text-fg-muted">{b.label}</span>
+              <span className="font-mono text-[11px] tabular-nums text-fg-muted">{b.pct}%</span>
             </div>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-100">
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-muted">
               <motion.span
                 className="block h-full rounded-full bg-primary"
                 initial={{ width: 0 }}
@@ -211,7 +211,7 @@ function EstudioMock() {
 
       <motion.ul variants={rise} className="mt-5 space-y-2">
         {checks.map((c) => (
-          <li key={c} className="flex items-center gap-2 text-[13px] text-neutral-700">
+          <li key={c} className="flex items-center gap-2 text-[13px] text-fg-muted">
             <CheckCircle className="h-4 w-4 shrink-0 text-primary" weight="fill" />
             {c}
           </li>
@@ -231,7 +231,7 @@ export default function NCProblemSplit() {
     <section className="bg-white py-24 md:py-32">
       <div className="container-platform">
         <Reveal>
-          <h2 className={`${lpHeading} mx-auto max-w-3xl text-center text-neutral-950`}>
+          <h2 className={`${lpHeading} mx-auto max-w-3xl text-center text-fg`}>
             La operación manual multiplica el trabajo
           </h2>
         </Reveal>
@@ -243,21 +243,21 @@ export default function NCProblemSplit() {
               {ITEMS.map((item, i) => {
                 const isActive = active === i;
                 return (
-                  <div key={item.n} className="border-t border-neutral-200 last:border-b">
+                  <div key={item.n} className="border-t border-border last:border-b">
                     <button
                       type="button"
                       onClick={() => setActive(i)}
                       aria-expanded={isActive}
                       className="group flex w-full items-baseline gap-5 pt-7 pb-5 text-left"
                     >
-                      <span className="font-mono text-[14px] tabular-nums text-neutral-400">
+                      <span className="font-mono text-[14px] tabular-nums text-fg-subtle">
                         {item.n}
                       </span>
                       <span
                         className={`font-heading text-[26px] font-medium leading-[1.1] tracking-[-0.02em] transition-colors duration-300 md:text-[34px] ${
                           isActive
-                            ? "text-neutral-950"
-                            : "text-neutral-300 group-hover:text-neutral-500"
+                            ? "text-fg"
+                            : "text-fg-subtle group-hover:text-fg-muted"
                         }`}
                       >
                         {item.title}
@@ -273,7 +273,7 @@ export default function NCProblemSplit() {
                           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                           className="overflow-hidden"
                         >
-                          <p className="pb-6 pl-[3.25rem] pr-6 text-[15px] leading-relaxed text-neutral-500">
+                          <p className="pb-6 pl-[3.25rem] pr-6 text-[15px] leading-relaxed text-fg-muted">
                             {item.body}
                           </p>
                         </motion.div>
@@ -295,12 +295,12 @@ export default function NCProblemSplit() {
 
           {/* RIGHT — mockup that swaps per active item */}
           <Reveal delay={0.1}>
-            <div className="relative min-h-[340px] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+            <div className="relative min-h-[340px] overflow-hidden rounded-2xl border border-border bg-surface-muted">
               {/* hairline frame ticks */}
-              <span aria-hidden className="pointer-events-none absolute left-3 top-3 h-3 w-3 border-l border-t border-neutral-300" />
-              <span aria-hidden className="pointer-events-none absolute right-3 top-3 h-3 w-3 border-r border-t border-neutral-300" />
-              <span aria-hidden className="pointer-events-none absolute left-3 bottom-3 h-3 w-3 border-l border-b border-neutral-300" />
-              <span aria-hidden className="pointer-events-none absolute right-3 bottom-3 h-3 w-3 border-r border-b border-neutral-300" />
+              <span aria-hidden className="pointer-events-none absolute left-3 top-3 h-3 w-3 border-l border-t border-border-strong" />
+              <span aria-hidden className="pointer-events-none absolute right-3 top-3 h-3 w-3 border-r border-t border-border-strong" />
+              <span aria-hidden className="pointer-events-none absolute left-3 bottom-3 h-3 w-3 border-l border-b border-border-strong" />
+              <span aria-hidden className="pointer-events-none absolute right-3 bottom-3 h-3 w-3 border-r border-b border-border-strong" />
               <AnimatePresence mode="wait">
                 <Mock key={active} />
               </AnimatePresence>

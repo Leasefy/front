@@ -67,7 +67,7 @@ function Row({ title, desc, children, sub }: { title: string; desc: string; chil
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[13.5px] font-medium text-[#14130f]">{title}</p>
-          <p className="text-[12.5px] text-neutral-500 leading-snug mt-0.5">{desc}</p>
+          <p className="text-[12.5px] text-fg-muted leading-snug mt-0.5">{desc}</p>
         </div>
         <div className="shrink-0 pt-0.5">{children}</div>
       </div>
@@ -87,14 +87,14 @@ export default function ConciliacionReglasPage() {
     <div className="p-6 lg:p-8">
       <div className="mx-auto max-w-[860px] space-y-6">
         {/* Header */}
-        <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors">
+        <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Conciliación IA
         </Link>
 
         <div className="space-y-1">
           <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#14130f]">Reglas de conciliación</h1>
-          <p className="text-[14px] text-neutral-500">Ajusta cómo concilia Gabriela según cómo opera tu inmobiliaria.</p>
+          <p className="text-[14px] text-fg-muted">Ajusta cómo concilia Gabriela según cómo opera tu inmobiliaria.</p>
         </div>
 
         {/* Ink effect banner (anchor) */}
@@ -118,9 +118,9 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Conciliación automática */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
+        <section className="rounded-2xl border border-border bg-surface p-5">
           <Eyebrow>Conciliación automática</Eyebrow>
-          <div className="mt-2 divide-y divide-neutral-100">
+          <div className="mt-2 divide-y divide-border-faint">
             <Row title="Conciliar automáticamente" desc="Cuando la confianza del match supere el umbral, Gabriela concilia sin pedir revisión.">
               <Stepper value={r.autoUmbral} onChange={(v) => set('autoUmbral', v)} step={5} min={70} max={99} format={pct} label="umbral de auto-conciliación" />
             </Row>
@@ -128,7 +128,7 @@ export default function ConciliacionReglasPage() {
               title="Aceptar diferencias menores"
               desc="Concilia aunque el valor difiera un poco del canon (ajustes bancarios)."
               sub={r.diferenciaActiva && (
-                <div className="flex items-center gap-2 text-[12.5px] text-neutral-500">
+                <div className="flex items-center gap-2 text-[12.5px] text-fg-muted">
                   Hasta
                   <Stepper value={r.diferenciaMax} onChange={(v) => set('diferenciaMax', v)} step={1000} min={1000} max={50000} format={cop} label="diferencia máxima permitida" />
                 </div>
@@ -143,9 +143,9 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Excedentes y saldos */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
+        <section className="rounded-2xl border border-border bg-surface p-5">
           <Eyebrow>Excedentes y saldos</Eyebrow>
-          <div className="mt-2 divide-y divide-neutral-100">
+          <div className="mt-2 divide-y divide-border-faint">
             <Row title="Aplicar excedentes al mes siguiente" desc="Si el inquilino paga de más, el excedente queda como saldo a favor.">
               <Toggle on={r.excedenteProxMes} onChange={(v) => set('excedenteProxMes', v)} label="Aplicar excedentes al mes siguiente" />
             </Row>
@@ -153,7 +153,7 @@ export default function ConciliacionReglasPage() {
               title="Activar cobranza por saldo"
               desc="Cuando queda un saldo pendiente, Valentina activa la cobranza por el monto."
               sub={r.cobranzaSaldoActiva && (
-                <div className="flex items-center gap-2 text-[12.5px] text-neutral-500">
+                <div className="flex items-center gap-2 text-[12.5px] text-fg-muted">
                   Si el saldo supera
                   <Stepper value={r.cobranzaSaldo} onChange={(v) => set('cobranzaSaldo', v)} step={10000} min={0} max={500000} format={cop} label="saldo mínimo para activar cobranza" />
                 </div>
@@ -165,9 +165,9 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Seguridad */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
+        <section className="rounded-2xl border border-border bg-surface p-5">
           <Eyebrow>Seguridad</Eyebrow>
-          <div className="mt-2 divide-y divide-neutral-100">
+          <div className="mt-2 divide-y divide-border-faint">
             <Row title="No conciliar pagos de terceros automáticamente" desc="Si el pagador no es el inquilino, deja el caso en revisión.">
               <Toggle on={r.noTerceros} onChange={(v) => set('noTerceros', v)} label="No conciliar pagos de terceros" />
             </Row>
@@ -181,9 +181,9 @@ export default function ConciliacionReglasPage() {
         </section>
 
         {/* Coincidencia */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
+        <section className="rounded-2xl border border-border bg-surface p-5">
           <Eyebrow>Coincidencia</Eyebrow>
-          <div className="mt-2 divide-y divide-neutral-100">
+          <div className="mt-2 divide-y divide-border-faint">
             <Row title="Asociar la referencia bancaria con el documento del inquilino" desc="Usa el número de referencia como una señal fuerte de coincidencia.">
               <Toggle on={r.refDocumento} onChange={(v) => set('refDocumento', v)} label="Asociar referencia con documento" />
             </Row>
@@ -201,7 +201,7 @@ export default function ConciliacionReglasPage() {
             hideArrow
             onClick={() => { setR(DEFAULTS); setGuardado(false) }}
             disabled={!dirty}
-            className="text-neutral-500"
+            className="text-fg-muted"
           >
             <ArrowCounterClockwise className="w-4 h-4" weight="bold" />
             Restaurar valores por defecto

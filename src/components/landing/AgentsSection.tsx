@@ -58,10 +58,10 @@ export default function AgentsSection() {
       <div className="container-platform">
         <Reveal className="max-w-4xl">
           <EyebrowPill>Agentes AI</EyebrowPill>
-          <h2 className={`${lpHeading} mt-6 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-6 text-fg`}>
             Agentes AI para automatizar los momentos críticos del arriendo
           </h2>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-neutral-500">
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-fg-muted">
             Leasefy incorpora agentes especializados que ayudan a tu equipo a
             mover la operación más rápido, reducir tareas repetitivas y tomar
             mejores decisiones.
@@ -73,18 +73,18 @@ export default function AgentsSection() {
             {AGENTS.map((a) => (
               <div
                 key={a.name}
-                className="flex min-h-[230px] flex-col rounded-2xl border border-neutral-200 bg-white p-7"
+                className="flex min-h-[230px] flex-col rounded-2xl border border-border bg-surface p-7"
               >
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-primary">
                   <a.icon className="h-6 w-6 text-primary" weight="duotone" />
                 </span>
-                <h3 className="mt-6 font-heading text-lg font-medium text-neutral-950">
+                <h3 className="mt-6 font-heading text-lg font-medium text-fg">
                   {a.name}
                 </h3>
-                <p className="mt-3 text-[15px] leading-relaxed text-neutral-500">
+                <p className="mt-3 text-[15px] leading-relaxed text-fg-muted">
                   {a.body}
                 </p>
-                <p className="mt-5 text-sm leading-relaxed text-neutral-600">
+                <p className="mt-5 text-sm leading-relaxed text-fg-muted">
                   <span className="text-overline mr-2 text-[11px] text-primary">
                     Resultado:
                   </span>

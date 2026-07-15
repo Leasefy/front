@@ -56,14 +56,14 @@ export default function ConciliacionLiquidacionesPage() {
   return (
     <div className="p-6 lg:p-8">
       <div className="mx-auto max-w-[1240px] space-y-6">
-        <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors">
+        <Link href="/panel/inmobiliaria/conciliacion-ia" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Conciliación IA
         </Link>
 
         <div className="space-y-1">
           <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#14130f]">Liquidaciones a propietarios</h1>
-          <p className="text-[14px] text-neutral-500">Lo que ya está conciliado y listo para transferir, del cierre del 16 de junio.</p>
+          <p className="text-[14px] text-fg-muted">Lo que ya está conciliado y listo para transferir, del cierre del 16 de junio.</p>
         </div>
 
         {/* Ink summary (anchor) */}
@@ -87,18 +87,18 @@ export default function ConciliacionLiquidacionesPage() {
         </section>
 
         {/* Table */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white overflow-hidden">
+        <section className="rounded-2xl border border-border bg-surface overflow-hidden">
           <div className="px-5 pt-5 pb-3">
             <Eyebrow>Propietarios del cierre</Eyebrow>
           </div>
 
-          <div className="hidden sm:grid grid-cols-[1.4fr_130px_120px_140px_130px_32px] gap-3 px-5 py-2 border-y border-neutral-100 bg-neutral-50/60">
+          <div className="hidden sm:grid grid-cols-[1.4fr_130px_120px_140px_130px_32px] gap-3 px-5 py-2 border-y border-border-faint bg-surface-muted/60">
             {['Propietario', 'Recibido', 'Comisión', 'Neto a transferir', 'Estado', ''].map((h, i) => (
               <MonoLabel key={i} className="text-[10px] tracking-[0.08em]">{h}</MonoLabel>
             ))}
           </div>
 
-          <ul className="divide-y divide-neutral-100">
+          <ul className="divide-y divide-border-faint">
             {LIQUIDACIONES.map((l) => {
               const est = ESTADO[l.estado]
               const isOpen = open === l.id
@@ -110,14 +110,14 @@ export default function ConciliacionLiquidacionesPage() {
                     onClick={() => setOpen(isOpen ? null : l.id)}
                     aria-expanded={isOpen}
                     aria-controls={`liq-${l.id}-panel`}
-                    className="w-full grid grid-cols-2 sm:grid-cols-[1.4fr_130px_120px_140px_130px_32px] gap-2 sm:gap-3 sm:items-center px-5 py-3.5 text-left hover:bg-neutral-50/80 transition-colors"
+                    className="w-full grid grid-cols-2 sm:grid-cols-[1.4fr_130px_120px_140px_130px_32px] gap-2 sm:gap-3 sm:items-center px-5 py-3.5 text-left hover:bg-surface-muted transition-colors"
                   >
                     <span className="min-w-0">
                       <span className="block text-[14px] font-medium text-[#14130f] truncate">{l.propietario}</span>
-                      <span className="block text-[12px] text-neutral-400 truncate">{l.inmueble}</span>
+                      <span className="block text-[12px] text-fg-subtle truncate">{l.inmueble}</span>
                     </span>
                     <span className="text-[13.5px] font-medium text-[#14130f] tabular-nums">{l.recibido > 0 ? fmt(l.recibido) : '—'}</span>
-                    <span className="text-[13px] text-neutral-500 tabular-nums">{hasNet ? `−${fmt(comision(l))}` : '—'}</span>
+                    <span className="text-[13px] text-fg-muted tabular-nums">{hasNet ? `−${fmt(comision(l))}` : '—'}</span>
                     <span className="text-[13.5px] font-semibold tabular-nums" style={{ color: hasNet ? '#14130f' : '#9AA3B2' }}>
                       {hasNet ? fmt(neto(l)) : '—'}
                     </span>
@@ -127,29 +127,29 @@ export default function ConciliacionLiquidacionesPage() {
                       </StatusBadge>
                     </span>
                     <span className="justify-self-end">
-                      <CaretDown className="w-4 h-4 text-neutral-400 transition-transform" weight="bold" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }} />
+                      <CaretDown className="w-4 h-4 text-fg-subtle transition-transform" weight="bold" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }} />
                     </span>
                   </button>
 
                   {/* §17 breakdown */}
                   {isOpen && (
                     <div id={`liq-${l.id}-panel`} role="region" aria-label={`Desglose de ${l.propietario}`} className="px-5 pb-4 pt-1 sm:pl-5">
-                      <div className="rounded-xl bg-neutral-50 p-4 max-w-md">
+                      <div className="rounded-xl bg-surface-muted p-4 max-w-md">
                         {hasNet ? (
                           <dl className="space-y-2">
                             <div className="flex items-center justify-between text-[13px]">
-                              <dt className="text-neutral-500">Canon recibido</dt>
+                              <dt className="text-fg-muted">Canon recibido</dt>
                               <dd className="font-medium text-[#14130f] tabular-nums">{fmt(l.recibido)}</dd>
                             </div>
                             <div className="flex items-center justify-between text-[13px]">
-                              <dt className="text-neutral-500">Comisión de administración ({l.comisionPct}%)</dt>
-                              <dd className="text-neutral-500 tabular-nums">−{fmt(comision(l))}</dd>
+                              <dt className="text-fg-muted">Comisión de administración ({l.comisionPct}%)</dt>
+                              <dd className="text-fg-muted tabular-nums">−{fmt(comision(l))}</dd>
                             </div>
-                            <div className="flex items-center justify-between text-[14px] border-t border-neutral-200 pt-2 mt-1">
+                            <div className="flex items-center justify-between text-[14px] border-t border-border pt-2 mt-1">
                               <dt className="font-medium text-[#14130f]">Neto a transferir</dt>
                               <dd className="font-semibold tabular-nums text-[#14130f]">{fmt(neto(l))}</dd>
                             </div>
-                            <p className="text-[12px] text-neutral-400 pt-1">
+                            <p className="text-[12px] text-fg-subtle pt-1">
                               Fecha estimada {l.fecha} · contrato al día
                             </p>
                           </dl>
@@ -166,7 +166,7 @@ export default function ConciliacionLiquidacionesPage() {
             })}
           </ul>
 
-          <p className="px-5 py-3 text-[11.5px] text-neutral-400 border-t border-neutral-100">
+          <p className="px-5 py-3 text-[11.5px] text-fg-subtle border-t border-border-faint">
             Vista previa — muestra de 5 de 42 propietarios listos para liquidación.
           </p>
         </section>

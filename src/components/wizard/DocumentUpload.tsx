@@ -202,15 +202,15 @@ export function DocumentUpload({
       {/* Label */}
       <label htmlFor={inputId} className="block text-sm font-medium text-foreground/70">
         {label}
-        {required && <span className="text-[#C4503B] ml-0.5">*</span>}
+        {required && <span className="text-danger ml-0.5">*</span>}
       </label>
 
       {/* Upload zone or file preview */}
       {state === 'success' && hasFile ? (
         // Compact file preview - Luxterra style
-        <div className="flex items-center gap-3 p-3 bg-[#E8F3EC]/50 border border-[#2C7A53]/30 rounded-sm">
+        <div className="flex items-center gap-3 p-3 bg-success-soft border border-success/30 rounded-sm">
           <div className="flex-shrink-0">
-            <File className="h-5 w-5 text-[#2C7A53]" />
+            <File className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
@@ -223,7 +223,7 @@ export function DocumentUpload({
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {!isDeleting && <Check className="h-4 w-4 text-[#2C7A53]" />}
+            {!isDeleting && <Check className="h-4 w-4 text-success" />}
             <IconButton
               variant="ghost"
               aria-label="Eliminar"
@@ -252,10 +252,10 @@ export function DocumentUpload({
           onDragLeave={handleDragLeave}
           className={cn(
             'relative border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors',
-            state === 'dragging' && 'border-border bg-black/[0.02]',
-            state === 'uploading' && 'border-border bg-black/[0.02] cursor-wait',
-            state === 'error' && 'border-[#C4503B]/30 bg-[#F8EAE7]/50',
-            state === 'idle' && 'border-border hover:border-border hover:bg-black/[0.02]'
+            state === 'dragging' && 'border-border bg-surface-hover',
+            state === 'uploading' && 'border-border bg-surface-hover cursor-wait',
+            state === 'error' && 'border-danger/30 bg-danger-soft',
+            state === 'idle' && 'border-border hover:border-border hover:bg-surface-hover'
           )}
         >
           <input
@@ -275,8 +275,8 @@ export function DocumentUpload({
             </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
-              <WarningCircle className="h-8 w-8 text-[#C4503B]" />
-              <p className="text-sm text-[#C4503B]">{displayError}</p>
+              <WarningCircle className="h-8 w-8 text-danger" />
+              <p className="text-sm text-danger">{displayError}</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -326,7 +326,7 @@ export function DocumentUpload({
 
       {/* External error (from form validation) */}
       {displayError && state !== 'error' && (
-        <p className="text-xs text-[#C4503B]">{displayError}</p>
+        <p className="text-xs text-danger">{displayError}</p>
       )}
     </div>
   );

@@ -208,7 +208,7 @@ export function PlanTable<T extends object>({
 
   if (loading) {
     return (
-      <div className={cn('bg-white dark:bg-card border border-plan-border overflow-hidden', className)}>
+      <div className={cn('bg-surface border border-plan-border overflow-hidden', className)}>
         <div className="p-8 text-center">
           <div className="animate-spin w-8 h-8 border-2 border-plan-border border-t-plan-status-green rounded-full mx-auto" />
           <p className="text-[13px] text-plan-muted mt-3">Cargando...</p>
@@ -218,12 +218,12 @@ export function PlanTable<T extends object>({
   }
 
   return (
-    <div className={cn('bg-white dark:bg-card border border-plan-border overflow-hidden', className)}>
+    <div className={cn('bg-surface border border-plan-border overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className={cn(
             'border-b border-plan-border',
-            stickyHeader && 'sticky top-0 z-10 bg-white dark:bg-card'
+            stickyHeader && 'sticky top-0 z-10 bg-surface'
           )}>
             <tr>
               {selectable && (
@@ -293,7 +293,7 @@ export function PlanTable<T extends object>({
                     key={key}
                     className={cn(
                       'transition-colors duration-100',
-                      isSelected && 'bg-[#F8F0E0]',
+                      isSelected && 'bg-warning-soft',
                       onRowClick && 'cursor-pointer hover:bg-muted',
                       !isSelected && !onRowClick && 'hover:bg-muted'
                     )}

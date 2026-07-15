@@ -22,7 +22,7 @@ export function RecentInsightsSection() {
           </div>
           <Link
             href="/blog"
-            className="mt-4 md:mt-0 inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:text-[#1A40FF] transition-colors group"
+            className="mt-4 md:mt-0 inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:text-primary transition-colors group"
           >
             Ver todos los artículos
             <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -82,7 +82,7 @@ export function RecentInsightsSection() {
               >
                 <Link
                   href={post.href}
-                  className="group flex gap-5 h-full items-stretch transition-colors duration-300 hover:bg-neutral-50"
+                  className="group flex gap-5 h-full items-stretch transition-colors duration-300 hover:bg-surface-muted"
                   style={{ border: "1px solid rgba(0,0,0,0.06)" }}
                 >
                   {/* Image — left, fixed width, full card height */}
@@ -105,7 +105,7 @@ export function RecentInsightsSection() {
                       <span className="text-[11px] text-muted-foreground">{post.readTime}</span>
                     </div>
 
-                    <h3 className="text-[15px] font-heading font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-[#1A40FF] transition-colors duration-300 mb-2">
+                    <h3 className="text-[15px] font-heading font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 mb-2">
                       {post.title}
                     </h3>
 

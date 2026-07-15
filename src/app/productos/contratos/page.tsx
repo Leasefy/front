@@ -225,11 +225,11 @@ export default function ContratosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-surface rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
-                        <Scales className="w-4 h-4 text-[#2C7A53]" />
+                      <div className="w-9 h-9 rounded-md bg-success-soft flex items-center justify-center">
+                        <Scales className="w-4 h-4 text-success" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Ley 820/2003</p>
@@ -375,36 +375,36 @@ export default function ContratosPage() {
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-[#F8EAE7] flex items-center justify-center">
-                        <FileX className="w-5 h-5 text-[#C4503B]" />
+                  <div className="bg-surface rounded-xl p-4 w-[200px] border border-border-faint">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-faint">
+                      <div className="w-10 h-10 rounded-full bg-danger-soft flex items-center justify-center">
+                        <FileX className="w-5 h-5 text-danger" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Contrato #847</p>
-                        <p className="text-[10px] text-[#C4503B] font-medium">Firma inválida</p>
+                        <p className="text-[10px] text-danger font-medium">Firma inválida</p>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-muted-foreground">Propietario</span>
-                        <span className="text-[#2C7A53] flex items-center gap-1">
+                        <span className="text-success flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> OK
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-muted-foreground">Inquilino</span>
-                        <span className="text-[#C4503B] flex items-center gap-1">
+                        <span className="text-danger flex items-center gap-1">
                           <Warning className="w-3 h-3" /> Error
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-muted-foreground">Testigo</span>
-                        <span className="text-neutral-300">— — —</span>
+                        <span className="text-fg-subtle">— — —</span>
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#C4503B] rounded-full flex items-center justify-center text-white uppercase tracking-wide font-mono font-bold text-sm">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-danger rounded-full flex items-center justify-center text-white uppercase tracking-wide font-mono font-bold text-sm">
                     !
                   </div>
                 </div>
@@ -428,10 +428,10 @@ export default function ContratosPage() {
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-surface rounded-xl p-4 w-[200px] border border-border-faint">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Proceso Legal</span>
-                      <Gavel className="w-4 h-4 text-[#B7791F]" />
+                      <Gavel className="w-4 h-4 text-warning" />
                     </div>
                     <div className="space-y-2">
                       {[
@@ -442,19 +442,19 @@ export default function ContratosPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-[10px]">
                           <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full flex items-center justify-center ${item.done ? 'bg-[#F8F0E0]' : 'bg-neutral-100'}`}>
-                              {item.done && <span className="text-[#B7791F] text-[8px]">✓</span>}
+                            <div className={`w-3 h-3 rounded-full flex items-center justify-center ${item.done ? 'bg-warning-soft' : 'bg-surface-muted'}`}>
+                              {item.done && <span className="text-warning text-[8px]">✓</span>}
                             </div>
                             <span className="text-muted-foreground">{item.step}</span>
                           </div>
-                          <span className={item.done ? 'text-[#B7791F]' : 'text-neutral-400'}>{item.time}</span>
+                          <span className={item.done ? 'text-warning' : 'text-fg-subtle'}>{item.time}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-neutral-100 my-3" />
+                    <div className="h-px bg-surface-muted my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Total estimado:</span>
-                      <span className="text-[12px] text-[#B7791F] font-bold">+14 meses</span>
+                      <span className="text-[12px] text-warning font-bold">+14 meses</span>
                     </div>
                   </div>
                 </div>
@@ -524,11 +524,11 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-surface rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
-                    <PenNib className="w-6 h-6 text-[#2C7A53]" />
+                  <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center mb-6">
+                    <PenNib className="w-6 h-6 text-success" />
                   </div>
                   <h3 className="text-[17px] font-mono uppercase font-normal text-foreground mb-3">
                     Firma Digital Certificada
@@ -539,7 +539,7 @@ export default function ContratosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Ley 527/1999', 'Código OTP', 'Certificado'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -552,7 +552,7 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-surface rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -567,7 +567,7 @@ export default function ContratosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['10 años', 'AES-256', 'Backup 24/7'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -748,7 +748,7 @@ export default function ContratosPage() {
                     Comercio electrónico y firmas digitales con validez jurídica plena en Colombia.
                   </p>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
+                    <CheckCircle className="w-4 h-4 text-success" />
                     <span className="text-[12px] text-foreground font-medium">Validez legal certificada</span>
                   </div>
                 </motion.div>
@@ -772,7 +772,7 @@ export default function ContratosPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.35 }}
-                    className="bg-white rounded-xl p-5 border border-neutral-200"
+                    className="bg-surface rounded-xl p-5 border border-border-faint"
                   >
                     <p className="text-[40px] font-heading font-light text-foreground leading-none tracking-tight mb-1">
                       10
@@ -788,17 +788,17 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="md:col-span-4 bg-white rounded-xl p-6 border border-neutral-200 flex flex-col"
+                className="md:col-span-4 bg-surface rounded-xl p-6 border border-border-faint flex flex-col"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-4">
-                  <SealCheck className="w-5 h-5 text-[#2C7A53]" />
+                <div className="w-11 h-11 rounded-xl bg-success-soft flex items-center justify-center mb-4">
+                  <SealCheck className="w-5 h-5 text-success" />
                 </div>
                 <h4 className="text-[17px] font-mono uppercase font-normal text-foreground mb-2">Certificado Digital</h4>
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Cada contrato incluye certificado de autenticidad con hash único verificable.
                 </p>
-                <div className="mt-4 pt-4 border-t border-neutral-100">
-                  <div className="font-mono text-[10px] text-muted-foreground bg-neutral-50 rounded-md px-3 py-2 truncate">
+                <div className="mt-4 pt-4 border-t border-border-faint">
+                  <div className="font-mono text-[10px] text-muted-foreground bg-surface-muted rounded-md px-3 py-2 truncate">
                     SHA-256: a7f3c9d...e4b2
                   </div>
                 </div>
@@ -809,7 +809,7 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.45 }}
-                className="md:col-span-4 bg-white rounded-xl p-6 border border-neutral-200 flex flex-col"
+                className="md:col-span-4 bg-surface rounded-xl p-6 border border-border-faint flex flex-col"
               >
                 <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                   <Clock className="w-5 h-5 text-primary" />
@@ -818,9 +818,9 @@ export default function ContratosPage() {
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Registro inmutable de fecha y hora de cada firma con validez probatoria.
                 </p>
-                <div className="mt-4 pt-4 border-t border-neutral-100">
+                <div className="mt-4 pt-4 border-t border-border-faint">
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="w-2 h-2 rounded-full bg-[#2C7A53]"></span>
+                    <span className="w-2 h-2 rounded-full bg-success"></span>
                     ISO 8601 + Timezone
                   </div>
                 </div>
@@ -831,16 +831,16 @@ export default function ContratosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="md:col-span-4 bg-white rounded-xl p-6 border border-neutral-200 flex flex-col"
+                className="md:col-span-4 bg-surface rounded-xl p-6 border border-border-faint flex flex-col"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#F8F0E0] flex items-center justify-center mb-4">
-                  <Lock className="w-5 h-5 text-[#B7791F]" />
+                <div className="w-11 h-11 rounded-xl bg-warning-soft flex items-center justify-center mb-4">
+                  <Lock className="w-5 h-5 text-warning" />
                 </div>
                 <h4 className="text-[17px] font-mono uppercase font-normal text-foreground mb-2">Encriptación AES-256</h4>
                 <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">
                   Datos personales protegidos con el estándar de encriptación más seguro.
                 </p>
-                <div className="mt-4 pt-4 border-t border-neutral-100">
+                <div className="mt-4 pt-4 border-t border-border-faint">
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <Shield className="w-3.5 h-3.5" />
                     Cumple Ley 1581/2012

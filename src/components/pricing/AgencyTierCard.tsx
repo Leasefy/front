@@ -65,7 +65,7 @@ export function AgencyTierCard({
     <Button
       variant={selected ? 'default' : (popular || isFlex) ? 'default' : 'outline'}
       hideArrow
-      className={cn("w-full", isFlex && !selected && "bg-[#B7791F] hover:bg-[#B7791F] text-white")}
+      className={cn("w-full", isFlex && !selected && "bg-warning hover:bg-warning text-white")}
       onClick={onSelect}
     >
       {label}
@@ -82,17 +82,17 @@ export function AgencyTierCard({
       className={cn(
         'relative rounded-[20px] bg-card p-6 flex flex-col transition-all duration-300',
         selected
-          ? 'border-2 border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20'
+          ? 'border-2 border-primary/30 ring-2 ring-primary/20'
           : isFlex
-            ? 'border-2 border-[#B7791F]/30 shadow-[#B7791F]/10'
+            ? 'border-2 border-warning/30 shadow-warning/10'
             : popular
-              ? 'border border-[#1A40FF]/30'
-              : 'border border-border hover:border-[#1A40FF]/30'
+              ? 'border border-primary/30'
+              : 'border border-border hover:border-primary/30'
       )}
     >
       {isFlex && !selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-gradient-to-r from-[#B7791F] to-[#B7791F] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-[#B7791F]/25">
+          <span className="bg-gradient-to-r from-warning to-warning text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-warning/25">
             Todo incluido
           </span>
         </div>
@@ -100,7 +100,7 @@ export function AgencyTierCard({
 
       {popular && !selected && !isFlex && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full">
+          <span className="bg-primary text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full">
             Más popular
           </span>
         </div>
@@ -108,7 +108,7 @@ export function AgencyTierCard({
 
       {selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5">
+          <span className="bg-primary text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5">
             <Check className="w-3 h-3" />
             Seleccionado
           </span>
@@ -151,7 +151,7 @@ export function AgencyTierCard({
       <ul className="space-y-3 flex-1 mb-4">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2.5">
-            <CheckCircle className="w-4 h-4 text-[#2C7A53] shrink-0 mt-0.5" />
+            <CheckCircle className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <span className="text-[13px] text-muted-foreground">{feature}</span>
           </li>
         ))}

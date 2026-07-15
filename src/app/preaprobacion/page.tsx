@@ -255,7 +255,7 @@ function ResultView({ result, onReset }: { result: PreApprovalResult; onReset: (
                   key={a.aseguradora}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-sm text-foreground"
                 >
-                  <span className="h-2 w-2 rounded-full bg-[#2C7A53]" aria-hidden />
+                  <span className="h-2 w-2 rounded-full bg-success" aria-hidden />
                   {aseguradoraDisplayName(a.aseguradora)}
                   {a.status === 'conditional' && (
                     <span className="text-xs text-muted-foreground">(con condiciones)</span>

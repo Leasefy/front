@@ -54,16 +54,16 @@ const SOCIALS = [
 
 export default function NCFooter() {
   return (
-    <footer className="border-t border-neutral-200 bg-white py-16 md:py-20">
+    <footer className="border-t border-border bg-surface py-16 md:py-20">
       <div className="container-platform">
         <div className="grid gap-12 lg:grid-cols-5 lg:gap-8">
           {/* LEFT — badges + socials */}
           <div className="lg:col-span-1">
             <div className="flex flex-col gap-3">
-              <MonoLabel className="w-fit rounded-xl border border-neutral-200 p-4 text-[12px] tracking-wide text-neutral-500">
+              <MonoLabel className="w-fit rounded-xl border border-border p-4 text-[12px] tracking-wide text-fg-muted">
                 Hecho en Colombia 🇨🇴
               </MonoLabel>
-              <MonoLabel className="w-fit rounded-xl border border-neutral-200 p-4 text-[12px] tracking-wide text-neutral-500">
+              <MonoLabel className="w-fit rounded-xl border border-border p-4 text-[12px] tracking-wide text-fg-muted">
                 Habeas Data · Ley 1581
               </MonoLabel>
             </div>
@@ -76,7 +76,7 @@ export default function NCFooter() {
                   aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:text-neutral-950"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-fg-muted transition-colors hover:text-fg"
                 >
                   <Icon className="h-[18px] w-[18px]" weight="regular" />
                 </a>
@@ -89,7 +89,7 @@ export default function NCFooter() {
             <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
               {COLUMNS.map((col) => (
                 <div key={col.title}>
-                  <MonoLabel className="block text-[12px] tracking-[0.08em] text-neutral-950">
+                  <MonoLabel className="block text-[12px] tracking-[0.08em] text-fg">
                     {col.title}
                   </MonoLabel>
                   <ul className="mt-5 space-y-3">
@@ -97,7 +97,7 @@ export default function NCFooter() {
                       <li key={link.label}>
                         <Link
                           href={link.href}
-                          className="text-[15px] text-neutral-500 transition-colors hover:text-neutral-950"
+                          className="text-[15px] text-fg-muted transition-colors hover:text-fg"
                         >
                           {link.label}
                         </Link>
@@ -105,8 +105,8 @@ export default function NCFooter() {
                     ))}
                     {col.title === "Compañía" && (
                       <>
-                        <li className="pt-1 text-[15px] text-neutral-500">hola@leasefy.co</li>
-                        <li className="text-[15px] text-neutral-500">ventas@leasefy.co</li>
+                        <li className="pt-1 text-[15px] text-fg-muted">hola@leasefy.co</li>
+                        <li className="text-[15px] text-fg-muted">ventas@leasefy.co</li>
                       </>
                     )}
                   </ul>
@@ -117,8 +117,8 @@ export default function NCFooter() {
         </div>
 
         {/* Bottom row */}
-        <div className="mt-16 flex items-center justify-between border-t border-neutral-200 pt-8">
-          <span className="text-[13px] text-neutral-400">© 2026 Leasefy</span>
+        <div className="mt-16 flex items-center justify-between border-t border-border pt-8">
+          <span className="text-[13px] text-fg-subtle">© 2026 Leasefy</span>
           <LeasefyLogo size={22} />
         </div>
       </div>

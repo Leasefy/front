@@ -224,17 +224,17 @@ const AGENTS: {
 
 export default function AgentsShowcaseC() {
   return (
-    <section className="bg-neutral-50 py-20 md:py-28">
+    <section className="bg-surface-muted py-20 md:py-28">
       <div className="container-platform">
         {/* Centered header */}
         <Reveal className="mx-auto max-w-2xl text-center">
           <div className="flex justify-center">
             <EyebrowPill>Agentes AI</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-6 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-6 text-fg`}>
             Un agente especializado para cada etapa.
           </h2>
-          <p className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-fg-muted md:text-lg">
             Ocho agentes que cubren la operación completa de arriendos —de la primera solicitud a la
             renovación—, trabajando juntos sin perder el hilo.
           </p>
@@ -246,10 +246,10 @@ export default function AgentsShowcaseC() {
             {AGENTS.map(({ name, desc, outcome, Icon, art }) => (
               <div
                 key={name}
-                className="group rounded-2xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-[0_18px_40px_-22px_rgba(15,23,42,0.25)]"
+                className="group rounded-2xl border border-border bg-surface p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_18px_40px_-22px_rgba(15,23,42,0.25)]"
               >
                 {/* Line-art tile */}
-                <div className="flex justify-center rounded-xl border border-neutral-100 bg-neutral-50/60 py-4">
+                <div className="flex justify-center rounded-xl border border-border-faint bg-surface-muted/60 py-4">
                   <LineArt kind={art} />
                 </div>
 
@@ -258,13 +258,13 @@ export default function AgentsShowcaseC() {
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-primary transition-transform duration-300 group-hover:scale-105">
                     <Icon className="h-[18px] w-[18px]" weight="bold" />
                   </span>
-                  <h3 className="font-heading text-[17px] font-semibold tracking-tight text-neutral-950">
+                  <h3 className="font-heading text-[17px] font-semibold tracking-tight text-fg">
                     {name}
                   </h3>
                 </div>
 
                 {/* Description */}
-                <p className="mt-3 text-[14px] leading-relaxed text-neutral-500">{desc}</p>
+                <p className="mt-3 text-[14px] leading-relaxed text-fg-muted">{desc}</p>
 
                 {/* Outcome line */}
                 <p className="mt-4 font-mono text-[13px] tabular-nums text-primary">{outcome}</p>

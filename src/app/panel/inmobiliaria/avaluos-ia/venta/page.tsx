@@ -291,7 +291,7 @@ export default function AvaluoVentaPage() {
                       <span className="text-[13px] text-fg-muted font-mono tabular-nums">{c.area} m²</span>
                       <span className="text-[13.5px] font-medium text-fg font-mono tabular-nums">{fmtShort(c.precio)}</span>
                       <span className="flex items-center gap-1.5">
-                        <span className="hidden sm:block h-1.5 w-10 rounded-full bg-neutral-100 overflow-hidden">
+                        <span className="hidden sm:block h-1.5 w-10 rounded-full bg-surface-muted overflow-hidden">
                           <span className="block h-full rounded-full" style={{ width: `${c.similitud}%`, background: BLUE }} />
                         </span>
                         <span className="text-[12px] text-fg-muted font-mono tabular-nums">{c.similitud}%</span>
@@ -316,7 +316,7 @@ export default function AvaluoVentaPage() {
           <aside className="space-y-6 lg:sticky lg:top-6">
             {/* Ficha */}
             <section className="rounded-2xl border border-border bg-surface overflow-hidden">
-              <div className="relative h-32 bg-gradient-to-br from-neutral-100 to-neutral-200/70 flex items-center justify-center">
+              <div className="relative h-32 bg-gradient-to-br from-surface-muted to-border/70 flex items-center justify-center">
                 <Storefront className="w-8 h-8 text-fg-subtle" weight="duotone" />
                 <span className="absolute bottom-2 right-2 inline-flex items-center h-5 px-2 rounded-full bg-white/90 backdrop-blur font-mono text-[9.5px] font-medium uppercase tracking-[0.08em] text-fg-muted">
                   Sin fotos
@@ -354,10 +354,10 @@ export default function AvaluoVentaPage() {
                   <span className="font-semibold font-mono tabular-nums text-primary">{fmtShort(mercado.value)}</span>
                 </div>
                 <div className="space-y-1.5 pt-1">
-                  <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
+                  <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: '100%', background: '#E2E5EA' }} />
                   </div>
-                  <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
+                  <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${Math.round((mercado.value / OWNER_EXPECTATION) * 100)}%`, background: BLUE }} />
                   </div>
                 </div>

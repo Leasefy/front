@@ -41,7 +41,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-[13px] font-medium text-neutral-700">
+          <label htmlFor={inputId} className="block text-[13px] font-medium text-fg-muted">
             {label}
           </label>
         )}
@@ -54,14 +54,14 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              'h-12 w-full rounded-xl border bg-white px-4 text-base md:text-[14px] text-[#14130f]',
-              'transition-colors duration-150 placeholder:text-neutral-400',
+              'h-12 w-full rounded-xl border bg-surface px-4 text-base md:text-[14px] text-fg',
+              'transition-colors duration-150 placeholder:text-fg-subtle',
               'focus:outline-none focus:border-[#1A40FF] focus:shadow-[0_0_0_3px_rgba(26,64,255,0.12)]',
               'disabled:cursor-not-allowed disabled:opacity-50',
               isPassword && 'pr-11',
               error
-                ? 'border-[#C0392B] focus:border-[#C0392B] focus:shadow-[0_0_0_3px_rgba(192,57,43,0.12)]'
-                : 'border-[#E5E2DC] hover:border-[#C9C4BB]',
+                ? 'border-danger focus:border-danger focus:shadow-[0_0_0_3px_rgba(192,57,43,0.12)]'
+                : 'border-border hover:border-border-strong',
               className
             )}
             {...props}
@@ -71,7 +71,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors focus:outline-none"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg-muted transition-colors focus:outline-none"
               tabIndex={-1}
               aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             >
@@ -81,7 +81,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
         </div>
 
         {error && (
-          <p id={errorId} className="text-[12px] text-[#C4503B]">
+          <p id={errorId} className="text-[12px] text-danger">
             {error}
           </p>
         )}

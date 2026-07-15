@@ -6,7 +6,6 @@ import {
   User,
   Buildings,
   HouseLine,
-  MapPin,
   CurrencyDollar,
   Percent,
   CalendarBlank,
@@ -38,6 +37,7 @@ import type { Propietario, Agente, PropietarioFormData, ConsignacionFormData, In
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from './PropietarioSelector';
 import { AgenteSelector } from './AgenteSelector';
+import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 
 // ============================================================================
 // Shared Types
@@ -48,6 +48,11 @@ export interface WizardFormData extends ConsignacionFormData {
   inventoryItems: InventoryItem[];
   inventoryNotes: string;
   contractStartDate: string;
+  /** Real coordinates from AddressAutocomplete/LocationPicker (LocationIQ). */
+  propertyLatitude?: number;
+  propertyLongitude?: number;
+  propertyGeocodePlaceId?: string;
+  propertyCoordsSource?: 'geocoded' | 'city';
 }
 
 export interface StepProps {
@@ -199,17 +204,23 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
           <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.addressLabel')} <span className="text-danger">*</span>
           </label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-            <Input
-              type="text"
-              value={formData.propertyAddress || ''}
-              onChange={(e) => updateFormData({ propertyAddress: e.target.value })}
-              onBlur={() => handleBlur('propertyAddress')}
-              placeholder={t('inmobiliaria.consignaciones.wizard.step2.addressPlaceholder')}
-              className={cn('w-full pl-10', errors.propertyAddress && 'border-danger/30')}
-            />
-          </div>
+          <PropertyLocationField
+            address={formData.propertyAddress || ''}
+            city={formData.propertyCity}
+            latitude={formData.propertyLatitude}
+            longitude={formData.propertyLongitude}
+            placeholder={t('inmobiliaria.consignaciones.wizard.step2.addressPlaceholder')}
+            onChange={(partial: PropertyLocationValue) => {
+              handleBlur('propertyAddress');
+              updateFormData({
+                ...(partial.address !== undefined ? { propertyAddress: partial.address } : {}),
+                propertyLatitude: partial.latitude,
+                propertyLongitude: partial.longitude,
+                propertyGeocodePlaceId: partial.geocodePlaceId,
+                propertyCoordsSource: partial.coordsSource,
+              });
+            }}
+          />
           {errors.propertyAddress && (
             <p className="text-xs text-danger flex items-center gap-1">
               <Warning className="w-3 h-3" />

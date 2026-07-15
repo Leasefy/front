@@ -287,17 +287,17 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay }}
-        className="rounded-xl bg-neutral-50 dark:bg-[#141416] overflow-hidden"
+        className="rounded-xl bg-surface-muted overflow-hidden"
       >
-        <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+        <div className="px-6 py-5 border-b border-border-faint">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+              <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-success" />
               </div>
               <div>
-                <h2 className="font-semibold text-neutral-900 dark:text-white">{t('landlordSettings.paymentAccounts.title')}</h2>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('landlordSettings.paymentAccounts.subtitle')}</p>
+                <h2 className="font-semibold text-fg">{t('landlordSettings.paymentAccounts.title')}</h2>
+                <p className="text-xs text-fg-subtle">{t('landlordSettings.paymentAccounts.subtitle')}</p>
               </div>
             </div>
           </div>
@@ -305,13 +305,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
         {/* My Accounts List */}
         <div className="p-6">
-          <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
+          <h3 className="text-sm font-medium text-fg-muted mb-4">
             {t('landlordSettings.paymentAccounts.myAccounts')}
           </h3>
 
           {paymentAccounts.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+              <p className="text-sm text-fg-subtle mb-4">
                 {t('landlordSettings.paymentAccounts.noAccounts')}
               </p>
             </div>
@@ -324,25 +324,25 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 return (
                   <div
                     key={account.id}
-                    className="flex items-start justify-between p-4 border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-[#1f1f21]"
+                    className="flex items-start justify-between p-4 border border-border rounded-xl bg-surface"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                      <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Icon className="w-5 h-5 text-fg-muted" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                          <p className="text-sm font-medium text-fg">
                             {info.name} {info.detail}
                           </p>
                           {account.isDefault && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F8F0E0] dark:bg-[#B7791F]/15 text-[#B7791F] dark:text-[#D2992F] text-xs font-medium rounded-full">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning-soft text-warning text-xs font-medium rounded-full">
                               <Star className="w-3 h-3" weight="fill" />
                               {t('landlordSettings.paymentAccounts.default')}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                        <p className="text-xs text-fg-subtle mt-0.5">
                           {info.holder}
                         </p>
                         {/* Property assignment tags */}
@@ -360,7 +360,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                           </div>
                         )}
                         {assignedNames.length === 0 && (
-                          <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1">
+                          <p className="text-[11px] text-fg-subtle mt-1">
                             {t('landlordSettings.paymentAccounts.noPropertiesAssigned')}
                           </p>
                         )}
@@ -380,7 +380,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                           setEditingAccount(account);
                           setShowDeleteAccountModal(true);
                         }}
-                        className="text-xs text-[#C4503B] dark:text-[#E0664D] hover:underline"
+                        className="text-xs text-danger hover:underline"
                       >
                         {t('common.delete')}
                       </button>
@@ -396,7 +396,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             variant="outline"
             hideArrow
             onClick={() => { resetForms(); setShowAddAccountModal(true); }}
-            className="w-full border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-xl hover:border-[#1A40FF]/30 hover:text-[#1A40FF] dark:hover:border-[#1A40FF]/30 dark:hover:text-[#1A40FF]"
+            className="w-full border-2 border-dashed border-border-strong text-fg-muted rounded-xl hover:border-[#1A40FF]/30 hover:text-[#1A40FF]"
           >
             <Plus className="w-5 h-5" />
             <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addAccount')}</span>
@@ -413,18 +413,18 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         <div className="space-y-5">
           {/* Segmented Control: Banco | Billetera Digital */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            <label className="block text-sm font-medium text-fg-muted mb-2">
               {t('landlordSettings.paymentAccounts.modals.addAccount.methodType')}
             </label>
-            <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-[#2a2a2c] rounded-xl">
+            <div className="flex gap-1 p-1 bg-surface-muted rounded-xl">
               <button
                 type="button"
                 onClick={() => setAccountMethodType('bank')}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
                   accountMethodType === 'bank'
-                    ? 'bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                    ? 'bg-surface text-fg'
+                    : 'text-fg-subtle hover:text-fg-muted'
                 )}
               >
                 <Bank className="w-4 h-4" />
@@ -436,8 +436,8 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
                   accountMethodType === 'wallet'
-                    ? 'bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                    ? 'bg-surface text-fg'
+                    : 'text-fg-subtle hover:text-fg-muted'
                 )}
               >
                 <Wallet className="w-4 h-4" />
@@ -451,7 +451,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <>
               {/* Bank Select */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.bank')}
                 </label>
                 <Select
@@ -471,7 +471,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
               {/* Account Type */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountType')}
                 </label>
                 <div className="flex gap-4">
@@ -481,8 +481,8 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     className={cn(
                       'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                       bankForm.accountType === 'savings'
-                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF] dark:text-[#5570FF]'
-                        : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
+                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
+                        : 'border-border text-fg-muted hover:border-border-strong'
                     )}
                   >
                     {t('landlordSettings.paymentAccounts.accountTypes.savings')}
@@ -493,8 +493,8 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     className={cn(
                       'flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all',
                       bankForm.accountType === 'checking'
-                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF] dark:text-[#5570FF]'
-                        : 'border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300'
+                        ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
+                        : 'border-border text-fg-muted hover:border-border-strong'
                     )}
                   >
                     {t('landlordSettings.paymentAccounts.accountTypes.checking')}
@@ -504,7 +504,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
               {/* Account Number */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumber')}
                 </label>
                 <Input
@@ -516,13 +516,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   maxLength={20}
                 />
                 {fieldErrors.accountNumber && (
-                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">{fieldErrors.accountNumber}</p>
+                  <p className="text-xs text-danger mt-1">{fieldErrors.accountNumber}</p>
                 )}
               </div>
 
               {/* Account Holder Name */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolder')}
                 </label>
                 <Input
@@ -536,7 +536,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
               {/* Document */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.document')}
                 </label>
                 <Input
@@ -548,7 +548,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   maxLength={12}
                 />
                 {fieldErrors.document && (
-                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">{fieldErrors.document}</p>
+                  <p className="text-xs text-danger mt-1">{fieldErrors.document}</p>
                 )}
               </div>
             </>
@@ -556,7 +556,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <>
               {/* Wallet Select */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addWallet.wallet')}
                 </label>
                 <Select
@@ -576,13 +576,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
               {/* Phone Number */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addWallet.phoneNumber')}
                 </label>
                 <div className="flex gap-2">
                   <div className={cn(
-                    'w-16 h-12 px-3 border rounded-xl bg-neutral-50 dark:bg-[#1f1f21] flex items-center justify-center text-sm text-neutral-500 dark:text-neutral-400',
-                    fieldErrors.phone ? 'border-[#C4503B]/30 dark:border-[#C4503B]/40' : 'border-neutral-200 dark:border-neutral-600'
+                    'w-16 h-12 px-3 border rounded-xl bg-surface-muted flex items-center justify-center text-sm text-fg-subtle',
+                    fieldErrors.phone ? 'border-danger/30' : 'border-border'
                   )}>
                     +57
                   </div>
@@ -596,13 +596,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   />
                 </div>
                 {fieldErrors.phone && (
-                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">{fieldErrors.phone}</p>
+                  <p className="text-xs text-danger mt-1">{fieldErrors.phone}</p>
                 )}
               </div>
 
               {/* Holder Name */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addWallet.holderName')}
                 </label>
                 <Input
@@ -619,7 +619,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
           {/* Property Assignment — custom multi-select dropdown with checkboxes */}
           {landlordProperties.length > 0 && (
             <div ref={propertyDropdownRef}>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              <label className="block text-sm font-medium text-fg-muted mb-2">
                 {t('landlordSettings.paymentAccounts.modals.addAccount.assignProperties')}
               </label>
               {/* Trigger button */}
@@ -629,22 +629,22 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 className={cn(
                   'w-full h-10 px-3 pr-10 border rounded-xl text-sm text-left relative transition-all appearance-none cursor-pointer',
                   showPropertyDropdown
-                    ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 ring-2 ring-[#1A40FF]/20 bg-white dark:bg-[#1f1f21]'
-                    : 'border-neutral-200 dark:border-neutral-600 bg-white dark:bg-[#1f1f21]'
+                    ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20 bg-surface'
+                    : 'border-border bg-surface'
                 )}
               >
                 <span className={cn(
                   'block truncate',
                   selectedPropertyIds.length > 0
-                    ? 'text-neutral-900 dark:text-white'
-                    : 'text-neutral-400 dark:text-neutral-500'
+                    ? 'text-fg'
+                    : 'text-fg-subtle'
                 )}>
                   {selectedPropertyIds.length > 0
                     ? `${selectedPropertyIds.length} inmueble${selectedPropertyIds.length > 1 ? 's' : ''} seleccionado${selectedPropertyIds.length > 1 ? 's' : ''}`
                     : t('landlordSettings.paymentAccounts.modals.addAccount.assignPropertiesHint')}
                 </span>
                 <CaretRight className={cn(
-                  'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 transition-transform',
+                  'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle transition-transform',
                   showPropertyDropdown ? '-rotate-90' : 'rotate-90'
                 )} />
               </button>
@@ -676,7 +676,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               )}
               {/* Dropdown panel with checkboxes */}
               {showPropertyDropdown && (
-                <div className="mt-1 border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] overflow-hidden max-h-48 overflow-y-auto">
+                <div className="mt-1 border border-border rounded-xl bg-surface overflow-hidden max-h-48 overflow-y-auto">
                   {landlordProperties.map((property) => {
                     const isSelected = selectedPropertyIds.includes(property.id);
                     return (
@@ -688,18 +688,18 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                             isSelected ? prev.filter(id => id !== property.id) : [...prev, property.id]
                           );
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-muted transition-colors text-left"
                       >
                         <div className={cn(
                           'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
                           isSelected
                             ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
-                            : 'border-neutral-300 dark:border-neutral-600'
+                            : 'border-border-strong'
                         )}>
                           {isSelected && <Check className="w-3 h-3 text-white" weight="bold" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-neutral-900 dark:text-white truncate">{property.title}</p>
+                          <p className="text-sm text-fg truncate">{property.title}</p>
                         </div>
                       </button>
                     );
@@ -721,7 +721,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 }
               }}
             />
-            <span className="text-sm text-neutral-700 dark:text-neutral-300">
+            <span className="text-sm text-fg-muted">
               {t('landlordSettings.paymentAccounts.modals.addBankAccount.setDefault')}
             </span>
           </label>
@@ -760,15 +760,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         <div className="space-y-4">
           {editingAccount && (
             <>
-              <div className="p-4 bg-[#F8EAE7] dark:bg-[#C4503B]/15 border border-[#C4503B]/30 dark:border-[#C4503B]/40 rounded-xl flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center flex-shrink-0">
-                  <Warning className="w-5 h-5 text-[#C4503B] dark:text-[#E0664D]" />
+              <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex gap-3">
+                <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
+                  <Warning className="w-5 h-5 text-danger" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[#C4503B] dark:text-[#E0664D]">
+                  <p className="text-sm font-medium text-danger">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
                   </p>
-                  <p className="text-xs text-[#C4503B] dark:text-[#E0664D] mt-1">
+                  <p className="text-xs text-danger mt-1">
                     {isBankAccount(editingAccount)
                       ? `${editingAccount.bankName} ${maskAccountNumber(editingAccount.accountNumber)}`
                       : `${editingAccount.walletName} ${maskPhoneNumber(editingAccount.phoneNumber)}`}
@@ -776,15 +776,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </div>
               </div>
               {getPropertyCountForAccount(editingAccount.id) > 0 && (
-                <div className="p-3 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
-                  <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
+                <div className="p-3 bg-warning-soft border border-warning/30 rounded-xl">
+                  <p className="text-xs text-warning">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningWithProperties', { count: getPropertyCountForAccount(editingAccount.id) })}
                   </p>
                 </div>
               )}
               {editingAccount.isDefault && paymentAccounts.length > 1 && (
-                <div className="p-3 bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 rounded-xl">
-                  <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">
+                <div className="p-3 bg-warning-soft border border-warning/30 rounded-xl">
+                  <p className="text-xs text-warning">
                     {t('landlordSettings.paymentAccounts.modals.deleteAccount.warningDefault')}
                   </p>
                 </div>

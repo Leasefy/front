@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { LeasefyLogo, LeasefyWordmark } from '@/components/brand';
+import { LeasefyLogo, LeasefyWordmark, LeasefyMark } from '@/components/brand';
 import Link from 'next/link';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { motion } from 'framer-motion';
@@ -76,9 +76,16 @@ export default function AuthPage() {
           }}
         />
 
+        {/* Brand symbol watermark — restores the mark that used to live in the
+            legacy photo (replaced by the gradient above). Oversized, centered,
+            very faint; the copy (z-10) stays fully legible on top. */}
+        <div className="absolute inset-0 z-[3] flex items-center justify-center pointer-events-none">
+          <LeasefyMark variant="bare" size={520} className="text-white opacity-[0.08]" />
+        </div>
+
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-12 w-full">
-          {/* Top — wordmark only (the symbol already lives in the photo) */}
+          {/* Top — wordmark (the symbol now lives in the centered watermark behind) */}
           <div>
             <Link href="/" className="inline-flex items-center group">
               <LeasefyWordmark className="text-white" style={{ fontSize: 21 }} />
@@ -146,7 +153,7 @@ export default function AuthPage() {
           <div className="w-full max-w-[400px] mx-auto flex items-center justify-between">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors group"
+              className="inline-flex items-center gap-2 text-[13px] text-fg-subtle hover:text-fg transition-colors group"
             >
               <ArrowRight className="w-4 h-4 rotate-180 group-hover:-translate-x-0.5 transition-transform" />
               Inicio
@@ -167,13 +174,13 @@ export default function AuthPage() {
             </Suspense>
 
             {/* Footer */}
-            <p className="mt-10 text-[11.5px] text-neutral-400 leading-relaxed">
+            <p className="mt-10 text-[11.5px] text-fg-subtle leading-relaxed">
               Al continuar, aceptas nuestros{' '}
-              <Link href="/terminos" className="text-neutral-600 hover:text-[#14130f] underline-offset-2 hover:underline">
+              <Link href="/terminos" className="text-fg-muted hover:text-fg underline-offset-2 hover:underline">
                 Términos
               </Link>{' '}
               y{' '}
-              <Link href="/privacidad" className="text-neutral-600 hover:text-[#14130f] underline-offset-2 hover:underline">
+              <Link href="/privacidad" className="text-fg-muted hover:text-fg underline-offset-2 hover:underline">
                 Política de Privacidad
               </Link>
             </p>

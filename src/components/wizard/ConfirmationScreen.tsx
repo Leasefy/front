@@ -31,9 +31,9 @@ export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail
         {/* Success card */}
         <div className="bg-card rounded-sm border border-border overflow-hidden">
           {/* Success header */}
-          <div className="bg-[#E8F3EC] px-6 py-8 text-center border-b border-[#2C7A53]/30">
-            <div className="mx-auto w-16 h-16 bg-[#E8F3EC] rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="h-10 w-10 text-[#2C7A53]" />
+          <div className="bg-success-soft px-6 py-8 text-center border-b border-success/30">
+            <div className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-10 w-10 text-success" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
               Aplicación enviada!
@@ -148,7 +148,7 @@ function TimelineItem({
 
       {/* Number circle */}
       <div className="relative flex-shrink-0">
-        <div className="w-8 h-8 rounded-full bg-[#EEF1FF] text-[#1A40FF] flex items-center justify-center text-sm font-medium">
+        <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center text-sm font-medium">
           {number}
         </div>
       </div>

@@ -207,11 +207,11 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
     return value ? (
       <div className={cn(
         'w-7 h-7 rounded-full mx-auto flex items-center justify-center',
-        highlighted ? 'bg-primary/10' : 'bg-[#E8F3EC]'
+        highlighted ? 'bg-primary/10' : 'bg-success-soft'
       )}>
         <Check className={cn(
           'w-4 h-4',
-          highlighted ? 'text-primary' : 'text-[#2C7A53]'
+          highlighted ? 'text-primary' : 'text-success'
         )} />
       </div>
     ) : (

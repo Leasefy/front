@@ -86,13 +86,13 @@ export function FeatureAnnouncementCard({
       aria-modal="false"
       aria-labelledby={titleId}
       aria-describedby={descId}
-      className="overflow-hidden rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-2xl outline-none motion-reduce:transition-none"
+      className="overflow-hidden rounded-xl bg-surface border border-border-faint shadow-2xl outline-none motion-reduce:transition-none"
       style={style}
       onClick={onCardClick}
     >
       {/* Brand hero photo — full bleed, no veil. The hairline under it does
           the separation work (zero-gradient per contract §3). */}
-      <div className={`relative w-full border-b border-neutral-200/80 dark:border-neutral-800 ${centered ? 'h-64' : 'h-40'}`}>
+      <div className={`relative w-full border-b border-border-faint ${centered ? 'h-64' : 'h-40'}`}>
         <Image
           src={image}
           alt=""
@@ -105,7 +105,7 @@ export function FeatureAnnouncementCard({
           type="button"
           onClick={onDismiss}
           aria-label={dismissLabel}
-          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-md bg-white/95 dark:bg-neutral-900/90 backdrop-blur border border-black/[0.06] dark:border-white/10 flex items-center justify-center text-neutral-500 hover:text-[#14130f] dark:text-neutral-400 dark:hover:text-white transition-colors"
+          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-md bg-surface/95 backdrop-blur border border-black/[0.06] dark:border-white/10 flex items-center justify-center text-fg-subtle hover:text-foreground transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -116,12 +116,12 @@ export function FeatureAnnouncementCard({
         {/* Eyebrow row — BrandDot + mono badge; counter mono a la derecha.
             ONE progress signal (the counter); the old dots duplicated it. */}
         <div className="flex items-center gap-2.5">
-          <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-[#1A40FF] shrink-0" />
-          <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[#1A40FF] dark:text-[#8FA3FF]">
+          <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0" />
+          <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-primary">
             {newBadge}
           </span>
           {showProgress && (
-            <span className="ml-auto font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-neutral-400 dark:text-neutral-500 tabular-nums">
+            <span className="ml-auto font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-fg-subtle tabular-nums">
               {`${currentStep + 1} / ${total}`}
             </span>
           )}
@@ -129,13 +129,13 @@ export function FeatureAnnouncementCard({
 
         <h2
           id={titleId}
-          className={`mt-3.5 font-medium tracking-[-0.02em] text-[#14130f] dark:text-white leading-tight ${centered ? 'text-[26px]' : 'text-[20px]'}`}
+          className={`mt-3.5 font-medium tracking-[-0.02em] text-foreground leading-tight ${centered ? 'text-[26px]' : 'text-[20px]'}`}
         >
           {title}
         </h2>
         <p
           id={descId}
-          className={`mt-2 text-neutral-500 dark:text-neutral-400 leading-relaxed ${centered ? 'text-[14.5px]' : 'text-[13.5px]'}`}
+          className={`mt-2 text-fg-subtle leading-relaxed ${centered ? 'text-[14.5px]' : 'text-[13.5px]'}`}
         >
           {description}
         </p>
@@ -148,12 +148,12 @@ export function FeatureAnnouncementCard({
         )}
 
         {/* Footer — hairline-separated; quiet dismiss left, CTA right. */}
-        <div className={`flex items-center justify-between gap-4 border-t border-neutral-200/80 dark:border-neutral-800 ${centered ? 'mt-7 pt-5' : 'mt-5 pt-4'}`}>
+        <div className={`flex items-center justify-between gap-4 border-t border-border-faint ${centered ? 'mt-7 pt-5' : 'mt-5 pt-4'}`}>
           {dismissLinkLabel ? (
             <button
               type="button"
               onClick={onDismiss}
-              className="text-[13px] text-neutral-400 hover:text-[#14130f] dark:text-neutral-500 dark:hover:text-neutral-200 transition-colors"
+              className="text-[13px] text-fg-subtle hover:text-foreground transition-colors"
             >
               {dismissLinkLabel}
             </button>
@@ -164,7 +164,7 @@ export function FeatureAnnouncementCard({
           <button
             type="button"
             onClick={onNext}
-            className="group inline-flex items-center gap-2 h-10 px-5 rounded-md bg-[#1A40FF] text-white text-sm font-medium hover:bg-[#1636D8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A40FF] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 transition-colors motion-reduce:transition-none"
+            className="group inline-flex items-center gap-2 h-10 px-5 rounded-md bg-primary text-primary-fg text-sm font-medium hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-surface transition-colors motion-reduce:transition-none"
           >
             {primaryLabel}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />

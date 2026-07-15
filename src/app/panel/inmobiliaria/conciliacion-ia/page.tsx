@@ -114,7 +114,7 @@ export default function ConciliacionIAHomePage() {
       <div className="mx-auto max-w-[1240px] space-y-7">
         {/* Breadcrumb + preview */}
         <div className="flex items-center justify-between gap-4">
-          <Link href="/panel/inmobiliaria/ai" className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors">
+          <Link href="/panel/inmobiliaria/ai" className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Agentes IA
           </Link>
@@ -193,18 +193,18 @@ export default function ConciliacionIAHomePage() {
             <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
               <div className="space-y-1.5">
                 <Eyebrow accent>Qué necesita tu atención</Eyebrow>
-                <p className="text-[13px] text-neutral-500">Gabriela ordena los casos por prioridad. Tú decides.</p>
+                <p className="text-[13px] text-fg-muted">Gabriela ordena los casos por prioridad. Tú decides.</p>
               </div>
-              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-neutral-100 text-[13px] font-semibold tabular-nums text-neutral-600">{BANDEJA.length}</span>
+              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-surface-muted text-[13px] font-semibold tabular-nums text-fg-muted">{BANDEJA.length}</span>
             </div>
 
-            <ul className="divide-y divide-neutral-100">
+            <ul className="divide-y divide-border-faint">
               {BANDEJA.map((item) => {
                 const p = PRIO[item.prioridad]
                 const ItemIcon = item.icon
                 return (
                   <li key={item.id}>
-                    <button type="button" className="group w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-neutral-50/80 transition-colors">
+                    <button type="button" className="group w-full flex items-start gap-4 px-5 py-4 text-left hover:bg-surface-muted transition-colors">
                       <span className="mt-0.5 inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0" style={{ background: p.soft, color: p.fg }}>
                         <ItemIcon className="w-[18px] h-[18px]" weight="bold" />
                       </span>
@@ -215,7 +215,7 @@ export default function ConciliacionIAHomePage() {
                           </StatusBadge>
                         </span>
                         <span className="block text-[14px] font-medium text-[#14130f] leading-snug">{item.title}</span>
-                        <span className="block mt-1 text-[13px] text-neutral-500 leading-relaxed">{item.motivo}</span>
+                        <span className="block mt-1 text-[13px] text-fg-muted leading-relaxed">{item.motivo}</span>
                         <span className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-medium" style={{ color: BLUE }}>
                           {item.cta}
                           <CaretRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" weight="bold" />
@@ -234,19 +234,19 @@ export default function ConciliacionIAHomePage() {
             <Card className="p-5">
               <div className="space-y-1.5 mb-4">
                 <Eyebrow>Fuentes</Eyebrow>
-                <p className="text-[13px] text-neutral-500">De dónde llegan los movimientos.</p>
+                <p className="text-[13px] text-fg-muted">De dónde llegan los movimientos.</p>
               </div>
               <ul className="space-y-2.5">
                 {FUENTES.map((f) => {
                   const FIcon = f.icon
                   return (
                     <li key={f.nombre} className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-100 text-neutral-600 shrink-0">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-surface-muted text-fg-muted shrink-0">
                         <FIcon className="w-4 h-4" weight="bold" />
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-[13px] font-medium text-[#14130f] truncate">{f.nombre}</span>
-                        <span className="block text-[11.5px] text-neutral-400">{f.meta}</span>
+                        <span className="block text-[11.5px] text-fg-subtle">{f.meta}</span>
                       </span>
                       <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium shrink-0" style={{ color: f.live ? '#22663F' : '#9AA3B2' }}>
                         {f.live && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#2C7A53' }} />}
@@ -262,18 +262,18 @@ export default function ConciliacionIAHomePage() {
             <Card className="p-5">
               <div className="space-y-1.5 mb-4">
                 <Eyebrow>El equipo</Eyebrow>
-                <p className="text-[13px] text-neutral-500">6 especialistas detrás del cierre.</p>
+                <p className="text-[13px] text-fg-muted">6 especialistas detrás del cierre.</p>
               </div>
               <ul className="space-y-1">
                 {EQUIPO.map((m, i) => (
-                  <li key={i} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-neutral-50 transition-colors">
+                  <li key={i} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-muted transition-colors">
                     <Monogram inicial={m.inicial} lead={m.lead} size={34} />
                     <span className="flex-1 min-w-0">
                       <span className="flex items-center gap-1.5">
                         <span className="text-[13.5px] font-medium text-[#14130f] truncate">{m.nombre}</span>
                         {m.lead && <Sparkle className="w-3.5 h-3.5 shrink-0" weight="fill" style={{ color: BLUE }} />}
                       </span>
-                      <span className="block text-[12px] text-neutral-500 truncate">{m.rol}</span>
+                      <span className="block text-[12px] text-fg-muted truncate">{m.rol}</span>
                     </span>
                     {m.lead && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: '#22663F' }}>

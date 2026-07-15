@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { MonoLabel } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
 
@@ -22,6 +23,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const { t } = useI18n();
 
   const [isImporting, setIsImporting] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentItem, setCurrentItem] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -55,17 +57,41 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const handleImport = async () => {
     if (importCount === 0) return;
     setIsImporting(true);
+    setIsGeocoding(true);
     setProgress(0);
     setCurrentItem(0);
 
     const total = importCount;
 
+    // Sequential geocoding — respects LocationIQ's rate limit (no per-row
+    // autocomplete, just the first result for the full address) and a bad
+    // address never blocks the import: it falls back to the city center.
+    let geocodedCount = 0;
+    let fallbackCount = 0;
+    const payloads: Array<ReturnType<typeof toCreatePayload> & { latitude?: number; longitude?: number }> = [];
+
+    for (let i = 0; i < selectedProperties.length; i++) {
+      const p = selectedProperties[i];
+      const coords = await geocodeImportRow(p);
+      if (coords.source === 'geocoded') geocodedCount += 1;
+      else fallbackCount += 1;
+      payloads.push({
+        ...toCreatePayload(p),
+        ...(coords.lat != null && coords.lng != null ? { latitude: coords.lat, longitude: coords.lng } : {}),
+      });
+      if (i < selectedProperties.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, GEOCODE_ROW_DELAY_MS));
+      }
+    }
+
+    setIsGeocoding(false);
+
     // No bulk-import endpoint exists — create each property via the real API,
     // tracking progress and partial failures honestly.
     let done = 0;
     const results = await Promise.allSettled(
-      selectedProperties.map((p) =>
-        propertiesApi.create(toCreatePayload(p)).finally(() => {
+      payloads.map((payload) =>
+        propertiesApi.create(payload).finally(() => {
           done += 1;
           setCurrentItem(done);
           setProgress(Math.round((done / total) * 100));
@@ -78,6 +104,9 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
 
     setIsImporting(false);
 
+    // eslint-disable-next-line no-console -- geocoding coverage isn't surfaced anywhere else
+    console.info(`[import] geocoding: ${geocodedCount} resolved, ${fallbackCount} fell back to city center`);
+
     if (created === 0) {
       // Nothing persisted — surface the error and do NOT navigate to success.
       toast.error('Error en la importación', {
@@ -89,13 +118,15 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     updateState({ importedCount: created, importProgress: 100 });
     setIsComplete(true);
 
+    const geocodeNote = geocodedCount > 0 ? ` (${geocodedCount} con dirección exacta geocodificada)` : '';
+
     if (failed > 0) {
       toast.error('Importación parcial', {
-        description: `${created} propiedades importadas, ${failed} con error.`,
+        description: `${created} propiedades importadas, ${failed} con error.${geocodeNote}`,
       });
     } else {
       toast.success('Importación exitosa', {
-        description: `${created} propiedades importadas correctamente`,
+        description: `${created} propiedades importadas correctamente${geocodeNote}`,
       });
     }
   };
@@ -277,19 +308,25 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       {isImporting && (
         <div className="space-y-2">
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            {t('inmobiliaria.import.confirm.importing', {
-              current: currentItem,
-              total: importCount,
-            })}
+            {isGeocoding
+              ? 'Geocodificando direcciones…'
+              : t('inmobiliaria.import.confirm.importing', {
+                  current: currentItem,
+                  total: importCount,
+                })}
           </p>
-          <Progress
-            value={progress}
-            size="xs"
-            variant={progress >= 100 ? 'success' : 'default'}
-          />
-          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
-            {progress}%
-          </p>
+          {!isGeocoding && (
+            <>
+              <Progress
+                value={progress}
+                size="xs"
+                variant={progress >= 100 ? 'success' : 'default'}
+              />
+              <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
+                {progress}%
+              </p>
+            </>
+          )}
         </div>
       )}
 

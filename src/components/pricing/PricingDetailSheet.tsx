@@ -179,7 +179,7 @@ export function PricingDetailSheet({
                   <ul className="space-y-3">
                     {group.items.map((item) => (
                       <li key={item.name} className="flex items-start gap-2.5">
-                        <CheckCircle className="w-4 h-4 text-[#2C7A53] shrink-0 mt-0.5" weight="fill" />
+                        <CheckCircle className="w-4 h-4 text-success shrink-0 mt-0.5" weight="fill" />
                         <div>
                           <span className="text-[13px] font-medium text-foreground">{item.name}</span>
                           <p className="text-[12px] text-muted-foreground leading-relaxed mt-0.5">

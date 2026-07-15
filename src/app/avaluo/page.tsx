@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   Buildings,
   CreditCard,
@@ -8,6 +7,7 @@ import {
 import { Eyebrow } from "@leasefy/cadence";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AVALUO_WIZARD_URL } from "@/lib/avaluo/wizard-url";
 
 // ---------------------------------------------------------------------------
 // Metadata for this specific page is inherited from avaluo/layout.tsx
@@ -63,7 +63,9 @@ export default function AvaluoPage() {
         {/* CTA — primary button, Satoshi sentence case (brand contract §4) */}
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
           <Button asChild size="lg">
-            <Link href="/avaluo/nuevo">Solicitar avalúo</Link>
+            <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
+              Solicitar avalúo
+            </a>
           </Button>
         </div>
 
@@ -119,7 +121,9 @@ export default function AvaluoPage() {
         {/* Secondary CTA at bottom */}
         <div className="mt-12 text-center">
           <Button asChild size="lg">
-            <Link href="/avaluo/nuevo">Solicitar avalúo</Link>
+            <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
+              Solicitar avalúo
+            </a>
           </Button>
           <p className="mt-4 text-xs text-fg-muted">
             También podés escribirnos a{" "}

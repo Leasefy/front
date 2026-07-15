@@ -35,16 +35,16 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
   return (
     <div className={cn('flex gap-3', className)}>
       {/* AI icon — real Leasefy mark */}
-      <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-        <LeasefyMark className="w-3.5 h-auto text-primary dark:text-neutral-200" />
+      <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-surface-muted flex items-center justify-center">
+        <LeasefyMark className="w-3.5 h-auto text-primary" />
       </div>
 
       <div className="flex-1 min-w-0">
         {isSending ? (
           <span className="inline-flex gap-1.5 py-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600 animate-bounce [animation-delay:0ms]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600 animate-bounce [animation-delay:150ms]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-600 animate-bounce [animation-delay:300ms]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:0ms]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:150ms]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:300ms]" />
           </span>
         ) : (
           <>
@@ -62,7 +62,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
                     type="button"
                     icon={<ActionIcon className="w-3.5 h-3.5" />}
                     variant="ghost"
-                    className="p-1.5 rounded-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    className="p-1.5 rounded-sm text-fg-subtle hover:text-fg-muted hover:bg-surface-muted"
                     aria-label={label}
                   />
                 ))}

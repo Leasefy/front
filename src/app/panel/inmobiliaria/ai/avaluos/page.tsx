@@ -10,9 +10,10 @@
  * hacen Portofino/Leasefy en el backoffice admin; la inmobiliaria SOLICITA y
  * CONSULTA. Mirrors the F6/F7/F8/F9 workspaces 1:1.
  *
- * Domain slot: "Solicitar avalúo" CTA → the public wizard app at
- * NEXT_PUBLIC_AVALUO_API_URL (rendered ONLY when the env var is set) + the
- * firma-del-certificado note.
+ * Domain slot: "Solicitar avalúo" CTA → the avalúo MICRO's own intake wizard
+ * (AVALUO_WIZARD_URL = NEXT_PUBLIC_AVALUO_API_URL/avaluo). The whole solicitud
+ * flow runs on the micro front, not here. When the micro base is unset the CTA
+ * degrades to "próximamente" — the main action must NEVER silently disappear.
  */
 
 import {
@@ -30,12 +31,9 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { SalaAgente } from '@/components/inmobiliaria/ai/SalaAgente'
 import { useI18n } from '@/lib/i18n'
+import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.avaluos'
-
-/** Public wizard app (external). When unset the CTA degrades to a visible
- * "próximamente" state — the main action must NEVER silently disappear. */
-const AVALUO_URL = process.env.NEXT_PUBLIC_AVALUO_API_URL
 
 /** "Cómo funciona" — the 4 steps of the avalúo journey. */
 const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
@@ -78,14 +76,14 @@ function AvaluosSala() {
                 {t(`${PAGES_NS}.solicitarTitle`)}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {AVALUO_URL
+                {AVALUO_WIZARD_URL
                   ? t(`${PAGES_NS}.solicitarDetalle`)
                   : t(`${PAGES_NS}.solicitarUnavailable`)}
               </p>
             </div>
-            {AVALUO_URL ? (
+            {AVALUO_WIZARD_URL ? (
               <Button asChild hideArrow className="shrink-0" data-testid="avaluos-solicitar-cta">
-                <a href={AVALUO_URL} target="_blank" rel="noopener noreferrer">
+                <a href={AVALUO_WIZARD_URL} target="_blank" rel="noopener noreferrer">
                   {t(`${PAGES_NS}.solicitarCta`)}
                   <ArrowSquareOut className="w-4 h-4" aria-hidden="true" />
                 </a>

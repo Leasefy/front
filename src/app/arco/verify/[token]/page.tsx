@@ -34,15 +34,15 @@ function ArcoVerifyInner() {
       id="main-content"
       className="min-h-screen flex flex-col items-center justify-center py-16 px-4 bg-background"
     >
-      <div className="w-full max-w-md rounded-[22px] border border-neutral-200 bg-white p-8 text-center">
+      <div className="w-full max-w-md rounded-[22px] border border-border bg-surface p-8 text-center">
         <CheckCircle
           weight="duotone"
-          className="h-12 w-12 text-[#2C7A53] mx-auto mb-4"
+          className="h-12 w-12 text-success mx-auto mb-4"
         />
-        <h1 className="text-xl font-semibold font-heading text-neutral-900">
+        <h1 className="text-xl font-semibold font-heading text-fg">
           {t('inmobiliaria.ai.arco.verify.confirmed')}
         </h1>
-        <p className="text-sm text-neutral-500 mt-2">
+        <p className="text-sm text-fg-subtle mt-2">
           {t('inmobiliaria.ai.arco.verify.sla')}
         </p>
         <Link
@@ -51,7 +51,7 @@ function ArcoVerifyInner() {
         >
           Volver al inicio
         </Link>
-        <p className="text-xs text-neutral-400 mt-4">
+        <p className="text-xs text-fg-subtle mt-4">
           ¿Tienes dudas? Consulta nuestra{' '}
           <Link
             href="/privacidad"

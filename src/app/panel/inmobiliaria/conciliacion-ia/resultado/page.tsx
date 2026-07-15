@@ -85,7 +85,7 @@ export default function ConciliacionResultadoPage() {
           <div className="space-y-1.5 min-w-0">
             <Link
               href="/panel/inmobiliaria/conciliacion-ia"
-              className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors"
+              className="inline-flex items-center gap-2 text-[13px] text-fg-muted hover:text-[#14130f] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Conciliación IA
@@ -93,7 +93,7 @@ export default function ConciliacionResultadoPage() {
             <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#14130f]">
               Conciliación del 16 de junio
             </h1>
-            <p className="text-[13px] text-neutral-500">
+            <p className="text-[13px] text-fg-muted">
               120 movimientos · Bancolombia .360 + links de pago
             </p>
           </div>
@@ -147,10 +147,10 @@ export default function ConciliacionResultadoPage() {
         </section>
 
         {/* ── 2. RESULTADO DEL DÍA ──────────────────────────────────────── */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5 sm:p-6">
+        <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
           <div className="space-y-1.5 mb-5">
             <Eyebrow>Resultado del día</Eyebrow>
-            <p className="text-[13px] text-neutral-500">
+            <p className="text-[13px] text-fg-muted">
               Cómo se reparten los <span className="tabular-nums">120</span> movimientos por estado.
             </p>
           </div>
@@ -168,12 +168,12 @@ export default function ConciliacionResultadoPage() {
           </div>
 
           {/* Breakdown rows */}
-          <ul className="divide-y divide-neutral-100">
+          <ul className="divide-y divide-border-faint">
             {RESULTADO.map((r) => (
               <li key={r.key} className="flex items-center gap-3 py-3">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: r.tone.dot }} />
                 <span className="flex-1 min-w-0 text-[14px] text-[#14130f] truncate">{r.label}</span>
-                <span className="w-12 text-right text-[13px] font-medium text-neutral-500 tabular-nums shrink-0">
+                <span className="w-12 text-right text-[13px] font-medium text-fg-muted tabular-nums shrink-0">
                   {r.count}
                 </span>
                 <span className="w-36 text-right text-[14px] font-medium text-[#14130f] tabular-nums shrink-0">
@@ -191,14 +191,14 @@ export default function ConciliacionResultadoPage() {
             {IMPACTO.map((c) => {
               const CIcon = c.icon
               return (
-                <div key={c.label} className="rounded-xl border border-neutral-200/80 bg-white p-4">
-                  <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-neutral-100 text-neutral-600">
+                <div key={c.label} className="rounded-xl border border-border bg-surface p-4">
+                  <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-surface-muted text-fg-muted">
                     <CIcon className="w-[18px] h-[18px]" weight="bold" />
                   </span>
                   <p className="mt-3 text-[26px] font-semibold tracking-[-0.01em] text-[#14130f] tabular-nums leading-none">
                     {c.value}
                   </p>
-                  <p className="mt-1.5 text-[12.5px] text-neutral-500 leading-snug">{c.label}</p>
+                  <p className="mt-1.5 text-[12.5px] text-fg-muted leading-snug">{c.label}</p>
                 </div>
               )
             })}
@@ -220,11 +220,11 @@ export default function ConciliacionResultadoPage() {
           </Link>
 
           <Button type="button" variant="outline" hideArrow>
-            <Export className="w-4 h-4 text-neutral-500" weight="bold" />
+            <Export className="w-4 h-4 text-fg-muted" weight="bold" />
             Exportar reporte
           </Button>
 
-          <Button type="button" variant="outline" hideArrow className="group sm:ml-auto text-neutral-600">
+          <Button type="button" variant="outline" hideArrow className="group sm:ml-auto text-fg-muted">
             Cerrar conciliación del día
             <CaretRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" weight="bold" />
           </Button>

@@ -65,11 +65,11 @@ export default function HowItWorksSection() {
           <div className="flex justify-center">
             <EyebrowPill>Cómo funciona</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-7 text-fg`}>
             De solicitud a retención, con agentes en{" "}
-            <span className="text-neutral-400">cada etapa</span>
+            <span className="text-fg-subtle">cada etapa</span>
           </h2>
-          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">
             Cada paso del ciclo del arriendo, ejecutado en secuencia por la
             plataforma —de la primera solicitud hasta la retención del propietario.
           </p>
@@ -80,31 +80,31 @@ export default function HowItWorksSection() {
           {/* hairline rule that connects the numbers */}
           <span
             aria-hidden
-            className="pointer-events-none absolute left-[19px] top-4 bottom-4 hidden w-px bg-neutral-200 sm:block md:left-[23px]"
+            className="pointer-events-none absolute left-[19px] top-4 bottom-4 hidden w-px bg-border-faint sm:block md:left-[23px]"
           />
 
           <ol className="space-y-0">
             {STEPS.map((step, i) => (
               <Reveal key={step.n} delay={0.05 * i}>
-                <li className="group relative flex gap-6 border-b border-neutral-200 py-7 last:border-b-0 md:gap-10 md:py-9">
+                <li className="group relative flex gap-6 border-b border-border py-7 last:border-b-0 md:gap-10 md:py-9">
                   {/* mono number — open on the background, primary accent */}
-                  <span className="relative z-10 shrink-0 font-mono text-[15px] font-medium tabular-nums text-neutral-300 transition-colors group-hover:text-primary md:text-base">
+                  <span className="relative z-10 shrink-0 font-mono text-[15px] font-medium tabular-nums text-fg-subtle transition-colors group-hover:text-primary md:text-base">
                     {step.n}
                   </span>
 
                   {/* content */}
                   <div className="flex min-w-0 flex-1 items-start gap-4">
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-heading text-xl font-medium tracking-tight text-neutral-950 md:text-[22px]">
+                      <h3 className="font-heading text-xl font-medium tracking-tight text-fg md:text-[22px]">
                         {step.title}
                       </h3>
-                      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-neutral-500 md:text-base">
+                      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-fg-muted md:text-base">
                         {step.body}
                       </p>
                     </div>
 
                     {/* guide icon — soft, hairline border */}
-                    <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-400 transition-colors group-hover:text-primary md:flex">
+                    <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-fg-subtle transition-colors group-hover:text-primary md:flex">
                       <step.icon className="h-5 w-5" weight="duotone" />
                     </span>
                   </div>

@@ -65,7 +65,7 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
           </p>
         </div>
         <CaretDown className={cn(
-          'w-5 h-5 text-neutral-400 transition-transform',
+          'w-5 h-5 text-fg-subtle transition-transform',
           expanded && 'rotate-180'
         )} />
       </button>
@@ -95,7 +95,7 @@ function UrgentActionsBanner({ actions }: { actions: DashboardUrgentAction[] }) 
                 >
                   {action.count}
                 </span>
-                <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 text-neutral-400" />
+                <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 text-fg-subtle" />
               </Link>
             );
           })}
@@ -378,7 +378,7 @@ export default function PanelPage() {
                 <h2 className="text-xl font-semibold text-fg">{t('landlord.dashboard.myProperties')}</h2>
                 <Link
                   href="/panel/propiedades"
-                  className="text-sm text-fg-muted hover:text-neutral-900 dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
+                  className="text-sm text-fg-muted hover:text-fg font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('landlord.dashboard.viewAll')}
                   <CaretRight className="w-4 h-4" />
@@ -546,7 +546,7 @@ export default function PanelPage() {
               {properties.length > 3 && (
                 <Link
                   href="/panel/propiedades"
-                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-xl border border-border text-sm font-medium text-fg-muted hover:bg-surface-hover hover:text-neutral-900 dark:hover:text-white transition-colors"
+                  className="flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-xl border border-border text-sm font-medium text-fg-muted hover:bg-surface-hover hover:text-fg transition-colors"
                 >
                   {t('landlord.dashboard.viewAllProperties')}
                   <span className="px-2 py-0.5 bg-surface-muted rounded-full text-xs">
@@ -587,7 +587,7 @@ export default function PanelPage() {
                         {activity.type === 'message' && <Chat className="w-5 h-5 text-fg-muted" />}
                         {activity.type === 'document' && <FileText className="w-5 h-5 text-fg-muted" />}
                         {!['application', 'status_change', 'message', 'document'].includes(activity.type) && (
-                          <Bell className="w-5 h-5 text-neutral-500" />
+                          <Bell className="w-5 h-5 text-fg-subtle" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -624,7 +624,7 @@ export default function PanelPage() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <BrandDot />
-                <MonoLabel className="text-[11px] font-medium text-neutral-400">
+                <MonoLabel className="text-[11px] font-medium text-fg-muted">
                   {t('landlord.dashboard.financialSummary')}
                 </MonoLabel>
               </div>
@@ -708,7 +708,7 @@ export default function PanelPage() {
                       {action.badge && (
                         <span className="w-2 h-2 rounded-full bg-primary" />
                       )}
-                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-primary transition-colors" />
+                      <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-primary transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -756,7 +756,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       title: t('landlord.dashboard.visitProperty'),
       content: (
         <div className="flex items-start gap-3">
-          <MapPin className="w-4 h-4 text-neutral-400 mt-0.5" />
+          <MapPin className="w-4 h-4 text-fg-subtle mt-0.5" />
           <p className="text-sm text-fg">{selected.propertyTitle}</p>
         </div>
       ),
@@ -766,7 +766,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       title: t('landlord.dashboard.visitDateTime'),
       content: (
         <div className="flex items-start gap-3">
-          <Clock className="w-4 h-4 text-neutral-400 mt-0.5" />
+          <Clock className="w-4 h-4 text-fg-subtle mt-0.5" />
           <p className="text-sm text-fg">
             {i18nFmtDate(selected.requestedDate + 'T12:00:00', {
               weekday: 'long',
@@ -782,7 +782,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       title: t('landlord.dashboard.candidateMessage'),
       content: (
         <div className="flex items-start gap-3">
-          <Chat className="w-4 h-4 text-neutral-400 mt-0.5" />
+          <Chat className="w-4 h-4 text-fg-subtle mt-0.5" />
           <p className="text-sm text-fg">{selected.candidateMessage}</p>
         </div>
       ),
@@ -792,7 +792,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
       title: t('landlord.dashboard.yourNotes'),
       content: (
         <div className="flex items-start gap-3">
-          <Chat className="w-4 h-4 text-neutral-400 mt-0.5" />
+          <Chat className="w-4 h-4 text-fg-subtle mt-0.5" />
           <p className="text-sm text-fg">{selected.landlordNotes}</p>
         </div>
       ),
@@ -828,14 +828,14 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
                   })} · {visit.requestedTime} · {VISIT_STATUS_LABELS[visit.status]}
                 </p>
               </div>
-              <CaretRight className="w-4 h-4 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              <CaretRight className="w-4 h-4 text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </button>
           ))}
         </div>
         {visits.length > 3 && (
           <Link
             href="/panel/visitas"
-            className="block mt-3 text-center text-xs text-fg-muted hover:text-neutral-900 dark:hover:text-white transition-colors"
+            className="block mt-3 text-center text-xs text-fg-muted hover:text-fg transition-colors"
           >
             {t('landlord.dashboard.viewAllVisits')} →
           </Link>
@@ -856,7 +856,7 @@ function UpcomingVisitsCard({ visits }: { visits: Visit[] }) {
           <div className="flex gap-2">
             <Link
               href={`/panel/${selected.propertyId}`}
-              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-surface border border-border text-fg rounded-xl hover:bg-neutral-50 dark:hover:bg-[#333] transition-colors"
+              className="flex-1 text-center text-sm font-medium px-4 py-2.5 bg-surface border border-border text-fg rounded-xl hover:bg-surface-muted transition-colors"
             >
               {t('landlord.dashboard.viewProperty')}
             </Link>
@@ -886,7 +886,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
     payment_due: 'bg-primary',
     lease_ending: 'bg-warning',
     contract_renewal: 'bg-success',
-    inspection: 'bg-neutral-500',
+    inspection: 'bg-fg-subtle',
   };
 
   const isOverdue = selected ? selected.daysUntil < 0 : false;
@@ -916,7 +916,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
       title: t('landlord.dashboard.eventProperty'),
       content: (
         <div className="flex items-start gap-3">
-          <Buildings className="w-4 h-4 text-neutral-400 mt-0.5" />
+          <Buildings className="w-4 h-4 text-fg-subtle mt-0.5" />
           <p className="text-sm text-fg">{selected.description}</p>
         </div>
       ),
@@ -926,7 +926,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
       title: t('landlord.dashboard.eventDate'),
       content: (
         <div className="flex items-start gap-3">
-          <Calendar className="w-4 h-4 text-neutral-400 mt-0.5" />
+          <Calendar className="w-4 h-4 text-fg-subtle mt-0.5" />
           <p className="text-sm text-fg">
             {i18nFmtDate(selected.date + 'T12:00:00', {
               weekday: 'long',
@@ -977,7 +977,7 @@ function UpcomingEventsCard({ events }: { events: DashboardUpcomingEvent[] }) {
                     })}
                   </p>
                 </div>
-                <CaretRight className="w-4 h-4 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                <CaretRight className="w-4 h-4 text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
               </button>
             );
           })}

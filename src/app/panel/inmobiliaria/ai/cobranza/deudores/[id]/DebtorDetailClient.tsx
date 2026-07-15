@@ -211,7 +211,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
       {/* Header */}
       <header className="mb-5">
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {debtorName || t('inmobiliaria.ai.cobranza.detail.title')}
           </h1>
           <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               aria-hidden="true"
               className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
             />
-            <MonoLabel className="text-[10.5px] font-medium text-neutral-400 dark:text-neutral-500">
+            <MonoLabel className="text-[10.5px] font-medium text-fg-subtle">
               {t('inmobiliaria.ai.cobranza.detalle.conversacion')}
             </MonoLabel>
           </h2>
@@ -322,7 +322,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               className="gap-2"
             >
               <span>{t(`inmobiliaria.ai.cobranza.detail.tabs.${activeTab}`)}</span>
-              <span className="text-xs text-neutral-400">▾</span>
+              <span className="text-xs text-fg-subtle">▾</span>
             </Button>
           </div>
 
@@ -347,7 +347,7 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                         'w-full justify-start px-3 font-medium ' +
                         (activeTab === k
                           ? 'bg-primary-soft text-primary'
-                          : 'text-neutral-700 dark:text-neutral-200')
+                          : 'text-fg-muted')
                       }
                     >
                       {t(`inmobiliaria.ai.cobranza.detail.tabs.${k}`)}

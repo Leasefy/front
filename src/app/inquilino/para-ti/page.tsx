@@ -165,8 +165,8 @@ export default function ParaTiPage() {
           </Link>
 
           <div className="bg-surface border border-plan-border p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center mx-auto mb-6">
-              <Sparkle className="w-8 h-8 text-[#1A40FF]" />
+            <div className="w-16 h-16 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-6">
+              <Sparkle className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-xl font-semibold text-plan-primary mb-3">
               {locale === 'es' ? 'Recomendaciones personalizadas' : 'Personalized recommendations'}
@@ -179,7 +179,7 @@ export default function ParaTiPage() {
             <div className="flex items-center justify-center gap-3">
               <Link
                 href="/inquilino/explorar"
-                className="px-5 py-2 bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors"
+                className="px-5 py-2 bg-primary text-white text-sm font-medium hover:opacity-90 transition-colors"
               >
                 {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
               </Link>
@@ -213,13 +213,13 @@ export default function ParaTiPage() {
         </Link>
 
         {/* Hero Section - Clean PLan style */}
-        <div className="bg-[#1A40FF] p-8 mb-6">
+        <div className="bg-primary p-8 mb-6">
           <div className="flex items-start justify-between gap-8">
             {/* Left Content */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#B7791F]/20 flex items-center justify-center">
-                  <Sparkle className="w-5 h-5 text-[#B7791F]" />
+                <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
+                  <Sparkle className="w-5 h-5 text-warning" />
                 </div>
                 <div>
                   <h1 className="text-xl font-semibold text-white">
@@ -247,10 +247,10 @@ export default function ParaTiPage() {
                 )}>
                   <span className={cn(
                     'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
-                    riskLevel === 'A' ? 'bg-[#2C7A53] text-white' :
-                    riskLevel === 'B' ? 'bg-[#1A40FF] text-white' :
-                    riskLevel === 'C' ? 'bg-[#B7791F] text-white' :
-                    'bg-[#C4503B] text-white'
+                    riskLevel === 'A' ? 'bg-success text-white' :
+                    riskLevel === 'B' ? 'bg-primary text-white' :
+                    riskLevel === 'C' ? 'bg-warning text-white' :
+                    'bg-danger text-white'
                   )}>
                     {riskLevel}
                   </span>
@@ -258,7 +258,7 @@ export default function ParaTiPage() {
                 </div>
 
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/10 border border-white/10 text-sm">
-                  <TrendUp className="w-3.5 h-3.5 text-[#2C7A53]" />
+                  <TrendUp className="w-3.5 h-3.5 text-success" />
                   <span className="text-white/90">
                     {locale === 'es' ? 'Disponible' : 'Available'}: {formatCurrency(profile.availableForRent)}/{locale === 'es' ? 'mes' : 'mo'}
                   </span>
@@ -266,7 +266,7 @@ export default function ParaTiPage() {
 
                 {profile.contractType === 'indefinite' && (
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/10 border border-white/10 text-sm">
-                    <Shield className="w-3.5 h-3.5 text-[#1A40FF]" />
+                    <Shield className="w-3.5 h-3.5 text-primary" />
                     <span className="text-white/90">
                       {locale === 'es' ? 'Contrato indefinido' : 'Permanent contract'}
                     </span>
@@ -275,7 +275,7 @@ export default function ParaTiPage() {
 
                 {profile.hasIncomeProof && profile.hasEmploymentLetter && (
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface/10 border border-white/10 text-sm">
-                    <SealCheck className="w-3.5 h-3.5 text-fg-muted dark:text-fg-subtle" />
+                    <SealCheck className="w-3.5 h-3.5 text-fg-muted" />
                     <span className="text-white/90">
                       {locale === 'es' ? 'Documentación completa' : 'Complete documentation'}
                     </span>
@@ -286,7 +286,7 @@ export default function ParaTiPage() {
 
             {/* Right - Access Percentage */}
             <div className="hidden lg:flex flex-col items-center justify-center bg-surface/5 border border-white/10 px-8 py-6 min-w-[160px]">
-              <span className="text-5xl font-bold text-[#B7791F] tracking-tight">
+              <span className="text-5xl font-bold text-warning tracking-tight">
                 {accessPercentage}%
               </span>
               <span className="text-xs text-white/60 mt-1 text-center">
@@ -432,7 +432,7 @@ export default function ParaTiPage() {
                         className={cn(
                           'min-w-[36px] h-9 px-3 rounded-none border text-sm font-medium',
                           currentPage === page
-                            ? 'bg-[#1A40FF] border-[#1A40FF]/30 text-white'
+                            ? 'bg-primary border-primary/30 text-white'
                             : 'border-plan-border text-plan-secondary hover:bg-surface-muted hover:text-plan-primary'
                         )}
                       >
@@ -477,7 +477,7 @@ export default function ParaTiPage() {
                 handleSortChange('match');
                 handleFunnelChange('all');
               }}
-              className="text-[#1A40FF] hover:text-[#1A40FF]"
+              className="text-primary hover:text-primary"
             >
               {locale === 'es' ? 'Limpiar filtros' : 'Clear filters'}
             </Button>
@@ -494,8 +494,8 @@ export default function ParaTiPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-plan-border">
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold text-[#2C7A53]">40%</span>
+              <div className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-3">
+                <span className="text-sm font-bold text-success">40%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Asequibilidad' : 'Affordability'}
@@ -506,8 +506,8 @@ export default function ParaTiPage() {
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold text-[#1A40FF]">30%</span>
+              <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-3">
+                <span className="text-sm font-bold text-primary">30%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Compatibilidad' : 'Compatibility'}
@@ -518,8 +518,8 @@ export default function ParaTiPage() {
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold text-fg-muted dark:text-fg-subtle">15%</span>
+              <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-3">
+                <span className="text-sm font-bold text-fg-muted">15%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Perfil' : 'Profile'}
@@ -530,8 +530,8 @@ export default function ParaTiPage() {
             </div>
 
             <div className="p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-[#F8F0E0] dark:bg-[#B7791F]/15 flex items-center justify-center mx-auto mb-3">
-                <span className="text-sm font-bold text-[#B7791F]">15%</span>
+              <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center mx-auto mb-3">
+                <span className="text-sm font-bold text-warning">15%</span>
               </div>
               <h3 className="text-sm font-medium text-plan-primary mb-1">
                 {locale === 'es' ? 'Preferencias' : 'Preferences'}
@@ -544,7 +544,7 @@ export default function ParaTiPage() {
         </div>
 
         {/* Improve Profile CTA */}
-        <div className="mt-6 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-5 flex items-center justify-between">
+        <div className="mt-6 bg-primary-soft border border-primary/30 p-5 flex items-center justify-between">
           <div>
             <h3 className="font-medium text-plan-primary mb-0.5">
               {locale === 'es' ? '¿Quieres acceder a más propiedades?' : 'Want to access more properties?'}
@@ -555,7 +555,7 @@ export default function ParaTiPage() {
           </div>
           <Link
             href="/inquilino/perfil"
-            className="px-5 py-2 bg-[#1A40FF] text-white text-sm font-medium hover:opacity-90 transition-colors flex-shrink-0"
+            className="px-5 py-2 bg-primary text-white text-sm font-medium hover:opacity-90 transition-colors flex-shrink-0"
           >
             {locale === 'es' ? 'Mejorar perfil' : 'Improve profile'}
           </Link>

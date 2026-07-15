@@ -27,17 +27,17 @@ const PRODUCTS = [
 
 export default function InitialProductsSection() {
   return (
-    <section className="bg-white py-20 md:py-28 lg:py-32">
+    <section className="bg-surface py-20 md:py-28 lg:py-32">
       <div className="container-platform">
         {/* Header — centered (Handle style) */}
         <Reveal className="mx-auto max-w-3xl text-center">
           <div className="flex justify-center">
             <EyebrowPill>Por dónde empezar</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-6 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-6 text-fg`}>
             Empieza por los procesos que más frenan tus cierres
           </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-fg-muted md:text-lg">
             Tres agentes que puedes activar de inmediato para responder más rápido,
             decidir mejor y avanzar tus solicitudes.
           </p>
@@ -50,23 +50,23 @@ export default function InitialProductsSection() {
               <Link
                 key={p.title}
                 href="/auth?mode=register"
-                className="group flex min-h-[260px] flex-col rounded-2xl border border-neutral-200 bg-white p-7 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_18px_40px_-22px_rgba(15,23,42,0.25)]"
+                className="group flex min-h-[260px] flex-col rounded-2xl border border-border bg-surface p-7 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_18px_40px_-22px_rgba(15,23,42,0.25)]"
               >
                 <div className="flex items-start justify-between">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                     <p.icon className="h-6 w-6" weight="duotone" />
                   </span>
-                  <span className="font-mono text-[12px] tabular-nums text-neutral-300">
+                  <span className="font-mono text-[12px] tabular-nums text-fg-subtle">
                     {p.num}
                   </span>
                 </div>
-                <h3 className="mt-6 font-heading text-xl font-medium text-neutral-950">
+                <h3 className="mt-6 font-heading text-xl font-medium text-fg">
                   {p.title}
                 </h3>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-500">
+                <p className="mt-2.5 text-[15px] leading-relaxed text-fg-muted">
                   {p.body}
                 </p>
-                <span className="mt-auto flex items-center gap-1.5 pt-6 text-[13px] font-medium text-neutral-400 transition-colors group-hover:text-primary">
+                <span className="mt-auto flex items-center gap-1.5 pt-6 text-[13px] font-medium text-fg-subtle transition-colors group-hover:text-primary">
                   Activar agente
                   <ArrowRight
                     className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"

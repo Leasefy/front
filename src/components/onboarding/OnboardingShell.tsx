@@ -257,7 +257,7 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
         </aside>
 
         {/* Center - Form Content */}
-        <main className="flex-1 bg-white lg:border-r lg:border-neutral-200">
+        <main className="flex-1 bg-surface lg:border-r lg:border-border">
           <div className="max-w-xl mx-auto px-4 py-8 lg:px-12 lg:py-12">
             {/* Step Header */}
             <motion.div

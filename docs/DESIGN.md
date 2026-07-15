@@ -626,14 +626,24 @@ All filters are pills with chevron-down. Active state: `border-border-strong bg-
 
 ## 17. Modal vs Drawer — Two Different Layers
 
-Two distinct overlay patterns with **different z-indexes**:
+Two overlay patterns plus the floating-content layer that must sit above them:
 
 | Pattern | Component | z-index | When |
 |---|---|---|---|
-| **Drawer (side panel)** | Custom (`CandidateDrawer`, `PlanDetailSheet`) | `z-50` | Detail views, settings, long sectioned content |
-| **Dialog (centered modal)** | `<Dialog>` from `dialog.tsx` (Radix-based) | `z-[300]` | Confirmations, short forms, alerts |
+| **Drawer / Sheet (side panel)** | `<Sheet>` / `<Drawer>` primitives (`sheet.tsx`, `drawer.tsx`) | `z-[300]` | Detail views, settings, long sectioned content |
+| **Dialog (centered modal)** | `<Dialog>` / `<AlertDialog>` (`dialog.tsx`, Radix-based) | `z-[300]` | Confirmations, short forms, alerts |
+| **Floating-in-modal** | `Select` / `DropdownMenu` / `Popover` / `Tooltip` / `HoverCard` content | `z-[400]` | Any Radix popover opened *inside* a modal/drawer |
 
-⚠️ **Different z-indexes are intentional** — Dialog must sit above the drawer because drawers can spawn confirmation dialogs.
+⚠️ **Overlay stack: modal/drawer `z-[300]` < floating content `z-[400]` < toasts (sonner, ~1e9).**
+Floating primitives MUST outrank the modal that contains them — otherwise their content
+renders **behind** the `z-[300]` overlay and is invisible/clipped. That's why
+`select.tsx`, `dropdown-menu.tsx`, `popover.tsx`, `tooltip.tsx`, and `hover-card.tsx`
+override the design-system default `z-50` to `z-[400]`. Add new floating primitives to
+that list, don't invent a new number.
+
+Dialog and Sheet share `z-[300]`; a confirmation Dialog spawned *from* a Sheet lands on
+top by DOM order (it mounts later). The legacy `PlanDetailSheet` still uses `z-50` — new
+side panels should use the shared `<Sheet>` primitive, not roll their own.
 
 ### Dialog Pattern
 ```tsx

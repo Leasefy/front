@@ -82,16 +82,16 @@ export function CouponInput({
   if (appliedCoupon) {
     return (
       <div className={cn('', className)}>
-        <div className="flex items-center justify-between bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-md p-3">
+        <div className="flex items-center justify-between bg-success-soft border border-success/30 rounded-md p-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#E8F3EC] flex items-center justify-center shrink-0">
-              <Check className="w-3.5 h-3.5 text-[#2C7A53]" />
+            <div className="w-6 h-6 rounded-full bg-success-soft flex items-center justify-center shrink-0">
+              <Check className="w-3.5 h-3.5 text-success" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-[#2C7A53] truncate">
+              <p className="text-sm font-medium text-success truncate">
                 {appliedCoupon.code}
               </p>
-              <p className="text-xs text-[#2C7A53] truncate">
+              <p className="text-xs text-success truncate">
                 {appliedCoupon.description}
               </p>
             </div>

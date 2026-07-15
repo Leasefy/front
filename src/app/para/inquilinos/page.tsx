@@ -953,7 +953,7 @@ export default function InquilinosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center">
@@ -1101,9 +1101,9 @@ export default function InquilinosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
-                    <div className="aspect-video bg-neutral-200 rounded-md mb-3 flex items-center justify-center">
-                      <span className="text-[10px] text-neutral-400">Foto no disponible</span>
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-border-faint">
+                    <div className="aspect-video bg-surface-muted rounded-md mb-3 flex items-center justify-center">
+                      <span className="text-[10px] text-fg-subtle">Foto no disponible</span>
                     </div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[12px] font-medium text-foreground">Apto Chapinero</span>
@@ -1140,7 +1140,7 @@ export default function InquilinosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-border-faint">
                     <p className="text-[11px] font-medium text-foreground mb-3">Documentos requeridos</p>
                     <div className="space-y-2">
                       {[
@@ -1151,7 +1151,7 @@ export default function InquilinosPage() {
                         'Declaración de renta',
                       ].map((doc, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded border border-neutral-300 flex items-center justify-center">
+                          <div className="w-4 h-4 rounded border border-border flex items-center justify-center">
                             {i < 2 && <Check className="w-2.5 h-2.5 text-[#2C7A53]" />}
                           </div>
                           <span className="text-[10px] text-muted-foreground">{doc}</span>
@@ -1230,7 +1230,7 @@ export default function InquilinosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -1245,7 +1245,7 @@ export default function InquilinosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Aplicaciones ilimitadas', '60 días', 'Sin repetir docs'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1258,7 +1258,7 @@ export default function InquilinosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
@@ -1273,7 +1273,7 @@ export default function InquilinosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Fotos verificadas', 'Visitas reales', 'Cero estafas'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}

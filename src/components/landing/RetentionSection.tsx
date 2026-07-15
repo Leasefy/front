@@ -31,11 +31,11 @@ export default function RetentionSection() {
         {/* Header */}
         <Reveal className="max-w-3xl">
           <EyebrowPill>Retención</EyebrowPill>
-          <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-7 text-fg`}>
             Retén más inmuebles{" "}
-            <span className="text-neutral-400">dentro de tu portafolio.</span>
+            <span className="text-fg-subtle">dentro de tu portafolio.</span>
           </h2>
-          <p className="mt-7 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mt-7 max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">
             Crecer una inmobiliaria no es solo captar más inmuebles: también es
             evitar perder los que ya tienes. Leasefy anticipa renovaciones,
             detecta propietarios en riesgo y mantiene una relación clara con cada
@@ -45,7 +45,7 @@ export default function RetentionSection() {
 
         {/* 3 puntos — hairline 3-up grid (Handle capabilities) */}
         <Reveal delay={0.15} className="mt-14">
-          <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-neutral-200 md:grid-cols-3 md:divide-x md:divide-neutral-200">
+          <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border md:grid-cols-3 md:divide-x md:divide-border">
             {CARDS.map((card) => (
               <div
                 key={card.title}
@@ -55,14 +55,14 @@ export default function RetentionSection() {
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                     <card.icon className="h-6 w-6" weight="duotone" />
                   </span>
-                  <span className="font-mono text-[12px] tabular-nums text-neutral-300">
+                  <span className="font-mono text-[12px] tabular-nums text-fg-subtle">
                     {card.num}
                   </span>
                 </div>
-                <h3 className="mt-6 font-heading text-xl font-medium tracking-tight text-neutral-950">
+                <h3 className="mt-6 font-heading text-xl font-medium tracking-tight text-fg">
                   {card.title}
                 </h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-neutral-500">
+                <p className="mt-2 text-[15px] leading-relaxed text-fg-muted">
                   {card.body}
                 </p>
               </div>

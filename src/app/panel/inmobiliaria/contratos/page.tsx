@@ -139,14 +139,14 @@ function ContratosContent() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-neutral-400" />
-        <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-emerald-600" />
+        <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-fg-subtle" />
+        <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-success" />
         <StatCard
           label={tx('Pendientes de firma', 'Pending signature')}
           value={isLoading ? '—' : stats.pendingLandlord + stats.pendingTenant}
-          dot="bg-amber-600"
+          dot="bg-warning"
         />
-        <StatCard label={tx('Borradores', 'Drafts')} value={isLoading ? '—' : stats.draft} dot="bg-neutral-400" />
+        <StatCard label={tx('Borradores', 'Drafts')} value={isLoading ? '—' : stats.draft} dot="bg-fg-subtle" />
       </div>
 
       {/* Error */}
@@ -175,8 +175,8 @@ function ContratosContent() {
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-              <FileText className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" weight="duotone" />
+            <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
+              <FileText className="w-[18px] h-[18px] text-fg-muted" weight="duotone" />
             </div>
             <div>
               <h2 className="text-base font-semibold text-foreground">{tx('Contratos', 'Contracts')}</h2>

@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // TEMPORARY (stg-demo integration): the redesign depends on the real @leasefy/ui
-  // design-system package, which is currently a local STUB (../design-system). The
-  // stub's permissive types surface ~38 type errors and some lint noise that the real
-  // package would resolve. We let `next build` produce a runnable bundle meanwhile.
-  // REMOVE both flags once the real @leasefy/ui tarball replaces the stub.
-  // `tsc --noEmit` still reports the stub-induced errors, so nothing is hidden in CI.
+  // TEMPORARY (stg-demo integration): the redesign depends on @leasefy/cadence, linked
+  // locally via `file:../cadence` (no real pnpm workspace, no published tarball yet).
+  // That linkage still surfaces type errors and some lint noise. We let `next build`
+  // produce a runnable bundle meanwhile.
+  // REMOVE both flags once @leasefy/cadence ships as a published/versioned package.
+  // `tsc --noEmit` still reports the linkage-induced errors, so nothing is hidden in CI.
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   images: {

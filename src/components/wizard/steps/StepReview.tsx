@@ -75,13 +75,13 @@ export function StepReview() {
     <div className="space-y-6">
       {/* Incomplete steps warning */}
       {!allStepsComplete && (
-        <div className="flex items-start gap-3 p-4 bg-[#F8F0E0]/50 border border-[#B7791F]/30 rounded-sm">
-          <WarningCircle className="h-5 w-5 text-[#B7791F] flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-warning-soft border border-warning/30 rounded-sm">
+          <WarningCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-[#B7791F] font-medium">
+            <p className="text-sm text-warning font-medium">
               Algunos pasos están incompletos
             </p>
-            <p className="text-xs text-[#B7791F]/80 mt-1">
+            <p className="text-xs text-warning/80 mt-1">
               Completa todos los pasos antes de enviar tu aplicación.
             </p>
           </div>
@@ -160,7 +160,7 @@ export function StepReview() {
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Obligaciones:</span>
-            <span className="font-medium text-[#C4503B]">
+            <span className="font-medium text-danger">
               {income.monthlyObligations !== undefined
                 ? formatCurrency(income.monthlyObligations)
                 : '-'}
@@ -168,7 +168,7 @@ export function StepReview() {
           </div>
           <div className="border-t border-border pt-2 flex justify-between">
             <span className="text-foreground font-medium">Disponible:</span>
-            <span className="font-semibold text-[#2C7A53]">
+            <span className="font-semibold text-success">
               {income.availableForRent ? formatCurrency(income.availableForRent) : '-'}
             </span>
           </div>
@@ -183,17 +183,17 @@ export function StepReview() {
       >
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-[#2C7A53]" />
+            <Check className="h-4 w-4 text-success" />
             {landlordCount} arrendador{landlordCount !== 1 ? 'es' : ''} anterior
             {landlordCount !== 1 ? 'es' : ''}
           </p>
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-[#2C7A53]" />
+            <Check className="h-4 w-4 text-success" />
             {employmentRefCount} referencia{employmentRefCount !== 1 ? 's' : ''} laboral
             {employmentRefCount !== 1 ? 'es' : ''}
           </p>
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-[#2C7A53]" />
+            <Check className="h-4 w-4 text-success" />
             {personalRefCount} referencia{personalRefCount !== 1 ? 's' : ''} personal
             {personalRefCount !== 1 ? 'es' : ''}
           </p>
@@ -323,7 +323,7 @@ interface SummaryCardProps {
 function SummaryCard({ icon, title, onEdit, children }: SummaryCardProps) {
   return (
     <div className="bg-card border border-border rounded-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-hover border-b border-border">
         <div className="flex items-center gap-2">
           {icon}
           <h4 className="text-sm font-medium text-foreground">{title}</h4>
@@ -358,10 +358,10 @@ function DocumentStatus({ label, uploaded, required }: DocumentStatusProps) {
   return (
     <p className={cn(
       'flex items-center gap-2',
-      !uploaded && required && 'text-[#C4503B]'
+      !uploaded && required && 'text-danger'
     )}>
       {uploaded ? (
-        <Check className="h-4 w-4 text-[#2C7A53]" />
+        <Check className="h-4 w-4 text-success" />
       ) : (
         <span className="h-4 w-4 flex items-center justify-center text-xs">
           {required ? '!' : '-'}

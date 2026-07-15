@@ -29,6 +29,9 @@ const PopoverContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
+      // z-[400]: Dialog/Sheet viven en z-[300]; el z-50 del DS dejaría este
+      // popover DETRÁS del overlay del modal que lo contiene. Igual que select.tsx.
+      "z-[400]",
       "max-w-[calc(100vw-1rem)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto",
       className
     )}

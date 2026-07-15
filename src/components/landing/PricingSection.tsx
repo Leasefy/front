@@ -64,10 +64,10 @@ export default function PricingSection() {
           <div className="flex justify-center">
             <EyebrowPill>Planes</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mx-auto mt-7 max-w-3xl text-neutral-950`}>
+          <h2 className={`${lpHeading} mx-auto mt-7 max-w-3xl text-fg`}>
             Elige cómo quieres empezar
           </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-relaxed text-fg-muted md:text-lg">
             No tienes que implementar todo de una vez. Empieza por una capa y crece
             a tu ritmo.
           </p>
@@ -78,7 +78,7 @@ export default function PricingSection() {
             <Reveal key={plan.name} delay={0.08 * i}>
               <div
                 className={`relative flex h-full flex-col rounded-2xl border bg-white p-7 transition-shadow hover:shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] ${
-                  plan.featured ? "border-primary/40" : "border-neutral-200"
+                  plan.featured ? "border-primary/40" : "border-border"
                 }`}
               >
                 {plan.featured && (
@@ -87,14 +87,14 @@ export default function PricingSection() {
                   </EyebrowPill>
                 )}
 
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-muted">
                   <plan.icon className="h-6 w-6 text-primary" weight="duotone" />
                 </span>
 
-                <h3 className="mt-6 font-heading text-xl font-medium text-neutral-950">
+                <h3 className="mt-6 font-heading text-xl font-medium text-fg">
                   {plan.name}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-500">
+                <p className="mt-3 text-sm leading-relaxed text-fg-muted">
                   {plan.body}
                 </p>
 
@@ -106,7 +106,7 @@ export default function PricingSection() {
                         weight="bold"
                         aria-hidden
                       />
-                      <span className="text-sm leading-relaxed text-neutral-500">
+                      <span className="text-sm leading-relaxed text-fg-muted">
                         {feature}
                       </span>
                     </li>
@@ -127,7 +127,7 @@ export default function PricingSection() {
         </div>
 
         <Reveal delay={0.1}>
-          <p className="mt-10 text-center text-sm text-neutral-500">
+          <p className="mt-10 text-center text-sm text-fg-muted">
             ¿Equipo grande?{" "}
             <Link
               href="/auth"

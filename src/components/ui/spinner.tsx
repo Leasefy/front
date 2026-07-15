@@ -54,10 +54,10 @@ const VARIANT_CLASSES: Record<SpinnerVariant, string> = {
   muted: '', // el Spinner del DS ya es gris (text-fg-muted)
   white: '[&_svg]:text-white',
   current: '[&_svg]:text-current',
-  success: '[&_svg]:text-[#2C7A53]',
-  warning: '[&_svg]:text-[#B7791F]',
-  error: '[&_svg]:text-[#C4503B]',
-  info: '[&_svg]:text-[#1A40FF]',
+  success: '[&_svg]:text-success',
+  warning: '[&_svg]:text-warning',
+  error: '[&_svg]:text-danger',
+  info: '[&_svg]:text-primary',
 };
 
 export interface SpinnerProps extends React.HTMLAttributes<HTMLSpanElement> {

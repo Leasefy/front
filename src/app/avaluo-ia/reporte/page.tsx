@@ -58,15 +58,15 @@ const COMPARABLES = [
 
 export default function ReporteAvaluoPage() {
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-surface-muted">
       {/* ── Brand bar ──────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 bg-white/85 backdrop-blur border-b border-neutral-200/80">
+      <header className="sticky top-0 z-10 bg-surface/85 backdrop-blur border-b border-border">
         <div className="mx-auto max-w-[560px] px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BrandMark size={26} />
-            <span className="text-[15px] font-semibold tracking-[-0.01em] text-[#14130f]">Leasefy</span>
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">Leasefy</span>
           </div>
-          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-neutral-400">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-fg-subtle">
             <Sparkle className="w-3 h-3" weight="fill" style={{ color: BLUE }} />
             Avalúo IA
           </span>
@@ -76,14 +76,14 @@ export default function ReporteAvaluoPage() {
       <main className="mx-auto max-w-[560px] px-4 py-8 space-y-5">
         {/* ── Greeting ─────────────────────────────────────────────────── */}
         <div className="space-y-2">
-          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#14130f]">
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">
             Hola, Carlos
           </h1>
-          <p className="text-[14.5px] text-neutral-600 leading-relaxed">
+          <p className="text-[14.5px] text-fg-muted leading-relaxed">
             Este es el avalúo de arriendo de tu inmueble en{' '}
-            <span className="font-medium text-[#14130f]">Cra. 43 #5-20, El Poblado</span>.
+            <span className="font-medium text-foreground">Cra. 43 #5-20, El Poblado</span>.
           </p>
-          <p className="text-[12.5px] text-neutral-400">
+          <p className="text-[12.5px] text-fg-subtle">
             Preparado por Inmobiliaria Demo con Leasefy IA · 17 jun 2026
           </p>
         </div>
@@ -112,38 +112,38 @@ export default function ReporteAvaluoPage() {
         </section>
 
         {/* ── Por qué este precio ──────────────────────────────────────── */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-          <h2 className="text-[15px] font-semibold text-[#14130f] mb-3.5">Por qué este precio</h2>
+        <section className="rounded-2xl border border-border bg-surface p-5">
+          <h2 className="text-[15px] font-semibold text-foreground mb-3.5">Por qué este precio</h2>
 
-          <p className="text-[12.5px] font-medium text-neutral-500 mb-2">Tu inmueble juega a favor</p>
+          <p className="text-[12.5px] font-medium text-fg-muted mb-2">Tu inmueble juega a favor</p>
           <ul className="space-y-2 mb-4">
             {PROS.map((p) => (
               <li key={p} className="flex items-center gap-2.5">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0" style={{ background: '#E9F3EE', color: '#22663F' }}>
                   <ArrowUp className="w-3.5 h-3.5" weight="bold" />
                 </span>
-                <span className="text-[13.5px] text-[#14130f]">{p}</span>
+                <span className="text-[13.5px] text-foreground">{p}</span>
               </li>
             ))}
           </ul>
 
-          <p className="text-[12.5px] font-medium text-neutral-500 mb-2">Y juega en contra</p>
+          <p className="text-[12.5px] font-medium text-fg-muted mb-2">Y juega en contra</p>
           <ul className="space-y-2">
             {CONTRAS.map((c) => (
               <li key={c} className="flex items-center gap-2.5">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0" style={{ background: '#FBF3E2', color: '#8A5A12' }}>
                   <ArrowDown className="w-3.5 h-3.5" weight="bold" />
                 </span>
-                <span className="text-[13.5px] text-[#14130f]">{c}</span>
+                <span className="text-[13.5px] text-foreground">{c}</span>
               </li>
             ))}
           </ul>
         </section>
 
         {/* ── Qué pasa según el precio ─────────────────────────────────── */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-          <h2 className="text-[15px] font-semibold text-[#14130f] mb-1">Qué pasa según el precio</h2>
-          <p className="text-[13px] text-neutral-500 mb-4 leading-relaxed">
+        <section className="rounded-2xl border border-border bg-surface p-5">
+          <h2 className="text-[15px] font-semibold text-foreground mb-1">Qué pasa según el precio</h2>
+          <p className="text-[13px] text-fg-muted mb-4 leading-relaxed">
             Mientras más alto el canon, más tarda en arrendarse. Este es el balance:
           </p>
           <ul className="space-y-2">
@@ -162,15 +162,15 @@ export default function ReporteAvaluoPage() {
                     <EIcon className="w-[18px] h-[18px]" weight="duotone" />
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[13.5px] font-medium text-[#14130f]">{e.label}</span>
-                    <span className="block text-[12px] text-neutral-500">Se arrienda en {e.dias}</span>
+                    <span className="block text-[13.5px] font-medium text-foreground">{e.label}</span>
+                    <span className="block text-[12px] text-fg-muted">Se arrienda en {e.dias}</span>
                   </span>
-                  <span className="text-[15px] font-semibold text-[#14130f] tabular-nums">{fmt(e.valor)}</span>
+                  <span className="text-[15px] font-semibold text-foreground tabular-nums">{fmt(e.valor)}</span>
                 </li>
               )
             })}
           </ul>
-          <p className="mt-3.5 flex items-start gap-2 text-[13px] text-[#14130f] leading-relaxed">
+          <p className="mt-3.5 flex items-start gap-2 text-[13px] text-foreground leading-relaxed">
             <Sparkle className="w-4 h-4 mt-0.5 shrink-0" weight="fill" style={{ color: BLUE }} />
             <span>Recomendamos <span className="font-semibold">{fmt(RECOMENDADO)}</span>: el mejor equilibrio entre lo que ganas y la rapidez para arrendar.</span>
           </p>
@@ -192,17 +192,17 @@ export default function ReporteAvaluoPage() {
         </section>
 
         {/* ── Inmuebles parecidos ──────────────────────────────────────── */}
-        <section className="rounded-2xl border border-neutral-200/80 bg-white p-5">
-          <h2 className="text-[15px] font-semibold text-[#14130f] mb-1">Inmuebles parecidos cerca</h2>
-          <p className="text-[13px] text-neutral-500 mb-3.5">Lo que se cobra hoy por propiedades como la tuya.</p>
+        <section className="rounded-2xl border border-border bg-surface p-5">
+          <h2 className="text-[15px] font-semibold text-foreground mb-1">Inmuebles parecidos cerca</h2>
+          <p className="text-[13px] text-fg-muted mb-3.5">Lo que se cobra hoy por propiedades como la tuya.</p>
           <ul className="space-y-2">
             {COMPARABLES.map((c) => (
-              <li key={c.dir} className="flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-3.5 py-2.5">
+              <li key={c.dir} className="flex items-center justify-between gap-3 rounded-xl bg-surface-muted px-3.5 py-2.5">
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] font-medium text-[#14130f] truncate">{c.dir}</span>
-                  <span className="block text-[12px] text-neutral-500">{c.specs}</span>
+                  <span className="block text-[13.5px] font-medium text-foreground truncate">{c.dir}</span>
+                  <span className="block text-[12px] text-fg-muted">{c.specs}</span>
                 </span>
-                <span className="text-[13.5px] font-semibold text-[#14130f] tabular-nums shrink-0">{fmt(c.canon)}/mes</span>
+                <span className="text-[13.5px] font-semibold text-foreground tabular-nums shrink-0">{fmt(c.canon)}/mes</span>
               </li>
             ))}
           </ul>
@@ -220,7 +220,7 @@ export default function ReporteAvaluoPage() {
           </button>
           <button
             type="button"
-            className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl border border-neutral-200 bg-white text-[#14130f] text-[15px] font-medium hover:bg-neutral-50 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl border border-border bg-surface text-foreground text-[15px] font-medium hover:bg-surface-muted transition-colors"
           >
             <WhatsappLogo className="w-5 h-5" weight="fill" style={{ color: '#25D366' }} />
             Quiero hablarlo con un asesor
@@ -229,11 +229,11 @@ export default function ReporteAvaluoPage() {
 
         {/* ── Footer ───────────────────────────────────────────────────── */}
         <footer className="pt-3 pb-2 text-center space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 text-[12px] text-neutral-400">
-            <BrandMark size={16} variant="bare" className="text-neutral-300" />
+          <div className="inline-flex items-center gap-1.5 text-[12px] text-fg-subtle">
+            <BrandMark size={16} variant="bare" className="text-fg-subtle" />
             Generado por Leasefy IA
           </div>
-          <p className="text-[11px] text-neutral-400 leading-relaxed max-w-xs mx-auto">
+          <p className="text-[11px] text-fg-subtle leading-relaxed max-w-xs mx-auto">
             Este avalúo es una estimación basada en datos de mercado y no constituye un avalúo comercial certificado.
           </p>
         </footer>

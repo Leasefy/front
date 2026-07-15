@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/publish';
 import { propertiesApi } from '@/lib/api/properties.service';
-import { getCityCoordinates } from '@/lib/constants/map';
+import { resolvePropertyCoordinates } from '@/lib/constants/map';
 
 interface PublishContextTextT {
   // State
@@ -132,8 +132,9 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     setSubmissionError(null);
     try {
       // 1. Create property via API
-      // Resolve city center coordinates as fallback (until address geocoding is implemented)
-      const cityCoords = getCityCoordinates(draft.city);
+      // Prefer real geocoded coordinates (AddressAutocomplete); fall back to
+      // the city-center table when the user never picked a suggestion.
+      const coords = resolvePropertyCoordinates(draft);
 
       const created = await propertiesApi.create({
         title: draft.title,
@@ -143,8 +144,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
         city: draft.city,
         neighborhood: draft.neighborhood,
         address: draft.address,
-        latitude: cityCoords?.lat,
-        longitude: cityCoords?.lng,
+        latitude: coords.lat,
+        longitude: coords.lng,
         monthlyRent: draft.monthlyRent,
         bedrooms: draft.bedrooms,
         bathrooms: draft.bathrooms,

@@ -118,10 +118,6 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
   const canAccess = useCallback(
     (module: string, action: string): boolean => {
-      // DEV-LOCAL-OVERRIDE (2026-06-14, NO COMMIT): abre todos los módulos en
-      // localhost para probar el panel de inmobiliaria con una cuenta tenant.
-      // Revertir antes de commit. Buscar "DEV-LOCAL-OVERRIDE".
-      if (typeof window !== 'undefined' && window.location.hostname === 'localhost') return true;
       if (isLoading) return false;
       if (isAgentModule(module)) {
         // Posture per module lives in agent-module-access.ts:
@@ -150,13 +146,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       isLoading,
       error,
       canAccess,
-      // DEV-LOCAL-OVERRIDE (2026-06-14, NO COMMIT): isAdmin=true en localhost
-      // para que las entradas de nav con gate de rol (pagos/conciliación/tesorería)
-      // también se muestren. Revertir antes de commit. "DEV-LOCAL-OVERRIDE".
-      isAdmin:
-        (typeof window !== 'undefined' && window.location.hostname === 'localhost')
-          ? true
-          : (permissions?.isAdmin ?? false),
+      isAdmin: permissions?.isAdmin ?? false,
       agencyRole: permissions?.role ?? null,
       refetch: fetchPermissions,
     }),

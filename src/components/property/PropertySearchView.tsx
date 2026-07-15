@@ -15,7 +15,6 @@ import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperties } from '@/lib/hooks/useProperties';
 import { cn } from '@/lib/utils';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
-import type { Property } from '@/lib/types/property';
 
 // Lazy-load the map (maplibre) so its chunk is only fetched when the map panel
 // is actually mounted. ssr:false because PropertyMap touches `window`.
@@ -61,9 +60,10 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
   const [aiSearchQuery, setAiSearchQuery] = useState(heroQuery || '');
-  const [isAiSearching, setIsAiSearching] = useState(false);
-  const [showAiResults, setShowAiResults] = useState(false);
-  const [aiResults, setAiResults] = useState<Property[]>([]);
+  // The natural-language query actually applied to the fetch. Feeding it into
+  // apiFilters (below) lets the backend NL parser filter the MAIN grid — one
+  // source of truth — instead of an isolated preview panel.
+  const [appliedQuery, setAppliedQuery] = useState(heroQuery || '');
   const [mapKey, setMapKey] = useState(0);
   // On desktop the map panel is part of the split-view (always visible via lg:block),
   // so it should mount there; on mobile it only exists when the user toggles the map.
@@ -71,7 +71,6 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
   const [sortBy, setSortBy] = useState('recommended');
   const [showSortList, setShowSortList] = useState(false);
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const heroSearchTriggered = useRef(false);
 
   // Filter state
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -83,6 +82,9 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
   // Build API filters from UI state
   const apiFilters = useMemo<PropertyFiltersParams>(() => {
     const filters: PropertyFiltersParams = { limit: 100 };
+    // Natural-language query goes to the backend parser (city/type/price/…).
+    // Explicit pills below still win via the backend's `filters.x ?? parsed.x`.
+    if (appliedQuery.trim()) filters.naturalQuery = appliedQuery.trim();
     if (selectedCity) filters.city = selectedCity;
     if (selectedBedrooms) {
       if (selectedBedrooms !== '4+') {
@@ -98,7 +100,7 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
       filters.maxPrice = max;
     }
     return filters;
-  }, [selectedCity, selectedBedrooms, selectedType, selectedPrice]);
+  }, [appliedQuery, selectedCity, selectedBedrooms, selectedType, selectedPrice]);
 
   // Fetch properties from API
   const { properties: apiProperties, isLoading: isInitialLoading } = useProperties(apiFilters);
@@ -123,37 +125,12 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  // Handle AI search via backend naturalQuery
-  const handleAiSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setShowAiResults(false);
-      setAiResults([]);
-      return;
-    }
-
-    setIsAiSearching(true);
-    setShowAiResults(false);
-
-    try {
-      const { propertiesApi } = await import('@/lib/api/properties.service');
-      const result = await propertiesApi.list({ naturalQuery: query, limit: 20 });
-      setAiResults(result.data);
-      setShowAiResults(true);
-    } catch {
-      setAiResults([]);
-      setShowAiResults(true);
-    } finally {
-      setIsAiSearching(false);
-    }
+  // Apply the natural-language query to the MAIN fetch. Bumping appliedQuery
+  // rebuilds apiFilters → useProperties refetches → the backend parses the text
+  // and returns the filtered list straight into the grid below.
+  const handleAiSearch = useCallback((query: string) => {
+    setAppliedQuery(query.trim());
   }, []);
-
-  // Auto-trigger AI search from hero query param
-  useEffect(() => {
-    if (heroQuery && !heroSearchTriggered.current) {
-      heroSearchTriggered.current = true;
-      handleAiSearch(heroQuery);
-    }
-  }, [heroQuery, handleAiSearch]);
 
   // Client-side: handle 4+ bedrooms filter and sorting
   const filteredProperties = useMemo(() => {
@@ -223,7 +200,12 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
     options: { value: string; label: string }[],
     onSelect: (value: string | null) => void
   ) => (
-    <div className="relative z-10">
+    // No `z-10` here: a positioned wrapper with a z-index traps the dropdown in
+    // its own stacking context, capping the `z-[110]` panel at root-z-10 — where
+    // later-DOM card internals (badges z-10, arrows z-20, overlay z-30) paint
+    // over it. Plain `relative` keeps positioning without the trap (matches the
+    // sort dropdown below).
+    <div className="relative">
       <Chip
         selected={!!selectedValue}
         onClick={() => setActiveFilter(activeFilter === id ? null : id)}
@@ -305,12 +287,10 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
                 onChange={setAiSearchQuery}
                 onMagnifyingGlass={handleAiSearch}
                 onClear={() => {
-                  setShowAiResults(false);
-                  setAiResults([]);
+                  setAiSearchQuery('');
+                  setAppliedQuery('');
                 }}
-                isMagnifyingGlassing={isAiSearching}
-                results={aiResults}
-                showResults={showAiResults}
+                isMagnifyingGlassing={isInitialLoading}
               />
             </div>
           </div>

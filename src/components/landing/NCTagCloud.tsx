@@ -31,11 +31,11 @@ const ROW_TWO: Tag[] = [
 
 function TagPill({ agent, label }: Tag) {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-[6px] border border-neutral-200 bg-white pr-4 transition-colors duration-300 hover:border-primary/30 hover:bg-indigo-50/30">
+    <span className="inline-flex shrink-0 items-center rounded-[6px] border border-border bg-surface pr-4 transition-colors duration-300 hover:border-primary/30 hover:bg-indigo-50/30">
       <MonoLabel className="m-1 rounded-[5px] bg-indigo-50 px-2.5 py-1.5 tracking-wide text-primary">
         {agent}
       </MonoLabel>
-      <span className="ml-3 text-[15px] text-neutral-700">{label}</span>
+      <span className="ml-3 text-[15px] text-fg-muted">{label}</span>
     </span>
   );
 }
@@ -48,7 +48,7 @@ export default function NCTagCloud() {
           <h2
             className={cn(
               lpHeading,
-              "mx-auto max-w-3xl text-center text-neutral-950"
+              "mx-auto max-w-3xl text-center text-fg"
             )}
           >
             Cada momento del arriendo,

@@ -98,8 +98,8 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
         'w-full text-left px-3 py-2 rounded-md relative',
         'transition-all duration-150',
         isActive
-          ? 'bg-neutral-100 dark:bg-neutral-800'
-          : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
+          ? 'bg-surface-muted'
+          : 'hover:bg-surface-muted'
       )}
     >
       <p
@@ -128,7 +128,7 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
             'h-auto w-auto p-1 rounded-sm',
             confirmDelete
               ? 'bg-danger-soft text-danger'
-              : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400'
+              : 'text-fg-subtle hover:text-fg-muted'
           )}
           aria-label={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
           title={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
@@ -164,7 +164,7 @@ export function ConversationList() {
       {/* Search */}
       <div className="relative">
         <MagnifyingGlass
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-subtle"
           weight="regular"
         />
         <Input
@@ -174,8 +174,8 @@ export function ConversationList() {
           placeholder={t('beta.sidebar.searchPlaceholder')}
           className={cn(
             'w-full pl-9 pr-3 py-2 h-10 rounded-xl',
-            'text-[13px] placeholder:text-neutral-400/60 dark:placeholder:text-neutral-500/60',
-            'bg-neutral-50/80 dark:bg-neutral-800/40',
+            'text-[13px] placeholder:text-fg-subtle/60',
+            'bg-surface-muted/80',
             'border-transparent'
           )}
         />
@@ -185,8 +185,8 @@ export function ConversationList() {
       <div className="flex-1 overflow-y-auto space-y-3" role="list">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center py-10">
-            <ChatCircleDots className="w-8 h-8 mb-2 text-neutral-300 dark:text-neutral-600" />
-            <p className="text-[13px] text-neutral-400 dark:text-neutral-500">
+            <ChatCircleDots className="w-8 h-8 mb-2 text-fg-subtle" />
+            <p className="text-[13px] text-fg-subtle">
               {searchQuery.trim()
                 ? t('beta.conversations.emptySearch')
                 : t('beta.conversations.noConversations')}
@@ -195,7 +195,7 @@ export function ConversationList() {
         ) : (
           grouped.map(({ group, items }) => (
             <div key={group} role="listitem">
-              <MonoLabel className="block px-2 mb-1 tracking-widest text-neutral-400/60 dark:text-neutral-500/60">
+              <MonoLabel className="block px-2 mb-1 tracking-widest text-fg-subtle/60">
                 {t(DATE_GROUP_KEYS[group])}
               </MonoLabel>
               <div className="space-y-0.5">

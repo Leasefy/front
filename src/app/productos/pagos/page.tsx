@@ -232,11 +232,11 @@ export default function PagosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-neutral-100"
+                    className="absolute -bottom-5 -left-4 bg-surface rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
+                      <div className="w-9 h-9 rounded-md bg-success-soft flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-success" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">3 pagos hoy</p>
@@ -383,10 +383,10 @@ export default function PagosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[200px] border border-neutral-100">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-neutral-100">
-                      <div className="w-10 h-10 rounded-full bg-[#F8F0E0] flex items-center justify-center">
-                        <BellRinging className="w-5 h-5 text-[#B7791F]" />
+                  <div className="bg-surface rounded-xl p-4 w-[200px] border border-border-faint">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-faint">
+                      <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
+                        <BellRinging className="w-5 h-5 text-warning" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Recordatorio #47</p>
@@ -394,8 +394,8 @@ export default function PagosPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="bg-[#F8F0E0] rounded-md p-2">
-                        <p className="text-[10px] text-[#B7791F]">
+                      <div className="bg-warning-soft rounded-md p-2">
+                        <p className="text-[10px] text-warning">
                           {'"'}Hola Nicolás, recuerda que el arriendo de este mes está pendiente...{'"'}
                         </p>
                       </div>
@@ -405,7 +405,7 @@ export default function PagosPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#B7791F] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-warning rounded-full flex items-center justify-center text-white font-bold text-sm">
                     47
                   </div>
                 </div>
@@ -431,10 +431,10 @@ export default function PagosPage() {
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-white rounded-xl p-4 w-[220px] border border-neutral-100">
+                  <div className="bg-surface rounded-xl p-4 w-[220px] border border-border-faint">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[11px] font-medium text-foreground">Control de pagos</span>
-                      <WarningCircle className="w-4 h-4 text-[#C4503B]" />
+                      <WarningCircle className="w-4 h-4 text-danger" />
                     </div>
                     <div className="space-y-2">
                       {[
@@ -445,12 +445,12 @@ export default function PagosPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-[11px]">
                           <span className="text-muted-foreground">{item.month}</span>
-                          <span className="text-[#C4503B]/70 text-[10px] truncate max-w-[100px]">{item.status}</span>
+                          <span className="text-danger/70 text-[10px] truncate max-w-[100px]">{item.status}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-neutral-100 my-3" />
-                    <div className="flex items-center gap-2 text-[10px] text-[#C4503B]">
+                    <div className="h-px bg-surface-muted my-3" />
+                    <div className="flex items-center gap-2 text-[10px] text-danger">
                       <Receipt className="w-3 h-3" />
                       <span>Sin recibos formales</span>
                     </div>
@@ -523,11 +523,11 @@ export default function PagosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-surface rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
-                    <BellRinging className="w-6 h-6 text-[#2C7A53]" />
+                  <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center mb-6">
+                    <BellRinging className="w-6 h-6 text-success" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Recordatorios Inteligentes
@@ -538,7 +538,7 @@ export default function PagosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['3 días antes', '1 día antes', 'Día de pago'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -551,7 +551,7 @@ export default function PagosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-neutral-200"
+                className="md:col-span-5 bg-surface rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -566,7 +566,7 @@ export default function PagosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['PDF descargable', 'Envío automático', 'Historial completo'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-neutral-100 px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -807,7 +807,7 @@ export default function PagosPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 }}
-                  className="bg-white rounded-xl p-5 border border-neutral-200 flex-1"
+                  className="bg-surface rounded-xl p-5 border border-border-faint flex-1"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-[14px] font-medium text-foreground">Últimos pagos</h4>
@@ -827,14 +827,14 @@ export default function PagosPage() {
                         transition={{ delay: 0.3 + i * 0.1 }}
                         className="flex items-center gap-3"
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${tx.status === 'success' ? 'bg-[#E8F3EC] text-[#2C7A53]' : 'bg-[#F8F0E0] text-[#B7791F]'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${tx.status === 'success' ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}>
                           {tx.name.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] font-medium text-foreground truncate">{tx.name}</p>
                           <p className="text-[10px] text-muted-foreground">{tx.property} · {tx.time}</p>
                         </div>
-                        <span className={`text-[12px] font-semibold ${tx.status === 'success' ? 'text-[#2C7A53]' : 'text-[#B7791F]'}`}>
+                        <span className={`text-[12px] font-semibold ${tx.status === 'success' ? 'text-success' : 'text-warning'}`}>
                           {tx.amount}
                         </span>
                       </motion.div>
@@ -854,8 +854,8 @@ export default function PagosPage() {
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { icon: FileText, label: 'Reporte PDF', color: 'bg-primary/10 text-primary' },
-                      { icon: PaperPlaneTilt, label: 'Recordatorio', color: 'bg-[#E8F3EC] text-[#2C7A53]' },
-                      { icon: ChartBar, label: 'Estadísticas', color: 'bg-[#F8F0E0] text-[#B7791F]' },
+                      { icon: PaperPlaneTilt, label: 'Recordatorio', color: 'bg-success-soft text-success' },
+                      { icon: ChartBar, label: 'Estadísticas', color: 'bg-warning-soft text-warning' },
                       { icon: Receipt, label: 'Recibos', color: 'bg-sand-200 text-sand-700' },
                     ].map((action, i) => (
                       <motion.button
@@ -864,7 +864,7 @@ export default function PagosPage() {
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.4 + i * 0.05 }}
-                        className="flex items-center gap-2 p-3 bg-white rounded-md border border-neutral-100 hover:border-neutral-200 transition-colors text-left"
+                        className="flex items-center gap-2 p-3 bg-surface rounded-md border border-border-faint hover:border-border-strong transition-colors text-left"
                       >
                         <div className={`w-7 h-7 rounded-md flex items-center justify-center ${action.color}`}>
                           <action.icon className="w-3.5 h-3.5" />

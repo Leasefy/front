@@ -69,20 +69,20 @@ export default function NCFeatureGrid() {
     <section className="bg-white py-24 md:py-32">
       <div className="container-platform">
         <Reveal>
-          <h2 className={`${lpHeading} mx-auto max-w-3xl text-center text-neutral-950`}>
+          <h2 className={`${lpHeading} mx-auto max-w-3xl text-center text-fg`}>
             Una plataforma para todo el arriendo
           </h2>
         </Reveal>
 
         {/* blueprint / crosshair grid */}
         <Reveal delay={0.1} className="mt-16 md:mt-20">
-          <div className="relative grid grid-cols-1 divide-y divide-neutral-200 border-y border-neutral-200 md:grid-cols-3 md:divide-y-0 md:border-y-0">
+          <div className="relative grid grid-cols-1 divide-y divide-border border-y border-border md:grid-cols-3 md:divide-y-0 md:border-y-0">
             {/* horizontal rails draw in left→right */}
             {["top-0", "bottom-0"].map((edge) => (
               <motion.span
                 key={edge}
                 aria-hidden
-                className={`pointer-events-none absolute ${edge} left-0 hidden h-px origin-left bg-neutral-200 md:block`}
+                className={`pointer-events-none absolute ${edge} left-0 hidden h-px origin-left bg-border-faint md:block`}
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
                 viewport={{ once: true, margin: "-80px" }}
@@ -95,7 +95,7 @@ export default function NCFeatureGrid() {
               <motion.span
                 key={pos}
                 aria-hidden
-                className={`pointer-events-none absolute -top-2 -bottom-2 ${pos} hidden w-px origin-top bg-neutral-200 md:block`}
+                className={`pointer-events-none absolute -top-2 -bottom-2 ${pos} hidden w-px origin-top bg-border-faint md:block`}
                 initial={{ scaleY: 0 }}
                 whileInView={{ scaleY: 1 }}
                 viewport={{ once: true, margin: "-80px" }}
@@ -110,7 +110,7 @@ export default function NCFeatureGrid() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.55, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] }}
-                className="group relative flex min-h-[300px] flex-col p-8 transition-colors duration-300 hover:bg-neutral-50/60 md:p-10"
+                className="group relative flex min-h-[300px] flex-col p-8 transition-colors duration-300 hover:bg-surface-muted/60 md:p-10"
               >
                 {/* accent bar that grows on hover */}
                 <span className="pointer-events-none absolute left-0 top-0 h-px w-0 bg-primary transition-all duration-500 group-hover:w-full" />
@@ -120,10 +120,10 @@ export default function NCFeatureGrid() {
                 </div>
 
                 <div className="mt-auto pt-10">
-                  <h3 className="font-heading text-[22px] font-medium tracking-tight text-neutral-950 transition-colors group-hover:text-primary md:text-2xl">
+                  <h3 className="font-heading text-[22px] font-medium tracking-tight text-fg transition-colors group-hover:text-primary md:text-2xl">
                     {f.title}
                   </h3>
-                  <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-neutral-500">
+                  <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-fg-muted">
                     {f.body}
                   </p>
                 </div>

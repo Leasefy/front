@@ -47,7 +47,7 @@ const TYPE_VARIANT: Record<
 
 function KpiSkeleton() {
   return (
-    <div className="h-6 w-16 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+    <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
   )
 }
 
@@ -60,19 +60,19 @@ interface KpiCardProps {
 
 function KpiCard({ icon, label, value, isLoading }: KpiCardProps) {
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1">
-          <p className="text-xs text-neutral-500">{label}</p>
+          <p className="text-xs text-fg-muted">{label}</p>
           {isLoading ? (
             <KpiSkeleton />
           ) : (
-            <p className="text-xl font-semibold text-neutral-900 dark:text-white">
+            <p className="text-xl font-semibold text-fg">
               {value ?? 0}
             </p>
           )}
         </div>
-        <div className="shrink-0 text-neutral-400">{icon}</div>
+        <div className="shrink-0 text-fg-subtle">{icon}</div>
       </div>
     </div>
   )
@@ -101,14 +101,14 @@ function RequestsTable({ requests }: RequestsTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-      <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-        <TableHeader className="bg-neutral-50 dark:bg-neutral-800/50">
+    <div className="overflow-x-auto rounded-xl border border-border bg-surface overflow-hidden">
+      <Table className="min-w-full divide-y divide-border">
+        <TableHeader className="bg-surface-muted">
           <TableRow>
             <TableHead>
               {t('inmobiliaria.ai.arco.table.type')}
             </TableHead>
-            <TableHead className="sticky left-0 z-10 bg-neutral-50 dark:bg-neutral-800/50">
+            <TableHead className="sticky left-0 z-10 bg-surface-muted">
               {t('inmobiliaria.ai.arco.table.requester')}
             </TableHead>
             <TableHead>
@@ -128,14 +128,14 @@ function RequestsTable({ requests }: RequestsTableProps) {
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <TableBody className="divide-y divide-border-faint">
           {requests.map((row) => (
-            <TableRow key={row.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
+            <TableRow key={row.id} className="hover:bg-surface-muted transition-colors">
               <TableCell className="px-4 py-3 whitespace-nowrap">
                 <TypeBadge type={row.type} />
               </TableCell>
-              <TableCell className="sticky left-0 z-10 bg-white dark:bg-[#1a1a1c] px-4 py-3 min-w-[180px]">
-                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+              <TableCell className="sticky left-0 z-10 bg-surface px-4 py-3 min-w-[180px]">
+                <p className="text-sm font-medium text-fg">
                   {row.requesterName}
                 </p>
                 <div className="mt-0.5">
@@ -143,7 +143,7 @@ function RequestsTable({ requests }: RequestsTableProps) {
                 </div>
               </TableCell>
               <TableCell className="px-4 py-3 whitespace-nowrap">
-                <p className="text-sm text-neutral-500">{row.requesterEmail}</p>
+                <p className="text-sm text-fg-muted">{row.requesterEmail}</p>
               </TableCell>
               <TableCell className="px-4 py-3 whitespace-nowrap">
                 <ArcoStatusBadge status={row.status} />
@@ -152,7 +152,7 @@ function RequestsTable({ requests }: RequestsTableProps) {
                 <SlaCountdownBadge deadline={row.slaDeadline} type={row.type} />
               </TableCell>
               <TableCell className="px-4 py-3 whitespace-nowrap">
-                <span className="text-xs font-mono tabular-nums text-neutral-500">
+                <span className="text-xs font-mono tabular-nums text-fg-muted">
                   {new Date(row.submittedAt).toLocaleDateString()}
                 </span>
               </TableCell>
@@ -230,7 +230,7 @@ export default function ArcoInboxPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-neutral-900 dark:text-white">
+          <h1 className="text-3xl font-semibold text-fg">
             {t('inmobiliaria.ai.arco.title')}
           </h1>
         </div>
@@ -284,7 +284,7 @@ export default function ArcoInboxPage() {
           isLoading={isLoading && !data}
         />
         <KpiCard
-          icon={<CheckCircle className="h-5 w-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />}
+          icon={<CheckCircle className="h-5 w-5 text-fg-muted" weight="duotone" />}
           label={t('inmobiliaria.ai.arco.kpi.resolved30d')}
           value={kpis?.resolvedLast30d}
           isLoading={isLoading && !data}

@@ -37,11 +37,11 @@ export default function TestimonialsSection() {
           <div className="flex justify-center">
             <EyebrowPill>Lo que cambia</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-7 text-fg`}>
             El trabajo del día{" "}
-            <span className="text-neutral-400">cambia de forma.</span>
+            <span className="text-fg-subtle">cambia de forma.</span>
           </h2>
-          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">
             Lo que escuchamos de los equipos que operan su arriendo sobre
             Leasefy, en sus propias palabras.
           </p>
@@ -53,17 +53,17 @@ export default function TestimonialsSection() {
             {QUOTES.map((q) => (
               <figure
                 key={q.role}
-                className="flex h-full flex-col rounded-2xl border border-neutral-200 bg-white p-7 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.25)]"
+                className="flex h-full flex-col rounded-2xl border border-border bg-surface p-7 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.25)]"
               >
                 <Quotes
                   weight="fill"
-                  className="h-6 w-6 text-neutral-300"
+                  className="h-6 w-6 text-fg-subtle"
                   aria-hidden
                 />
-                <blockquote className="mt-5 flex-1 text-[17px] leading-relaxed text-neutral-800">
+                <blockquote className="mt-5 flex-1 text-[17px] leading-relaxed text-fg">
                   {q.quote}
                 </blockquote>
-                <figcaption className="mt-6 border-t border-neutral-200 pt-5 text-[13px] leading-relaxed text-neutral-500">
+                <figcaption className="mt-6 border-t border-border pt-5 text-[13px] leading-relaxed text-fg-muted">
                   {q.role}
                 </figcaption>
               </figure>
@@ -73,7 +73,7 @@ export default function TestimonialsSection() {
 
         {/* Honest social-proof footnote — no invented logos or metrics */}
         <Reveal delay={0.25}>
-          <p className="mt-8 text-center text-[13px] leading-relaxed text-neutral-400">
+          <p className="mt-8 text-center text-[13px] leading-relaxed text-fg-subtle">
             Citas representativas de equipos en operación. Sin nombres ni cifras
             inventadas: honestidad sobre hype.
           </p>

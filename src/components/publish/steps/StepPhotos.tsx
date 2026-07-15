@@ -172,7 +172,7 @@ export function StepPhotos() {
               className={cn(
                 'relative aspect-[4/3] rounded-xl overflow-hidden group cursor-move',
                 'border-2 border-transparent',
-                draggedIndex === index && 'border-[#1A40FF]/30 opacity-50'
+                draggedIndex === index && 'border-primary/30 opacity-50'
               )}
             >
               <img

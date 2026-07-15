@@ -111,10 +111,10 @@ export function StepIncome() {
   }, [availableForRent, recommendedRent]);
 
   const capacityStyles = {
-    insufficient: 'bg-[#F8EAE7]/50 border-[#C4503B]/30 text-[#C4503B]',
-    limited: 'bg-[#F8F0E0]/50 border-[#B7791F]/30 text-[#B7791F]',
-    moderate: 'bg-[#EEF1FF]/50 border-[#1A40FF]/30 text-[#1A40FF]',
-    good: 'bg-[#E8F3EC]/50 border-[#2C7A53]/30 text-[#2C7A53]',
+    insufficient: 'bg-danger-soft border-danger/30 text-danger',
+    limited: 'bg-warning-soft border-warning/30 text-warning',
+    moderate: 'bg-primary-soft border-[#1A40FF]/30 text-[#1A40FF]',
+    good: 'bg-success-soft border-success/30 text-success',
   };
 
   return (

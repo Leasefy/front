@@ -101,7 +101,9 @@ function Modal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[9999]"
+      // Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9999],
+      // que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17.
+      className="fixed inset-0 z-[300]"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       data-lenis-prevent
     >

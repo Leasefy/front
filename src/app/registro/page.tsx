@@ -317,13 +317,13 @@ function RegistroContent() {
                 <p className="text-xs text-muted-foreground">por {invitation.invitedBy}</p>
               )}
             </div>
-            {!isExpired && <CheckCircle className="w-5 h-5 text-[#2C7A53] ml-auto shrink-0" />}
+            {!isExpired && <CheckCircle className="w-5 h-5 text-success ml-auto shrink-0" />}
           </div>
 
           {isExpired && (
-            <div className="mt-3 p-3 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 flex items-center gap-2">
-              <WarningCircle className="w-4 h-4 text-[#B7791F] shrink-0" />
-              <p className="text-xs text-[#B7791F] dark:text-[#D2992F]">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
+            <div className="mt-3 p-3 rounded-xl bg-warning-soft border border-warning/30 flex items-center gap-2">
+              <WarningCircle className="w-4 h-4 text-warning shrink-0" />
+              <p className="text-xs text-warning">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
             </div>
           )}
         </div>
@@ -411,8 +411,8 @@ function RegistroContent() {
                 {confirmed ? (
                   /* Email confirmation pending — user just needs to click the link */
                   <div className="py-4 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center mx-auto">
-                      <Envelope className="w-7 h-7 text-[#2C7A53] dark:text-[#3EAE70]" />
+                    <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto">
+                      <Envelope className="w-7 h-7 text-success" />
                     </div>
                     <div>
                       <p className="text-[15px] font-semibold text-foreground">Revisá tu email</p>

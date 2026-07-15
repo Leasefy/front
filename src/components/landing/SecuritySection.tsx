@@ -44,11 +44,11 @@ export default function SecuritySection() {
           <div className="flex justify-center">
             <EyebrowPill>Confianza y cumplimiento</EyebrowPill>
           </div>
-          <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-7 text-fg`}>
             Tu operación con respaldo{" "}
-            <span className="text-neutral-400">y trazabilidad.</span>
+            <span className="text-fg-subtle">y trazabilidad.</span>
           </h2>
-          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg">
             Leasefy maneja datos sensibles de forma responsable y auditable,
             conforme a la normativa colombiana.
           </p>
@@ -58,14 +58,14 @@ export default function SecuritySection() {
         <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
           {CARDS.map((c, i) => (
             <Reveal key={c.title} delay={0.05 * i}>
-              <div className="group h-full rounded-2xl border border-neutral-200 bg-white p-7 transition-all hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-[0_12px_32px_-12px_rgba(15,23,42,0.12)]">
+              <div className="group h-full rounded-2xl border border-border bg-surface p-7 transition-all hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_12px_32px_-12px_rgba(15,23,42,0.12)]">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                   <c.icon className="h-6 w-6" weight="duotone" />
                 </span>
-                <h3 className="mt-6 font-heading text-lg font-medium tracking-tight text-neutral-950">
+                <h3 className="mt-6 font-heading text-lg font-medium tracking-tight text-fg">
                   {c.title}
                 </h3>
-                <p className="mt-3 text-[15px] leading-relaxed text-neutral-500">
+                <p className="mt-3 text-[15px] leading-relaxed text-fg-muted">
                   {c.body}
                 </p>
               </div>
@@ -79,7 +79,7 @@ export default function SecuritySection() {
             {BADGES.map((b) => (
               <span
                 key={b.label}
-                className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-[13px] text-neutral-600"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-1.5 text-[13px] text-fg-muted"
               >
                 <b.icon className="h-3.5 w-3.5 text-primary" weight="duotone" />
                 {b.label}

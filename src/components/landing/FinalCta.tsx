@@ -8,7 +8,7 @@ export default function FinalCta() {
       <div className="container-platform">
         <Reveal>
           {/* Light hairline-bordered panel with a very subtle indigo radial wash */}
-          <div className="relative overflow-hidden rounded-[28px] border border-neutral-200 bg-white px-6 py-16 md:px-12 md:py-24">
+          <div className="relative overflow-hidden rounded-[28px] border border-border bg-surface px-6 py-16 md:px-12 md:py-24">
             {/* low-opacity indigo wash — stays light/clean, no dark panel */}
             <div
               aria-hidden
@@ -24,15 +24,15 @@ export default function FinalCta() {
 
               {/* Headline — echoes the hero value prop */}
               <h2
-                className={`${lpDisplay} mt-7 max-w-[16ch] text-balance text-neutral-950`}
+                className={`${lpDisplay} mt-7 max-w-[16ch] text-balance text-fg`}
               >
                 Tu inmobiliaria, operando en piloto automático.
               </h2>
 
               {/* Subhead */}
-              <p className="mt-7 max-w-[52ch] text-balance text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+              <p className="mt-7 max-w-[52ch] text-balance text-[17px] leading-relaxed text-fg-muted md:text-lg">
                 Centraliza CRM, ERP y agentes AI en una sola plataforma.{" "}
-                <span className="text-neutral-400">Sin migraciones eternas.</span>
+                <span className="text-fg-subtle">Sin migraciones eternas.</span>
               </p>
 
               {/* CTA */}

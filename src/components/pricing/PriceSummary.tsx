@@ -68,7 +68,7 @@ export function PriceSummary({
       <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
         Resumen
         {appliedCoupon && (
-          <Gift className="w-4 h-4 text-[#2C7A53]" />
+          <Gift className="w-4 h-4 text-success" />
         )}
       </h4>
 
@@ -86,9 +86,9 @@ export function PriceSummary({
 
         {/* Discount line */}
         {appliedCoupon && savings > 0 && (
-          <div className="flex justify-between items-center text-[#2C7A53]">
+          <div className="flex justify-between items-center text-success">
             <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
               {appliedCoupon.description}
             </span>
             <span className="font-medium font-mono tabular-nums">-{formatCurrency(savings)}</span>
@@ -97,14 +97,14 @@ export function PriceSummary({
 
         {/* Free period notice */}
         {isTrial && (
-          <div className="bg-[#E8F3EC] border border-[#2C7A53]/30 rounded-md p-3">
+          <div className="bg-success-soft border border-success/30 rounded-md p-3">
             <div className="flex items-start gap-2">
-              <Calendar className="w-4 h-4 text-[#2C7A53] shrink-0 mt-0.5" />
+              <Calendar className="w-4 h-4 text-success shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-[#2C7A53]">
+                <p className="text-sm font-medium text-success">
                   {appliedCoupon?.description}
                 </p>
-                <p className="text-xs text-[#2C7A53] mt-0.5">
+                <p className="text-xs text-success mt-0.5">
                   {trialDays > 30
                     ? `Después de ${Math.round(trialDays / 30)} meses se cobrará el precio normal.`
                     : trialDays === 30
@@ -145,7 +145,7 @@ export function PriceSummary({
 
         {/* Savings summary */}
         {savings > 0 && !isTrial && (
-          <div className="flex items-center justify-center gap-1.5 pt-2 text-[#2C7A53]">
+          <div className="flex items-center justify-center gap-1.5 pt-2 text-success">
             <Info className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">
               Ahorras <span className="font-mono tabular-nums">{formatCurrency(savings)}</span> con este cupon

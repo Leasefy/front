@@ -10,6 +10,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Input, Textarea, Spinner } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BackButton, SegmentedControl } from '@leasefy/cadence';
+import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { COLOMBIAN_CITIES } from '@/lib/types/property';
 import type { PropertyType } from '@/lib/types/property';
 
@@ -35,6 +36,8 @@ function NuevaPropiedadContent() {
     city:         '',
     neighborhood: '',
     address:      '',
+    latitude:     undefined as number | undefined,
+    longitude:    undefined as number | undefined,
     monthlyRent:  '',
     bedrooms:     '',
     bathrooms:    '',
@@ -44,6 +47,14 @@ function NuevaPropiedadContent() {
 
   const update = (field: string, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  const updateLocation = (partial: PropertyLocationValue) =>
+    setForm((prev) => ({
+      ...prev,
+      address: partial.address ?? prev.address,
+      latitude: partial.latitude,
+      longitude: partial.longitude,
+    }));
 
   const isValid =
     !!form.title &&
@@ -70,6 +81,8 @@ function NuevaPropiedadContent() {
         city:         form.city,
         neighborhood: form.neighborhood,
         address:      form.address,
+        latitude:     form.latitude,
+        longitude:    form.longitude,
         monthlyRent:  Number(form.monthlyRent),
         bedrooms:     Number(form.bedrooms),
         bathrooms:    Number(form.bathrooms),
@@ -194,10 +207,12 @@ function NuevaPropiedadContent() {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-fg">Dirección *</label>
-            <Input
-              type="text"
-              value={form.address}
-              onChange={(e) => update('address', e.target.value)}
+            <PropertyLocationField
+              address={form.address}
+              city={form.city}
+              latitude={form.latitude}
+              longitude={form.longitude}
+              onChange={updateLocation}
               placeholder="Ej: Calle 53 #13-45"
             />
           </div>

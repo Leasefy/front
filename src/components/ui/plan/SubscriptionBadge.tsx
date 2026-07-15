@@ -41,10 +41,10 @@ const TENANT_BADGES: Record<TenantSubscriptionTextT, {
     shortLabel: 'Pass',
     icon: SealCheck,
     colors: {
-      bg: 'bg-gradient-to-r from-[#1A40FF]/10 to-[#6B6B6B]/10',
-      text: 'text-[#1A40FF] dark:text-[#5570FF]',
-      border: 'border-[#1A40FF]/30',
-      iconBg: 'bg-[#1A40FF]',
+      bg: 'bg-gradient-to-r from-primary/10 to-fg-muted/10',
+      text: 'text-primary',
+      border: 'border-primary/30',
+      iconBg: 'bg-primary',
     },
   },
   none: null,
@@ -71,10 +71,10 @@ const LANDLORD_BADGES: Record<PlanId, {
     shortLabel: 'Starter',
     icon: Lightning,
     colors: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      text: 'text-neutral-600 dark:text-neutral-400',
-      border: 'border-neutral-200 dark:border-neutral-700',
-      iconBg: 'bg-neutral-400',
+      bg: 'bg-surface-muted',
+      text: 'text-fg-muted',
+      border: 'border-border',
+      iconBg: 'bg-fg-muted',
     },
   },
   pro: {
@@ -82,10 +82,10 @@ const LANDLORD_BADGES: Record<PlanId, {
     shortLabel: 'Pro',
     icon: Shield,
     colors: {
-      bg: 'bg-gradient-to-r from-[#1A40FF]/10 to-[#1A40FF]/10',
-      text: 'text-[#1A40FF] dark:text-[#5570FF]',
-      border: 'border-[#1A40FF]/30',
-      iconBg: 'bg-[#1A40FF]',
+      bg: 'bg-gradient-to-r from-primary/10 to-primary/10',
+      text: 'text-primary',
+      border: 'border-primary/30',
+      iconBg: 'bg-primary',
     },
   },
   flex: {
@@ -93,10 +93,10 @@ const LANDLORD_BADGES: Record<PlanId, {
     shortLabel: 'Flex',
     icon: Crown,
     colors: {
-      bg: 'bg-gradient-to-r from-[#B7791F]/10 to-[#B7791F]/10',
-      text: 'text-[#B7791F] dark:text-[#D2992F]',
-      border: 'border-[#B7791F]/30',
-      iconBg: 'bg-[#B7791F]',
+      bg: 'bg-gradient-to-r from-warning/10 to-warning/10',
+      text: 'text-warning',
+      border: 'border-warning/30',
+      iconBg: 'bg-warning',
     },
   },
 };
@@ -280,7 +280,7 @@ export function UserAvatarWithBadge({
       {hasBadge && (
         <div
           className={cn(
-            'absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-card',
+            'absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface',
             badgeConfig.colors.iconBg
           )}
           title={badgeConfig.label}

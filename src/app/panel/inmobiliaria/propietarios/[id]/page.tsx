@@ -100,15 +100,17 @@ function Modal({
   const modalContent = (
     <>
       {/* Backdrop - separate fixed element */}
+      {/* Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9998/9999],
+          que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17. */}
       <div
-        className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm"
         style={{ top: 0, left: 0, right: 0, bottom: 0 }}
         onClick={onClose}
       />
 
       {/* Modal Container */}
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
+        className="fixed inset-0 z-[300] flex items-center justify-center p-4 pointer-events-none"
         style={{ top: 0, left: 0, right: 0, bottom: 0 }}
         onWheel={(e) => e.stopPropagation()}
       >
@@ -168,7 +170,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
     >
       <div className="flex items-start gap-4">
         {/* Thumbnail */}
-        <div className="w-20 h-20 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="w-20 h-20 rounded-xl bg-surface-muted flex items-center justify-center shrink-0 overflow-hidden">
           {consignacion.propertyThumbnail ? (
             <img
               src={consignacion.propertyThumbnail}
@@ -176,7 +178,7 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <House className="w-8 h-8 text-neutral-400" />
+            <House className="w-8 h-8 text-fg-subtle" />
           )}
         </div>
 

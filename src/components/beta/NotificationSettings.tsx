@@ -52,8 +52,8 @@ const DOT_COLORS: Record<string, string> = {
   emerald: 'bg-success',
   blue: 'bg-primary',
   amber: 'bg-warning',
-  purple: 'bg-neutral-100 dark:bg-neutral-800',
-  pink: 'bg-neutral-100 dark:bg-neutral-800',
+  purple: 'bg-surface-muted',
+  pink: 'bg-surface-muted',
   indigo: 'bg-primary',
 };
 
@@ -130,15 +130,15 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
       {/* Category toggles */}
       <div
         className={cn(
-          'rounded-xl border border-neutral-200 dark:border-border',
-          'bg-white dark:bg-card',
-          'divide-y divide-neutral-100 dark:divide-border'
+          'rounded-xl border border-border',
+          'bg-surface',
+          'divide-y divide-border-faint'
         )}
       >
         {AGENT_TYPES.map((agentType) => {
           const meta = AGENT_METADATA[agentType];
           const AgentIcon = AGENT_ICON_MAP[meta.icon];
-          const dotColor = DOT_COLORS[meta.color] ?? 'bg-neutral-400';
+          const dotColor = DOT_COLORS[meta.color] ?? 'bg-fg-subtle';
           const isEnabled = preferences.notifications.categories[agentType];
 
           return (

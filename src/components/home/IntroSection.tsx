@@ -55,9 +55,9 @@ export function IntroSection() {
                   className="bg-white rounded-xl p-4 relative z-10"
                 >
                   {/* Property image placeholder */}
-                  <div className="bg-gradient-to-br from-neutral-200 to-neutral-100 rounded-xl h-32 mb-3 relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-surface-muted to-surface rounded-xl h-32 mb-3 relative overflow-hidden">
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-12 h-12 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-12 h-12 text-fg-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
                     </div>
@@ -147,7 +147,7 @@ export function IntroSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="group relative rounded-xl overflow-hidden bg-[#F3EEE4]"
+            className="group relative rounded-xl overflow-hidden bg-surface-muted"
           >
             {/* UI Illustration Area */}
             <div className="relative p-8 md:p-12 min-h-[320px] md:min-h-[380px] flex items-center justify-center">
@@ -165,7 +165,7 @@ export function IntroSection() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sand-100 to-sand-200 flex items-center justify-center">
-                        <span className="text-[14px] font-semibold text-neutral-700">MG</span>
+                        <span className="text-[14px] font-semibold text-fg-muted">MG</span>
                       </div>
                       <div>
                         <div className="text-[13px] font-medium text-foreground">María García</div>
@@ -183,7 +183,7 @@ export function IntroSection() {
                       <span className="text-[11px] text-muted-foreground">Capacidad de pago</span>
                       <span className="text-[11px] font-medium text-success-500">Excelente</span>
                     </div>
-                    <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                       <div className="h-full w-[85%] bg-gradient-to-r from-success-500 to-success-500 rounded-full" />
                     </div>
                   </div>

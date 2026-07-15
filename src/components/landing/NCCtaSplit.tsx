@@ -14,17 +14,17 @@ export default function NCCtaSplit() {
     <section className="bg-white py-24 md:py-32">
       <div className="container-platform">
         <Reveal>
-          <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 px-8 py-14 md:px-16 md:py-20">
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-muted px-8 py-14 md:px-16 md:py-20">
             <AmbientField className="opacity-60" />
             <div className="relative grid items-center gap-10 lg:grid-cols-2">
               {/* LEFT — big heading, left-aligned */}
-              <h2 className="max-w-[16ch] font-heading font-medium leading-[1.1] tracking-[-0.01em] text-[clamp(1.9rem,3.4vw,2.6rem)] text-neutral-950">
+              <h2 className="max-w-[16ch] font-heading font-medium leading-[1.1] tracking-[-0.01em] text-[clamp(1.9rem,3.4vw,2.6rem)] text-fg">
                 Asegura tu operación con agentes que trabajan solos.
               </h2>
 
               {/* RIGHT — mono note + primary CTA */}
               <div className="lg:justify-self-end">
-                <MonoLabel className="block max-w-[28ch] text-[12px] leading-relaxed tracking-[0.08em] text-neutral-950">
+                <MonoLabel className="block max-w-[28ch] text-[12px] leading-relaxed tracking-[0.08em] text-fg">
                   Lo que no ves te puede costar. Cambiemos eso.
                 </MonoLabel>
                 <div className="mt-6">

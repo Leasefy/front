@@ -38,42 +38,42 @@ function displayStatusForApproved(contract: Contract | undefined, locale: string
     case 'draft':
       return {
         label: locale === 'es' ? 'Contrato en preparación' : 'Contract being prepared',
-        color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+        color: 'bg-warning-soft text-warning',
         icon: Clock,
         progress: 100,
       };
     case 'pending_tenant':
       return {
         label: locale === 'es' ? 'Firmar contrato' : 'Sign contract',
-        color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+        color: 'bg-primary-soft text-primary',
         icon: Warning,
         progress: 100,
       };
     case 'pending_landlord':
       return {
         label: locale === 'es' ? 'Esperando firma del propietario' : 'Waiting for landlord signature',
-        color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+        color: 'bg-warning-soft text-warning',
         icon: Clock,
         progress: 100,
       };
     case 'rejected_pending_modifications':
       return {
         label: locale === 'es' ? 'Esperando cambios' : 'Waiting for changes',
-        color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+        color: 'bg-warning-soft text-warning',
         icon: Clock,
         progress: 100,
       };
     case 'signed':
       return {
         label: locale === 'es' ? 'Firmado — pendiente activar' : 'Signed — pending activation',
-        color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+        color: 'bg-primary-soft text-primary',
         icon: CheckCircle,
         progress: 100,
       };
     case 'active':
       return {
         label: locale === 'es' ? 'Contrato activo' : 'Contract active',
-        color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+        color: 'bg-success-soft text-success',
         icon: CheckCircle,
         progress: 100,
       };
@@ -87,7 +87,7 @@ function displayStatusForApproved(contract: Contract | undefined, locale: string
     case 'cancelled':
       return {
         label: locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled',
-        color: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+        color: 'bg-danger-soft text-danger',
         icon: XCircle,
         progress: 100,
       };
@@ -158,37 +158,37 @@ export default function AplicacionesPage() {
   const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle; progress: number }> = {
     submitted: {
       label: t('applications.steps.submitted'),
-      color: 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]',
+      color: 'bg-primary-soft text-primary',
       icon: Clock,
       progress: 25
     },
     under_review: {
       label: t('applications.steps.review'),
-      color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+      color: 'bg-warning-soft text-warning',
       icon: Clock,
       progress: 50
     },
     needs_info: {
       label: locale === 'es' ? 'Info. requerida' : 'Info required',
-      color: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+      color: 'bg-warning-soft text-warning',
       icon: Warning,
       progress: 30
     },
     pre_approved: {
       label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved',
-      color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+      color: 'bg-success-soft text-success',
       icon: CheckCircle,
       progress: 75
     },
     approved: {
       label: t('applications.steps.approved'),
-      color: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+      color: 'bg-success-soft text-success',
       icon: CheckCircle,
       progress: 100
     },
     rejected: {
       label: t('applications.rejected'),
-      color: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+      color: 'bg-danger-soft text-danger',
       icon: XCircle,
       progress: 100
     },
@@ -200,7 +200,7 @@ export default function AplicacionesPage() {
     },
     contract_failed: {
       label: locale === 'es' ? 'Contrato fallido' : 'Contract failed',
-      color: 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]',
+      color: 'bg-danger-soft text-danger',
       icon: XCircle,
       progress: 100,
     },
@@ -222,7 +222,7 @@ export default function AplicacionesPage() {
   // Loading state
   if (isOnboardingLoading || isAppsLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
@@ -231,7 +231,7 @@ export default function AplicacionesPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="applications" />
         </div>
@@ -242,7 +242,7 @@ export default function AplicacionesPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -256,7 +256,7 @@ export default function AplicacionesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -265,10 +265,10 @@ export default function AplicacionesPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('applications.title')}
           </h1>
-          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
+          <p className="mt-1 text-fg-muted">
             {t('applications.subtitle')}
           </p>
         </motion.header>
@@ -280,37 +280,37 @@ export default function AplicacionesPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
-          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <FileText className="w-5 h-5 text-fg dark:text-fg-subtle" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <FileText className="w-5 h-5 text-fg-subtle" />
             </div>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
-            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {activeApplications.length + completedApplications.length}
             </p>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
+            <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
           </div>
 
-          <div className="rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <Clock className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
+          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <Clock className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm text-[#1A40FF] dark:text-[#5570FF] mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
-            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
+            <p className="text-sm text-primary mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {activeApplications.length}
             </p>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{t('applications.active')}</p>
+            <p className="text-sm text-fg-muted mt-2">{t('applications.active')}</p>
           </div>
 
-          <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-4">
-              <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-success" />
             </div>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
-            <p className="text-3xl font-bold text-fg dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {completedApplications.length}
             </p>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
+            <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
           </div>
         </motion.div>
 
@@ -357,7 +357,7 @@ export default function AplicacionesPage() {
           />
 
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-surface-muted dark:bg-[#1a1a1c] rounded-full w-fit">
+          <div className="flex items-center gap-1 p-1 bg-surface-muted rounded-full w-fit">
             <IconButton
               variant="ghost"
               onClick={() => setViewMode('list')}
@@ -365,8 +365,8 @@ export default function AplicacionesPage() {
               className={cn(
                 'p-2 rounded-full',
                 viewMode === 'list'
-                  ? 'bg-surface dark:bg-[#2a2a2c] text-fg dark:text-white'
-                  : 'text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle'
+                  ? 'bg-surface text-fg'
+                  : 'text-fg-muted hover:text-fg'
               )}
               title={locale === 'es' ? 'Vista de lista' : 'List view'}
               aria-label={locale === 'es' ? 'Vista de lista' : 'List view'}
@@ -379,8 +379,8 @@ export default function AplicacionesPage() {
               className={cn(
                 'p-2 rounded-full',
                 viewMode === 'grid'
-                  ? 'bg-surface dark:bg-[#2a2a2c] text-fg dark:text-white'
-                  : 'text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-fg-subtle'
+                  ? 'bg-surface text-fg'
+                  : 'text-fg-muted hover:text-fg'
               )}
               title={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
               aria-label={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
@@ -416,7 +416,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden">
+                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden">
                             <div className="flex flex-col lg:flex-row">
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -444,81 +444,81 @@ export default function AplicacionesPage() {
                               <div className="flex-1 p-6">
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                                    <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
                                       {application.property?.title || 'Propiedad'}
                                     </h3>
-                                    <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1 flex items-center gap-1.5">
+                                    <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
                                       <MapPin className="w-3.5 h-3.5" />
                                       {application.property?.neighborhood}, {application.property?.city}
                                     </p>
                                   </div>
                                   <div className="sm:text-right">
-                                    <p className="text-2xl font-bold text-fg dark:text-white">
+                                    <p className="text-2xl font-bold text-fg">
                                       {formatCurrency(application.property?.monthlyRent || 0)}
                                     </p>
-                                    <p className="text-xs text-fg-muted dark:text-fg-subtle">/mes</p>
+                                    <p className="text-xs text-fg-muted">/mes</p>
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint dark:border-border-strong">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint">
                                   <div>
                                     <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Código' : 'Code'}</p>
-                                    <p className="text-sm font-mono font-medium text-fg dark:text-white">
+                                    <p className="text-sm font-mono font-medium text-fg">
                                       {application.trackingCode}
                                     </p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Enviada' : 'Submitted'}</p>
-                                    <p className="text-sm font-medium text-fg dark:text-white">
+                                    <p className="text-sm font-medium text-fg">
                                       {formatShortDate(application.submittedAt)}
                                     </p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Actualizada' : 'Updated'}</p>
-                                    <p className="text-sm font-medium text-fg dark:text-white">
+                                    <p className="text-sm font-medium text-fg">
                                       {formatShortDate(application.updatedAt)}
                                     </p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Progreso' : 'Progress'}</p>
-                                    <p className="text-sm font-medium text-fg dark:text-white">{status.progress}%</p>
+                                    <p className="text-sm font-medium text-fg">{status.progress}%</p>
                                   </div>
                                 </div>
 
                                 <div className="mt-4">
-                                  <div className="flex items-center justify-between text-xs text-fg-muted dark:text-fg-subtle mb-2">
+                                  <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
                                     <span>{locale === 'es' ? 'Progreso de aplicación' : 'Application progress'}</span>
                                     <span>{status.progress}% {locale === 'es' ? 'completado' : 'complete'}</span>
                                   </div>
-                                  <div className="h-2 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
+                                  <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
-                                          ? "bg-[#C4503B]"
+                                          ? "bg-danger"
                                           : application.status === 'approved' || application.status === 'pre_approved'
-                                          ? "bg-[#2C7A53]"
+                                          ? "bg-success"
                                           : application.status === 'needs_info'
-                                          ? "bg-[#B7791F]"
-                                          : "bg-[#1A40FF]"
+                                          ? "bg-warning"
+                                          : "bg-primary"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted dark:bg-[#2a2a2c] rounded-xl">
+                                <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted rounded-xl">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1a1a1c] flex items-center justify-center">
-                                      <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+                                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+                                      <FileText className="w-5 h-5 text-fg-muted" />
                                     </div>
                                     <div>
-                                      <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
+                                      <p className="text-xs text-fg-muted">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
                                       <p className={cn(
                                         'text-sm font-semibold',
                                         application.status === 'needs_info'
-                                          ? 'text-[#B7791F] dark:text-[#D2992F]'
-                                          : 'text-fg dark:text-white'
+                                          ? 'text-warning'
+                                          : 'text-fg'
                                       )}>
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
@@ -531,7 +531,7 @@ export default function AplicacionesPage() {
                                       </p>
                                     </div>
                                   </div>
-                                  <span className="flex items-center gap-1 text-sm font-medium text-[#1A40FF] dark:text-[#5570FF] group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                                  <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
                                     {locale === 'es' ? 'Ver detalle' : 'View details'}
                                     <ArrowUpRight className="w-4 h-4" />
                                   </span>
@@ -565,7 +565,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300 overflow-hidden h-full flex flex-col">
+                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden h-full flex flex-col">
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
@@ -590,18 +590,18 @@ export default function AplicacionesPage() {
                             {/* Content */}
                             <div className="p-4 flex-1 flex flex-col">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors line-clamp-1 mb-1">
+                                <h3 className="font-semibold text-fg group-hover:text-primary transition-colors line-clamp-1 mb-1">
                                   {application.property?.title || 'Propiedad'}
                                 </h3>
-                                <p className="text-sm text-fg-muted dark:text-fg-subtle flex items-center gap-1 mb-3">
+                                <p className="text-sm text-fg-muted flex items-center gap-1 mb-3">
                                   <MapPin className="w-3 h-3 flex-shrink-0" />
                                   <span className="truncate">{application.property?.neighborhood}, {application.property?.city}</span>
                                 </p>
 
                                 <div className="flex items-center justify-between mb-3">
-                                  <p className="text-lg font-bold text-fg dark:text-white">
+                                  <p className="text-lg font-bold text-fg">
                                     {formatCurrency(application.property?.monthlyRent || 0)}
-                                    <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/mes</span>
+                                    <span className="text-xs font-normal text-fg-muted">/mes</span>
                                   </p>
                                   <span className="text-xs font-mono text-fg-subtle">
                                     {application.trackingCode}
@@ -614,17 +614,17 @@ export default function AplicacionesPage() {
                                     <span>{locale === 'es' ? 'Progreso' : 'Progress'}</span>
                                     <span>{status.progress}%</span>
                                   </div>
-                                  <div className="h-1.5 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
+                                  <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
-                                          ? "bg-[#C4503B]"
+                                          ? "bg-danger"
                                           : application.status === 'approved' || application.status === 'pre_approved'
-                                          ? "bg-[#2C7A53]"
+                                          ? "bg-success"
                                           : application.status === 'needs_info'
-                                          ? "bg-[#B7791F]"
-                                          : "bg-[#1A40FF]"
+                                          ? "bg-warning"
+                                          : "bg-primary"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
@@ -633,11 +633,11 @@ export default function AplicacionesPage() {
                               </div>
 
                               {/* Footer */}
-                              <div className="pt-3 border-t border-border-faint dark:border-border-strong flex items-center justify-between">
-                                <span className="text-xs text-fg-muted dark:text-fg-subtle">
+                              <div className="pt-3 border-t border-border-faint flex items-center justify-between">
+                                <span className="text-xs text-fg-muted">
                                   {formatShortDate(application.updatedAt)}
                                 </span>
-                                <span className="flex items-center gap-1 text-xs font-medium text-[#1A40FF] dark:text-[#5570FF] group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                                <span className="flex items-center gap-1 text-xs font-medium text-primary group-hover:text-primary transition-colors">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
                                   <ArrowUpRight className="w-3 h-3" />
                                 </span>
@@ -661,8 +661,8 @@ export default function AplicacionesPage() {
                     className={cn(
                       'p-2 rounded-full',
                       currentPage === 1
-                        ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle cursor-not-allowed'
+                        : 'text-fg-muted hover:bg-surface-muted'
                     )}
                     aria-label={locale === 'es' ? 'Página anterior' : 'Previous page'}
                     icon={<CaretLeft className="w-5 h-5" />}
@@ -679,8 +679,8 @@ export default function AplicacionesPage() {
                         className={cn(
                           'w-10 h-10 rounded-full p-0 text-sm font-medium',
                           currentPage === page
-                            ? 'bg-ink dark:bg-surface text-white dark:text-fg'
-                            : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
+                            ? 'bg-primary text-primary-fg'
+                            : 'text-fg-muted hover:bg-surface-muted'
                         )}
                       >
                         {page}
@@ -695,8 +695,8 @@ export default function AplicacionesPage() {
                     className={cn(
                       'p-2 rounded-full',
                       currentPage === totalPages
-                        ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
-                        : 'text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle cursor-not-allowed'
+                        : 'text-fg-muted hover:bg-surface-muted'
                     )}
                     aria-label={locale === 'es' ? 'Página siguiente' : 'Next page'}
                     icon={<CaretRight className="w-5 h-5" />}
@@ -705,7 +705,7 @@ export default function AplicacionesPage() {
               )}
 
               {/* Results info */}
-              <p className="text-center text-sm text-fg-muted dark:text-fg-subtle mt-4">
+              <p className="text-center text-sm text-fg-muted mt-4">
                 {locale === 'es'
                   ? `Mostrando ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} de ${currentApplications.length} aplicaciones`
                   : `Showing ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} of ${currentApplications.length} applications`}

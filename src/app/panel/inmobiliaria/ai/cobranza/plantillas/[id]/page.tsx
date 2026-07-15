@@ -445,10 +445,10 @@ function TemplateEditorContent({
   return (
     <div className="flex flex-col min-h-screen">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 bg-white dark:bg-[#1a1a1c] border-b border-neutral-200 dark:border-neutral-700 py-3 px-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="sticky top-0 z-20 bg-surface border-b border-border py-3 px-4 flex items-center justify-between gap-4 flex-wrap">
         {/* Left: name + status pill */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-white truncate">
+          <h1 className="text-xl font-semibold text-fg truncate">
             {template.name}
           </h1>
           <StatusPill status={localStatus} t={t} />
@@ -536,7 +536,7 @@ function TemplateEditorContent({
 
         {/* Variable picker */}
         <section>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+          <p className="text-xs font-medium text-fg-muted mb-2">
             {t('inmobiliaria.ai.templates.editor.variables')}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -555,7 +555,7 @@ function TemplateEditorContent({
         <div className="grid md:grid-cols-2 gap-6">
           {/* Left: monospace textarea */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <label className="text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.templates.editor.bodyLabel')}
             </label>
             <Textarea
@@ -569,12 +569,12 @@ function TemplateEditorContent({
 
           {/* Right: live preview */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <p className="text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.templates.editor.previewTitle')}
             </p>
-            <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-4 min-h-[200px] text-sm whitespace-pre-wrap font-mono text-neutral-800 dark:text-neutral-200">
+            <div className="rounded-md border border-border bg-surface-muted p-4 min-h-[200px] text-sm whitespace-pre-wrap font-mono text-fg">
               {previewText || (
-                <span className="text-neutral-400 dark:text-neutral-500 italic">
+                <span className="text-fg-subtle italic">
                   La vista previa aparecerá aquí...
                 </span>
               )}
@@ -586,9 +586,9 @@ function TemplateEditorContent({
         {template.category === 'whatsapp' && (
           <section
             data-wa-status-section
-            className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-card p-4 mt-4 space-y-3"
+            className="rounded-xl border border-border bg-card p-4 mt-4 space-y-3"
           >
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
+            <h2 className="text-sm font-semibold text-fg">
               {t('inmobiliaria.ai.templates.editor.waStatusTitle')}
             </h2>
 
@@ -597,7 +597,7 @@ function TemplateEditorContent({
                 <WaStatusPill status={localWaStatus} t={t} />
               )}
               {localWaLastChecked && (
-                <span className="text-xs font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+                <span className="text-xs font-mono text-fg-muted tabular-nums">
                   {t('inmobiliaria.ai.templates.editor.waLastChecked')}:{' '}
                   {new Date(localWaLastChecked).toLocaleString()}
                 </span>
@@ -671,7 +671,7 @@ export default function TemplatePage({
 
   if (!template) {
     return (
-      <div className="p-6 text-sm text-neutral-500">
+      <div className="p-6 text-sm text-fg-muted">
         {t('inmobiliaria.ai.templates.empty.body')}
       </div>
     )

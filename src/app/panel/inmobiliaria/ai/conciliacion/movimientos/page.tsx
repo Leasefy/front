@@ -54,10 +54,10 @@ import {
 const RESUMEN_ITEMS = [
   { key: 'conciliados',       dot: 'bg-success-500', field: 'conciliados'       },
   { key: 'parciales',         dot: 'bg-warning-500', field: 'parciales'         },
-  { key: 'duplicados',        dot: 'bg-neutral-400', field: 'duplicados'        },
-  { key: 'noIdentificados',   dot: 'bg-neutral-400', field: 'noIdentificados'   },
+  { key: 'duplicados',        dot: 'bg-fg-subtle', field: 'duplicados'        },
+  { key: 'noIdentificados',   dot: 'bg-fg-subtle', field: 'noIdentificados'   },
   { key: 'diferencias',       dot: 'bg-error-500',   field: 'diferencias'       },
-  { key: 'fueraFecha',        dot: 'bg-neutral-400', field: 'fueraDeFecha'      },
+  { key: 'fueraFecha',        dot: 'bg-fg-subtle', field: 'fueraDeFecha'      },
 ] as const;
 
 // ── Caso badge ──────────────────────────────────────────────────────────────
@@ -342,11 +342,11 @@ function ConciliacionContent() {
       </header>
 
       {/* Phase-honest banner */}
-      <div className="rounded-xl bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-800 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-neutral-500 dark:text-neutral-400 flex-shrink-0 mt-0.5" weight="duotone" />
+      <div className="rounded-xl bg-surface-muted border border-border p-3 flex items-start gap-2.5">
+        <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" weight="duotone" />
         <div>
-          <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">{t(k('m2BannerTitle'))}</p>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5">{t(k('m2BannerDesc'))}</p>
+          <p className="text-xs font-semibold text-fg-muted">{t(k('m2BannerTitle'))}</p>
+          <p className="text-xs text-fg-muted mt-0.5">{t(k('m2BannerDesc'))}</p>
         </div>
       </div>
 
@@ -454,8 +454,8 @@ function ConciliacionContent() {
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-              <ArrowsClockwise className="w-[18px] h-[18px] text-neutral-600 dark:text-neutral-300" weight="duotone" />
+            <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
+              <ArrowsClockwise className="w-[18px] h-[18px] text-fg-muted" weight="duotone" />
             </div>
             <div>
               <h2 className="text-base font-semibold text-foreground">{t(k('movimientosTitle'))}</h2>

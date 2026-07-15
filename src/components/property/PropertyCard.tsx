@@ -276,20 +276,20 @@ export function PropertyCard({
           className="flex items-center gap-2 mt-4"
           aria-label="Características de la propiedad"
         >
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-neutral-100 border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
             <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="1" />
               <path d="M3 9h18M9 21V9" />
             </svg>
             {formatArea(area)}
           </span>
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-neutral-100 border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
             <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M3 12h18M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6M3 12V8a4 4 0 014-4h1a3 3 0 013 3v5" />
             </svg>
             {bedrooms} hab
           </span>
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-neutral-100 border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
             <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M4 12h16a2 2 0 012 2v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a2 2 0 012-2z" />
               <path d="M6 12V5a2 2 0 012-2h8a2 2 0 012 2v7" />

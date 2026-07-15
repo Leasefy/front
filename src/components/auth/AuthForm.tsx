@@ -90,11 +90,11 @@ function GoogleIcon({ className }: { className?: string }) {
 function MonoDivider({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 my-6">
-      <div className="h-px flex-1 bg-neutral-200/80" />
-      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+      <div className="h-px flex-1 bg-border" />
+      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
         {children}
       </span>
-      <div className="h-px flex-1 bg-neutral-200/80" />
+      <div className="h-px flex-1 bg-border" />
     </div>
   );
 }
@@ -106,14 +106,14 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-11 flex items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full h-11 flex items-center justify-center gap-2.5 rounded-full border border-border bg-surface hover:border-border-strong hover:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isLoading ? (
-        <SpinnerGap className="w-4 h-4 animate-spin text-neutral-400" />
+        <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
       ) : (
         <GoogleIcon className="w-4 h-4" />
       )}
-      <span className="text-[13.5px] font-medium text-[#14130f]">{children}</span>
+      <span className="text-[13.5px] font-medium text-fg">{children}</span>
     </button>
   );
 }
@@ -124,9 +124,9 @@ function ErrorBanner({ children }: { children: React.ReactNode }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-xl bg-[#FBE9E6] border border-[#F4D2CC]"
+      className="px-3.5 py-2.5 rounded-xl bg-danger-soft border border-danger/30"
     >
-      <p className="text-[12.5px] text-[#C0392B]">{children}</p>
+      <p className="text-[12.5px] text-danger">{children}</p>
     </motion.div>
   );
 }
@@ -386,7 +386,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           <button
             type="button"
             onClick={() => handleModeSwitch('login')}
-            className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors mb-5"
+            className="inline-flex items-center gap-2 text-[13px] text-fg-subtle hover:text-fg transition-colors mb-5"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver al inicio de sesión
@@ -398,15 +398,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            className="w-10 h-10 mb-5 rounded-xl bg-[#E8F4EA] flex items-center justify-center"
+            className="w-10 h-10 mb-5 rounded-xl bg-success-soft flex items-center justify-center"
           >
-            <CheckCircle className="w-5 h-5 text-[#3F8A53]" weight="fill" />
+            <CheckCircle className="w-5 h-5 text-success" weight="fill" />
           </motion.div>
         )}
 
         <Eyebrow>{eyebrow}</Eyebrow>
 
-        <h1 className="mt-3 font-heading text-[24px] font-medium text-[#14130f] tracking-[-0.01em] leading-tight">
+        <h1 className="mt-3 font-heading text-[24px] font-medium text-fg tracking-[-0.01em] leading-tight">
           {mode === 'login' && 'Bienvenido de vuelta'}
           {mode === 'register' && registerStep === 'role' && '¿Cómo usarás Leasefy?'}
           {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
@@ -414,18 +414,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="mt-1.5 text-[13.5px] text-neutral-500 leading-relaxed">
+        <p className="mt-1.5 text-[13.5px] text-fg-subtle leading-relaxed">
           {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'role' && 'Selecciona tu perfil para personalizar tu experiencia.'}
           {mode === 'register' && registerStep === 'credentials' && (
-            <>Como <span className="font-medium text-neutral-700">{selectedRole ? roleLabels[selectedRole] : ''}</span>. Ingresa tus datos para continuar.</>
+            <>Como <span className="font-medium text-fg-muted">{selectedRole ? roleLabels[selectedRole] : ''}</span>. Ingresa tus datos para continuar.</>
           )}
           {mode === 'register' && registerStep === 'confirm-email' && (
-            <>Enviamos un enlace de confirmación a <span className="font-medium text-neutral-700">{resetEmail}</span>.</>
+            <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
           )}
           {mode === 'forgot-password' && 'Te enviaremos un enlace para restablecer tu contraseña.'}
           {mode === 'reset-sent' && (
-            <>Enviamos un enlace de recuperación a <span className="font-medium text-neutral-700">{resetEmail}</span>.</>
+            <>Enviamos un enlace de recuperación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
           )}
         </p>
       </div>
@@ -472,7 +472,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   <button
                     type="button"
                     onClick={() => handleModeSwitch('forgot-password')}
-                    className="text-[12.5px] text-neutral-500 hover:text-[#14130f] transition-colors"
+                    className="text-[12.5px] text-fg-subtle hover:text-fg transition-colors"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
@@ -484,7 +484,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               </Button>
             </form>
 
-            <p className="mt-7 text-[13px] text-neutral-500">
+            <p className="mt-7 text-[13px] text-fg-subtle">
               ¿No tienes cuenta?{' '}
               <button
                 type="button"
@@ -509,8 +509,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           >
             {defaultRole ? (
               <div className="flex flex-col items-center gap-3 py-8">
-                <SpinnerGap className="w-6 h-6 animate-spin text-neutral-400" />
-                <p className="text-sm text-neutral-500">Configurando tu cuenta...</p>
+                <SpinnerGap className="w-6 h-6 animate-spin text-fg-subtle" />
+                <p className="text-sm text-fg-subtle">Configurando tu cuenta...</p>
               </div>
             ) : (
               <>
@@ -529,28 +529,28 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                       className={cn(
                         'relative w-full text-left transition-colors duration-150 rounded-xl p-4 group border',
                         isSelected
-                          ? 'border-[#14130f] bg-[#14130f]'
-                          : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-[rgba(0,0,0,0.02)]'
+                          ? 'border-ink bg-ink'
+                          : 'border-border bg-surface hover:border-border-strong hover:bg-surface-hover'
                       )}
                     >
                       <div className="flex items-center gap-3.5">
                         <div className={cn(
                           'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-150',
-                          isSelected ? 'bg-white/10' : 'bg-neutral-100'
+                          isSelected ? 'bg-white/10' : 'bg-surface-muted'
                         )}>
-                          <Icon className={cn('w-5 h-5 transition-colors duration-150', isSelected ? 'text-white' : 'text-neutral-600')} weight={isSelected ? 'fill' : 'regular'} />
+                          <Icon className={cn('w-5 h-5 transition-colors duration-150', isSelected ? 'text-ink-fg' : 'text-fg-muted')} weight={isSelected ? 'fill' : 'regular'} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className={cn('text-[14px] font-medium transition-colors duration-150', isSelected ? 'text-white' : 'text-[#14130f]')}>{card.title}</h3>
-                          <p className={cn('text-[12.5px] mt-0.5 transition-colors duration-150 leading-snug', isSelected ? 'text-white/65' : 'text-neutral-500')}>{card.description}</p>
+                          <h3 className={cn('text-[14px] font-medium transition-colors duration-150', isSelected ? 'text-ink-fg' : 'text-fg')}>{card.title}</h3>
+                          <p className={cn('text-[12.5px] mt-0.5 transition-colors duration-150 leading-snug', isSelected ? 'text-ink-fg-muted' : 'text-fg-subtle')}>{card.description}</p>
                         </div>
                         <div className={cn(
                           'w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150',
-                          isSelected ? 'bg-white' : 'border border-neutral-300 group-hover:border-neutral-400'
+                          isSelected ? 'bg-ink-fg' : 'border border-border-strong group-hover:border-fg-subtle'
                         )}>
                           {isSelected && (
                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }}>
-                              <Check className="w-3 h-3 text-[#14130f]" weight="bold" />
+                              <Check className="w-3 h-3 text-ink" weight="bold" />
                             </motion.div>
                           )}
                         </div>
@@ -570,7 +570,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </Button>
                 </motion.div>
 
-                <p className="pt-4 text-[13px] text-neutral-500">
+                <p className="pt-4 text-[13px] text-fg-subtle">
                   ¿Ya tienes cuenta?{' '}
                   <button
                     type="button"
@@ -599,7 +599,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <button
                 type="button"
                 onClick={() => { setRegisterStep('role'); setError(null); registerForm.reset(); }}
-                className="inline-flex items-center gap-2 text-[13px] text-neutral-500 hover:text-[#14130f] transition-colors mb-6"
+                className="inline-flex items-center gap-2 text-[13px] text-fg-subtle hover:text-fg transition-colors mb-6"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cambiar perfil
@@ -663,11 +663,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
-            <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-2.5">
-              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>
-              <ol className="text-[12.5px] text-neutral-600 space-y-1.5 list-decimal list-inside">
+              <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Revisa tu bandeja de entrada (y spam)</li>
                 <li>Haz clic en el enlace de confirmación</li>
                 <li>Vuelve aquí e inicia sesión</li>
@@ -704,7 +704,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>
-            <p className="text-[12px] text-neutral-400 leading-relaxed">
+            <p className="text-[12px] text-fg-subtle leading-relaxed">
               Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
             </p>
           </motion.form>
@@ -720,11 +720,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
-            <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-2.5">
-              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-neutral-400">
+            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
               </span>
-              <ol className="text-[12.5px] text-neutral-600 space-y-1.5 list-decimal list-inside">
+              <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Revisa tu bandeja de entrada (y spam)</li>
                 <li>Haz clic en el enlace del correo</li>
                 <li>Crea tu nueva contraseña</li>
@@ -733,7 +733,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-full text-[14px]">
               Volver al inicio de sesión
             </Button>
-            <p className="text-[13px] text-neutral-500">
+            <p className="text-[13px] text-fg-subtle">
               ¿No recibiste el correo?{' '}
               <button
                 type="button"

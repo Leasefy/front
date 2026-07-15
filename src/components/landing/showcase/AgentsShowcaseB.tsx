@@ -151,7 +151,7 @@ function HeroTileCard({ tile }: { tile: HeroTile }) {
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ type: "spring", stiffness: 320, damping: 26 }}
-      className="group flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-7 transition-colors hover:border-neutral-300 md:p-8"
+      className="group flex h-full flex-col justify-between rounded-2xl border border-border bg-surface p-7 transition-colors hover:border-border-strong md:p-8"
     >
       <div>
         <div className="flex items-start justify-between">
@@ -160,17 +160,17 @@ function HeroTileCard({ tile }: { tile: HeroTile }) {
             <Art />
           </div>
         </div>
-        <h3 className="mt-6 font-heading text-xl font-semibold tracking-tight text-neutral-950">
+        <h3 className="mt-6 font-heading text-xl font-semibold tracking-tight text-fg">
           {tile.name}
         </h3>
-        <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-neutral-500">{tile.desc}</p>
+        <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-fg-muted">{tile.desc}</p>
       </div>
 
-      <div className="mt-7 flex items-baseline gap-3 border-t border-neutral-100 pt-5">
-        <span className="font-mono text-3xl tabular-nums tracking-tight text-neutral-950">
+      <div className="mt-7 flex items-baseline gap-3 border-t border-border-faint pt-5">
+        <span className="font-mono text-3xl tabular-nums tracking-tight text-fg">
           {tile.metricValue}
         </span>
-        <MonoLabel className="text-[12px] tracking-[0.12em] text-neutral-400">
+        <MonoLabel className="text-[12px] tracking-[0.12em] text-fg-subtle">
           {tile.metricLabel}
         </MonoLabel>
       </div>
@@ -183,18 +183,18 @@ function SmallTileCard({ tile }: { tile: Feature & { soft?: boolean } }) {
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ type: "spring", stiffness: 320, damping: 26 }}
-      className={`group flex h-full flex-col rounded-2xl border border-neutral-200 p-6 transition-colors hover:border-neutral-300 ${
-        tile.soft ? "bg-neutral-50" : "bg-white"
+      className={`group flex h-full flex-col rounded-2xl border border-border p-6 transition-colors hover:border-border-strong ${
+        tile.soft ? "bg-surface-muted" : "bg-surface"
       }`}
     >
       <div className="flex items-center justify-between">
         <IconChip Icon={tile.icon} />
-        <ArrowUpRight className="h-4 w-4 text-neutral-300 transition-colors group-hover:text-primary" />
+        <ArrowUpRight className="h-4 w-4 text-fg-subtle transition-colors group-hover:text-primary" />
       </div>
-      <h3 className="mt-5 font-heading text-lg font-semibold tracking-tight text-neutral-950">
+      <h3 className="mt-5 font-heading text-lg font-semibold tracking-tight text-fg">
         {tile.name}
       </h3>
-      <p className="mt-2 text-[14px] leading-relaxed text-neutral-500">{tile.desc}</p>
+      <p className="mt-2 text-[14px] leading-relaxed text-fg-muted">{tile.desc}</p>
     </motion.div>
   );
 }
@@ -207,10 +207,10 @@ export default function AgentsShowcaseB() {
       <div className="container-platform">
         <Reveal>
           <EyebrowPill>Agentes AI</EyebrowPill>
-          <h2 className={`${lpHeading} mt-6 max-w-3xl text-neutral-950`}>
+          <h2 className={`${lpHeading} mt-6 max-w-3xl text-fg`}>
             Tu equipo de agentes AI.
           </h2>
-          <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-neutral-500 md:text-lg">
+          <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-fg-muted md:text-lg">
             Ocho agentes especializados que operan tu inmobiliaria de punta a punta. Cada uno domina
             una parte del ciclo —del primer contacto al cierre de cartera— y trabajan juntos, en
             todos los canales.
@@ -246,7 +246,7 @@ export default function AgentsShowcaseB() {
 
         {/* Footer CTA */}
         <Reveal delay={0.15} className="mt-12 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="max-w-md text-[15px] leading-relaxed text-neutral-500">
+          <p className="max-w-md text-[15px] leading-relaxed text-fg-muted">
             Empiezan a trabajar el día uno. Tú supervisas; ellos ejecutan.
           </p>
           <LpButton href="/auth?mode=register" variant="primary" arrow>

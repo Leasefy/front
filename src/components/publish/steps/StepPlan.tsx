@@ -106,7 +106,7 @@ export function StepPlan() {
                     className={cn(
                       'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0 transition-colors',
                       isSelected
-                        ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
+                        ? 'bg-primary text-white uppercase tracking-wide font-mono'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400',
                     )}
                   >
@@ -221,7 +221,7 @@ export function StepPlan() {
                   >
                     {/* Badge */}
                     {plan.badge && (
-                      <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-[#1A40FF] text-white uppercase tracking-wide font-mono">
+                      <span className="absolute -top-3 right-4 px-3 py-1 text-[11px] font-semibold rounded-full bg-primary text-white uppercase tracking-wide font-mono">
                         {plan.badge}
                       </span>
                     )}
@@ -232,7 +232,7 @@ export function StepPlan() {
                         className={cn(
                           'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200',
                           plan.highlighted
-                            ? 'bg-[#1A40FF] text-white uppercase tracking-wide font-mono'
+                            ? 'bg-primary text-white uppercase tracking-wide font-mono'
                             : isSelected
                               ? 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
                               : 'bg-neutral-100 dark:bg-neutral-800',
@@ -306,7 +306,7 @@ export function StepPlan() {
                         className={cn(
                           'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200',
                           isSelected
-                            ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
+                            ? 'border-primary/30 bg-primary'
                             : plan.highlighted
                               ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40'
                               : 'border-neutral-300 dark:border-neutral-600',
@@ -325,15 +325,15 @@ export function StepPlan() {
             {/* Trust indicator */}
             <div className="flex items-center justify-center gap-6 pt-4 text-xs text-neutral-500 dark:text-neutral-400">
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 Sin compromisos
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 Cancela cuando quieras
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 Pago seguro
               </span>
             </div>

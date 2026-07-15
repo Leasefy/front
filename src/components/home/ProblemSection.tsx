@@ -140,7 +140,7 @@ export function ProblemSection() {
       </div>
 
       {/* Section 2: Stats cards with real people - Meridian style */}
-      <div className="bg-neutral-50 pt-24 md:pt-32 pb-12 md:pb-16">
+      <div className="bg-surface-muted pt-24 md:pt-32 pb-12 md:pb-16">
         <div className="container-platform">
           {/* Section header - centered, powerful */}
           <motion.div
@@ -316,7 +316,7 @@ export function ProblemSection() {
                     whileInView={{ opacity: 0.4, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.1 }}
-                    className="absolute top-0 left-0 w-[160px] bg-white rounded-xl border border-neutral-200 p-3 -rotate-6"
+                    className="absolute top-0 left-0 w-[160px] bg-white rounded-xl border border-border-faint p-3 -rotate-6"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-5 h-5 rounded-full bg-error-100 flex items-center justify-center">
@@ -325,8 +325,8 @@ export function ProblemSection() {
                       <span className="text-[8px] text-muted-foreground/60">Aplicación #1</span>
                     </div>
                     <div className="space-y-1">
-                      <div className="h-1.5 bg-neutral-100 rounded w-full" />
-                      <div className="h-1.5 bg-neutral-100 rounded w-2/3" />
+                      <div className="h-1.5 bg-surface-muted rounded w-full" />
+                      <div className="h-1.5 bg-surface-muted rounded w-2/3" />
                     </div>
                   </motion.div>
 
@@ -336,7 +336,7 @@ export function ProblemSection() {
                     whileInView={{ opacity: 0.7, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 }}
-                    className="absolute top-6 left-6 w-[160px] bg-white rounded-xl border border-neutral-200 p-3 -rotate-3"
+                    className="absolute top-6 left-6 w-[160px] bg-white rounded-xl border border-border-faint p-3 -rotate-3"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-5 h-5 rounded-full bg-error-100 flex items-center justify-center">
@@ -345,8 +345,8 @@ export function ProblemSection() {
                       <span className="text-[8px] text-muted-foreground/80">Aplicación #2</span>
                     </div>
                     <div className="space-y-1">
-                      <div className="h-1.5 bg-neutral-100 rounded w-full" />
-                      <div className="h-1.5 bg-neutral-100 rounded w-3/4" />
+                      <div className="h-1.5 bg-surface-muted rounded w-full" />
+                      <div className="h-1.5 bg-surface-muted rounded w-3/4" />
                     </div>
                   </motion.div>
 
@@ -356,7 +356,7 @@ export function ProblemSection() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.3 }}
-                    className="absolute top-10 left-12 w-[170px] bg-white rounded-xl border border-neutral-200 overflow-hidden"
+                    className="absolute top-10 left-12 w-[170px] bg-white rounded-xl border border-border-faint overflow-hidden"
                   >
                     {/* Header with red stripe */}
                     <div className="h-1 bg-error-500" />
@@ -424,7 +424,7 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="group relative rounded-xl overflow-hidden bg-[#F3EEE4] md:col-span-3 p-6 md:p-8"
+              className="group relative rounded-xl overflow-hidden bg-surface-muted md:col-span-3 p-6 md:p-8"
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
                 {/* UI Illustration Area - Bank statement with debt accumulation */}
@@ -434,7 +434,7 @@ export function ProblemSection() {
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="absolute top-4 left-0 w-[190px] bg-white rounded-xl overflow-hidden border border-neutral-200"
+                    className="absolute top-4 left-0 w-[190px] bg-white rounded-xl overflow-hidden border border-border-faint"
                   >
                     {/* Header */}
                     <div className="bg-[#F8F0E0] dark:bg-[#B7791F]/12 px-4 py-2.5">
@@ -476,7 +476,7 @@ export function ProblemSection() {
                       </div>
 
                       {/* Total debt */}
-                      <div className="mt-3 pt-2 border-t border-neutral-100">
+                      <div className="mt-3 pt-2 border-t border-border-faint">
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] text-muted-foreground">Deuda acumulada:</span>
                           <span className="text-[13px] font-bold text-error-600">$5.0M</span>

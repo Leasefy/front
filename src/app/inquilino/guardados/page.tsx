@@ -44,7 +44,7 @@ export default function GuardadosPage() {
   // Loading state
   if (isOnboardingLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
@@ -53,7 +53,7 @@ export default function GuardadosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="saved" />
         </div>
@@ -62,7 +62,7 @@ export default function GuardadosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -72,10 +72,10 @@ export default function GuardadosPage() {
         >
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
+              <h1 className="text-3xl font-medium text-fg tracking-tight">
                 {t('saved.title')}
               </h1>
-              <p className="mt-2 text-fg-muted dark:text-fg-subtle">
+              <p className="mt-2 text-fg-muted">
                 {displayCount === 0
                   ? (locale === 'es' ? 'Guarda propiedades que te interesen para verlas después' : 'Save properties you like to view them later')
                   : displayCount === 1
@@ -85,7 +85,7 @@ export default function GuardadosPage() {
             </div>
             <Link
               href="/inquilino/explorar"
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
+              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
             >
               <MagnifyingGlass className="w-4 h-4" />
               {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
@@ -100,10 +100,10 @@ export default function GuardadosPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl bg-surface-muted/80 dark:bg-surface/[0.03] p-8 sm:p-12 text-center"
+            className="rounded-xl bg-surface-muted/80 p-8 sm:p-12 text-center"
           >
-            <div className="w-14 h-14 rounded-xl bg-surface dark:bg-surface/[0.06] flex items-center justify-center mx-auto mb-5">
-              <Heart className="w-6 h-6 text-fg-subtle dark:text-fg-muted" />
+            <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
+              <Heart className="w-6 h-6 text-fg-subtle" />
             </div>
             <h2 className="text-base font-semibold text-fg mb-1.5">
               {locale === 'es' ? 'No tienes propiedades guardadas' : 'No saved properties'}
@@ -120,28 +120,28 @@ export default function GuardadosPage() {
             </Button>
 
             {/* Tips */}
-            <div className="mt-10 pt-8 border-t border-border dark:border-border-strong">
-              <p className="text-sm font-medium text-fg dark:text-fg-subtle mb-4">
+            <div className="mt-10 pt-8 border-t border-border">
+              <p className="text-sm font-medium text-fg mb-4">
                 {locale === 'es' ? '¿Cómo guardar propiedades?' : 'How to save properties?'}
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-fg-muted dark:text-fg-subtle">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-fg-muted">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
                     <MagnifyingGlass className="w-4 h-4" />
                   </div>
                   <span>{locale === 'es' ? 'Busca propiedades' : 'Search properties'}</span>
                 </div>
                 <CaretRight className="w-4 h-4 hidden sm:block" />
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
-                    <Heart className="w-4 h-4 text-[#C4503B]" />
+                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-danger" />
                   </div>
                   <span>{locale === 'es' ? 'Toca el corazón' : 'Tap the heart'}</span>
                 </div>
                 <CaretRight className="w-4 h-4 hidden sm:block" />
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface dark:bg-[#2a2a2c] flex items-center justify-center">
-                    <Check className="w-4 h-4 text-[#2C7A53]" />
+                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
+                    <Check className="w-4 h-4 text-success" />
                   </div>
                   <span>{locale === 'es' ? '¡Guardada!' : 'Saved!'}</span>
                 </div>
@@ -162,7 +162,7 @@ export default function GuardadosPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + index * 0.05 }}
-                  className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong hover: transition-all duration-300"
+                  className="group relative overflow-hidden rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300"
                 >
                   {/* Image */}
                   <button
@@ -193,7 +193,7 @@ export default function GuardadosPage() {
                         e.stopPropagation();
                         removeFromWishlist(property.id);
                       }}
-                      className="absolute top-3 right-3 w-9 h-9 rounded-full hover:scale-110 transition-all backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-[#C4503B] group/btn"
+                      className="absolute top-3 right-3 w-9 h-9 rounded-full hover:scale-110 transition-all backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-danger group/btn"
                       title={t('saved.remove')}
                       aria-label={t('saved.remove')}
                       icon={
@@ -212,29 +212,29 @@ export default function GuardadosPage() {
                         onClick={() => handleViewProperty(property)}
                         className="text-left flex-1"
                       >
-                        <h3 className="font-semibold text-fg dark:text-white group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors line-clamp-1">
+                        <h3 className="font-semibold text-fg group-hover:text-primary transition-colors line-clamp-1">
                           {property.title}
                         </h3>
                       </button>
-                      <p className="text-lg font-bold text-fg dark:text-white whitespace-nowrap flex-shrink-0">
+                      <p className="text-lg font-bold text-fg whitespace-nowrap flex-shrink-0">
                         {formatCurrency(property.monthlyRent)}
-                        <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                        <span className="text-xs font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
                       </p>
                     </div>
 
-                    <p className="text-sm text-fg-muted dark:text-fg-subtle flex items-center gap-1.5 mb-3">
+                    <p className="text-sm text-fg-muted flex items-center gap-1.5 mb-3">
                       <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                       {property.neighborhood}, {property.city}
                     </p>
 
-                    <div className="flex items-center gap-2 pt-3 border-t border-border-faint dark:border-border-strong">
-                      <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                    <div className="flex items-center gap-2 pt-3 border-t border-border-faint">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
                         {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
                         {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
                       </span>
-                      <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
+                      <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
                         {property.area} m²
                       </span>
                     </div>
@@ -250,15 +250,15 @@ export default function GuardadosPage() {
               >
                 <Link
                   href="/inquilino/explorar"
-                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-border dark:border-border-strong bg-surface-muted/50 dark:bg-[#1a1a1c]/50 hover:border-[#1A40FF]/30 dark:hover:border-[#1A40FF]/30 hover:bg-[#EEF1FF]/50 dark:hover:bg-[#1A40FF]/20 transition-all group"
+                  className="flex flex-col items-center justify-center h-full min-h-[280px] rounded-xl border-2 border-dashed border-border bg-surface-muted/50 hover:border-primary/30 hover:bg-primary-soft/50 transition-all group"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3 group-hover:bg-[#EEF1FF] dark:group-hover:bg-[#1A40FF]/30 transition-colors">
-                    <Plus className="w-6 h-6 text-fg-subtle group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors" />
+                  <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 group-hover:bg-primary-soft transition-colors">
+                    <Plus className="w-6 h-6 text-fg-subtle group-hover:text-primary transition-colors" />
                   </div>
-                  <p className="text-sm font-medium text-fg-muted dark:text-fg-subtle group-hover:text-[#1A40FF] dark:group-hover:text-[#1A40FF] transition-colors">
+                  <p className="text-sm font-medium text-fg-muted group-hover:text-primary transition-colors">
                     {locale === 'es' ? 'Agregar más' : 'Add more'}
                   </p>
-                  <p className="text-xs text-fg-subtle dark:text-fg-muted mt-1">
+                  <p className="text-xs text-fg-subtle mt-1">
                     {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
                   </p>
                 </Link>
@@ -270,25 +270,25 @@ export default function GuardadosPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-8 rounded-xl bg-gradient-to-br from-[#1A40FF] to-white dark:from-[#1A40FF]/40 dark:to-[#1a1a1c] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 p-6"
+              className="mt-8 rounded-xl bg-primary-soft border border-primary/30 p-6"
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-surface dark:bg-[#1a1a1c] border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-center">
-                    <Heart className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
+                  <div className="w-12 h-12 rounded-xl bg-surface border border-primary/30 flex items-center justify-center">
+                    <Heart className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-fg dark:text-white">
+                    <p className="font-semibold text-fg">
                       {displayCount} {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
                     </p>
-                    <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                    <p className="text-sm text-fg-muted">
                       {locale === 'es' ? '¿Listo para aplicar a alguna?' : 'Ready to apply to one?'}
                     </p>
                   </div>
                 </div>
                 <Link
                   href="/inquilino/explorar"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A40FF] text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
                 >
                   <MagnifyingGlass className="w-4 h-4" />
                   {locale === 'es' ? 'Ver más propiedades' : 'View more properties'}

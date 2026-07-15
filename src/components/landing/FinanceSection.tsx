@@ -36,16 +36,16 @@ export default function FinanceSection() {
           {/* IZQUIERDA — copy + bullets */}
           <Reveal>
             <EyebrowPill>Operación financiera</EyebrowPill>
-            <h2 className={`${lpHeading} mt-7 text-neutral-950`}>
+            <h2 className={`${lpHeading} mt-7 text-fg`}>
               Controla cobros, cartera y{" "}
-              <span className="text-neutral-400">pagos a propietarios</span>
+              <span className="text-fg-subtle">pagos a propietarios</span>
             </h2>
-            <p className="mt-7 max-w-xl text-base leading-relaxed text-neutral-500 md:text-lg">
+            <p className="mt-7 max-w-xl text-base leading-relaxed text-fg-muted md:text-lg">
               Centraliza la operación financiera de tus arriendos: pagos de inquilinos,
               mora, recordatorios, conciliación, comisiones, propietarios y reportes.
             </p>
 
-            <MonoLabel className="mt-10 block tracking-[0.16em] text-neutral-400">
+            <MonoLabel className="mt-10 block tracking-[0.16em] text-fg-subtle">
               Qué resuelve
             </MonoLabel>
             <ul className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3.5 sm:grid-cols-2">
@@ -54,7 +54,7 @@ export default function FinanceSection() {
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-indigo-50">
                     <s.icon className="h-3.5 w-3.5 text-primary" weight="bold" />
                   </span>
-                  <span className="text-[15px] leading-relaxed text-neutral-700">
+                  <span className="text-[15px] leading-relaxed text-fg-muted">
                     {s.label}
                   </span>
                 </li>
@@ -62,22 +62,22 @@ export default function FinanceSection() {
             </ul>
           </Reveal>
 
-          {/* DERECHA — light finance mock (neutral-100 frame, hairline card) */}
+          {/* DERECHA — light finance mock (surface-muted frame, hairline card) */}
           <Reveal delay={0.1}>
-            <div className="rounded-[24px] bg-neutral-100 p-3">
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 md:p-6">
-                <MonoLabel className="block tracking-[0.16em] text-neutral-400">
+            <div className="rounded-[24px] bg-surface-muted p-3">
+              <div className="rounded-2xl border border-border bg-surface p-5 md:p-6">
+                <MonoLabel className="block tracking-[0.16em] text-fg-subtle">
                   Resumen de cartera
                 </MonoLabel>
 
                 {/* Stats */}
-                <div className="mt-5 grid grid-cols-3 gap-4 border-b border-neutral-200 pb-5">
+                <div className="mt-5 grid grid-cols-3 gap-4 border-b border-border pb-5">
                   {STATS.map((s) => (
                     <div key={s.label}>
-                      <p className="text-[11px] leading-tight text-neutral-500">
+                      <p className="text-[11px] leading-tight text-fg-muted">
                         {s.label}
                       </p>
-                      <p className="mt-1.5 font-mono text-[15px] font-medium tabular-nums tracking-tight text-neutral-950">
+                      <p className="mt-1.5 font-mono text-[15px] font-medium tabular-nums tracking-tight text-fg">
                         {s.value}
                       </p>
                     </div>
@@ -91,19 +91,19 @@ export default function FinanceSection() {
                       <div
                         key={i}
                         className={`flex-1 rounded-sm ${
-                          i === BARS.length - 1 ? "bg-primary" : "bg-neutral-200"
+                          i === BARS.length - 1 ? "bg-primary" : "bg-border"
                         }`}
                         style={{ height: `${h}%` }}
                       />
                     ))}
                   </div>
-                  <p className="mt-3 text-xs text-neutral-500">
+                  <p className="mt-3 text-xs text-fg-muted">
                     Recaudo — últimos 12 meses
                   </p>
                 </div>
 
                 {/* Detalle */}
-                <div className="mt-6 space-y-3 border-t border-neutral-200 pt-5">
+                <div className="mt-6 space-y-3 border-t border-border pt-5">
                   {DETAILS.map((d) => (
                     <div
                       key={d.label}
@@ -111,11 +111,11 @@ export default function FinanceSection() {
                     >
                       <span className="flex items-center gap-2.5">
                         <span className={`h-2 w-2 rounded-full ${d.dot}`} />
-                        <span className="text-[13px] text-neutral-700">
+                        <span className="text-[13px] text-fg-muted">
                           {d.label}
                         </span>
                       </span>
-                      <span className="font-mono text-[13px] font-medium tabular-nums text-neutral-950">
+                      <span className="font-mono text-[13px] font-medium tabular-nums text-fg">
                         {d.value}
                       </span>
                     </div>

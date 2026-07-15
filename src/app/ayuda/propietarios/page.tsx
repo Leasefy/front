@@ -313,7 +313,7 @@ function GuideAccordion({ section }: { section: GuideSection }) {
                         key={tipIdx}
                         className="flex items-start gap-2 text-[14px]"
                       >
-                        <CheckCircle className="w-4 h-4 text-[#2C7A53] shrink-0 mt-0.5" />
+                        <CheckCircle className="w-4 h-4 text-success shrink-0 mt-0.5" />
                         <span className="text-foreground">{tip}</span>
                       </li>
                     ))}
@@ -365,8 +365,8 @@ export default function PropietariosGuidePage() {
               </div>
 
               {/* Pro tip */}
-              <div className="flex items-start gap-3 p-4 mb-10 rounded-[18px] bg-[#B7791F]/10 border border-[#B7791F]/30">
-                <Lightbulb className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 mb-10 rounded-[18px] bg-warning-soft border border-warning/30">
+                <Lightbulb className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[14px] font-medium text-foreground">
                     Consejo profesional

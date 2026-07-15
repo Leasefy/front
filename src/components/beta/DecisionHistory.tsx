@@ -1,5 +1,6 @@
 'use client';
 
+import { MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -12,12 +13,12 @@ import type { DecisionEntry } from '@/lib/hooks/useBetaChat';
 // ============================================================================
 
 const CATEGORY_BADGE: Record<string, string> = {
-  emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
-  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  amber: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-  purple: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
-  pink: 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-400',
-  indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-600/15 dark:text-indigo-400',
+  emerald: 'bg-success-soft text-success',
+  blue: 'bg-primary-soft text-primary',
+  amber: 'bg-warning-soft text-warning',
+  purple: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600',
+  pink: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600',
+  indigo: 'bg-primary-soft text-primary',
 };
 
 // ============================================================================
@@ -58,8 +59,8 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
         'w-full text-left p-3 rounded-xl',
         'border transition-colors',
         isResolved
-          ? 'border-emerald-200/60 dark:border-emerald-500/20 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/5'
-          : 'border-amber-200/60 dark:border-amber-500/20 hover:bg-amber-50/50 dark:hover:bg-amber-500/5'
+          ? 'border-success/30 hover:bg-success-soft'
+          : 'border-warning/30 hover:bg-warning-soft'
       )}
     >
       {/* Title + category */}
@@ -80,7 +81,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
       {/* Status line */}
       {isResolved && selectedOption ? (
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
           <span className="text-[12px] text-muted-foreground truncate">
             {selectedOption.label}
           </span>
@@ -92,7 +93,7 @@ function DecisionItem({ entry, onNavigate }: DecisionItemProps) {
         </div>
       ) : (
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
           <span className="text-[12px] text-muted-foreground">
             {decision.options.length} {t('beta.decisions.optionsAvailable')}
           </span>
@@ -134,9 +135,9 @@ export function DecisionHistory() {
       {/* Pending decisions */}
       {pending.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-warning">
             {t('beta.decisions.pending')} ({pending.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {pending.map((entry) => (
               <DecisionItem
@@ -152,9 +153,9 @@ export function DecisionHistory() {
       {/* Resolved decisions */}
       {resolved.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-success">
             {t('beta.decisions.resolved')} ({resolved.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {resolved.map((entry) => (
               <DecisionItem

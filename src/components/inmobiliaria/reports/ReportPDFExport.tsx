@@ -2,6 +2,7 @@
 
 import { FileText } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 
 interface ReportPDFExportProps {
   /** Title shown in the print header */
@@ -25,13 +26,16 @@ export function ReportPDFExport({ title }: ReportPDFExportProps) {
 
   return (
     <>
-      <button
+      <Button
+        variant="secondary"
+        size="sm"
+        hideArrow
         onClick={handleExport}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-neutral-100 dark:bg-neutral-800 text-foreground hover:bg-neutral-200 dark:hover:bg-neutral-700 print:hidden"
+        className="gap-2 print:hidden"
       >
         <FileText className="w-4 h-4" />
         {locale === 'es' ? 'Exportar PDF' : 'Export PDF'}
-      </button>
+      </Button>
 
       {/* Print-specific styles */}
       <style jsx global>{`
@@ -65,8 +69,8 @@ export function ReportPDFExport({ title }: ReportPDFExportProps) {
 
           /* Remove shadows and decorative borders */
           .rounded-xl,
-          .rounded-lg,
-          .rounded-2xl {
+          .rounded-md,
+          .rounded-xl {
             box-shadow: none !important;
           }
 

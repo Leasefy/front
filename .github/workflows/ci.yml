@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Required job: typecheck + unit tests. Fast (~1-2 min incl. install) and
+  # deterministic — no app server, no DB, no secrets required.
+  # ---------------------------------------------------------------------------
+  test:
+    name: Typecheck & Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pnpm is the authoritative package manager for this repo (pnpm-lock.yaml
+      # is committed and all docs use `pnpm`). No `packageManager` field exists,
+      # so the version is pinned explicitly here.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Node 20 LTS — matches devDependency `@types/node@^20` and Next 14.2.x.
+          node-version: 20
+          cache: pnpm
+
+      # @leasefy/cadence is a `file:../cadence` dependency — the private sibling
+      # repo Leasefy/cadence. CI only checks out `front`, so cadence must exist at
+      # ../cadence BEFORE install or `pnpm install` fails with ENOENT (same failure
+      # mode `fix/ci-provision-design-system` fixed for the old @leasefy/ui stub).
+      # Its built `dist/` is committed, so a shallow clone covers the JS itself —
+      # but unlike the old @leasefy/ui stub, cadence's dist/index.js imports real
+      # runtime deps (clsx, tailwind-merge, radix, sonner, phosphor-icons) that are
+      # NOT bundled, so cadence's own node_modules must be populated too or tsc/
+      # vitest fail to resolve them. --ignore-scripts skips esbuild's postinstall
+      # (blocked by pnpm's default build-script policy) — safe here since we only
+      # consume cadence's prebuilt dist, never build it in this workflow.
+      # Requires a `CADENCE_REPO_TOKEN` secret with read access to Leasefy/cadence
+      # (the default GITHUB_TOKEN is scoped to `front` only and cannot read it).
+      - name: Provide @leasefy/cadence (sibling design-system repo)
+        run: |
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
+            ../cadence
+          pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts
+
+      - name: Install dependencies
+        # --frozen-lockfile fails if pnpm-lock.yaml is out of sync with package.json.
+        # The `postinstall` runs `prisma generate`, which only needs the committed
+        # prisma/schema.prisma — no database connection or DATABASE_URL required.
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (tsc --noEmit)
+        # Cheap (~5s) and clean. tsconfig excludes tests/e2e, so this type-checks
+        # app + unit-test source only.
+        run: pnpm exec tsc --noEmit
+
+      - name: Unit tests (vitest)
+        # `pnpm test` === `vitest run` (happy-dom environment).
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
+  # Manual-only E2E job. NOT a required check — opt-in via "Run workflow".
+  #
+  # Why it is not in the default push/PR path:
+  #   - playwright.config.ts has NO `webServer` entry and defaults baseURL to
+  #     http://localhost:3001, expecting an already-running dev server.
+  #   - The panel/* specs require an AUTHENTICATED session (a storageState.json
+  #     fixture), which is NOT committed to the repo.
+  #   - The app boots against Supabase (and some specs expect the agent backend),
+  #     so it needs secrets that are not available to PRs from forks.
+  # Until a committed storageState fixture + the required secrets exist, e2e
+  # cannot run cleanly in CI, so it is gated behind workflow_dispatch and
+  # continue-on-error so a failure here never blocks a merge.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: Playwright E2E (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    env:
+      CI: "true"
+      PLAYWRIGHT_BASE_URL: http://localhost:3001
+      # Provide these as repo/environment secrets before relying on this job:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # See the `test` job: @leasefy/cadence = file:../cadence (private sibling
+      # repo, real runtime deps not bundled in dist/). Needs CADENCE_REPO_TOKEN.
+      - name: Provide @leasefy/cadence (sibling design-system repo)
+        run: |
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
+            ../cadence
+          pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build app
+        run: pnpm build
+
+      - name: Start app and run E2E
+        # Boots `next start` on :3001 (the baseURL), waits for it, then runs the
+        # suite. NOTE: panel/* specs still need a committed storageState.json auth
+        # fixture to pass — add one before treating this job as meaningful.
+        run: |
+          pnpm start -- -p 3001 &
+          npx wait-on http://localhost:3001 --timeout 60000
+          pnpm exec playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

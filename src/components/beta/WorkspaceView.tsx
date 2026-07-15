@@ -14,6 +14,9 @@ import {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
   CheckCircle,
   CircleNotch,
   Circle,
@@ -24,6 +27,8 @@ import {
   ArrowSquareOut,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { Button, Badge } from '@/components/ui';
+import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type {
@@ -46,6 +51,9 @@ const ICON_MAP: Record<string, Icon> = {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
   ArrowSquareOut,
   ListChecks,
 };
@@ -56,24 +64,24 @@ const ICON_MAP: Record<string, Icon> = {
 
 const AGENT_BG: Record<string, string> = {
   emerald:
-    'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
-  blue: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400',
+    'bg-success-soft text-success',
+  blue: 'bg-primary-soft text-primary',
   amber:
-    'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
+    'bg-warning-soft text-warning',
   purple:
-    'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400',
-  pink: 'bg-pink-100 dark:bg-pink-500/15 text-pink-700 dark:text-pink-400',
+    'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+  pink: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
   indigo:
-    'bg-indigo-100 dark:bg-indigo-600/15 text-indigo-700 dark:text-indigo-400',
+    'bg-primary-soft text-primary',
 };
 
 const STATUS_DOT: Record<string, string> = {
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  amber: 'bg-amber-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-  indigo: 'bg-indigo-600',
+  emerald: 'bg-success',
+  blue: 'bg-primary',
+  amber: 'bg-warning',
+  purple: 'bg-neutral-100 dark:bg-neutral-800',
+  pink: 'bg-neutral-100 dark:bg-neutral-800',
+  indigo: 'bg-primary',
 };
 
 // ============================================================================
@@ -123,12 +131,12 @@ function StepItem({
         <div className="relative z-10 flex-shrink-0">
           {step.status === 'completed' ? (
             <CheckCircle
-              className="w-5 h-5 text-emerald-500"
+              className="w-5 h-5 text-success"
               weight="fill"
             />
           ) : step.status === 'active' ? (
             <CircleNotch
-              className="w-5 h-5 text-indigo-500 animate-spin"
+              className="w-5 h-5 text-primary animate-spin"
               weight="bold"
             />
           ) : (
@@ -145,7 +153,7 @@ function StepItem({
             className={cn(
               'w-px flex-1 min-h-[20px]',
               step.status === 'completed'
-                ? 'bg-emerald-300 dark:bg-emerald-500/40'
+                ? 'bg-success-soft'
                 : 'bg-neutral-200 dark:bg-neutral-700'
             )}
           />
@@ -196,49 +204,33 @@ function StepItem({
   );
 }
 
-/** Action button matching the ResponseCard pattern */
+/** Action button matching the ResponseCard pattern — Cadence Button */
 function ActionButton({ action }: { action: ResponseAction }) {
   const ActionIcon = ICON_MAP[action.icon];
-  const isLink = !!action.href;
+  // primary → DS primary pill (drops the old mono-uppercase anti-pattern);
+  // secondary → outline; ghost → ghost.
+  const variant =
+    action.variant === 'primary' ? 'default' : action.variant === 'secondary' ? 'outline' : 'ghost';
 
-  const baseClasses = cn(
-    'inline-flex items-center gap-2',
-    'px-4 py-2 rounded-xl',
-    'text-[13px] font-medium',
-    'transition-all duration-150',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-1',
-    action.variant === 'primary' && [
-      'bg-indigo-600 text-white uppercase tracking-wide font-mono',
-      'hover:bg-indigo-700 active:bg-indigo-700',
-      'shadow-sm',
-    ],
-    action.variant === 'secondary' && [
-      'bg-neutral-100 dark:bg-neutral-800',
-      'text-foreground',
-      'border border-neutral-200 dark:border-neutral-700',
-      'hover:bg-neutral-200/80 dark:hover:bg-neutral-700',
-    ],
-    action.variant === 'ghost' && [
-      'text-muted-foreground',
-      'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-      'hover:text-foreground',
-    ]
+  const content = (
+    <>
+      {ActionIcon && <ActionIcon className="w-4 h-4" weight="duotone" />}
+      {action.label}
+    </>
   );
 
-  if (isLink) {
+  if (action.href) {
     return (
-      <a href={action.href} className={baseClasses}>
-        {ActionIcon && <ActionIcon className="w-4 h-4" weight="duotone" />}
-        {action.label}
-      </a>
+      <Button asChild variant={variant} hideArrow className="gap-2 rounded-xl">
+        <a href={action.href}>{content}</a>
+      </Button>
     );
   }
 
   return (
-    <button type="button" className={baseClasses}>
-      {ActionIcon && <ActionIcon className="w-4 h-4" weight="duotone" />}
-      {action.label}
-    </button>
+    <Button type="button" variant={variant} hideArrow className="gap-2 rounded-xl">
+      {content}
+    </Button>
   );
 }
 
@@ -294,23 +286,22 @@ function MiniChatInput({
           'disabled:opacity-50'
         )}
       />
-      <button
+      <IconButton
         type="button"
+        icon={<PaperPlaneTilt className="w-3.5 h-3.5" weight="fill" />}
         onClick={handleSend}
         disabled={disabled || isEmpty}
+        variant="ghost"
         className={cn(
           'flex-shrink-0',
-          'w-7 h-7 rounded-lg',
-          'flex items-center justify-center',
+          'w-7 h-7 rounded-md',
           'transition-all duration-150',
           disabled || isEmpty
             ? 'text-muted-foreground/40 cursor-not-allowed'
-            : 'text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-700/10 active:scale-95'
+            : 'text-primary hover:bg-primary-soft active:scale-95'
         )}
         aria-label={t('beta.workspace.sendMessage')}
-      >
-        <PaperPlaneTilt className="w-3.5 h-3.5" weight="fill" />
-      </button>
+      />
     </div>
   );
 }
@@ -431,7 +422,7 @@ export function WorkspaceView({
               'transition-colors duration-150',
               'border-b-2',
               mobileTab === tab.key
-                ? 'text-indigo-600 dark:text-indigo-400 border-indigo-500'
+                ? 'text-primary border-primary/30'
                 : 'text-muted-foreground border-transparent hover:text-foreground'
             )}
           >
@@ -441,20 +432,18 @@ export function WorkspaceView({
 
         {/* Close button (mobile) */}
         {onClose && (
-          <button
+          <IconButton
             type="button"
+            icon={<X className="w-4 h-4" weight="bold" />}
             onClick={onClose}
+            variant="ghost"
             className={cn(
-              'flex-shrink-0 w-8 h-8 rounded-lg ml-1',
-              'flex items-center justify-center',
+              'flex-shrink-0 w-8 h-8 rounded-md ml-1',
               'text-muted-foreground hover:text-foreground',
-              'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-              'transition-colors duration-150'
+              'hover:bg-neutral-100 dark:hover:bg-neutral-800'
             )}
             aria-label={t('beta.workspace.close')}
-          >
-            <X className="w-4 h-4" weight="bold" />
-          </button>
+          />
         )}
       </div>
 
@@ -487,7 +476,7 @@ export function WorkspaceView({
           >
             <div className="flex items-center gap-2">
               <ListChecks
-                className="w-4 h-4 text-indigo-500"
+                className="w-4 h-4 text-primary"
                 weight="duotone"
               />
               <span className="text-[13px] font-semibold text-foreground">
@@ -495,18 +484,12 @@ export function WorkspaceView({
               </span>
             </div>
             {totalSteps > 0 && (
-              <span
-                className={cn(
-                  'inline-flex items-center justify-center',
-                  'min-w-[36px] px-2 py-0.5',
-                  'rounded-full text-[11px] font-semibold',
-                  completedCount === totalSteps
-                    ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                    : 'bg-indigo-100 dark:bg-indigo-600/15 text-indigo-700 dark:text-indigo-400'
-                )}
+              <Badge
+                variant={completedCount === totalSteps ? 'success' : 'default'}
+                className="justify-center min-w-[36px] px-2 py-0.5 text-[11px] font-semibold tabular-nums"
               >
                 {completedCount}/{totalSteps}
-              </span>
+              </Badge>
             )}
           </div>
 
@@ -555,20 +538,14 @@ export function WorkspaceView({
                 </h2>
 
                 {/* Response type badge */}
-                <span
-                  className={cn(
-                    'inline-flex items-center',
-                    'px-2 py-0.5 rounded-full',
-                    'text-[10px] font-semibold uppercase tracking-wider',
-                    meta.type === 'actionable'
-                      ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
-                      : 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400'
-                  )}
+                <Badge
+                  variant={meta.type === 'actionable' ? 'warning' : 'default'}
+                  className="px-2 py-0.5 text-[10px] font-semibold"
                 >
                   {meta.type === 'actionable'
                     ? t('beta.workspace.typeActionable')
                     : t('beta.workspace.typeInformative')}
-                </span>
+                </Badge>
 
                 {/* Primary agent badge */}
                 {primaryAgent && (
@@ -599,21 +576,19 @@ export function WorkspaceView({
 
             {/* Close button (desktop) */}
             {onClose && (
-              <button
+              <IconButton
                 type="button"
+                icon={<X className="w-4 h-4" weight="bold" />}
                 onClick={onClose}
+                variant="ghost"
                 className={cn(
                   'hidden md:flex',
-                  'flex-shrink-0 w-8 h-8 rounded-lg',
-                  'items-center justify-center',
+                  'flex-shrink-0 w-8 h-8 rounded-md',
                   'text-muted-foreground hover:text-foreground',
-                  'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-                  'transition-colors duration-150'
+                  'hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 )}
                 aria-label={t('beta.workspace.close')}
-              >
-                <X className="w-4 h-4" weight="bold" />
-              </button>
+              />
             )}
           </div>
 
@@ -668,7 +643,7 @@ export function WorkspaceView({
             )}
           >
             <Sparkle
-              className="w-4 h-4 text-indigo-500"
+              className="w-4 h-4 text-primary"
               weight="fill"
             />
             <span className="text-[13px] font-semibold text-foreground">
@@ -694,7 +669,7 @@ export function WorkspaceView({
                     'max-w-[85%] px-3 py-2 rounded-xl text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? [
-                          'bg-indigo-600 text-white uppercase tracking-wide font-mono',
+                          'bg-primary text-primary-fg',
                           'rounded-br-sm',
                         ]
                       : [

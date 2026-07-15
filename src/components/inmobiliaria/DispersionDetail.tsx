@@ -34,11 +34,12 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@leasefy/cadence';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
-import { getDispersionStatusColor } from '@/lib/types/inmobiliaria';
-import { usePropietarios, useInmobiliariaConfig, propietariosApi } from '@/lib/hooks/useInmobiliaria';
+import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
+import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
-import { downloadExtractoPDF } from '@/lib/utils/generate-extracto-pdf';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -67,13 +68,14 @@ function CopyButton({ text, toastLabel, tooltip }: { text: string; toastLabel: s
   };
 
   return (
-    <button
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={<Copy className="w-4 h-4" />}
       onClick={handleCopy}
-      className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+      aria-label={tooltip}
       title={tooltip}
-    >
-      <Copy className="w-4 h-4" />
-    </button>
+    />
   );
 }
 
@@ -95,7 +97,7 @@ function ContactAction({
     <a
       href={href}
       className={cn(
-        'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+        'inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
         className
       )}
       target="_blank"
@@ -112,11 +114,17 @@ function ContactAction({
  */
 function StatusBadge({ status, label }: { status: DispersionStatus; label: string }) {
   const Icon = STATUS_ICONS[status];
+  const STATUS_VARIANT = {
+    pending: 'warning',
+    processing: 'default',
+    completed: 'success',
+    failed: 'destructive',
+  } as const;
   return (
-    <span className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium', getDispersionStatusColor(status))}>
+    <Badge variant={STATUS_VARIANT[status]} className="gap-1.5">
       <Icon className="w-4 h-4" weight="fill" />
       {label}
-    </span>
+    </Badge>
   );
 }
 
@@ -150,11 +158,11 @@ function TimelineEvent({
           className={cn(
             'w-8 h-8 rounded-full flex items-center justify-center',
             isError
-              ? 'bg-red-100 dark:bg-red-900/30'
+              ? 'bg-danger-soft'
               : isActive
-              ? 'bg-emerald-100 dark:bg-emerald-900/30'
+              ? 'bg-success-soft'
               : date
-              ? 'bg-indigo-100 dark:bg-indigo-900/30'
+              ? 'bg-primary-soft'
               : 'bg-muted'
           )}
         >
@@ -162,11 +170,11 @@ function TimelineEvent({
             className={cn(
               'w-4 h-4',
               isError
-                ? 'text-red-600 dark:text-red-400'
+                ? 'text-danger'
                 : isActive
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-success'
                 : date
-                ? 'text-indigo-600 dark:text-indigo-400'
+                ? 'text-primary'
                 : 'text-muted-foreground'
             )}
             weight={date || isActive || isError ? 'fill' : 'regular'}
@@ -176,7 +184,7 @@ function TimelineEvent({
           <div
             className={cn(
               'w-0.5 flex-1 min-h-[24px]',
-              date ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-muted'
+              date ? 'bg-primary-soft' : 'bg-muted'
             )}
           />
         )}
@@ -188,7 +196,7 @@ function TimelineEvent({
           className={cn(
             'text-sm font-medium',
             isError
-              ? 'text-red-600 dark:text-red-400'
+              ? 'text-danger'
               : date || isActive
               ? 'text-foreground'
               : 'text-muted-foreground'
@@ -265,16 +273,19 @@ export function DispersionDetail({
 
     setIsDownloadingPDF(true);
     try {
-      // Generate extracto data
-      const extracto = await propietariosApi.getExtracto(dispersion.propietarioId, dispersion.month);
-      if (extracto && config) {
-        downloadExtractoPDF(extracto, config, propietario);
-        toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
-          description: t('inmobiliaria.dispersiones.toasts.pdfDownloadedDesc', { name: dispersion.propietarioName }),
-        });
-      } else {
-        toast.error(t('inmobiliaria.dispersiones.toasts.couldNotGenerate'));
-      }
+      const blob = await apiClient.getBlob(`/inmobiliaria/dispersiones/${dispersion.id}/extracto.pdf`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = dispersion.propietarioName.replace(/\s+/g, '-').toLowerCase();
+      a.download = `extracto-${safeName}-${dispersion.month}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
+        description: t('inmobiliaria.dispersiones.toasts.pdfDownloadedDesc', { name: dispersion.propietarioName }),
+      });
     } catch {
       toast.error(t('inmobiliaria.dispersiones.toasts.downloadError'));
     } finally {
@@ -321,13 +332,13 @@ export function DispersionDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <User className="w-4 h-4 text-indigo-600" />
+              <User className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.propietario')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                  <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center">
+                  <User className="w-6 h-6 text-primary" />
                 </div>
                 <div>
                   <p className="font-medium text-foreground">{dispersion.propietarioName}</p>
@@ -352,13 +363,13 @@ export function DispersionDetail({
                     icon={WhatsappLogo}
                     href={`https://wa.me/${propietario.phone.replace(/\D/g, '')}`}
                     label="WhatsApp"
-                    className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400"
+                    className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
                   />
                   <ContactAction
                     icon={Envelope}
                     href={`mailto:${propietario.email}`}
                     label={t('inmobiliaria.dispersiones.detailView.email')}
-                    className="bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400"
+                    className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
                   />
                 </div>
               )}
@@ -373,7 +384,7 @@ export function DispersionDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Bank className="w-4 h-4 text-indigo-600" />
+              <Bank className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.bankAccount')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
@@ -417,7 +428,7 @@ export function DispersionDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <CurrencyCircleDollar className="w-4 h-4 text-indigo-600" />
+              <CurrencyCircleDollar className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.summaryTitle')}
             </h3>
             <div className="grid grid-cols-3 gap-3">
@@ -427,15 +438,15 @@ export function DispersionDetail({
                   {formatCurrency(dispersion.totalCollected)}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-center">
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
-                <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+              <div className="p-4 rounded-xl bg-primary-soft text-center">
+                <p className="text-xs text-primary mb-1">{t('inmobiliaria.dispersiones.detailView.commission')}</p>
+                <p className="text-lg font-bold text-primary">
                   {formatCurrency(dispersion.totalCommission)}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-center">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
-                <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="p-4 rounded-xl bg-success-soft text-center">
+                <p className="text-xs text-success mb-1">{t('inmobiliaria.dispersiones.detailView.net')}</p>
+                <p className="text-lg font-bold text-success">
                   {formatCurrency(dispersion.netToPropietario)}
                 </p>
               </div>
@@ -450,7 +461,7 @@ export function DispersionDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-indigo-600" />
+              <Receipt className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.propertyBreakdown')}
             </h3>
             <ComisionDesglose
@@ -468,7 +479,7 @@ export function DispersionDetail({
             className="space-y-3"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-600" />
+              <Clock className="w-4 h-4 text-primary" />
               {t('inmobiliaria.dispersiones.detailView.history')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
@@ -534,14 +545,14 @@ export function DispersionDetail({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+              className="p-4 rounded-xl bg-success-soft border border-success/30 dark:border-success/40"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  <p className="text-xs text-success font-medium">
                     {t('inmobiliaria.dispersiones.detailView.transferReference')}
                   </p>
-                  <p className="text-sm font-mono font-semibold text-emerald-700 dark:text-emerald-300 mt-0.5">
+                  <p className="text-sm font-mono font-semibold text-success mt-0.5">
                     {dispersion.transferReference}
                   </p>
                 </div>
@@ -556,15 +567,15 @@ export function DispersionDetail({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+              className="p-4 rounded-xl bg-danger-soft border border-danger/30 dark:border-danger/40"
             >
               <div className="flex items-start gap-3">
-                <Warning className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" weight="fill" />
+                <Warning className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" weight="fill" />
                 <div>
-                  <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                  <p className="text-sm font-medium text-danger">
                     {t('inmobiliaria.dispersiones.detailView.transferError')}
                   </p>
-                  <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                  <p className="text-sm text-danger mt-1">
                     {dispersion.failureReason}
                   </p>
                 </div>
@@ -596,28 +607,13 @@ export function DispersionDetail({
             {/* Process button (primary - right) */}
             {isPending && onProcess && (
               <Button
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
+                className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
                 onClick={handleProcess}
                 disabled={isProcessing}
               >
                 {isProcessing ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
+                    <Spinner size="sm" variant="current" />
                     {t('inmobiliaria.dispersiones.detailView.processingAction')}
                   </span>
                 ) : (
@@ -632,28 +628,13 @@ export function DispersionDetail({
             {/* Retry button (failed - right) */}
             {isFailed && onRetry && (
               <Button
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                className="flex-1 bg-warning hover:bg-warning text-white"
                 onClick={handleRetry}
                 disabled={isProcessing}
               >
                 {isProcessing ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
+                    <Spinner size="sm" variant="current" />
                     {t('inmobiliaria.dispersiones.detailView.retrying')}
                   </span>
                 ) : (
@@ -669,28 +650,13 @@ export function DispersionDetail({
           {/* Download PDF button */}
           <Button
             variant="ghost"
-            className="w-full text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+            className="w-full text-primary hover:text-primary dark:hover:text-primary hover:bg-primary-soft dark:hover:bg-primary/20"
             onClick={handleDownloadPDF}
             disabled={isDownloadingPDF}
           >
             {isDownloadingPDF ? (
               <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
+                <Spinner size="sm" variant="current" />
                 {t('inmobiliaria.dispersiones.detailView.downloading')}
               </span>
             ) : (

@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Sparkle,
 } from '@phosphor-icons/react';
+import { Button, Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { BriefingCardSkeleton } from './BetaSkeletons';
@@ -38,30 +39,30 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_LEFT_COLORS: Record<string, string> = {
-  emerald: 'border-l-emerald-400 dark:border-l-emerald-500',
-  blue: 'border-l-blue-400 dark:border-l-blue-500',
-  amber: 'border-l-amber-400 dark:border-l-amber-500',
-  purple: 'border-l-purple-400 dark:border-l-purple-500',
-  pink: 'border-l-pink-400 dark:border-l-pink-500',
-  indigo: 'border-l-indigo-400 dark:border-l-indigo-500',
+  emerald: 'border-l-success',
+  blue: 'border-l-primary',
+  amber: 'border-l-warning',
+  purple: 'border-l-border-strong',
+  pink: 'border-l-border-strong',
+  indigo: 'border-l-primary',
 };
 
 const ICON_COLORS: Record<string, string> = {
-  emerald: 'text-emerald-500 dark:text-emerald-400',
-  blue: 'text-blue-500 dark:text-blue-400',
-  amber: 'text-amber-500 dark:text-amber-400',
-  purple: 'text-purple-500 dark:text-purple-400',
-  pink: 'text-pink-500 dark:text-pink-400',
-  indigo: 'text-indigo-500 dark:text-indigo-400',
+  emerald: 'text-success',
+  blue: 'text-primary',
+  amber: 'text-warning',
+  purple: 'text-fg-muted',
+  pink: 'text-fg-muted',
+  indigo: 'text-primary',
 };
 
 const ACTION_BTN_COLORS: Record<string, string> = {
-  emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-500/20',
-  blue: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20',
-  amber: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20',
-  purple: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 hover:bg-purple-100 dark:hover:bg-purple-500/20',
-  pink: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-500/30 hover:bg-pink-100 dark:hover:bg-pink-500/20',
-  indigo: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-700/20',
+  emerald: 'text-success bg-success-soft border-success/30 hover:opacity-90',
+  blue: 'text-primary bg-primary-soft border-primary/30 hover:opacity-90',
+  amber: 'text-warning bg-warning-soft border-warning/30 hover:opacity-90',
+  purple: 'text-fg-muted bg-surface-muted border-border hover:opacity-90',
+  pink: 'text-fg-muted bg-surface-muted border-border hover:opacity-90',
+  indigo: 'text-primary bg-primary-soft border-primary/30 hover:opacity-90',
 };
 
 // ============================================================================
@@ -103,11 +104,11 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
   return (
     <div
       className={cn(
-        'border border-neutral-200/60 dark:border-border/50',
+        'border border-border',
         'border-l-[3px]',
         borderColor,
-        'rounded-lg overflow-hidden',
-        'bg-white/60 dark:bg-card/60',
+        'rounded-md overflow-hidden',
+        'bg-surface',
         'transition-all duration-200'
       )}
     >
@@ -119,19 +120,19 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
         className={cn(
           'w-full flex items-center gap-2 px-3 py-2.5',
           'text-left text-xs',
-          'hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30',
+          'hover:bg-surface-hover',
           'transition-colors duration-150'
         )}
       >
         {SectionIcon && (
           <SectionIcon className={cn('w-4 h-4 flex-shrink-0', iconColor)} weight="duotone" />
         )}
-        <span className="font-medium text-foreground flex-1 truncate text-[13px]">
+        <span className="font-medium text-fg flex-1 truncate text-sm">
           {section.title}
         </span>
         <CaretDown
           className={cn(
-            'w-3.5 h-3.5 text-muted-foreground flex-shrink-0',
+            'w-3.5 h-3.5 text-fg-muted flex-shrink-0',
             'transition-transform duration-200',
             isExpanded && 'rotate-180'
           )}
@@ -141,7 +142,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
 
       {/* Summary — always visible */}
       <div className="px-3 pb-2">
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-fg-muted leading-relaxed">
           {section.summary}
         </p>
       </div>
@@ -158,8 +159,8 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
             {/* Detail bullets */}
             <ul className="space-y-1.5">
               {section.details.map((detail, idx) => (
-                <li key={idx} className="flex gap-2 text-xs text-muted-foreground leading-relaxed">
-                  <span className="text-muted-foreground/50 mt-0.5 flex-shrink-0">-</span>
+                <li key={idx} className="flex gap-2 text-xs text-fg-muted leading-relaxed">
+                  <span className="text-fg-muted/50 mt-0.5 flex-shrink-0">-</span>
                   <span>{detail}</span>
                 </li>
               ))}
@@ -167,24 +168,23 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
 
             {/* Action button */}
             {section.actionLabel && section.actionContext && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onAction?.(section.id, section.actionContext!);
                 }}
                 className={cn(
-                  'inline-flex items-center gap-1.5',
-                  'px-2.5 py-1.5 rounded-md',
-                  'text-xs font-medium',
-                  'border',
-                  'transition-colors duration-150',
+                  'gap-1.5 px-2.5 py-1.5 h-auto rounded-md',
+                  'text-xs font-medium border',
                   actionBtnColor
                 )}
               >
                 <span>{section.actionLabel}</span>
                 <ArrowRight className="w-3 h-3" weight="bold" />
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -240,27 +240,20 @@ export function BriefingCard({ briefing, onAction, isLoading, className }: Brief
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <p className="text-xs text-muted-foreground font-medium">
+          <p className="text-xs text-fg-muted font-medium">
             {formattedDate}
           </p>
           {briefing.isNew && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1',
-                'px-1.5 py-0.5 rounded-full',
-                'bg-indigo-600/10 text-indigo-500',
-                'text-[10px] font-semibold'
-              )}
-            >
+            <Badge variant="default" className="gap-1 px-1.5 py-0.5 text-[10px] font-semibold">
               <Sparkle className="w-2.5 h-2.5" weight="fill" />
               {t('beta.briefing.new')}
-            </span>
+            </Badge>
           )}
         </div>
-        <p className="text-[13px] text-foreground font-medium leading-snug">
+        <p className="text-sm text-fg font-medium leading-snug">
           {briefing.greeting}
         </p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-fg-muted leading-relaxed">
           {briefing.overallSummary}
         </p>
       </div>

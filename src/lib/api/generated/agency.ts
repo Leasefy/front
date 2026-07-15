@@ -1,0 +1,76 @@
+// Re-exports for the agency / permissions domain.
+// Source: generated/agent.ts
+// Regenerate with: pnpm api:gen (from ~/rent/mvp/)
+//
+// Agency/onboarding/permissions paths in v0.1.2:
+//   GET  /api/agency/{agencyId}/policy
+//   GET  /api/agency/{agencyId}/my-permissions
+//   GET  /api/agency/{agencyId}/experiments
+//   GET  /api/agency/{agencyId}/experiments/{experimentKey}
+//   POST /api/agency/{agencyId}/experiments/{experimentKey}/status
+//   GET  /api/agency/{agencyId}/experiments/{experimentKey}/report
+//   POST /onboarding/start
+//   GET  /onboarding/{token}/resume
+//   POST /onboarding/{token}/agency
+//   POST /onboarding/{token}/members
+//   POST /onboarding/{token}/payment-provider
+//   POST /onboarding/{token}/policy
+//   GET  /onboarding/{token}/habeas-data/presign-url
+//   POST /onboarding/{token}/habeas-data/confirm
+//   POST /onboarding/{token}/complete
+import type { components as AgentComponents } from './agent'
+export type { paths, components, operations } from './agent'
+
+// Convenience aliases for agency/onboarding-specific response types.
+export type MemberPermissionsResponse = AgentComponents['schemas']['MemberPermissionsResponse']
+export type OnboardingStartResponse = AgentComponents['schemas']['OnboardingStartResponse']
+export type OnboardingResumeResponse = AgentComponents['schemas']['OnboardingResumeResponse']
+
+// Session-based onboarding wizard (JWT-gated, no magic-link token) — v0.2.0:
+//   POST /onboarding/session/{sessionId}/agency
+//   POST /onboarding/session/{sessionId}/members
+//   POST /onboarding/session/{sessionId}/payment-provider
+//   POST /onboarding/session/{sessionId}/policy
+//   POST /onboarding/session/{sessionId}/habeas-data/presign-url
+//   POST /onboarding/session/{sessionId}/habeas-data/confirm
+//   POST /onboarding/session/{sessionId}/complete
+//   GET  /onboarding/session/{sessionId}/resume
+// Shares business logic with the magic-link token routes above via the
+// step-core handlers; front-only difference is auth (Bearer JWT vs token
+// query param) and the identity gate (sub === session.startedByUserId).
+export type OnboardingSessionAgencyRequest =
+  AgentComponents['schemas']['OnboardingSessionAgencyRequest']
+export type OnboardingSessionAgencyResponse =
+  AgentComponents['schemas']['OnboardingSessionAgencyResponse']
+export type OnboardingSessionMembersRequest =
+  AgentComponents['schemas']['OnboardingSessionMembersRequest']
+export type OnboardingSessionMembersResponse =
+  AgentComponents['schemas']['OnboardingSessionMembersResponse']
+export type OnboardingSessionPaymentProviderRequest =
+  AgentComponents['schemas']['OnboardingSessionPaymentProviderRequest']
+export type OnboardingSessionPaymentProviderResponse =
+  AgentComponents['schemas']['OnboardingSessionPaymentProviderResponse']
+export type OnboardingSessionPolicyRequest =
+  AgentComponents['schemas']['OnboardingSessionPolicyRequest']
+export type OnboardingSessionPolicyResponse =
+  AgentComponents['schemas']['OnboardingSessionPolicyResponse']
+export type OnboardingSessionHabeasDataPresignRequest =
+  AgentComponents['schemas']['OnboardingSessionHabeasDataPresignRequest']
+export type OnboardingSessionHabeasDataPresignResponse =
+  AgentComponents['schemas']['OnboardingSessionHabeasDataPresignResponse']
+export type OnboardingSessionHabeasDataConfirmRequest =
+  AgentComponents['schemas']['OnboardingSessionHabeasDataConfirmRequest']
+export type OnboardingSessionHabeasDataConfirmResponse =
+  AgentComponents['schemas']['OnboardingSessionHabeasDataConfirmResponse']
+export type OnboardingSessionCompleteResponse =
+  AgentComponents['schemas']['OnboardingSessionCompleteResponse']
+export type OnboardingSessionResumeResponse =
+  AgentComponents['schemas']['OnboardingSessionResumeResponse']
+/** 409 conflict payload — carries the real `currentStep` so the SPA can redirect. */
+export type OnboardingSessionStepConflict =
+  AgentComponents['schemas']['OnboardingSessionStepConflict']
+// `/complete`'s 409 body is a UNION of the shape above and this one (no
+// `requiredStep`, an unordered `missingSteps` list instead) — see
+// onboarding-session.service.ts's header comment for how callers discriminate.
+export type OnboardingSessionCompleteMissingSteps =
+  AgentComponents['schemas']['OnboardingSessionCompleteMissingSteps']

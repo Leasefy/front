@@ -3,7 +3,7 @@
  * Endpoints for candidates, landlord properties, dashboard, and scoring
  */
 
-import { apiClient } from './client';
+import { apiClient, ApiError } from './client';
 import { mapBackendProperty } from './properties.mapper';
 import type {
   BackendCandidate,
@@ -556,16 +556,19 @@ export const landlordApi = {
 
   /** Get notes for a candidate - backend only stores one note per landlord, returned in detail */
   async getNotes(id: string): Promise<BackendCandidateNote[]> {
-    // The note comes embedded in the candidate detail, no separate list endpoint
+    // The note comes embedded in the candidate detail; no separate list endpoint.
     try {
       const detail = await apiClient.get<{ note?: { id: string; content: string; updatedAt: string } }>(`/landlord/applications/${id}`);
       if (detail.note) {
         return [{ id: detail.note.id, content: detail.note.content, createdAt: detail.note.updatedAt }];
       }
-    } catch {
-      // Silently fail
+      return [];
+    } catch (err) {
+      // 404 = application not found or no note exists — legitimate empty state.
+      // Other errors (5xx, network) propagate so the caller (useLandlord) can show an error.
+      if (err instanceof ApiError && err.status === 404) return [];
+      throw err;
     }
-    return [];
   },
 
   // --------------------------------------------------------------------------

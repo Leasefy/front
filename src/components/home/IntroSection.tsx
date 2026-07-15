@@ -22,7 +22,7 @@ export function IntroSection() {
             Arrienda diferente.
             <br />
             Arrienda{" "}
-            <span className="inline-block bg-primary text-white uppercase tracking-wide font-mono px-4 md:px-6 py-1 md:py-2 rounded-lg md:rounded-xl align-middle">
+            <span className="inline-block bg-primary text-primary-fg uppercase tracking-wide font-mono px-4 md:px-6 py-1 md:py-2 rounded-md md:rounded-xl align-middle">
               <span className="block" style={{ transform: 'translateY(-0.06em)' }}>simple</span>
             </span>
           </h2>
@@ -40,7 +40,7 @@ export function IntroSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="group relative rounded-3xl overflow-hidden bg-indigo-50"
+            className="group relative rounded-xl overflow-hidden bg-accent-soft"
           >
             {/* UI Illustration Area */}
             <div className="relative p-8 md:p-12 min-h-[320px] md:min-h-[380px] flex items-center justify-center">
@@ -52,17 +52,17 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: 0.3 }}
-                  className="bg-white rounded-2xl shadow-lg p-4 relative z-10"
+                  className="bg-white rounded-xl p-4 relative z-10"
                 >
                   {/* Property image placeholder */}
-                  <div className="bg-gradient-to-br from-neutral-200 to-neutral-100 rounded-xl h-32 mb-3 relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-surface-muted to-surface rounded-xl h-32 mb-3 relative overflow-hidden">
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-12 h-12 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-12 h-12 text-fg-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
                     </div>
                     {/* Badge */}
-                    <div className="absolute top-2 left-2 bg-primary text-white uppercase tracking-wide font-mono text-[10px] font-medium px-2 py-0.5 rounded-full">
+                    <div className="absolute top-2 left-2 bg-primary text-primary-fg uppercase tracking-wide font-mono text-[10px] font-medium px-2 py-0.5 rounded-full">
                       Disponible
                     </div>
                   </div>
@@ -71,7 +71,7 @@ export function IntroSection() {
                     <div className="text-[11px] text-muted-foreground">Chapinero Alto, Bogotá</div>
                     <div className="text-[13px] font-medium text-foreground">Apartamento moderno</div>
                     <div className="flex items-center justify-between">
-                      <div className="text-[15px] font-semibold text-foreground">$2.500.000<span className="text-[11px] font-normal text-muted-foreground">/mes</span></div>
+                      <div className="text-[15px] font-semibold text-foreground font-mono tabular-nums">$2.500.000<span className="text-[11px] font-normal text-muted-foreground">/mes</span></div>
                       <div className="flex gap-2 text-[10px] text-muted-foreground">
                         <span>2 hab</span>
                         <span>•</span>
@@ -87,7 +87,7 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: 0.2 }}
-                  className="absolute -top-6 left-4 right-4 bg-white rounded-xl shadow-md px-4 py-2.5 flex items-center gap-2 z-20"
+                  className="absolute -top-6 left-4 right-4 bg-white rounded-xl px-4 py-2.5 flex items-center gap-2 z-20"
                 >
                   <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -101,7 +101,7 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.3, delay: 0.5 }}
-                  className="absolute -right-4 top-20 bg-success-500 text-white rounded-xl px-3 py-2 shadow-lg z-20"
+                  className="absolute -right-4 top-20 bg-success-500 text-white rounded-xl px-3 py-2 z-20"
                 >
                   <div className="flex items-center gap-1.5">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -117,7 +117,7 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.3, delay: 0.6 }}
-                  className="absolute -left-2 bottom-16 bg-white rounded-lg px-2.5 py-1.5 shadow-md border border-border z-20"
+                  className="absolute -left-2 bottom-16 bg-white rounded-md px-2.5 py-1.5 border border-border z-20"
                 >
                   <div className="flex items-center gap-1.5">
                     <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,7 +147,7 @@ export function IntroSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="group relative rounded-3xl overflow-hidden bg-[#F3EEE4]"
+            className="group relative rounded-xl overflow-hidden bg-surface-muted"
           >
             {/* UI Illustration Area */}
             <div className="relative p-8 md:p-12 min-h-[320px] md:min-h-[380px] flex items-center justify-center">
@@ -159,13 +159,13 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: 0.3 }}
-                  className="bg-white rounded-2xl shadow-lg p-5 relative z-10"
+                  className="bg-white rounded-xl p-5 relative z-10"
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sand-100 to-sand-200 flex items-center justify-center">
-                        <span className="text-[14px] font-semibold text-neutral-700">MG</span>
+                        <span className="text-[14px] font-semibold text-fg-muted">MG</span>
                       </div>
                       <div>
                         <div className="text-[13px] font-medium text-foreground">María García</div>
@@ -183,7 +183,7 @@ export function IntroSection() {
                       <span className="text-[11px] text-muted-foreground">Capacidad de pago</span>
                       <span className="text-[11px] font-medium text-success-500">Excelente</span>
                     </div>
-                    <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                       <div className="h-full w-[85%] bg-gradient-to-r from-success-500 to-success-500 rounded-full" />
                     </div>
                   </div>
@@ -191,7 +191,7 @@ export function IntroSection() {
                   {/* Stats row */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="text-center">
-                      <div className="text-[16px] font-semibold text-foreground">$4.5M</div>
+                      <div className="text-[16px] font-semibold text-foreground font-mono tabular-nums">$4.5M</div>
                       <div className="text-[9px] text-muted-foreground">Ingresos</div>
                     </div>
                     <div className="text-center border-x border-border">
@@ -199,7 +199,7 @@ export function IntroSection() {
                       <div className="text-[9px] text-muted-foreground">Empleo</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[16px] font-semibold text-success-500">92%</div>
+                      <div className="text-[16px] font-semibold text-success-500 font-mono tabular-nums">92%</div>
                       <div className="text-[9px] text-muted-foreground">Prob. pago</div>
                     </div>
                   </div>
@@ -211,7 +211,7 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.3, delay: 0.5 }}
-                  className="absolute -right-3 -top-2 bg-white rounded-xl px-3 py-2 shadow-lg border border-border z-20"
+                  className="absolute -right-3 -top-2 bg-white rounded-xl px-3 py-2 border border-border z-20"
                 >
                   <div className="flex items-center gap-1.5">
                     <svg className="w-4 h-4 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -227,10 +227,10 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.3, delay: 0.6 }}
-                  className="absolute -left-4 bottom-8 bg-white rounded-xl px-3 py-2.5 shadow-lg border border-border z-20"
+                  className="absolute -left-4 bottom-8 bg-white rounded-xl px-3 py-2.5 border border-border z-20"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-warning-50 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-md bg-warning-50 flex items-center justify-center">
                       <svg className="w-4 h-4 text-warning-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -248,7 +248,7 @@ export function IntroSection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.3, delay: 0.7 }}
-                  className="absolute right-4 -bottom-2 bg-warning-500 text-white rounded-lg px-3 py-1.5 shadow-lg z-20"
+                  className="absolute right-4 -bottom-2 bg-warning-500 text-white rounded-md px-3 py-1.5 z-20"
                 >
                   <div className="flex items-center gap-1.5">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

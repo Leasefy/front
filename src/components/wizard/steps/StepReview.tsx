@@ -3,6 +3,8 @@
 import { useCallback } from 'react';
 import { User, Briefcase, CurrencyDollar, Users, FileText, Pencil, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
@@ -29,6 +31,8 @@ export function StepReview() {
     setAcceptTerms,
     authorizeVerification,
     setAuthorizeVerification,
+    consentText,
+    mode,
   } = useApplication();
   const { personal, employment, income, references, documents } = application;
 
@@ -71,13 +75,13 @@ export function StepReview() {
     <div className="space-y-6">
       {/* Incomplete steps warning */}
       {!allStepsComplete && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
-          <WarningCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-warning-soft border border-warning/30 rounded-sm">
+          <WarningCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-amber-800 font-medium">
+            <p className="text-sm text-warning font-medium">
               Algunos pasos están incompletos
             </p>
-            <p className="text-xs text-amber-700/80 mt-1">
+            <p className="text-xs text-warning/80 mt-1">
               Completa todos los pasos antes de enviar tu aplicación.
             </p>
           </div>
@@ -156,7 +160,7 @@ export function StepReview() {
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Obligaciones:</span>
-            <span className="font-medium text-red-600">
+            <span className="font-medium text-danger">
               {income.monthlyObligations !== undefined
                 ? formatCurrency(income.monthlyObligations)
                 : '-'}
@@ -164,7 +168,7 @@ export function StepReview() {
           </div>
           <div className="border-t border-border pt-2 flex justify-between">
             <span className="text-foreground font-medium">Disponible:</span>
-            <span className="font-semibold text-emerald-600">
+            <span className="font-semibold text-success">
               {income.availableForRent ? formatCurrency(income.availableForRent) : '-'}
             </span>
           </div>
@@ -179,17 +183,17 @@ export function StepReview() {
       >
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="h-4 w-4 text-success" />
             {landlordCount} arrendador{landlordCount !== 1 ? 'es' : ''} anterior
             {landlordCount !== 1 ? 'es' : ''}
           </p>
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="h-4 w-4 text-success" />
             {employmentRefCount} referencia{employmentRefCount !== 1 ? 's' : ''} laboral
             {employmentRefCount !== 1 ? 'es' : ''}
           </p>
           <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="h-4 w-4 text-success" />
             {personalRefCount} referencia{personalRefCount !== 1 ? 's' : ''} personal
             {personalRefCount !== 1 ? 'es' : ''}
           </p>
@@ -205,29 +209,41 @@ export function StepReview() {
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <DocumentStatus
             label="Documento de identidad"
-            uploaded={!!documents.idDocument?.fileName || !!documents.idDocument?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.idDocument?.fileName || !!documents.idDocument?.file)
+              : !!documents.idDocument?.file}
             required
           />
           <DocumentStatus
             label="Extracto bancario"
-            uploaded={!!documents.bankStatement?.fileName || !!documents.bankStatement?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.bankStatement?.fileName || !!documents.bankStatement?.file)
+              : !!documents.bankStatement?.file}
             required
           />
           <DocumentStatus
             label="Contrato laboral"
-            uploaded={!!documents.employmentLetter?.fileName || !!documents.employmentLetter?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.employmentLetter?.fileName || !!documents.employmentLetter?.file)
+              : !!documents.employmentLetter?.file}
           />
           <DocumentStatus
             label="Certificado de ingresos"
-            uploaded={!!documents.incomeProof?.fileName || !!documents.incomeProof?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.incomeProof?.fileName || !!documents.incomeProof?.file)
+              : !!documents.incomeProof?.file}
           />
           <DocumentStatus
             label="Colilla de nómina"
-            uploaded={!!documents.payStub?.fileName || !!documents.payStub?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.payStub?.fileName || !!documents.payStub?.file)
+              : !!documents.payStub?.file}
           />
           <DocumentStatus
             label="Reporte de crédito"
-            uploaded={!!documents.creditReport?.fileName || !!documents.creditReport?.file}
+            uploaded={mode === 'update'
+              ? (!!documents.creditReport?.fileName || !!documents.creditReport?.file)
+              : !!documents.creditReport?.file}
           />
         </div>
       </SummaryCard>
@@ -236,21 +252,11 @@ export function StepReview() {
       <div className="border-t border-border pt-6 space-y-4">
         <div className="space-y-3">
           <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               id="acceptTerms"
               checked={acceptTerms}
-              onChange={(e) => handleTermsChange(e.target.checked)}
-              className={cn(
-                'mt-0.5 h-4 w-4 rounded-sm border border-border',
-                'focus:ring-2 focus:ring-ring focus:ring-offset-0',
-                'checked:bg-primary checked:border-primary',
-                'appearance-none cursor-pointer relative',
-                'after:content-[""] after:absolute after:hidden',
-                'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
-                'after:border-white after:border-r-2 after:border-b-2 after:rotate-45',
-                'checked:after:block'
-              )}
+              onCheckedChange={(c) => handleTermsChange(c === true)}
+              className="mt-0.5"
             />
             <span className="text-sm text-foreground/70">
               Acepto los{' '}
@@ -261,28 +267,36 @@ export function StepReview() {
             </span>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              id="authorizeVerification"
-              checked={authorizeVerification}
-              onChange={(e) => handleAuthorizationChange(e.target.checked)}
-              className={cn(
-                'mt-0.5 h-4 w-4 rounded-sm border border-border',
-                'focus:ring-2 focus:ring-ring focus:ring-offset-0',
-                'checked:bg-primary checked:border-primary',
-                'appearance-none cursor-pointer relative',
-                'after:content-[""] after:absolute after:hidden',
-                'after:left-[5px] after:top-[2px] after:w-[4px] after:h-[8px]',
-                'after:border-white after:border-r-2 after:border-b-2 after:rotate-45',
-                'checked:after:block'
-              )}
-            />
-            <span className="text-sm text-foreground/70">
-              Autorizo la verificación de mis datos personales, laborales y
-              crediticios
-            </span>
-          </label>
+          {/* Habeas-data consent block */}
+          <div className="flex flex-col gap-2">
+            {consentText ? (
+              <div className="border border-border rounded-md bg-muted/30 p-3">
+                <p className="text-xs font-medium text-foreground mb-1.5">
+                  {consentText.title}
+                </p>
+                <div
+                  className="text-xs text-muted-foreground leading-relaxed max-h-32 overflow-y-auto pr-1"
+                  data-testid="consent-text-body"
+                >
+                  {consentText.text}
+                </div>
+              </div>
+            ) : null}
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                id="authorizeVerification"
+                checked={authorizeVerification}
+                onCheckedChange={(c) => handleAuthorizationChange(c === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm text-foreground/70">
+                {consentText
+                  ? 'He leído y autorizo el tratamiento de mis datos personales'
+                  : 'Autorizo la verificación de mis datos personales, laborales y crediticios'}
+              </span>
+            </label>
+          </div>
         </div>
 
         {!acceptTerms || !authorizeVerification ? (
@@ -309,23 +323,21 @@ interface SummaryCardProps {
 function SummaryCard({ icon, title, onEdit, children }: SummaryCardProps) {
   return (
     <div className="bg-card border border-border rounded-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-hover border-b border-border">
         <div className="flex items-center gap-2">
           {icon}
           <h4 className="text-sm font-medium text-foreground">{title}</h4>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={onEdit}
-          className={cn(
-            'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium',
-            'text-muted-foreground hover:text-foreground',
-            'rounded-sm hover:bg-black/5 transition-colors'
-          )}
+          className="text-xs text-muted-foreground hover:text-foreground"
         >
           <Pencil className="h-3.5 w-3.5" />
           Editar
-        </button>
+        </Button>
       </div>
       <div className="px-4 py-3">{children}</div>
     </div>
@@ -346,10 +358,10 @@ function DocumentStatus({ label, uploaded, required }: DocumentStatusProps) {
   return (
     <p className={cn(
       'flex items-center gap-2',
-      !uploaded && required && 'text-red-600'
+      !uploaded && required && 'text-danger'
     )}>
       {uploaded ? (
-        <Check className="h-4 w-4 text-emerald-500" />
+        <Check className="h-4 w-4 text-success" />
       ) : (
         <span className="h-4 w-4 flex items-center justify-center text-xs">
           {required ? '!' : '-'}

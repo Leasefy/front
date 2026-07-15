@@ -4,11 +4,14 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, ArrowLeft, CheckCircle, Circle, WarningCircle, FileText, Buildings, Briefcase, UserPlus, ArrowUpRight, X, Warning, TrashSimple, SpinnerGap, Pencil, Upload, Image as ImageIcon } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, ArrowLeft, CheckCircle, Circle, WarningCircle, FileText, Buildings, Briefcase, UserPlus, ArrowUpRight, X, Warning, TrashSimple, Pencil, Upload, Image as ImageIcon } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // Setup steps definition
 interface SetupStep {
@@ -214,7 +217,7 @@ export default function PerfilPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -224,10 +227,10 @@ export default function PerfilPage() {
           className="mb-8"
         >
           <div>
-            <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            <h1 className="text-3xl font-medium text-fg tracking-tight">
               {t('profile.title')}
             </h1>
-            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-fg-muted">
               {t('profile.subtitle')}
             </p>
           </div>
@@ -240,34 +243,34 @@ export default function PerfilPage() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/50 dark:to-indigo-900/30 p-6">
+          <div className="rounded-xl bg-primary-soft p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               {/* Progress Info */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 flex items-center justify-center shadow-sm">
-                    <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                    <h2 className="text-lg font-semibold text-fg">
                       {t('profile.completion.title')}
                     </h2>
-                    <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                    <p className="text-sm text-primary">
                       {locale === 'es'
                         ? `${completedSteps} de ${totalSteps} pasos completados`
                         : `${completedSteps} of ${totalSteps} steps completed`}
                     </p>
                   </div>
                 </div>
-                <div className="h-2 bg-white/50 dark:bg-white/10 rounded-full overflow-hidden">
+                <div className="h-2 bg-surface/50 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${completionPercentage}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-indigo-600 rounded-full"
+                    className="h-full bg-primary rounded-full"
                   />
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+                <p className="text-xs text-fg-muted mt-2">
                   {completionPercentage === 100
                     ? (locale === 'es' ? '¡Perfil completo! Tienes acceso a todas las funciones.' : 'Profile complete! You have access to all features.')
                     : t('profile.completion.completeFor')}
@@ -293,7 +296,7 @@ export default function PerfilPage() {
                       cy="50"
                       r="40"
                       fill="none"
-                      stroke="#4f46e5"
+                      stroke="#1A40FF"
                       strokeWidth="8"
                       strokeLinecap="round"
                       initial={{ strokeDasharray: '0 251.2' }}
@@ -302,7 +305,7 @@ export default function PerfilPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-neutral-900 dark:text-white">
+                    <span className="text-2xl font-bold text-fg">
                       {completionPercentage}%
                     </span>
                   </div>
@@ -321,43 +324,46 @@ export default function PerfilPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + index * 0.05 }}
                     className={cn(
-                      'rounded-2xl p-4 transition-all',
+                      'rounded-xl p-4 transition-all',
                       step.completed
-                        ? 'bg-white/80 dark:bg-white/10'
-                        : 'bg-white dark:bg-neutral-800/80 border-2 border-dashed border-indigo-200 dark:border-amber-500/50'
+                        ? 'bg-surface/80'
+                        : 'bg-surface border-2 border-dashed border-primary/30'
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0',
                         step.completed
-                          ? 'bg-emerald-100 dark:bg-emerald-900/50'
-                          : 'bg-indigo-100 dark:bg-indigo-900/50'
+                          ? 'bg-success-soft'
+                          : 'bg-primary-soft'
                       )}>
                         {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle className="w-4 h-4 text-success" />
                         ) : (
-                          <Icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <Icon className="w-4 h-4 text-primary" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           'text-sm font-medium truncate',
-                          step.completed ? 'text-neutral-900 dark:text-white' : 'text-indigo-900 dark:text-white'
+                          step.completed ? 'text-fg' : 'text-primary'
                         )}>
                           {step.label}
                         </p>
                         {step.completed ? (
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400">{locale === 'es' ? 'Completado' : 'Completed'}</span>
+                          <span className="text-xs text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
                         ) : step.action ? (
-                          <button
+                          <Button
+                            variant="link"
+                            size="sm"
+                            hideArrow
                             onClick={() => handleVerifyStep(step.id)}
-                            className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                            className="px-0 text-xs text-primary"
                           >
                             {step.action} →
-                          </button>
+                          </Button>
                         ) : (
-                          <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('common.pending')}</span>
+                          <span className="text-xs text-fg-muted">{t('common.pending')}</span>
                         )}
                       </div>
                     </div>
@@ -377,19 +383,20 @@ export default function PerfilPage() {
             className="lg:col-span-1 space-y-6"
           >
             {/* Avatar Card */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden">
-              <div className="relative bg-gradient-to-br from-indigo-500 to-indigo-600 h-28">
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
+              <div className="relative bg-primary-soft h-28">
                 {/* Edit button for avatar section */}
                 {editingSection !== 'avatar' && (
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => {
                       setAvatarPreview(savedAvatar);
                       setEditingSection('avatar');
                     }}
-                    className="absolute top-3 right-3 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
+                    className="absolute top-3 right-3 p-2 bg-surface/20 hover:bg-surface/30 backdrop-blur-sm rounded-full text-white"
+                    aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
+                    icon={<Pencil className="w-4 h-4" />}
+                  />
                 )}
               </div>
               <div className="px-6 pb-6">
@@ -406,7 +413,7 @@ export default function PerfilPage() {
                   {/* Avatar circle with image preview */}
                   <div
                     className={cn(
-                      "w-28 h-28 rounded-full border-4 border-white dark:border-[#1a1a1c] shadow-lg overflow-hidden",
+                      "w-28 h-28 rounded-full border-4 border-surface overflow-hidden",
                       editingSection === 'avatar' && "cursor-pointer"
                     )}
                     onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
@@ -420,18 +427,19 @@ export default function PerfilPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-white dark:bg-indigo-600 flex items-center justify-center text-neutral-900 dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
+                      <div className="w-full h-full bg-surface-muted flex items-center justify-center text-fg uppercase tracking-wide font-mono font-bold text-4xl">
                         {formData.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
                   {editingSection === 'avatar' && (
-                    <button
+                    <IconButton
+                      variant="ghost"
                       onClick={handleAvatarClick}
-                      className="absolute bottom-1 right-1 p-2.5 bg-neutral-900 dark:bg-white rounded-full text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-lg"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
+                      className="absolute bottom-1 right-1 p-2.5 bg-primary rounded-full text-primary-fg hover:bg-primary-hover"
+                      aria-label={locale === 'es' ? 'Cambiar foto' : 'Change photo'}
+                      icon={<Camera className="w-4 h-4" />}
+                    />
                   )}
                 </div>
 
@@ -445,14 +453,14 @@ export default function PerfilPage() {
                     className={cn(
                       "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
                       isDragging
-                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-                        : "border-neutral-200 dark:border-white/20 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-neutral-50 dark:hover:bg-white/5"
+                        ? "border-primary/30 bg-primary-soft"
+                        : "border-border hover:border-primary/30 hover:bg-surface-muted"
                     )}
                   >
                     {avatarPreview ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                             <Image
                               src={avatarPreview}
                               alt="Preview"
@@ -462,35 +470,36 @@ export default function PerfilPage() {
                             />
                           </div>
                           <div className="text-left">
-                            <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                            <p className="text-sm font-medium text-fg">
                               {locale === 'es' ? 'Imagen seleccionada' : 'Image selected'}
                             </p>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            <p className="text-xs text-fg-muted">
                               {locale === 'es' ? 'Haz clic para cambiar' : 'Click to change'}
                             </p>
                           </div>
                         </div>
-                        <button
+                        <IconButton
+                          variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRemoveAvatar();
                           }}
-                          className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-                        >
-                          <TrashSimple className="w-4 h-4" />
-                        </button>
+                          className="p-2 rounded-md text-fg-subtle hover:text-danger hover:bg-danger-soft"
+                          aria-label={locale === 'es' ? 'Quitar imagen' : 'Remove image'}
+                          icon={<TrashSimple className="w-4 h-4" />}
+                        />
                       </div>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-white/10 flex items-center justify-center mx-auto mb-3">
-                          <Upload className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+                        <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-3">
+                          <Upload className="w-6 h-6 text-fg-subtle" />
                         </div>
-                        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <p className="text-sm font-medium text-fg-muted">
                           {isDragging
                             ? (locale === 'es' ? 'Suelta la imagen aquí' : 'Drop the image here')
                             : (locale === 'es' ? 'Subir foto de perfil' : 'Upload profile photo')}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                        <p className="text-xs text-fg-muted mt-1">
                           {locale === 'es' ? 'Arrastra o haz clic • JPG, PNG (máx. 5MB)' : 'Drag or click • JPG, PNG (max 5MB)'}
                         </p>
                       </>
@@ -499,61 +508,68 @@ export default function PerfilPage() {
                 )}
 
                 {editingSection === 'avatar' ? (
-                  <input
+                  <Input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-3 py-2 text-lg font-semibold rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    className="w-full text-lg font-semibold rounded-md bg-surface-muted"
                   />
                 ) : (
-                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{formData.name}</h2>
+                  <h2 className="text-xl font-semibold text-fg">{formData.name}</h2>
                 )}
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                <p className="text-sm text-fg-muted mt-1">
                   {locale === 'es' ? 'Inquilino desde Enero 2024' : 'Tenant since January 2024'}
                 </p>
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
                 {editingSection === 'avatar' && (
                   <div className="flex items-center gap-2 mt-4">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={handleCancelEdit}
-                      className="flex-1 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                      className="flex-1 rounded-md"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      isLoading={isSaving}
                       onClick={() => handleSave('avatar')}
                       disabled={isSaving}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="flex-1 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
                     >
-                      {isSaving ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <FloppyDisk className="w-4 h-4" />}
+                      {!isSaving && <FloppyDisk className="w-4 h-4" />}
                       {t('common.save')}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
                 {/* Quick Stats */}
-                <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-white/10 space-y-4">
+                <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
+                      <Buildings className="w-5 h-5 text-success" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                      <p className="text-sm font-medium text-fg">
                         {locale === 'es' ? '1 Arriendo activo' : '1 Active rental'}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Departamento Providencia</p>
+                      <p className="text-xs text-fg-muted">Departamento Providencia</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                      <p className="text-sm font-medium text-fg">
                         {locale === 'es' ? '12 Pagos realizados' : '12 Payments made'}
                       </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      <p className="text-xs text-fg-muted">
                         {locale === 'es' ? '100% a tiempo' : '100% on time'}
                       </p>
                     </div>
@@ -563,9 +579,9 @@ export default function PerfilPage() {
             </div>
 
             {/* Verification Status Card */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-fg-subtle" />
                 {t('profile.verification.title')}
               </h3>
               <div className="space-y-3">
@@ -575,20 +591,23 @@ export default function PerfilPage() {
                   { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
                   { key: 'employment', label: locale === 'es' ? 'Empleo' : 'Employment', verified: false },
                 ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-100 dark:border-neutral-600">
-                    <span className="text-sm font-medium text-neutral-700 dark:text-white">{item.label}</span>
+                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-muted border border-border-faint">
+                    <span className="text-sm font-medium text-fg">{item.label}</span>
                     {item.verified ? (
-                      <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full">
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
                         <CheckCircle className="w-3.5 h-3.5" />
                         {t('profile.verification.verified')}
                       </span>
                     ) : (
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        hideArrow
                         onClick={() => handleVerifyStep('employment-verify')}
-                        className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full transition-colors"
+                        className="rounded-full px-2.5 py-1 text-xs text-primary bg-primary-soft"
                       >
                         {t('profile.verification.verify')}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -604,119 +623,129 @@ export default function PerfilPage() {
             className="lg:col-span-2 space-y-6"
           >
             {/* Personal Information */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-neutral-900 dark:text-white">{t('profile.personalInfo')}</h3>
+                <h3 className="font-semibold text-fg">{t('profile.personalInfo')}</h3>
                 {editingSection !== 'personal' ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={() => setEditingSection('personal')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    className="gap-1.5 rounded-md text-fg-muted hover:text-fg"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                      className="rounded-md"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      isLoading={isSaving}
                       onClick={() => handleSave('personal')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
                     >
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
                     {t('profile.fullName')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full rounded-xl bg-surface-muted"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                      <User className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.name}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <User className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{formData.name}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
                     {t('profile.idNumber')}
                   </label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                    <Shield className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.rut}</span>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <Shield className="w-4 h-4 text-fg-subtle" />
+                    <span className="text-sm text-fg">{formData.rut}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
                     Email
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full rounded-xl bg-surface-muted"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                      <Envelope className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.email}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <Envelope className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{formData.email}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
                     {t('profile.phone')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full rounded-xl bg-surface-muted"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                      <Phone className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.phone}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <Phone className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{formData.phone}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
                     {t('profile.dateOfBirth')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="date"
                       value={formData.birthDate}
                       onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full rounded-xl bg-surface-muted"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                      <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <Calendar className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">
                         {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
                           day: 'numeric',
                           month: 'long',
@@ -728,20 +757,20 @@ export default function PerfilPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
                     {t('profile.address')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <input
+                    <Input
                       type="text"
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className="w-full rounded-xl bg-surface-muted"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                      <MapPin className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                      <span className="text-sm text-neutral-900 dark:text-white">{formData.address}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <MapPin className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{formData.address}</span>
                     </div>
                   )}
                 </div>
@@ -749,74 +778,86 @@ export default function PerfilPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] p-6">
+            <div className="rounded-xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-neutral-900 dark:text-white">{t('profile.emergencyContact')}</h3>
+                <h3 className="font-semibold text-fg">{t('profile.emergencyContact')}</h3>
                 {editingSection !== 'emergency' ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={() => setEditingSection('emergency')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    className="gap-1.5 rounded-md text-fg-muted hover:text-fg"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {locale === 'es' ? 'Editar' : 'Edit'}
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      hideArrow
                       onClick={handleCancelEdit}
-                      className="px-3 py-1.5 text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                      className="rounded-md"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      isLoading={isSaving}
                       onClick={() => handleSave('emergency')}
                       disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                      className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
                     >
-                      {isSaving ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <FloppyDisk className="w-3.5 h-3.5" />}
+                      {!isSaving && <FloppyDisk className="w-3.5 h-3.5" />}
                       {t('common.save')}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}
                 </label>
                 {editingSection === 'emergency' ? (
-                  <input
+                  <Input
                     type="text"
                     value={formData.emergencyContact}
                     onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    className="w-full rounded-xl bg-surface-muted"
                     placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'}
                   />
                 ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-stone-50 dark:bg-white/5 rounded-xl">
-                    <UserPlus className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-                    <span className="text-sm text-neutral-900 dark:text-white">{formData.emergencyContact}</span>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <UserPlus className="w-4 h-4 text-fg-subtle" />
+                    <span className="text-sm text-fg">{formData.emergencyContact}</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Danger Zone */}
-            <div className="rounded-3xl border border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20 p-6">
-              <h3 className="font-semibold text-red-800 dark:text-red-400 mb-2 flex items-center gap-2">
+            <div className="rounded-xl border border-danger/30 bg-danger-soft/30 p-6">
+              <h3 className="font-semibold text-danger mb-2 flex items-center gap-2">
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+              <p className="text-sm text-fg-muted mb-4">
                 {locale === 'es'
                   ? 'Estas acciones son irreversibles. Por favor, procede con precaución.'
                   : 'These actions are irreversible. Please proceed with caution.'}
               </p>
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={handleOpenDeleteModal}
-                className="px-4 py-2.5 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 rounded-full text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                className="rounded-full border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
               >
                 {t('settings.account.deleteAccount')}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -829,61 +870,62 @@ export default function PerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1a1a1c] rounded-3xl max-w-md w-full p-6"
+            className="bg-surface rounded-xl max-w-md w-full p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <h3 className="text-lg font-semibold text-fg">
                 {locale === 'es' ? 'Verificar empleo' : 'Verify employment'}
               </h3>
-              <button
+              <IconButton
+                variant="ghost"
                 onClick={() => setShowVerifyModal(null)}
-                className="p-2 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-              </button>
+                className="p-2 rounded-full hover:bg-surface-muted"
+                aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
+                icon={<X className="w-5 h-5 text-fg-muted" />}
+              />
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {locale === 'es' ? 'Empresa' : 'Company'}
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder={locale === 'es' ? 'Nombre de tu empresa' : 'Your company name'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full rounded-xl bg-surface-muted"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {locale === 'es' ? 'Cargo' : 'Position'}
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder={locale === 'es' ? 'Tu cargo actual' : 'Your current position'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full rounded-xl bg-surface-muted"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {locale === 'es' ? 'Ingreso mensual (CLP)' : 'Monthly income (CLP)'}
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder={locale === 'es' ? 'Ej: $1.500.000' : 'E.g.: $1,500,000'}
-                  className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full rounded-xl bg-surface-muted"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium text-fg-muted mb-2">
                   {locale === 'es' ? 'Comprobante de ingresos' : 'Proof of income'}
                 </label>
-                <div className="border-2 border-dashed border-neutral-200 dark:border-white/20 rounded-xl p-6 text-center hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-colors cursor-pointer">
-                  <FileText className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/30 transition-colors cursor-pointer">
+                  <FileText className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
+                  <p className="text-sm text-fg-muted">
                     {locale === 'es' ? 'Arrastra o haz clic para subir' : 'Drag or click to upload'}
                   </p>
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                  <p className="text-xs text-fg-subtle mt-1">
                     {locale === 'es' ? 'PDF, JPG o PNG (máx. 5MB)' : 'PDF, JPG or PNG (max. 5MB)'}
                   </p>
                 </div>
@@ -891,21 +933,25 @@ export default function PerfilPage() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={() => setShowVerifyModal(null)}
-                className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                className="flex-1 rounded-full"
               >
                 {t('common.cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                hideArrow
                 onClick={() => {
                   toast.success(locale === 'es' ? 'Verificación enviada. Te notificaremos cuando sea aprobada.' : 'Verification sent. We will notify you when approved.');
                   setShowVerifyModal(null);
                 }}
-                className="flex-1 px-4 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+                className="flex-1 rounded-full bg-primary text-primary-fg hover:bg-primary-hover"
               >
                 {locale === 'es' ? 'Enviar verificación' : 'Submit verification'}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </div>
@@ -918,20 +964,20 @@ export default function PerfilPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1a1a1c] rounded-3xl max-w-md w-full overflow-hidden"
+            className="bg-surface rounded-xl max-w-md w-full overflow-hidden"
           >
             {/* Step 1: Warning */}
             {deleteStep === 1 && (
               <>
                 {/* Header with icon */}
-                <div className="bg-red-50 dark:bg-red-950/30 px-6 py-8 text-center border-b border-red-100 dark:border-red-900/30">
-                  <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center mx-auto mb-4">
-                    <Warning className="w-8 h-8 text-red-600 dark:text-red-400" />
+                <div className="bg-danger-soft px-6 py-8 text-center border-b border-danger/30">
+                  <div className="w-16 h-16 rounded-full bg-danger-soft flex items-center justify-center mx-auto mb-4">
+                    <Warning className="w-8 h-8 text-danger" />
                   </div>
-                  <h3 className="text-xl font-semibold text-red-800 dark:text-red-300">
+                  <h3 className="text-xl font-semibold text-danger">
                     {locale === 'es' ? '¿Eliminar tu cuenta?' : 'Delete your account?'}
                   </h3>
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-danger mt-1">
                     {locale === 'es' ? 'Esta acción es permanente e irreversible' : 'This action is permanent and irreversible'}
                   </p>
                 </div>
@@ -939,7 +985,7 @@ export default function PerfilPage() {
                 <div className="p-6">
                   {/* What will be deleted */}
                   <div className="mb-6">
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white mb-3">
+                    <p className="text-sm font-medium text-fg mb-3">
                       {locale === 'es' ? 'Se eliminará permanentemente:' : 'Will be permanently deleted:'}
                     </p>
                     <ul className="space-y-2">
@@ -956,8 +1002,8 @@ export default function PerfilPage() {
                         'Access to saved properties',
                         'Conversations and messages',
                       ]).map((item, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-                          <TrashSimple className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                        <li key={index} className="flex items-start gap-2 text-sm text-fg-muted">
+                          <TrashSimple className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
                           {item}
                         </li>
                       ))}
@@ -965,14 +1011,14 @@ export default function PerfilPage() {
                   </div>
 
                   {/* Active lease warning */}
-                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 mb-6">
+                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/30 mb-6">
                     <div className="flex items-start gap-3">
-                      <WarningCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                      <WarningCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                        <p className="text-sm font-medium text-warning">
                           {locale === 'es' ? 'Tienes un arriendo activo' : 'You have an active rental'}
                         </p>
-                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                        <p className="text-xs text-warning mt-0.5">
                           {locale === 'es'
                             ? 'Eliminar tu cuenta no cancela tu contrato de arriendo vigente. Deberás contactar a tu arrendador.'
                             : 'Deleting your account does not cancel your current lease agreement. You will need to contact your landlord.'}
@@ -983,18 +1029,22 @@ export default function PerfilPage() {
 
                   {/* Buttons */}
                   <div className="flex gap-3">
-                    <button
+                    <Button
+                      variant="outline"
+                      hideArrow
                       onClick={handleCloseDeleteModal}
-                      className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                      className="flex-1 rounded-full"
                     >
                       {t('common.cancel')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      hideArrow
                       onClick={() => setDeleteStep(2)}
-                      className="flex-1 px-4 py-2.5 bg-red-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+                      className="flex-1 rounded-full"
                     >
                       {locale === 'es' ? 'Continuar' : 'Continue'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </>
@@ -1003,69 +1053,65 @@ export default function PerfilPage() {
             {/* Step 2: Confirmation */}
             {deleteStep === 2 && (
               <>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/10">
-                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border-faint">
+                  <h3 className="text-lg font-semibold text-fg">
                     {locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
                   </h3>
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={handleCloseDeleteModal}
-                    className="p-2 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-                  </button>
+                    className="p-2 rounded-full hover:bg-surface-muted"
+                    aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
+                    icon={<X className="w-5 h-5 text-fg-muted" />}
+                  />
                 </div>
 
                 <div className="p-6">
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                  <p className="text-sm text-fg-muted mb-4">
                     {locale === 'es' ? (
                       <>
                         Para confirmar la eliminación de tu cuenta, escribe{' '}
-                        <span className="font-mono font-semibold text-red-600 dark:text-red-400">ELIMINAR</span>{' '}
+                        <span className="font-mono font-semibold text-danger">ELIMINAR</span>{' '}
                         en el campo de abajo:
                       </>
                     ) : (
                       <>
                         To confirm account deletion, type{' '}
-                        <span className="font-mono font-semibold text-red-600 dark:text-red-400">DELETE</span>{' '}
+                        <span className="font-mono font-semibold text-danger">DELETE</span>{' '}
                         in the field below:
                       </>
                     )}
                   </p>
 
-                  <input
+                  <Input
                     type="text"
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
                     placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
-                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-mono text-center tracking-widest"
+                    className="w-full rounded-xl bg-surface-muted font-mono text-center tracking-widest focus-visible:border-danger/30 focus-visible:ring-danger/20"
                   />
 
                   <div className="flex gap-3 mt-6">
-                    <button
+                    <Button
+                      variant="outline"
+                      hideArrow
                       onClick={() => setDeleteStep(1)}
-                      className="flex-1 px-4 py-2.5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                      className="flex-1 rounded-full"
                     >
                       {locale === 'es' ? 'Volver' : 'Back'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      hideArrow
+                      isLoading={isDeleting}
                       onClick={handleDeleteAccount}
                       disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
-                      className={cn(
-                        'flex-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2',
-                        (locale === 'es' ? deleteConfirmText === 'ELIMINAR' : deleteConfirmText === 'DELETE')
-                          ? 'bg-red-600 text-white uppercase tracking-wide font-mono hover:bg-red-700'
-                          : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-                      )}
+                      className="flex-1 rounded-full"
                     >
-                      {isDeleting ? (
-                        <>
-                          <SpinnerGap className="w-4 h-4 animate-spin" />
-                          {locale === 'es' ? 'Eliminando...' : 'Deleting...'}
-                        </>
-                      ) : (
-                        locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'
-                      )}
-                    </button>
+                      {isDeleting
+                        ? (locale === 'es' ? 'Eliminando...' : 'Deleting...')
+                        : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
+                    </Button>
                   </div>
                 </div>
               </>
@@ -1074,13 +1120,13 @@ export default function PerfilPage() {
             {/* Step 3: Goodbye */}
             {deleteStep === 3 && (
               <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-white/10 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-neutral-600 dark:text-neutral-400" />
+                <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-fg-muted" />
                 </div>
-                <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-fg mb-2">
                   {locale === 'es' ? 'Cuenta eliminada' : 'Account deleted'}
                 </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <p className="text-sm text-fg-muted">
                   {locale === 'es'
                     ? 'Tu cuenta ha sido eliminada exitosamente. Gracias por usar Leasefy.'
                     : 'Your account has been successfully deleted. Thank you for using Leasefy.'}

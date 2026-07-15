@@ -3,16 +3,25 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CaretDown, X } from '@phosphor-icons/react';
+import { Chip } from '@leasefy/cadence';
 
+import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
-import { PropertyMap, MapToggle } from '@/components/map';
+import dynamic from 'next/dynamic';
+import { MapToggle } from '@/components/map';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperties } from '@/lib/hooks/useProperties';
 import { cn } from '@/lib/utils';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
-import type { Property } from '@/lib/types/property';
+
+// Lazy-load the map (maplibre) so its chunk is only fetched when the map panel
+// is actually mounted. ssr:false because PropertyMap touches `window`.
+const PropertyMap = dynamic(
+  () => import('@/components/map').then((m) => ({ default: m.PropertyMap })),
+  { ssr: false, loading: () => <div className="h-full w-full" /> }
+);
 
 const SORT_OPTIONS = [
   { value: 'recommended', label: 'Recomendado' },
@@ -51,14 +60,17 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
   const [aiSearchQuery, setAiSearchQuery] = useState(heroQuery || '');
-  const [isAiSearching, setIsAiSearching] = useState(false);
-  const [showAiResults, setShowAiResults] = useState(false);
-  const [aiResults, setAiResults] = useState<Property[]>([]);
+  // The natural-language query actually applied to the fetch. Feeding it into
+  // apiFilters (below) lets the backend NL parser filter the MAIN grid — one
+  // source of truth — instead of an isolated preview panel.
+  const [appliedQuery, setAppliedQuery] = useState(heroQuery || '');
   const [mapKey, setMapKey] = useState(0);
+  // On desktop the map panel is part of the split-view (always visible via lg:block),
+  // so it should mount there; on mobile it only exists when the user toggles the map.
+  const [isDesktop, setIsDesktop] = useState(false);
   const [sortBy, setSortBy] = useState('recommended');
   const [showSortList, setShowSortList] = useState(false);
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const heroSearchTriggered = useRef(false);
 
   // Filter state
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -70,6 +82,9 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
   // Build API filters from UI state
   const apiFilters = useMemo<PropertyFiltersParams>(() => {
     const filters: PropertyFiltersParams = { limit: 100 };
+    // Natural-language query goes to the backend parser (city/type/price/…).
+    // Explicit pills below still win via the backend's `filters.x ?? parsed.x`.
+    if (appliedQuery.trim()) filters.naturalQuery = appliedQuery.trim();
     if (selectedCity) filters.city = selectedCity;
     if (selectedBedrooms) {
       if (selectedBedrooms !== '4+') {
@@ -85,7 +100,7 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
       filters.maxPrice = max;
     }
     return filters;
-  }, [selectedCity, selectedBedrooms, selectedType, selectedPrice]);
+  }, [appliedQuery, selectedCity, selectedBedrooms, selectedType, selectedPrice]);
 
   // Fetch properties from API
   const { properties: apiProperties, isLoading: isInitialLoading } = useProperties(apiFilters);
@@ -99,37 +114,23 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle AI search via backend naturalQuery
-  const handleAiSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setShowAiResults(false);
-      setAiResults([]);
-      return;
-    }
-
-    setIsAiSearching(true);
-    setShowAiResults(false);
-
-    try {
-      const { propertiesApi } = await import('@/lib/api/properties.service');
-      const result = await propertiesApi.list({ naturalQuery: query, limit: 20 });
-      setAiResults(result.data);
-      setShowAiResults(true);
-    } catch {
-      setAiResults([]);
-      setShowAiResults(true);
-    } finally {
-      setIsAiSearching(false);
-    }
+  // Track the lg breakpoint so we only mount the map (and fetch its chunk) when
+  // the split-view panel is actually visible — never in mobile list-only view.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
   }, []);
 
-  // Auto-trigger AI search from hero query param
-  useEffect(() => {
-    if (heroQuery && !heroSearchTriggered.current) {
-      heroSearchTriggered.current = true;
-      handleAiSearch(heroQuery);
-    }
-  }, [heroQuery, handleAiSearch]);
+  // Apply the natural-language query to the MAIN fetch. Bumping appliedQuery
+  // rebuilds apiFilters → useProperties refetches → the backend parses the text
+  // and returns the filtered list straight into the grid below.
+  const handleAiSearch = useCallback((query: string) => {
+    setAppliedQuery(query.trim());
+  }, []);
 
   // Client-side: handle 4+ bedrooms filter and sorting
   const filteredProperties = useMemo(() => {
@@ -199,38 +200,41 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
     options: { value: string; label: string }[],
     onSelect: (value: string | null) => void
   ) => (
-    <div className="relative z-10">
-      <button
-        type="button"
+    // No `z-10` here: a positioned wrapper with a z-index traps the dropdown in
+    // its own stacking context, capping the `z-[110]` panel at root-z-10 — where
+    // later-DOM card internals (badges z-10, arrows z-20, overlay z-30) paint
+    // over it. Plain `relative` keeps positioning without the trap (matches the
+    // sort dropdown below).
+    <div className="relative">
+      <Chip
+        selected={!!selectedValue}
         onClick={() => setActiveFilter(activeFilter === id ? null : id)}
-        className={cn(
-          'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-sm border transition-colors whitespace-nowrap cursor-pointer',
-          selectedValue
-            ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-            : 'border-border text-foreground/70 hover:border-foreground/30'
-        )}
+        className="whitespace-nowrap"
       >
-        {options.find(o => o.value === selectedValue)?.label || label}
-        <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFilter === id && 'rotate-180')} />
-      </button>
+        <span className="inline-flex items-center gap-1.5">
+          {options.find(o => o.value === selectedValue)?.label || label}
+          <CaretDown className={cn('w-3.5 h-3.5 transition-transform', activeFilter === id && 'rotate-180')} />
+        </span>
+      </Chip>
       {activeFilter === id && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setActiveFilter(null)} />
-          <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm shadow-xl z-[110] min-w-[140px]">
+          <div className="absolute left-0 top-full mt-1 py-1 bg-surface border border-border rounded-md z-[110] min-w-[140px]">
             {options.map((option) => (
-              <button
+              <Button
                 key={option.value}
-                type="button"
+                variant="ghost"
+                hideArrow
                 onClick={() => { onSelect(selectedValue === option.value ? null : option.value); setActiveFilter(null); }}
                 className={cn(
-                  'w-full px-3 py-2 text-left text-sm',
+                  'w-full justify-start h-auto rounded-none px-3 py-2 text-sm font-normal',
                   selectedValue === option.value
                     ? 'bg-black/5 dark:bg-white/10 font-medium'
                     : 'hover:bg-black/5 dark:hover:bg-white/10'
                 )}
               >
                 {option.label}
-              </button>
+              </Button>
             ))}
           </div>
         </>
@@ -283,12 +287,10 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
                 onChange={setAiSearchQuery}
                 onMagnifyingGlass={handleAiSearch}
                 onClear={() => {
-                  setShowAiResults(false);
-                  setAiResults([]);
+                  setAiSearchQuery('');
+                  setAppliedQuery('');
                 }}
-                isMagnifyingGlassing={isAiSearching}
-                results={aiResults}
-                showResults={showAiResults}
+                isMagnifyingGlassing={isInitialLoading}
               />
             </div>
           </div>
@@ -329,52 +331,57 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
 
                 {/* Clear Filters */}
                 {hasActiveFilters && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={clearAllFilters}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="gap-1 text-muted-foreground hover:text-foreground"
                   >
                     <X className="w-3.5 h-3.5" />
                     Limpiar
-                  </button>
+                  </Button>
                 )}
               </div>
 
               {/* Results Count + Sort */}
               <div className="flex items-center justify-between">
                 <p className="text-sm text-foreground/70">
-                  <span className="font-medium text-foreground">{filteredProperties.length}</span> propiedades
+                  <span className="font-medium text-foreground font-mono tabular-nums">{filteredProperties.length}</span> propiedades
                 </p>
 
                 {/* Sort Dropdown */}
                 <div className="relative">
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
                     onClick={() => setShowSortList(!showSortList)}
-                    className="flex items-center gap-2 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                    className="gap-2 px-2 text-sm font-normal text-foreground/70 hover:text-foreground"
                   >
                     <span>{currentSortLabel}</span>
                     <CaretDown className={cn('w-4 h-4 transition-transform', showSortList && 'rotate-180')} />
-                  </button>
+                  </Button>
 
                   {showSortList && (
                     <>
                       <div className="fixed inset-0 z-[100]" onClick={() => setShowSortList(false)} />
-                      <div className="absolute right-0 top-full mt-2 py-1 bg-white dark:bg-neutral-800 border border-border rounded-sm shadow-xl z-[110] min-w-[160px]">
+                      <div className="absolute right-0 top-full mt-2 py-1 bg-surface border border-border rounded-md z-[110] min-w-[160px]">
                         {SORT_OPTIONS.map((option) => (
-                          <button
+                          <Button
                             key={option.value}
-                            type="button"
+                            variant="ghost"
+                            hideArrow
                             onClick={() => { setSortBy(option.value); setShowSortList(false); }}
                             className={cn(
-                              'w-full px-4 py-2 text-left text-sm transition-colors',
+                              'w-full justify-start h-auto rounded-none px-4 py-2 text-sm font-normal',
                               sortBy === option.value
                                 ? 'bg-black/5 dark:bg-white/10 text-foreground font-medium'
                                 : 'text-foreground/70 hover:bg-black/5 dark:hover:bg-white/10'
                             )}
                           >
                             {option.label}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </>
@@ -413,15 +420,17 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
                 )
           )}
         >
-          <PropertyMap
-            key={mapKey}
-            properties={mappableProperties}
-            selectedPropertyId={selectedPropertyId}
-            hoveredPropertyId={hoveredPropertyId}
-            onPropertySelect={handlePropertySelect}
-            onPropertyHover={setHoveredPropertyId}
-            className="h-full w-full"
-          />
+          {(showMap || isDesktop) && (
+            <PropertyMap
+              key={mapKey}
+              properties={mappableProperties}
+              selectedPropertyId={selectedPropertyId}
+              hoveredPropertyId={hoveredPropertyId}
+              onPropertySelect={handlePropertySelect}
+              onPropertyHover={setHoveredPropertyId}
+              className="h-full w-full"
+            />
+          )}
         </div>
       </div>
 

@@ -1,0 +1,181 @@
+/**
+ * Admin panel styles — nest brandbook, ported from the monolith globals.css.
+ * Everything is SCOPED under `.admin-scope` so the component classes
+ * (.btn/.card/.pill/.input/.section-label) never leak into the customer app.
+ * The color/typography utilities (bg-bg, text-fg, font-display, tracking-mono-label)
+ * come from the additive tokens in tailwind.config.ts and are only used inside
+ * admin markup.
+ */
+
+/* ── Satoshi (self-hosted under public/admin/fonts) ───────────────────── */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/admin/fonts/Satoshi-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/admin/fonts/Satoshi-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/admin/fonts/Satoshi-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/admin/fonts/Satoshi-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Scope base: paper canvas + ink text + Inter body ─────────────────── */
+.admin-scope {
+  font-family: var(--font-admin-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'cv05';
+  font-size: 14px;
+  line-height: 1.5;
+  @apply bg-bg text-fg antialiased min-h-screen;
+}
+.admin-scope ::selection {
+  background: rgba(0, 64, 255, 0.18);
+  color: #0a1b2e;
+}
+
+/* Component classes — plain rules with @apply (NO @layer: this file is imported
+   on its own, without @tailwind directives; @apply still resolves from config). */
+/* Section labels */
+.admin-scope .section-label {
+    @apply inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted;
+  }
+  .admin-scope .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: theme('colors.brand');
+  }
+  .admin-scope .section-label-inverted {
+    @apply inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-white/70;
+  }
+  .admin-scope .section-label-inverted::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: theme('colors.white');
+  }
+
+  /* Cards */
+  .admin-scope .card {
+    @apply bg-bg-card border border-bg-border rounded-none;
+  }
+  .admin-scope .card-paper {
+    @apply bg-brand-paper text-brand-ink border border-bg-border rounded-none;
+  }
+  .admin-scope .card-blue {
+    @apply bg-brand text-white border border-brand rounded-none;
+  }
+  .admin-scope .card-night {
+    @apply bg-brand-night text-white border border-brand-night rounded-none;
+  }
+  .admin-scope .card-lila {
+    @apply bg-nestlila text-brand-ink border border-nestlila rounded-none;
+  }
+  .admin-scope .card-yellow {
+    @apply bg-nestyellow text-brand-ink border border-nestyellow rounded-none;
+  }
+
+  /* Buttons */
+  .admin-scope .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 h-10 font-mono text-[11px] uppercase tracking-[0.12em] border border-bg-border-strong bg-bg-surface text-fg hover:bg-bg-hover hover:border-fg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-none;
+  }
+  .admin-scope .btn-primary {
+    @apply bg-brand text-white border-brand hover:bg-[#0033CC] hover:border-[#0033CC];
+  }
+  .admin-scope .btn-danger {
+    @apply bg-transparent text-bad border-bad/40 hover:bg-bad/10 hover:border-bad;
+  }
+  .admin-scope .btn-ghost {
+    @apply bg-transparent border-transparent text-fg-muted hover:text-fg hover:bg-bg-hover;
+  }
+  .admin-scope .btn-on-dark {
+    @apply border-white/30 bg-white/10 text-white hover:bg-white/20 hover:border-white/60;
+  }
+  .admin-scope .btn-inverted {
+    @apply bg-white text-brand-ink border-white hover:bg-brand-paper;
+  }
+
+  /* Inputs */
+  .admin-scope .input {
+    @apply w-full bg-bg-surface border border-bg-border-strong rounded-none px-3 h-10 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:border-brand;
+  }
+  .admin-scope .textarea {
+    @apply w-full bg-bg-surface border border-bg-border-strong rounded-none p-3 text-[13px] leading-relaxed text-fg placeholder:text-fg-subtle font-mono resize-y focus:outline-none focus:border-brand;
+  }
+
+  /* Pills */
+  .admin-scope .pill {
+    @apply inline-flex items-center gap-1 px-2 h-5 rounded-none font-mono text-[10px] uppercase tracking-[0.12em] bg-bg-hover border border-bg-border text-fg-muted;
+  }
+  .admin-scope .pill-ok {
+    @apply bg-ok/10 border-ok/30 text-ok;
+  }
+  .admin-scope .pill-warn {
+    @apply bg-warn/10 border-warn/30 text-warn;
+  }
+  .admin-scope .pill-bad {
+    @apply bg-bad/10 border-bad/30 text-bad;
+  }
+  .admin-scope .pill-info {
+    @apply bg-brand/10 border-brand/30 text-brand;
+  }
+  .admin-scope .pill-solid {
+    @apply bg-brand border-brand text-white;
+  }
+
+  /* Misc */
+  .admin-scope .step-num {
+    @apply inline-flex items-center justify-center w-8 h-8 bg-brand text-white font-mono text-xs;
+  }
+  .admin-scope .h-display {
+    @apply font-display text-display tracking-tight;
+  }
+  .admin-scope .h-display-lg {
+    @apply font-display text-display-lg tracking-tight;
+  }
+  .admin-scope .h-display-xl {
+    @apply font-display text-display-xl tracking-tight;
+  }
+
+/* Tables (plain CSS — scoped) */
+.admin-scope .table-zebra > tbody > tr:nth-child(odd) {
+  background: #fbfbfa;
+}
+.admin-scope .table-zebra > tbody > tr:hover {
+  background: #f0f0ee;
+}
+
+/* ── Decorative patterns (scoped; unique names) ───────────────────────── */
+.admin-scope .pattern-hash {
+  background-image: repeating-linear-gradient(135deg, transparent 0, transparent 6px, rgba(10, 27, 46, 0.06) 6px, rgba(10, 27, 46, 0.06) 7px);
+}
+.admin-scope .pattern-hash-on-blue {
+  background-image: repeating-linear-gradient(135deg, transparent 0, transparent 6px, rgba(255, 255, 255, 0.1) 6px, rgba(255, 255, 255, 0.1) 7px);
+}
+.admin-scope .pattern-dots {
+  background-image: radial-gradient(rgba(0, 64, 255, 0.16) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+.admin-scope .pattern-grid {
+  background-image: linear-gradient(to right, rgba(10, 27, 46, 0.035) 1px, transparent 1px);
+  background-size: 80px 100%;
+}

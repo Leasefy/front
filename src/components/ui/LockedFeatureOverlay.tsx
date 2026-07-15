@@ -1,8 +1,11 @@
 'use client';
 
-import { Lock, ArrowUpRight } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import {
+  LockedFeatureOverlay as CadenceLockedFeatureOverlay,
+  LockedBadge as CadenceLockedBadge,
+} from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 
 interface LockedFeatureOverlayProps {
   title: string;
@@ -16,8 +19,14 @@ interface LockedFeatureOverlayProps {
 }
 
 /**
- * Overlay for features locked behind a subscription plan.
- * Wraps content with blur effect and shows upgrade CTA.
+ * Overlay for features locked behind a subscription plan — thin wrapper over
+ * the Cadence `LockedFeatureOverlay` (warm card, neutral lock tile + duotone
+ * LockSimple, frosted veil on the `blur` variant). The upgrade CTA is rendered
+ * into the DS `action` slot as a Cadence primary pill `Button` (cobalt +
+ * auto ArrowUpRight) that navigates via next/link.
+ *
+ * Public API (title/description/upgradeHref/upgradeLabel/variant/children/
+ * className) is preserved.
  */
 export function LockedFeatureOverlay({
   title,
@@ -29,46 +38,27 @@ export function LockedFeatureOverlay({
   className,
 }: LockedFeatureOverlayProps) {
   return (
-    <div className={cn('relative', className)}>
-      {/* Blurred content behind */}
-      {children && variant === 'blur' && (
-        <div className="blur-[6px] select-none pointer-events-none opacity-50" aria-hidden>
-          {children}
-        </div>
-      )}
-
-      {/* Overlay */}
-      <div
-        className={cn(
-          'flex flex-col items-center justify-center text-center px-6 py-8',
-          variant === 'blur' ? 'absolute inset-0 z-10' : ''
-        )}
-      >
-        <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-3">
-          <Lock className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
-        </div>
-        <p className="text-sm font-semibold text-foreground mb-1">{title}</p>
-        <p className="text-xs text-muted-foreground max-w-xs mb-4">{description}</p>
-        <Link
-          href={upgradeHref}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono uppercase tracking-wide hover:bg-primary/85 transition-colors"
-        >
-          {upgradeLabel}
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-    </div>
+    <CadenceLockedFeatureOverlay
+      title={title}
+      description={description}
+      variant={variant}
+      className={className}
+      action={
+        <Button asChild size="sm">
+          <Link href={upgradeHref}>{upgradeLabel}</Link>
+        </Button>
+      }
+    >
+      {children}
+    </CadenceLockedFeatureOverlay>
   );
 }
 
 /**
- * Small inline lock badge for table cells and compact UI elements
+ * Small inline lock badge for table cells and compact UI elements.
+ * Wraps the Cadence `LockedBadge` (mono uppercase neutral tag); keeps the
+ * legacy default label of "Pro".
  */
 export function LockedBadge({ label }: { label?: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-[10px] font-medium">
-      <Lock className="w-3 h-3" />
-      {label || 'Pro'}
-    </span>
-  );
+  return <CadenceLockedBadge label={label || 'Pro'} />;
 }

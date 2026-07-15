@@ -8,16 +8,29 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@leasefy/cadence';
 import { useMyApplications } from '@/lib/hooks/useApplications';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 
 // Document type labels and icons
 const DOC_TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: typeof FileText }> = {
+  // Legacy lowercase keys (kept for back-compat)
   id_document: { label: 'Documento de identidad', labelEn: 'ID Document', icon: IdentificationCard },
   income_proof: { label: 'Comprobante de ingresos', labelEn: 'Income Proof', icon: Money },
   employment_letter: { label: 'Carta laboral', labelEn: 'Employment Letter', icon: Briefcase },
   bank_statements: { label: 'Extractos bancarios', labelEn: 'Bank Statements', icon: Bank },
   credit_report: { label: 'Reporte crediticio', labelEn: 'Credit Report', icon: FileText },
+  // Canonical UPPER_SNAKE backend keys
+  ID_DOCUMENT: { label: 'Documento de identidad', labelEn: 'ID Document', icon: IdentificationCard },
+  INCOME_PROOF: { label: 'Comprobante de ingresos', labelEn: 'Income Proof', icon: Money },
+  EMPLOYMENT_LETTER: { label: 'Carta laboral', labelEn: 'Employment Letter', icon: Briefcase },
+  BANK_STATEMENT: { label: 'Extracto bancario', labelEn: 'Bank Statement', icon: Bank },
+  PAY_STUB: { label: 'Desprendible de nómina', labelEn: 'Pay Stub', icon: Money },
+  CREDIT_REPORT: { label: 'Reporte crediticio', labelEn: 'Credit Report', icon: FileText },
+  OTHER: { label: 'Otro documento', labelEn: 'Other Document', icon: FileText },
 };
 
 const ITEMS_PER_PAGE = 6;
@@ -128,8 +141,8 @@ export default function DocumentosPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
   }
@@ -137,7 +150,7 @@ export default function DocumentosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="documents" />
         </div>
@@ -146,7 +159,7 @@ export default function DocumentosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -154,10 +167,10 @@ export default function DocumentosPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('documents.title')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted">
             {t('documents.subtitle')}
           </p>
         </motion.header>
@@ -170,43 +183,43 @@ export default function DocumentosPage() {
           className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8"
         >
           {/* Total */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <FolderOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <FolderOpen className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Total</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-primary mb-1">Total</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {documents.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('nav.documents')}</p>
+            <p className="text-sm text-fg-muted mt-2">{t('nav.documents')}</p>
           </div>
 
           {/* Verified */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-success" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+            <p className="text-sm text-fg-muted mb-1">
               {locale === 'es' ? 'Verificados' : 'Verified'}
             </p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {verifiedCount}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Aprobados' : 'Approved'}
             </p>
           </div>
 
           {/* Pending */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <Clock className="w-5 h-5 text-warning" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('common.pending')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{t('common.pending')}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {pendingCount}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'En revisión' : 'Under review'}
             </p>
           </div>
@@ -221,20 +234,20 @@ export default function DocumentosPage() {
         >
           {/* Search */}
           <div className="relative flex-1">
-            <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-            <input
+            <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+            <Input
               type="text"
               placeholder={locale === 'es' ? 'Buscar documento...' : 'Search document...'}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               aria-label={locale === 'es' ? 'Buscar documento' : 'Search document'}
-              className="w-full pl-12 pr-4 py-3 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
+              className="w-full pl-12 pr-4 rounded-full bg-surface"
             />
           </div>
 
           {/* Type Filter Pills */}
           {filterCategories.length > 1 && (
-            <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit overflow-x-auto">
+            <div className="flex items-center gap-1 p-1 bg-surface-muted rounded-full w-fit overflow-x-auto">
               {filterCategories.map((cat) => {
                 const IconComponent = cat.icon;
                 return (
@@ -244,8 +257,8 @@ export default function DocumentosPage() {
                     className={cn(
                       'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap',
                       selectedType === cat.value
-                        ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                        ? 'bg-surface text-fg'
+                        : 'text-fg-muted hover:text-fg'
                     )}
                   >
                     <IconComponent className="w-4 h-4" />
@@ -264,10 +277,10 @@ export default function DocumentosPage() {
           transition={{ delay: 0.3 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+            <h2 className="text-xl font-semibold text-fg">
               {t('nav.documents')}
             </h2>
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">
+            <span className="text-sm text-fg-muted">
               {filteredDocuments.length} {locale === 'es'
                 ? (filteredDocuments.length !== 1 ? 'documentos' : 'documento')
                 : (filteredDocuments.length !== 1 ? 'documents' : 'document')}
@@ -297,20 +310,20 @@ export default function DocumentosPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ delay: index * 0.05 }}
-                        className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden"
                       >
                         {/* Document Header */}
                         <div className="p-5">
                           <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                              <Icon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+                            <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center">
+                              <Icon className="w-6 h-6 text-fg-muted" />
                             </div>
                             <span
                               className={cn(
                                 'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
                                 doc.verified
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-amber-100 text-amber-700'
+                                  ? 'bg-success-soft text-success'
+                                  : 'bg-warning-soft text-warning'
                               )}
                             >
                               {doc.verified ? (
@@ -321,21 +334,21 @@ export default function DocumentosPage() {
                             </span>
                           </div>
 
-                          <h3 className="font-semibold text-neutral-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          <h3 className="font-semibold text-fg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                             {getDocLabel(doc.type)}
                           </h3>
 
                           <div className="space-y-1.5">
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+                            <p className="text-xs text-fg-muted flex items-center gap-1.5 truncate">
                               <FileText className="w-3 h-3 flex-shrink-0" />
                               {doc.fileName}
                             </p>
                             <div className="flex items-center justify-between">
-                              <p className="text-xs text-neutral-400 flex items-center gap-1.5">
+                              <p className="text-xs text-fg-subtle flex items-center gap-1.5">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(doc.createdAt)}
                               </p>
-                              <span className="text-xs text-neutral-400">
+                              <span className="text-xs text-fg-subtle">
                                 {formatSize(doc.size)}
                               </span>
                             </div>
@@ -343,21 +356,23 @@ export default function DocumentosPage() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center border-t border-neutral-100 dark:border-neutral-700">
-                          <button
+                        <div className="flex items-center border-t border-border-faint">
+                          <Button
+                            variant="ghost"
+                            hideArrow
                             onClick={() => setViewingDocument(doc)}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted hover:text-primary"
                           >
                             <Eye className="w-4 h-4" />
                             {t('documents.view')}
-                          </button>
-                          <div className="w-px h-8 bg-neutral-100 dark:bg-neutral-700" />
+                          </Button>
+                          <div className="w-px h-8 bg-surface-muted" />
                           <a
                             href={doc.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             download
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-[#2a2a2c] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted hover:bg-surface-muted hover:text-primary transition-colors"
                           >
                             <Download className="w-4 h-4" />
                             {t('documents.download')}
@@ -372,56 +387,61 @@ export default function DocumentosPage() {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8">
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className={cn(
-                      'p-2 rounded-full transition-all',
+                      'p-2 rounded-full',
                       currentPage === 1
-                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle cursor-not-allowed'
+                        : 'text-fg-muted hover:bg-surface-muted'
                     )}
-                  >
-                    <CaretLeft className="w-5 h-5" />
-                  </button>
+                    aria-label={locale === 'es' ? 'Página anterior' : 'Previous page'}
+                    icon={<CaretLeft className="w-5 h-5" />}
+                  />
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
+                    <Button
                       key={page}
+                      variant="ghost"
+                      hideArrow
                       onClick={() => setCurrentPage(page)}
+                      aria-current={currentPage === page ? 'page' : undefined}
                       className={cn(
-                        'w-10 h-10 rounded-full text-sm font-medium transition-all',
+                        'w-10 h-10 rounded-full p-0 text-sm font-medium',
                         currentPage === page
-                          ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                          ? 'bg-primary text-primary-fg'
+                          : 'text-fg-muted hover:bg-surface-muted'
                       )}
                     >
                       {page}
-                    </button>
+                    </Button>
                   ))}
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className={cn(
-                      'p-2 rounded-full transition-all',
+                      'p-2 rounded-full',
                       currentPage === totalPages
-                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle cursor-not-allowed'
+                        : 'text-fg-muted hover:bg-surface-muted'
                     )}
-                  >
-                    <CaretRight className="w-5 h-5" />
-                  </button>
+                    aria-label={locale === 'es' ? 'Página siguiente' : 'Next page'}
+                    icon={<CaretRight className="w-5 h-5" />}
+                  />
                 </div>
               )}
             </>
           ) : (
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-white dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <FileText className="w-8 h-8 text-neutral-400" />
+            <div className="rounded-xl bg-surface-muted p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-fg-subtle" />
               </div>
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">
+              <h3 className="font-semibold text-fg mb-2">
                 {t('documents.noDocuments')}
               </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+              <p className="text-sm text-fg-muted max-w-sm mx-auto">
                 {locale === 'es' ? 'Intenta ajustar los filtros o el término de búsqueda' : 'Try adjusting the filters or search term'}
               </p>
             </div>
@@ -453,19 +473,19 @@ export default function DocumentosPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="relative bg-white dark:bg-[#1a1a1c] w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-xl flex flex-col overflow-hidden"
+              className="relative bg-surface w-full max-w-4xl max-h-[90vh] rounded-xl flex flex-col overflow-hidden"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-neutral-700">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-[#2a2a2c] flex items-center justify-center">
-                    {(() => { const DocIcon = getDocIcon(viewingDocument.type); return <DocIcon className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />; })()}
+                  <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center">
+                    {(() => { const DocIcon = getDocIcon(viewingDocument.type); return <DocIcon className="w-6 h-6 text-fg-muted" />; })()}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-neutral-900 dark:text-white">
+                    <h3 className="font-semibold text-fg">
                       {getDocLabel(viewingDocument.type)}
                     </h3>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    <p className="text-sm text-fg-muted">
                       {viewingDocument.fileName} · {formatDate(viewingDocument.createdAt)} · {formatSize(viewingDocument.size)}
                     </p>
                   </div>
@@ -476,43 +496,44 @@ export default function DocumentosPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     download
-                    className="flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-fg rounded-full text-sm font-medium hover:bg-primary-hover transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     {t('documents.download')}
                   </a>
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => setViewingDocument(null)}
-                    className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-[#2a2a2c] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                    className="p-2 rounded-full hover:bg-surface-muted text-fg-muted hover:text-fg"
+                    aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
+                    icon={<X className="w-5 h-5" />}
+                  />
                 </div>
               </div>
 
               {/* Document Preview Area */}
-              <div className="flex-1 bg-stone-50 dark:bg-[#0f0f10] p-6 overflow-auto">
-                <div className="bg-white dark:bg-[#1a1a1c] h-full rounded-2xl shadow-sm flex items-center justify-center min-h-[400px]">
+              <div className="flex-1 bg-surface-muted p-6 overflow-auto">
+                <div className="bg-surface h-full rounded-xl flex items-center justify-center min-h-[400px]">
                   {viewingDocument.mimeType?.startsWith('image/') ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={viewingDocument.url}
                       alt={getDocLabel(viewingDocument.type)}
-                      className="max-w-full max-h-[60vh] rounded-lg object-contain"
+                      className="max-w-full max-h-[60vh] rounded-md object-contain"
                     />
                   ) : viewingDocument.mimeType === 'application/pdf' ? (
                     <iframe
                       src={viewingDocument.url}
-                      className="w-full h-full min-h-[500px] rounded-lg"
+                      className="w-full h-full min-h-[500px] rounded-md"
                       title={getDocLabel(viewingDocument.type)}
                     />
                   ) : (
                     <div className="text-center p-8">
-                      <FileText className="w-16 h-16 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-                      <p className="text-lg font-medium text-neutral-900 dark:text-white mb-2">
+                      <FileText className="w-16 h-16 text-fg-subtle mx-auto mb-4" />
+                      <p className="text-lg font-medium text-fg mb-2">
                         {viewingDocument.fileName}
                       </p>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+                      <p className="text-sm text-fg-muted mb-4">
                         {viewingDocument.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'} · {formatSize(viewingDocument.size)}
                       </p>
                       <a
@@ -520,7 +541,7 @@ export default function DocumentosPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         download
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium transition-colors"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:opacity-90 text-white rounded-full text-sm font-medium transition-colors"
                       >
                         <Download className="w-4 h-4" />
                         {locale === 'es' ? 'Descargar archivo' : 'Download file'}

@@ -6,12 +6,20 @@ import {
   MagnifyingGlass,
   Funnel,
   X,
-  CaretDown,
   CalendarBlank,
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button, Input } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { IconButton, Chip } from '@leasefy/cadence';
 import type { DispersionStatus } from '@/lib/types/inmobiliaria';
 
 export interface DispersionFiltersState {
@@ -76,7 +84,6 @@ export function DispersionFilters({
 }: DispersionFiltersProps) {
   const { t, formatDate } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
   // Debounced search
@@ -121,63 +128,49 @@ export function DispersionFilters({
     setSearchInput('');
   }, [recentMonths, filters.month, onFiltersChange]);
 
-  // Get labels for current selections
-  const getMonthLabel = () => {
-    const month = recentMonths.find((m) => m.value === filters.month);
-    return month?.label || t('inmobiliaria.dispersiones.filtersPanel.selectMonth');
-  };
-
-  const getPropietarioLabel = () => {
-    if (filters.propietarioId === 'all') return t('inmobiliaria.dispersiones.filtersPanel.all');
-    const propietario = propietarios.find((p) => p.id === filters.propietarioId);
-    return propietario?.name || t('inmobiliaria.dispersiones.filtersPanel.all');
-  };
-
   return (
     <div className="relative">
       {/* Search and Filters Toggle - Main Row */}
       <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+          <Input
             type="text"
             placeholder={t('inmobiliaria.dispersiones.filtersPanel.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+            className="w-full pl-10 pr-4"
           />
           {searchInput && (
-            <button
+            <IconButton
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setSearchInput('');
                 updateFilter('search', '');
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+              icon={<X className="w-4 h-4 text-muted-foreground" />}
+            />
           )}
         </div>
 
         {/* Filters Toggle */}
-        <button
+        <Chip
+          selected={showFilters || activeFiltersCount > 0}
           onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-medium',
-            showFilters || activeFiltersCount > 0
-              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-              : 'border-border bg-background text-muted-foreground hover:text-foreground hover:border-foreground/30'
-          )}
+          icon={<Funnel className="w-4 h-4" />}
+          aria-expanded={showFilters}
         >
-          <Funnel className="w-4 h-4" />
-          <span>{t('inmobiliaria.dispersiones.filtersPanel.filtersButton')}</span>
+          {t('inmobiliaria.dispersiones.filtersPanel.filtersButton')}
           {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-bold min-w-[20px] text-center">
+            <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold min-w-[20px] text-center tabular-nums">
               {activeFiltersCount}
             </span>
           )}
-        </button>
+        </Chip>
       </div>
 
       {/* Filters Panel (collapsible) */}
@@ -194,46 +187,26 @@ export function DispersionFilters({
               {/* Row 1: Month Selector + Status Tabs */}
               <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
                 {/* Month Selector */}
-                <div className="relative shrink-0">
+                <div className="shrink-0">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.dispersiones.filtersPanel.monthLabel')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'month' ? null : 'month')}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-background text-foreground hover:border-foreground/30 transition-all text-sm"
+                  <Select
+                    value={filters.month}
+                    onValueChange={(value) => updateFilter('month', value)}
                   >
-                    <CalendarBlank className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium capitalize min-w-[120px]">{getMonthLabel()}</span>
-                    <CaretDown className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'month' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-56 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-64 overflow-y-auto"
-                      >
-                        {recentMonths.map((month) => (
-                          <button
-                            key={month.value}
-                            onClick={() => {
-                              updateFilter('month', month.value);
-                              setOpenDropdown(null);
-                            }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-lg text-left text-sm capitalize transition-colors',
-                              filters.month === month.value
-                                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            {month.label}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="gap-2 capitalize">
+                      <CalendarBlank className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <SelectValue placeholder={t('inmobiliaria.dispersiones.filtersPanel.selectMonth')} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {recentMonths.map((month) => (
+                        <SelectItem key={month.value} value={month.value} className="capitalize">
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Status Tabs */}
@@ -241,34 +214,30 @@ export function DispersionFilters({
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.dispersiones.filtersPanel.statusLabel')}
                   </label>
-                  <div className="flex items-center gap-1 p-1 rounded-lg bg-muted overflow-x-auto">
+                  <div className="flex items-center gap-1.5 overflow-x-auto">
                     {STATUS_TAB_VALUES.map((tabValue) => {
                       const count = statusCounts[tabValue] || 0;
                       const isActive = filters.status === tabValue;
 
                       return (
-                        <button
+                        <Chip
                           key={tabValue}
+                          selected={isActive}
                           onClick={() => updateFilter('status', tabValue)}
-                          className={cn(
-                            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all',
-                            isActive
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          )}
+                          className="whitespace-nowrap"
                         >
                           {t(STATUS_TAB_KEYS[tabValue])}
                           {count > 0 && (
                             <span className={cn(
                               'px-1.5 py-0.5 rounded-full text-xs min-w-[20px] text-center',
                               isActive
-                                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                ? 'bg-primary text-primary-foreground'
                                 : 'bg-muted-foreground/20 text-muted-foreground'
                             )}>
                               {count}
                             </span>
                           )}
-                        </button>
+                        </Chip>
                       );
                     })}
                   </div>
@@ -278,89 +247,42 @@ export function DispersionFilters({
               {/* Row 2: Propietario Filter */}
               <div className="flex flex-wrap gap-4 items-end">
                 {/* Propietario Dropdown */}
-                <div className="relative">
+                <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                     {t('inmobiliaria.dispersiones.filtersPanel.propietarioLabel')}
                   </label>
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'propietario' ? null : 'propietario')}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all min-w-[200px] justify-between border',
-                      filters.propietarioId !== 'all'
-                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                        : 'border-border bg-background text-foreground hover:border-foreground/30'
-                    )}
+                  <Select
+                    value={filters.propietarioId}
+                    onValueChange={(value) => updateFilter('propietarioId', value)}
                   >
-                    <User className="w-4 h-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate max-w-[140px]">{getPropietarioLabel()}</span>
-                    <CaretDown className="w-4 h-4 shrink-0 text-muted-foreground" />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdown === 'propietario' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full left-0 mt-1 w-64 p-2 rounded-xl border border-border bg-card shadow-xl z-50 max-h-60 overflow-y-auto"
-                      >
-                        <button
-                          onClick={() => {
-                            updateFilter('propietarioId', 'all');
-                            setOpenDropdown(null);
-                          }}
-                          className={cn(
-                            'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                            filters.propietarioId === 'all'
-                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                              : 'text-foreground hover:bg-muted'
-                          )}
-                        >
-                          {t('inmobiliaria.dispersiones.filtersPanel.allOwners')}
-                        </button>
-                        {propietarios.map((propietario) => (
-                          <button
-                            key={propietario.id}
-                            onClick={() => {
-                              updateFilter('propietarioId', propietario.id);
-                              setOpenDropdown(null);
-                            }}
-                            className={cn(
-                              'w-full px-3 py-2 rounded-lg text-left text-sm transition-colors',
-                              filters.propietarioId === propietario.id
-                                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                                : 'text-foreground hover:bg-muted'
-                            )}
-                          >
-                            {propietario.name}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SelectTrigger className="gap-2 min-w-[200px]">
+                      <User className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      <SelectItem value="all">
+                        {t('inmobiliaria.dispersiones.filtersPanel.allOwners')}
+                      </SelectItem>
+                      {propietarios.map((propietario) => (
+                        <SelectItem key={propietario.id} value={propietario.id}>
+                          {propietario.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Clear Filters */}
                 {activeFiltersCount > 0 && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
-                  >
+                  <Button variant="link" hideArrow onClick={clearAllFilters}>
                     {t('inmobiliaria.dispersiones.filtersPanel.clearFilters')}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Close dropdown on click outside */}
-      {openDropdown && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setOpenDropdown(null)}
-        />
-      )}
     </div>
   );
 }

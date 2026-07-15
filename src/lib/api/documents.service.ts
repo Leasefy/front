@@ -3,7 +3,7 @@
  * Endpoints for fetching, uploading, downloading, and deleting documents
  */
 
-import { apiClient, getAccessToken } from './client';
+import { apiClient, getAccessToken, ApiError } from './client';
 import type { BackendDocumentFull, UploadDocumentDto } from './documents.types';
 import type { BackendDocument } from './applications.types';
 
@@ -82,15 +82,21 @@ export const documentsApi = {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${BACKEND_URL}/documents`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}/documents`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
+    }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Upload failed: ${res.status}`);
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, (body as { message?: string }).message || `Upload failed: ${res.status}`);
     }
 
     const bd: BackendDocumentFull = await res.json();

@@ -10,6 +10,7 @@ import { CaretLeft, Buildings, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button, EmptyState } from '@/components/ui';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   useConsignacion,
@@ -88,7 +89,9 @@ function Modal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[9999]"
+      // Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9999],
+      // que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17.
+      className="fixed inset-0 z-[300]"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       data-lenis-prevent
     >
@@ -103,22 +106,19 @@ function Modal({
       >
         <div
           className={cn(
-            'relative bg-white dark:bg-[#141416] w-full rounded-3xl shadow-2xl flex flex-col',
+            'relative bg-card border border-border w-full rounded-xl flex flex-col',
             sizeClasses[size]
           )}
           style={{ maxHeight: '85vh' }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-border">
+            <h3 className="text-base font-semibold text-fg">
               {title}
             </h3>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-            >
+            <Button variant="ghost" size="icon" hideArrow onClick={onClose} aria-label="Cerrar">
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
           <div
             ref={scrollContainerRef}
@@ -246,23 +246,16 @@ function ConsignacionDetailContent() {
   if (!consignacion) {
     return (
       <div className="p-4 md:p-6">
-        <div className="max-w-lg mx-auto text-center py-16">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Buildings className="w-8 h-8 text-neutral-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-            {t('inmobiliaria.portafolio.detail.notFound')}
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            {t('inmobiliaria.portafolio.detail.notFoundDesc')}
-          </p>
-          <Link
-            href="/panel/inmobiliaria/portafolio"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
-          >
-            <CaretLeft className="w-4 h-4" />
-            {t('inmobiliaria.portafolio.detail.backToPortfolio')}
-          </Link>
+        <div className="max-w-lg mx-auto py-16">
+          <EmptyState
+            icon={Buildings}
+            title={t('inmobiliaria.portafolio.detail.notFound')}
+            description={t('inmobiliaria.portafolio.detail.notFoundDesc')}
+            action={{
+              label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
+              href: '/panel/inmobiliaria/portafolio',
+            }}
+          />
         </div>
       </div>
     );
@@ -274,13 +267,13 @@ function ConsignacionDetailContent() {
       <nav className="flex items-center gap-2 text-sm">
         <Link
           href="/panel/inmobiliaria/portafolio"
-          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
+          className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
         >
           <CaretLeft className="w-4 h-4" />
           {t('inmobiliaria.portafolio.title')}
         </Link>
-        <span className="text-neutral-300 dark:text-neutral-600">/</span>
-        <span className="text-neutral-900 dark:text-white font-medium truncate max-w-[200px]">
+        <span className="text-border">/</span>
+        <span className="text-fg font-medium truncate max-w-[200px]">
           {consignacion.propertyTitle}
         </span>
       </nav>

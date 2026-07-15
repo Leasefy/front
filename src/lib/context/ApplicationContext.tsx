@@ -31,6 +31,8 @@ import { StorageManager } from '@/lib/utils/storage';
 import { contextLogger } from '@/lib/utils/logger';
 import { applicationsApi } from '@/lib/api/applications.service';
 import { getAccessToken } from '@/lib/api/client';
+import { getConsentText, type ConsentTextResponse } from '@/lib/api/legal.service';
+import type { ApplicationPrefillData } from '@/lib/api/applications.types';
 
 // ============================================================================
 // Local storage key
@@ -85,6 +87,10 @@ interface ApplicationContextValue {
   authorizeVerification: boolean;
   setAuthorizeVerification: (value: boolean) => void;
   canSubmit: boolean;
+
+  // Habeas-data consent text (fetched once on mount)
+  consentText: ConsentTextResponse | null;
+  authorizationVersion: string | undefined;
 
   // Actions
   clearApplication: () => void;
@@ -169,6 +175,8 @@ export function ApplicationProvider({
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [authorizeVerification, setAuthorizeVerification] = useState(false);
   const [attemptedAdvance, setAttemptedAdvance] = useState(false);
+  const [consentText, setConsentText] = useState<ConsentTextResponse | null>(null);
+  const [authorizationVersion, setAuthorizationVersion] = useState<string | undefined>(undefined);
 
   const totalSteps = WIZARD_STEPS.length;
 
@@ -218,6 +226,111 @@ export function ApplicationProvider({
       },
     });
   }, [application, isHydrated, propertyId]);
+
+  // ========================================================================
+  // Fetch habeas-data consent text once on mount (graceful fallback on failure)
+  // ========================================================================
+
+  useEffect(() => {
+    let cancelled = false;
+    getConsentText()
+      .then((data) => {
+        if (!cancelled) {
+          setConsentText(data);
+          setAuthorizationVersion(data.version);
+        }
+      })
+      .catch(() => {
+        // Endpoint may not be deployed yet or is temporarily down.
+        // Graceful fallback: leave consentText null and authorizationVersion undefined.
+        // The UI will fall back to static copy; the submit payload omits authorizationVersion.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // ========================================================================
+  // Prefill from previous application (create mode + authenticated only)
+  // ========================================================================
+  //
+  // Pristine rule: a locally saved draft is considered dirty if it has a
+  // non-empty `personal.fullName`. That field is the first thing a tenant
+  // types and serves as a reliable signal that the user already started
+  // filling the form. When dirty, we skip prefill entirely to never
+  // overwrite the user's own input.
+  //
+  // Race-condition guard: we re-read the current `application` state at the
+  // moment the response arrives (via the functional-update form of
+  // setApplication). If `personal.fullName` is already set by then (e.g. the
+  // user typed while the fetch was in flight), we silently discard the prefill.
+
+  useEffect(() => {
+    if (mode !== 'create') return;
+    if (!getAccessToken()) return;
+
+    let cancelled = false;
+
+    applicationsApi.getPrefill()
+      .then((prefill) => {
+        if (cancelled) return;
+        if (!prefill.hasPreviousApplication) return;
+
+        const data = prefill as ApplicationPrefillData;
+
+        setApplication((prev) => {
+          // If the state is no longer pristine (user typed something), bail out.
+          if (prev.personal.fullName) return prev;
+
+          return {
+            ...prev,
+            personal: {
+              ...prev.personal,
+              fullName: data.fullName ?? prev.personal.fullName ?? '',
+              documentType: (data.documentType as Application['personal']['documentType']) ?? prev.personal.documentType,
+              documentNumber: data.documentNumber ?? prev.personal.documentNumber ?? '',
+              dateOfBirth: data.dateOfBirth ?? prev.personal.dateOfBirth ?? '',
+              phone: data.phone ?? prev.personal.phone ?? '',
+              email: data.email ?? prev.personal.email ?? '',
+              currentAddress: data.currentAddress ?? prev.personal.currentAddress ?? '',
+              timeAtCurrentAddress: data.timeAtCurrentAddress ?? prev.personal.timeAtCurrentAddress,
+              maritalStatus: (data.maritalStatus as Application['personal']['maritalStatus']) ?? prev.personal.maritalStatus,
+              dependents: data.dependents ?? prev.personal.dependents,
+            },
+            employment: {
+              ...prev.employment,
+              employmentStatus: (data.employmentStatus as Application['employment']['employmentStatus']) ?? prev.employment.employmentStatus,
+              companyName: data.companyName ?? prev.employment.companyName ?? '',
+              industry: data.industry ?? prev.employment.industry ?? '',
+              position: data.position ?? prev.employment.position ?? '',
+              contractType: (data.contractType as Application['employment']['contractType']) ?? prev.employment.contractType,
+              timeAtJob: data.timeAtJob ?? prev.employment.timeAtJob,
+              employerPhone: data.employerPhone ?? prev.employment.employerPhone ?? '',
+              employerAddress: data.employerAddress ?? prev.employment.employerAddress ?? '',
+            },
+            income: {
+              ...prev.income,
+              monthlySalary: data.monthlySalary ?? prev.income.monthlySalary ?? 0,
+              additionalIncome: data.additionalIncome ?? prev.income.additionalIncome ?? 0,
+              additionalIncomeSource: data.additionalIncomeSource ?? prev.income.additionalIncomeSource ?? '',
+              totalMonthlyIncome: data.totalMonthlyIncome ?? prev.income.totalMonthlyIncome ?? 0,
+              monthlyObligations: data.monthlyObligations ?? prev.income.monthlyObligations ?? 0,
+              availableForRent: data.availableForRent ?? prev.income.availableForRent ?? 0,
+            },
+            references: data.references ?? prev.references,
+            hasCoSigner: data.hasCoSigner ?? prev.hasCoSigner,
+            coSigner: (data.coSigner as unknown as Application['coSigner']) ?? prev.coSigner,
+            updatedAt: new Date().toISOString(),
+          };
+        });
+      })
+      .catch(() => {
+        // Prefill is best-effort: network errors or 4xx are silently swallowed.
+        // The wizard continues with an empty form as if prefill was not available.
+        contextLogger.warn('Prefill fetch failed — starting with empty form');
+      });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, propertyId]);
 
   // ========================================================================
   // Compass helpers
@@ -351,6 +464,40 @@ export function ApplicationProvider({
   }, [propertyId]);
 
   const submitApplication = useCallback(async () => {
+    // Habeas-data: the backend requires authorizationVersion whenever consent is
+    // true. If the legal text failed to load we cannot register a valid consent,
+    // so we block the submit instead of sending a versionless true (backend 400).
+    if (authorizeVerification && !authorizationVersion) {
+      setSubmissionError(
+        'No pudimos cargar el texto de autorización de datos. Recargá la página e intentá de nuevo.',
+      );
+      return;
+    }
+
+    // Stale-document guard (create mode only): if a slot has a fileName but no
+    // File object the document was dropped during serialisation to localStorage.
+    // Uploading is impossible without the File — block early with a clear message.
+    // In update mode, fileName-without-file means the document already exists on
+    // the server and skipping the upload is intentional, so the guard is skipped.
+    if (mode !== 'update') {
+      const docs = application.documents;
+      const staleSlots = [
+        docs.idDocument,
+        docs.bankStatement,
+        docs.incomeProof,
+        docs.employmentLetter,
+        docs.payStub,
+        docs.creditReport,
+      ];
+      const hasStaleSlot = staleSlots.some((slot) => slot?.fileName && !slot?.file);
+      if (hasStaleSlot) {
+        setSubmissionError(
+          'Algunos documentos se desconectaron al recargar la página. Volvé al paso de documentos y adjuntalos de nuevo.',
+        );
+        return;
+      }
+    }
+
     setIsLoading(true);
     setSubmissionError(null);
 
@@ -391,6 +538,9 @@ export function ApplicationProvider({
       // Agent attribution
       agentCode: (application as Application & { agentCode?: string }).agentCode,
       linkCode: (application as Application & { linkCode?: string }).linkCode,
+      // Habeas-data consent
+      habeasDataConsent: authorizeVerification,
+      ...(authorizationVersion ? { authorizationVersion } : {}),
     };
 
     try {
@@ -458,7 +608,7 @@ export function ApplicationProvider({
         for (const { file, type } of docEntries) {
           if (file) {
             try {
-              await applicationsApi.uploadDocument(file, type);
+              await applicationsApi.uploadDocument(existingApplicationId, file, type);
             } catch (uploadErr) {
               const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
               throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
@@ -490,14 +640,22 @@ export function ApplicationProvider({
         for (const { file, type } of docEntries) {
           if (file) {
             try {
-              await applicationsApi.uploadDocument(file, type);
-            } catch {
-              console.error(`Failed to upload document: ${type}`);
+              await applicationsApi.uploadDocument(created.id, file, type);
+            } catch (uploadErr) {
+              // Do NOT swallow: a failed upload must block the 'submitted' transition.
+              // The outer catch maps this to setSubmissionError so the user can retry.
+              // NOTE: the application row already exists from create() above, so a full
+              // re-submit could 409; retry should re-run uploads only, not create.
+              const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
+              throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
             }
           }
         }
       } else {
-        // 1b. Guest: create via public endpoint — backend sends invite email
+        // 1b. Guest: create via public endpoint — backend sends invite email.
+        // NOTE: guest documents are NOT uploaded here. Upload requires Bearer auth,
+        // which the guest only gains after accepting the invite email and creating
+        // an account. The ConfirmationScreen reflects this (directs guests to email).
         const result = await applicationsApi.createGuest(payload);
         applicationId = result.applicationId;
         setIsGuestSubmission(true);
@@ -523,7 +681,7 @@ export function ApplicationProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [propertyId, application]);
+  }, [propertyId, application, authorizeVerification, authorizationVersion]);
 
   // ========================================================================
   // Computed: completed steps
@@ -581,8 +739,14 @@ export function ApplicationProvider({
   // Computed: can submit (all steps complete + terms accepted)
   // ========================================================================
 
+  // authorizationVersion must be present whenever the user authorizes: the
+  // backend rejects a consent without its version, so the legal text must have
+  // loaded before submit is allowed.
   const canSubmit =
-    completedSteps.length >= 5 && acceptTerms && authorizeVerification;
+    completedSteps.length >= 5 &&
+    acceptTerms &&
+    authorizeVerification &&
+    !!authorizationVersion;
 
   // ========================================================================
   // Context value
@@ -617,6 +781,9 @@ export function ApplicationProvider({
     authorizeVerification,
     setAuthorizeVerification,
     canSubmit,
+
+    consentText,
+    authorizationVersion,
 
     clearApplication,
     submitApplication,

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork, X } from '@phosphor-icons/react';
+import { ProgressRing, RiskBadge, IconButton, type RiskGrade } from '@leasefy/cadence';
 import {
   Sheet,
   SheetContent,
@@ -9,12 +10,11 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RISK_LEVELS, getRiskBadgeVariant } from '@/lib/types/risk-score';
 import type { RiskScore, RiskLevel } from '@/lib/types/risk-score';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useLenis } from '@/components/providers/SmoothScroll';
 
 interface ScoreDetailSheetProps {
   open: boolean;
@@ -29,24 +29,24 @@ interface ScoreDetailSheetProps {
 
 const LEVEL_COLORS: Record<RiskLevel, { bg: string; text: string; bar: string }> = {
   A: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    bar: 'bg-emerald-500',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    bar: 'bg-success',
   },
   B: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-700 dark:text-blue-400',
-    bar: 'bg-blue-500',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
+    bar: 'bg-primary',
   },
   C: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    bar: 'bg-amber-500',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    bar: 'bg-warning',
   },
   D: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-700 dark:text-red-400',
-    bar: 'bg-red-500',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    bar: 'bg-danger',
   },
 };
 
@@ -61,7 +61,15 @@ export function ScoreDetailSheet({
   onShare,
 }: ScoreDetailSheetProps) {
   const { locale } = useI18n();
+  const lenis = useLenis();
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Pause Lenis smooth scroll while the sheet is open (DESIGN.md §8).
+  useEffect(() => {
+    if (open) lenis.stop();
+    else lenis.start();
+    return () => lenis.start();
+  }, [open, lenis]);
 
   const handleCopyCode = async () => {
     if (!verificationCode) return;
@@ -78,22 +86,20 @@ export function ScoreDetailSheet({
         hideCloseButton
       >
         {/* Header */}
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg font-semibold">
               {isPaid
                 ? (locale === 'es' ? 'Tu evaluación' : 'Your evaluation')
                 : (locale === 'es' ? 'Evaluación de inquilino' : 'Tenant evaluation')}
             </SheetTitle>
-            <button
+            <IconButton
+              variant="ghost"
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            >
-              <span className="sr-only">Cerrar</span>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              className="w-8 h-8 rounded-md hover:bg-surface-muted"
+              aria-label="Cerrar"
+              icon={<X className="w-4 h-4" />}
+            />
           </div>
           <SheetDescription className="sr-only">
             {locale === 'es' ? 'Detalle de evaluación de inquilino' : 'Tenant evaluation detail'}
@@ -101,7 +107,11 @@ export function ScoreDetailSheet({
         </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div
+          className="flex-1 overflow-y-auto px-6 py-6"
+          data-lenis-prevent
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           {!isPaid ? (
             <LockedContent locale={locale} />
           ) : score ? (
@@ -116,7 +126,7 @@ export function ScoreDetailSheet({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-neutral-200 dark:border-neutral-800 px-6 py-4">
+        <div className="flex-shrink-0 border-t border-border px-6 py-4">
           {!isPaid ? (
             <Button onClick={onPurchase} className="w-full" size="lg">
               {locale === 'es' ? 'Evaluar mi perfil' : 'Evaluate my profile'}
@@ -149,26 +159,26 @@ function LockedContent({ locale }: { locale: string }) {
       {/* Blurred decorative score */}
       <div className="relative flex flex-col items-center py-8">
         <div className="blur-md select-none pointer-events-none">
-          <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3">
-            <span className="text-5xl font-bold text-emerald-600">A</span>
+          <div className="w-24 h-24 rounded-full bg-success-soft flex items-center justify-center mb-3">
+            <span className="text-5xl font-bold text-success">A</span>
           </div>
-          <p className="text-center text-lg font-semibold text-neutral-900 dark:text-white">92 / 100</p>
+          <p className="text-center text-lg font-semibold text-fg">92 / 100</p>
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-lg">
-            <Lock className="w-7 h-7 text-neutral-400 dark:text-neutral-500" />
+          <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center">
+            <Lock className="w-7 h-7 text-fg-subtle" />
           </div>
         </div>
       </div>
 
       {/* Explanation */}
       <div>
-        <h3 className="text-base font-semibold text-foreground mb-2">
+        <h3 className="text-base font-semibold text-fg mb-2">
           {locale === 'es'
             ? '¿Qué es la evaluación de inquilino?'
             : 'What is the tenant evaluation?'}
         </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-sm text-fg-muted leading-relaxed">
           {locale === 'es'
             ? 'Obtén tu evaluación para compartir con propietarios e inmobiliarias. Un score verificable que demuestra tu confiabilidad como inquilino y acelera el proceso de aplicación.'
             : 'Get your evaluation to share with landlords and agencies. A verifiable score that demonstrates your reliability as a tenant and speeds up the application process.'}
@@ -196,8 +206,8 @@ function LockedContent({ locale }: { locale: string }) {
           },
         ].map((benefit, i) => (
           <div key={i} className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-foreground">
+            <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-fg">
               {locale === 'es' ? benefit.es : benefit.en}
             </p>
           </div>
@@ -224,7 +234,6 @@ function UnlockedContent({
   onCopyCode: () => void;
   locale: string;
 }) {
-  const info = RISK_LEVELS[score.level];
   const colors = LEVEL_COLORS[score.level];
 
   return (
@@ -234,33 +243,31 @@ function UnlockedContent({
         <div className={cn('w-20 h-20 rounded-full flex items-center justify-center mb-3', colors.bg)}>
           <span className={cn('text-4xl font-bold', colors.text)}>{score.level}</span>
         </div>
-        <p className="text-2xl font-bold text-foreground">{score.numericScore} / 100</p>
-        <Badge variant={getRiskBadgeVariant(score.level)} className="mt-2">
-          {info.label}
-        </Badge>
+        <p className="text-2xl font-bold font-mono tabular-nums text-fg">{score.numericScore} / 100</p>
+        <RiskBadge grade={score.level} showLabel className="mt-2" />
       </div>
 
       {/* AI Explanation */}
-      <div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 p-4">
-        <p className="text-sm text-muted-foreground leading-relaxed">{score.aiExplanation}</p>
+      <div className="rounded-xl bg-surface-muted p-4">
+        <p className="text-sm text-fg-muted leading-relaxed">{score.aiExplanation}</p>
       </div>
 
       {/* Category Breakdown */}
       <div>
-        <h4 className="text-sm font-semibold text-foreground mb-3">
+        <h4 className="text-sm font-semibold text-fg mb-3">
           {locale === 'es' ? 'Desglose por categoría' : 'Category breakdown'}
         </h4>
         <div className="space-y-4">
           {score.categories.map((cat) => (
             <div key={cat.name}>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm text-foreground">{cat.label}</span>
+                <span className="text-sm text-fg">{cat.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{Math.round(cat.weight * 100)}%</span>
-                  <span className="text-sm font-semibold text-foreground">{cat.score}</span>
+                  <span className="text-xs text-fg-muted">{Math.round(cat.weight * 100)}%</span>
+                  <span className="text-sm font-semibold text-fg">{cat.score}</span>
                 </div>
               </div>
-              <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+              <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
                 <div
                   className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
                   style={{ width: `${cat.score}%` }}
@@ -274,14 +281,14 @@ function UnlockedContent({
       {/* Drivers */}
       {score.drivers.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-foreground mb-3">
+          <h4 className="text-sm font-semibold text-fg mb-3">
             {locale === 'es' ? 'Factores positivos' : 'Positive factors'}
           </h4>
           <div className="space-y-2">
             {score.drivers.map((driver, i) => (
               <div key={i} className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">{driver}</p>
+                <CheckCircle className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-fg-muted">{driver}</p>
               </div>
             ))}
           </div>
@@ -291,14 +298,14 @@ function UnlockedContent({
       {/* Flags */}
       {score.flags.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-foreground mb-3">
+          <h4 className="text-sm font-semibold text-fg mb-3">
             {locale === 'es' ? 'Puntos a considerar' : 'Points to consider'}
           </h4>
           <div className="space-y-2">
             {score.flags.map((flag) => (
               <div key={flag.id} className="flex items-start gap-2.5">
-                <WarningCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">{flag.message}</p>
+                <WarningCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-fg-muted">{flag.message}</p>
               </div>
             ))}
           </div>
@@ -308,23 +315,23 @@ function UnlockedContent({
       {/* Verification Code */}
       {verificationCode && (
         <div>
-          <h4 className="text-sm font-semibold text-foreground mb-2">
+          <h4 className="text-sm font-semibold text-fg mb-2">
             {locale === 'es' ? 'Código de verificación' : 'Verification code'}
           </h4>
           <button
             onClick={onCopyCode}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors"
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-surface-muted border border-border hover:border-border-strong transition-colors"
           >
-            <span className="font-mono text-lg font-semibold tracking-wider text-foreground">
+            <span className="font-mono text-lg font-semibold tracking-wider text-fg">
               {verificationCode}
             </span>
             {copiedCode ? (
-              <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <Check className="w-4 h-4 text-success flex-shrink-0" />
             ) : (
-              <Copy className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
             )}
           </button>
-          <p className="text-xs text-muted-foreground mt-1.5">
+          <p className="text-xs text-fg-muted mt-1.5">
             {locale === 'es'
               ? 'Cualquier persona puede verificar tu evaluación con este código.'
               : 'Anyone can verify your evaluation with this code.'}

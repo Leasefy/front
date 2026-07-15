@@ -31,9 +31,11 @@ interface BetaChatProviderProps {
  *   - Switching BetaSidebar tabs
  *   - Navigating between /panel/beta/* routes
  *
- * State is in-memory only (no localStorage). Closing the Beta section
- * or refreshing the page resets the conversation. Persistent storage
- * is deferred to Phase 19 (Conversation Management).
+ * Conversations persist to the browser's localStorage via useBetaChat
+ * (`leasefy-beta-conversations`), so they survive reloads and tab closes.
+ * They are wiped on: a storage-version bump, or a DAILY RESET (the chat
+ * starts fresh on the first load of each calendar day). Persistence is
+ * per-device/browser only — server-side sync is deferred to Phase 19.
  */
 export function BetaChatProvider({ children, onTabChange }: BetaChatProviderProps) {
   const chat = useBetaChat({ onTabChange });

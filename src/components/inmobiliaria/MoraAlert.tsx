@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Warning, WarningCircle, Bell, ClockCountdown, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 type MoraSeverity = 'warning' | 'critical' | 'severe';
@@ -46,27 +47,27 @@ const SEVERITY_STYLES: Record<
   }
 > = {
   warning: {
-    bg: 'bg-amber-50 dark:bg-amber-900/20',
-    border: 'border-amber-200 dark:border-amber-800',
-    icon: 'text-amber-600 dark:text-amber-400',
-    text: 'text-amber-800 dark:text-amber-300',
-    textSecondary: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-warning-soft',
+    border: 'border-warning/30',
+    icon: 'text-warning',
+    text: 'text-warning',
+    textSecondary: 'text-warning',
     pulse: false,
   },
   critical: {
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    border: 'border-red-200 dark:border-red-800',
-    icon: 'text-red-600 dark:text-red-400',
-    text: 'text-red-800 dark:text-red-300',
-    textSecondary: 'text-red-700 dark:text-red-400',
+    bg: 'bg-danger-soft',
+    border: 'border-danger/30',
+    icon: 'text-danger',
+    text: 'text-danger',
+    textSecondary: 'text-danger',
     pulse: true,
   },
   severe: {
-    bg: 'bg-red-100 dark:bg-red-900/40',
-    border: 'border-red-300 dark:border-red-700',
-    icon: 'text-red-700 dark:text-red-300',
-    text: 'text-red-900 dark:text-red-200',
-    textSecondary: 'text-red-800 dark:text-red-300',
+    bg: 'bg-danger-soft',
+    border: 'border-danger/30',
+    icon: 'text-danger',
+    text: 'text-danger',
+    textSecondary: 'text-danger',
     pulse: true,
   },
 };
@@ -185,34 +186,30 @@ export function MoraAlert({
 
           {/* Actions */}
           {(onSendReminder || onViewHistory) && (
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               {onSendReminder && (
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
                   onClick={onSendReminder}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg',
-                    'bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/30',
-                    'border transition-colors',
-                    styles.border,
-                    styles.text
-                  )}
+                  className={cn('bg-card/60', styles.border, styles.text)}
                 >
                   <Bell className="w-3.5 h-3.5" />
                   {t('inmobiliaria.cobros.mora.sendReminder')}
-                </button>
+                </Button>
               )}
               {onViewHistory && (
-                <button
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
                   onClick={onViewHistory}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg',
-                    'hover:underline transition-colors',
-                    styles.textSecondary
-                  )}
+                  className={cn('gap-1.5', styles.textSecondary)}
                 >
                   {t('inmobiliaria.cobros.mora.viewHistory')}
                   <ArrowRight className="w-3 h-3" />
-                </button>
+                </Button>
               )}
             </div>
           )}

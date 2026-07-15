@@ -3,6 +3,7 @@
 import { type ReactNode, useState } from 'react';
 import { Lock, Sparkle, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
 import { AgencyPricingModal } from '@/components/inmobiliaria/AgencyPricingModal';
@@ -54,29 +55,29 @@ export function UpgradePrompt({
       <div
         className={cn(
           'flex flex-col items-center justify-center rounded-xl px-6 py-10 text-center',
-          'bg-neutral-50',
+          'bg-surface-muted',
           className,
         )}
         style={{ border: '1px solid rgba(0,0,0,0.06)' }}
       >
         {/* Lock icon */}
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
-          <Lock weight="duotone" className="h-5 w-5 text-neutral-400" />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
+          <Lock weight="duotone" className="h-5 w-5 text-fg-subtle" />
         </div>
 
         {/* Title */}
-        <h3 className="text-[15px] font-semibold text-neutral-900">
+        <h3 className="text-[15px] font-semibold text-fg">
           {resolvedTitle}
         </h3>
 
         {/* Description */}
-        <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-neutral-500">
+        <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-fg-muted">
           {resolvedDescription}
         </p>
 
         {/* Flex-only callout */}
         {isFlexOnly && (
-          <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium text-indigo-600">
+          <p className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium text-primary">
             <Sparkle weight="fill" className="h-3.5 w-3.5" />
             {locale === 'es'
               ? 'Incluido en planes Flex'
@@ -85,17 +86,15 @@ export function UpgradePrompt({
         )}
 
         {/* CTA button */}
-        <button
+        <Button
           onClick={() => setModalOpen(true)}
-          className={cn(
-            'mt-5 inline-flex items-center gap-2 rounded-xl px-5 py-2.5',
-            'bg-neutral-900 text-white text-[13px] font-medium',
-            'transition-colors hover:bg-neutral-800',
-          )}
+          size="sm"
+          hideArrow
+          className="mt-5 gap-2"
         >
           {locale === 'es' ? 'Ver planes' : 'View plans'}
           <ArrowRight weight="bold" className="h-3.5 w-3.5" />
-        </button>
+        </Button>
       </div>
 
       <AgencyPricingModal open={modalOpen} onClose={() => setModalOpen(false)} />

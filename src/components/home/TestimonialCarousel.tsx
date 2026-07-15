@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 
 export interface Testimonial {
   quote: string;
@@ -47,20 +48,20 @@ export function TestimonialCarousel({
             {title}
 
             <div className="flex gap-3">
-              <button
+              <IconButton
+                variant="outline"
                 onClick={prevTestimonial}
-                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full"
                 aria-label="Anterior testimonio"
-              >
-                <CaretLeft className="w-5 h-5" />
-              </button>
-              <button
+                icon={<CaretLeft className="w-5 h-5" />}
+              />
+              <IconButton
+                variant="outline"
                 onClick={nextTestimonial}
-                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full"
                 aria-label="Siguiente testimonio"
-              >
-                <CaretRight className="w-5 h-5" />
-              </button>
+                icon={<CaretRight className="w-5 h-5" />}
+              />
             </div>
           </motion.div>
 

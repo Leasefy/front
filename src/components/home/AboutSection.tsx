@@ -80,7 +80,7 @@ function RiskVisual() {
             {[
               { label: "Historial pago", score: 95, color: "bg-success-500" },
               { label: "Estabilidad", score: 88, color: "bg-primary" },
-              { label: "Referencias", score: 92, color: "bg-indigo-400" },
+              { label: "Referencias", score: 92, color: "bg-primary" },
             ].map((item, i) => (
               <motion.div
                 key={item.label}
@@ -126,11 +126,11 @@ function MagnifyingGlassVisual() {
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-xl shadow-sm border border-border mb-4"
+        className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-xl border border-border mb-4"
       >
         <MagnifyingGlass className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         <span className="text-[11px] text-muted-foreground flex-1">Chapinero, 2 hab, $3M máx</span>
-        <div className="bg-foreground text-white text-[9px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+        <div className="bg-foreground text-white text-[9px] font-semibold px-3 py-1.5 rounded-md flex items-center gap-1.5">
           <Sparkle className="w-3 h-3" /> AI
         </div>
       </motion.div>
@@ -156,7 +156,7 @@ function MagnifyingGlassVisual() {
             transition={{ delay: 0.3 + i * 0.1 }}
             className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
               item.highlight
-                ? "bg-primary/5 border-primary/20 shadow-sm"
+                ? "bg-primary/5 border-primary/20"
                 : "bg-white border-border hover:border-primary/20"
             }`}
           >
@@ -164,7 +164,7 @@ function MagnifyingGlassVisual() {
             <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center ${
               item.match >= 90
                 ? "bg-success-50 text-success-600"
-                : "bg-neutral-100 text-foreground"
+                : "bg-surface-muted text-foreground"
             }`}>
               <span className="text-[14px] font-heading font-bold leading-none">{item.match}</span>
               <span className="text-[7px] opacity-60">%</span>
@@ -229,7 +229,7 @@ function ContractVisual() {
         initial={{ y: 15, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full bg-white rounded-2xl shadow-lg border border-border overflow-hidden"
+        className="relative w-full bg-white rounded-xl border border-border overflow-hidden"
       >
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center gap-3">
@@ -274,7 +274,7 @@ function ContractVisual() {
         </div>
 
         {/* Signature area */}
-        <div className="px-5 py-4 bg-neutral-50/50 border-t border-border">
+        <div className="px-5 py-4 bg-surface-muted/50 border-t border-border">
           <div className="h-12 flex items-center justify-center rounded-xl border-2 border-dashed border-border bg-white">
             {!signed ? (
               <motion.div
@@ -343,8 +343,8 @@ function TransparencyVisual() {
   const items = [
     { label: "Canon", amount: "$2.8M", pct: 82, colorClass: "bg-foreground" },
     { label: "Admin", amount: "$280K", pct: 8, colorClass: "bg-primary" },
-    { label: "Seguro", amount: "$196K", pct: 6, colorClass: "bg-indigo-400" },
-    { label: "Fee", amount: "$140K", pct: 4, colorClass: "bg-indigo-300" },
+    { label: "Seguro", amount: "$196K", pct: 6, colorClass: "bg-primary" },
+    { label: "Fee", amount: "$140K", pct: 4, colorClass: "bg-primary" },
   ];
 
   return (
@@ -368,7 +368,7 @@ function TransparencyVisual() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden"
+          className="bg-white rounded-xl border border-border overflow-hidden"
         >
           {/* Total section */}
           <div className="px-5 py-4 border-b border-border">
@@ -456,10 +456,10 @@ function BentoCard({
   const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   const bg = dark
-    ? "bg-indigo-950 hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
+    ? "bg-primary hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
     : outline
-      ? "bg-white hover:shadow-md"
-      : "bg-neutral-50 hover:shadow-lg";
+      ? "bg-white hover:"
+      : "bg-surface hover:";
 
   const borderStyle = dark
     ? "1px solid rgba(255,255,255,0.06)"
@@ -471,7 +471,7 @@ function BentoCard({
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`group flex flex-col overflow-hidden rounded-2xl transition-shadow duration-500 ${bg} ${className}`}
+      className={`group flex flex-col overflow-hidden rounded-xl transition-shadow duration-500 ${bg} ${className}`}
       style={{ border: borderStyle }}
     >
       <div className="px-6 pt-5 pb-0">
@@ -494,7 +494,7 @@ function BentoCard({
    ================================================================ */
 export function AboutSection() {
   return (
-    <section className="bg-neutral-50 pt-12 lg:pt-16 pb-24 lg:pb-32 relative">
+    <section className="bg-surface-muted pt-12 lg:pt-16 pb-24 lg:pb-32 relative">
       <div className="container-platform relative z-10">
         <div className="mb-14 lg:mb-20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">

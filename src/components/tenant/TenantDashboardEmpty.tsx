@@ -50,7 +50,7 @@ const SETUP_STEPS: SetupStep[] = [
 const QUICK_ACTIONS = [
   {
     labelEs: 'Buscar propiedades',
-    labelEn: 'MagnifyingGlass properties',
+    labelEn: 'Search properties',
     icon: MagnifyingGlass,
     href: '/inquilino/explorar',
   },
@@ -130,7 +130,7 @@ export function TenantDashboardEmpty() {
   if (!isLoaded) return null;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Welcome Header */}
         <motion.header
@@ -138,13 +138,13 @@ export function TenantDashboardEmpty() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-10"
         >
-          <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+          <p className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-1">
             {greeting}
           </p>
-          <h1 className="text-3xl md:text-4xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-medium text-fg dark:text-white tracking-tight">
             {locale === 'es' ? `Hola, ${firstName}` : `Hi, ${firstName}`}
           </h1>
-          <p className="mt-2 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-2 text-fg-muted dark:text-fg-subtle">
             {locale === 'es'
               ? 'Completa tu perfil para aplicar a propiedades más rápido'
               : 'Complete your profile to apply to properties faster'}
@@ -159,18 +159,18 @@ export function TenantDashboardEmpty() {
             transition={{ delay: 0.1 }}
             className="lg:col-span-2 space-y-6"
           >
-            {/* Progress Card - Soft Style */}
-            <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/40 dark:to-[#1a1a1c] border border-indigo-100 dark:border-indigo-900/50 p-6 md:p-8">
+            {/* Progress Card - Clean Style */}
+            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6 md:p-8">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center shadow-sm">
-                    <ClipboardText className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-14 h-14 rounded-xl bg-surface-muted dark:bg-ink/60 flex items-center justify-center">
+                    <ClipboardText weight="duotone" className="w-7 h-7 text-fg-subtle dark:text-fg-muted" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+                    <h2 className="text-xl font-semibold text-fg dark:text-white">
                       {locale === 'es' ? 'Configura tu perfil' : 'Set up your profile'}
                     </h2>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
                       {locale === 'es'
                         ? `${completedCount} de ${totalSteps} pasos completados`
                         : `${completedCount} of ${totalSteps} steps completed`}
@@ -180,7 +180,7 @@ export function TenantDashboardEmpty() {
                 {nextIncompleteStep && (
                   <Link
                     href={nextIncompleteStep.href}
-                    className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
+                    className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg dark:text-neutral-100 border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
                   >
                     {locale === 'es' ? 'Continuar' : 'Continue'}
                     <ArrowRight className="w-4 h-4" />
@@ -190,19 +190,19 @@ export function TenantDashboardEmpty() {
 
               {/* Progress bar */}
               <div className="relative">
-                <div className="h-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full overflow-hidden">
+                <div className="h-2 bg-surface-muted dark:bg-surface-muted rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full"
+                    className="h-full bg-ink dark:bg-surface rounded-full"
                   />
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
                     {progressPercentage}% {locale === 'es' ? 'completado' : 'complete'}
                   </span>
-                  <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                  <span className="text-sm text-fg-muted dark:text-fg-subtle font-medium">
                     {locale === 'es' ? `${totalSteps - completedCount} restantes` : `${totalSteps - completedCount} remaining`}
                   </span>
                 </div>
@@ -212,7 +212,7 @@ export function TenantDashboardEmpty() {
               {nextIncompleteStep && (
                 <Link
                   href={nextIncompleteStep.href}
-                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white uppercase tracking-wide font-mono rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg dark:text-neutral-100 border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
                 >
                   {locale === 'es' ? 'Continuar' : 'Continue'}
                   <ArrowRight className="w-4 h-4" />
@@ -221,8 +221,8 @@ export function TenantDashboardEmpty() {
             </div>
 
             {/* Setup Steps List */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-              <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-4">
+            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-6">
+              <h3 className="text-base font-semibold text-fg dark:text-white mb-4">
                 {locale === 'es' ? 'Pasos para completar' : 'Steps to complete'}
               </h3>
               <div className="space-y-2">
@@ -235,62 +235,55 @@ export function TenantDashboardEmpty() {
                       key={step.id}
                       href={step.href}
                       className={cn(
-                        'flex items-center gap-4 p-4 rounded-2xl transition-all group',
+                        'flex items-center gap-4 p-4 rounded-xl transition-all group',
                         step.completed
-                          ? 'bg-white dark:bg-[#222224] border border-emerald-100 dark:border-emerald-900/30'
+                          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                           : isNext
-                          ? 'bg-white dark:bg-[#222224] border-2 border-indigo-200 dark:border-indigo-800/50 shadow-sm'
-                          : 'bg-white/50 dark:bg-[#1f1f21] border border-neutral-100 dark:border-neutral-800 opacity-60 hover:opacity-100'
+                          ? 'bg-surface dark:bg-[#222224] border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong'
+                          : 'bg-surface/50 dark:bg-[#1f1f21] border border-border-faint dark:border-border-strong opacity-60 hover:opacity-100'
                       )}
                     >
                       <div className={cn(
                         'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
                         step.completed
-                          ? 'bg-emerald-50 dark:bg-emerald-900/30'
+                          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
                           : isNext
-                          ? 'bg-indigo-50 dark:bg-indigo-900/30'
-                          : 'bg-neutral-100 dark:bg-neutral-800'
+                          ? 'bg-ink dark:bg-surface'
+                          : 'bg-surface-muted dark:bg-ink'
                       )}>
                         {step.completed ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                         ) : isNext ? (
-                          <Play className="w-5 h-5 text-indigo-600 dark:text-indigo-400 fill-current" />
+                          <Play className="w-5 h-5 text-white dark:text-fg fill-current" />
                         ) : (
-                          <Icon className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
+                          <Icon className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           'font-medium text-sm',
                           step.completed
-                            ? 'text-emerald-700 dark:text-emerald-400'
+                            ? 'text-[#2C7A53] dark:text-[#3EAE70]'
                             : isNext
-                            ? 'text-neutral-900 dark:text-white'
-                            : 'text-neutral-600 dark:text-neutral-400'
+                            ? 'text-fg dark:text-white'
+                            : 'text-fg-muted dark:text-fg-subtle'
                         )}>
                           {locale === 'es' ? step.labelEs : step.labelEn}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">
+                        <p className="text-xs text-fg-muted dark:text-fg-muted mt-0.5">
                           {locale === 'es' ? step.descriptionEs : step.descriptionEn}
                         </p>
                       </div>
                       <div className={cn(
                         'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all',
                         step.completed
-                          ? 'bg-emerald-50 dark:bg-emerald-900/30'
-                          : isNext
-                          ? 'bg-indigo-50 dark:bg-indigo-900/30 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50'
-                          : 'bg-neutral-100 dark:bg-neutral-800'
+                          ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15'
+                          : 'bg-surface-muted dark:bg-ink'
                       )}>
                         {step.completed ? (
-                          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle className="w-4 h-4 text-[#2C7A53] dark:text-[#3EAE70]" />
                         ) : (
-                          <CaretRight className={cn(
-                            'w-4 h-4 transition-transform group-hover:translate-x-0.5',
-                            isNext
-                              ? 'text-indigo-600 dark:text-indigo-400'
-                              : 'text-neutral-400 dark:text-neutral-500'
-                          )} />
+                          <CaretRight className="w-4 h-4 text-fg-subtle dark:text-fg-muted transition-transform group-hover:translate-x-0.5" />
                         )}
                       </div>
                     </Link>
@@ -308,9 +301,6 @@ export function TenantDashboardEmpty() {
                   titleEn: 'Apply faster',
                   descEs: 'Postula en segundos',
                   descEn: 'Apply in seconds',
-                  color: 'text-amber-600 dark:text-amber-400',
-                  bg: 'bg-amber-50 dark:bg-amber-900/20',
-                  border: 'border-amber-100 dark:border-amber-900/30',
                 },
                 {
                   icon: Shield,
@@ -318,9 +308,6 @@ export function TenantDashboardEmpty() {
                   titleEn: 'More trust',
                   descEs: 'Perfil verificado',
                   descEn: 'Verified profile',
-                  color: 'text-emerald-600 dark:text-emerald-400',
-                  bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-                  border: 'border-emerald-100 dark:border-emerald-900/30',
                 },
                 {
                   icon: Star,
@@ -328,9 +315,6 @@ export function TenantDashboardEmpty() {
                   titleEn: 'Better position',
                   descEs: 'Destaca entre otros',
                   descEn: 'Stand out',
-                  color: 'text-indigo-600 dark:text-indigo-400',
-                  bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-                  border: 'border-indigo-100 dark:border-indigo-900/30',
                 },
               ].map((benefit, index) => (
                 <motion.div
@@ -338,15 +322,15 @@ export function TenantDashboardEmpty() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.1 }}
-                  className={cn('rounded-2xl p-5 border', benefit.bg, benefit.border)}
+                  className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5"
                 >
-                  <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', benefit.bg)}>
-                    <benefit.icon className={cn('w-5 h-5', benefit.color)} />
+                  <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-ink/60 flex items-center justify-center mb-3">
+                    <benefit.icon weight="duotone" className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
                   </div>
-                  <p className="font-semibold text-neutral-900 dark:text-white text-sm">
+                  <p className="font-semibold text-fg dark:text-white text-sm">
                     {locale === 'es' ? benefit.titleEs : benefit.titleEn}
                   </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                  <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
                     {locale === 'es' ? benefit.descEs : benefit.descEn}
                   </p>
                 </motion.div>
@@ -362,8 +346,8 @@ export function TenantDashboardEmpty() {
             className="space-y-6"
           >
             {/* Quick Actions */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-              <h3 className="text-base font-semibold text-neutral-900 dark:text-white mb-4">
+            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+              <h3 className="text-base font-semibold text-fg dark:text-white mb-4">
                 {locale === 'es' ? 'Acciones rápidas' : 'Quick actions'}
               </h3>
               <div className="space-y-2">
@@ -371,31 +355,31 @@ export function TenantDashboardEmpty() {
                   <Link
                     key={action.labelEs}
                     href={action.href}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#222224] hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors group border border-neutral-100 dark:border-neutral-800"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-surface dark:bg-[#222224] hover:bg-surface-muted dark:hover:bg-[#2a2a2c] transition-colors group border border-border-faint dark:border-border-strong"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-colors">
-                      <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                    <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-ink flex items-center justify-center group-hover:bg-surface-muted dark:group-hover:bg-surface-muted transition-colors">
+                      <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle group-hover:text-fg dark:group-hover:text-white transition-colors" />
                     </div>
-                    <span className="flex-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors">
+                    <span className="flex-1 text-sm font-medium text-fg dark:text-fg-subtle group-hover:text-fg dark:group-hover:text-white transition-colors">
                       {locale === 'es' ? action.labelEs : action.labelEn}
                     </span>
-                    <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted dark:group-hover:text-fg-subtle group-hover:translate-x-0.5 transition-all" />
                   </Link>
                 ))}
               </div>
             </div>
 
             {/* Tip Card */}
-            <div className="rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 border border-amber-100 dark:border-amber-900/30 p-5">
+            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800/50 flex items-center justify-center flex-shrink-0">
-                  <TrendUp className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-ink/60 flex items-center justify-center flex-shrink-0">
+                  <TrendUp weight="duotone" className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-amber-900 dark:text-amber-300 text-sm mb-1">
+                  <h4 className="font-semibold text-fg dark:text-white text-sm mb-1">
                     {locale === 'es' ? '¿Sabías que?' : 'Did you know?'}
                   </h4>
-                  <p className="text-sm text-amber-700 dark:text-amber-400/80 leading-relaxed">
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle leading-relaxed">
                     {locale === 'es'
                       ? 'Los perfiles completos tienen 3x más probabilidades de ser aprobados.'
                       : 'Complete profiles are 3x more likely to be approved.'}
@@ -405,18 +389,18 @@ export function TenantDashboardEmpty() {
             </div>
 
             {/* Help Card */}
-            <div className="rounded-3xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 p-5">
-              <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-2">
+            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5">
+              <h4 className="font-semibold text-fg dark:text-white text-sm mb-2">
                 {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
               </h4>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+              <p className="text-sm text-fg-muted dark:text-fg-subtle mb-4">
                 {locale === 'es'
                   ? 'Nuestro equipo está listo para asistirte.'
                   : 'Our team is ready to assist you.'}
               </p>
               <Link
                 href="/ayuda"
-                className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-medium text-fg dark:text-fg-subtle hover:text-fg dark:hover:text-white transition-colors"
               >
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
                 <ArrowRight className="w-4 h-4" />

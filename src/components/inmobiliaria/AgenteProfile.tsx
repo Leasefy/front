@@ -13,6 +13,7 @@ import {
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import type { Agente, AgenteRole, AgenteStatus } from '@/lib/types/inmobiliaria';
 
@@ -25,18 +26,18 @@ interface AgenteProfileProps {
 const ROLE_CONFIG: Record<AgenteRole, { label: string; bg: string; text: string }> = {
   agent: {
     label: 'Agente',
-    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-    text: 'text-indigo-700 dark:text-indigo-400',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   coordinator: {
     label: 'Coordinador',
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
-    text: 'text-purple-700 dark:text-purple-400',
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
   },
   director: {
     label: 'Director',
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
 };
 
@@ -44,15 +45,15 @@ const ROLE_CONFIG: Record<AgenteRole, { label: string; bg: string; text: string 
 const STATUS_CONFIG: Record<AgenteStatus, { label: string; dot: string }> = {
   active: {
     label: 'Activo',
-    dot: 'bg-emerald-500',
+    dot: 'bg-success',
   },
   inactive: {
     label: 'Inactivo',
-    dot: 'bg-neutral-400',
+    dot: 'bg-muted',
   },
   on_leave: {
     label: 'En licencia',
-    dot: 'bg-amber-500',
+    dot: 'bg-warning',
   },
 };
 
@@ -106,7 +107,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
   const whatsappNumber = agente.phone.replace(/[\s+\-]/g, '');
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden">
+    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
       <div className="p-5 lg:p-6">
         {/* Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
@@ -116,11 +117,11 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
               <img
                 src={agente.avatar}
                 alt={agente.name}
-                className="w-20 h-20 rounded-2xl object-cover"
+                className="w-20 h-20 rounded-xl object-cover"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50 flex items-center justify-center">
-                <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              <div className="w-20 h-20 rounded-xl bg-primary-soft flex items-center justify-center">
+                <span className="text-2xl font-bold text-primary">
                   {agente.name.split(' ').map(n => n.charAt(0)).slice(0, 2).join('')}
                 </span>
               </div>
@@ -128,7 +129,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
             {/* Status dot */}
             <div
               className={cn(
-                'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-[#1a1a1c]',
+                'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-[#14130F]',
                 statusConfig.dot
               )}
               title={statusConfig.label}
@@ -138,7 +139,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Name, Role, and Status */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-white truncate">
+              <h1 className="text-2xl font-bold text-fg dark:text-white truncate">
                 {agente.name}
               </h1>
               <span
@@ -154,20 +155,20 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
 
             {/* Contact Info */}
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+              <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle">
                 <Envelope className="w-4 h-4 shrink-0" />
                 <a
                   href={`mailto:${agente.email}`}
-                  className="text-sm hover:text-indigo-500 transition-colors truncate"
+                  className="text-sm hover:text-primary transition-colors truncate"
                 >
                   {agente.email}
                 </a>
               </div>
-              <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
+              <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle">
                 <Phone className="w-4 h-4 shrink-0" />
                 <a
                   href={`tel:${agente.phone}`}
-                  className="text-sm hover:text-indigo-500 transition-colors"
+                  className="text-sm hover:text-primary transition-colors"
                 >
                   {agente.phone}
                 </a>
@@ -176,57 +177,59 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           </div>
 
           {/* Edit Button */}
-          <button
+          <Button
+            variant="outline"
+            hideArrow
             onClick={onEdit}
             disabled
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-400 dark:text-neutral-500 font-medium opacity-50 cursor-not-allowed"
+            className="shrink-0 gap-2"
             title={t('inmobiliaria.agente.comingSoon')}
           >
             <PencilSimple className="w-4 h-4" />
             {t('inmobiliaria.agente.edit')}
-          </button>
+          </Button>
         </div>
 
         {/* Info Pills */}
         <div className="flex flex-wrap gap-2 mb-6">
           {/* Zone */}
           {agente.zone && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-700 dark:text-neutral-300">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted dark:bg-ink text-sm text-fg dark:text-fg-subtle">
               <MapPin className="w-4 h-4" />
               {agente.zone}
             </div>
           )}
           {/* Specialization */}
           {agente.specialization && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-700 dark:text-neutral-300">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted dark:bg-ink text-sm text-fg dark:text-fg-subtle">
               <Buildings className="w-4 h-4" />
               {specializationLabels[agente.specialization]}
             </div>
           )}
           {/* Hire Date */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-700 dark:text-neutral-300">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-muted dark:bg-ink text-sm text-fg dark:text-fg-subtle">
             <CalendarBlank className="w-4 h-4" />
             {t('inmobiliaria.agente.since')} {formatHireDate(agente.hireDate)}
           </div>
         </div>
 
         {/* Commission Split */}
-        <div className="p-4 rounded-xl bg-neutral-50 dark:bg-[#141416] mb-6">
+        <div className="p-4 rounded-xl bg-surface-muted dark:bg-[#14130F] mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <Percent className="w-4 h-4 text-neutral-500" />
-            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <Percent className="w-4 h-4 text-fg-muted" />
+            <span className="text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.agente.commissionDistribution')}
             </span>
           </div>
 
           {/* Split Bar */}
-          <div className="h-3 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex mb-3">
+          <div className="h-3 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex mb-3">
             <div
-              className="bg-indigo-600 dark:bg-indigo-400 transition-all"
+              className="bg-primary transition-all"
               style={{ width: `${agentPercent}%` }}
             />
             <div
-              className="bg-neutral-400 dark:bg-neutral-500"
+              className="bg-muted dark:bg-muted"
               style={{ width: `${agencyPercent}%` }}
             />
           </div>
@@ -234,15 +237,15 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Labels */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-indigo-600 dark:bg-indigo-400" />
-              <span className="text-neutral-600 dark:text-neutral-400">
-                {t('inmobiliaria.agente.agentLabel')}: <span className="font-semibold text-neutral-900 dark:text-white">{agentPercent}%</span>
+              <div className="w-3 h-3 rounded-full bg-primary" />
+              <span className="text-fg-muted dark:text-fg-subtle">
+                {t('inmobiliaria.agente.agentLabel')}: <span className="font-semibold text-fg dark:text-white">{agentPercent}%</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-neutral-400 dark:bg-neutral-500" />
-              <span className="text-neutral-600 dark:text-neutral-400">
-                {t('inmobiliaria.agente.agencyLabel')}: <span className="font-semibold text-neutral-900 dark:text-white">{agencyPercent}%</span>
+              <div className="w-3 h-3 rounded-full bg-muted dark:bg-muted" />
+              <span className="text-fg-muted dark:text-fg-subtle">
+                {t('inmobiliaria.agente.agencyLabel')}: <span className="font-semibold text-fg dark:text-white">{agencyPercent}%</span>
               </span>
             </div>
           </div>
@@ -252,14 +255,14 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
         <div className="flex flex-wrap items-center gap-2">
           <a
             href={`mailto:${agente.email}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-fg font-medium hover:opacity-90 transition-colors"
           >
             <Envelope className="w-4 h-4" />
             Email
           </a>
           <a
             href={`tel:${agente.phone}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#141416] text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] text-fg dark:text-fg-subtle font-medium hover:bg-surface-muted dark:hover:bg-ink transition-colors"
           >
             <Phone className="w-4 h-4" />
             {t('inmobiliaria.agente.call')}
@@ -268,7 +271,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
             href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-success text-white font-medium hover:bg-success transition-colors"
           >
             <WhatsappLogo className="w-4 h-4" />
             WhatsApp

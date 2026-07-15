@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText } from '@phosphor-icons/react';
+import { CheckCircle, Clock, MagnifyingGlass, Bell, FileText, EnvelopeSimple } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import type { Property } from '@/lib/types/property';
 
@@ -25,16 +25,15 @@ interface ConfirmationScreenProps {
  * Displays tracking code and next steps
  */
 export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail }: ConfirmationScreenProps) {
-  void isGuest; void guestEmail; // available for future use
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
         {/* Success card */}
-        <div className="bg-card rounded-sm border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-sm border border-border overflow-hidden">
           {/* Success header */}
-          <div className="bg-green-50 px-6 py-8 text-center border-b border-green-100">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="h-10 w-10 text-green-600" />
+          <div className="bg-success-soft px-6 py-8 text-center border-b border-success/30">
+            <div className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-10 w-10 text-success" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
               Aplicación enviada!
@@ -51,17 +50,30 @@ export function ConfirmationScreen({ property, trackingCode, isGuest, guestEmail
           {/* Next steps */}
           <div className="px-6 py-6">
             <h2 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-600" />
+              <FileText className="h-4 w-4 text-[#1A40FF]" />
               ¿Qué sigue?
             </h2>
 
             <div className="space-y-4">
-              <TimelineItem
-                icon={<MagnifyingGlass className="h-4 w-4" />}
-                title="Verificación de documentos"
-                description="Revisaremos tus documentos en las próximas 24 horas."
-                number={1}
-              />
+              {isGuest ? (
+                <TimelineItem
+                  icon={<EnvelopeSimple className="h-4 w-4" />}
+                  title="Revisa tu correo"
+                  description={
+                    guestEmail
+                      ? `Te enviamos un enlace a ${guestEmail} para crear tu cuenta y subir tus documentos.`
+                      : 'Te enviamos un enlace por correo para crear tu cuenta y subir tus documentos.'
+                  }
+                  number={1}
+                />
+              ) : (
+                <TimelineItem
+                  icon={<MagnifyingGlass className="h-4 w-4" />}
+                  title="Verificación de documentos"
+                  description="Revisaremos tus documentos en las próximas 24 horas."
+                  number={1}
+                />
+              )}
               <TimelineItem
                 icon={<Clock className="h-4 w-4" />}
                 title="Evaluación AI"
@@ -136,7 +148,7 @@ function TimelineItem({
 
       {/* Number circle */}
       <div className="relative flex-shrink-0">
-        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">
+        <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center text-sm font-medium">
           {number}
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Info } from '@phosphor-icons/react';
 import { RiskScoreDisplay } from '@/components/score';
@@ -22,6 +23,14 @@ import { Button } from '@/components/ui/button';
  * Note: This page is for development, not production users.
  */
 export default function ScoreDemoPage() {
+  // Production guard: this is a dev-only playground. Render the standard 404 in
+  // production so the page is unreachable for real users. Must be the first
+  // statement (before any hooks) so it short-circuits before React hooks run.
+  // NODE_ENV is build-time-inlined by Next, so this branch tree-shakes cleanly.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   // Selected candidate state
   const [selectedCandidateId, setSelectedCandidateId] = useState(MOCK_CANDIDATES[0].id);
 
@@ -156,12 +165,12 @@ export default function ScoreDemoPage() {
                   <span
                     className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                       level === 'A'
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]'
                         : level === 'B'
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-[#EEF1FF] text-[#1A40FF] dark:bg-[#1A40FF]/15 dark:text-[#5570FF]'
                         : level === 'C'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-red-100 text-red-700'
+                        ? 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]'
+                        : 'bg-[#F8EAE7] text-[#C4503B] dark:bg-[#C4503B]/15 dark:text-[#E0664D]'
                     }`}
                   >
                     {level}

@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Sparkle, CaretLeft, CaretRight, ArrowUpRight, Info, TrendUp } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
-import { useProperties } from '@/lib/hooks/useProperties';
 import { useRecommendations } from '@/lib/hooks/useRecommendations';
 import {
   useTenantProfile,
@@ -14,7 +14,6 @@ import {
   getAccessiblePropertiesPercentage,
   getRiskRecommendation,
 } from '@/lib/context/TenantProfileContext';
-import { getRecommendedProperties } from '@/lib/scoring/propertyMatching';
 import { PropertyMatchCard } from './PropertyMatchCard';
 
 // ============================================================================
@@ -40,20 +39,9 @@ export function RecommendedProperties({
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Try backend recommendations first
-  const { recommendations: apiRecommendations, source } = useRecommendations(limit);
+  const { recommendations, isLoading: recommendationsLoading } = useRecommendations(limit);
 
-  // Fetch properties for client-side fallback
-  const { properties: allProperties } = useProperties({ limit: source === 'client' ? 100 : 0 });
-
-  // Use API recommendations if available, otherwise compute client-side
-  const recommendations = useMemo(() => {
-    if (source === 'api' && apiRecommendations.length > 0) {
-      return apiRecommendations;
-    }
-    if (!profile || allProperties.length === 0) return [];
-    return getRecommendedProperties(allProperties, profile, limit);
-  }, [source, apiRecommendations, profile, allProperties, limit]);
+  const loading = isLoading || recommendationsLoading;
 
   // Scroll handlers
   const scroll = (direction: 'left' | 'right') => {
@@ -79,19 +67,19 @@ export function RecommendedProperties({
   };
 
   // Loading state
-  if (isLoading) {
+  if (loading) {
     return (
-      <section className={cn('bg-card border border-plan-border', className)}>
+      <section className={cn('bg-surface border border-plan-border', className)}>
         <div className="p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-6 bg-muted rounded w-48" />
-            <div className="h-4 bg-muted rounded w-64" />
+            <div className="h-6 bg-surface-muted rounded w-48" />
+            <div className="h-4 bg-surface-muted rounded w-64" />
             <div className="flex gap-4 overflow-hidden">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="w-[300px] flex-shrink-0 space-y-3">
-                  <div className="aspect-[4/3] bg-muted rounded" />
-                  <div className="h-4 bg-muted rounded w-3/4" />
-                  <div className="h-4 bg-muted rounded w-1/2" />
+                  <div className="aspect-[4/3] bg-surface-muted rounded" />
+                  <div className="h-4 bg-surface-muted rounded w-3/4" />
+                  <div className="h-4 bg-surface-muted rounded w-1/2" />
                 </div>
               ))}
             </div>
@@ -104,7 +92,7 @@ export function RecommendedProperties({
   // No profile state
   if (!hasVerifiedProfile || !profile) {
     return (
-      <section className={cn('bg-card border border-plan-border', className)}>
+      <section className={cn('bg-surface border border-plan-border', className)}>
         <div className="p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-plan-status-purple-bg flex items-center justify-center mx-auto mb-4">
             <Sparkle className="w-7 h-7 text-plan-status-purple" />
@@ -130,9 +118,9 @@ export function RecommendedProperties({
   // No recommendations
   if (recommendations.length === 0) {
     return (
-      <section className={cn('bg-card border border-plan-border', className)}>
+      <section className={cn('bg-surface border border-plan-border', className)}>
         <div className="p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
             <TrendUp className="w-7 h-7 text-plan-muted" />
           </div>
           <h3 className="text-lg font-semibold text-plan-primary mb-2">
@@ -157,7 +145,7 @@ export function RecommendedProperties({
   const riskColors = riskLevel ? RISK_LEVEL_COLORS[riskLevel] : null;
 
   return (
-    <section className={cn('bg-card border border-plan-border overflow-hidden', className)}>
+    <section className={cn('bg-surface border border-plan-border overflow-hidden', className)}>
       {/* Header */}
       <div className="flex items-start justify-between px-5 py-4 border-b border-border">
         <div>
@@ -173,26 +161,26 @@ export function RecommendedProperties({
         {/* Compass arrows */}
         {recommendations.length > 2 && (
           <div className="flex items-center gap-1">
-            <button
+            <IconButton
+              variant="ghost"
               onClick={() => scroll('left')}
               disabled={scrollPosition <= 0}
               className={cn(
-                'p-1.5 rounded-sm transition-colors',
+                'p-1.5 rounded-sm',
                 scrollPosition <= 0
-                  ? 'text-plan-muted cursor-not-allowed'
-                  : 'text-plan-secondary hover:bg-muted hover:text-plan-primary'
+                  ? 'text-plan-muted'
+                  : 'text-plan-secondary hover:bg-surface-muted hover:text-plan-primary'
               )}
               aria-label="Ver anteriores"
-            >
-              <CaretLeft className="w-5 h-5" />
-            </button>
-            <button
+              icon={<CaretLeft className="w-5 h-5" />}
+            />
+            <IconButton
+              variant="ghost"
               onClick={() => scroll('right')}
-              className="p-1.5 rounded-sm text-plan-secondary hover:bg-muted hover:text-plan-primary transition-colors"
+              className="p-1.5 rounded-sm text-plan-secondary hover:bg-surface-muted hover:text-plan-primary"
               aria-label="Ver siguientes"
-            >
-              <CaretRight className="w-5 h-5" />
-            </button>
+              icon={<CaretRight className="w-5 h-5" />}
+            />
           </div>
         )}
       </div>
@@ -244,8 +232,8 @@ export function RecommendedProperties({
           href="/inquilino/explorar"
           className={cn(
             'flex-shrink-0 w-[200px] flex flex-col items-center justify-center',
-            'bg-muted/50 border border-dashed border-plan-border rounded-sm',
-            'hover:border-plan-border-hover hover:bg-muted transition-colors',
+            'bg-surface-muted/50 border border-dashed border-plan-border rounded-sm',
+            'hover:border-plan-border-hover hover:bg-surface-muted transition-colors',
             'min-h-[320px]'
           )}
         >
@@ -256,7 +244,7 @@ export function RecommendedProperties({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-muted/30">
+      <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface-muted/30">
         <p className="text-xs text-plan-muted">
           {recommendations.length} propiedades recomendadas para tu perfil
         </p>

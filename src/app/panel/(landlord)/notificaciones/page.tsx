@@ -29,8 +29,11 @@ import {
   Sparkle,
   ArrowRight,
 } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui';
+import { IconButton, Chip } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
@@ -81,24 +84,24 @@ type FilterType = 'all' | 'unread' | 'payment' | 'application' | 'contract' | 'l
 // Skeleton component for loading state
 function NotificationSkeleton() {
   return (
-    <div className="flex items-start gap-4 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 animate-pulse">
+    <div className="flex items-start gap-4 px-5 py-4 border-b border-border-faint animate-pulse">
       {/* Icon skeleton */}
-      <div className="w-10 h-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+      <div className="w-10 h-10 rounded-xl bg-surface-muted flex-shrink-0" />
 
       {/* Content skeleton */}
       <div className="flex-1 min-w-0 space-y-2">
-        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4" />
-        <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-full" />
+        <div className="h-4 bg-surface-muted rounded w-3/4" />
+        <div className="h-3 bg-surface-muted rounded w-full" />
         <div className="flex items-center gap-2 mt-2">
-          <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-16" />
-          <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-20" />
+          <div className="h-3 bg-surface-muted rounded w-16" />
+          <div className="h-3 bg-surface-muted rounded w-20" />
         </div>
       </div>
 
       {/* Action skeleton */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-neutral-200 dark:bg-neutral-700" />
-        <div className="w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-700" />
+        <div className="w-8 h-8 rounded-md bg-surface-muted" />
+        <div className="w-4 h-4 rounded bg-surface-muted" />
       </div>
     </div>
   );
@@ -118,6 +121,11 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
 
+  const notifyError = () => toast.error(t('header.notificationActionError'));
+  const handleMarkAsRead = (id: string) => markAsRead(id).catch(notifyError);
+  const handleMarkAllAsRead = () => markAllAsRead().catch(notifyError);
+  const handleDeleteNotification = (id: string) => deleteNotification(id).catch(notifyError);
+
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
   const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
@@ -127,7 +135,7 @@ export default function NotificacionesPage() {
 
   const handleNotificationClick = (notification: LandlordNotification) => {
     if (!notification.read) {
-      markAsRead(notification.id);
+      handleMarkAsRead(notification.id);
     }
     if (notification.actionUrl) {
       router.push(notification.actionUrl);
@@ -143,34 +151,31 @@ export default function NotificacionesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+          <h1 className="text-2xl font-semibold text-fg">
             {t('landlord.notifications.title')}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             {unreadCount > 0 ? t('landlord.notifications.unreadCount', { count: unreadCount }) : t('landlord.notifications.allRead')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
               <Check className="w-4 h-4" />
               {t('landlord.notifications.markAllRead')}
-            </button>
+            </Button>
           )}
-          <button
+          <IconButton
+            variant="ghost"
+            icon={<Gear className="w-5 h-5" />}
+            aria-label="Configuración"
             onClick={() => router.push('/panel/configuracion')}
-            className="p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-          >
-            <Gear className="w-5 h-5" />
-          </button>
+          />
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-neutral-200 dark:border-neutral-700 overflow-x-auto">
+      <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border overflow-x-auto">
         {[
           { id: 'all', label: t('landlord.notifications.filterAll') },
           { id: 'unread', label: t('landlord.notifications.filterUnread'), count: unreadCount },
@@ -181,35 +186,22 @@ export default function NotificacionesPage() {
           { id: 'visit', label: t('landlord.notifications.filterVisits') },
           { id: 'property', label: t('landlord.notifications.filterProperties') },
         ].map((f) => (
-          <button
+          <Chip
             key={f.id}
+            selected={filter === f.id}
             onClick={() => setFilter(f.id as FilterType)}
-            className={cn(
-              'px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-2',
-              filter === f.id
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            )}
+            className="whitespace-nowrap"
           >
             {f.label}
             {f.count !== undefined && f.count > 0 && (
-              <span
-                className={cn(
-                  'text-xs px-1.5 py-0.5 rounded-full',
-                  filter === f.id
-                    ? 'bg-white/20 text-white'
-                    : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                )}
-              >
-                {f.count}
-              </span>
+              <span className="tabular-nums">{f.count}</span>
             )}
-          </button>
+          </Chip>
         ))}
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
         {isLoading ? (
           // Loading skeleton
           <div>
@@ -247,10 +239,10 @@ export default function NotificacionesPage() {
                   transition={{ duration: 0.2 }}
                   onClick={() => handleNotificationClick(notification)}
                   className={cn(
-                    'flex items-start gap-4 px-5 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer group',
+                    'flex items-start gap-4 px-5 py-4 hover:bg-surface-hover transition-colors cursor-pointer group',
                     index !== filteredNotifications.length - 1 &&
-                      'border-b border-neutral-100 dark:border-neutral-800',
-                    !notification.read && 'bg-indigo-50/50 dark:bg-indigo-600/5'
+                      'border-b border-border-faint',
+                    !notification.read && 'bg-primary-soft/50'
                   )}
                 >
                   {/* Icon */}
@@ -273,20 +265,20 @@ export default function NotificacionesPage() {
                       className={cn(
                         'text-sm',
                         !notification.read
-                          ? 'text-neutral-900 dark:text-white font-medium'
-                          : 'text-neutral-700 dark:text-neutral-300'
+                          ? 'text-fg font-medium'
+                          : 'text-fg-muted'
                       )}
                     >
                       {notification.title}
                     </p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-1">
+                    <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">
                       {notification.message}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                      <span className="text-xs text-fg-subtle">
                         {formatRelativeDate(notification.createdAt)}
                       </span>
-                      <span className="text-neutral-300 dark:text-neutral-600">
+                      <span className="text-fg-subtle">
                         •
                       </span>
                       <span
@@ -306,18 +298,19 @@ export default function NotificacionesPage() {
                       className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => {
                           if (notification.actionUrl) {
-                            markAsRead(notification.id);
+                            handleMarkAsRead(notification.id);
                             router.push(notification.actionUrl);
                           }
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-700/20 transition-colors"
                       >
                         {notification.actionLabel}
                         <ArrowRight className="w-3 h-3" />
-                      </button>
+                      </Button>
                     </div>
                   )}
 
@@ -327,29 +320,31 @@ export default function NotificacionesPage() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     {!notification.read && (
-                      <button
-                        onClick={() => markAsRead(notification.id)}
-                        className="p-2 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                      <IconButton
+                        variant="ghost"
+                        icon={<Check className="w-4 h-4" />}
+                        onClick={() => handleMarkAsRead(notification.id)}
+                        className="hover:text-success hover:bg-success-soft"
+                        aria-label={t('landlord.notifications.markAsRead')}
                         title={t('landlord.notifications.markAsRead')}
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
+                      />
                     )}
-                    <button
-                      onClick={() => deleteNotification(notification.id)}
-                      className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                    <IconButton
+                      variant="ghost"
+                      icon={<TrashSimple className="w-4 h-4" />}
+                      onClick={() => handleDeleteNotification(notification.id)}
+                      className="hover:text-danger hover:bg-danger-soft"
+                      aria-label={t('landlord.notifications.deleteNotification')}
                       title={t('landlord.notifications.deleteNotification')}
-                    >
-                      <TrashSimple className="w-4 h-4" />
-                    </button>
+                    />
                   </div>
 
                   {/* Unread indicator and arrow */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {!notification.read && (
-                      <div className="w-2 h-2 bg-indigo-600 rounded-full" />
+                      <div className="w-2 h-2 bg-primary rounded-full" />
                     )}
-                    <CaretRight className="w-4 h-4 text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
+                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" />
                   </div>
                 </motion.div>
               );
@@ -361,19 +356,18 @@ export default function NotificacionesPage() {
 
       {/* Summary */}
       {notifications.length > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400">
+        <div className="mt-4 flex items-center justify-between text-sm text-fg-muted">
           <span>
             {t('landlord.notifications.showingCount', { filtered: filteredNotifications.length, total: notifications.length })}
           </span>
           {notifications.length > 0 && (
-            <button
-              onClick={() =>
-                setHideRead(true)
-              }
-              className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => setHideRead(true)}
             >
               {t('landlord.notifications.clearRead')}
-            </button>
+            </Button>
           )}
         </div>
       )}

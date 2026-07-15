@@ -11,10 +11,7 @@ import {
   SquaresFour,
   Lightning,
   DownloadSimple,
-  CaretLeft,
-  CaretRight,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
   useDispersiones,
@@ -34,7 +31,7 @@ import {
   DispersionCard,
   type DispersionFiltersState,
 } from '@/components/inmobiliaria';
-import { downloadExtractoPDF } from '@/lib/utils/generate-extracto-pdf';
+import { apiClient } from '@/lib/api/client';
 import {
   Dialog,
   DialogContent,
@@ -42,6 +39,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { SegmentedControl } from '@leasefy/cadence';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -287,24 +286,26 @@ function DispersionesContent() {
 
   // Handle download extracto PDF
   const handleDownloadExtracto = useCallback(async (dispersion: Dispersion) => {
-    if (!config) return;
     try {
-      const extracto = await propietariosApi.getExtracto(dispersion.propietarioId, dispersion.month);
-      const propietario = propietarios.find((p) => p.id === dispersion.propietarioId);
-      if (extracto) {
-        downloadExtractoPDF(extracto, config, propietario);
-        toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
-          description: t('inmobiliaria.dispersiones.detail.ownerStatement') + ` - ${dispersion.propietarioName}`,
-        });
-      } else {
-        toast.error(t('inmobiliaria.dispersiones.toasts.error'));
-      }
+      const blob = await apiClient.getBlob(`/inmobiliaria/dispersiones/${dispersion.id}/extracto.pdf`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = dispersion.propietarioName.replace(/\s+/g, '-').toLowerCase();
+      a.download = `extracto-${safeName}-${dispersion.month}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t('inmobiliaria.dispersiones.toasts.pdfDownloaded'), {
+        description: t('inmobiliaria.dispersiones.detail.ownerStatement') + ` - ${dispersion.propietarioName}`,
+      });
     } catch (error) {
       toast.error(t('inmobiliaria.dispersiones.toasts.error'), {
         description: error instanceof Error ? error.message : 'Error al generar extracto',
       });
     }
-  }, [t, config, propietarios]);
+  }, [t]);
 
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: DispersionFiltersState) => {
@@ -366,22 +367,21 @@ function DispersionesContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.dispersiones.title')}
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.dispersiones.subtitle')}
           </p>
         </div>
-        <Link
-          href="/panel/inmobiliaria/dispersiones/generar"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
-        >
-          <Lightning className="w-5 h-5" weight="fill" />
-          {t('inmobiliaria.dispersiones.wizard.title')}
-        </Link>
+        <Button asChild hideArrow className="shrink-0">
+          <Link href="/panel/inmobiliaria/dispersiones/generar">
+            <Lightning className="w-4 h-4" weight="fill" />
+            {t('inmobiliaria.dispersiones.wizard.title')}
+          </Link>
+        </Button>
       </div>
 
       {/* Summary Section */}
@@ -406,33 +406,34 @@ function DispersionesContent() {
       >
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted">
-            <button
-              onClick={() => setViewMode('table')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                viewMode === 'table'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Table className="w-4 h-4" />
-              {t('inmobiliaria.dispersiones.viewTable')}
-            </button>
-            <button
-              onClick={() => setViewMode('cards')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                viewMode === 'cards'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <SquaresFour className="w-4 h-4" />
-              {t('inmobiliaria.dispersiones.viewCards')}
-            </button>
-          </div>
-          <span className="text-sm text-muted-foreground tabular-nums">
+          <SegmentedControl
+            aria-label={t('inmobiliaria.dispersiones.viewTable')}
+            value={viewMode}
+            onChange={(v) => setViewMode(v as ViewMode)}
+            options={[
+              {
+                value: 'table',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Table className="w-4 h-4" />
+                    {t('inmobiliaria.dispersiones.viewTable')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.dispersiones.viewTable'),
+              },
+              {
+                value: 'cards',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <SquaresFour className="w-4 h-4" />
+                    {t('inmobiliaria.dispersiones.viewCards')}
+                  </span>
+                ),
+                ariaLabel: t('inmobiliaria.dispersiones.viewCards'),
+              },
+            ]}
+          />
+          <span className="text-xs text-fg-muted tabular-nums">
             {filteredDispersiones.length} {t('inmobiliaria.nav.dispersiones').toLowerCase()}
           </span>
         </div>
@@ -473,85 +474,42 @@ function DispersionesContent() {
               </div>
             )
           ) : (
-            <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
-                <PaperPlaneTilt className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+            <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
+                <PaperPlaneTilt
+                  weight="duotone"
+                  className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+                  aria-hidden="true"
+                />
               </div>
-              <h3 className="text-base font-semibold text-foreground mb-1.5">
-                {t('inmobiliaria.dispersiones.noDispersions')}
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                {t('inmobiliaria.dispersiones.noDispersionsDesc')}
-              </p>
+              <div className="space-y-1.5">
+                <p className="text-base font-semibold text-fg">
+                  {t('inmobiliaria.dispersiones.noDispersions')}
+                </p>
+                <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
+                  {t('inmobiliaria.dispersiones.noDispersionsDesc')}
+                </p>
+              </div>
               {filters.status !== 'all' && (
-                <button
+                <Button
+                  variant="link"
                   onClick={() => setFilters((prev) => ({ ...prev, status: 'all' }))}
-                  className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
                   {t('inmobiliaria.dispersiones.filters.all')}
-                </button>
+                </Button>
               )}
-              {filteredDispersiones.length === 0 &&
-                dispersiones.filter((d) => d.month === filters.month).length === 0 && (
-                  <div className="mt-6">
-                    <Link
-                      href="/panel/inmobiliaria/dispersiones/generar"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
-                    >
-                      <Lightning className="w-4 h-4" weight="fill" />
-                      {t('inmobiliaria.dispersiones.wizard.title')}
-                    </Link>
-                  </div>
-                )}
             </div>
           )}
         </div>
 
         {/* Pagination Footer */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={cn(
-                'p-2 rounded-md border border-border transition-all',
-                currentPage === 1
-                  ? 'text-muted-foreground/40 cursor-not-allowed'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <CaretLeft className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={cn(
-                    'w-8 h-8 rounded-md text-sm font-medium transition-all',
-                    page === currentPage
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:bg-muted'
-                  )}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className={cn(
-                'p-2 rounded-md border border-border transition-all',
-                currentPage === totalPages
-                  ? 'text-muted-foreground/40 cursor-not-allowed'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <CaretRight className="w-4 h-4" />
-            </button>
+          <div className="px-4 py-3 border-t border-border flex items-center justify-center bg-muted/10">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </motion.div>

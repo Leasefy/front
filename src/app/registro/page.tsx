@@ -7,7 +7,8 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
 import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, ApiError } from '@/lib/api/client';
+import { Input } from '@/components/ui/input';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
@@ -87,6 +88,9 @@ function RegistroContent() {
   const [confirmed, setConfirmed] = useState(false);
   // True while silently auto-completing onboarding after email confirmation click
   const [autoCompleting, setAutoCompleting] = useState(false);
+  // True when the token is conclusively dead (expired / already-accepted / not-found),
+  // as opposed to a transient network failure we shouldn't act on.
+  const [invitationDead, setInvitationDead] = useState(false);
 
   const authForm = useForm<RegisterFormData>();
   const profileForm = useForm<ProfileFormData>();
@@ -102,13 +106,35 @@ function RegistroContent() {
     agencyApi.getInvitation(token)
       .then((data) => {
         setInvitation(data);
-        if (data.invitedEmail || data.email) {
-          authForm.setValue('email', data.invitedEmail ?? data.email ?? '');
+        const rawEmail = data.invitedEmail ?? data.email ?? '';
+        if (rawEmail) {
+          // Defend against a malformed value (e.g. RFC-2822 `name"<email>`):
+          // extract the address inside angle brackets, else use the trimmed value.
+          const angle = rawEmail.match(/<([^>]+)>/);
+          authForm.setValue('email', (angle ? angle[1] : rawEmail).trim());
         }
       })
-      .catch(() => setInvitationError('La invitación no existe o ya expiró.'))
+      .catch((err) => {
+        // Distinguish a dead token (expired / already-accepted / not-found) from a
+        // transient network error, so we don't wipe a still-valid token on a blip.
+        const dead = err instanceof ApiError && [400, 404, 410].includes(err.status);
+        setInvitationDead(dead);
+        setInvitationError(
+          dead
+            ? 'Esta invitación ya no es válida: expiró o ya fue aceptada.'
+            : 'No pudimos validar la invitación. Revisá tu conexión e intentá de nuevo.'
+        );
+      })
       .finally(() => setLoadingInvitation(false));
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A dead invitation token left in localStorage makes ProtectedRoute bounce the user
+  // back here forever (panel → /registro → error → …). Purge it to break the loop.
+  useEffect(() => {
+    if (invitationDead) {
+      try { localStorage.removeItem(PENDING_INVITATION_KEY); } catch { /* ignore */ }
+    }
+  }, [invitationDead]);
 
   // ─── Auto-accept / auto-complete ─────────────────────────────────────────
   // Fires whenever the user is authenticated and has an invitation token loaded.
@@ -229,12 +255,33 @@ function RegistroContent() {
   if (invitationError || !invitation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-        <div className="max-w-sm w-full bg-white dark:bg-card rounded-2xl border border-border p-8 text-center">
+        <div className="max-w-sm w-full bg-white dark:bg-card rounded-xl border border-border p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <WarningCircle className="w-7 h-7 text-destructive" />
           </div>
           <h1 className="text-lg font-semibold text-foreground mb-2">Invitación inválida</h1>
           <p className="text-sm text-muted-foreground">{invitationError}</p>
+          {invitationDead && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Si ya sos miembro, entrá a tu panel. Si no, pedile al administrador que te reenvíe la invitación.
+            </p>
+          )}
+          {isAuthenticated && (
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                onClick={() => window.location.replace('/panel/inmobiliaria')}
+                className="w-full h-11 flex items-center justify-center rounded-xl bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                Ir a mi panel
+              </button>
+              <a
+                href="/"
+                className="w-full h-11 flex items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Volver al inicio
+              </a>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -247,10 +294,10 @@ function RegistroContent() {
       <div className="max-w-md w-full">
 
         {/* Invitation card */}
-        <div className="bg-white dark:bg-card rounded-2xl border border-border p-6 mb-6">
+        <div className="bg-white dark:bg-card rounded-xl border border-border p-6 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-              <Buildings className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+              <Buildings className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">Invitación de</p>
@@ -270,19 +317,19 @@ function RegistroContent() {
                 <p className="text-xs text-muted-foreground">por {invitation.invitedBy}</p>
               )}
             </div>
-            {!isExpired && <CheckCircle className="w-5 h-5 text-emerald-500 ml-auto shrink-0" />}
+            {!isExpired && <CheckCircle className="w-5 h-5 text-success ml-auto shrink-0" />}
           </div>
 
           {isExpired && (
-            <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2">
-              <WarningCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <p className="text-xs text-amber-700 dark:text-amber-300">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
+            <div className="mt-3 p-3 rounded-xl bg-warning-soft border border-warning/30 flex items-center gap-2">
+              <WarningCircle className="w-4 h-4 text-warning shrink-0" />
+              <p className="text-xs text-warning">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
             </div>
           )}
         </div>
 
         {!isExpired && (
-          <div className="bg-white dark:bg-card rounded-2xl border border-border p-6">
+          <div className="bg-white dark:bg-card rounded-xl border border-border p-6">
 
             {/* ── Step: Complete profile (Supabase session exists, no backend profile) ── */}
             {needsOnboarding ? (
@@ -298,10 +345,10 @@ function RegistroContent() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
-                      <input
+                      <Input
                         {...profileForm.register('firstName', { required: 'Requerido' })}
                         placeholder="Tu nombre"
-                        className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full"
                       />
                       {profileForm.formState.errors.firstName && (
                         <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.firstName.message}</p>
@@ -309,10 +356,10 @@ function RegistroContent() {
                     </div>
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
-                      <input
+                      <Input
                         {...profileForm.register('lastName', { required: 'Requerido' })}
                         placeholder="Tu apellido"
-                        className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full"
                       />
                       {profileForm.formState.errors.lastName && (
                         <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.lastName.message}</p>
@@ -326,11 +373,11 @@ function RegistroContent() {
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
+                      <Input
                         {...profileForm.register('phone')}
                         placeholder="3001234567"
                         type="tel"
-                        className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full pl-9"
                       />
                     </div>
                   </div>
@@ -364,8 +411,8 @@ function RegistroContent() {
                 {confirmed ? (
                   /* Email confirmation pending — user just needs to click the link */
                   <div className="py-4 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
-                      <Envelope className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto">
+                      <Envelope className="w-7 h-7 text-success" />
                     </div>
                     <div>
                       <p className="text-[15px] font-semibold text-foreground">Revisá tu email</p>
@@ -385,10 +432,10 @@ function RegistroContent() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
-                        <input
+                        <Input
                           {...authForm.register('firstName', { required: 'Requerido' })}
                           placeholder="Tu nombre"
-                          className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full"
                         />
                         {authForm.formState.errors.firstName && (
                           <p className="text-xs text-destructive mt-1">{authForm.formState.errors.firstName.message}</p>
@@ -396,10 +443,10 @@ function RegistroContent() {
                       </div>
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
-                        <input
+                        <Input
                           {...authForm.register('lastName', { required: 'Requerido' })}
                           placeholder="Tu apellido"
-                          className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full"
                         />
                         {authForm.formState.errors.lastName && (
                           <p className="text-xs text-destructive mt-1">{authForm.formState.errors.lastName.message}</p>
@@ -411,11 +458,11 @@ function RegistroContent() {
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Email</label>
                       <div className="relative">
                         <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
+                        <Input
                           {...authForm.register('email', { required: 'Requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email inválido' } })}
                           type="email"
                           placeholder="tu@email.com"
-                          className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full pl-9"
                         />
                       </div>
                       {authForm.formState.errors.email && (
@@ -427,11 +474,11 @@ function RegistroContent() {
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Contraseña</label>
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
+                        <Input
                           {...authForm.register('password', { required: 'Requerido', minLength: { value: 6, message: 'Mínimo 6 caracteres' } })}
                           type="password"
                           placeholder="Mínimo 6 caracteres"
-                          className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full pl-9"
                         />
                       </div>
                       {authForm.formState.errors.password && (

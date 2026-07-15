@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -14,19 +14,21 @@ import {
   ArrowRight,
   Lock,
   Robot,
-  CircleNotch,
   CheckCircle,
   X,
   Warning,
+  Play,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AIAgentDefinition } from '@/lib/types/ai-agents';
-import { AIAgentDetailSidebar } from './AIAgentDetailSidebar';
 import { AIAgentExecutionPanel } from './AIAgentExecutionPanel';
 import { useAgentExecution } from '@/lib/hooks/use-agent';
-import { useAuth } from '@/lib/auth/use-auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 
 const ICON_MAP: Record<string, Icon> = {
   ShieldCheck,
@@ -48,15 +50,13 @@ interface AIAgentCardProps {
 
 export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgentCardProps) {
   const { locale } = useI18n();
-  const { user } = useAuth();
-  const [showDetail, setShowDetail] = useState(false);
   const [showRunPopover, setShowRunPopover] = useState(false);
   const [showExecution, setShowExecution] = useState(false);
   const [applicationIdInput, setApplicationIdInput] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { isRunning, error, result, trace, runScoring, runMatching, clearResult } = useAgentExecution();
+  const { isRunning, error, result, trace, runScoring, clearResult } = useAgentExecution();
 
   const AgentIcon = ICON_MAP[agent.icon] || ShieldCheck;
   const isActive = agent.status === 'active';
@@ -95,13 +95,19 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
     if (!appId) return;
 
     setShowRunPopover(false);
-    const agencyId = user?.id ?? '';
 
+    // Scoring is the only agent runnable from the card. Smart-matching is
+    // server-triggered (out of scope for the card — see use-agent.ts).
     if (isScoring) {
-      await runScoring(appId, agencyId);
-    } else {
-      await runMatching(appId, agencyId, 'new_application');
+      await runScoring(appId);
     }
+  }
+
+  function handleOpenRunPopover(e: ReactMouseEvent) {
+    // Card is wrapped in a <Link>; prevent the click from navigating.
+    e.preventDefault();
+    e.stopPropagation();
+    setShowRunPopover(true);
   }
 
   function handleClearAndReset() {
@@ -123,20 +129,20 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
 
   if (!isActive) {
     return (
-      <div className="relative rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 bg-neutral-50/50 dark:bg-white/[0.02] p-5 opacity-75">
+      <div className="relative rounded-xl border border-dashed border-border-strong bg-surface-muted/50 p-5 opacity-75">
         <div className="flex items-start gap-4">
-          <div className={cn('rounded-xl p-3', 'bg-neutral-100 dark:bg-neutral-800')}>
-            <AgentIcon weight="duotone" className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+          <div className={cn('rounded-xl p-3', 'bg-surface-muted')}>
+            <AgentIcon weight="duotone" className="h-5 w-5 text-fg-subtle" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-medium text-neutral-500 dark:text-neutral-400">{name}</h3>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400">
+              <h3 className="font-medium text-fg-subtle">{name}</h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface-muted text-fg-subtle">
                 <Lock weight="bold" className="h-3 w-3" />
                 {locale === 'es' ? 'Proximamente' : 'Coming soon'}
               </span>
             </div>
-            <p className="mt-1 text-sm text-neutral-400 dark:text-neutral-500 line-clamp-2">
+            <p className="mt-1 text-sm text-fg-subtle line-clamp-2">
               {description}
             </p>
           </div>
@@ -146,45 +152,45 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
   }
 
   return (
-    <>
-      <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg hover:shadow-neutral-200/50 dark:hover:shadow-black/20 transition-all overflow-hidden cursor-pointer">
+    <div className="relative">
+      <Link href={`/panel/inmobiliaria/ai?agent=${agent.id}`} className="group block rounded-xl border border-border bg-surface p-4 hover:border-border-strong hover:shadow-sm transition-all overflow-hidden cursor-pointer">
         {/* Header: badge + active + info */}
         <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-surface-muted text-fg-subtle">
             <Robot weight="bold" className="h-2.5 w-2.5" />
             Agente AI
           </span>
           <span className="flex items-center gap-1.5 ml-auto">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-emerald-400" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 bg-success" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
             </span>
-            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+            <MonoLabel className="text-[10.5px] tracking-[0.06em]">
               {locale === 'es' ? 'Activo' : 'Active'}
-            </span>
+            </MonoLabel>
           </span>
         </div>
 
         {/* Icon + name */}
         <div className="flex items-center gap-3">
-          <div className={cn('rounded-lg p-2 flex-shrink-0', agent.colorBg)}>
+          <div className={cn('rounded-md p-2 flex-shrink-0', agent.colorBg)}>
             <AgentIcon weight="duotone" className={cn('h-4 w-4', agent.color)} />
           </div>
-          <h3 className="font-semibold text-sm text-neutral-900 dark:text-white truncate flex-1">{name}</h3>
+          <h3 className="font-semibold text-sm text-fg truncate flex-1">{name}</h3>
         </div>
 
         {/* Description */}
-        <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2">
+        <p className="mt-2 text-xs text-fg-subtle line-clamp-2">
           {description}
         </p>
 
         {/* Metrics */}
         {metrics && metrics.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50 grid grid-cols-2 gap-2">
+          <div className="mt-3 pt-3 border-t border-border-faint grid grid-cols-2 gap-2">
             {metrics.map((m) => (
               <div key={m.label}>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{m.label}</p>
-                <p className="text-base font-semibold text-neutral-900 dark:text-white">{m.value}</p>
+                <p className="text-[11px] text-fg-subtle">{m.label}</p>
+                <p className="text-base font-semibold text-fg font-mono tabular-nums">{m.value}</p>
               </div>
             ))}
           </div>
@@ -193,44 +199,49 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
         {/* Inline result banner */}
         {(resultLabel || error || isRunning) && (
           <div className={cn(
-            'mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50',
+            'mt-3 pt-3 border-t border-border-faint',
           )}>
             {isRunning && (
-              <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
-                <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <Spinner size="sm" />
                 <span>{locale === 'es' ? 'Ejecutando...' : 'Running...'}</span>
               </div>
             )}
             {!isRunning && error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+              <div className="flex items-center gap-2 text-sm text-danger">
                 <Warning weight="fill" className="h-4 w-4" />
                 <span className="truncate flex-1">{error}</span>
-                <button
-                  onClick={handleClearAndReset}
-                  className="p-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                >
-                  <X className="h-3 w-3" />
-                </button>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClearAndReset(); }}
+                  aria-label={locale === 'es' ? 'Descartar error' : 'Dismiss error'}
+                  icon={<X />}
+                />
               </div>
             )}
             {!isRunning && resultLabel && (
               <div className="flex items-center gap-2 text-sm">
-                <CheckCircle weight="fill" className="h-4 w-4 text-emerald-500" />
-                <span className="font-medium text-neutral-900 dark:text-white truncate flex-1">
+                <CheckCircle weight="fill" className="h-4 w-4 text-success" />
+                <span className="font-medium text-fg font-mono tabular-nums truncate flex-1">
                   {resultLabel}
                 </span>
-                <button
-                  onClick={() => { if (trace) setShowExecution(true); }}
-                  className="text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors whitespace-nowrap"
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (trace) setShowExecution(true); }}
+                  className="h-auto whitespace-nowrap p-0 text-xs"
                 >
                   {locale === 'es' ? 'Ver trace' : 'View trace'}
-                </button>
-                <button
-                  onClick={handleClearAndReset}
-                  className="p-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                >
-                  <X className="h-3 w-3 text-neutral-400" />
-                </button>
+                </Button>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClearAndReset(); }}
+                  aria-label={locale === 'es' ? 'Limpiar resultado' : 'Clear result'}
+                  icon={<X className="text-fg-subtle" />}
+                />
               </div>
             )}
           </div>
@@ -238,30 +249,95 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
 
         {/* Live activity ticker */}
         {lastAction && (
-          <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50">
-            <div className="relative overflow-hidden rounded-lg bg-neutral-50/80 dark:bg-white/[0.03] px-3 py-2">
+          <div className="mt-3 pt-3 border-t border-border-faint">
+            <div className="relative overflow-hidden rounded-md bg-surface-muted px-3 py-2">
               {/* Shimmer sweep */}
-              <div className="absolute inset-0 animate-sweep bg-gradient-to-r from-transparent via-white/60 dark:via-white/[0.06] to-transparent w-1/2" />
+              <div className="absolute inset-0 animate-sweep bg-gradient-to-r from-transparent via-white/60 to-transparent w-1/2" />
               <div className="relative flex items-center gap-2">
                 {/* Animated dots */}
                 <div className="flex items-center gap-[3px] flex-shrink-0">
-                  <span className="h-[5px] w-[5px] rounded-full bg-emerald-500 animate-[pulse_1.5s_ease-in-out_infinite]" />
-                  <span className="h-[5px] w-[5px] rounded-full bg-emerald-400 animate-[pulse_1.5s_ease-in-out_0.3s_infinite]" />
-                  <span className="h-[5px] w-[5px] rounded-full bg-emerald-300 animate-[pulse_1.5s_ease-in-out_0.6s_infinite]" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-fg-muted animate-[pulse_1.5s_ease-in-out_infinite]" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-fg-subtle animate-[pulse_1.5s_ease-in-out_0.3s_infinite]" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-border-strong animate-[pulse_1.5s_ease-in-out_0.6s_infinite]" />
                 </div>
-                <p className="text-[11px] font-medium text-neutral-700 dark:text-neutral-200 truncate flex-1">{lastAction.title}</p>
-                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 whitespace-nowrap tabular-nums">{lastAction.time}</span>
+                <p className="text-[11px] font-medium text-fg-muted truncate flex-1">{lastAction.title}</p>
+                <span className="text-[10px] text-fg-subtle whitespace-nowrap tabular-nums">{lastAction.time}</span>
               </div>
             </div>
           </div>
         )}
 
         {/* View detail hint */}
-        <div className="mt-2.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+        <div className="mt-2.5 flex items-center gap-1 text-xs text-fg-subtle group-hover:text-primary transition-colors">
           {locale === 'es' ? 'Ver detalle del agente' : 'View agent detail'}
           <ArrowRight className="h-3 w-3" />
         </div>
       </Link>
-    </>
+
+      {/* Run control — scoring only. Sibling of <Link> so navigation stays intact. */}
+      {isScoring && (
+        <div className="absolute top-4 right-4 z-10" ref={popoverRef}>
+          <Button
+            type="button"
+            size="sm"
+            hideArrow
+            isLoading={isRunning}
+            onClick={handleOpenRunPopover}
+            aria-label={locale === 'es' ? 'Ejecutar agente' : 'Run agent'}
+          >
+            <Play weight="fill" className="h-3.5 w-3.5" />
+            {locale === 'es' ? 'Ejecutar' : 'Run'}
+          </Button>
+
+          {/* ALLOWLIST: inline anchored run-form popover. It is a disclosure
+              anchored under the card's relative wrapper (custom outside-click +
+              focus mgmt + role="dialog" + aria-label). A portaled Cadence
+              Dialog/Popover would detach it from the card anchor and break the
+              inline run-form affordance (and the inline-DOM test contract). */}
+          {showRunPopover && (
+            <div
+              className="absolute right-0 mt-2 w-72 rounded-[14px] border border-border bg-surface shadow-lg p-3"
+              role="dialog"
+              aria-label={locale === 'es' ? 'Ejecutar evaluación' : 'Run evaluation'}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <label
+                htmlFor={`run-app-${agent.id}`}
+                className="block text-[11px] font-medium text-fg-subtle mb-1.5"
+              >
+                {locale === 'es' ? 'ID de aplicación' : 'Application ID'}
+              </label>
+              <Input
+                id={`run-app-${agent.id}`}
+                ref={inputRef}
+                type="text"
+                value={applicationIdInput}
+                onChange={(e) => setApplicationIdInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleRun(); } }}
+                placeholder={locale === 'es' ? 'p. ej. app_abc123' : 'e.g. app_abc123'}
+                className="w-full"
+              />
+              <Button
+                type="button"
+                size="sm"
+                hideArrow
+                isLoading={isRunning}
+                onClick={() => { void handleRun(); }}
+                disabled={!applicationIdInput.trim() || isRunning}
+                className="mt-2.5 w-full"
+              >
+                <Play weight="fill" className="h-3.5 w-3.5" />
+                {locale === 'es' ? 'Ejecutar' : 'Run'}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Execution panel — full-screen overlay, sibling of <Link>. */}
+      {showExecution && trace && (
+        <AIAgentExecutionPanel trace={trace} onClose={() => setShowExecution(false)} />
+      )}
+    </div>
   );
 }

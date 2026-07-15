@@ -7,7 +7,6 @@ import {
   UploadSimple,
   FileText,
   X,
-  Spinner,
   WarningCircle,
   CheckCircle,
   Info,
@@ -15,6 +14,17 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { IconButton } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import { contractsApi } from '@/lib/api/contracts.service';
@@ -251,7 +261,7 @@ function NuevoContratoContent() {
   if (isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
+        <Spinner size="md" variant="muted" />
       </div>
     );
   }
@@ -259,11 +269,11 @@ function NuevoContratoContent() {
   if (loadError || !application) {
     return (
       <div className="max-w-2xl mx-auto p-8">
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-rose-700">No se pudo cargar la aplicación</p>
-            <p className="text-sm text-rose-600 mt-1">{loadError}</p>
+            <p className="font-semibold text-danger">No se pudo cargar la aplicación</p>
+            <p className="text-sm text-danger mt-1">{loadError}</p>
           </div>
         </div>
       </div>
@@ -274,13 +284,15 @@ function NuevoContratoContent() {
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div>
-        <button
+        <Button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
+          variant="link"
+          hideArrow
+          className="mb-3 h-auto gap-1 px-0 text-muted-foreground hover:text-foreground hover:no-underline"
         >
           <CaretLeft className="w-4 h-4" /> Volver
-        </button>
-        <h1 className="text-2xl font-semibold text-foreground">Crear contrato</h1>
+        </Button>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Crear contrato</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Candidato: <span className="font-medium text-foreground">{application.tenantName}</span>
           {property && (
@@ -291,8 +303,8 @@ function NuevoContratoContent() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1) Contract origin */}
-        <section className="rounded-2xl border border-border bg-card p-5 space-y-4">
-          <h2 className="font-semibold text-sm text-foreground">Tipo de contrato</h2>
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ModeOption
               active={form.mode === 'upload'}
@@ -322,25 +334,26 @@ function NuevoContratoContent() {
 
         {/* 2) PDF upload */}
         {form.mode === 'upload' && (
-          <section className="rounded-2xl border border-border bg-card p-5 space-y-3">
-            <h2 className="font-semibold text-sm text-foreground">PDF del contrato</h2>
+          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
             {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20">
-                <FileText className="w-5 h-5 text-rose-500 flex-shrink-0" />
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50/60 dark:bg-emerald-900/20">
+                <FileText className="w-5 h-5 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {(form.pdfFile.size / 1024).toFixed(0)} KB
                   </p>
                 </div>
-                <button
-                  type="button"
+                <IconButton
+                  variant="ghost"
+                  size="sm"
                   onClick={() => updateForm('pdfFile', null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                  aria-label="Quitar"
                   title="Quitar"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                  className="text-muted-foreground hover:text-danger"
+                  icon={<X className="w-4 h-4" />}
+                />
               </div>
             ) : (
               <label
@@ -351,8 +364,8 @@ function NuevoContratoContent() {
                 className={cn(
                   'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
                   isDragging
-                    ? 'border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
-                    : 'border-border hover:border-indigo-300 hover:bg-muted/50'
+                    ? 'border-primary/40 bg-primary-soft/40'
+                    : 'border-border hover:border-primary/40 hover:bg-muted/50'
                 )}
               >
                 <UploadSimple className="w-8 h-8 text-muted-foreground" />
@@ -370,10 +383,10 @@ function NuevoContratoContent() {
               </label>
             )}
             {validation.pdfFile && (
-              <p className="text-xs text-rose-600">{validation.pdfFile}</p>
+              <p className="text-xs text-danger">{validation.pdfFile}</p>
             )}
 
-            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-lg p-3">
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <p>
                 El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
@@ -384,23 +397,21 @@ function NuevoContratoContent() {
         )}
 
         {/* 3) Dates + amounts */}
-        <section className="rounded-2xl border border-border bg-card p-5 space-y-4">
-          <h2 className="font-semibold text-sm text-foreground">Términos</h2>
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Fecha de inicio" error={validation.startDate}>
-              <input
+              <Input
                 type="date"
                 value={form.startDate}
                 onChange={(e) => updateForm('startDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
               />
             </Field>
             <Field label="Fecha de fin" error={validation.endDate}>
-              <input
+              <Input
                 type="date"
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
               />
             </Field>
             <Field
@@ -408,14 +419,14 @@ function NuevoContratoContent() {
               error={validation.monthlyRent}
               hint={form.monthlyRent ? formatCurrency(Number(form.monthlyRent)) : 'Mínimo 100.000 COP'}
             >
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min={100_000}
                 step={1000}
                 value={form.monthlyRent}
                 onChange={(e) => updateForm('monthlyRent', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="tabular-nums"
               />
             </Field>
             <Field
@@ -423,69 +434,75 @@ function NuevoContratoContent() {
               error={validation.deposit}
               hint={form.deposit ? formatCurrency(Number(form.deposit)) : undefined}
             >
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min={0}
                 step={1000}
                 value={form.deposit}
                 onChange={(e) => updateForm('deposit', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="tabular-nums"
               />
             </Field>
             <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min={1}
                 max={28}
                 value={form.paymentDay}
                 onChange={(e) => updateForm('paymentDay', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm tabular-nums"
+                className="tabular-nums"
               />
             </Field>
             <Field label="Seguro" hint="Opcional">
-              <select
+              <Select
                 value={form.insuranceTier}
-                onChange={(e) => updateForm('insuranceTier', e.target.value as InsuranceTier)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
               >
-                <option value="NONE">Sin seguro</option>
-                <option value="BASIC">Básico</option>
-                <option value="PREMIUM">Premium</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Sin seguro</SelectItem>
+                  <SelectItem value="BASIC">Básico</SelectItem>
+                  <SelectItem value="PREMIUM">Premium</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
           </div>
         </section>
 
         {/* Errors + submit */}
         {submitError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 flex items-start gap-2">
-            <WarningCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-rose-700">{submitError}</p>
+          <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+            <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-danger">{submitError}</p>
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3">
-          <button
+        <div className="flex items-center justify-end gap-2">
+          <Button
             type="button"
+            variant="secondary"
+            hideArrow
             onClick={() => router.back()}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            hideArrow
             disabled={!isValid || actions.isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="gap-2"
           >
             {actions.isSubmitting ? (
-              <Spinner className="w-4 h-4 animate-spin" />
+              <Spinner size="sm" variant="current" />
             ) : (
               <CheckCircle className="w-4 h-4" />
             )}
             Crear contrato
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -514,17 +531,18 @@ function ModeOption({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(
         'relative text-left p-4 rounded-xl border transition-colors',
-        active && 'border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20',
-        !active && !disabled && 'border-border hover:border-indigo-200 hover:bg-muted/50',
+        active && 'border-primary/40 bg-primary-soft/40',
+        !active && !disabled && 'border-border hover:border-primary/40 hover:bg-muted/50',
         disabled && 'border-border opacity-50 cursor-not-allowed'
       )}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <Icon className={cn('w-4 h-4', active ? 'text-indigo-600' : 'text-muted-foreground')} />
+        <Icon className={cn('w-4 h-4', active ? 'text-primary' : 'text-muted-foreground')} />
         <p className="text-sm font-semibold text-foreground">{title}</p>
       </div>
       <p className="text-xs text-muted-foreground">{desc}</p>
@@ -553,7 +571,7 @@ function Field({
       <label className="block text-xs font-medium text-foreground">{label}</label>
       {children}
       {error ? (
-        <p className="text-xs text-rose-600">{error}</p>
+        <p className="text-xs text-danger">{error}</p>
       ) : hint ? (
         <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}

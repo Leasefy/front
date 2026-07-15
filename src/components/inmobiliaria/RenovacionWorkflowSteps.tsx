@@ -66,9 +66,9 @@ export function WorkflowStepper({
   return (
     <div className="relative">
       {/* Progress line */}
-      <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-700" />
+      <div className="absolute top-5 left-0 right-0 h-0.5 bg-border" />
       <div
-        className="absolute top-5 left-0 h-0.5 bg-emerald-500 transition-all duration-300"
+        className="absolute top-5 left-0 h-0.5 bg-success transition-all duration-300"
         style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
       />
 
@@ -80,6 +80,9 @@ export function WorkflowStepper({
           const isClickable = index <= currentIndex;
 
           return (
+            // allowlist: clickable wizard step-navigator (icon-per-step circle + label-below,
+            // done/active/upcoming state). Cadence Stepper is display-only (non-clickable nav,
+            // numbered, side labels) — can't model this. Native kept, tokens cleaned (emerald→success).
             <button
               key={step.status}
               onClick={() => isClickable && onStepClick(step.status)}
@@ -91,10 +94,10 @@ export function WorkflowStepper({
               <div
                 className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                   isCompleted
-                    ? 'bg-emerald-500 text-white'
+                    ? 'bg-success text-white'
                     : isCurrent
-                    ? 'bg-emerald-500 text-white ring-4 ring-emerald-100 dark:ring-emerald-900/50'
-                    : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                    ? 'bg-success text-white ring-4 ring-success/30'
+                    : 'bg-surface-muted text-fg-muted'
                 }`}
               >
                 {isCompleted ? <Check className="h-5 w-5" weight="bold" /> : step.icon}
@@ -103,7 +106,7 @@ export function WorkflowStepper({
                 <p
                   className={`text-xs font-medium ${
                     isCurrent
-                      ? 'text-emerald-600 dark:text-emerald-400'
+                      ? 'text-success'
                       : 'text-muted-foreground'
                   }`}
                 >
@@ -181,7 +184,7 @@ export function StepRevision({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.expiryDate')}</span>
-              <span className="font-medium text-amber-600">
+              <span className="font-medium text-warning">
                 {new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}
               </span>
             </div>
@@ -193,9 +196,9 @@ export function StepRevision({
         </Card>
 
         {/* IPC Preview */}
-        <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10">
+        <Card className="border-success/30 bg-success-soft">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+            <CardTitle className="text-sm flex items-center gap-2 text-success">
               <TrendUp className="h-4 w-4" />
               {t('inmobiliaria.operaciones.renovacion.revision.ipcProjection', { rate: String(ipc.rate) })}
             </CardTitle>
@@ -204,9 +207,9 @@ export function StepRevision({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.proposedRent')}</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(proposedRent)}</p>
+                <p className="text-2xl font-bold text-success">{formatCurrency(proposedRent)}</p>
               </div>
-              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <Badge className="bg-success-soft text-success">
                 +{formatCurrency(increase)}
               </Badge>
             </div>
@@ -255,8 +258,8 @@ Arriendos Premium`;
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-              <User className="h-5 w-5 text-slate-500" />
+            <div className="h-10 w-10 rounded-full bg-surface-muted flex items-center justify-center">
+              <User className="h-5 w-5 text-fg-muted" />
             </div>
             <div>
               <p className="font-medium">{renovacion.tenantName}</p>
@@ -272,7 +275,7 @@ Arriendos Premium`;
           <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.notification.messagePreview')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 text-sm whitespace-pre-line">
+          <div className="bg-surface-muted/50 rounded-md p-4 text-sm whitespace-pre-line">
             {messagePreview}
           </div>
         </CardContent>
@@ -291,7 +294,7 @@ Arriendos Premium`;
         <Button
           variant="outline"
           onClick={() => onNotify('whatsapp')}
-          className="flex items-center gap-2 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400"
+          className="flex items-center gap-2 border-success/30 text-success hover:bg-success-soft"
         >
           <WhatsappLogo className="h-4 w-4" />
           WhatsApp
@@ -341,11 +344,11 @@ export function StepNegotiation({
   return (
     <div className="space-y-4">
       {/* Proposed Rent */}
-      <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10">
+      <Card className="border-success/30 bg-success-soft">
         <CardContent className="pt-4">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.operaciones.renovacion.negotiation.proposedRent', { rate: String(ipc.rate) })}</p>
-            <p className="text-3xl font-bold text-emerald-600">{formatCurrency(proposedRent)}</p>
+            <p className="text-3xl font-bold text-success">{formatCurrency(proposedRent)}</p>
           </div>
         </CardContent>
       </Card>
@@ -364,7 +367,7 @@ export function StepNegotiation({
           />
         </div>
         {counterOfferValue > 0 && counterOfferValue < proposedRent && (
-          <p className="text-xs text-amber-600 flex items-center gap-1">
+          <p className="text-xs text-warning flex items-center gap-1">
             <Warning className="h-3 w-3" />
             {t('inmobiliaria.operaciones.renovacion.negotiation.counterOfferWarning', { amount: formatCurrency(proposedRent - counterOfferValue) })}
           </p>
@@ -426,7 +429,7 @@ export function StepApproval({
         <CardContent className="space-y-2">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.newRent')}</span>
-            <span className="font-bold text-emerald-600">{formatCurrency(finalRent)}</span>
+            <span className="font-bold text-success">{formatCurrency(finalRent)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.increase')}</span>
@@ -441,14 +444,14 @@ export function StepApproval({
 
       {/* Approval Status */}
       <div className="space-y-3">
-        <Card className={`transition-colors ${ownerApproved ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/10' : ''}`}>
+        <Card className={`transition-colors ${ownerApproved ? 'border-success/30 bg-success-soft' : ''}`}>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  ownerApproved ? 'bg-emerald-100 dark:bg-emerald-900/50' : 'bg-slate-100 dark:bg-slate-800'
+                  ownerApproved ? 'bg-success-soft' : 'bg-surface-muted'
                 }`}>
-                  <User className={`h-5 w-5 ${ownerApproved ? 'text-emerald-600' : 'text-slate-500'}`} />
+                  <User className={`h-5 w-5 ${ownerApproved ? 'text-success' : 'text-fg-muted'}`} />
                 </div>
                 <div>
                   <p className="font-medium">{renovacion.propietarioName}</p>
@@ -456,7 +459,7 @@ export function StepApproval({
                 </div>
               </div>
               {ownerApproved ? (
-                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <Badge className="bg-success-soft text-success">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   {t('inmobiliaria.operaciones.renovacion.approval.approved')}
                 </Badge>
@@ -475,14 +478,14 @@ export function StepApproval({
           </CardContent>
         </Card>
 
-        <Card className={`transition-colors ${tenantApproved ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/10' : ''}`}>
+        <Card className={`transition-colors ${tenantApproved ? 'border-success/30 bg-success-soft' : ''}`}>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  tenantApproved ? 'bg-emerald-100 dark:bg-emerald-900/50' : 'bg-slate-100 dark:bg-slate-800'
+                  tenantApproved ? 'bg-success-soft' : 'bg-surface-muted'
                 }`}>
-                  <User className={`h-5 w-5 ${tenantApproved ? 'text-emerald-600' : 'text-slate-500'}`} />
+                  <User className={`h-5 w-5 ${tenantApproved ? 'text-success' : 'text-fg-muted'}`} />
                 </div>
                 <div>
                   <p className="font-medium">{renovacion.tenantName}</p>
@@ -490,7 +493,7 @@ export function StepApproval({
                 </div>
               </div>
               {tenantApproved ? (
-                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <Badge className="bg-success-soft text-success">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   {t('inmobiliaria.operaciones.renovacion.approval.approved')}
                 </Badge>
@@ -511,9 +514,9 @@ export function StepApproval({
       </div>
 
       {ownerApproved && tenantApproved && (
-        <Card className="border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20">
+        <Card className="border-success/30 bg-success-soft">
           <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+            <div className="flex items-center gap-2 text-success">
               <CheckCircle className="h-5 w-5" weight="fill" />
               <span className="font-medium">{t('inmobiliaria.operaciones.renovacion.approval.bothApproved')}</span>
             </div>
@@ -548,7 +551,7 @@ export function StepSignature({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="aspect-[8.5/11] bg-slate-100 dark:bg-slate-900/50 rounded-lg flex items-center justify-center">
+          <div className="aspect-[8.5/11] bg-surface-muted/50 rounded-md flex items-center justify-center">
             <div className="text-center text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm">{t('inmobiliaria.operaciones.renovacion.signature.preview')}</p>
@@ -564,14 +567,14 @@ export function StepSignature({
       <div className="space-y-2">
         <Label>{t('inmobiliaria.operaciones.renovacion.signature.upload')}</Label>
         <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-md p-6 text-center transition-colors ${
             signedFile
-              ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/10'
-              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+              ? 'border-success/30 bg-success-soft'
+              : 'border-border hover:border-fg-muted/40'
           }`}
         >
           {signedFile ? (
-            <div className="flex items-center justify-center gap-2 text-emerald-600">
+            <div className="flex items-center justify-center gap-2 text-success">
               <CheckCircle className="h-5 w-5" weight="fill" />
               <span className="font-medium">{signedFile.name}</span>
             </div>
@@ -581,6 +584,7 @@ export function StepSignature({
               <p className="text-sm text-muted-foreground">
                 {t('inmobiliaria.operaciones.renovacion.signature.dragOrClick')}
               </p>
+              {/* allowlist: hidden type=file behind a custom drag/click dropzone (playbook file-input allowlist) */}
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
@@ -624,8 +628,8 @@ export function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
   return (
     <div className="space-y-4 text-center">
       <div className="py-8">
-        <div className="mx-auto w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-          <FlagCheckered className="h-10 w-10 text-emerald-600" weight="fill" />
+        <div className="mx-auto w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mb-4">
+          <FlagCheckered className="h-10 w-10 text-success" weight="fill" />
         </div>
         <h3 className="text-xl font-bold mb-2">{t('inmobiliaria.operaciones.renovacion.completed.title')}</h3>
         <p className="text-muted-foreground">
@@ -646,7 +650,7 @@ export function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.newRent')}</span>
-              <span className="font-bold text-emerald-600">{formatCurrency(finalRent)}</span>
+              <span className="font-bold text-success">{formatCurrency(finalRent)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.term')}</span>
@@ -691,13 +695,13 @@ export function WorkflowSidebar({
       </Card>
 
       {/* Countdown */}
-      <Card className={daysUntilExpiry <= 30 ? 'border-red-200 dark:border-red-800' : ''}>
+      <Card className={daysUntilExpiry <= 30 ? 'border-danger/30' : ''}>
         <CardContent className="pt-4 text-center">
           <Clock className={`h-8 w-8 mx-auto mb-2 ${
-            daysUntilExpiry <= 30 ? 'text-red-500' : 'text-amber-500'
+            daysUntilExpiry <= 30 ? 'text-danger' : 'text-warning'
           }`} />
           <p className={`text-3xl font-bold ${
-            daysUntilExpiry <= 30 ? 'text-red-600' : 'text-amber-600'
+            daysUntilExpiry <= 30 ? 'text-danger' : 'text-warning'
           }`}>
             {daysUntilExpiry}
           </p>
@@ -715,9 +719,9 @@ export function WorkflowSidebar({
             {renovacion.history.map((item, index) => (
               <div key={index} className="flex gap-3">
                 <div className="flex flex-col items-center">
-                  <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                  <div className="w-2 h-2 rounded-full bg-surface-muted" />
                   {index < renovacion.history.length - 1 && (
-                    <div className="w-px h-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="w-px h-full bg-surface-muted" />
                   )}
                 </div>
                 <div className="pb-3">
@@ -771,7 +775,7 @@ export function WorkflowSidebar({
       {/* Quick Actions */}
       <Button
         variant="outline"
-        className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+        className="w-full text-danger hover:bg-danger-soft hover:text-danger"
         onClick={onTerminate}
       >
         <X className="h-4 w-4 mr-2" />

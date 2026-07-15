@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { MonoLabel, IconButton } from "@leasefy/cadence";
 
 // --- Original multi-audience testimonials (commented for agency-only launch) ---
 // const _originalTestimonials = [
@@ -83,26 +84,26 @@ export function TestimonialsSection() {
             </div>
 
             {/* Main heading - 58px, -4.176px letter-spacing */}
-            <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-4.176px] leading-[1.05] mb-10">
+            <h2 className="text-[40px] md:text-[58px] font-heading font-normal text-foreground tracking-[-0.072em] leading-[1.05] mb-10">
               Historias de éxito
             </h2>
 
             {/* Compass arrows - Luxterra style */}
             <div className="flex gap-3">
-              <button
+              <IconButton
+                variant="outline"
                 onClick={prevTestimonial}
-                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full"
                 aria-label="Anterior testimonio"
-              >
-                <CaretLeft className="w-5 h-5" />
-              </button>
-              <button
+                icon={<CaretLeft className="w-5 h-5" />}
+              />
+              <IconButton
+                variant="outline"
                 onClick={nextTestimonial}
-                className="w-12 h-12 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-black/5 transition-colors"
+                className="w-12 h-12 rounded-full"
                 aria-label="Siguiente testimonio"
-              >
-                <CaretRight className="w-5 h-5" />
-              </button>
+                icon={<CaretRight className="w-5 h-5" />}
+              />
             </div>
           </motion.div>
 
@@ -119,7 +120,7 @@ export function TestimonialsSection() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.4, delay: offset * 0.1 }}
-                    className="bg-white rounded-2xl p-8 flex flex-col h-[300px]"
+                    className="bg-white rounded-xl p-8 flex flex-col h-[300px]"
                   >
                     {/* Quote icon */}
                     <div className="mb-4">
@@ -157,10 +158,10 @@ export function TestimonialsSection() {
                         </p>
                       </div>
                       {testimonial.result && (
-                        <div className="flex-shrink-0 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-md">
-                          <span className="text-[9px] font-mono font-normal text-primary uppercase tracking-wide whitespace-nowrap">
+                        <div className="flex-shrink-0 bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-sm">
+                          <MonoLabel className="text-[9px] font-normal text-primary tracking-wide whitespace-nowrap">
                             {testimonial.result}
-                          </span>
+                          </MonoLabel>
                         </div>
                       )}
                     </div>

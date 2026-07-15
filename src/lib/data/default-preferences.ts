@@ -46,6 +46,12 @@ export const AUTONOMY_LEVELS: AutonomyLevelOption[] = [
 
 const AGENT_TYPES: AgentType[] = [
   'cobranza',
+  'cotizador',
+  'estudio',
+  'matching',
+  'avaluo',
+  'conciliacion',
+  'pagos',
   'pipeline',
   'mantenimiento',
   'documentos',

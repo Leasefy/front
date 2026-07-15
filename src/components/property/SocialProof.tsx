@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Eye, Users, TrendUp, Clock, Lightning, Shield } from '@phosphor-icons/react';
+import { MonoLabel } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface SocialProofProps {
@@ -54,33 +57,31 @@ export function SocialProofBanner({ propertyId, className }: SocialProofProps) {
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
       {/* Live viewers - Chip style */}
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-100 border border-border rounded-full">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-surface-muted border border-border rounded-full">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success-500))]"></span>
         </span>
         <span className="text-[12px] text-muted-foreground">
-          <span className="font-semibold text-foreground">{currentViewers}</span> viendo ahora
+          <span className="font-semibold text-foreground font-mono tabular-nums">{currentViewers}</span> viendo ahora
         </span>
       </div>
 
       {/* Views today - Chip style */}
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 border border-border rounded-full text-[12px] text-muted-foreground">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-[12px] text-muted-foreground">
         <Eye className="w-3.5 h-3.5" />
-        <span>{stats.viewsToday} visitas hoy</span>
+        <span><span className="font-mono tabular-nums">{stats.viewsToday}</span> visitas hoy</span>
       </div>
 
-      {/* Demand indicator - Colored chip */}
+      {/* Demand indicator - status badge */}
       {stats.demandLevel !== 'media' && (
-        <div className={cn(
-          'inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-full',
-          stats.demandLevel === 'muy-alta'
-            ? 'bg-destructive/10 text-destructive border border-destructive/20'
-            : 'bg-[hsl(var(--warning-50))] text-[hsl(var(--warning-500))] border border-[hsl(var(--warning-100))]'
-        )}>
+        <Badge
+          variant={stats.demandLevel === 'muy-alta' ? 'destructive' : 'warning'}
+          className="gap-1.5"
+        >
           <TrendUp className="w-3.5 h-3.5" />
           {stats.demandLevel === 'muy-alta' ? 'Muy alta demanda' : 'Alta demanda'}
-        </div>
+        </Badge>
       )}
     </div>
   );
@@ -100,7 +101,7 @@ export function SocialProofCard({ propertyId, className }: SocialProofProps) {
   if (!stats) return null;
 
   return (
-    <div className={cn('border border-border bg-black/[0.02] p-4', className)}>
+    <Card className={cn('bg-surface-muted p-4', className)}>
       <div className="space-y-3">
         {/* Applications */}
         <div className="flex items-center justify-between">
@@ -108,7 +109,7 @@ export function SocialProofCard({ propertyId, className }: SocialProofProps) {
             <Users className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-foreground/70">Postulaciones esta semana</span>
           </div>
-          <span className="text-sm font-semibold text-foreground">{stats.applicationsThisWeek}</span>
+          <span className="text-sm font-semibold text-foreground font-mono tabular-nums">{stats.applicationsThisWeek}</span>
         </div>
 
         {/* Saved */}
@@ -117,7 +118,7 @@ export function SocialProofCard({ propertyId, className }: SocialProofProps) {
             <Lightning className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-foreground/70">Guardado por usuarios</span>
           </div>
-          <span className="text-sm font-semibold text-foreground">{stats.savedByUsers}</span>
+          <span className="text-sm font-semibold text-foreground font-mono tabular-nums">{stats.savedByUsers}</span>
         </div>
 
         {/* Response time */}
@@ -126,10 +127,10 @@ export function SocialProofCard({ propertyId, className }: SocialProofProps) {
             <Clock className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-foreground/70">Tiempo de respuesta</span>
           </div>
-          <span className="text-sm font-semibold text-foreground">{stats.avgResponseTime}</span>
+          <span className="text-sm font-semibold text-foreground font-mono tabular-nums">{stats.avgResponseTime}</span>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -163,16 +164,13 @@ export function UrgencyBadge({
   }
 
   return (
-    <div className={cn(
-      'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium',
-      stats.demandLevel === 'muy-alta'
-        ? 'bg-destructive text-white'
-        : 'bg-[hsl(var(--warning-500))] text-white',
-      className
-    )}>
+    <Badge
+      variant={stats.demandLevel === 'muy-alta' ? 'destructive' : 'warning'}
+      className={cn('gap-1.5', className)}
+    >
       <TrendUp className="w-3.5 h-3.5" />
       {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular'}
-    </div>
+    </Badge>
   );
 }
 
@@ -216,7 +214,7 @@ export function LiveActivityFeed({ propertyId, className }: SocialProofProps) {
 
   return (
     <div className={cn('space-y-2', className)}>
-      <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Actividad reciente</p>
+      <MonoLabel>Actividad reciente</MonoLabel>
       <div className="space-y-2">
         {activities.map((activity, index) => (
           <div key={index} className="flex items-center gap-2 text-xs text-muted-foreground">

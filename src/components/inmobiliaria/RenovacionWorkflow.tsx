@@ -197,8 +197,8 @@ export function RenovacionWorkflow({
         <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
           <SheetHeader className="border-b pb-4">
             <SheetTitle className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                <ArrowRight className="h-5 w-5 text-emerald-600" />
+              <div className="p-2 rounded-md bg-success-soft">
+                <ArrowRight className="h-5 w-5 text-success" />
               </div>
               {t('inmobiliaria.operaciones.renovacion.sheetTitle')}
             </SheetTitle>
@@ -221,7 +221,7 @@ export function RenovacionWorkflow({
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                      <div className="p-2 rounded-md bg-primary-soft text-primary">
                         {currentStepInfo?.icon}
                       </div>
                       <div>

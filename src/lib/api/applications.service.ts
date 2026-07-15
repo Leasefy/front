@@ -3,7 +3,7 @@
  * Wraps apiClient for application-specific operations
  */
 
-import { apiClient, getAccessToken } from './client';
+import { apiClient, getAccessToken, ApiError } from './client';
 import type {
   BackendApplication,
   BackendDocument,
@@ -14,6 +14,9 @@ import type {
   EvaluationResult,
   EvaluationTriggerResponse,
   SmartMatchingResponse,
+  CreditCheck,
+  ProtectionOption,
+  ApplicationPrefill,
 } from './applications.types';
 import type { Application } from '@/lib/types/application';
 import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
@@ -175,7 +178,7 @@ export const applicationsApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Error al enviar la aplicación: ${res.status}`);
+      throw new ApiError(res.status, err.message || 'Error al enviar la aplicación');
     }
     return res.json();
   },
@@ -244,8 +247,14 @@ export const applicationsApi = {
     });
   },
 
-  /** Upload a document for an application (multipart) */
+  /**
+   * Upload a document for an application (multipart).
+   * @param applicationId - The application to attach the document to.
+   * @param file - The file to upload.
+   * @param type - Document type key (e.g. 'ID_DOCUMENT', 'BANK_STATEMENT').
+   */
   async uploadDocument(
+    applicationId: string,
     file: File,
     type: string
   ): Promise<BackendDocument> {
@@ -258,7 +267,7 @@ export const applicationsApi = {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${BACKEND_URL}/documents/upload`, {
+    const res = await fetch(`${BACKEND_URL}/applications/${applicationId}/documents`, {
       method: 'POST',
       headers,
       body: formData,
@@ -266,10 +275,20 @@ export const applicationsApi = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Upload failed: ${res.status}`);
+      throw new ApiError(res.status, err.message || 'Upload failed');
     }
 
     return res.json();
+  },
+
+  /**
+   * Fetch prefill data from the tenant's most recent previous application.
+   * Requires an authenticated TENANT session (Bearer JWT).
+   * Returns { hasPreviousApplication: false } when no previous application exists.
+   * GET /applications/prefill
+   */
+  async getPrefill(): Promise<ApplicationPrefill> {
+    return apiClient.get<ApplicationPrefill>('/applications/prefill');
   },
 
   /** Get documents for an application */
@@ -375,6 +394,15 @@ export const landlordApplicationsApi = {
     const raw = await apiClient.get<Record<string, unknown>>(`/evaluations/${applicationId}/result`);
     const nested = (raw.result as Record<string, unknown> | undefined) ?? {};
     const status = typeof raw.status === 'string' ? raw.status.toLowerCase() : undefined;
+    // credit_check arrives at root level (not nested under `result`).
+    // Fall back to nested just in case a backend version wraps everything under result.
+    const creditCheck =
+      (raw.credit_check as CreditCheck | undefined) ??
+      (nested.credit_check as CreditCheck | undefined);
+    // protection_options follows the same root-first, nested-fallback pattern.
+    const protectionOptions =
+      (raw.protection_options as ProtectionOption[] | undefined) ??
+      (nested.protection_options as ProtectionOption[] | undefined);
     return {
       ...(raw as unknown as EvaluationResult),
       status: status as EvaluationResult['status'],
@@ -384,6 +412,8 @@ export const landlordApplicationsApi = {
       integrity_flags: (raw.integrity_flags as EvaluationResult['integrity_flags']) ?? (nested.integrity_flags as EvaluationResult['integrity_flags']),
       observations: (raw.observations as EvaluationResult['observations']) ?? (nested.observations as EvaluationResult['observations']),
       score_breakdown: (raw.score_breakdown as EvaluationResult['score_breakdown']) ?? (nested.score_breakdown as EvaluationResult['score_breakdown']),
+      credit_check: creditCheck,
+      protection_options: protectionOptions,
     };
   },
 

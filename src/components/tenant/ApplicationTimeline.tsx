@@ -29,28 +29,28 @@ const EVENT_ICONS: Record<ApplicationEventType, React.ElementType> = {
  * Color classes for each event type
  */
 const EVENT_COLORS: Record<ApplicationEventType, string> = {
-  created: 'text-muted-foreground bg-muted',
-  submitted: 'text-blue-600 bg-blue-100',
-  documents_verified: 'text-sky-600 bg-sky-100',
-  under_review: 'text-blue-600 bg-blue-100',
-  pre_approved: 'text-amber-600 bg-amber-100',
-  approved: 'text-emerald-600 bg-emerald-100',
-  rejected: 'text-red-600 bg-red-100',
-  withdrawn: 'text-muted-foreground bg-muted',
+  created: 'text-fg-muted bg-surface-muted',
+  submitted: 'text-primary bg-primary-soft',
+  documents_verified: 'text-primary bg-primary-soft',
+  under_review: 'text-primary bg-primary-soft',
+  pre_approved: 'text-warning bg-warning-soft',
+  approved: 'text-success bg-success-soft',
+  rejected: 'text-danger bg-danger-soft',
+  withdrawn: 'text-fg-muted bg-surface-muted',
 };
 
 /**
  * Line color for connecting timeline items
  */
 const EVENT_LINE_COLORS: Record<ApplicationEventType, string> = {
-  created: 'bg-muted',
-  submitted: 'bg-blue-200',
-  documents_verified: 'bg-sky-200',
-  under_review: 'bg-blue-200',
-  pre_approved: 'bg-amber-200',
-  approved: 'bg-emerald-200',
-  rejected: 'bg-red-200',
-  withdrawn: 'bg-muted',
+  created: 'bg-surface-muted',
+  submitted: 'bg-primary-soft',
+  documents_verified: 'bg-primary-soft',
+  under_review: 'bg-primary-soft',
+  pre_approved: 'bg-warning-soft',
+  approved: 'bg-success-soft',
+  rejected: 'bg-danger-soft',
+  withdrawn: 'bg-surface-muted',
 };
 
 /**
@@ -109,12 +109,12 @@ export function ApplicationTimeline({
             {/* Content column */}
             <div className={cn('flex-1 pb-6', isLast && 'pb-0')}>
               {/* Event title */}
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-medium text-fg">
                 {event.description}
               </p>
 
               {/* Timestamp */}
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-fg-muted mt-0.5">
                 {formatDateTime(event.timestamp)}
               </p>
             </div>
@@ -124,7 +124,7 @@ export function ApplicationTimeline({
 
       {/* Empty state */}
       {events.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">
+        <p className="text-sm text-fg-muted text-center py-4">
           No hay eventos para mostrar
         </p>
       )}

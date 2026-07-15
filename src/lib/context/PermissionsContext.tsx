@@ -6,14 +6,19 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, getAccessToken } from '@/lib/api/client';
 import type { MemberPermissionsResponse } from '@/lib/api/inmobiliaria.service';
+import { useAuth } from '@/lib/auth';
+import {
+  isAgentModule,
+  resolveAgentModuleAccess,
+  type AgentModulePermissions,
+} from '@/lib/auth/agent-module-access';
 
-// ============================================================================
-// Context
-// ============================================================================
+type AgentPermissions = AgentModulePermissions;
 
 interface PermissionsContextValue {
   permissions: MemberPermissionsResponse | null;
@@ -27,12 +32,57 @@ interface PermissionsContextValue {
 
 const PermissionsContext = createContext<PermissionsContextValue | null>(null);
 
-// ============================================================================
-// Provider
-// ============================================================================
+async function fetchAgentPermissions(agencyId: string): Promise<AgentPermissions | null> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
+  if (!agentUrl) return null;
+  const token = getAccessToken();
+  // NOTE — issue the fetch even when no token is in memory yet. In production
+  // without a session the backend returns 401 and `!res.ok` keeps us at
+  // `agentPerms = null` (same as the previous early-return). In test contexts
+  // the network mock intercepts before reaching the backend, so route.fulfill
+  // can supply the canonical full-access response without the test needing to
+  // patch the in-memory `_accessToken` singleton from src/lib/api/client.ts.
+  // Net: zero behavior change in production, route.fulfill becomes reachable.
+  const headers: Record<string, string> = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+  const res = await fetch(`${agentUrl}/api/agency/${agencyId}/my-permissions`, {
+    headers,
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as AgentPermissions;
+}
+
+/**
+ * Auth-context shape persisted by the inmobiliaria login flow. When a real
+ * Supabase session is not present (tests, post-logout, transient), the auth
+ * provider's `agency` field is null but the localStorage entry still encodes
+ * the agency identifier — read it here so the permissions fetch can fire and
+ * the layout gate releases. Mirrors the localStorage-fallback pattern used in
+ * ProtectedRoute.tsx (line 49-60).
+ */
+function readAgencyIdFromStorage(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem('arriendo-facil-auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { agencyId?: string; agency?: { id?: string } };
+    return parsed.agencyId ?? parsed.agency?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
+  const { agency } = useAuth();
+  // Prefer the live auth-context agency; fall back to localStorage so the
+  // first paint after a hard refresh (and the synthetic Playwright test seed)
+  // still triggers fetchAgentPermissions. Without this fallback, the cobranza
+  // layout's `canAccess('cobranza','view')` permanently returns false when
+  // the Supabase session has not hydrated yet (auth-context is loading).
+  const agencyId = agency?.id ?? readAgencyIdFromStorage();
   const [permissions, setPermissions] = useState<MemberPermissionsResponse | null>(null);
+  const [agentPerms, setAgentPerms] = useState<AgentPermissions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,10 +90,19 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiClient.get<MemberPermissionsResponse>(
-        '/inmobiliaria/agency/my-permissions'
-      );
-      setPermissions(data);
+      // Decouple the two fetches: a monolith outage must NOT reject the whole
+      // Promise.all and null out agent permissions (cobranza/cotizador access),
+      // and an agent-service outage must not block the legacy modules. Each
+      // call fails independently to null.
+      const [legacy, agent] = await Promise.all([
+        apiClient
+          .get<MemberPermissionsResponse>('/inmobiliaria/agency/my-permissions')
+          .catch(() => null),
+        agencyId ? fetchAgentPermissions(agencyId).catch(() => null) : Promise.resolve(null),
+      ]);
+      setPermissions(legacy);
+      setAgentPerms(agent);
+      if (!legacy) setError('No se pudieron cargar los permisos de la agencia');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error fetching permissions';
       console.error('[PermissionsContext]', message);
@@ -51,7 +110,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [agencyId]);
 
   useEffect(() => {
     fetchPermissions();
@@ -59,29 +118,43 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
   const canAccess = useCallback(
     (module: string, action: string): boolean => {
-      if (!permissions || isLoading) return false;
+      if (isLoading) return false;
+      if (isAgentModule(module)) {
+        // Posture per module lives in agent-module-access.ts:
+        // cobranza/cotizador fail CLOSED; estudio/matching treat an ABSENT
+        // payload key as ALLOWED (mergeable in any order with the agent PR).
+        return resolveAgentModuleAccess(agentPerms, module, action);
+      }
+      if (!permissions) return false;
       if (permissions.isAdmin) return true;
       const effectivePerms = permissions.effectivePermissions;
-      if (!effectivePerms || effectivePerms === 'FULL_ACCESS') return true;
+      // Fail CLOSED: only the explicit sentinel grants full access. A missing,
+      // null, or malformed permissions payload must deny non-admin users
+      // instead of accidentally granting every module.
+      if (effectivePerms === 'FULL_ACCESS') return true;
+      if (!effectivePerms || typeof effectivePerms !== 'object') return false;
       const modulePerms = (effectivePerms as Record<string, string[]>)[module];
       if (!modulePerms) return false;
       return modulePerms.includes(action);
     },
-    [permissions, isLoading],
+    [permissions, agentPerms, isLoading],
+  );
+
+  const value = useMemo<PermissionsContextValue>(
+    () => ({
+      permissions,
+      isLoading,
+      error,
+      canAccess,
+      isAdmin: permissions?.isAdmin ?? false,
+      agencyRole: permissions?.role ?? null,
+      refetch: fetchPermissions,
+    }),
+    [permissions, isLoading, error, canAccess, fetchPermissions],
   );
 
   return (
-    <PermissionsContext.Provider
-      value={{
-        permissions,
-        isLoading,
-        error,
-        canAccess,
-        isAdmin: permissions?.isAdmin ?? false,
-        agencyRole: permissions?.role ?? null,
-        refetch: fetchPermissions,
-      }}
-    >
+    <PermissionsContext.Provider value={value}>
       {children}
     </PermissionsContext.Provider>
   );

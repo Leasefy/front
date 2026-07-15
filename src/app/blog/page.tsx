@@ -39,7 +39,7 @@ export default function BlogPage() {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-1.5 text-[13px] font-medium tracking-wide transition-colors duration-200 border ${
+                  className={`px-4 py-1.5 text-[13px] font-medium transition-colors duration-200 border ${
                     activeCategory === cat
                       ? "bg-foreground text-white border-foreground"
                       : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
@@ -63,8 +63,7 @@ export default function BlogPage() {
               >
                 <Link
                   href={featured.href}
-                  className="group relative block h-[400px] md:h-[520px] overflow-hidden"
-                  style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                  className="group relative block h-[400px] md:h-[520px] overflow-hidden border border-border-faint"
                 >
                   <Image
                     src={featured.image}
@@ -113,8 +112,7 @@ export default function BlogPage() {
                   >
                     <Link
                       href={post.href}
-                      className="group block overflow-hidden"
-                      style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                      className="group block overflow-hidden border border-border-faint"
                     >
                       <div className="relative h-[220px] overflow-hidden">
                         <Image
@@ -128,13 +126,13 @@ export default function BlogPage() {
 
                       <div className="p-5">
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-[11px] font-medium text-indigo-600 tracking-wide uppercase">
+                          <span className="text-[11px] font-medium text-primary tracking-wide uppercase">
                             {post.category}
                           </span>
                           <span className="text-[11px] text-muted-foreground">{post.readTime}</span>
                         </div>
 
-                        <h3 className="text-[15px] font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors duration-300 mb-2">
+                        <h3 className="text-[15px] font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 mb-2">
                           {post.title}
                         </h3>
 
@@ -144,7 +142,7 @@ export default function BlogPage() {
 
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] text-muted-foreground/70">{post.date}</span>
-                          <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-indigo-600" />
+                          <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
                         </div>
                       </div>
                     </Link>

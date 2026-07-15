@@ -20,10 +20,10 @@ export function StepType() {
   return (
     <div className="space-y-6">
       <div className="text-center pb-2">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-fg">
           ¿Qué tipo de inmueble vas a publicar?
         </h3>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Selecciona el tipo que mejor describe tu propiedad
         </p>
       </div>
@@ -41,23 +41,24 @@ export function StepType() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => updateDraft({ type: type.value as PropertyDraft['type'] })}
+              style={isSelected ? { boxShadow: '0 0 0 3px rgba(26,64,255,0.12)' } : undefined}
               className={cn(
-                'relative group p-6 rounded-xl border transition-all duration-200',
+                'relative group p-6 rounded-[20px] transition-all duration-200',
                 isSelected
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-sm'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#2a2a2c] hover:shadow-sm'
+                  ? 'border-2 border-primary bg-primary-soft'
+                  : 'border border-border hover:border-border-strong bg-surface'
               )}
             >
               {/* Selection indicator */}
               <div className={cn(
                 'absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200',
                 isSelected
-                  ? 'border-indigo-600 bg-indigo-600'
-                  : 'border-neutral-300 dark:border-neutral-600'
+                  ? 'border-primary bg-primary'
+                  : 'border-border-strong'
               )}>
                 {isSelected && (
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    <Check className="w-3 h-3 text-primary-fg" weight="bold" />
                   </motion.div>
                 )}
               </div>
@@ -73,13 +74,13 @@ export function StepType() {
               {/* Text */}
               <p className={cn(
                 'font-semibold text-[15px]',
-                isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
+                isSelected ? 'text-fg' : 'text-fg-muted'
               )}>
                 {type.label}
               </p>
               <p className={cn(
                 'text-xs mt-1',
-                isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500 dark:text-neutral-400'
+                isSelected ? 'text-primary' : 'text-fg-subtle'
               )}>
                 {type.description}
               </p>

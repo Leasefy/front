@@ -3,7 +3,7 @@
  * Wraps apiClient with property-specific mapper logic
  */
 
-import { apiClient, getAccessToken } from './client';
+import { apiClient, getAccessToken, ApiError } from './client';
 import { mapBackendProperty, mapBackendAgencyProperty, TYPE_TO_BACKEND } from './properties.mapper';
 import type { BackendProperty, PaginatedResponse, PropertyFiltersParams } from './properties.types';
 import type { Property, AgencyProperty } from '@/lib/types/property';
@@ -136,15 +136,21 @@ export const propertiesApi = {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${BACKEND_URL}/properties/${propertyId}/images`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}/properties/${propertyId}/images`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
+    }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Upload failed: ${res.status}`);
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, (body as { message?: string }).message || `Upload failed: ${res.status}`);
     }
 
     return res.json();

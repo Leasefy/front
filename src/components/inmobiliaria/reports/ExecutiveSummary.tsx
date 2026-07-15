@@ -27,27 +27,27 @@ interface ExecutiveSummaryProps {
 
 const HEALTH_COLORS = {
   excellent: {
-    ring: 'text-emerald-500',
-    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    track: 'text-emerald-200 dark:text-emerald-800',
+    ring: 'text-success',
+    bg: 'bg-success-soft',
+    track: 'text-success',
     label: { es: 'Excelente', en: 'Excellent' },
   },
   good: {
-    ring: 'text-blue-500',
-    bg: 'bg-blue-50 dark:bg-blue-900/20',
-    track: 'text-blue-200 dark:text-blue-800',
+    ring: 'text-primary',
+    bg: 'bg-primary-soft',
+    track: 'text-primary',
     label: { es: 'Bueno', en: 'Good' },
   },
   warning: {
-    ring: 'text-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-900/20',
-    track: 'text-amber-200 dark:text-amber-800',
+    ring: 'text-warning',
+    bg: 'bg-warning-soft',
+    track: 'text-warning',
     label: { es: 'Atencion', en: 'Warning' },
   },
   critical: {
-    ring: 'text-red-500',
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    track: 'text-red-200 dark:text-red-800',
+    ring: 'text-danger',
+    bg: 'bg-danger-soft',
+    track: 'text-danger',
     label: { es: 'Critico', en: 'Critical' },
   },
 } as const;
@@ -94,12 +94,12 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
         {/* Health Score Hero */}
         <div
           className={cn(
-            'rounded-xl border border-neutral-200 dark:border-neutral-800 p-6 flex flex-col items-center justify-center',
-            'bg-white dark:bg-[#1a1a1c]'
+            'rounded-xl border border-border dark:border-strong p-6 flex flex-col items-center justify-center',
+            'bg-surface dark:bg-[#14130F]'
           )}
         >
           <div className="flex items-center gap-2 mb-4">
-            <Heartbeat className="w-4 h-4 text-neutral-500" />
+            <Heartbeat className="w-4 h-4 text-fg-muted" />
             <h3 className="text-sm font-semibold text-foreground">
               {isEs ? 'Salud del Portafolio' : 'Portfolio Health'}
             </h3>
@@ -154,19 +154,19 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
         </div>
 
         {/* Revenue Trend Chart */}
-        <div className="lg:col-span-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-5">
+        <div className="lg:col-span-2 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ChartLineUp className="w-4 h-4 text-neutral-500" />
+              <ChartLineUp className="w-4 h-4 text-fg-muted" />
               {isEs ? 'Ingresos vs Gastos (6 meses)' : 'Revenue vs Expenses (6 months)'}
             </h3>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-neutral-600 dark:bg-neutral-400" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-ink dark:bg-muted" />
                 {isEs ? 'Ingresos' : 'Revenue'}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-neutral-300 dark:bg-neutral-600" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-muted dark:bg-ink" />
                 {isEs ? 'Gastos' : 'Expenses'}
               </span>
             </div>
@@ -176,7 +176,7 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
             height={180}
           />
           {/* Net Income Row */}
-          <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="mt-3 pt-3 border-t border-faint dark:border-strong">
             <div className="flex items-center gap-4 overflow-x-auto">
               {data.monthlySummary.map((m) => (
                 <div key={m.month} className="flex-1 min-w-0 text-center">
@@ -187,8 +187,8 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
                     className={cn(
                       'text-xs font-semibold',
                       m.netIncome >= 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-red-600 dark:text-red-400'
+                        ? 'text-success'
+                        : 'text-danger'
                     )}
                   >
                     {formatCurrency(m.netIncome)}
@@ -247,19 +247,19 @@ function MetricCard({
   const formattedValue = formatMetricValue(metric.currentValue, metric.format, formatCurrency);
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] p-4">
+    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-4">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-          <Icon className="w-4.5 h-4.5 text-neutral-500" />
+        <div className="w-9 h-9 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+          <Icon className="w-4.5 h-4.5 text-fg-muted" />
         </div>
         {/* Delta indicator */}
         {deltaRaw !== 0 && (
           <div
             className={cn(
-              'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-md',
+              'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-sm',
               isGoodChange
-                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
-                : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+                ? 'text-success bg-success-soft'
+                : 'text-danger bg-danger-soft'
             )}
           >
             {isPositiveChange ? (

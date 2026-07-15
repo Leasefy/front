@@ -64,11 +64,11 @@ export function PriceSummary({
   const billingLabel = billingCycle === 'monthly' ? 'mes' : 'ano';
 
   return (
-    <div className={cn('bg-muted rounded-sm p-4', className)}>
+    <div className={cn('bg-muted rounded-[18px] p-4', className)}>
       <h4 className="font-medium text-foreground mb-4 flex items-center gap-2">
         Resumen
         {appliedCoupon && (
-          <Gift className="w-4 h-4 text-emerald-500" />
+          <Gift className="w-4 h-4 text-success" />
         )}
       </h4>
 
@@ -77,7 +77,7 @@ export function PriceSummary({
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Plan {plan.name}</span>
           <span className={cn(
-            'font-medium',
+            'font-medium font-mono tabular-nums',
             appliedCoupon && savings > 0 && 'line-through text-muted-foreground'
           )}>
             {formatCurrency(originalPrice)}/{billingLabel}
@@ -86,25 +86,25 @@ export function PriceSummary({
 
         {/* Discount line */}
         {appliedCoupon && savings > 0 && (
-          <div className="flex justify-between items-center text-emerald-600">
+          <div className="flex justify-between items-center text-success">
             <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
               {appliedCoupon.description}
             </span>
-            <span className="font-medium">-{formatCurrency(savings)}</span>
+            <span className="font-medium font-mono tabular-nums">-{formatCurrency(savings)}</span>
           </div>
         )}
 
         {/* Free period notice */}
         {isTrial && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-sm p-3">
+          <div className="bg-success-soft border border-success/30 rounded-md p-3">
             <div className="flex items-start gap-2">
-              <Calendar className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <Calendar className="w-4 h-4 text-success shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-emerald-800">
+                <p className="text-sm font-medium text-success">
                   {appliedCoupon?.description}
                 </p>
-                <p className="text-xs text-emerald-600 mt-0.5">
+                <p className="text-xs text-success mt-0.5">
                   {trialDays > 30
                     ? `Después de ${Math.round(trialDays / 30)} meses se cobrará el precio normal.`
                     : trialDays === 30
@@ -125,7 +125,7 @@ export function PriceSummary({
             {isFree ? 'A pagar hoy' : 'Total'}
           </span>
           <div className="text-right">
-            <span className="text-xl font-bold text-foreground">
+            <span className="text-xl font-bold font-mono tabular-nums text-foreground">
               {isFree ? 'Gratis' : formatCurrency(finalPrice)}
             </span>
             {!isFree && (
@@ -145,10 +145,10 @@ export function PriceSummary({
 
         {/* Savings summary */}
         {savings > 0 && !isTrial && (
-          <div className="flex items-center justify-center gap-1.5 pt-2 text-emerald-600">
+          <div className="flex items-center justify-center gap-1.5 pt-2 text-success">
             <Info className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">
-              Ahorras {formatCurrency(savings)} con este cupon
+              Ahorras <span className="font-mono tabular-nums">{formatCurrency(savings)}</span> con este cupon
             </span>
           </div>
         )}

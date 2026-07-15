@@ -13,6 +13,9 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Chip } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import type { AdvancedKPI, TrendDirection } from '@/lib/types/inmobiliaria';
 import { getCategoryLabel } from '@/lib/types/inmobiliaria';
 
@@ -64,7 +67,7 @@ function MiniSparkline({
   });
 
   const linePath = `M ${pathPoints.join(' L ')}`;
-  const strokeColor = trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#6366F1';
+  const strokeColor = trend === 'up' ? '#3F8A53' : trend === 'down' ? '#C0392B' : '#1A40FF';
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="flex-shrink-0">
@@ -119,15 +122,15 @@ function KPICard({
     <motion.div
       whileHover={{ y: -2 }}
       onClick={onClick}
-      className="flex flex-col h-full p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:shadow-lg hover: hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all cursor-pointer"
+      className="flex flex-col h-full p-5 rounded-xl border border-border bg-card transition-all cursor-pointer hover:border-primary/30"
     >
       {/* Header - Icon + Title */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-          <CategoryIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="duotone" />
+        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+          <CategoryIcon className="w-5 h-5 text-primary" weight="duotone" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-neutral-600 dark:text-neutral-400 truncate">
+          <h3 className="text-sm font-medium text-fg-muted truncate">
             {kpi.label}
           </h3>
         </div>
@@ -136,21 +139,17 @@ function KPICard({
       {/* Value + Trend Row */}
       <div className="flex items-end justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <p className="text-2xl font-bold text-neutral-900 dark:text-white truncate">
+          <p className="text-2xl font-bold font-mono tabular-nums text-fg truncate">
             {kpi.formattedValue}
           </p>
         </div>
-        <div
-          className={cn(
-            'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0',
-            isPositiveTrend && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-            isNegativeTrend && 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
-            !isPositiveTrend && !isNegativeTrend && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-          )}
+        <Badge
+          variant={isPositiveTrend ? 'success' : isNegativeTrend ? 'destructive' : 'secondary'}
+          className="gap-1 font-mono tabular-nums flex-shrink-0"
         >
           <TrendIcon className="w-3 h-3" weight="bold" />
           <span>{kpi.trend.percentage > 0 ? '+' : ''}{kpi.trend.percentage.toFixed(1)}%</span>
-        </div>
+        </Badge>
       </div>
 
       {/* Sparkline */}
@@ -160,34 +159,30 @@ function KPICard({
 
       {/* Progress Bar */}
       {progress !== null && kpi.targetLabel && (
-        <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800">
+        <div className="pt-3 border-t border-faint">
           <div className="flex items-center justify-between text-xs mb-1.5">
-            <div className="flex items-center gap-1 text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1 text-fg-muted">
               <Target className="w-3 h-3" />
               <span>{kpi.targetLabel}</span>
             </div>
             <span className={cn(
-              'font-semibold',
-              progress >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'
+              'font-semibold font-mono tabular-nums',
+              progress >= 100 ? 'text-success' : 'text-primary'
             )}>
               {progress.toFixed(0)}%
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-            <div
-              className={cn(
-                'h-full rounded-full transition-all duration-500',
-                progress >= 100 ? 'bg-emerald-500' : 'bg-indigo-600'
-              )}
-              style={{ width: `${Math.min(100, progress)}%` }}
-            />
-          </div>
+          <Progress
+            value={Math.min(100, progress)}
+            variant={progress >= 100 ? 'success' : 'default'}
+            size="sm"
+          />
         </div>
       )}
 
       {/* Empty state for cards without target */}
       {progress === null && (
-        <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800">
+        <div className="pt-3 border-t border-faint">
           <div className="h-[26px]" />
         </div>
       )}
@@ -218,26 +213,22 @@ function CompactKPICard({
     <motion.div
       whileHover={{ x: 2 }}
       onClick={onClick}
-      className="flex items-center gap-4 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1c] hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all cursor-pointer"
+      className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card transition-all cursor-pointer hover:border-primary/30"
     >
-      <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-        <CategoryIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="duotone" />
+      <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+        <CategoryIcon className="w-5 h-5 text-primary" weight="duotone" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{kpi.label}</p>
-        <p className="text-lg font-bold text-neutral-900 dark:text-white">{kpi.formattedValue}</p>
+        <p className="text-xs text-fg-muted truncate">{kpi.label}</p>
+        <p className="text-lg font-bold font-mono tabular-nums text-fg">{kpi.formattedValue}</p>
       </div>
-      <div
-        className={cn(
-          'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0',
-          isPositiveTrend && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-          isNegativeTrend && 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
-          !isPositiveTrend && !isNegativeTrend && 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-        )}
+      <Badge
+        variant={isPositiveTrend ? 'success' : isNegativeTrend ? 'destructive' : 'secondary'}
+        className="gap-1 font-mono tabular-nums flex-shrink-0"
       >
         <TrendIcon className="w-3.5 h-3.5" weight="bold" />
         <span>{kpi.trend.percentage > 0 ? '+' : ''}{kpi.trend.percentage.toFixed(1)}%</span>
-      </div>
+      </Badge>
     </motion.div>
   );
 }
@@ -273,30 +264,20 @@ export function AnalyticsKPICards({
     <div className="space-y-5">
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 flex-wrap">
-        <button
+        <Chip
+          selected={selectedCategory === null}
           onClick={() => setSelectedCategory(null)}
-          className={cn(
-            'px-4 py-2 rounded-xl text-sm font-medium transition-all',
-            selectedCategory === null
-              ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-          )}
         >
           {t('inmobiliaria.analytics.kpiCards.all')} ({kpis.length})
-        </button>
+        </Chip>
         {categories.map((category) => (
-          <button
+          <Chip
             key={category}
+            selected={selectedCategory === category}
             onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
-            className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium transition-all',
-              selectedCategory === category
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            )}
           >
             {getCategoryLabel(category)} ({groupedKPIs[category].length})
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -340,7 +321,7 @@ export function AnalyticsKPICards({
       </AnimatePresence>
 
       {/* Summary Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-neutral-200 dark:border-neutral-800">
+      <div className="flex items-center justify-between pt-4 border-t border-border">
         <div className="flex items-center gap-6">
           {categories.map((category) => {
             const categoryKpis = groupedKPIs[category];
@@ -352,22 +333,22 @@ export function AnalyticsKPICards({
 
             return (
               <div key={category} className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                  <CategoryIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" weight="duotone" />
+                <div className="w-7 h-7 rounded-md bg-primary-soft flex items-center justify-center">
+                  <CategoryIcon className="w-3.5 h-3.5 text-primary" weight="duotone" />
                 </div>
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                <span className="text-sm text-fg-muted">
                   {getCategoryLabel(category)}:{' '}
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="font-semibold font-mono tabular-nums text-success">
                     {upTrends}/{categoryKpis.length}
                   </span>
-                  <span className="text-neutral-400 dark:text-neutral-500 ml-1">{t('inmobiliaria.analytics.kpiCards.positive')}</span>
+                  <span className="text-fg-subtle ml-1">{t('inmobiliaria.analytics.kpiCards.positive')}</span>
                 </span>
               </div>
             );
           })}
         </div>
-        <p className="text-xs text-neutral-400">
-          {t('inmobiliaria.analytics.kpiCards.updated')}: {new Date().toLocaleTimeString(locale === 'es' ? 'es-CL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+        <p className="text-xs text-fg-subtle">
+          {t('inmobiliaria.analytics.kpiCards.updated')}: <span className="font-mono tabular-nums">{new Date().toLocaleTimeString(locale === 'es' ? 'es-CL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
         </p>
       </div>
     </div>

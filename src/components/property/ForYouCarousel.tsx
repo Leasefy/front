@@ -4,12 +4,13 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { SectionLabel } from '@/components/ui/section-label';
 import type { Property } from '@/lib/types/property';
-import type { QualificationResult } from '@/lib/scoring/qualificationScore';
+import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
 export interface ScoredPropertyItem {
   property: Property;
@@ -80,38 +81,36 @@ export function ForYouCarousel({
       <div className="relative group">
         {/* Left arrow */}
         {canScrollLeft && (
-          <button
+          <IconButton
+            variant="ghost"
+            icon={<CaretLeft className="h-5 w-5" />}
             onClick={() => scroll('left')}
+            aria-label="Anterior"
             className={cn(
               'absolute left-0 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-sm bg-white/95 shadow-md',
-              'flex items-center justify-center',
+              'h-10 w-10 rounded-full bg-white/95',
               'text-foreground hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',
               '-translate-x-1/2'
             )}
-            aria-label="Anterior"
-          >
-            <CaretLeft className="h-5 w-5" />
-          </button>
+          />
         )}
 
         {/* Right arrow */}
         {canScrollRight && (
-          <button
+          <IconButton
+            variant="ghost"
+            icon={<CaretRight className="h-5 w-5" />}
             onClick={() => scroll('right')}
+            aria-label="Siguiente"
             className={cn(
               'absolute right-0 top-1/2 -translate-y-1/2 z-10',
-              'w-10 h-10 rounded-sm bg-white/95 shadow-md',
-              'flex items-center justify-center',
+              'h-10 w-10 rounded-full bg-white/95',
               'text-foreground hover:bg-white transition-all',
               'opacity-0 group-hover:opacity-100',
               'translate-x-1/2'
             )}
-            aria-label="Siguiente"
-          >
-            <CaretRight className="h-5 w-5" />
-          </button>
+          />
         )}
 
         {/* Scrollable cards container */}
@@ -154,7 +153,7 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
       className="group block shrink-0 w-[260px]"
     >
       {/* Image container */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-sm">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
         <Image
           src={thumbnailUrl}
           alt={title}
@@ -166,7 +165,7 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
         {/* Match score badge - top left */}
         <div
           className={cn(
-            'absolute top-3 left-3 z-10 text-white text-xs px-2 py-1 rounded-sm',
+            'absolute top-3 left-3 z-10 text-white text-xs px-2 py-1 rounded-full font-mono tabular-nums',
             getScoreColor(matchScore)
           )}
         >
@@ -182,7 +181,7 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
         <p className="text-xs text-muted-foreground mt-0.5 truncate">
           {neighborhood}, {city}
         </p>
-        <p className="text-sm font-normal text-foreground mt-1.5">
+        <p className="text-sm font-normal text-foreground mt-1.5 font-mono tabular-nums">
           {formatCurrency(monthlyRent)}/mes
         </p>
       </div>

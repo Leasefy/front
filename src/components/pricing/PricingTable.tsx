@@ -6,6 +6,7 @@ import { PricingCard } from './PricingCard';
 import { AgencyTierCard } from './AgencyTierCard';
 import { PLANS, PLAN_COMPARISON } from '@/lib/constants/subscription-plans';
 import { Check, X } from '@phosphor-icons/react';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { BillingCycle, PlanId, AgencyPlan, AgencyPlanId } from '@/lib/types/subscription';
@@ -61,27 +62,17 @@ export function PricingTable({
       <div className={cn('', className)}>
         {/* Billing cycle toggle */}
         <div className="flex justify-center mb-12">
-          <div className="inline-flex items-center bg-muted/80 p-1.5 rounded-full">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={cn(
-                'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
-                billingCycle === 'monthly' ? 'bg-card text-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Mensual
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={cn(
-                'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
-                billingCycle === 'yearly' ? 'bg-card text-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
+        <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
+          <TabsList variant="segmented">
+            <TabsTrigger value="monthly">Mensual</TabsTrigger>
+            <TabsTrigger value="yearly" className="inline-flex items-center gap-2">
               Anual
-              <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">-20%</span>
-            </button>
-          </div>
+              <Badge variant="success" className="font-mono tabular-nums">
+                -20%
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -115,33 +106,17 @@ export function PricingTable({
     <div className={cn('', className)}>
       {/* Billing cycle toggle - Premium pill design */}
       <div className="flex justify-center mb-12">
-        <div className="inline-flex items-center bg-muted/80 p-1.5 rounded-full">
-          <button
-            onClick={() => setBillingCycle('monthly')}
-            className={cn(
-              'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300',
-              billingCycle === 'monthly'
-                ? 'bg-card text-foreground shadow-md'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Mensual
-          </button>
-          <button
-            onClick={() => setBillingCycle('yearly')}
-            className={cn(
-              'px-6 py-2.5 text-sm font-semibold rounded-full transition-all duration-300 flex items-center gap-2',
-              billingCycle === 'yearly'
-                ? 'bg-card text-foreground shadow-md'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Anual
-            <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-              -20%
-            </span>
-          </button>
-        </div>
+        <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
+          <TabsList variant="segmented">
+            <TabsTrigger value="monthly">Mensual</TabsTrigger>
+            <TabsTrigger value="yearly" className="inline-flex items-center gap-2">
+              Anual
+              <Badge variant="success" className="font-mono tabular-nums">
+                -20%
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Plans grid with stagger animation */}
@@ -164,7 +139,7 @@ export function PricingTable({
             Comparacion detallada
           </h3>
 
-          <div className="overflow-x-auto rounded-sm border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+          <div className="overflow-x-auto rounded-[18px] border border-border/60 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
             <Table>
               <TableHeader>
                 <TableRow className="border-b-border">
@@ -232,11 +207,11 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
     return value ? (
       <div className={cn(
         'w-7 h-7 rounded-full mx-auto flex items-center justify-center',
-        highlighted ? 'bg-primary/10' : 'bg-emerald-50'
+        highlighted ? 'bg-primary/10' : 'bg-success-soft'
       )}>
         <Check className={cn(
           'w-4 h-4',
-          highlighted ? 'text-primary' : 'text-emerald-500'
+          highlighted ? 'text-primary' : 'text-success'
         )} />
       </div>
     ) : (
@@ -246,7 +221,7 @@ function ComparisonCell({ value, highlighted }: { value: boolean | string | numb
 
   return (
     <span className={cn(
-      'text-sm font-semibold',
+      'text-sm font-semibold font-mono tabular-nums',
       highlighted ? 'text-primary' : 'text-foreground'
     )}>
       {value}

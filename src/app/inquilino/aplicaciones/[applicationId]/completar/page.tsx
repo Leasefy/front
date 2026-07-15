@@ -21,6 +21,10 @@ import { StepReferences } from '@/components/wizard/steps/StepReferences';
 import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
 
+import { Button } from '@/components/ui/button';
+import { IconButton } from '@leasefy/cadence';
+import { Spinner } from '@/components/ui/spinner';
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -152,20 +156,20 @@ export default function CompletarPage({ params }: CompletarPageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-surface-muted">
+        <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
   }
 
   if (error || !application || !property) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">{error ?? 'No se pudo cargar la aplicación.'}</p>
+          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la aplicación.'}</p>
           <a
             href={`/inquilino/aplicaciones/${applicationId}`}
-            className="text-indigo-600 hover:underline text-sm"
+            className="text-primary hover:underline text-sm"
           >
             ← Volver al detalle
           </a>
@@ -219,28 +223,30 @@ function UpdateWizardContent({
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-muted flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-muted flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-[#1a1a1c] rounded-3xl p-8 max-w-md w-full text-center shadow-xl"
+          className="bg-surface rounded-xl p-8 max-w-md w-full text-center"
         >
-          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-16 h-16 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-8 h-8 text-success" />
           </div>
-          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-3">
+          <h2 className="text-2xl font-semibold text-fg mb-3">
             ¡Información actualizada!
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-8">
+          <p className="text-fg-muted mb-8">
             La inmobiliaria fue notificada de que completaste la información solicitada.
             Revisarán tu solicitud a la brevedad.
           </p>
-          <button
+          <Button
+            size="lg"
+            hideArrow
             onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}`)}
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors"
+            className="w-full"
           >
             Ver mi aplicación
-          </button>
+          </Button>
         </motion.div>
       </div>
     );
@@ -265,24 +271,24 @@ function SubmissionErrorBanner({ message }: { message: string }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
-    <div className="sticky top-0 z-40 bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-800">
+    <div className="sticky top-0 z-40 bg-danger-soft border-b border-danger/30">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-start gap-3">
-        <WarningCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+        <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">
+          <p className="text-sm font-semibold text-danger">
             No pudimos completar tu solicitud
           </p>
-          <p className="text-xs text-rose-700 dark:text-rose-300 mt-0.5 break-words">
+          <p className="text-xs text-danger mt-0.5 break-words">
             {message}
           </p>
         </div>
-        <button
+        <IconButton
+          variant="ghost"
           onClick={() => setDismissed(true)}
-          className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
+          className="flex-shrink-0 w-7 h-7 rounded-sm hover:bg-danger-soft"
           aria-label="Cerrar"
-        >
-          <X className="w-4 h-4 text-rose-700 dark:text-rose-400" />
-        </button>
+          icon={<X className="w-4 h-4 text-danger" />}
+        />
       </div>
     </div>
   );

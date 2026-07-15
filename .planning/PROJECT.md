@@ -10,24 +10,28 @@ Una plataforma de administración de arriendos para el mercado colombiano donde 
 
 Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Agentes → Resultado debe funcionar con autonomía inteligente y escalamiento a humano cuando se requiera una decisión.
 
-## Current Milestone: v5.0 — Agency Plan-Gated Features & AI Agent UX
+## Current Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (Frontend-First)
 
-**Goal:** Hacer que la plataforma se sienta agéntica desde el minuto 0 para inmobiliarias, y construir las features que diferencian los planes Flex (pago por adjudicación) de los planes de suscripción: reportes avanzados, recordatorios automáticos, y lógica de gating por plan.
+**Goal:** Que TODAS las secciones de un ERP inmobiliario existan en el panel `panel/inmobiliaria` (facturación, conciliación bancaria, egresos/tesorería, informes contables, PQRS, agenda) de forma **aditiva y sin romper el CRM existente**, más los momentos autopilot que no dependen del motor backend (insights proactivos, creación de terceros por IA, captura de propiedad por foto+audio). Es el arranque **frontend-first** de un programa multi-repo de 6 milestones.
 
-**Principio clave:** Los planes Flex deben ser irresistibles — incluyen Agentes AI, reportes avanzados y recordatorios automáticos. El modelo de negocio óptimo es que las inmobiliarias paguen $10 USD por cada adjudicación exitosa.
+**Principio clave:** El diferencial no son más módulos, es que **el sistema opere la inmobiliaria** ("¿qué hace esto que no haga un Excel?"). v6.0 deja el FRENTE del ERP+CRM+Autopilot completo (UI + contrato de api-client); los motores (DIAN, conciliación real, posteo contable, egreso neto autoritativo) llegan en milestones de backend M1–M3 en `back-main`/`agent`.
 
-**Target features:**
-- [ ] Plan gating system — lógica en useAgencyPlan para bloquear features según plan
-- [ ] Reportes avanzados — ocupación, mora, rendimiento por agente, tendencias (Growth+)
-- [ ] Reportes ejecutivos — resúmenes C-level con comparativas mensuales (Business+)
-- [ ] Recordatorios automáticos de cobro — pre-vencimiento, post-vencimiento, escalación (Growth+)
-- [ ] Recordatorios de vencimiento de contrato — alertas a 90/60/30 días (Growth+)
-- [ ] UI de pricing modal para inmobiliarias — modelo Flex vs Suscripción
-- [ ] Dashboard agéntico — agent cards, activity feed, execution panel (ya en progreso)
-- [ ] Agent Hub page — centro de control de agentes AI (/panel/inmobiliaria/ai)
-- [ ] Agent detail sidebar — explicación paso a paso de cada agente
+**⛔ Restricción dura:** ADITIVO — no romper el CRM/módulos existentes. Todo entra como rutas/módulos nuevos vía `canAccess(module,'view')`. Leer `docs/DESIGN.md` antes de cualquier UI.
 
+**Target features (Phases v6-01..v6-08 — namespace `v6-NN` para no colisionar con el stream `agent` v2.1-frontend en mvp):**
+- [x] **v6-01** IA Unificada & Command Center — nav agrupada + landing "Hoy" ✅
+- [ ] **v6-02** Facturación ⭐ — venta/compra, FE-DIAN (estado), notas débito/crédito, recurrente
+- [ ] **v6-03** Conciliación bancaria — cargar fuente, matches, parciales/dup/no-identificados, cola revisión
+- [ ] **v6-04** Egresos a propietarios / Tesorería — neto + comprobante, sobre dispersiones
+- [ ] **v6-05** Informes & Insights — catálogo de informes + "de informes a insights"
+- [ ] **v6-06** PQRS / Solicitudes + Agenda interna
+- [ ] **v6-07** Creación de terceros por IA — foto/audio → IA → prellena
+- [ ] **v6-08** Captura de propiedad foto+audio (stretch)
+
+**Backbone:** `.planning/ERP-CRM-AUTOPILOT-PROGRAM.md` · **Gap:** `.planning/research/ERP-VISION/GAP-ANALYSIS.md` · **Detalle:** `milestones/v6.0-{REQUIREMENTS,ROADMAP}.md`
 **Arquitectura de referencia:** `docs/AI-AGENT-ARCHITECTURE.md`
+
+> v5.0 (Agency Plan-Gated Features) quedó **pausado** 2026-05-12 (Phases 1–33 completas; items diferidos: Automatic Reminders, Contract Expiry Reminders). v6.0 lo reemplaza como milestone activo.
 
 ## Requirements
 
@@ -49,7 +53,21 @@ Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Age
 
 ### Active
 
-#### v4.0 — AI Agent Platform Beta
+#### v6.0 — Backoffice Unificado ERP·CRM·Autopilot (current, frontend-first)
+
+Lista completa de REQ-IDs en `milestones/v6.0-REQUIREMENTS.md`. Categorías:
+- **UNIF** — IA unificada & command center (nav agrupada + landing Operación)
+- **FACT** ⭐ — facturación venta/compra, FE-DIAN, notas débito/crédito, recurrente
+- **CONC** — conciliación bancaria (cargar fuente, matches, cola de revisión)
+- **EGR** — egresos a propietarios / tesorería (neto + comprobante)
+- **INFO** — informes & insights (catálogo + "de informes a insights")
+- **PQRS / AGEN** — PQRS/solicitudes + agenda interna
+- **TERC** — creación de terceros por IA (foto/audio)
+- **CAPT** — captura de propiedad foto+audio (stretch)
+
+Aditivo, sin romper CRM existente. Motores backend (DIAN, conciliación real, posteo contable) → milestones M1–M3 del programa.
+
+#### v4.0 — AI Agent Platform Beta (shipped)
 
 **Chat UI & Orquestador:**
 - [ ] Sección "Beta" en sidebar de propietarios e inmobiliarias
@@ -262,4 +280,4 @@ applicationId, hostId, note, createdAt
 | Conversación > Dashboard | El chat es la interfaz principal, dashboard es vista pasiva | — Pending |
 
 ---
-*Last updated: 2026-02-10 after milestone v4.0 initialization*
+*Last updated: 2026-05-29 after milestone v6.0 initialization (Backoffice Unificado ERP·CRM·Autopilot, frontend-first)*

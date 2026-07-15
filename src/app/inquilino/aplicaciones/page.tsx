@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
+import { SegmentedControl, IconButton } from '@leasefy/cadence';
 
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,9 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import type { Contract } from '@/lib/types/contract';
 
 const ITEMS_PER_PAGE = 4;
@@ -34,56 +38,56 @@ function displayStatusForApproved(contract: Contract | undefined, locale: string
     case 'draft':
       return {
         label: locale === 'es' ? 'Contrato en preparación' : 'Contract being prepared',
-        color: 'bg-amber-100 text-amber-700',
+        color: 'bg-warning-soft text-warning',
         icon: Clock,
         progress: 100,
       };
     case 'pending_tenant':
       return {
         label: locale === 'es' ? 'Firmar contrato' : 'Sign contract',
-        color: 'bg-indigo-100 text-indigo-700',
+        color: 'bg-primary-soft text-primary',
         icon: Warning,
         progress: 100,
       };
     case 'pending_landlord':
       return {
         label: locale === 'es' ? 'Esperando firma del propietario' : 'Waiting for landlord signature',
-        color: 'bg-amber-100 text-amber-700',
+        color: 'bg-warning-soft text-warning',
         icon: Clock,
         progress: 100,
       };
     case 'rejected_pending_modifications':
       return {
         label: locale === 'es' ? 'Esperando cambios' : 'Waiting for changes',
-        color: 'bg-amber-100 text-amber-700',
+        color: 'bg-warning-soft text-warning',
         icon: Clock,
         progress: 100,
       };
     case 'signed':
       return {
         label: locale === 'es' ? 'Firmado — pendiente activar' : 'Signed — pending activation',
-        color: 'bg-blue-100 text-blue-700',
+        color: 'bg-primary-soft text-primary',
         icon: CheckCircle,
         progress: 100,
       };
     case 'active':
       return {
         label: locale === 'es' ? 'Contrato activo' : 'Contract active',
-        color: 'bg-emerald-100 text-emerald-700',
+        color: 'bg-success-soft text-success',
         icon: CheckCircle,
         progress: 100,
       };
     case 'expired':
       return {
         label: locale === 'es' ? 'Contrato expirado' : 'Contract expired',
-        color: 'bg-neutral-100 text-neutral-600',
+        color: 'bg-surface-muted text-fg-muted',
         icon: XCircle,
         progress: 100,
       };
     case 'cancelled':
       return {
         label: locale === 'es' ? 'Contrato cancelado' : 'Contract cancelled',
-        color: 'bg-rose-100 text-rose-700',
+        color: 'bg-danger-soft text-danger',
         icon: XCircle,
         progress: 100,
       };
@@ -140,7 +144,7 @@ export default function AplicacionesPage() {
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error } = useTenantApplications();
 
-  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [activeTab, setTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -154,49 +158,49 @@ export default function AplicacionesPage() {
   const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle; progress: number }> = {
     submitted: {
       label: t('applications.steps.submitted'),
-      color: 'bg-blue-100 text-blue-700',
+      color: 'bg-primary-soft text-primary',
       icon: Clock,
       progress: 25
     },
     under_review: {
       label: t('applications.steps.review'),
-      color: 'bg-amber-100 text-amber-700',
+      color: 'bg-warning-soft text-warning',
       icon: Clock,
       progress: 50
     },
     needs_info: {
       label: locale === 'es' ? 'Info. requerida' : 'Info required',
-      color: 'bg-orange-100 text-orange-700',
+      color: 'bg-warning-soft text-warning',
       icon: Warning,
       progress: 30
     },
     pre_approved: {
       label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved',
-      color: 'bg-emerald-100 text-emerald-700',
+      color: 'bg-success-soft text-success',
       icon: CheckCircle,
       progress: 75
     },
     approved: {
       label: t('applications.steps.approved'),
-      color: 'bg-emerald-100 text-emerald-700',
+      color: 'bg-success-soft text-success',
       icon: CheckCircle,
       progress: 100
     },
     rejected: {
       label: t('applications.rejected'),
-      color: 'bg-red-100 text-red-700',
+      color: 'bg-danger-soft text-danger',
       icon: XCircle,
       progress: 100
     },
     withdrawn: {
       label: t('applications.withdrawn'),
-      color: 'bg-neutral-100 text-neutral-600',
+      color: 'bg-surface-muted text-fg-muted',
       icon: XCircle,
       progress: 100
     },
     contract_failed: {
       label: locale === 'es' ? 'Contrato fallido' : 'Contract failed',
-      color: 'bg-rose-100 text-rose-700',
+      color: 'bg-danger-soft text-danger',
       icon: XCircle,
       progress: 100,
     },
@@ -211,15 +215,15 @@ export default function AplicacionesPage() {
 
   // Reset page when changing tabs
   const handleTabChange = (tab: 'active' | 'completed') => {
-    setActiveTab(tab);
+    setTab(tab);
     setCurrentPage(1);
   };
 
   // Loading state
   if (isOnboardingLoading || isAppsLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" variant="current" className="text-primary" />
       </div>
     );
   }
@@ -227,7 +231,7 @@ export default function AplicacionesPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="applications" />
         </div>
@@ -238,7 +242,7 @@ export default function AplicacionesPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -252,7 +256,7 @@ export default function AplicacionesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -261,10 +265,10 @@ export default function AplicacionesPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('applications.title')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted">
             {t('applications.subtitle')}
           </p>
         </motion.header>
@@ -276,37 +280,37 @@ export default function AplicacionesPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <FileText className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <FileText className="w-5 h-5 text-fg-subtle" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Total aplicaciones' : 'Total applications'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {activeApplications.length + completedApplications.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
+            <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Todas tus aplicaciones' : 'All your applications'}</p>
           </div>
 
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <Clock className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-primary mb-1">{locale === 'es' ? 'En proceso' : 'In progress'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {activeApplications.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('applications.active')}</p>
+            <p className="text-sm text-fg-muted mt-2">{t('applications.active')}</p>
           </div>
 
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-success" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Completadas' : 'Completed'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {completedApplications.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
+            <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
           </div>
         </motion.div>
 
@@ -317,74 +321,71 @@ export default function AplicacionesPage() {
           transition={{ delay: 0.2 }}
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
         >
-          {/* Tabs */}
-          <div className="flex items-center gap-2 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit">
-            <button
-              onClick={() => handleTabChange('active')}
-              className={cn(
-                'px-5 py-2 text-sm font-medium rounded-full transition-all',
-                activeTab === 'active'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-              )}
-            >
-              {locale === 'es' ? 'En Proceso' : 'In Progress'}
-              {activeApplications.length > 0 && (
-                <span className={cn(
-                  'ml-2 px-2 py-0.5 text-xs rounded-full',
-                  activeTab === 'active' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
-                )}>
-                  {activeApplications.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => handleTabChange('completed')}
-              className={cn(
-                'px-5 py-2 text-sm font-medium rounded-full transition-all',
-                activeTab === 'completed'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-              )}
-            >
-              {locale === 'es' ? 'Historial' : 'History'}
-              {completedApplications.length > 0 && (
-                <span className={cn(
-                  'ml-2 px-2 py-0.5 text-xs rounded-full',
-                  activeTab === 'completed' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
-                )}>
-                  {completedApplications.length}
-                </span>
-              )}
-            </button>
-          </div>
+          {/* Tabs — Cadence SegmentedControl */}
+          <SegmentedControl
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label={locale === 'es' ? 'Filtrar aplicaciones' : 'Filter applications'}
+            options={[
+              {
+                value: 'active',
+                label: (
+                  <span className="inline-flex items-center">
+                    {locale === 'es' ? 'En Proceso' : 'In Progress'}
+                    {activeApplications.length > 0 && (
+                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
+                        {activeApplications.length}
+                      </Badge>
+                    )}
+                  </span>
+                ),
+              },
+              {
+                value: 'completed',
+                label: (
+                  <span className="inline-flex items-center">
+                    {locale === 'es' ? 'Historial' : 'History'}
+                    {completedApplications.length > 0 && (
+                      <Badge variant="default" className="ml-2 h-auto bg-primary-soft px-2 py-0.5 font-mono tabular-nums text-primary">
+                        {completedApplications.length}
+                      </Badge>
+                    )}
+                  </span>
+                ),
+              },
+            ]}
+          />
 
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-[#1a1a1c] rounded-full w-fit">
-            <button
+          <div className="flex items-center gap-1 p-1 bg-surface-muted rounded-full w-fit">
+            <IconButton
+              variant="ghost"
               onClick={() => setViewMode('list')}
+              aria-pressed={viewMode === 'list'}
               className={cn(
-                'p-2 rounded-full transition-all',
+                'p-2 rounded-full',
                 viewMode === 'list'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                  ? 'bg-surface text-fg'
+                  : 'text-fg-muted hover:text-fg'
               )}
               title={locale === 'es' ? 'Vista de lista' : 'List view'}
-            >
-              <ListBullets className="w-4 h-4" />
-            </button>
-            <button
+              aria-label={locale === 'es' ? 'Vista de lista' : 'List view'}
+              icon={<ListBullets className="w-4 h-4" />}
+            />
+            <IconButton
+              variant="ghost"
               onClick={() => setViewMode('grid')}
+              aria-pressed={viewMode === 'grid'}
               className={cn(
-                'p-2 rounded-full transition-all',
+                'p-2 rounded-full',
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                  ? 'bg-surface text-fg'
+                  : 'text-fg-muted hover:text-fg'
               )}
               title={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
-            >
-              <GridFour className="w-4 h-4" />
-            </button>
+              aria-label={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
+              icon={<GridFour className="w-4 h-4" />}
+            />
           </div>
         </motion.div>
 
@@ -415,7 +416,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden">
                             <div className="flex flex-col lg:flex-row">
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -443,81 +444,81 @@ export default function AplicacionesPage() {
                               <div className="flex-1 p-6">
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                   <div>
-                                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                    <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
                                       {application.property?.title || 'Propiedad'}
                                     </h3>
-                                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
+                                    <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
                                       <MapPin className="w-3.5 h-3.5" />
                                       {application.property?.neighborhood}, {application.property?.city}
                                     </p>
                                   </div>
                                   <div className="sm:text-right">
-                                    <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                                    <p className="text-2xl font-bold text-fg">
                                       {formatCurrency(application.property?.monthlyRent || 0)}
                                     </p>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">/mes</p>
+                                    <p className="text-xs text-fg-muted">/mes</p>
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-neutral-100 dark:border-neutral-700">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint">
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Código' : 'Code'}</p>
-                                    <p className="text-sm font-mono font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Código' : 'Code'}</p>
+                                    <p className="text-sm font-mono font-medium text-fg">
                                       {application.trackingCode}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Enviada' : 'Submitted'}</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Enviada' : 'Submitted'}</p>
+                                    <p className="text-sm font-medium text-fg">
                                       {formatShortDate(application.submittedAt)}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Actualizada' : 'Updated'}</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Actualizada' : 'Updated'}</p>
+                                    <p className="text-sm font-medium text-fg">
                                       {formatShortDate(application.updatedAt)}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Progreso' : 'Progress'}</p>
-                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{status.progress}%</p>
+                                    <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Progreso' : 'Progress'}</p>
+                                    <p className="text-sm font-medium text-fg">{status.progress}%</p>
                                   </div>
                                 </div>
 
                                 <div className="mt-4">
-                                  <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                                  <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
                                     <span>{locale === 'es' ? 'Progreso de aplicación' : 'Application progress'}</span>
                                     <span>{status.progress}% {locale === 'es' ? 'completado' : 'complete'}</span>
                                   </div>
-                                  <div className="h-2 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                  <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
-                                          ? "bg-red-400"
+                                          ? "bg-danger"
                                           : application.status === 'approved' || application.status === 'pre_approved'
-                                          ? "bg-emerald-500"
+                                          ? "bg-success"
                                           : application.status === 'needs_info'
-                                          ? "bg-orange-400"
-                                          : "bg-indigo-600"
+                                          ? "bg-warning"
+                                          : "bg-primary"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-between mt-4 p-4 bg-neutral-50 dark:bg-[#2a2a2c] rounded-2xl">
+                                <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted rounded-xl">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1a1a1c] flex items-center justify-center shadow-sm">
-                                      <FileText className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+                                      <FileText className="w-5 h-5 text-fg-muted" />
                                     </div>
                                     <div>
-                                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
+                                      <p className="text-xs text-fg-muted">{locale === 'es' ? 'Próximo paso' : 'Next step'}</p>
                                       <p className={cn(
                                         'text-sm font-semibold',
                                         application.status === 'needs_info'
-                                          ? 'text-orange-600 dark:text-orange-400'
-                                          : 'text-neutral-900 dark:text-white'
+                                          ? 'text-warning'
+                                          : 'text-fg'
                                       )}>
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
@@ -530,7 +531,7 @@ export default function AplicacionesPage() {
                                       </p>
                                     </div>
                                   </div>
-                                  <span className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                                  <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
                                     {locale === 'es' ? 'Ver detalle' : 'View details'}
                                     <ArrowUpRight className="w-4 h-4" />
                                   </span>
@@ -564,7 +565,7 @@ export default function AplicacionesPage() {
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col">
+                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden h-full flex flex-col">
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
@@ -589,41 +590,41 @@ export default function AplicacionesPage() {
                             {/* Content */}
                             <div className="p-4 flex-1 flex flex-col">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1 mb-1">
+                                <h3 className="font-semibold text-fg group-hover:text-primary transition-colors line-clamp-1 mb-1">
                                   {application.property?.title || 'Propiedad'}
                                 </h3>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mb-3">
+                                <p className="text-sm text-fg-muted flex items-center gap-1 mb-3">
                                   <MapPin className="w-3 h-3 flex-shrink-0" />
                                   <span className="truncate">{application.property?.neighborhood}, {application.property?.city}</span>
                                 </p>
 
                                 <div className="flex items-center justify-between mb-3">
-                                  <p className="text-lg font-bold text-neutral-900 dark:text-white">
+                                  <p className="text-lg font-bold text-fg">
                                     {formatCurrency(application.property?.monthlyRent || 0)}
-                                    <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">/mes</span>
+                                    <span className="text-xs font-normal text-fg-muted">/mes</span>
                                   </p>
-                                  <span className="text-xs font-mono text-neutral-400">
+                                  <span className="text-xs font-mono text-fg-subtle">
                                     {application.trackingCode}
                                   </span>
                                 </div>
 
                                 {/* Progress Bar */}
                                 <div className="mb-3">
-                                  <div className="flex items-center justify-between text-xs text-neutral-400 mb-1">
+                                  <div className="flex items-center justify-between text-xs text-fg-subtle mb-1">
                                     <span>{locale === 'es' ? 'Progreso' : 'Progress'}</span>
                                     <span>{status.progress}%</span>
                                   </div>
-                                  <div className="h-1.5 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                  <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
-                                          ? "bg-red-400"
+                                          ? "bg-danger"
                                           : application.status === 'approved' || application.status === 'pre_approved'
-                                          ? "bg-emerald-500"
+                                          ? "bg-success"
                                           : application.status === 'needs_info'
-                                          ? "bg-orange-400"
-                                          : "bg-indigo-600"
+                                          ? "bg-warning"
+                                          : "bg-primary"
                                       )}
                                       style={{ width: `${status.progress}%` }}
                                     />
@@ -632,11 +633,11 @@ export default function AplicacionesPage() {
                               </div>
 
                               {/* Footer */}
-                              <div className="pt-3 border-t border-neutral-100 dark:border-neutral-700 flex items-center justify-between">
-                                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                              <div className="pt-3 border-t border-border-faint flex items-center justify-between">
+                                <span className="text-xs text-fg-muted">
                                   {formatShortDate(application.updatedAt)}
                                 </span>
-                                <span className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                                <span className="flex items-center gap-1 text-xs font-medium text-primary group-hover:text-primary transition-colors">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
                                   <ArrowUpRight className="w-3 h-3" />
                                 </span>
@@ -653,53 +654,58 @@ export default function AplicacionesPage() {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8">
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className={cn(
-                      'p-2 rounded-full transition-all',
+                      'p-2 rounded-full',
                       currentPage === 1
-                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle cursor-not-allowed'
+                        : 'text-fg-muted hover:bg-surface-muted'
                     )}
-                  >
-                    <CaretLeft className="w-5 h-5" />
-                  </button>
+                    aria-label={locale === 'es' ? 'Página anterior' : 'Previous page'}
+                    icon={<CaretLeft className="w-5 h-5" />}
+                  />
 
                   <div className="flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
+                      <Button
                         key={page}
+                        variant="ghost"
+                        hideArrow
                         onClick={() => setCurrentPage(page)}
+                        aria-current={currentPage === page ? 'page' : undefined}
                         className={cn(
-                          'w-10 h-10 rounded-full text-sm font-medium transition-all',
+                          'w-10 h-10 rounded-full p-0 text-sm font-medium',
                           currentPage === page
-                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                            : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                            ? 'bg-primary text-primary-fg'
+                            : 'text-fg-muted hover:bg-surface-muted'
                         )}
                       >
                         {page}
-                      </button>
+                      </Button>
                     ))}
                   </div>
 
-                  <button
+                  <IconButton
+                    variant="ghost"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className={cn(
-                      'p-2 rounded-full transition-all',
+                      'p-2 rounded-full',
                       currentPage === totalPages
-                        ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
+                        ? 'text-fg-subtle cursor-not-allowed'
+                        : 'text-fg-muted hover:bg-surface-muted'
                     )}
-                  >
-                    <CaretRight className="w-5 h-5" />
-                  </button>
+                    aria-label={locale === 'es' ? 'Página siguiente' : 'Next page'}
+                    icon={<CaretRight className="w-5 h-5" />}
+                  />
                 </div>
               )}
 
               {/* Results info */}
-              <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mt-4">
+              <p className="text-center text-sm text-fg-muted mt-4">
                 {locale === 'es'
                   ? `Mostrando ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} de ${currentApplications.length} aplicaciones`
                   : `Showing ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, currentApplications.length)} of ${currentApplications.length} applications`}

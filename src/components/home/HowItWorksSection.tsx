@@ -56,7 +56,7 @@ export function HowItWorksSection() {
           className="text-center mb-16 md:mb-20"
         >
           {/* Main heading */}
-          <h2 className="text-[32px] md:text-[48px] font-heading font-normal text-foreground tracking-[-3px] leading-[1.1] mb-4 max-w-2xl mx-auto">
+          <h2 className="text-[32px] md:text-[48px] font-heading font-normal text-foreground tracking-[-0.0625em] leading-[1.1] mb-4 max-w-2xl mx-auto">
             Administra más con menos en 3 pasos
           </h2>
 
@@ -79,7 +79,7 @@ export function HowItWorksSection() {
                 className="group"
               >
                 {/* Card */}
-                <div className="relative bg-muted/30 border border-border hover:border-primary/30 rounded-2xl p-8 md:p-10 transition-all duration-300 hover:shadow-lg h-full flex flex-col">
+                <div className="relative bg-muted/30 border border-border hover:border-primary/30 rounded-xl p-8 md:p-10 transition-all duration-300 hover: h-full flex flex-col">
                   {/* Step number */}
                   <div className="flex items-center justify-between mb-6">
                     <span className="text-[48px] md:text-[56px] font-extralight tracking-[-4px] text-primary/20">

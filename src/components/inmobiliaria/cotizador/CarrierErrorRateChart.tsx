@@ -1,0 +1,74 @@
+'use client'
+
+/**
+ * CarrierErrorRateChart.tsx — Phase 35 plan 35-08 (Task 2)
+ *
+ * Recharts LineChart at 160px height showing error rate over time.
+ * Stroke: brand-red (#C0392B). Reference line at 5% threshold (light brand-red dashed).
+ * Must declare 'use client' — ResponsiveContainer needs DOM access (T-35-12).
+ */
+
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts'
+import { useI18n } from '@/lib/i18n'
+
+// =============================================================================
+// Props
+// =============================================================================
+
+interface CarrierErrorRateChartProps {
+  data: Array<{ date: string; errorRate: number }>
+  isLoading?: boolean
+}
+
+// =============================================================================
+// Component
+// =============================================================================
+
+export function CarrierErrorRateChart({ data, isLoading = false }: CarrierErrorRateChartProps) {
+  const { t } = useI18n()
+
+  if (isLoading) {
+    return (
+      <div className="h-[160px] flex items-center justify-center">
+        <div className="h-4 w-32 rounded bg-surface-muted dark:bg-ink animate-pulse" />
+      </div>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="h-[160px] flex items-center justify-center">
+        <p className="text-xs text-fg-subtle text-center py-8">
+          {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.noErrorRateData')}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={160}>
+      <LineChart data={data}>
+        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+        <YAxis
+          tick={{ fontSize: 10 }}
+          tickFormatter={(v) => `${(v * 100).toFixed(1)}%`}
+        />
+        <Tooltip
+          formatter={(v) => [
+            `${(Number(v) * 100).toFixed(2)}%`,
+            t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.tooltipLabel'),
+          ]}
+        />
+        {/* 5% threshold reference line (light brand-red tint) */}
+        <ReferenceLine y={0.05} stroke="#E0A89E" strokeDasharray="3 3" />
+        <Line
+          type="monotone"
+          dataKey="errorRate"
+          stroke="#C0392B"
+          dot={false}
+          strokeWidth={1.5}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  )
+}

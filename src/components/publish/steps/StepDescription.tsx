@@ -6,6 +6,7 @@ import { usePublish } from '@/lib/context/PublishContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { PROPERTY_TYPES } from '@/lib/types/publish';
 import { cn } from '@/lib/utils';
 
@@ -101,10 +102,10 @@ export function StepDescription() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">
+        <h3 className="text-sm font-medium text-fg mb-1">
           Describe tu inmueble
         </h3>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           Un buen título y descripción atraen más inquilinos
         </p>
       </div>
@@ -113,19 +114,22 @@ export function StepDescription() {
         {/* Title */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="title" className="flex items-center gap-2 text-neutral-900 dark:text-white">
-              <TextT className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+            <Label htmlFor="title" className="flex items-center gap-2 text-fg">
+              <TextT className="w-4 h-4 text-fg-subtle" />
               Título del anuncio *
             </Label>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={handleGenerateTitle}
               disabled={generatingField === 'description' || descTextTr.isTyping}
               className={cn(
-                "flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-40",
+                "h-auto gap-1.5 px-2 py-1 text-xs font-medium disabled:opacity-40",
                 titleTextTr.isTyping
-                  ? "text-amber-600 hover:text-amber-700"
-                  : "text-indigo-600 hover:text-indigo-800"
+                  ? "text-warning hover:text-warning"
+                  : "text-primary hover:text-primary"
               )}
             >
               {generatingField === 'title' ? (
@@ -134,7 +138,7 @@ export function StepDescription() {
                 <Sparkle className={cn("w-3 h-3", titleTextTr.isTyping && "animate-pulse")} />
               )}
               {titleTextTr.isTyping ? 'Detener' : generatingField === 'title' ? 'Generando...' : 'Generar'}
-            </button>
+            </Button>
           </div>
           <div className="relative">
             <Input
@@ -146,15 +150,14 @@ export function StepDescription() {
               maxLength={80}
               readOnly={titleTextTr.isTyping}
               className={cn(
-                "rounded-xl border-neutral-200 dark:border-neutral-700",
-                titleTextTr.isTyping && "border-indigo-300 bg-indigo-50/30 dark:bg-indigo-900/10"
+                titleTextTr.isTyping && "border-primary/40 bg-primary-soft/50"
               )}
             />
             {titleTextTr.isTyping && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-indigo-600 animate-pulse" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary animate-pulse" />
             )}
           </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 text-right">
+          <p className="text-xs text-fg-subtle text-right font-mono tabular-nums">
             {draft.title.length}/80 caracteres
           </p>
         </div>
@@ -162,19 +165,22 @@ export function StepDescription() {
         {/* Description */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="description" className="flex items-center gap-2 text-neutral-900 dark:text-white">
-              <FileText className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+            <Label htmlFor="description" className="flex items-center gap-2 text-fg">
+              <FileText className="w-4 h-4 text-fg-subtle" />
               Descripción *
             </Label>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={handleGenerateDescription}
               disabled={generatingField === 'title' || titleTextTr.isTyping}
               className={cn(
-                "flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-40",
+                "h-auto gap-1.5 px-2 py-1 text-xs font-medium disabled:opacity-40",
                 descTextTr.isTyping
-                  ? "text-amber-600 hover:text-amber-700"
-                  : "text-indigo-600 hover:text-indigo-800"
+                  ? "text-warning hover:text-warning"
+                  : "text-primary hover:text-primary"
               )}
             >
               {generatingField === 'description' ? (
@@ -183,7 +189,7 @@ export function StepDescription() {
                 <Sparkle className={cn("w-3 h-3", descTextTr.isTyping && "animate-pulse")} />
               )}
               {descTextTr.isTyping ? 'Detener' : generatingField === 'description' ? 'Generando...' : 'Generar'}
-            </button>
+            </Button>
           </div>
           <div className="relative">
             <Textarea
@@ -194,25 +200,25 @@ export function StepDescription() {
               rows={6}
               maxLength={1000}
               className={cn(
-                "resize-none rounded-xl border-neutral-200 dark:border-neutral-700",
-                descTextTr.isTyping && "border-indigo-300 bg-indigo-50/30 dark:bg-indigo-900/10"
+                "resize-none",
+                descTextTr.isTyping && "border-primary/40 bg-primary-soft/50"
               )}
               readOnly={descTextTr.isTyping}
             />
             {descTextTr.isTyping && (
-              <span className="absolute right-3 bottom-3 w-0.5 h-4 bg-indigo-600 animate-pulse" />
+              <span className="absolute right-3 bottom-3 w-0.5 h-4 bg-primary animate-pulse" />
             )}
           </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 text-right">
+          <p className="text-xs text-fg-subtle text-right font-mono tabular-nums">
             {draft.description.length}/1000 caracteres
           </p>
         </div>
       </div>
 
       {/* Tips */}
-      <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200 dark:border-neutral-700">
-        <p className="text-sm font-medium text-neutral-900 dark:text-white mb-2">Tips para una mejor descripción:</p>
-        <ul className="text-sm text-neutral-500 dark:text-neutral-400 space-y-1 list-disc list-inside">
+      <div className="p-4 bg-surface-muted rounded-[20px] border border-border">
+        <p className="text-sm font-medium text-fg mb-2">Tips para una mejor descripción:</p>
+        <ul className="text-sm text-fg-muted space-y-1 list-disc list-inside">
           <li>Menciona características únicas del inmueble</li>
           <li>Describe la ubicación y accesibilidad</li>
           <li>Incluye información sobre servicios cercanos</li>

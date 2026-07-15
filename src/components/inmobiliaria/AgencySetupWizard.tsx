@@ -9,10 +9,11 @@ import {
   Check,
   CaretLeft,
   CaretRight,
-  SpinnerGap,
   X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { IconButton } from '@leasefy/cadence';
 import { apiClient } from '@/lib/api/client';
 import { AgencyBasicForm, type AgencyBasicFormData } from './wizard/AgencyBasicForm';
 import { AgencyOperationsForm, type AgencyOperationsFormData } from './wizard/AgencyOperationsForm';
@@ -92,10 +93,10 @@ function StepIndicator({
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all',
                   isCompleted
-                    ? 'border-indigo-600 bg-indigo-600'
+                    ? 'border-primary/30 bg-primary'
                     : isCurrent
-                    ? 'border-indigo-600 bg-white dark:bg-neutral-900'
-                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900'
+                    ? 'border-primary/30 bg-surface dark:bg-ink'
+                    : 'border-border dark:border-strong bg-surface dark:bg-ink'
                 )}
               >
                 {isCompleted ? (
@@ -104,7 +105,7 @@ function StepIndicator({
                   <Icon
                     className={cn(
                       'w-5 h-5',
-                      isCurrent ? 'text-indigo-600' : 'text-neutral-400 dark:text-neutral-500'
+                      isCurrent ? 'text-primary' : 'text-fg-subtle dark:text-fg-muted'
                     )}
                   />
                 )}
@@ -112,7 +113,7 @@ function StepIndicator({
               <p
                 className={cn(
                   'text-xs font-medium mt-1.5 text-center max-w-[80px]',
-                  isCurrent ? 'text-indigo-600' : isCompleted ? 'text-neutral-600 dark:text-neutral-400' : 'text-neutral-400 dark:text-neutral-500'
+                  isCurrent ? 'text-primary' : isCompleted ? 'text-fg-muted dark:text-fg-subtle' : 'text-fg-subtle dark:text-fg-muted'
                 )}
               >
                 {step.title}
@@ -124,7 +125,7 @@ function StepIndicator({
               <div
                 className={cn(
                   'w-16 h-0.5 mx-2 mb-5 transition-colors',
-                  isCompleted ? 'bg-indigo-600' : 'bg-neutral-200 dark:bg-neutral-700'
+                  isCompleted ? 'bg-primary' : 'bg-surface-muted dark:bg-ink'
                 )}
               />
             )}
@@ -295,14 +296,14 @@ export function AgencySetupWizard({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-5"
+          className="w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-5"
         >
-          <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" weight="bold" />
+          <Check className="w-8 h-8 text-success" weight="bold" />
         </motion.div>
-        <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+        <h3 className="text-xl font-semibold text-fg dark:text-white mb-2">
           ¡Agencia configurada!
         </h3>
-        <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+        <p className="text-fg-muted dark:text-fg-subtle text-sm">
           Tu agencia está lista. Redirigiendo al panel...
         </p>
       </div>
@@ -320,22 +321,21 @@ export function AgencySetupWizard({
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+          <h2 className="text-xl font-semibold text-fg dark:text-white">
             Configura tu agencia
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
             Solo tomará un par de minutos
           </p>
         </div>
         {onDismiss && (
-          <button
+          <IconButton
             type="button"
+            variant="ghost"
             onClick={onDismiss}
-            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
             aria-label="Cerrar wizard"
-          >
-            <X className="w-5 h-5" />
-          </button>
+            icon={<X className="w-5 h-5" />}
+          />
         )}
       </div>
 
@@ -345,15 +345,15 @@ export function AgencySetupWizard({
       {/* Step Content */}
       <div className="mt-8 flex-1">
         <div className="mb-6">
-          <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <h3 className="text-base font-semibold text-fg dark:text-white">
             {currentStepConfig.title}
             {currentStepConfig.optional && (
-              <span className="ml-2 text-xs font-normal text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs font-normal text-fg-subtle dark:text-fg-muted bg-surface-muted dark:bg-ink px-2 py-0.5 rounded-full">
                 Opcional
               </span>
             )}
           </h3>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{currentStepConfig.description}</p>
+          <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">{currentStepConfig.description}</p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -379,77 +379,64 @@ export function AgencySetupWizard({
 
       {/* Error message */}
       {error && (
-        <p className="mt-4 text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{error}</p>
+        <p className="mt-4 text-sm text-danger bg-danger-soft px-4 py-2 rounded-md">{error}</p>
       )}
 
       {/* Navigation */}
       <div className="mt-8 flex gap-3">
         {currentStep > 1 && (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            hideArrow
             onClick={handleBack}
             disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
           >
             <CaretLeft className="w-4 h-4" />
             Anterior
-          </button>
+          </Button>
         )}
 
         {currentStep < 3 ? (
-          <button
+          <Button
             type="button"
+            hideArrow
             onClick={handleNext}
             disabled={!canProceed || isSubmitting}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-semibold transition-all',
-              canProceed && !isSubmitting
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
-            )}
+            isLoading={isSubmitting}
+            className="flex-1"
           >
             {isSubmitting ? (
-              <>
-                <SpinnerGap className="w-4 h-4 animate-spin" />
-                Guardando...
-              </>
+              'Guardando...'
             ) : (
               <>
                 Siguiente
                 <CaretRight className="w-4 h-4" />
               </>
             )}
-          </button>
+          </Button>
         ) : (
           <div className="flex-1 flex gap-3">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              hideArrow
               onClick={handleSkipInvite}
               disabled={isSubmitting}
-              className="flex-1 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              className="flex-1"
             >
               Omitir por ahora
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              hideArrow
               onClick={handleFinish}
               disabled={!isStep3Valid || !formData.invite.email || isSubmitting}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-semibold transition-all',
-                isStep3Valid && formData.invite.email && !isSubmitting
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
-              )}
+              isLoading={isSubmitting}
+              className="flex-1"
             >
-              {isSubmitting ? (
-                <>
-                  <SpinnerGap className="w-4 h-4 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                'Enviar invitación'
-              )}
-            </button>
+              {isSubmitting ? 'Enviando...' : 'Enviar invitación'}
+            </Button>
           </div>
         )}
       </div>

@@ -45,8 +45,15 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
   const [storageUser, setStorageUser] = useState<{ role: string } | null>(null)
 
-  // Check localStorage directly as a fallback
+  // Check localStorage directly as a fallback.
+  // NOTE: this localStorage fallback is dev/test-only. In production we must
+  // rely solely on the real Supabase auth context — otherwise anyone could
+  // forge an 'arriendo-facil-auth' entry and bypass authentication.
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      setIsCheckingStorage(false)
+      return
+    }
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY)
       if (stored) {
@@ -155,8 +162,13 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
     )
   }
 
-  // needsOnboarding or not authenticated - will redirect (handled in effect)
-  if (needsOnboarding || !effectiveIsAuthenticated) {
+  // needsOnboarding or not authenticated - will redirect (handled in effect).
+  // Mirrors the effect's pathname exemption above (line ~85): a
+  // needsOnboarding user already on an /onboarding/* page (e.g. the
+  // auth-first agency wizard) is NOT redirected by the effect, so this
+  // render guard must not block their children either — otherwise it's a
+  // dead-end "Redirigiendo..." spinner that never actually redirects.
+  if ((needsOnboarding && !pathname.startsWith('/onboarding')) || !effectiveIsAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

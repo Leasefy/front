@@ -32,12 +32,15 @@ import {
   ArrowRight,
   CalendarCheck,
 } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { TENANT_CATEGORIES } from '@/lib/types/notification';
 import type { TenantNotification, TenantNotificationCategory } from '@/lib/types/notification';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
+import { IconButton } from '@leasefy/cadence';
 
 /**
  * Icon mapping for notification types.
@@ -110,25 +113,25 @@ type FilterType = 'all' | 'unread' | 'payment' | 'application' | 'message' | 'do
 // Loading skeleton component
 function NotificationSkeleton() {
   return (
-    <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden divide-y divide-neutral-100 dark:divide-white/5">
+    <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] overflow-hidden divide-y divide-border dark:divide-white/5">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-start gap-4 p-5 animate-pulse">
           {/* Icon skeleton */}
-          <div className="w-11 h-11 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-surface-muted flex-shrink-0" />
 
           {/* Content skeleton */}
           <div className="flex-1 min-w-0 space-y-2">
-            <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded-lg w-3/4" />
-            <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg w-1/2" />
+            <div className="h-4 bg-surface-muted dark:bg-surface-muted rounded-md w-3/4" />
+            <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-1/2" />
             <div className="flex items-center gap-2 mt-2">
-              <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg w-16" />
-              <div className="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-              <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg w-20" />
+              <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-16" />
+              <div className="w-1 h-1 rounded-full bg-surface-muted dark:bg-surface-muted" />
+              <div className="h-3 bg-surface-muted dark:bg-ink rounded-md w-20" />
             </div>
           </div>
 
           {/* Arrow skeleton */}
-          <div className="w-5 h-5 rounded bg-neutral-100 dark:bg-neutral-800 flex-shrink-0" />
+          <div className="w-5 h-5 rounded bg-surface-muted dark:bg-ink flex-shrink-0" />
         </div>
       ))}
     </div>
@@ -136,7 +139,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificacionesPage() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const router = useRouter();
   const {
     notifications,
@@ -149,6 +152,11 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
 
+  const notifyError = () => toast.error(t('header.notificationActionError'));
+  const handleMarkAsRead = (id: string) => markAsRead(id).catch(notifyError);
+  const handleMarkAllAsRead = () => markAllAsRead().catch(notifyError);
+  const handleDeleteNotification = (id: string) => deleteNotification(id).catch(notifyError);
+
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
   const filteredNotifications = visibleNotifications.filter((n) => {
     if (filter === 'all') return true;
@@ -159,7 +167,7 @@ export default function NotificacionesPage() {
 
   const handleNotificationClick = (notification: TenantNotification) => {
     if (!notification.read) {
-      markAsRead(notification.id);
+      handleMarkAsRead(notification.id);
     }
     if (notification.actionUrl) {
       router.push(notification.actionUrl);
@@ -180,7 +188,7 @@ export default function NotificacionesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -190,14 +198,14 @@ export default function NotificacionesPage() {
         >
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-                <Bell className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                <Bell className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+                <h1 className="text-2xl font-semibold text-fg dark:text-white tracking-tight">
                   {locale === 'es' ? 'Notificaciones' : 'Notifications'}
                 </h1>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
                   {unreadCount > 0
                     ? locale === 'es'
                       ? `${unreadCount} sin leer`
@@ -210,22 +218,25 @@ export default function NotificacionesPage() {
             </div>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  hideArrow
+                  onClick={handleMarkAllAsRead}
                 >
                   <Checks className="w-4 h-4" />
                   <span className="hidden sm:inline">
                     {locale === 'es' ? 'Marcar todo' : 'Mark all'}
                   </span>
-                </button>
+                </Button>
               )}
-              <button
+              <IconButton
+                variant="ghost"
                 onClick={() => router.push('/inquilino/configuracion')}
-                className="p-2.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-xl transition-colors"
-              >
-                <Gear className="w-5 h-5" />
-              </button>
+                className="p-2.5 rounded-xl text-fg-subtle dark:text-fg-muted hover:text-fg-muted dark:hover:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface/5"
+                aria-label={locale === 'es' ? 'Configuración' : 'Settings'}
+                icon={<Gear className="w-5 h-5" />}
+              />
             </div>
           </div>
         </motion.header>
@@ -245,8 +256,8 @@ export default function NotificacionesPage() {
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
                   filter === f.id
-                    ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                    ? 'bg-ink dark:bg-surface text-white dark:text-fg'
+                    : 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-surface-muted'
                 )}
               >
                 {f.label}
@@ -255,8 +266,8 @@ export default function NotificacionesPage() {
                     className={cn(
                       'text-xs px-1.5 py-0.5 rounded-full',
                       filter === f.id
-                        ? 'bg-white/20 dark:bg-neutral-900/20'
-                        : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                        ? 'bg-surface/20 dark:bg-ink/20'
+                        : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                     )}
                   >
                     {f.count}
@@ -302,11 +313,11 @@ export default function NotificacionesPage() {
                       ? 'Cuando haya actividad en tus aplicaciones o arriendos, te notificaremos aquí.'
                       : 'When there is activity on your applications or leases, we will notify you here.'
                   }
-                  className="rounded-3xl border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c]"
+                  className="rounded-xl border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c]"
                 />
               </motion.div>
             ) : (
-              <div className="rounded-3xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1c] overflow-hidden divide-y divide-neutral-100 dark:divide-white/5">
+              <div className="rounded-xl border border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c] overflow-hidden divide-y divide-border dark:divide-white/5">
                 {filteredNotifications.map((notification, index) => {
                   const IconComponent = getNotificationIcon(notification.type);
                   const categoryConfig = getCategoryConfig(notification.category);
@@ -323,8 +334,8 @@ export default function NotificacionesPage() {
                       className={cn(
                         'flex items-start gap-4 p-5 cursor-pointer group transition-colors',
                         !notification.read
-                          ? 'bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-50 dark:hover:bg-indigo-950/30'
-                          : 'hover:bg-neutral-50 dark:hover:bg-white/5'
+                          ? 'bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]/30'
+                          : 'hover:bg-surface-muted dark:hover:bg-surface/5'
                       )}
                     >
                       {/* Icon */}
@@ -332,7 +343,7 @@ export default function NotificacionesPage() {
                         className={cn(
                           'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105',
                           !notification.read
-                            ? 'bg-indigo-600 dark:bg-indigo-600'
+                            ? 'bg-[#1A40FF] dark:bg-[#5570FF]'
                             : cn(categoryConfig.bgColor, categoryConfig.darkBgColor)
                         )}
                       >
@@ -351,20 +362,20 @@ export default function NotificacionesPage() {
                           className={cn(
                             'text-sm leading-relaxed',
                             !notification.read
-                              ? 'text-neutral-900 dark:text-white font-semibold'
-                              : 'text-neutral-700 dark:text-neutral-300'
+                              ? 'text-fg dark:text-white font-semibold'
+                              : 'text-fg dark:text-fg-subtle'
                           )}
                         >
                           {notification.title}
                         </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-1">
+                        <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5 line-clamp-1">
                           {notification.message}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                          <span className="text-xs text-fg-subtle dark:text-fg-muted">
                             {formatRelativeTime(notification.createdAt, locale)}
                           </span>
-                          <span className="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+                          <span className="w-1 h-1 rounded-full bg-surface-muted dark:bg-surface-muted" />
                           <span
                             className={cn('text-xs font-medium', categoryConfig.color)}
                           >
@@ -372,8 +383,8 @@ export default function NotificacionesPage() {
                           </span>
                           {!notification.read && (
                             <>
-                              <span className="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-                              <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                              <span className="w-1 h-1 rounded-full bg-surface-muted dark:bg-surface-muted" />
+                              <span className="text-xs font-medium text-[#1A40FF] dark:text-[#5570FF]">
                                 {locale === 'es' ? 'Nueva' : 'New'}
                               </span>
                             </>
@@ -387,18 +398,21 @@ export default function NotificacionesPage() {
                           className="hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <button
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            hideArrow
                             onClick={() => {
                               if (notification.actionUrl) {
-                                markAsRead(notification.id);
+                                handleMarkAsRead(notification.id);
                                 router.push(notification.actionUrl);
                               }
                             }}
-                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-600/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-700/20 transition-colors"
+                            className="px-3 py-1.5 text-xs text-[#1A40FF] dark:text-[#5570FF] bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
                           >
                             {notification.actionLabel}
                             <ArrowRight className="w-3 h-3" />
-                          </button>
+                          </Button>
                         </div>
                       )}
 
@@ -408,28 +422,32 @@ export default function NotificacionesPage() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         {!notification.read && (
-                          <button
-                            onClick={() => markAsRead(notification.id)}
-                            className="p-2 text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"
+                          <IconButton
+                            variant="ghost"
+                            onClick={() => handleMarkAsRead(notification.id)}
+                            className="p-2 rounded-md text-fg-subtle hover:text-[#2C7A53] dark:hover:text-[#2C7A53] hover:bg-[#E8F3EC] dark:hover:bg-[#2C7A53]/30"
                             title={
                               locale === 'es' ? 'Marcar como leído' : 'Mark as read'
                             }
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
+                            aria-label={
+                              locale === 'es' ? 'Marcar como leído' : 'Mark as read'
+                            }
+                            icon={<Check className="w-4 h-4" />}
+                          />
                         )}
-                        <button
-                          onClick={() => deleteNotification(notification.id)}
-                          className="p-2 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        <IconButton
+                          variant="ghost"
+                          onClick={() => handleDeleteNotification(notification.id)}
+                          className="p-2 rounded-md text-fg-subtle hover:text-[#C4503B] dark:hover:text-[#C4503B] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/30"
                           title={locale === 'es' ? 'Eliminar' : 'Delete'}
-                        >
-                          <TrashSimple className="w-4 h-4" />
-                        </button>
+                          aria-label={locale === 'es' ? 'Eliminar' : 'Delete'}
+                          icon={<TrashSimple className="w-4 h-4" />}
+                        />
                       </div>
 
                       {/* Arrow */}
                       <div className="flex items-center flex-shrink-0">
-                        <CaretRight className="w-5 h-5 text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-400 dark:group-hover:text-neutral-500 transition-colors" />
+                        <CaretRight className="w-5 h-5 text-fg-subtle dark:text-fg-muted group-hover:text-fg-subtle dark:group-hover:text-fg-muted transition-colors" />
                       </div>
                     </motion.div>
                   );
@@ -446,23 +464,24 @@ export default function NotificacionesPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-6 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-white/5"
+            className="mt-6 p-4 rounded-xl bg-surface-muted dark:bg-ink/50 border border-border-faint dark:border-white/5"
           >
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-500 dark:text-neutral-400">
+              <span className="text-fg-muted dark:text-fg-subtle">
                 {locale === 'es'
                   ? `Mostrando ${filteredNotifications.length} de ${notifications.length} notificaciones`
                   : `Showing ${filteredNotifications.length} of ${notifications.length} notifications`}
               </span>
               {notifications.length > 0 && (
-                <button
-                  onClick={() =>
-                    setHideRead(true)
-                  }
-                  className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 font-medium transition-colors"
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
+                  onClick={() => setHideRead(true)}
+                  className="text-fg-muted hover:text-fg dark:hover:text-fg-subtle"
                 >
                   {locale === 'es' ? 'Limpiar leídas' : 'Clear read'}
-                </button>
+                </Button>
               )}
             </div>
           </motion.div>

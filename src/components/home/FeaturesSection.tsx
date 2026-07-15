@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { UserCheck, CreditCard, Megaphone, PencilLine, CheckCircle, ArrowRight, FileText } from '@phosphor-icons/react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { MonoLabel } from "@leasefy/cadence";
 
 const features = [
   {
@@ -126,9 +127,9 @@ function PaymentsVisual() {
   return (
     <div className="bg-card border border-border rounded-sm p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-mono font-normal text-muted-foreground uppercase tracking-wide">
+        <MonoLabel className="text-xs font-normal text-muted-foreground tracking-wide">
           Febrero 2026
-        </span>
+        </MonoLabel>
         <span className="text-xs text-success-500 font-medium">3 de 3 pagados</span>
       </div>
       <div className="space-y-2">
@@ -236,9 +237,9 @@ export function FeaturesSection() {
       <div className="container-platform max-w-[1200px]">
         {/* Header */}
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 text-xs font-mono font-normal text-primary bg-primary/10 rounded-full px-3 py-1 mb-4 uppercase tracking-wide">
+          <MonoLabel className="inline-flex items-center gap-1.5 text-xs font-normal text-primary bg-primary/10 rounded-full px-3 py-1 mb-4 tracking-wide">
             Para propietarios
-          </span>
+          </MonoLabel>
           <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-3">
             Todo lo que necesitas para arrendar
           </h2>

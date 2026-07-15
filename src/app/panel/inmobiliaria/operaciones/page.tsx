@@ -28,6 +28,9 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { SegmentedControl } from '@leasefy/cadence';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Sheet,
@@ -136,15 +139,15 @@ function StatCard({
   iconColor,
 }: StatCardProps) {
   const subValueColors = {
-    warning: 'text-amber-600 dark:text-amber-400 font-medium',
-    info: 'text-blue-600 dark:text-blue-400',
+    warning: 'text-warning font-medium',
+    info: 'text-primary',
     default: 'text-muted-foreground',
   };
 
   return (
     <div className="p-4 rounded-xl border border-border bg-card">
       <div className="flex items-center gap-3">
-        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', bgColor)}>
+        <div className={cn('w-10 h-10 rounded-md flex items-center justify-center', bgColor)}>
           <Icon className={cn('w-5 h-5', iconColor)} />
         </div>
         <div className="min-w-0 flex-1">
@@ -194,7 +197,7 @@ function OperacionesContent() {
   } = useConsignaciones();
 
   // State
-  const [activeTab, setActiveTab] = useState<TabValue>('renovaciones');
+  const [activeTab, setTab] = useState<TabValue>('renovaciones');
   const [mantenimientoView, setMantenimientoView] = useState<MantenimientoViewMode>('kanban');
 
   // Use API data or fallback to empty arrays
@@ -247,7 +250,7 @@ function OperacionesContent() {
   }, []);
 
   const handleCalculateIPC = useCallback((renovacion: Renovacion) => {
-    setActiveTab('ipc');
+    setTab('ipc');
   }, []);
 
   const handleViewRenovacionHistory = useCallback((renovacion: Renovacion) => {
@@ -396,10 +399,10 @@ function OperacionesContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('inmobiliaria.operaciones.title')}</h1>
-          <p className="text-muted-foreground mt-1">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">{t('inmobiliaria.operaciones.title')}</h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.operaciones.subtitle')}
           </p>
         </div>
@@ -407,7 +410,7 @@ function OperacionesContent() {
 
       {/* Error states */}
       {(renovacionesError || mantenimientosError || consignacionesError) && (
-        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+        <div className="p-4 rounded-md bg-destructive/10 border border-destructive/20">
           <p className="text-sm text-destructive">
             Error al cargar datos. Por favor, intenta de nuevo.
           </p>
@@ -420,7 +423,7 @@ function OperacionesContent() {
           {[...Array(4)].map((_, i) => (
             <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-muted" />
+                <div className="w-10 h-10 rounded-md bg-muted" />
                 <div className="flex-1 space-y-2">
                   <div className="h-8 bg-muted rounded w-12" />
                   <div className="h-3 bg-muted rounded w-24" />
@@ -445,8 +448,8 @@ function OperacionesContent() {
                 : undefined
             }
             subValueColor={stats.renovaciones.critical > 0 ? 'warning' : 'default'}
-            bgColor="bg-amber-100 dark:bg-amber-900/30"
-            iconColor="text-amber-600 dark:text-amber-400"
+            bgColor="bg-warning-soft"
+            iconColor="text-warning"
           />
           <StatCard
             icon={Wrench}
@@ -458,23 +461,23 @@ function OperacionesContent() {
                 : undefined
             }
             subValueColor={stats.mantenimiento.quoted > 0 ? 'info' : 'default'}
-            bgColor="bg-blue-100 dark:bg-blue-900/30"
-            iconColor="text-blue-600 dark:text-blue-400"
+            bgColor="bg-primary-soft"
+            iconColor="text-primary"
           />
           <StatCard
             icon={CurrencyDollar}
             label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
             value={stats.mantenimiento.quoted}
-            bgColor="bg-violet-100 dark:bg-violet-900/30"
-            iconColor="text-violet-600 dark:text-violet-400"
+            bgColor="bg-neutral-100 dark:bg-neutral-800"
+            iconColor="text-neutral-600 dark:text-neutral-300"
           />
           <StatCard
             icon={TrendUp}
             label={t('inmobiliaria.operaciones.stats.currentIPC')}
             value={`${stats.ipc.currentRate.toFixed(2)}%`}
             subValue={stats.ipc.description}
-            bgColor="bg-emerald-100 dark:bg-emerald-900/30"
-            iconColor="text-emerald-600 dark:text-emerald-400"
+            bgColor="bg-success-soft"
+            iconColor="text-success"
           />
         </motion.div>
       )}
@@ -486,44 +489,44 @@ function OperacionesContent() {
         transition={{ delay: 0.1 }}
         className="rounded-xl border border-border bg-card"
       >
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
+        <Tabs value={activeTab} onValueChange={(v) => setTab(v as TabValue)}>
           {/* Tab Header */}
           <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-border">
-            <TabsList className="bg-muted/50 p-1 rounded-lg">
+            <TabsList variant="segmented">
               <TabsTrigger
                 value="renovaciones"
-                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="inline-flex items-center"
               >
                 <ClockCounterClockwise className="w-4 h-4 mr-2" />
                 {t('inmobiliaria.operaciones.tabs.renovaciones')}
                 {stats.renovaciones.pending > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                  <Badge variant="warning" className="ml-2 px-1.5 py-0.5 font-mono text-[11px] tabular-nums">
                     {stats.renovaciones.pending}
-                  </span>
+                  </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger
                 value="mantenimiento"
-                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="inline-flex items-center"
               >
                 <Wrench className="w-4 h-4 mr-2" />
                 {t('inmobiliaria.operaciones.tabs.mantenimiento')}
                 {stats.mantenimiento.active > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                  <span className="ml-2 rounded-full bg-surface-muted px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-fg-muted">
                     {stats.mantenimiento.active}
                   </span>
                 )}
               </TabsTrigger>
               <TabsTrigger
                 value="ipc"
-                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="inline-flex items-center"
               >
                 <Calculator className="w-4 h-4 mr-2" />
                 {t('inmobiliaria.operaciones.tabs.ipc')}
               </TabsTrigger>
               <TabsTrigger
                 value="recordatorios"
-                className="rounded-md px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="inline-flex items-center"
               >
                 <Bell className="w-4 h-4 mr-2" />
                 Recordatorios
@@ -533,17 +536,17 @@ function OperacionesContent() {
             {/* Tab-specific Actions */}
             <AnimatePresence mode="wait">
               {activeTab === 'mantenimiento' && (
-                <motion.button
+                <motion.div
                   key="new-mant"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  onClick={handleNewMantenimiento}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  {t('inmobiliaria.operaciones.maintenance.new')}
-                </motion.button>
+                  <Button size="sm" hideArrow onClick={handleNewMantenimiento} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    {t('inmobiliaria.operaciones.maintenance.new')}
+                  </Button>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -571,38 +574,38 @@ function OperacionesContent() {
                   </span>
                   {' '}{t('inmobiliaria.operaciones.maintenance.activeRequests')}
                   {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
-                    <span className="ml-2 text-blue-600 dark:text-blue-400">
+                    <span className="ml-2 text-primary">
                       ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: mantenimientos.filter((m) => m.status === 'quoted').length })})
                     </span>
                   )}
                 </p>
               </div>
-              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
-                <button
-                  onClick={() => setMantenimientoView('kanban')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                    mantenimientoView === 'kanban'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Kanban className="w-4 h-4" />
-                  {t('inmobiliaria.operaciones.maintenance.kanbanView')}
-                </button>
-                <button
-                  onClick={() => setMantenimientoView('cards')}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                    mantenimientoView === 'cards'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <SquaresFour className="w-4 h-4" />
-                  {t('inmobiliaria.operaciones.maintenance.listView')}
-                </button>
-              </div>
+              <SegmentedControl<MantenimientoViewMode>
+                value={mantenimientoView}
+                onChange={setMantenimientoView}
+                options={[
+                  {
+                    value: 'kanban',
+                    ariaLabel: t('inmobiliaria.operaciones.maintenance.kanbanView'),
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <Kanban className="w-4 h-4" />
+                        {t('inmobiliaria.operaciones.maintenance.kanbanView')}
+                      </span>
+                    ),
+                  },
+                  {
+                    value: 'cards',
+                    ariaLabel: t('inmobiliaria.operaciones.maintenance.listView'),
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <SquaresFour className="w-4 h-4" />
+                        {t('inmobiliaria.operaciones.maintenance.listView')}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             </div>
 
             {/* Content based on view mode */}

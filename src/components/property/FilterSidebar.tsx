@@ -1,10 +1,26 @@
 'use client';
 
 import { X, SlidersHorizontal, Check } from '@phosphor-icons/react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { Chip, IconButton } from '@leasefy/cadence';
 
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import type { PropertyFilters } from '@/lib/hooks/usePropertyFilters';
 import type { PropertyType } from '@/lib/types/property';
@@ -26,6 +42,9 @@ export interface FunnelSidebarProps {
   /** Toggle "only for me" filter */
   onOnlyAffordableChange?: (value: boolean) => void;
 }
+
+// Radix Select forbids empty-string item values — sentinel for "all cities".
+const CITY_ALL = '__all__';
 
 const BEDROOM_OPTIONS = [1, 2, 3, 4] as const;
 const PROPERTY_TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
@@ -54,8 +73,6 @@ export function FunnelSidebar({
   onOnlyAffordableChange,
 }: FunnelSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [minPriceInput, setMinPriceInput] = useState(
     filters.minPrice?.toString() ?? ''
   );
@@ -91,27 +108,7 @@ export function FunnelSidebar({
     onReset();
   };
 
-  // Handle Escape key to close drawer
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && isOpen) {
-      setIsOpen(false);
-    }
-  }, [isOpen]);
-
-  // Add keyboard listener when drawer is open
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      // Focus the close button when drawer opens
-      closeButtonRef.current?.focus();
-      // Prevent body scroll when drawer is open
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, handleKeyDown]);
+  // Escape, scroll-lock and focus-trap are handled by Cadence Sheet (Radix Dialog).
 
   // Count active filters for badge
   const activeFunnelCount = [
@@ -128,13 +125,15 @@ export function FunnelSidebar({
       {/* Personalization toggle - premium feature */}
       {showPersonalization && onOnlyAffordableChange && (
         <div className="pb-6 border-b border-border">
-          <button
+          <Button
+            variant="ghost"
+            hideArrow
             onClick={() => onOnlyAffordableChange(!onlyAffordable)}
             className={cn(
-              'w-full flex items-center gap-3 p-4 rounded-sm transition-all duration-200',
+              'w-full justify-start gap-3 p-4 h-auto rounded-md',
               onlyAffordable
-                ? 'bg-[hsl(var(--success-50))] border border-[hsl(var(--success-100))]'
-                : 'bg-muted border border-border hover:bg-muted hover:border-border'
+                ? 'bg-[hsl(var(--success-50))] border border-[hsl(var(--success-100))] hover:bg-[hsl(var(--success-50))]'
+                : 'bg-muted border border-border hover:bg-muted'
             )}
           >
             <div
@@ -156,54 +155,51 @@ export function FunnelSidebar({
               </p>
             </div>
             {onlyAffordable && (
-              <span className="px-2 py-0.5 text-xs font-medium text-[hsl(var(--success-700))] bg-[hsl(var(--success-100))] rounded-sm">
+              <span className="px-2 py-0.5 text-xs font-medium text-[hsl(var(--success-700))] bg-[hsl(var(--success-100))] rounded-full">
                 Activo
               </span>
             )}
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Results count and reset */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground tracking-tight" aria-live="polite" aria-atomic="true">
-          <span className="font-medium text-foreground">{resultsCount}</span>{' '}
+          <span className="font-medium text-foreground font-mono tabular-nums">{resultsCount}</span>{' '}
           {resultsCount === 1 ? 'resultado' : 'resultados'}
         </p>
         {hasActiveFilters && (
-          <button
+          <Button
+            variant="link"
+            hideArrow
             onClick={handleReset}
-            className="text-xs text-foreground hover:text-foreground transition-colors tracking-tight hover:underline"
+            className="h-auto p-0 text-xs tracking-tight text-foreground"
           >
             Limpiar filtros
-          </button>
+          </Button>
         )}
       </div>
 
       {/* City filter */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-foreground tracking-tight">Ciudad</Label>
-        <select
-          value={filters.city ?? ''}
-          onChange={(e) => onCityChange(e.target.value || null)}
-          aria-label="Filtrar por ciudad"
-          className={cn(
-            'flex h-11 w-full rounded-sm border bg-card px-3 py-2',
-            'text-sm text-foreground tracking-tight',
-            'transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground',
-            filters.city
-              ? 'border-border bg-muted/50'
-              : 'border-border hover:border-border'
-          )}
+        <Select
+          value={filters.city ?? CITY_ALL}
+          onValueChange={(v) => onCityChange(v === CITY_ALL ? null : v)}
         >
-          <option value="">Todas las ciudades</option>
-          {availableCities.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-full" aria-label="Filtrar por ciudad">
+            <SelectValue placeholder="Todas las ciudades" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={CITY_ALL}>Todas las ciudades</SelectItem>
+            {availableCities.map((city) => (
+              <SelectItem key={city} value={city}>
+                {city}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Price range filter */}
@@ -221,7 +217,7 @@ export function FunnelSidebar({
               onBlur={handleMinPriceBlur}
               aria-label="Precio mínimo"
               className={cn(
-                'h-11 rounded-sm border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
+                'h-11 rounded-md border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
                 'focus:ring-2 focus:ring-ring/20 focus:border-foreground',
                 filters.minPrice
@@ -240,7 +236,7 @@ export function FunnelSidebar({
               onBlur={handleMaxPriceBlur}
               aria-label="Precio máximo"
               className={cn(
-                'h-11 rounded-sm border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
+                'h-11 rounded-md border bg-card text-sm placeholder:text-muted-foreground tracking-tight',
                 'transition-all duration-200',
                 'focus:ring-2 focus:ring-ring/20 focus:border-foreground',
                 filters.maxPrice
@@ -257,22 +253,18 @@ export function FunnelSidebar({
         <Label className="text-xs font-medium text-foreground tracking-tight">Habitaciones</Label>
         <div className="flex flex-wrap gap-2">
           {BEDROOM_OPTIONS.map((num) => (
-            <button
+            <Chip
               key={num}
+              selected={filters.bedrooms === num}
               onClick={() =>
                 onBedroomsChange(filters.bedrooms === num ? null : num)
               }
               aria-pressed={filters.bedrooms === num}
               aria-label={`${num === 4 ? '4 o más' : num} habitaciones`}
-              className={cn(
-                'h-10 min-w-[3rem] px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
-                filters.bedrooms === num
-                  ? 'bg-foreground text-white shadow-sm'
-                  : 'bg-card text-foreground border border-border hover:bg-muted hover:border-border'
-              )}
+              className="font-mono tabular-nums"
             >
               {num === 4 ? '4+' : num}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -282,8 +274,9 @@ export function FunnelSidebar({
         <Label className="text-xs font-medium text-foreground tracking-tight">Tipo de propiedad</Label>
         <div className="flex flex-wrap gap-2">
           {PROPERTY_TYPE_OPTIONS.map(({ value, label }) => (
-            <button
+            <Chip
               key={value}
+              selected={filters.propertyType === value}
               onClick={() =>
                 onPropertyTypeChange(
                   filters.propertyType === value ? null : value
@@ -291,15 +284,9 @@ export function FunnelSidebar({
               }
               aria-pressed={filters.propertyType === value}
               aria-label={`Tipo de propiedad: ${label}`}
-              className={cn(
-                'h-10 px-4 rounded-sm text-sm tracking-tight transition-all duration-200',
-                filters.propertyType === value
-                  ? 'bg-foreground text-white shadow-sm'
-                  : 'bg-card text-foreground border border-border hover:bg-muted hover:border-border'
-              )}
             >
               {label}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
@@ -310,98 +297,77 @@ export function FunnelSidebar({
     <>
       {/* Mobile toggle button */}
       <div className="lg:hidden">
-        <button
+        <Button
+          variant="outline"
+          hideArrow
           onClick={() => setIsOpen(true)}
-          className={cn(
-            'mb-4 w-full flex items-center justify-center gap-2 h-11 rounded-sm',
-            'bg-card text-foreground border border-border',
-            'text-sm tracking-tight transition-all duration-200',
-            'hover:bg-muted hover:border-border active:scale-[0.99]'
-          )}
+          className="mb-4 w-full gap-2 rounded-full"
         >
           <SlidersHorizontal className="w-4 h-4" />
           Filtros
           {activeFunnelCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 rounded-sm bg-foreground text-xs text-white font-medium">
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-foreground text-xs text-background font-medium font-mono tabular-nums">
               {activeFunnelCount}
             </span>
           )}
-        </button>
+        </Button>
       </div>
 
-      {/* Mobile drawer */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-[300] lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="filter-drawer-title"
+      {/* Mobile drawer — Cadence Sheet (bottom) */}
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetContent
+          side="bottom"
+          hideCloseButton
+          data-lenis-prevent
+          className="lg:hidden max-h-[85vh] overflow-y-auto rounded-t-[2px] p-0"
         >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in-up"
-            style={{ animationDuration: '150ms' }}
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
-          {/* Drawer */}
-          <div
-            ref={drawerRef}
-            className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-card rounded-t-[2px] animate-fade-in-up"
-            style={{ animationDuration: '200ms' }}
-          >
-            {/* Handle */}
-            <div className="sticky top-0 bg-card pt-3 pb-2 border-b border-border">
-              <div className="w-10 h-1 bg-border rounded-full mx-auto" aria-hidden="true" />
-            </div>
-
-            {/* Header */}
-            <div className="px-6 py-4 flex items-center justify-between border-b border-border">
-              <h2 id="filter-drawer-title" className="text-lg font-medium text-foreground tracking-tight">Filtros</h2>
-              <button
-                ref={closeButtonRef}
-                onClick={() => setIsOpen(false)}
-                className="w-9 h-9 rounded-sm bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
-                aria-label="Cerrar filtros"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="px-6 py-6">
-              {filterContent}
-            </div>
-
-            {/* Footer */}
-            <div className="sticky bottom-0 px-6 py-4 bg-card border-t border-border">
-              <button
-                onClick={() => setIsOpen(false)}
-                className={cn(
-                  'w-full h-12 rounded-sm text-sm font-medium tracking-tight transition-all duration-200',
-                  'bg-foreground text-white hover:bg-foreground active:scale-[0.99]'
-                )}
-              >
-                Ver {resultsCount} {resultsCount === 1 ? 'resultado' : 'resultados'}
-              </button>
-            </div>
+          {/* Handle */}
+          <div className="sticky top-0 z-10 bg-card pt-3 pb-2 border-b border-border">
+            <div className="w-10 h-1 bg-border rounded-full mx-auto" aria-hidden="true" />
           </div>
-        </div>
-      )}
+
+          {/* Header */}
+          <div className="px-6 py-4 flex items-center justify-between border-b border-border">
+            <SheetTitle className="text-lg font-medium text-foreground tracking-tight">Filtros</SheetTitle>
+            <SheetClose asChild>
+              <IconButton
+                variant="ghost"
+                icon={<X className="h-4 w-4" />}
+                aria-label="Cerrar filtros"
+                className="h-9 w-9 rounded-full bg-muted text-muted-foreground hover:bg-muted"
+              />
+            </SheetClose>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            {filterContent}
+          </div>
+
+          {/* Footer */}
+          <div className="sticky bottom-0 px-6 py-4 bg-card border-t border-border">
+            <SheetClose asChild>
+              <Button hideArrow className="w-full h-12 rounded-full text-sm">
+                Ver {resultsCount} {resultsCount === 1 ? 'resultado' : 'resultados'}
+              </Button>
+            </SheetClose>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Desktop sidebar */}
       <aside className="hidden w-72 shrink-0 lg:block">
-        <div className="sticky top-24 bg-card p-6 rounded-sm shadow-sm border border-border">
+        <Card className="sticky top-24 rounded-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-medium text-foreground tracking-tight">Filtros</h2>
             {activeFunnelCount > 0 && (
-              <span className="px-2 py-0.5 rounded-sm bg-muted text-xs text-foreground font-medium">
+              <span className="px-2 py-0.5 rounded-full bg-muted text-xs text-foreground font-medium font-mono tabular-nums">
                 {activeFunnelCount} activo{activeFunnelCount > 1 ? 's' : ''}
               </span>
             )}
           </div>
           {filterContent}
-        </div>
+        </Card>
       </aside>
     </>
   );

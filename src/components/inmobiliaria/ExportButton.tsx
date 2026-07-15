@@ -10,10 +10,10 @@ import {
   XCircle,
   CalendarBlank,
   CaretDown,
-  SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Spinner } from '@/components/ui/spinner';
 import {
   DropdownList,
   DropdownListContent,
@@ -48,7 +48,7 @@ export interface ExportButtonProps {
 // Size configurations
 const SIZE_CONFIG = {
   sm: {
-    button: 'px-3 py-1.5 text-xs gap-1.5 rounded-lg',
+    button: 'px-3 py-1.5 text-xs gap-1.5 rounded-md',
     icon: 'w-3.5 h-3.5',
     dropdown: 'min-w-[160px]',
   },
@@ -69,16 +69,16 @@ const FORMAT_CONFIG = {
   pdf: {
     icon: FilePdf,
     label: 'Descargar PDF',
-    color: 'text-red-600 dark:text-red-400',
-    bgColor: 'bg-red-50 dark:bg-red-900/20',
-    buttonBg: 'bg-red-600 hover:bg-red-700',
+    color: 'text-danger',
+    bgColor: 'bg-danger-soft',
+    buttonBg: 'bg-danger hover:opacity-90',
   },
   excel: {
     icon: FileXls,
     label: 'Descargar Excel',
-    color: 'text-green-600 dark:text-green-400',
-    bgColor: 'bg-green-50 dark:bg-green-900/20',
-    buttonBg: 'bg-green-600 hover:bg-green-700',
+    color: 'text-success',
+    bgColor: 'bg-success-soft',
+    buttonBg: 'bg-success hover:opacity-90',
   },
 };
 
@@ -117,6 +117,9 @@ export function ExportButton({
     const buttonLabel = label || config.label;
 
     return (
+      // allowlist (Cadence GAP): format-brand export CTA — DS Button has no success/green variant
+      // (Excel is green) and its hover/fill states fight the per-format brand fill; bespoke 3-size
+      // scale + AnimatePresence success/icon swap that Button's loading prop can't model.
       <button
         onClick={() => onExport(format)}
         disabled={disabled || isLoading}
@@ -124,10 +127,10 @@ export function ExportButton({
           'inline-flex items-center justify-center font-medium transition-all',
           sizeConfig.button,
           internalSuccess
-            ? 'bg-emerald-500 hover:bg-emerald-500 text-white'
+            ? 'bg-success hover:opacity-90 text-white'
             : disabled
-              ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              : `${config.buttonBg} text-white shadow-lg shadow-${format === 'pdf' ? 'red' : 'green'}-500/25`,
+              ? 'bg-surface-muted dark:bg-ink text-fg-subtle dark:text-fg-muted cursor-not-allowed'
+              : `${config.buttonBg} text-white shadow-${format === 'pdf' ? 'red' : 'green'}-500/25`,
           className
         )}
       >
@@ -139,7 +142,7 @@ export function ExportButton({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
             >
-              <SpinnerGap className={cn(sizeConfig.icon, 'animate-spin')} />
+              <Spinner size="sm" variant="white" />
             </motion.span>
           ) : internalSuccess ? (
             <motion.span
@@ -172,14 +175,15 @@ export function ExportButton({
   return (
     <DropdownList>
       <DropdownListTrigger asChild>
+        {/* allowlist (Cadence GAP): format-brand export CTA with AnimatePresence icon swap; see note above */}
         <button
           disabled={disabled || isLoading}
           className={cn(
             'inline-flex items-center justify-center font-medium transition-all',
             sizeConfig.button,
             disabled
-              ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono',
+              ? 'bg-surface-muted dark:bg-ink text-fg-subtle dark:text-fg-muted cursor-not-allowed'
+              : 'bg-primary hover:opacity-90 text-primary-fg',
             className
           )}
         >
@@ -191,7 +195,7 @@ export function ExportButton({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
               >
-                <SpinnerGap className={cn(sizeConfig.icon, 'animate-spin')} />
+                <Spinner size="sm" variant="white" />
               </motion.span>
             ) : (
               <motion.span
@@ -212,18 +216,18 @@ export function ExportButton({
       <DropdownListContent
         align="end"
         className={cn(
-          'p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]',
+          'p-1.5 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]',
           sizeConfig.dropdown
         )}
       >
         {/* PDF Option */}
         <DropdownListItem
           onClick={() => onExport('pdf')}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer hover:bg-surface-muted dark:hover:bg-ink transition-colors"
         >
           <div
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center',
+              'w-8 h-8 rounded-md flex items-center justify-center',
               FORMAT_CONFIG.pdf.bgColor
             )}
           >
@@ -233,10 +237,10 @@ export function ExportButton({
             />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">
+            <p className="text-sm font-medium text-fg dark:text-white">
               {t('inmobiliaria.finance.export.downloadPDF')}
             </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.finance.export.printFormat')}
             </p>
           </div>
@@ -245,11 +249,11 @@ export function ExportButton({
         {/* Excel Option */}
         <DropdownListItem
           onClick={() => onExport('excel')}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer hover:bg-surface-muted dark:hover:bg-ink transition-colors"
         >
           <div
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center',
+              'w-8 h-8 rounded-md flex items-center justify-center',
               FORMAT_CONFIG.excel.bgColor
             )}
           >
@@ -259,30 +263,30 @@ export function ExportButton({
             />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">
+            <p className="text-sm font-medium text-fg dark:text-white">
               {t('inmobiliaria.finance.export.downloadExcel')}
             </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.finance.export.analysisFormat')}
             </p>
           </div>
         </DropdownListItem>
 
-        <DropdownListSeparator className="my-1.5 bg-neutral-200 dark:bg-neutral-700" />
+        <DropdownListSeparator className="my-1.5 bg-surface-muted dark:bg-ink" />
 
         {/* Scheduled Export - Coming Soon */}
         <DropdownListItem
           disabled
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg opacity-50 cursor-not-allowed"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md opacity-50 cursor-not-allowed"
         >
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
-            <CalendarBlank className="w-4 h-4 text-neutral-400" />
+          <div className="w-8 h-8 rounded-md flex items-center justify-center bg-surface-muted dark:bg-ink">
+            <CalendarBlank className="w-4 h-4 text-fg-subtle" />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
               {t('inmobiliaria.finance.export.scheduleExport')}
             </p>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500">
+            <p className="text-xs text-fg-subtle dark:text-fg-muted">
               {t('inmobiliaria.finance.export.comingSoon')}
             </p>
           </div>
@@ -320,20 +324,21 @@ export function ExportButtonCompact({
   const Icon = config.icon;
 
   return (
+    // allowlist (Cadence GAP): compact format-brand icon export CTA (no success/green variant); see note above
     <button
       onClick={() => onExport(format)}
       disabled={disabled || isLoading}
       className={cn(
-        'p-2 rounded-lg transition-colors',
+        'p-2 rounded-md transition-colors',
         disabled
-          ? 'text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+          ? 'text-fg-subtle dark:text-fg-muted cursor-not-allowed'
           : `${config.color} hover:${config.bgColor}`,
         className
       )}
       title={config.label}
     >
       {isLoading ? (
-        <SpinnerGap className="w-4 h-4 animate-spin" />
+        <Spinner size="sm" variant="current" />
       ) : (
         <Icon className="w-4 h-4" weight="fill" />
       )}

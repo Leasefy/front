@@ -121,7 +121,7 @@ export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   draft: 'bg-muted text-foreground',
   pending_landlord: 'bg-plan-status-yellow-bg text-plan-status-yellow',
   pending_tenant: 'bg-plan-status-blue-bg text-plan-status-blue',
-  rejected_pending_modifications: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  rejected_pending_modifications: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
   signed: 'bg-plan-status-blue-bg text-plan-status-blue',
   active: 'bg-plan-status-green-bg text-plan-status-green',
   expired: 'bg-muted text-muted-foreground',

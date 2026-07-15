@@ -16,9 +16,9 @@ const RECOMMENDATION_STYLES: Record<
 > = {
   recommended: {
     labelKey: 'beta.decisions.recommended',
-    bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    border: 'border-emerald-200 dark:border-emerald-500/30',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    border: 'border-success/30 border-success/40',
   },
   neutral: {
     labelKey: 'beta.decisions.neutral',
@@ -28,9 +28,9 @@ const RECOMMENDATION_STYLES: Record<
   },
   not_recommended: {
     labelKey: 'beta.decisions.notRecommended',
-    bg: 'bg-red-50 dark:bg-red-500/10',
-    text: 'text-red-700 dark:text-red-400',
-    border: 'border-red-200 dark:border-red-500/30',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    border: 'border-danger/30 border-danger/40',
   },
 };
 
@@ -39,21 +39,21 @@ const RECOMMENDATION_STYLES: Record<
 // ============================================================================
 
 const BORDER_LEFT_COLORS: Record<string, string> = {
-  emerald: 'border-l-emerald-400 dark:border-l-emerald-500',
-  blue: 'border-l-blue-400 dark:border-l-blue-500',
-  amber: 'border-l-amber-400 dark:border-l-amber-500',
-  purple: 'border-l-purple-400 dark:border-l-purple-500',
-  pink: 'border-l-pink-400 dark:border-l-pink-500',
-  indigo: 'border-l-indigo-400 dark:border-l-indigo-500',
+  emerald: 'border-l-success',
+  blue: 'border-l-primary',
+  amber: 'border-l-warning',
+  purple: 'border-l-border-strong',
+  pink: 'border-l-border-strong',
+  indigo: 'border-l-primary',
 };
 
 const CATEGORY_BG: Record<string, string> = {
-  emerald: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  amber: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  purple: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400',
-  pink: 'bg-pink-50 dark:bg-pink-500/10 text-pink-700 dark:text-pink-400',
-  indigo: 'bg-indigo-50 dark:bg-indigo-600/10 text-indigo-700 dark:text-indigo-400',
+  emerald: 'bg-success-soft text-success',
+  blue: 'bg-primary-soft text-primary',
+  amber: 'bg-warning-soft text-warning',
+  purple: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+  pink: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300',
+  indigo: 'bg-primary-soft text-primary',
 };
 
 // ============================================================================
@@ -88,7 +88,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
         'border border-neutral-200/60 dark:border-border/50',
         'border-l-[3px]',
         borderColor,
-        'rounded-lg overflow-hidden',
+        'rounded-md overflow-hidden',
         'bg-white/80 dark:bg-card/80',
         'transition-all duration-200',
         className
@@ -129,7 +129,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
               onClick={() => onSelect?.(option.id)}
               aria-label={`${t('beta.decisions.select')}: ${option.label}`}
               className={cn(
-                'w-full text-left rounded-md border px-3 py-2',
+                'w-full text-left rounded-sm border px-3 py-2',
                 'transition-all duration-200',
                 // Interactive state
                 !isResolved && [
@@ -140,9 +140,9 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
                 ],
                 // Selected state
                 isSelected && [
-                  'border-emerald-300 dark:border-emerald-500/40',
-                  'bg-emerald-50/50 dark:bg-emerald-500/5',
-                  'ring-1 ring-emerald-200 dark:ring-emerald-500/20',
+                  'border-success/30 border-success/40',
+                  'bg-success-soft',
+                  'ring-1 ring-success/20',
                 ],
                 // Non-selected (dimmed) state
                 isNotSelected && [
@@ -155,7 +155,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
               <div className="flex items-start gap-2">
                 {/* Checkmark for selected option */}
                 {isSelected && (
-                  <div className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-success flex items-center justify-center">
                     <Check className="w-2.5 h-2.5 text-white" weight="bold" />
                   </div>
                 )}

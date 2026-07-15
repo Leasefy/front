@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, SpinnerGap } from '@phosphor-icons/react';
+import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar } from '@phosphor-icons/react';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { SegmentedControl } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/lib/auth/use-auth';
 import { visitsApi } from '@/lib/api/visits.service';
 import { ApiError } from '@/lib/api/client';
@@ -97,7 +100,7 @@ export function StickyCTA({
   const router = useRouter();
   const pathname = usePathname();
 
-  const [activeTab, setActiveTab] = useState<'apply' | 'visit'>('apply');
+  const [ctaMode, setCtaMode] = useState<'apply' | 'visit'>('apply');
   const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -127,7 +130,7 @@ export function StickyCTA({
 
   // ─── Fetch slots when visit tab opens ─────────────────────────────────────
   useEffect(() => {
-    if (activeTab !== 'visit') return;
+    if (ctaMode !== 'visit') return;
 
     setSlotsLoading(true);
     setSlotsByDate({});
@@ -145,7 +148,7 @@ export function StickyCTA({
         // Non-blocking: empty slots will show "sin disponibilidad"
       })
       .finally(() => setSlotsLoading(false));
-  }, [activeTab, propertyId]);
+  }, [ctaMode, propertyId]);
 
   // ─── Derived slot data ────────────────────────────────────────────────────
 
@@ -198,7 +201,7 @@ export function StickyCTA({
 
   return (
     <div className={cn('lg:sticky lg:top-28', className)}>
-      <div className="bg-white dark:bg-card border border-border rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden">
+      <Card className="overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
         {/* Urgency Banner */}
         {stats && stats.demandLevel !== 'media' && (
           <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-primary text-primary-foreground">
@@ -235,32 +238,38 @@ export function StickyCTA({
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (
-                <button
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
                   onClick={onWishlistToggle}
                   className={cn(
-                    'w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200',
+                    'h-10 w-10',
                     isWishlisted
                       ? 'border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10'
-                      : 'border-border hover:bg-neutral-100 text-muted-foreground'
+                      : 'hover:bg-surface-muted text-muted-foreground'
                   )}
                   aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                 >
                   <Heart className={cn('w-[18px] h-[18px]', isWishlisted && 'fill-current')} />
-                </button>
+                </Button>
               )}
-              <button
-                className="w-10 h-10 flex items-center justify-center rounded-xl border border-border hover:bg-neutral-100 text-muted-foreground transition-all duration-200"
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className="h-10 w-10 hover:bg-surface-muted text-muted-foreground"
                 aria-label="Compartir"
               >
                 <ShareNetwork className="w-[18px] h-[18px]" />
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Price */}
           <div className="mb-6 pb-6 border-b border-border">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[30px] font-heading font-bold text-foreground tracking-[-0.02em]">
+              <span className="text-[30px] font-mono tabular-nums font-bold text-foreground tracking-[-0.02em]">
                 {formatCurrency(price)}
               </span>
               <span className="text-[14px] text-muted-foreground font-medium">/mes</span>
@@ -273,33 +282,21 @@ export function StickyCTA({
           </div>
 
           {/* Tab selector */}
-          <div className="flex p-1 bg-neutral-100 dark:bg-white/[0.04] rounded-xl mb-6">
-            <button
-              onClick={() => setActiveTab('apply')}
-              className={cn(
-                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-lg',
-                activeTab === 'apply'
-                  ? 'bg-white dark:bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Postularme
-            </button>
-            <button
-              onClick={() => setActiveTab('visit')}
-              className={cn(
-                'flex-1 py-2.5 text-[13px] font-semibold transition-all duration-200 rounded-lg',
-                activeTab === 'visit'
-                  ? 'bg-white dark:bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Agendar visita
-            </button>
+          <div className="mb-6">
+            <SegmentedControl<'apply' | 'visit'>
+              fullWidth
+              value={ctaMode}
+              onChange={setCtaMode}
+              aria-label="Postularme o agendar visita"
+              options={[
+                { value: 'apply', label: 'Postularme' },
+                { value: 'visit', label: 'Agendar visita' },
+              ]}
+            />
           </div>
 
           {/* Tab content */}
-          {activeTab === 'apply' ? (
+          {ctaMode === 'apply' ? (
             /* ── Apply tab ── */
             <div>
               <div className="space-y-2.5 mb-6">
@@ -326,7 +323,7 @@ export function StickyCTA({
           ) : visitConfirmed ? (
             /* ── Visit confirmed ── */
             <div className="text-center py-4">
-              <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--success-500))] rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--success-500))] rounded-xl flex items-center justify-center">
                 <Check className="w-8 h-8 text-white" strokeWidth={3} />
               </div>
               <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
@@ -343,48 +340,52 @@ export function StickyCTA({
               <p className="text-xs text-muted-foreground mb-6">
                 Te enviaremos un correo con los detalles de la visita y recordatorios.
               </p>
-              <button
+              <Button
+                variant="link"
+                hideArrow
                 onClick={handleResetVisit}
-                className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                className="h-auto p-0 text-sm font-medium"
               >
                 Agendar otra visita
-              </button>
+              </Button>
             </div>
           ) : (
             /* ── Visit tab ── */
             <div className="space-y-5">
               {/* Visit type */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setVisitType('presencial')}
-                  className={cn(
-                    'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
-                    visitTextT === 'presencial'
-                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
-                      : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
-                  )}
-                >
-                  <MapPin className="w-4 h-4" />
-                  Presencial
-                </button>
-                <button
-                  onClick={() => setVisitType('virtual')}
-                  className={cn(
-                    'py-3 px-4 border text-[13px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
-                    visitTextT === 'virtual'
-                      ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
-                      : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
-                  )}
-                >
-                  <VideoCamera className="w-4 h-4" />
-                  Virtual
-                </button>
-              </div>
+              <SegmentedControl<'presencial' | 'virtual'>
+                fullWidth
+                value={visitTextT}
+                onChange={setVisitType}
+                aria-label="Tipo de visita"
+                options={[
+                  {
+                    value: 'presencial',
+                    ariaLabel: 'Presencial',
+                    label: (
+                      <span className="inline-flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Presencial
+                      </span>
+                    ),
+                  },
+                  {
+                    value: 'virtual',
+                    ariaLabel: 'Virtual',
+                    label: (
+                      <span className="inline-flex items-center gap-2">
+                        <VideoCamera className="w-4 h-4" />
+                        Virtual
+                      </span>
+                    ),
+                  },
+                ]}
+              />
 
               {/* Slots loading */}
               {slotsLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <SpinnerGap className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <Spinner variant="muted" />
                 </div>
               ) : availableDates.length === 0 ? (
                 <div className="text-center py-6">
@@ -402,25 +403,26 @@ export function StickyCTA({
                     <div className="grid grid-cols-5 gap-1.5">
                       {availableDates.map((dateStr) => {
                         const { dayName, dayNumber } = parseDateDisplay(dateStr);
+                        const isSelected = selectedDay === dateStr;
                         return (
-                          <button
+                          <Button
                             key={dateStr}
+                            variant={isSelected ? 'default' : 'outline'}
+                            hideArrow
                             onClick={() => { setSelectedDay(dateStr); setSelectedTime(null); setScheduleError(null); }}
                             className={cn(
-                              'py-2.5 border text-center rounded-xl transition-all duration-200',
-                              selectedDay === dateStr
-                                ? 'border-primary bg-primary text-white'
-                                : 'border-border hover:border-primary/30'
+                              'h-auto flex-col gap-0 px-0 py-2.5 rounded-xl',
+                              !isSelected && 'hover:border-primary/30'
                             )}
                           >
                             <span className={cn(
                               'block text-[9px] font-semibold uppercase tracking-wide',
-                              selectedDay === dateStr ? 'text-white/70' : 'text-muted-foreground'
+                              isSelected ? 'text-white/70' : 'text-muted-foreground'
                             )}>
                               {dayName}
                             </span>
-                            <span className="block text-[15px] font-bold mt-0.5">{dayNumber}</span>
-                          </button>
+                            <span className="block text-[15px] font-bold mt-0.5 font-mono tabular-nums">{dayNumber}</span>
+                          </Button>
                         );
                       })}
                     </div>
@@ -435,21 +437,20 @@ export function StickyCTA({
                       </div>
                       <div className="grid grid-cols-3 gap-1.5">
                         {timesForDay.map(({ time, available }) => (
-                          <button
+                          <Button
                             key={time}
+                            variant={selectedTime === time ? 'default' : 'outline'}
+                            hideArrow
                             onClick={() => { if (available) { setSelectedTime(time); setScheduleError(null); } }}
                             disabled={!available}
                             className={cn(
-                              'py-2.5 text-[12px] font-semibold border rounded-lg transition-all duration-200',
-                              !available
-                                ? 'border-border/50 text-muted-foreground/40 bg-neutral-50 cursor-not-allowed line-through'
-                                : selectedTime === time
-                                  ? 'border-primary bg-primary text-white uppercase tracking-wide font-mono'
-                                  : 'border-border text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                              'h-auto py-2.5 rounded-md text-[12px] font-semibold font-mono tabular-nums',
+                              !available && 'line-through',
+                              available && selectedTime !== time && 'hover:border-primary/30'
                             )}
                           >
                             {formatTimeSlot(time)}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -463,19 +464,15 @@ export function StickyCTA({
               )}
 
               {/* CTA button */}
-              <button
+              <Button
                 onClick={handleScheduleVisit}
                 disabled={!selectedDay || !selectedTime || isSubmitting || slotsLoading}
-                className={cn(
-                  'w-full py-4 text-[14px] font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2',
-                  selectedDay && selectedTime && !isSubmitting && !slotsLoading
-                    ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90 shadow-sm'
-                    : 'bg-neutral-100 text-muted-foreground cursor-not-allowed'
-                )}
+                hideArrow
+                className="w-full h-auto py-4 rounded-xl text-[14px] gap-2"
               >
                 {isSubmitting ? (
                   <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" />
+                    <Spinner size="sm" variant="current" />
                     Agendando...
                   </>
                 ) : selectedDay && selectedTime ? (
@@ -486,7 +483,7 @@ export function StickyCTA({
                 ) : (
                   'Selecciona fecha y hora'
                 )}
-              </button>
+              </Button>
 
               <p className="text-[11px] text-muted-foreground text-center flex items-center justify-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[hsl(var(--success-500))]" />
@@ -499,13 +496,13 @@ export function StickyCTA({
         </div>
 
         {/* Activity footer */}
-        <div className="px-6 py-3.5 bg-neutral-50 dark:from-white/[0.02] dark:to-white/[0.04] border-t border-border">
+        <div className="px-6 py-3.5 bg-surface-muted border-t border-border">
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-[hsl(var(--success-500))] animate-pulse" />
             <span>Última postulación hace <span className="font-semibold text-foreground">12 minutos</span></span>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -531,7 +528,7 @@ export function MobileStickyCTA({
   }, [propertyId]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
+    <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
       {stats && stats.demandLevel !== 'media' && (
         <div className="px-4 py-2 bg-primary text-primary-foreground text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
           <TrendUp className="w-3.5 h-3.5" />
@@ -541,9 +538,9 @@ export function MobileStickyCTA({
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-lg font-heading font-bold text-foreground tracking-tight">
+            <p className="text-lg font-mono tabular-nums font-bold text-foreground tracking-tight">
               {formatCurrency(price)}
-              <span className="text-[13px] font-medium text-muted-foreground">/mes</span>
+              <span className="text-[13px] font-medium text-muted-foreground font-sans">/mes</span>
             </p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
@@ -554,14 +551,12 @@ export function MobileStickyCTA({
             </p>
           </div>
           <div className="flex gap-2">
-            <Link href={`/aplicar/${propertyId}`}>
-              <button className="min-h-[44px] px-5 py-3 bg-primary text-white text-[13px] font-semibold uppercase tracking-wide font-mono rounded-xl hover:bg-primary/90 transition-all duration-200 shadow-sm">
-                Postularme
-              </button>
-            </Link>
-            <button className="min-h-[44px] px-4 py-3 border border-border rounded-xl text-[13px] font-semibold text-foreground hover:bg-neutral-100 transition-all duration-200">
+            <Button asChild hideArrow>
+              <Link href={`/aplicar/${propertyId}`}>Postularme</Link>
+            </Button>
+            <Button variant="outline" hideArrow>
               Visita
-            </button>
+            </Button>
           </div>
         </div>
       </div>

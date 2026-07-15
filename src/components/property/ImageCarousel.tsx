@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export interface ImageCarouselProps {
@@ -72,7 +74,7 @@ export function ImageCarousel({
       <div
         className={cn(
           'relative bg-muted flex items-center justify-center',
-          isHero ? 'h-[50vh] md:h-[70vh]' : 'aspect-[4/3] rounded-sm',
+          isHero ? 'h-[50vh] md:h-[70vh]' : 'aspect-[4/3] rounded-lg',
           className
         )}
       >
@@ -96,7 +98,7 @@ export function ImageCarousel({
           'relative overflow-hidden bg-muted',
           isHero
             ? 'h-[50vh] md:h-[70vh] cursor-pointer group'
-            : 'aspect-[4/3] rounded-sm'
+            : 'aspect-[4/3] rounded-lg'
         )}
         onClick={isHero ? handleImageClick : undefined}
         role={isHero && onImageClick ? 'button' : undefined}
@@ -135,7 +137,7 @@ export function ImageCarousel({
         {/* Image counter badge */}
         <div
           className={cn(
-            'absolute rounded-full bg-black/60 px-3 py-1 text-sm text-white',
+            'absolute rounded-full bg-black/60 px-3 py-1 text-sm text-white font-mono tabular-nums',
             isHero ? 'bottom-4 right-4' : 'bottom-3 right-3'
           )}
         >
@@ -144,48 +146,51 @@ export function ImageCarousel({
 
         {/* View all images button (hero only) */}
         {isHero && hasMultipleImages && (
-          <button
+          <Button
+            variant="white"
+            size="sm"
+            hideArrow
             onClick={(e) => {
               e.stopPropagation();
               onImageClick?.(0);
             }}
-            className="absolute bottom-4 left-4 px-4 py-2 bg-white text-foreground text-xs font-medium tracking-tight rounded-sm hover:bg-muted transition-colors shadow-sm"
+            className="absolute bottom-4 left-4 rounded-full text-xs"
           >
             Ver todas las imagenes ({totalImages})
-          </button>
+          </Button>
         )}
 
         {/* Compass arrows */}
         {hasMultipleImages && (
           <>
-            <button
+            <IconButton
+              variant="ghost"
+              icon={<CaretLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />}
               onClick={(e) => {
                 e.stopPropagation();
                 goToPrevious();
               }}
+              aria-label="Imagen anterior"
               className={cn(
-                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-md transition-all',
-                'hover:bg-white hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary',
+                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 transition-all',
+                'hover:bg-white hover:scale-110',
                 isHero ? 'left-4 p-3' : 'left-3 p-2'
               )}
-              aria-label="Imagen anterior"
-            >
-              <CaretLeft className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
-            </button>
-            <button
+            />
+            <IconButton
+              variant="ghost"
+              icon={<CaretRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />}
               onClick={(e) => {
                 e.stopPropagation();
                 goToNext();
               }}
+              aria-label="Siguiente imagen"
               className={cn(
-                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 shadow-md transition-all',
-                'hover:bg-white hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary',
+                'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/90 transition-all',
+                'hover:bg-white hover:scale-110',
                 isHero ? 'right-4 p-3' : 'right-3 p-2'
               )}
-              aria-label="Siguiente imagen"
-            >
-              <CaretRight className={cn(isHero ? 'h-6 w-6' : 'h-5 w-5', 'text-foreground')} />
-            </button>
+            />
           </>
         )}
       </div>
@@ -198,7 +203,7 @@ export function ImageCarousel({
               key={index}
               onClick={() => goToIndex(index)}
               className={cn(
-                'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-sm transition-all',
+                'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-md transition-all',
                 'hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary',
                 index === currentIndex
                   ? 'ring-2 ring-primary'

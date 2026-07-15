@@ -13,7 +13,6 @@ import {
   Sparkle,
   CaretRight,
   Download,
-  SpinnerGap,
   Info,
   ChartLineUp,
   Users,
@@ -32,7 +31,17 @@ import { useI18n } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { formatCurrency as formatCOP, formatDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -208,9 +217,9 @@ export function ConfigFacturacion({
   // Get invoice status color
   const getInvoiceStatusColor = (status: BillingInvoice['status']) => {
     const colors = {
-      paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-      pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-      failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+      paid: 'bg-success-soft text-success',
+      pending: 'bg-warning-soft text-warning',
+      failed: 'bg-danger-soft text-danger',
     };
     return colors[status];
   };
@@ -260,7 +269,7 @@ export function ConfigFacturacion({
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-muted rounded-lg w-1/3" />
+        <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="h-48 bg-muted rounded-xl" />
           <div className="h-48 bg-muted rounded-xl" />
@@ -279,9 +288,9 @@ export function ConfigFacturacion({
       className="space-y-6"
     >
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-foreground">{t('inmobiliaria.config.billing.title')}</h2>
-        <p className="text-sm text-muted-foreground mt-1">
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.billing.title')}</h2>
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.config.billing.subtitle')}
         </p>
       </div>
@@ -292,17 +301,8 @@ export function ConfigFacturacion({
         <div className="p-5 rounded-xl bg-card border border-border">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  'w-12 h-12 rounded-xl flex items-center justify-center',
-                  billing.plan === 'professional'
-                    ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
-                    : billing.plan === 'enterprise'
-                    ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                )}
-              >
-                <PlanIcon className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-lg bg-surface-muted flex items-center justify-center">
+                <PlanIcon className="w-6 h-6 text-fg-muted" weight="duotone" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -321,9 +321,9 @@ export function ConfigFacturacion({
           </div>
 
           {/* Price */}
-          <div className="p-4 rounded-lg bg-muted/50 mb-4">
+          <div className="p-4 rounded-md bg-muted/50 mb-4">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-foreground">
+              <span className="text-2xl font-semibold text-foreground">
                 {formatCOP(billing.pricePerMonth)}
               </span>
               <span className="text-muted-foreground">{t('inmobiliaria.config.billing.perMonth')}</span>
@@ -335,21 +335,18 @@ export function ConfigFacturacion({
 
           {/* Upgrade Button */}
           {billing.plan !== 'enterprise' && (
-            <button
-              onClick={() => setIsUpgradeDialogOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-medium transition-colors"
-            >
+            <Button hideArrow className="w-full justify-center" onClick={() => setIsUpgradeDialogOpen(true)}>
               <ArrowUp className="w-4 h-4" />
               {t('inmobiliaria.config.billing.upgradePlan')}
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Usage Meters Card */}
         <div className="p-5 rounded-xl bg-card border border-border">
           <div className="flex items-center gap-2 mb-4">
-            <ChartLineUp className="w-5 h-5 text-emerald-500" />
-            <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.planUsage')}</h3>
+            <ChartLineUp className="w-5 h-5 text-fg-muted" />
+            <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.config.billing.planUsage')}</h3>
           </div>
 
           <div className="space-y-5">
@@ -375,7 +372,7 @@ export function ConfigFacturacion({
                 />
               )}
               {billing.limits.maxProperties === -1 && (
-                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-center gap-1 text-xs text-success">
                   <Lightning className="w-3 h-3" />
                   {t('inmobiliaria.config.billing.unlimited')}
                 </div>
@@ -404,7 +401,7 @@ export function ConfigFacturacion({
                 />
               )}
               {billing.limits.maxUsers === -1 && (
-                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-center gap-1 text-xs text-success">
                   <Lightning className="w-3 h-3" />
                   {t('inmobiliaria.config.billing.unlimited')}
                 </div>
@@ -433,7 +430,7 @@ export function ConfigFacturacion({
                 />
               )}
               {billing.limits.maxAgents === -1 && (
-                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-center gap-1 text-xs text-success">
                   <Lightning className="w-3 h-3" />
                   {t('inmobiliaria.config.billing.unlimited')}
                 </div>
@@ -449,24 +446,27 @@ export function ConfigFacturacion({
         <div className="p-5 rounded-xl bg-card border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-blue-500" />
-              <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.paymentMethod')}</h3>
+              <CreditCard className="w-5 h-5 text-fg-muted" />
+              <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.config.billing.paymentMethod')}</h3>
             </div>
-            <button
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={handleUpdatePaymentMethod}
-              className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+              className="h-auto p-0 text-sm font-medium"
             >
               {t('inmobiliaria.config.billing.update')}
-            </button>
+            </Button>
           </div>
 
           {billing.paymentMethod ? (
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-              <div className="w-12 h-8 rounded-md bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+            <div className="flex items-center gap-4 p-4 rounded-md bg-muted/50">
+              <div className="w-12 h-8 rounded-md bg-ink flex items-center justify-center">
                 {billing.paymentMethod.type === 'card' ? (
-                  <CreditCard className="w-5 h-5 text-white" />
+                  <CreditCard className="w-5 h-5 text-ink-fg" />
                 ) : (
-                  <Bank className="w-5 h-5 text-white" />
+                  <Bank className="w-5 h-5 text-ink-fg" />
                 )}
               </div>
               <div>
@@ -499,10 +499,10 @@ export function ConfigFacturacion({
               </div>
             </div>
           ) : (
-            <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
+            <div className="p-4 rounded-md bg-warning-soft border border-warning/30">
               <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-amber-500" />
-                <p className="text-sm text-amber-600 dark:text-amber-400">
+                <Info className="w-4 h-4 text-warning" />
+                <p className="text-sm text-warning">
                   {t('inmobiliaria.config.billing.noPaymentMethod')}
                 </p>
               </div>
@@ -513,8 +513,8 @@ export function ConfigFacturacion({
         {/* Plan Features Card */}
         <div className="p-5 rounded-xl bg-card border border-border">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkle className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.planIncludes')}</h3>
+            <Sparkle className="w-5 h-5 text-fg-muted" />
+            <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.config.billing.planIncludes')}</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -529,7 +529,7 @@ export function ConfigFacturacion({
                   className="flex items-center gap-2"
                 >
                   {isIncluded ? (
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                   ) : (
                     <X className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                   )}
@@ -554,71 +554,74 @@ export function ConfigFacturacion({
       {/* Invoice History */}
       <div className="p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center gap-2 mb-4">
-          <Receipt className="w-5 h-5 text-amber-500" />
-          <h3 className="font-semibold text-foreground">{t('inmobiliaria.config.billing.invoiceHistory')}</h3>
+          <Receipt className="w-5 h-5 text-fg-muted" />
+          <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.config.billing.invoiceHistory')}</h3>
         </div>
 
         {invoices.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow className="border-b border-border">
+                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceDate')}
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceAmount')}
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceStatus')}
-                  </th>
-                  <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {t('inmobiliaria.config.billing.invoiceActions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {invoices.map((invoice) => (
-                  <tr
+                  <TableRow
                     key={invoice.id}
                     className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
                   >
-                    <td className="py-3 px-4">
+                    <TableCell className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-foreground">
                           {formatDate(invoice.date)}
                         </span>
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell className="py-3 px-4">
                       <span className="text-sm font-medium text-foreground">
                         {formatCOP(invoice.amount)}
                       </span>
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell className="py-3 px-4">
                       <Badge
                         variant="secondary"
                         className={getInvoiceStatusColor(invoice.status)}
                       >
                         {getInvoiceStatusLabel(invoice.status)}
                       </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-right">
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-right">
                       {invoice.pdfUrl && invoice.status === 'paid' && (
-                        <button
+                        <Button
+                          variant="link"
+                          size="sm"
+                          hideArrow
                           onClick={() => handleDownloadInvoice(invoice)}
-                          className="inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
+                          className="h-auto p-0 gap-1.5 text-sm font-medium"
                         >
                           <Download className="w-4 h-4" />
                           {t('common.download')}
-                        </button>
+                        </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="py-8 text-center">
@@ -656,16 +659,16 @@ export function ConfigFacturacion({
                   className={cn(
                     'relative p-4 rounded-xl border-2 text-left transition-all',
                     isCurrentPlan
-                      ? 'border-slate-200 dark:border-slate-700 bg-muted/50 cursor-default'
+                      ? 'border-border bg-muted/50 cursor-default'
                       : isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                      : 'border-border hover:border-indigo-300 dark:hover:border-indigo-700',
-                    config.highlight && !isCurrentPlan && 'ring-2 ring-indigo-500/20'
+                      ? 'border-primary/30 bg-primary-soft'
+                      : 'border-border hover:border-primary/30',
+                    config.highlight && !isCurrentPlan && 'ring-2 ring-primary/20'
                   )}
                 >
                   {config.highlight && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge variant="default" className="bg-indigo-600 text-white uppercase tracking-wide font-mono">
+                      <Badge variant="default" className="bg-primary text-primary-foreground">
                         <Sparkle className="w-3 h-3 mr-1" />
                         {t('inmobiliaria.config.billing.popular')}
                       </Badge>
@@ -674,14 +677,8 @@ export function ConfigFacturacion({
 
                   <div className="flex items-center gap-2 mb-3 mt-1">
                     <PlanIconComponent
-                      className={cn(
-                        'w-5 h-5',
-                        plan === 'professional'
-                          ? 'text-indigo-500'
-                          : plan === 'enterprise'
-                          ? 'text-purple-500'
-                          : 'text-slate-500'
-                      )}
+                      className="w-5 h-5 text-fg-muted"
+                      weight="duotone"
                     />
                     <span className="font-semibold text-foreground">
                       {getPlanLabel(plan)}
@@ -694,7 +691,7 @@ export function ConfigFacturacion({
                   </div>
 
                   <div className="mb-3">
-                    <span className="text-2xl font-bold text-foreground">
+                    <span className="text-2xl font-semibold text-foreground">
                       {formatCOP(config.price)}
                     </span>
                     <span className="text-muted-foreground">{t('inmobiliaria.config.billing.perMonth')}</span>
@@ -715,7 +712,7 @@ export function ConfigFacturacion({
                           className="flex items-center gap-1.5 text-xs"
                         >
                           {isIncluded ? (
-                            <Check className="w-3 h-3 text-emerald-500" />
+                            <Check className="w-3 h-3 text-success" />
                           ) : (
                             <X className="w-3 h-3 text-muted-foreground/50" />
                           )}
@@ -737,30 +734,26 @@ export function ConfigFacturacion({
             })}
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-            <button
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+            <Button
+              variant="secondary"
+              hideArrow
               onClick={() => {
                 setIsUpgradeDialogOpen(false);
                 setSelectedPlan(null);
               }}
               disabled={isUpgrading}
-              className="px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
             >
               {t('inmobiliaria.config.billing.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              hideArrow
               onClick={() => selectedPlan && handleUpgrade(selectedPlan)}
               disabled={!selectedPlan || isUpgrading}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                !selectedPlan || isUpgrading
-                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono'
-              )}
             >
               {isUpgrading ? (
                 <>
-                  <SpinnerGap className="w-4 h-4 animate-spin" />
+                  <Spinner size="sm" variant="current" />
                   {t('inmobiliaria.config.billing.updating')}
                 </>
               ) : (
@@ -769,7 +762,7 @@ export function ConfigFacturacion({
                   {t('inmobiliaria.config.billing.changeTo', { plan: selectedPlan ? getPlanLabel(selectedPlan) : 'plan' })}
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

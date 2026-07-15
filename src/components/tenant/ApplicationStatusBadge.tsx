@@ -38,13 +38,13 @@ export function ApplicationStatusBadge({
 
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-2.5 py-1',
+    md: 'text-sm px-3 py-1',
   };
 
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-sm',
+        'inline-flex items-center font-medium rounded-full',
         colorClasses,
         sizeClasses[size],
         className

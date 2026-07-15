@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
-import { ForceLightMode } from "@/components/providers/ForceLightMode";
-
 export const metadata: Metadata = {
   title: "Términos y Condiciones | Leasefy",
   description:
@@ -12,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TerminosPage() {
   return (
-    <ForceLightMode>
+    <>
       <Navbar />
       <main id="main-content" className="bg-background">
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
@@ -1530,7 +1528,7 @@ export default function TerminosPage() {
                   estos Términos, puede comunicarse con nosotros a través de los
                   siguientes canales:
                 </p>
-                <div className="p-5 border border-border rounded-lg bg-muted/30 space-y-1">
+                <div className="p-5 border border-border rounded-md bg-muted/30 space-y-1">
                   <p className="text-foreground font-medium">Leasefy S.A.S.</p>
                   <p className="text-muted-foreground">NIT: [Pendiente de registro]</p>
                   <p className="text-muted-foreground">
@@ -1569,6 +1567,6 @@ export default function TerminosPage() {
         </section>
       </main>
       <Footer />
-    </ForceLightMode>
+    </>
   );
 }

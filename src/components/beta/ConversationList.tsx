@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { MagnifyingGlass, Trash, ChatCircleDots } from '@phosphor-icons/react';
+import { IconButton, MonoLabel } from '@leasefy/cadence';
+import { Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -93,11 +95,11 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        'w-full text-left px-3 py-2 rounded-lg relative',
+        'w-full text-left px-3 py-2 rounded-md relative',
         'transition-all duration-150',
         isActive
-          ? 'bg-neutral-100 dark:bg-neutral-800'
-          : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
+          ? 'bg-surface-muted'
+          : 'hover:bg-surface-muted'
       )}
     >
       <p
@@ -116,19 +118,21 @@ function ConversationItem({ summary, isActive, onSelect, onDelete }: Conversatio
 
       {/* Delete — appears on hover */}
       {showDelete && (
-        <button
+        <IconButton
+          type="button"
+          icon={<Trash className="w-3.5 h-3.5" weight={confirmDelete ? 'fill' : 'regular'} />}
           onClick={handleDelete}
+          variant="ghost"
           className={cn(
             'absolute right-2 top-1/2 -translate-y-1/2',
-            'p-1 rounded-md transition-colors',
+            'h-auto w-auto p-1 rounded-sm',
             confirmDelete
-              ? 'bg-red-100 dark:bg-red-500/20 text-red-500'
-              : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-500 dark:hover:text-neutral-400'
+              ? 'bg-danger-soft text-danger'
+              : 'text-fg-subtle hover:text-fg-muted'
           )}
+          aria-label={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
           title={confirmDelete ? t('beta.conversations.confirmDelete') : t('beta.conversations.deleteConversation')}
-        >
-          <Trash className="w-3.5 h-3.5" weight={confirmDelete ? 'fill' : 'regular'} />
-        </button>
+        />
       )}
     </button>
   );
@@ -160,21 +164,19 @@ export function ConversationList() {
       {/* Search */}
       <div className="relative">
         <MagnifyingGlass
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-subtle"
           weight="regular"
         />
-        <input
+        <Input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t('beta.sidebar.searchPlaceholder')}
           className={cn(
-            'w-full pl-9 pr-3 py-2 rounded-xl',
-            'text-[13px] placeholder:text-neutral-400/60 dark:placeholder:text-neutral-500/60',
-            'bg-neutral-50/80 dark:bg-neutral-800/40',
-            'border-none',
-            'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
-            'transition-all duration-150'
+            'w-full pl-9 pr-3 py-2 h-10 rounded-xl',
+            'text-[13px] placeholder:text-fg-subtle/60',
+            'bg-surface-muted/80',
+            'border-transparent'
           )}
         />
       </div>
@@ -183,8 +185,8 @@ export function ConversationList() {
       <div className="flex-1 overflow-y-auto space-y-3" role="list">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center py-10">
-            <ChatCircleDots className="w-8 h-8 mb-2 text-neutral-300 dark:text-neutral-600" />
-            <p className="text-[13px] text-neutral-400 dark:text-neutral-500">
+            <ChatCircleDots className="w-8 h-8 mb-2 text-fg-subtle" />
+            <p className="text-[13px] text-fg-subtle">
               {searchQuery.trim()
                 ? t('beta.conversations.emptySearch')
                 : t('beta.conversations.noConversations')}
@@ -193,9 +195,9 @@ export function ConversationList() {
         ) : (
           grouped.map(({ group, items }) => (
             <div key={group} role="listitem">
-              <p className="text-[11px] font-semibold text-neutral-400/60 dark:text-neutral-500/60 uppercase tracking-widest px-2 mb-1">
+              <MonoLabel className="block px-2 mb-1 tracking-widest text-fg-subtle/60">
                 {t(DATE_GROUP_KEYS[group])}
-              </p>
+              </MonoLabel>
               <div className="space-y-0.5">
                 {items.map((s) => (
                   <ConversationItem

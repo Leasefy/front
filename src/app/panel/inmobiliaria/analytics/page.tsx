@@ -22,6 +22,10 @@ import {
   CheckCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { SegmentedControl } from '@leasefy/cadence';
 import {
   AnalyticsDashboard,
 } from '@/components/inmobiliaria';
@@ -82,34 +86,35 @@ function HeroKPICard({
   accentColor,
   onClick,
 }: HeroKPIProps) {
+  // Tiles/borders = neutral (blue is actionable-only); progress bars keep brand tones (data).
   const colorConfig = {
     indigo: {
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      icon: 'text-indigo-600 dark:text-indigo-400',
-      border: 'border-indigo-100 dark:border-indigo-800/50',
-      progress: 'bg-indigo-600',
-      progressBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-primary',
+      progressBg: 'bg-primary-soft',
     },
     emerald: {
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      icon: 'text-emerald-600 dark:text-emerald-400',
-      border: 'border-emerald-100 dark:border-emerald-800/50',
-      progress: 'bg-emerald-500',
-      progressBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-success',
+      progressBg: 'bg-success-soft',
     },
     amber: {
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      icon: 'text-amber-600 dark:text-amber-400',
-      border: 'border-amber-100 dark:border-amber-800/50',
-      progress: 'bg-amber-500',
-      progressBg: 'bg-amber-100 dark:bg-amber-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-warning',
+      progressBg: 'bg-warning-soft',
     },
     violet: {
-      bg: 'bg-violet-50 dark:bg-violet-900/20',
-      icon: 'text-violet-600 dark:text-violet-400',
-      border: 'border-violet-100 dark:border-violet-800/50',
-      progress: 'bg-violet-500',
-      progressBg: 'bg-violet-100 dark:bg-violet-900/40',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      icon: 'text-neutral-600 dark:text-neutral-300',
+      border: 'border-neutral-200 dark:border-neutral-700',
+      progress: 'bg-primary',
+      progressBg: 'bg-neutral-100 dark:bg-neutral-800',
     },
   };
 
@@ -143,7 +148,7 @@ function HeroKPICard({
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        'w-full p-5 rounded-xl border bg-card text-left transition-all hover:shadow-lg',
+        'w-full p-5 rounded-xl border bg-card text-left transition-all',
         colors.border
       )}
     >
@@ -157,7 +162,7 @@ function HeroKPICard({
             <path
               d={sparklinePath}
               fill="none"
-              stroke={trendIsPositive ? '#10B981' : trendIsNegative ? '#EF4444' : '#6B7280'}
+              stroke={trendIsPositive ? '#2C7A53' : trendIsNegative ? '#C4503B' : '#1A40FF'}
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -173,19 +178,14 @@ function HeroKPICard({
       {/* Trend & Target */}
       <div className="flex items-center justify-between">
         {trend && (
-          <div
-            className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-              trendIsPositive && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-              trendIsNegative && 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
-              !trendIsPositive && !trendIsNegative && 'bg-muted text-muted-foreground'
-            )}
+          <Badge
+            variant={trendIsPositive ? 'success' : trendIsNegative ? 'destructive' : 'secondary'}
           >
             {trendIsPositive && <TrendUp className="w-3 h-3" weight="bold" />}
             {trendIsNegative && <TrendDown className="w-3 h-3" weight="bold" />}
             {!trendIsPositive && !trendIsNegative && <Minus className="w-3 h-3" />}
             <span>{trend.percentage > 0 ? '+' : ''}{trend.percentage.toFixed(1)}%</span>
-          </div>
+          </Badge>
         )}
         {target && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -198,14 +198,11 @@ function HeroKPICard({
       {/* Target Progress Bar */}
       {target && (
         <div className="mt-3">
-          <div className={cn('h-1.5 rounded-full overflow-hidden', colors.progressBg)}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(100, (target.current / target.value) * 100)}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className={cn('h-full rounded-full', colors.progress)}
-            />
-          </div>
+          <Progress
+            value={Math.min(100, (target.current / target.value) * 100)}
+            variant={accentColor === 'emerald' ? 'success' : accentColor === 'amber' ? 'warning' : 'default'}
+            size="xs"
+          />
         </div>
       )}
     </motion.button>
@@ -226,22 +223,23 @@ interface InsightProps {
 function InsightCard({ type, title, description, action }: InsightProps) {
   const config = {
     success: {
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      border: 'border-emerald-200 dark:border-emerald-800/50',
+      bg: 'bg-success-soft',
+      border: 'border-success/30',
       icon: CheckCircle,
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      iconColor: 'text-success',
     },
     warning: {
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      border: 'border-amber-200 dark:border-amber-800/50',
+      bg: 'bg-warning-soft',
+      border: 'border-warning/30',
       icon: WarningCircle,
-      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconColor: 'text-warning',
     },
+    // Informational (non-actionable) = neutral; blue stays reserved for actions.
     info: {
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      border: 'border-indigo-200 dark:border-indigo-800/50',
+      bg: 'bg-neutral-100 dark:bg-neutral-800',
+      border: 'border-neutral-200 dark:border-neutral-700',
       icon: Lightning,
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      iconColor: 'text-neutral-600 dark:text-neutral-300',
     },
   };
 
@@ -255,13 +253,16 @@ function InsightCard({ type, title, description, action }: InsightProps) {
           <p className="font-medium text-foreground text-sm">{title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
           {action && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={action.onClick}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="mt-2 h-auto p-0 gap-1 text-xs"
             >
               {action.label}
               <CaretRight className="w-3 h-3" />
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -448,31 +449,31 @@ function AnalyticsContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <ChartLineUp className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" />
             </div>
             {t('inmobiliaria.analytics.title')}
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.analytics.subtitle')}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Date Range */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium font-mono uppercase tracking-wide hover:bg-muted transition-colors">
+              <Button variant="secondary" size="sm" hideArrow className="gap-2">
                 <CalendarBlank className="w-4 h-4 text-muted-foreground" />
                 <span className="hidden sm:inline">
                   {DATE_RANGES.find((r) => r.id === dateRange)?.label}
                 </span>
                 <CaretDown className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
+              </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-44">
               {DATE_RANGES.map((range) => (
@@ -490,10 +491,10 @@ function AnalyticsContent() {
           {/* Export */}
           <DropdownList>
             <DropdownListTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700 text-sm font-medium transition-colors">
+              <Button size="sm" hideArrow className="gap-2">
                 <Export className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('inmobiliaria.common.export')}</span>
-              </button>
+              </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-44">
               <DropdownListItem onSelect={() => handleExport('pdf')}>
@@ -561,26 +562,24 @@ function AnalyticsContent() {
         className="rounded-xl border border-border bg-card overflow-hidden"
       >
         {/* View Tabs */}
-        <div className="flex items-center gap-1 p-1.5 m-4 mb-0 rounded-xl bg-muted w-fit">
-          {VIEWS.map((view) => {
-            const Icon = view.icon;
-            const isActive = activeView === view.id;
-            return (
-              <button
-                key={view.id}
-                onClick={() => setActiveView(view.id)}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                {view.label}
-              </button>
-            );
-          })}
+        <div className="m-4 mb-0 w-fit">
+          <SegmentedControl<AnalyticsView>
+            value={activeView}
+            onChange={setActiveView}
+            options={VIEWS.map((view) => {
+              const Icon = view.icon;
+              return {
+                value: view.id,
+                ariaLabel: view.label,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Icon className="w-4 h-4" />
+                    {view.label}
+                  </span>
+                ),
+              };
+            })}
+          />
         </div>
 
         {/* View Content */}
@@ -596,7 +595,7 @@ function AnalyticsContent() {
               {activeView === 'dashboard' && (
                 <>
                   {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-                  {analyticsError && <p className="text-sm text-rose-600">{analyticsError}</p>}
+                  {analyticsError && <p className="text-sm text-danger">{analyticsError}</p>}
                   {analyticsData && <AnalyticsDashboard data={analyticsData} />}
                 </>
               )}

@@ -9,7 +9,6 @@ import {
   Palette,
   ArrowCounterClockwise,
   Check,
-  SpinnerGap,
   Warning,
   Eye,
   Link,
@@ -17,6 +16,7 @@ import {
   User,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button, Input } from '@/components/ui';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type { AgencyBranding } from '@/lib/types/inmobiliaria';
@@ -31,10 +31,10 @@ interface ConfigBrandingProps {
 // Preset color palettes for quick selection
 const COLOR_PRESETS = [
   {
-    name: 'Indigo',
-    primary: '#4F46E5',
-    secondary: '#10B981',
-    accent: '#F59E0B',
+    name: 'Electric Blue',
+    primary: '#1A40FF',
+    secondary: '#6B6B6B',
+    accent: '#9B9B9B',
   },
   {
     name: 'Blue',
@@ -220,7 +220,7 @@ export function ConfigBranding({
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-muted rounded-lg w-1/3" />
+        <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="h-48 bg-muted rounded-xl" />
         <div className="h-32 bg-muted rounded-xl" />
       </div>
@@ -237,18 +237,21 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground">
-            <Image className="w-5 h-5 text-indigo-500" />
-            <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
+            <Image className="w-5 h-5 text-fg-muted" weight="duotone" />
+            <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.agencyLogo')}</h3>
           </div>
           {currentLogo && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
               onClick={removeLogo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="gap-1.5 text-danger hover:bg-danger-soft hover:text-danger"
             >
               <Trash className="w-4 h-4" />
               {t('inmobiliaria.common.delete')}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -281,21 +284,21 @@ export function ConfigBranding({
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                'h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all',
+                'h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all',
                 isDragging
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                  : 'border-border hover:border-indigo-400 hover:bg-muted/50'
+                  ? 'border-primary/40 bg-primary-soft'
+                  : 'border-border hover:border-primary/40 hover:bg-muted/50'
               )}
             >
               <Upload
                 className={cn(
                   'w-8 h-8 mb-2',
-                  isDragging ? 'text-indigo-500' : 'text-muted-foreground'
+                  isDragging ? 'text-primary' : 'text-muted-foreground'
                 )}
               />
               <p className="text-sm text-muted-foreground text-center">
                 {t('inmobiliaria.config.brandingSection.dragOrClick')}{' '}
-                <span className="text-indigo-500 font-medium">{t('inmobiliaria.config.brandingSection.clickHere')}</span>
+                <span className="text-primary font-medium">{t('inmobiliaria.config.brandingSection.clickHere')}</span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 PNG, JPG, SVG (max 2MB)
@@ -312,7 +315,7 @@ export function ConfigBranding({
         </div>
 
         {previewError && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+          <div className="flex items-center gap-2 p-3 rounded-md bg-danger-soft text-danger text-sm">
             <Warning className="w-4 h-4" />
             {previewError}
           </div>
@@ -323,17 +326,20 @@ export function ConfigBranding({
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground">
-            <Palette className="w-5 h-5 text-purple-500" />
-            <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
+            <Palette className="w-5 h-5 text-fg-muted" weight="duotone" />
+            <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.brandColors')}</h3>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            hideArrow
             onClick={resetToDefaults}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors"
+            className="gap-1.5 text-muted-foreground"
           >
             <ArrowCounterClockwise className="w-4 h-4" />
             {t('inmobiliaria.config.brandingSection.restore')}
-          </button>
+          </Button>
         </div>
 
         {/* Color Pickers */}
@@ -363,13 +369,16 @@ export function ConfigBranding({
           <p className="text-sm font-medium text-foreground mb-3">
             {t('inmobiliaria.config.brandingSection.presetPalettes')}
           </p>
+          {/* allowlist: color-palette swatch tiles (3 inline-styled color dots + name) —
+              no Cadence color-swatch/palette-picker primitive; Button can't host the swatch
+              layout. Kept native. */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             {COLOR_PRESETS.map((preset) => (
               <button
                 key={preset.name}
                 type="button"
                 onClick={() => applyPreset(preset)}
-                className="group p-3 rounded-lg border border-border hover:border-indigo-400 transition-all"
+                className="group p-3 rounded-md border border-border hover:border-primary/30 transition-all"
               >
                 <div className="flex gap-1 mb-2">
                   <div
@@ -397,13 +406,17 @@ export function ConfigBranding({
       {/* Preview Section */}
       <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
-          <Eye className="w-5 h-5 text-emerald-500" />
-          <h3 className="font-semibold">{t('inmobiliaria.config.brandingSection.preview')}</h3>
+          <Eye className="w-5 h-5 text-fg-muted" weight="duotone" />
+          <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.preview')}</h3>
         </div>
 
+        {/* allowlist: the entire Preview block is a live branding MOCKUP that renders the
+            agency's arbitrary chosen colors via inline `style` (buttons/badges/links/alert).
+            Cadence Button/Badge use fixed brand tokens and cannot show per-agency custom
+            colors — that would defeat the preview. Kept native (sample/preview precedent). */}
         <div className="p-6 rounded-xl bg-muted/30 border border-border space-y-6">
           {/* Header Preview */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
+          <div className="flex items-center justify-between p-4 rounded-md bg-background border border-border">
             <div className="flex items-center gap-3">
               {currentLogo ? (
                 <img
@@ -413,7 +426,7 @@ export function ConfigBranding({
                 />
               ) : (
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                  className="w-8 h-8 rounded-md flex items-center justify-center text-white font-bold text-sm"
                   style={{ backgroundColor: formData.primaryColor }}
                 >
                   A
@@ -433,21 +446,21 @@ export function ConfigBranding({
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90"
+                className="px-4 py-2 rounded-md text-white text-sm font-medium transition-opacity hover:opacity-90"
                 style={{ backgroundColor: formData.primaryColor }}
               >
                 {t('inmobiliaria.config.brandingSection.primaryButton')}
               </button>
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90"
+                className="px-4 py-2 rounded-md text-white text-sm font-medium transition-opacity hover:opacity-90"
                 style={{ backgroundColor: formData.secondaryColor }}
               >
                 {t('inmobiliaria.config.brandingSection.secondaryButton')}
               </button>
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg border text-sm font-medium transition-colors"
+                className="px-4 py-2 rounded-md border text-sm font-medium transition-colors"
                 style={{
                   borderColor: formData.primaryColor,
                   color: formData.primaryColor,
@@ -511,7 +524,7 @@ export function ConfigBranding({
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground font-medium">{t('inmobiliaria.config.brandingSection.alert')}</p>
             <div
-              className="p-3 rounded-lg text-sm"
+              className="p-3 rounded-md text-sm"
               style={{
                 backgroundColor: `${formData.accentColor}15`,
                 borderLeft: `3px solid ${formData.accentColor}`,
@@ -532,34 +545,33 @@ export function ConfigBranding({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="flex items-center justify-end gap-3 pt-4 border-t border-border"
+            className="flex items-center justify-end gap-2 pt-4 border-t border-border"
           >
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              hideArrow
               onClick={() => setFormData({ ...branding })}
               disabled={isSaving}
-              className="px-5 py-2.5 rounded-xl border border-border text-foreground font-medium hover:bg-muted transition-colors disabled:opacity-50"
             >
               {t('inmobiliaria.config.brandingSection.discard')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              hideArrow
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+              isLoading={isSaving}
             >
               {isSaving ? (
-                <>
-                  <SpinnerGap className="w-4 h-4 animate-spin" />
-                  {t('inmobiliaria.common.saving')}
-                </>
+                t('inmobiliaria.common.saving')
               ) : (
                 <>
                   <Check className="w-4 h-4" />
                   {t('inmobiliaria.config.brandingSection.saveBranding')}
                 </>
               )}
-            </button>
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -608,21 +620,24 @@ function ColorPickerField({
       <label className="block text-sm font-medium text-foreground">{label}</label>
       <div className="flex items-center gap-2">
         <div className="relative">
+          {/* allowlist: native color picker (type="color") — Cadence has no color-input
+              primitive; the OS color dialog can't be replaced by Input. */}
           <input
             type="color"
             value={value}
             onChange={handleColorPickerChange}
-            className="w-10 h-10 rounded-lg cursor-pointer border border-border overflow-hidden"
+            className="w-10 h-10 rounded-md cursor-pointer border border-border overflow-hidden"
             style={{ padding: 0 }}
           />
         </div>
-        <input
+        <Input
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           placeholder="#000000"
           maxLength={7}
-          className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all uppercase"
+          className="flex-1 font-mono"
+          style={{ textTransform: 'uppercase' }}
         />
       </div>
       {description && (

@@ -3,6 +3,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Plus, TrashSimple, Buildings, Briefcase, User, Phone, MapPin, Clock, Users } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import type {
   PreviousLandlordReference,
@@ -241,14 +243,13 @@ export function StepReferences() {
                   Referencia {index + 1}
                 </span>
                 {landlords.length > 1 && (
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="ghost"
+                    aria-label="Eliminar"
                     onClick={() => removeLandlord(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <TrashSimple className="h-4 w-4" />
-                    <span className="sr-only">Eliminar</span>
-                  </button>
+                    icon={<TrashSimple className="h-4 w-4" />}
+                    className="h-8 w-8 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft"
+                  />
                 )}
               </div>
 
@@ -367,14 +368,13 @@ export function StepReferences() {
                   Referencia {index + 1}
                 </span>
                 {employmentRefs.length > 1 && (
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="ghost"
+                    aria-label="Eliminar"
                     onClick={() => removeEmploymentRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <TrashSimple className="h-4 w-4" />
-                    <span className="sr-only">Eliminar</span>
-                  </button>
+                    icon={<TrashSimple className="h-4 w-4" />}
+                    className="h-8 w-8 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft"
+                  />
                 )}
               </div>
 
@@ -486,14 +486,13 @@ export function StepReferences() {
                   Referencia {index + 1}
                 </span>
                 {personalRefs.length > 1 && (
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="ghost"
+                    aria-label="Eliminar"
                     onClick={() => removePersonalRef(index)}
-                    className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <TrashSimple className="h-4 w-4" />
-                    <span className="sr-only">Eliminar</span>
-                  </button>
+                    icon={<TrashSimple className="h-4 w-4" />}
+                    className="h-8 w-8 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft"
+                  />
                 )}
               </div>
 
@@ -581,18 +580,14 @@ interface AddButtonProps {
 
 function AddButton({ onClick, label }: AddButtonProps) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      hideArrow
       onClick={onClick}
-      className={cn(
-        'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium font-mono uppercase tracking-wide',
-        'rounded-xl border border-neutral-300 dark:border-neutral-600',
-        'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-500',
-        'transition-colors'
-      )}
+      className="rounded-xl"
     >
       <Plus className="h-4 w-4" />
       {label}
-    </button>
+    </Button>
   );
 }

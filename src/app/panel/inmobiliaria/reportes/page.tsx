@@ -21,6 +21,9 @@ import {
   Users,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui';
+import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
 import {
@@ -38,13 +41,7 @@ import {
   ReporteViewer,
   type ReporteFiltersState,
 } from '@/components/inmobiliaria';
-import {
-  exportCarteraEdades,
-  exportComisionesAgente,
-  exportVencimientos,
-  exportFlujoCaja,
-  exportOcupacion,
-} from '@/lib/utils/generate-report-excel';
+import { apiClient } from '@/lib/api/client';
 import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
 import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 import { OccupancyReport } from '@/components/inmobiliaria/reports/OccupancyReport';
@@ -342,55 +339,30 @@ function ReportesContent() {
     async (report: ReportDefinition, format: 'pdf' | 'excel') => {
       try {
         if (format === 'excel') {
-          // Generate and export based on report type
-          switch (report.id) {
-            case 'cartera-edades': {
-              if (!carteraReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportCarteraEdades(carteraReport.report);
-              break;
-            }
-            case 'comisiones-agente':
-            case 'rendimiento-agentes': {
-              if (!comisionesReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportComisionesAgente(comisionesReport.report);
-              break;
-            }
-            case 'vencimientos': {
-              if (!vencimientosReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportVencimientos(vencimientosReport.report);
-              break;
-            }
-            case 'flujo-caja': {
-              if (!flujoCajaReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportFlujoCaja(flujoCajaReport.report);
-              break;
-            }
-            case 'ocupacion-portafolio': {
-              if (!ocupacionReport.report) {
-                toast.error(t('inmobiliaria.reportes.toasts.dataNotLoaded'));
-                return;
-              }
-              exportOcupacion(ocupacionReport.report);
-              break;
-            }
-            default:
-              toast.error(t('inmobiliaria.reportes.toasts.exportNotAvailable'), {
-                description: t('inmobiliaria.reportes.toasts.excelNotSupported'),
-              });
-              return;
+          const EXPORT_TYPE_MAP: Partial<Record<ReportId, string>> = {
+            'cartera-edades': 'cartera-edades',
+            'comisiones-agente': 'comisiones-agente',
+            'rendimiento-agentes': 'comisiones-agente',
+            'vencimientos': 'vencimientos',
+            'flujo-caja': 'flujo-caja',
+            'ocupacion-portafolio': 'ocupacion-portafolio',
+          };
+          const exportType = EXPORT_TYPE_MAP[report.id as ReportId];
+          if (!exportType) {
+            toast.error(t('inmobiliaria.reportes.toasts.exportNotAvailable'), {
+              description: t('inmobiliaria.reportes.toasts.excelNotSupported'),
+            });
+            return;
           }
+          const blob = await apiClient.getBlob(`/inmobiliaria/reports/export?type=${exportType}`);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${exportType}-${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
         } else {
           // PDF export - only extractos for now
           if (report.id === 'extractos-propietarios') {
@@ -416,7 +388,7 @@ function ReportesContent() {
         });
       }
     },
-    [t, carteraReport.report, comisionesReport.report, vencimientosReport.report, flujoCajaReport.report, ocupacionReport.report]
+    [t]
   );
 
   // Handle viewer export
@@ -476,33 +448,26 @@ function ReportesContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
             {t('inmobiliaria.reportes.title')}
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-sm text-fg-muted max-w-2xl">
             {t('inmobiliaria.reportes.subtitle')}
           </p>
         </div>
         {/* TODO Backend: Los reportes deben actualizarse en tiempo real via subscriptions/websockets */}
-        <div className="flex items-center gap-3">
-          <button
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            hideArrow
             onClick={handleGenerateAll}
             disabled={generatingReports.size > 0}
-            className={cn(
-              'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-colors shadow-lg',
-              generatingReports.size > 0
-                ? 'bg-muted text-muted-foreground cursor-not-allowed shadow-none'
-                : 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
-            )}
+            className="gap-2"
           >
             <Lightning className="w-5 h-5" weight="fill" />
             {t('inmobiliaria.reportes.generateAll')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -514,8 +479,8 @@ function ReportesContent() {
       >
         <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
+              <ChartLine className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
@@ -528,8 +493,8 @@ function ReportesContent() {
 
         <div className="p-4 rounded-xl border border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <Star className="w-5 h-5 text-amber-600 dark:text-amber-400" weight="fill" />
+            <div className="w-10 h-10 rounded-md bg-warning-soft flex items-center justify-center">
+              <Star className="w-5 h-5 text-warning" weight="fill" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
@@ -542,8 +507,8 @@ function ReportesContent() {
 
         <div className="p-4 rounded-xl border border-border bg-card col-span-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
+              <Clock className="w-5 h-5 text-success" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground truncate">
@@ -566,32 +531,32 @@ function ReportesContent() {
       >
         {/* Header: View Toggle & Count */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                viewMode === 'grid'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <SquaresFour className="w-4 h-4" />
-              {t('inmobiliaria.reportes.viewCards')}
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-                viewMode === 'list'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Table className="w-4 h-4" />
-              {t('inmobiliaria.reportes.viewList')}
-            </button>
-          </div>
+          <SegmentedControl<ViewMode>
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              {
+                value: 'grid',
+                ariaLabel: t('inmobiliaria.reportes.viewCards'),
+                label: (
+                  <span className="flex items-center gap-2">
+                    <SquaresFour className="w-4 h-4" />
+                    {t('inmobiliaria.reportes.viewCards')}
+                  </span>
+                ),
+              },
+              {
+                value: 'list',
+                ariaLabel: t('inmobiliaria.reportes.viewList'),
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Table className="w-4 h-4" />
+                    {t('inmobiliaria.reportes.viewList')}
+                  </span>
+                ),
+              },
+            ]}
+          />
           <p className="text-sm text-muted-foreground">
             {filteredReports.length} {filteredReports.length !== 1 ? t('inmobiliaria.reportes.stats.reports').toLowerCase() : t('inmobiliaria.reportes.stats.report')}
           </p>
@@ -614,8 +579,8 @@ function ReportesContent() {
         {favoriteReports.length > 0 && !filters.favoritesOnly && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-amber-500" weight="fill" />
-              <h2 className="font-semibold text-foreground">{t('inmobiliaria.reportes.stats.favorites')}</h2>
+              <Star className="w-5 h-5 text-warning" weight="fill" />
+              <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.reportes.stats.favorites')}</h2>
               <span className="text-xs text-muted-foreground">
                 ({favoriteReports.length})
               </span>
@@ -661,8 +626,8 @@ function ReportesContent() {
           <div className="space-y-4">
             {favoriteReports.length > 0 && !filters.favoritesOnly && (
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-neutral-400" />
-                <h2 className="font-semibold text-foreground">
+                <FileText className="w-5 h-5 text-fg-subtle" />
+                <h2 className="text-base font-semibold text-fg">
                   {t('inmobiliaria.reportes.otherReports')}
                 </h2>
                 <span className="text-xs text-muted-foreground">
@@ -708,25 +673,21 @@ function ReportesContent() {
 
         {/* Empty State */}
         {filteredReports.length === 0 && (
-          <div className="rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03] py-14 px-6 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-5 shadow-sm dark:shadow-none">
-              <MagnifyingGlass className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground mb-1.5">
-              {t('inmobiliaria.reportes.noReports')}
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-              {t('inmobiliaria.reportes.noReportsDesc')}
-            </p>
+          <div className="flex flex-col items-center">
+            <EmptyState
+              icon={MagnifyingGlass}
+              title={t('inmobiliaria.reportes.noReports')}
+              description={t('inmobiliaria.reportes.noReportsDesc')}
+            />
             {filters.search && (
-              <button
-                onClick={() =>
-                  setFilters((prev) => ({ ...prev, search: '' }))
-                }
-                className="mt-4 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              <Button
+                variant="link"
+                hideArrow
+                onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
+                className="-mt-4"
               >
                 {t('inmobiliaria.reportes.clearSearch')}
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -743,11 +704,11 @@ function ReportesContent() {
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border bg-muted/30 print:hidden">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <ChartLine className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
+              <ChartLine className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground">
+              <h2 className="text-base font-semibold text-fg">
                 {locale === 'es' ? 'Reportes Avanzados' : 'Advanced Reports'}
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -772,26 +733,23 @@ function ReportesContent() {
 
         {/* Tab Bar */}
         <div className="p-4 border-b border-border print:hidden">
-          <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-muted">
-            {advancedTabs.map((tab) => {
+          <SegmentedControl<AdvancedTab>
+            value={activeAdvancedTab}
+            onChange={setActiveAdvancedTab}
+            options={advancedTabs.map((tab) => {
               const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveAdvancedTab(tab.key)}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
-                    activeAdvancedTab === tab.key
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              );
+              return {
+                value: tab.key,
+                ariaLabel: tab.label,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Icon className="w-4 h-4" />
+                    {tab.label}
+                  </span>
+                ),
+              };
             })}
-          </div>
+          />
         </div>
 
         {/* Tab Content — Gated */}

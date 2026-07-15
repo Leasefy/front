@@ -24,8 +24,13 @@ import {
   Monitor,
   Shield,
   CaretRight,
+  Compass,
 } from '@phosphor-icons/react';
+import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
 import { cn } from '@/lib/utils';
+import { Button, Switch, Spinner } from '@/components/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import {
@@ -108,11 +113,16 @@ function ConfiguracionContent() {
   const initialTab = (searchParams.get('tab') as ConfigTab) || 'perfil';
 
   // State
-  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab);
+  const [activeTab, setTab] = useState<ConfigTab>(initialTab);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
   );
+
+  // Phase 38 plan 38-06 — AI panel tour preference (hybrid localStorage + DB persistence).
+  // tourDismissed === null means the context hasn't hydrated yet; show a spinner-state.
+  const { tourDismissed, setTourDismissed, relaunchTour } = usePanelPrefs();
+  const [isTogglingTour, setIsTogglingTour] = useState(false);
 
   // Real notification settings from backend
   const { settings: notifSettings, isLoading: notifLoading, updateSetting } = useNotificationSettings();
@@ -384,43 +394,34 @@ function ConfiguracionContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Gear className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+            <Gear className="w-5 h-5 text-fg-muted" />
           </div>
           {t('inmobiliaria.config.title')}
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.config.subtitle')}
         </p>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-4">
+      {/* Tabs Navigation — selected = soft fill, never solid brand block */}
+      <Tabs value={activeTab} onValueChange={(v) => setTab(v as ConfigTab)}>
+      <TabsList variant="underline" className="flex-wrap">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-sm'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <Icon className={cn('w-4 h-4', isActive && 'text-indigo-600 dark:text-indigo-400')} />
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label}</span>
-            </button>
+            <TabsTrigger key={tab.id} value={tab.id} className="inline-flex items-center gap-2 whitespace-nowrap">
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{tab.label}</span>
+            </TabsTrigger>
           );
         })}
-      </div>
+      </TabsList>
 
       {/* Tab Content with Animation */}
+      <TabsContent value={activeTab} className="mt-4">
       <motion.div
         key={activeTab}
         initial={{ opacity: 0, y: 10 }}
@@ -432,7 +433,7 @@ function ConfiguracionContent() {
         {activeTab === 'perfil' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : config ? (
             <ConfigPerfilAgencia config={config} onSave={handleSaveConfig} />
@@ -445,7 +446,7 @@ function ConfiguracionContent() {
         {activeTab === 'branding' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : config?.branding ? (
             <ConfigBranding branding={config.branding} onSave={handleSaveBranding} />
@@ -458,7 +459,7 @@ function ConfiguracionContent() {
         {activeTab === 'usuarios' && (
           usersLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : (
             <ConfigUsuarios
@@ -481,7 +482,7 @@ function ConfiguracionContent() {
         {activeTab === 'integraciones' && (
           integrationsLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : (
             <ConfigIntegraciones
@@ -496,7 +497,7 @@ function ConfiguracionContent() {
         {activeTab === 'facturacion' && (
           billingLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : billing ? (
             <ConfigFacturacion
@@ -507,23 +508,22 @@ function ConfiguracionContent() {
           ) : (
             // Empty state — agency has no active billing/subscription yet.
             // Show a clear CTA to view available plans instead of a dead-end message.
-            <div className="rounded-2xl border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-[#141416] p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <Lightning className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
+                <Lightning weight="duotone" className="h-6 w-6 text-fg-muted" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                Todavía no tenés un plan activo
-              </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 max-w-md mx-auto">
-                Elegí el plan que mejor se adapte a tu agencia y desbloqueá todas las funcionalidades de Leasify.
-              </p>
-              <button
-                onClick={() => setIsPricingModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
-              >
+              <div className="space-y-1.5">
+                <h3 className="text-base font-semibold text-fg">
+                  Todavía no tenés un plan activo
+                </h3>
+                <p className="mx-auto max-w-md text-sm leading-relaxed text-fg-muted">
+                  Elegí el plan que mejor se adapte a tu agencia y desbloqueá todas las funcionalidades de Leasefy.
+                </p>
+              </div>
+              <Button onClick={() => setIsPricingModalOpen(true)} hideArrow className="mt-1">
                 <Lightning className="w-4 h-4" />
                 Ver planes disponibles
-              </button>
+              </Button>
             </div>
           )
         )}
@@ -536,19 +536,19 @@ function ConfiguracionContent() {
 
         {/* Notificaciones Tab */}
         {activeTab === 'notificaciones' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-fg-muted" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.notifications.title')}</h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.notifications.subtitle')}</p>
+                  <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.notifications.title')}</h2>
+                  <p className="text-xs text-fg-muted">{t('inmobiliaria.config.notifications.subtitle')}</p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+            <div className="divide-y divide-border">
               {([
                 { key: 'emailNewLead' as const, icon: Envelope, title: t('inmobiliaria.config.notifications.newLeads'), desc: t('inmobiliaria.config.notifications.newLeadsDesc') },
                 { key: 'emailPaymentReceived' as const, icon: CreditCard, title: t('inmobiliaria.config.notifications.paymentsReceived'), desc: t('inmobiliaria.config.notifications.paymentsReceivedDesc') },
@@ -556,18 +556,20 @@ function ConfiguracionContent() {
                 { key: 'pushNewMessage' as const, icon: Bell, title: t('inmobiliaria.config.notifications.newMessages'), desc: t('inmobiliaria.config.notifications.newMessagesDesc') },
                 { key: 'marketingEmails' as const, icon: Tag, title: t('inmobiliaria.config.notifications.promotionalEmails'), desc: t('inmobiliaria.config.notifications.promotionalEmailsDesc') },
               ]).map((item) => (
-                <div key={item.key} className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+                <div key={item.key} className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                      <item.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                      <item.icon className="w-5 h-5 text-fg-muted" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{item.title}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.desc}</p>
+                      <p className="text-sm font-medium text-fg">{item.title}</p>
+                      <p className="text-xs text-fg-muted">{item.desc}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={async () => {
+                  <Switch
+                    checked={!!notifSettings[notifKeyMap[item.key]]}
+                    aria-label={item.title}
+                    onCheckedChange={async () => {
                       const backendKey = notifKeyMap[item.key];
                       if (!backendKey) return;
                       try {
@@ -577,16 +579,7 @@ function ConfiguracionContent() {
                         toast.error(locale === 'es' ? 'Error al actualizar configuración' : 'Error updating settings');
                       }
                     }}
-                    className={cn(
-                      'relative w-11 h-6 rounded-full transition-colors',
-                      notifSettings[notifKeyMap[item.key]] ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
-                    )}
-                  >
-                    <span className={cn(
-                      'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                      notifSettings[notifKeyMap[item.key]] && 'translate-x-5'
-                    )} />
-                  </button>
+                  />
                 </div>
               ))}
             </div>
@@ -595,71 +588,123 @@ function ConfiguracionContent() {
 
         {/* Preferencias Tab */}
         {activeTab === 'preferencias' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Globe className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-fg-muted" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.title')}</h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.subtitle')}</p>
+                  <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.preferences.title')}</h2>
+                  <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.subtitle')}</p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+            <div className="divide-y divide-border">
               {/* Dark mode toggle */}
-              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Moon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Moon className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.darkMode')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.darkModeDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.darkMode')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.darkModeDesc')}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
+                <Switch
+                  checked={mounted && resolvedTheme === 'dark'}
+                  aria-label={t('inmobiliaria.config.preferences.darkMode')}
+                  onCheckedChange={() => {
                     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
                     toast.success(resolvedTheme === 'dark' ? t('inmobiliaria.config.preferences.lightThemeEnabled') : t('inmobiliaria.config.preferences.darkThemeEnabled'));
                   }}
-                  className={cn(
-                    'relative w-11 h-6 rounded-full transition-colors',
-                    mounted && resolvedTheme === 'dark' ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
-                  )}
-                >
-                  <span className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                    mounted && resolvedTheme === 'dark' && 'translate-x-5'
-                  )} />
-                </button>
+                />
               </div>
               {/* Language selector */}
-              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.language')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.languageDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.language')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.languageDesc')}</p>
                   </div>
                 </div>
-                <div className="relative">
-                  <select
-                    value={locale}
-                    onChange={(e) => {
-                      setLocale(e.target.value as Locale);
-                      toast.success(e.target.value === 'en' ? t('inmobiliaria.config.preferences.langChangedEn') : t('inmobiliaria.config.preferences.langChangedEs'));
-                    }}
-                    className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all cursor-pointer"
-                  >
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
-                  </select>
-                  <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
+                <Select
+                  value={locale}
+                  onValueChange={(v) => {
+                    setLocale(v as Locale);
+                    toast.success(v === 'en' ? t('inmobiliaria.config.preferences.langChangedEn') : t('inmobiliaria.config.preferences.langChangedEs'));
+                  }}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="es">Español</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* AI panel tour toggle — Phase 38 plan 38-06 */}
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Compass className="w-5 h-5 text-fg-muted" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.panelTour')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.panelTourDesc')}</p>
+                  </div>
                 </div>
+                <Switch
+                  checked={tourDismissed === false}
+                  aria-label={t('inmobiliaria.config.preferences.panelTour')}
+                  aria-busy={isTogglingTour || tourDismissed === null}
+                  disabled={isTogglingTour || tourDismissed === null}
+                  onCheckedChange={async () => {
+                    if (tourDismissed === null) return;
+                    setIsTogglingTour(true);
+                    try {
+                      // Switch is "ON" when tour is enabled (dismissed=false).
+                      // Toggling flips dismissed; toast reflects the NEW state.
+                      const nextDismissed = !tourDismissed;
+                      await setTourDismissed(nextDismissed);
+                      toast.success(
+                        nextDismissed
+                          ? t('inmobiliaria.config.preferences.panelTourDismissed')
+                          : t('inmobiliaria.config.preferences.panelTourEnabled')
+                      );
+                    } finally {
+                      setIsTogglingTour(false);
+                    }
+                  }}
+                />
+              </div>
+              {/* Relaunch tour button — session-only, does not persist */}
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Compass className="w-5 h-5 text-fg-muted" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.relaunchTour')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.relaunchTourDesc')}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
+                  onClick={() => {
+                    relaunchTour();
+                    toast.success(t('inmobiliaria.config.preferences.relaunchTourStarted'));
+                  }}
+                >
+                  {t('inmobiliaria.config.preferences.relaunchTour')}
+                </Button>
               </div>
             </div>
           </div>
@@ -667,56 +712,62 @@ function ConfiguracionContent() {
 
         {/* Seguridad Tab */}
         {activeTab === 'seguridad' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-fg-muted" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.title')}</h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.security.subtitle')}</p>
+                  <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.security.title')}</h2>
+                  <p className="text-xs text-fg-muted">{t('inmobiliaria.config.security.subtitle')}</p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+            <div className="divide-y divide-border">
               <MfaSetupSection />
               {/* Change password */}
-              <button
+              <Button
+                variant="ghost"
+                hideArrow
                 onClick={() => toast.info(t('inmobiliaria.config.security.changePassword'), { description: t('inmobiliaria.config.security.changePasswordToast') })}
-                className="flex items-center justify-between w-full px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors text-left"
+                className="flex items-center justify-between w-full px-6 py-4 h-auto rounded-none text-left hover:bg-muted/40"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Lock className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.changePassword')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.security.changePasswordDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.security.changePassword')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.security.changePasswordDesc')}</p>
                   </div>
                 </div>
-                <CaretRight className="w-4 h-4 text-neutral-400" />
-              </button>
+                <CaretRight className="w-4 h-4 text-fg-muted" />
+              </Button>
               {/* Active sessions */}
-              <button
+              <Button
+                variant="ghost"
+                hideArrow
                 onClick={() => toast.info(t('inmobiliaria.config.security.activeSessions'), { description: t('inmobiliaria.config.security.activeSessionsDesc') })}
-                className="flex items-center justify-between w-full px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors text-left"
+                className="flex items-center justify-between w-full px-6 py-4 h-auto rounded-none text-left hover:bg-muted/40"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Monitor className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Monitor className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.activeSessions')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.security.activeSessionsDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.security.activeSessions')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.security.activeSessionsDesc')}</p>
                   </div>
                 </div>
-                <CaretRight className="w-4 h-4 text-neutral-400" />
-              </button>
+                <CaretRight className="w-4 h-4 text-fg-muted" />
+              </Button>
             </div>
           </div>
         )}
       </motion.div>
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

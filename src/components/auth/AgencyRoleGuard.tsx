@@ -43,7 +43,7 @@ export function AgencyRoleGuard({
   if (isLoading || !hasAccess) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { MonoLabel } from "@leasefy/cadence";
 import { SectionLabel } from "@/components/ui/section-label";
 import { ArrowUpRight } from '@phosphor-icons/react';
 import { blogPosts } from "@/lib/data/blog-posts";
@@ -21,7 +22,7 @@ export function RecentInsightsSection() {
           </div>
           <Link
             href="/blog"
-            className="mt-4 md:mt-0 inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:text-indigo-600 transition-colors group"
+            className="mt-4 md:mt-0 inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:text-primary transition-colors group"
           >
             Ver todos los artículos
             <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -50,9 +51,9 @@ export function RecentInsightsSection() {
 
               <div className="absolute bottom-0 left-0 right-0 p-7 md:p-9">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full border border-white/10 text-[11px] font-mono font-normal text-white/90 tracking-wide uppercase">
+                  <MonoLabel className="inline-flex items-center px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full border border-white/10 text-[11px] font-normal text-white/90 tracking-wide">
                     {blogPosts[0].category}
-                  </span>
+                  </MonoLabel>
                   <span className="text-[12px] text-white/50">{blogPosts[0].date}</span>
                   <span className="text-[12px] text-white/40">·</span>
                   <span className="text-[12px] text-white/50">{blogPosts[0].readTime}</span>
@@ -81,7 +82,7 @@ export function RecentInsightsSection() {
               >
                 <Link
                   href={post.href}
-                  className="group flex gap-5 h-full items-stretch transition-colors duration-300 hover:bg-neutral-50"
+                  className="group flex gap-5 h-full items-stretch transition-colors duration-300 hover:bg-surface-muted"
                   style={{ border: "1px solid rgba(0,0,0,0.06)" }}
                 >
                   {/* Image — left, fixed width, full card height */}
@@ -98,13 +99,13 @@ export function RecentInsightsSection() {
                   {/* Content — right */}
                   <div className="flex flex-col justify-center py-4 pr-5 flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[11px] font-mono font-normal text-indigo-600 tracking-wide uppercase">
+                      <MonoLabel className="text-[11px] font-normal text-primary tracking-wide">
                         {post.category}
-                      </span>
+                      </MonoLabel>
                       <span className="text-[11px] text-muted-foreground">{post.readTime}</span>
                     </div>
 
-                    <h3 className="text-[15px] font-heading font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors duration-300 mb-2">
+                    <h3 className="text-[15px] font-heading font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 mb-2">
                       {post.title}
                     </h3>
 

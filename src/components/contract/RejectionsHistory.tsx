@@ -23,13 +23,13 @@ export function RejectionsHistory({ rejections, collapsible = true, className }:
   const visibleHistory = showCollapseToggle && !expanded ? [] : rest;
 
   return (
-    <section className={cn('rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/20 p-5 space-y-3', className)}>
+    <section className={cn('rounded-xl border border-warning/30 bg-warning-soft/60 dark:bg-warning/20 p-5 space-y-3', className)}>
       <header className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-sm text-foreground">
+          <h3 className="font-semibold text-sm text-fg">
             {hasHistory ? `Modificaciones solicitadas (${rejections.length})` : 'Modificación solicitada'}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-fg-muted mt-0.5">
             Historial de rechazos del inquilino
           </p>
         </div>
@@ -41,7 +41,7 @@ export function RejectionsHistory({ rejections, collapsible = true, className }:
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline py-1"
+          className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium text-warning hover:underline py-1"
         >
           {expanded ? (
             <>
@@ -78,32 +78,32 @@ function RejectionCard({ rejection, highlight = false }: { rejection: ContractRe
       className={cn(
         'rounded-xl border p-3 flex items-start gap-3',
         highlight
-          ? 'bg-white dark:bg-neutral-900 border-amber-300 dark:border-amber-700'
-          : 'bg-white/50 dark:bg-neutral-900/40 border-border'
+          ? 'bg-surface dark:bg-ink border-warning/30'
+          : 'bg-surface/50 dark:bg-ink/40 border-border'
       )}
     >
       <div className={cn(
-        'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+        'w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0',
         isDefinitive
-          ? 'bg-rose-100 dark:bg-rose-900/30'
-          : 'bg-amber-100 dark:bg-amber-900/30'
+          ? 'bg-danger-soft'
+          : 'bg-warning-soft'
       )}>
         <Icon className={cn(
           'w-4 h-4',
-          isDefinitive ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
+          isDefinitive ? 'text-danger' : 'text-warning'
         )} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-xs font-semibold text-foreground">{typeLabel}</span>
-          <span className="text-[11px] text-muted-foreground tabular-nums">
+          <span className="text-xs font-semibold text-fg">{typeLabel}</span>
+          <span className="text-[11px] text-fg-muted tabular-nums">
             {formatDate(rejection.createdAt)}
           </span>
         </div>
-        <p className="text-sm text-foreground whitespace-pre-wrap break-words">
+        <p className="text-sm text-fg whitespace-pre-wrap break-words">
           {rejection.reason}
         </p>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-fg-muted">
           <User className="w-3 h-3" />
           <span>{rejection.rejectedBy.firstName} {rejection.rejectedBy.lastName}</span>
         </div>

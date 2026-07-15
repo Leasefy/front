@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Robot,
@@ -12,10 +12,12 @@ import {
   ShieldCheck,
   GitMerge,
 } from '@phosphor-icons/react';
+import { MonoLabel, StatusBadge } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
 import { AIAgentActivityFeed } from '@/components/inmobiliaria/ai/AIAgentActivityFeed';
+import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge';
 import {
   getActiveAgents,
   getComingSoonAgents,
@@ -23,6 +25,23 @@ import {
 import type { AIAgentDefinition } from '@/lib/types/ai-agents';
 import { useAgentMetrics } from '@/lib/hooks/use-agent-metrics';
 import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
+import { useAiHubLanding } from '@/lib/hooks/use-ai-hub-landing';
+import { useAiHubResumen } from '@/lib/hooks/ai/use-ai-hub-resumen';
+import { EquipoAgentes } from '@/components/inmobiliaria/ai/EquipoAgentes';
+import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton';
+
+// ── Relative time helper (XR-05 i18n for es-CO) ───────────────────────────
+// Avoids date-fns dependency; covers Intl.RelativeTimeFormat semantics.
+function formatRelativeTime(isoString: string | null | undefined, locale: string): string {
+  if (!isoString) return locale === 'es' ? 'Sin actividad reciente' : 'No recent activity';
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMins = Math.floor(diffMs / 60_000);
+  if (diffMins < 60) return locale === 'es' ? `hace ${diffMins}min` : `${diffMins}min ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return locale === 'es' ? `hace ${diffHours}h` : `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return locale === 'es' ? `hace ${diffDays}d` : `${diffDays}d ago`;
+}
 
 /**
  * Agent Detail View — shown when ?agent= query param is present
@@ -41,15 +60,15 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
 
   // Build detailed metrics
   const detailMetrics = isScoring ? [
-    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : metrics.scoring.evaluationsThisMonth },
-    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics.scoring.avgTimeMin },
-    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : metrics.scoring.accuracyRate },
-    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : metrics.scoring.escalationRate },
+    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : (metrics?.scoring.evaluationsThisMonth ?? '—') },
+    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics?.scoring.avgTimeMin ?? '—' },
+    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : (metrics?.scoring.accuracyRate ?? '—') },
+    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : (metrics?.scoring.escalationRate ?? '—') },
   ] : [
-    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : metrics.matching.suggestionsSent },
-    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : metrics.matching.conversionRate },
-    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : metrics.matching.candidatesRedirected },
-    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : metrics.matching.avgCompatibility },
+    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : (metrics?.matching.suggestionsSent ?? '—') },
+    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : (metrics?.matching.conversionRate ?? '—') },
+    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : (metrics?.matching.candidatesRedirected ?? '—') },
+    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : (metrics?.matching.avgCompatibility ?? '—') },
   ];
 
   // How it works steps
@@ -86,13 +105,9 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">{name}</h1>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-emerald-400" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
+            <StatusBadge tone="success" pulse>
               {locale === 'es' ? 'Activo' : 'Active'}
-            </span>
+            </StatusBadge>
           </div>
           <p className="text-neutral-500 dark:text-neutral-400 mt-0.5">{description}</p>
         </div>
@@ -149,6 +164,7 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
  */
 export default function AIAgentsPage() {
   const { locale } = useI18n();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const selectedAgentId = searchParams.get('agent');
 
@@ -156,6 +172,11 @@ export default function AIAgentsPage() {
   const comingSoonAgents = getComingSoonAgents();
   const { activities } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 20 });
   const { metrics, isLoading } = useAgentMetrics(60_000);
+  const { data: landing, isLoading: hubLoading } = useAiHubLanding();
+  // F10 — hub real: 6 colas por rol + vista agregada (decisión 2026-06-08).
+  // 404 / backend not deployed → graceful panel; the Phase 37 surfaces below
+  // keep working untouched.
+  const resumen = useAiHubResumen();
 
   // If an agent is selected, show detail view
   const selectedAgent = selectedAgentId ? activeAgents.find(a => a.id === selectedAgentId) : null;
@@ -163,32 +184,86 @@ export default function AIAgentsPage() {
     return <AgentDetailView agent={selectedAgent} agentId={selectedAgentId} />;
   }
 
+  // Phase 38-05b: PageSkeleton during initial useAiHubLanding load (D-38-04: skeleton
+  // only; per-card NoDataYetBadge from Phase 37 below is PRESERVED for empty data).
+  if (hubLoading && !landing) return <PageSkeleton variant="dashboard" />;
+
   // Build metrics arrays from real data
   const scoringMetrics = [
-    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : metrics.scoring.evaluationsThisMonth },
-    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics.scoring.avgTimeMin },
-    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : metrics.scoring.accuracyRate },
-    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : metrics.scoring.escalationRate },
+    { label: locale === 'es' ? 'Evaluaciones este mes' : 'Evaluations this month', value: isLoading ? '...' : (metrics?.scoring.evaluationsThisMonth ?? '—') },
+    { label: locale === 'es' ? 'Tiempo promedio' : 'Avg time', value: metrics?.scoring.avgTimeMin ?? '—' },
+    { label: locale === 'es' ? 'Precisión' : 'Accuracy', value: isLoading ? '...' : (metrics?.scoring.accuracyRate ?? '—') },
+    { label: locale === 'es' ? 'Escalados a humano' : 'Escalated to human', value: isLoading ? '...' : (metrics?.scoring.escalationRate ?? '—') },
   ];
 
   const matchingMetrics = [
-    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : metrics.matching.suggestionsSent },
-    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : metrics.matching.conversionRate },
-    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : metrics.matching.candidatesRedirected },
-    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : metrics.matching.avgCompatibility },
+    { label: locale === 'es' ? 'Sugerencias enviadas' : 'Suggestions sent', value: isLoading ? '...' : (metrics?.matching.suggestionsSent ?? '—') },
+    { label: locale === 'es' ? 'Tasa de conversión' : 'Conversion rate', value: isLoading ? '...' : (metrics?.matching.conversionRate ?? '—') },
+    { label: locale === 'es' ? 'Candidatos redirigidos' : 'Candidates redirected', value: isLoading ? '...' : (metrics?.matching.candidatesRedirected ?? '—') },
+    { label: locale === 'es' ? 'Compatibilidad promedio' : 'Avg compatibility', value: isLoading ? '...' : (metrics?.matching.avgCompatibility ?? '—') },
   ];
+
+  // ── Cobranza card KPIs (from useAiHubLanding) ────────────────────────────
+  const cobranzaCard = landing?.cobranza;
+  const cobranzaPermitted = cobranzaCard?.permitted ?? false;
+  const cobranzaMetrics = [
+    {
+      label: locale === 'es' ? '% COP recuperado (30d)' : '% COP recovered (30d)',
+      value: cobranzaPermitted && cobranzaCard?.heroKpi?.populated
+        ? (cobranzaCard.heroKpi.value ?? '...')
+        : '—',
+    },
+    {
+      label: locale === 'es' ? 'Escalaciones abiertas' : 'Open escalations',
+      value: cobranzaPermitted ? String(cobranzaCard?.secondaryKpi?.value ?? 0) : '—',
+    },
+    {
+      label: locale === 'es' ? 'Última llamada' : 'Last call',
+      value: cobranzaPermitted
+        ? formatRelativeTime(cobranzaCard?.lastActivityAt, locale)
+        : '—',
+    },
+  ];
+
+  // ── Cotizador card KPIs (from useAiHubLanding) ───────────────────────────
+  const cotizadorCard = landing?.cotizador;
+  const cotizadorPermitted = cotizadorCard?.permitted ?? false;
+  const cotizadorMetrics = [
+    {
+      label: locale === 'es' ? '% aprobación (30d)' : '% approval rate (30d)',
+      value: cotizadorPermitted && cotizadorCard?.heroKpi?.populated
+        ? (cotizadorCard.heroKpi.value ?? '...')
+        : '—',
+    },
+    {
+      label: locale === 'es' ? 'Cotizaciones hoy' : 'Quotes today',
+      value: cotizadorPermitted ? String(cotizadorCard?.secondaryKpi?.value ?? 0) : '—',
+    },
+    {
+      label: locale === 'es' ? 'Última cotización' : 'Last quote',
+      value: cotizadorPermitted
+        ? formatRelativeTime(cotizadorCard?.lastActivityAt, locale)
+        : '—',
+    },
+  ];
+
+  const cobranzaAgent = getActiveAgents().find((a) => a.id === 'cobranza');
+  const cotizadorAgent = getActiveAgents().find((a) => a.id === 'cotizador');
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      {/* Header */}
+      {/* Header — F10 "AGENTES IA · Equipo" tone */}
       <div className="flex flex-col gap-1 animate-stagger-in" style={{ animationDelay: '0s' }}>
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-neutral-100 dark:bg-neutral-800">
             <Robot weight="duotone" className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
+            <MonoLabel className="text-[11px] text-neutral-500 dark:text-neutral-400">
+              {locale === 'es' ? 'Agentes IA · Equipo' : 'AI Agents · Team'}
+            </MonoLabel>
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
-              {locale === 'es' ? 'Agentes AI' : 'AI Agents'}
+              {locale === 'es' ? 'Equipo de agentes' : 'Agent team'}
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400">
               {locale === 'es'
@@ -199,11 +274,22 @@ export default function AIAgentsPage() {
         </div>
       </div>
 
+      {/* F10 — Equipo de agentes: 6 colas por rol + vista agregada. Leads the
+          page; the Phase 37 cards/feed below are PRESERVED. */}
+      <div className="animate-stagger-in" style={{ animationDelay: '0.04s' }}>
+        <EquipoAgentes
+          data={resumen.data}
+          isLoading={resumen.isLoading}
+          error={resumen.error}
+          notAvailable={resumen.notAvailable}
+        />
+      </div>
+
       {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger-in" style={{ animationDelay: '0.08s' }}>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <CheckCircle weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
@@ -216,12 +302,12 @@ export default function AIAgentsPage() {
         </div>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <TrendUp weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                {isLoading ? '...' : metrics.summary.actionsThisWeek}
+                {isLoading ? '...' : (metrics?.summary.actionsThisWeek ?? '—')}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {locale === 'es' ? 'Acciones esta semana' : 'Actions this week'}
@@ -231,12 +317,12 @@ export default function AIAgentsPage() {
         </div>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <Clock weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
               <p className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                {isLoading ? '...' : metrics.summary.hoursSavedThisMonth}
+                {isLoading ? '...' : (metrics?.summary.hoursSavedThisMonth ?? '—')}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {locale === 'es' ? 'Horas ahorradas este mes' : 'Hours saved this month'}
@@ -253,18 +339,82 @@ export default function AIAgentsPage() {
             {locale === 'es' ? 'Agentes Activos' : 'Active Agents'}
           </h2>
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
           </span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {activeAgents.map((agent) => (
-            <AIAgentCard
-              key={agent.id}
-              agent={agent}
-              metrics={agent.id === 'tenant-scoring' ? scoringMetrics : matchingMetrics}
-            />
-          ))}
+          {/* Existing agents: TenantScoring + SmartMatching */}
+          {activeAgents
+            .filter((a) => a.id === 'tenant-scoring' || a.id === 'smart-matching')
+            .map((agent) =>
+              agent.id === 'tenant-scoring' ? (
+                // Estudio del inquilino — click-through to the bespoke Tier-B workspace
+                <div
+                  key={agent.id}
+                  className="relative cursor-pointer"
+                  onClick={() => router.push('/panel/inmobiliaria/ai/estudio')}
+                  data-testid="estudio-agent-card"
+                  data-tour-target="estudio-card"
+                >
+                  <AIAgentCard agent={agent} metrics={scoringMetrics} />
+                </div>
+              ) : (
+                <AIAgentCard key={agent.id} agent={agent} metrics={matchingMetrics} />
+              ),
+            )}
+
+          {/* Cobranza card — click-through to analytics (D-37-03b per-card layout) */}
+          {cobranzaAgent && (
+            <div
+              className="relative cursor-pointer"
+              onClick={() => router.push('/panel/inmobiliaria/ai/cobranza/analitica')}
+              data-testid="cobranza-agent-card"
+              data-tour-target="cobranza-card"
+            >
+              <AIAgentCard
+                agent={cobranzaAgent}
+                metrics={cobranzaMetrics}
+              />
+              {/* populated:false overlay — NoDataYetBadge (T-37-11-01) */}
+              {cobranzaPermitted && cobranzaCard?.heroKpi?.populated === false && (
+                <div className="absolute top-3 right-3">
+                  <NoDataYetBadge phase={37} reason={locale === 'es' ? 'Sin datos de cobranza aún' : 'No collections data yet'} />
+                </div>
+              )}
+              {!cobranzaPermitted && (
+                <div className="absolute top-3 right-3">
+                  <NoDataYetBadge phase={37} reason={locale === 'es' ? 'Sin permiso cobranza:view' : 'Missing cobranza:view permission'} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Cotizador card — click-through to cotizador page */}
+          {cotizadorAgent && (
+            <div
+              className="relative cursor-pointer"
+              onClick={() => router.push('/panel/inmobiliaria/ai/asegurabilidad')}
+              data-testid="cotizador-agent-card"
+              data-tour-target="cotizador-card"
+            >
+              <AIAgentCard
+                agent={cotizadorAgent}
+                metrics={cotizadorMetrics}
+              />
+              {/* populated:false overlay — NoDataYetBadge (T-37-11-01) */}
+              {cotizadorPermitted && cotizadorCard?.heroKpi?.populated === false && (
+                <div className="absolute top-3 right-3">
+                  <NoDataYetBadge phase={37} reason={locale === 'es' ? 'Sin datos de cotizador aún' : 'No quoter data yet'} />
+                </div>
+              )}
+              {!cotizadorPermitted && (
+                <div className="absolute top-3 right-3">
+                  <NoDataYetBadge phase={37} reason={locale === 'es' ? 'Sin permiso cotizador:view' : 'Missing cotizador:view permission'} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

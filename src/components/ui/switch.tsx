@@ -1,29 +1,27 @@
 "use client"
 
 import * as React from "react"
-import * as SwitchPrimitives from "@radix-ui/react-switch"
+import { Switch as DSSwitch } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * ADAPTER fino sobre el Switch de @leasefy/cadence (API y métricas idénticas:
+ * track 36×20, thumb 16, translate-x-4). Única fidelidad: el thumb del mvp
+ * era bg-background (oscuro en dark mode); el DS lo fija bg-white. Se
+ * restaura vía selector descendiente para que dark mode siga igual
+ * (en light ambos son blancos — sin cambio visible).
+ */
 const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
+  React.ElementRef<typeof DSSwitch>,
+  React.ComponentPropsWithoutRef<typeof DSSwitch>
 >(({ className, ...props }, ref) => (
-  <SwitchPrimitives.Root
-    className={cn(
-      "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
-      className
-    )}
-    {...props}
+  <DSSwitch
     ref={ref}
-  >
-    <SwitchPrimitives.Thumb
-      className={cn(
-        "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-      )}
-    />
-  </SwitchPrimitives.Root>
+    className={cn("[&>span]:bg-background", className)}
+    {...props}
+  />
 ))
-Switch.displayName = SwitchPrimitives.Root.displayName
+Switch.displayName = "Switch"
 
 export { Switch }

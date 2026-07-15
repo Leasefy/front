@@ -1,26 +1,62 @@
 import type { Config } from "tailwindcss";
+import leasefyBridge from "./tailwind.leasefy";
 
 const config: Config = {
     darkMode: ["class"],
+    // @leasefy/cadence bridge — DS theme names (surface/fg/ink/text-label/shadow-glow…)
+    // resolve here; mvp's own keys below win on collision (same brand values).
+    presets: [leasefyBridge as Config],
     content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    // design-system components (symlinked package) — Tailwind must see their classes
+    "./node_modules/@leasefy/cadence/src/**/*.{ts,tsx}",
   ],
   theme: {
+  	container: {
+  		center: true,
+  		padding: {
+  			DEFAULT: '1rem',
+  			sm: '1.5rem',
+  			lg: '2rem',
+  		},
+  		screens: {
+  			'2xl': '1280px',
+  		},
+  	},
   	extend: {
   		fontFamily: {
   			sans: ['var(--font-sans)'],
   			heading: ['var(--font-heading)'],
   			mono: ['var(--font-mono)'],
+  			// Admin panel only (Satoshi, self-hosted under /admin/fonts).
+  			display: ['Satoshi', 'var(--font-admin-sans)', 'sans-serif'],
   		},
+  		// Admin panel display scale + mono label tracking (nest brandbook).
+  		fontSize: {
+  			'display-xl': ['clamp(2.5rem, 6vw, 4.5rem)', { lineHeight: '0.95', letterSpacing: '-0.025em', fontWeight: '900' }],
+  			'display-lg': ['clamp(2rem, 4.5vw, 3rem)', { lineHeight: '1.0', letterSpacing: '-0.025em', fontWeight: '700' }],
+  			display: ['clamp(1.5rem, 3vw, 2rem)', { lineHeight: '1.05', letterSpacing: '-0.015em', fontWeight: '700' }],
+  		},
+  		letterSpacing: {
+  			'mono-label': '0.12em',
+  		},
+  		// escala @leasefy/cadence (BRAND-CONTRACT §3 / .dc.html §04 Radius) — DEBE
+  		// coincidir EXACTAMENTE con cadence/tailwind.preset.ts, porque mvp genera el
+  		// CSS de las clases horneadas de los componentes cadence. La escala anterior
+  		// (6/8/12/16) estaba mal rotulada y achicaba todo radio cadence (lg 22→12).
   		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)',
-  			xl: 'var(--radius-xl)',
-  			'2xl': 'var(--radius-2xl)',
-  			'3xl': 'var(--radius-3xl)',
+  			sm: '8px',
+  			md: '14px',
+  			lg: '22px',
+  			xl: '32px',
+  			'2xl': '32px',
+  			full: '9999px',
+  		},
+  		// Cadence signature spring (overshoot) — mirrors cadence preset's `ease-spring`
+  		transitionTimingFunction: {
+  			spring: 'cubic-bezier(0.34,1.56,0.64,1)',
   		},
   		zIndex: {
   			dropdown: 'var(--z-dropdown)',
@@ -47,8 +83,8 @@ const config: Config = {
   				'100%': { transform: 'translateX(400%)' }
   			},
   			'shimmer': {
-  				'0%': { backgroundPosition: '-200% 0' },
-  				'100%': { backgroundPosition: '200% 0' }
+  				'0%': { backgroundPosition: '-340px 0' },
+  				'100%': { backgroundPosition: '340px 0' }
   			},
   			'fade-in': {
   				from: { opacity: '0' },
@@ -61,6 +97,14 @@ const config: Config = {
   			'scale-in': {
   				from: { opacity: '0', transform: 'scale(0.95)' },
   				to: { opacity: '1', transform: 'scale(1)' }
+  			},
+  			'command-pop': {
+  				from: { opacity: '0', transform: 'translateY(-12px) scale(0.96)' },
+  				to: { opacity: '1', transform: 'translateY(0) scale(1)' }
+  			},
+  			'command-rows': {
+  				from: { opacity: '0', transform: 'translateY(8px)' },
+  				to: { opacity: '1', transform: 'translateY(0)' }
   			},
   			'slide-in-right': {
   				from: { transform: 'translateX(100%)', opacity: '0.5' },
@@ -116,11 +160,13 @@ const config: Config = {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'indeterminate': 'indeterminate 1.5s ease-in-out infinite',
-  			'shimmer': 'shimmer 2s linear infinite',
+  			'shimmer': 'shimmer 1.4s linear infinite',
   			'sweep': 'sweep 3s ease-in-out infinite',
   			'fade-in': 'fade-in 0.2s ease-out',
   			'fade-in-up': 'fade-in-up 0.3s ease-out',
   			'scale-in': 'scale-in 0.2s ease-out',
+  			'command-pop': 'command-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1)',
+  			'command-rows': 'command-rows 0.34s ease 0.08s',
   			'slide-in-right': 'slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
   			'slide-in-left': 'slide-in-left 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
   			'slide-in-up': 'slide-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -167,6 +213,41 @@ const config: Config = {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+  			/* ── Admin panel (/admin) — nest brandbook tokens. ADDITIVE + scoped:
+  			   these keys don't collide with the app's own palette and are only
+  			   used inside the `.admin-scope` internal tool. Do NOT use in the
+  			   customer app. ── */
+  			// DEFAULT points at the SAME --bg/--fg vars @leasefy/cadence uses (was a
+  			// hardcoded hex here, which silently shadowed cadence's dark-mode-aware
+  			// bg-bg/text-fg for the WHOLE app, not just /admin). The admin-specific
+  			// paper/ink values now live under `.admin-scope` in globals.css, scoped
+  			// to the admin subtree via a CSS var override — bg-bg/text-fg resolve
+  			// correctly everywhere else.
+  			bg: {
+  				DEFAULT: 'var(--bg)',
+  				surface: '#FFFFFF',
+  				card: '#FFFFFF',
+  				hover: '#EFEFEC',
+  				border: '#E2E3DE',
+  				'border-strong': '#C9CBC4',
+  			},
+  			fg: {
+  				DEFAULT: 'var(--fg)',
+  				muted: '#5A6678',
+  				subtle: '#8C95A2',
+  				dim: '#C0C5CD',
+  			},
+  			brand: '#0040FF',
+  			'brand-ink': '#0A1B2E',
+  			'brand-paper': '#F7F7F5',
+  			'brand-night': '#0D0D0D',
+  			nestlila: '#A8B3FF',
+  			nestcielo: '#00CFE0',
+  			nestyellow: '#E6FF6A',
+  			nestgray: '#E6E8EC',
+  			ok: '#00A878',
+  			warn: '#C97A0F',
+  			bad: '#D33547',
   			/* ── New design system scales ── */
   			indigo: {
   				50: 'hsl(var(--indigo-50))',

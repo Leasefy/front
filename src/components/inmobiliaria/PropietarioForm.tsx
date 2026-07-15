@@ -11,13 +11,23 @@ import {
   MapPin,
   Bank,
   Wallet,
-  CaretDown,
-  SpinnerGap,
   Check,
   Warning,
   Info,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Spinner } from '@/components/ui/spinner';
+import { Chip } from '@leasefy/cadence';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
 import type { Propietario, PropietarioFormData, DocumentType } from '@/lib/types/inmobiliaria';
 import {
@@ -73,18 +83,18 @@ function InputWrapper({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
       {error ? (
-        <p className="text-xs text-red-500 flex items-center gap-1">
+        <p className="text-xs text-danger flex items-center gap-1">
           <Warning className="w-3 h-3" />
           {error}
         </p>
       ) : hint ? (
-        <p className="text-xs text-neutral-400">{hint}</p>
+        <p className="text-xs text-fg-subtle">{hint}</p>
       ) : null}
     </div>
   );
@@ -219,11 +229,11 @@ export function PropietarioForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Personal Information */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
+        <div className="flex items-center gap-2 text-fg dark:text-white">
           {isCompany ? (
-            <Buildings className="w-5 h-5 text-purple-500" />
+            <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           ) : (
-            <User className="w-5 h-5 text-indigo-500" />
+            <User className="w-5 h-5 text-primary" />
           )}
           <h3 className="font-semibold">
             {isCompany ? t('inmobiliaria.propietario.form.companyInfo') : t('inmobiliaria.propietario.form.personalInfo')}
@@ -233,20 +243,21 @@ export function PropietarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Document Type */}
           <InputWrapper label={t('inmobiliaria.propietario.form.documentType')} required>
-            <div className="relative">
-              <select
-                value={formData.documentType}
-                onChange={(e) => updateField('documentType', e.target.value as DocumentType)}
-                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              >
+            <Select
+              value={formData.documentType}
+              onValueChange={(value) => updateField('documentType', value as DocumentType)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {DOCUMENT_TYPE_VALUES.map((type) => (
-                  <option key={type.value} value={type.value}>
+                  <SelectItem key={type.value} value={type.value}>
                     {t(DOCUMENT_TYPE_LABEL_KEYS[type.value])}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-            </div>
+              </SelectContent>
+            </Select>
           </InputWrapper>
 
           {/* Document Number */}
@@ -257,18 +268,16 @@ export function PropietarioForm({
             hint={DOCUMENT_TYPE_VALUES.find((dt) => dt.value === formData.documentType)?.hint}
           >
             <div className="relative">
-              <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <input
+              <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
+              <Input
                 type="text"
                 value={formData.documentNumber}
                 onChange={(e) => updateField('documentNumber', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, documentNumber: true }))}
                 placeholder={DOCUMENT_TYPE_VALUES.find((dt) => dt.value === formData.documentType)?.hint}
                 className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
-                  touched.documentNumber && errors.documentNumber
-                    ? 'border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700'
+                  'pl-10',
+                  touched.documentNumber && errors.documentNumber && 'border-danger/30'
                 )}
               />
             </div>
@@ -283,22 +292,17 @@ export function PropietarioForm({
         >
           <div className="relative">
             {isCompany ? (
-              <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+              <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
             ) : (
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
             )}
-            <input
+            <Input
               type="text"
               value={formData.name}
               onChange={(e) => updateField('name', e.target.value)}
               onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
               placeholder={isCompany ? 'Inversiones ABC S.A.S.' : 'Juan Pérez García'}
-              className={cn(
-                'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
-                touched.name && errors.name
-                  ? 'border-red-500'
-                  : 'border-neutral-200 dark:border-neutral-700'
-              )}
+              className={cn('pl-10', touched.name && errors.name && 'border-danger/30')}
             />
           </div>
         </InputWrapper>
@@ -311,19 +315,14 @@ export function PropietarioForm({
             error={touched.email ? errors.email : undefined}
           >
             <div className="relative">
-              <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <input
+              <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
+              <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
                 placeholder="email@ejemplo.com"
-                className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
-                  touched.email && errors.email
-                    ? 'border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700'
-                )}
+                className={cn('pl-10', touched.email && errors.email && 'border-danger/30')}
               />
             </div>
           </InputWrapper>
@@ -335,19 +334,14 @@ export function PropietarioForm({
             error={touched.phone ? errors.phone : undefined}
           >
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <input
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
+              <Input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => updateField('phone', e.target.value)}
                 onBlur={() => setTouched((prev) => ({ ...prev, phone: true }))}
                 placeholder="+57 310 234 5678"
-                className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
-                  touched.phone && errors.phone
-                    ? 'border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700'
-                )}
+                className={cn('pl-10', touched.phone && errors.phone && 'border-danger/30')}
               />
             </div>
           </InputWrapper>
@@ -357,41 +351,40 @@ export function PropietarioForm({
           {/* Address */}
           <InputWrapper label={t('inmobiliaria.propietario.form.address')} hint={t('inmobiliaria.propietario.form.optional')}>
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <input
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
+              <Input
                 type="text"
                 value={formData.address}
                 onChange={(e) => updateField('address', e.target.value)}
                 placeholder="Cra 15 #93-45, Apto 802"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="pl-10"
               />
             </div>
           </InputWrapper>
 
           {/* City */}
           <InputWrapper label={t('inmobiliaria.propietario.form.city')} hint={t('inmobiliaria.propietario.form.optional')}>
-            <input
+            <Input
               type="text"
               value={formData.city}
               onChange={(e) => updateField('city', e.target.value)}
               placeholder="Bogotá"
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
           </InputWrapper>
         </div>
       </div>
 
       {/* Bank Account */}
-      <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-        <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
-          <Bank className="w-5 h-5 text-emerald-500" />
+      <div className="space-y-4 pt-4 border-t border-faint dark:border-strong">
+        <div className="flex items-center gap-2 text-fg dark:text-white">
+          <Bank className="w-5 h-5 text-success" />
           <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
         </div>
 
-        <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+        <div className="p-4 rounded-xl bg-primary-soft border border-primary/30">
           <div className="flex gap-3">
-            <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-sm text-primary">
               {t('inmobiliaria.propietario.form.bankDataInfo')}
             </p>
           </div>
@@ -404,28 +397,27 @@ export function PropietarioForm({
             required
             error={touched.bankCode ? errors.bankCode : undefined}
           >
-            <div className="relative">
-              <Bank className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <select
-                value={formData.bankCode}
-                onChange={(e) => updateField('bankCode', e.target.value as BankCode)}
-                onBlur={() => setTouched((prev) => ({ ...prev, bankCode: true }))}
+            <Select
+              value={formData.bankCode || undefined}
+              onValueChange={(value) => updateField('bankCode', value as BankCode)}
+            >
+              <SelectTrigger
                 className={cn(
-                  'w-full pl-10 pr-8 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
-                  touched.bankCode && errors.bankCode
-                    ? 'border-red-500'
-                    : 'border-neutral-200 dark:border-neutral-700'
+                  'gap-2',
+                  touched.bankCode && errors.bankCode && 'border-danger/30'
                 )}
               >
-                <option value="">{t('inmobiliaria.propietario.form.selectBank')}</option>
+                <Bank className="w-5 h-5 text-fg-subtle shrink-0" />
+                <SelectValue placeholder={t('inmobiliaria.propietario.form.selectBank')} />
+              </SelectTrigger>
+              <SelectContent>
                 {COLOMBIAN_BANKS.map((bank) => (
-                  <option key={bank.code} value={bank.code}>
+                  <SelectItem key={bank.code} value={bank.code}>
                     {bank.name}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-            </div>
+              </SelectContent>
+            </Select>
           </InputWrapper>
 
           {/* Account Type */}
@@ -436,19 +428,14 @@ export function PropietarioForm({
           >
             <div className="flex gap-3">
               {ACCOUNT_TYPE_VALUES.map((accType) => (
-                <button
+                <Chip
                   key={accType}
-                  type="button"
+                  selected={formData.accountType === accType}
                   onClick={() => updateField('accountType', accType)}
-                  className={cn(
-                    'flex-1 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all',
-                    formData.accountType === accType
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                      : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
-                  )}
+                  className="flex-1 justify-center"
                 >
                   {t(ACCOUNT_TYPE_LABEL_KEYS[accType])}
-                </button>
+                </Chip>
               ))}
             </div>
           </InputWrapper>
@@ -461,7 +448,7 @@ export function PropietarioForm({
           error={touched.accountNumber ? errors.accountNumber : undefined}
           hint={t('inmobiliaria.propietario.form.hintDigitsOnly')}
         >
-          <input
+          <Input
             type="text"
             value={formData.accountNumber}
             onChange={(e) => updateField('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
@@ -469,10 +456,8 @@ export function PropietarioForm({
             placeholder="1234567890"
             maxLength={20}
             className={cn(
-              'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-mono',
-              touched.accountNumber && errors.accountNumber
-                ? 'border-red-500'
-                : 'border-neutral-200 dark:border-neutral-700'
+              'font-mono',
+              touched.accountNumber && errors.accountNumber && 'border-danger/30'
             )}
           />
         </InputWrapper>
@@ -484,53 +469,50 @@ export function PropietarioForm({
           error={touched.accountHolder ? errors.accountHolder : undefined}
           hint={t('inmobiliaria.propietario.form.hintMatchBank')}
         >
-          <input
+          <Input
             type="text"
             value={formData.accountHolder}
             onChange={(e) => updateField('accountHolder', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, accountHolder: true }))}
             placeholder={formData.name || 'Nombre del titular'}
-            className={cn(
-              'w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
-              touched.accountHolder && errors.accountHolder
-                ? 'border-red-500'
-                : 'border-neutral-200 dark:border-neutral-700'
-            )}
+            className={cn(touched.accountHolder && errors.accountHolder && 'border-danger/30')}
           />
         </InputWrapper>
       </div>
 
       {/* Notes */}
-      <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+      <div className="space-y-4 pt-4 border-t border-faint dark:border-strong">
         <InputWrapper label={t('inmobiliaria.propietario.form.internalNotes')} hint={t('inmobiliaria.propietario.form.hintTeamOnly')}>
-          <textarea
+          <Textarea
             value={formData.notes}
             onChange={(e) => updateField('notes', e.target.value)}
             placeholder="Agregar notas sobre este propietario..."
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+            className="resize-none"
           />
         </InputWrapper>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-        <button
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-faint dark:border-strong">
+        <Button
           type="button"
+          variant="secondary"
+          hideArrow
           onClick={onCancel}
           disabled={isSubmitting}
-          className="px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
         >
           {t('inmobiliaria.propietario.form.cancel')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
+          hideArrow
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+          className="gap-2"
         >
           {isSubmitting ? (
             <>
-              <SpinnerGap className="w-4 h-4 animate-spin" />
+              <Spinner size="sm" variant="current" />
               {t('inmobiliaria.propietario.form.saving')}
             </>
           ) : (
@@ -539,7 +521,7 @@ export function PropietarioForm({
               {mode === 'create' ? t('inmobiliaria.propietario.form.createOwner') : t('inmobiliaria.propietario.form.saveChanges')}
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

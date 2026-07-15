@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, CaretLeft, Receipt, Prohibit, XCircle } from '@phosphor-icons/react';
+import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,10 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { Progress } from '@/components/ui/progress';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
 import type {
   BackendTenantPaymentRequest,
@@ -70,9 +74,11 @@ export default function PagosPage() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRequests = allRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Stats — sólo cuentan los APPROVED como "pagado", PENDING_VALIDATION como "pendiente"
+  // Stats — sólo cuentan los APPROVED como "pagado", PENDING_VALIDATION como "pendiente".
+  // El indicador "Total pagado / Este año" es year-to-date: se limita al año en curso.
+  const currentYear = new Date().getFullYear();
   const totalPaid = allRequests
-    .filter(r => r.status === 'APPROVED')
+    .filter(r => r.status === 'APPROVED' && r.periodYear === currentYear)
     .reduce((sum, r) => sum + r.amount, 0);
 
   const pendingAmount = allRequests
@@ -128,35 +134,35 @@ export default function PagosPage() {
       case 'APPROVED':
         return {
           label: locale === 'es' ? 'Aprobado' : 'Approved',
-          color: 'bg-emerald-100 text-emerald-700',
+          color: 'bg-success-soft text-success',
           icon: Check,
-          iconBg: 'bg-emerald-100',
-          iconColor: 'text-emerald-600',
+          iconBg: 'bg-success-soft',
+          iconColor: 'text-success',
         };
       case 'PENDING_VALIDATION':
         return {
           label: locale === 'es' ? 'En verificación' : 'In verification',
-          color: 'bg-amber-100 text-amber-700',
+          color: 'bg-warning-soft text-warning',
           icon: Clock,
-          iconBg: 'bg-amber-100',
-          iconColor: 'text-amber-600',
+          iconBg: 'bg-warning-soft',
+          iconColor: 'text-warning',
         };
       case 'REJECTED':
       case 'DISPUTED':
         return {
           label: locale === 'es' ? 'Rechazado' : 'Rejected',
-          color: 'bg-rose-100 text-rose-700',
+          color: 'bg-danger-soft text-danger',
           icon: XCircle,
-          iconBg: 'bg-rose-100',
-          iconColor: 'text-rose-600',
+          iconBg: 'bg-danger-soft',
+          iconColor: 'text-danger',
         };
       case 'CANCELLED':
         return {
           label: locale === 'es' ? 'Cancelado' : 'Cancelled',
-          color: 'bg-neutral-100 text-neutral-600',
+          color: 'bg-surface-muted text-fg-muted',
           icon: Prohibit,
-          iconBg: 'bg-neutral-100',
-          iconColor: 'text-neutral-500',
+          iconBg: 'bg-surface-muted',
+          iconColor: 'text-fg-muted',
         };
     }
   };
@@ -164,8 +170,8 @@ export default function PagosPage() {
   // Loading state
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -173,7 +179,7 @@ export default function PagosPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="payments" />
         </div>
@@ -184,17 +190,17 @@ export default function PagosPage() {
   // No active lease — show clean empty state (no fake stats, no mock Visa)
   if (!primaryLease) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <motion.header
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+            <h1 className="text-3xl font-medium text-fg tracking-tight">
               {t('payments.title')}
             </h1>
-            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-fg-muted">
               {t('payments.subtitle')}
             </p>
           </motion.header>
@@ -219,7 +225,7 @@ export default function PagosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -228,10 +234,10 @@ export default function PagosPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('payments.title')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted">
             {t('payments.subtitle')}
           </p>
         </motion.header>
@@ -244,41 +250,41 @@ export default function PagosPage() {
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
           {/* Next Payment */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CreditCard className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">{t('dashboard.nextPayment')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-primary mb-1">{t('dashboard.nextPayment')}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {formatCurrencyI18n(nextAmount)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {daysUntil !== null ? t('dashboard.dueIn', { days: daysUntil }) : t('payments.noPayments')}
             </p>
           </div>
 
           {/* Total Paid */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CurrencyDollar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CurrencyDollar className="w-5 h-5 text-success" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('payments.summary.totalPaid')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{t('payments.summary.totalPaid')}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {formatCurrencyI18n(totalPaid)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('payments.summary.thisYear')}</p>
+            <p className="text-sm text-fg-muted mt-2">{t('payments.summary.thisYear')}</p>
           </div>
 
           {/* Pending */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <Calendar className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <Calendar className="w-5 h-5 text-fg-muted" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{t('common.pending')}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{t('common.pending')}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {formatCurrencyI18n(pendingAmount)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">{t('payments.summary.nextDue')}</p>
+            <p className="text-sm text-fg-muted mt-2">{t('payments.summary.nextDue')}</p>
           </div>
         </motion.div>
 
@@ -291,8 +297,8 @@ export default function PagosPage() {
             className="lg:col-span-2"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{t('payments.history')}</h2>
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">{allRequests.length} {t('nav.payments').toLowerCase()}</span>
+              <h2 className="text-xl font-semibold text-fg">{t('payments.history')}</h2>
+              <span className="text-sm text-fg-muted">{allRequests.length} {t('nav.payments').toLowerCase()}</span>
             </div>
 
             {allRequests.length > 0 ? (
@@ -315,7 +321,7 @@ export default function PagosPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="group rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-md transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden"
                       >
                         <div className="flex items-center gap-4 p-4">
                           <div className={cn(
@@ -328,15 +334,15 @@ export default function PagosPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4">
                               <div>
-                                <h3 className="font-semibold text-neutral-900 dark:text-white">
+                                <h3 className="font-semibold text-fg">
                                   {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
                                 </h3>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
+                                <p className="text-sm text-fg-muted truncate">
                                   {request.propertyTitle}
                                 </p>
                               </div>
                               <div className="text-right flex-shrink-0">
-                                <p className="text-lg font-bold text-neutral-900 dark:text-white">
+                                <p className="text-lg font-bold text-fg">
                                   {formatCurrencyI18n(request.amount)}
                                 </p>
                                 <span className={cn(
@@ -348,24 +354,26 @@ export default function PagosPage() {
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
-                              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-faint">
+                              <span className="text-sm text-fg-muted">
                                 {dateLabel}
                                 {request.bankName && <span className="ml-1">· {request.bankName}</span>}
                               </span>
                               {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
-                                <button
+                                <Button
+                                  variant="link"
+                                  size="sm"
                                   onClick={handlePayNow}
-                                  className="flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
+                                  className="h-auto gap-1 p-0"
                                 >
                                   {locale === 'es' ? 'Reintentar' : 'Retry'}
                                   <ArrowUpRight className="w-4 h-4" />
-                                </button>
+                                </Button>
                               )}
                             </div>
 
                             {request.rejectionReason && (
-                              <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 italic">
+                              <p className="text-xs text-danger mt-2 italic">
                                 {request.rejectionReason}
                               </p>
                             )}
@@ -378,49 +386,12 @@ export default function PagosPage() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-6">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className={cn(
-                        'p-2 rounded-full transition-all',
-                        currentPage === 1
-                          ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
-                      )}
-                    >
-                      <CaretLeft className="w-5 h-5" />
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={cn(
-                            'w-10 h-10 rounded-full text-sm font-medium transition-all',
-                            currentPage === page
-                              ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
-                              : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
-                          )}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className={cn(
-                        'p-2 rounded-full transition-all',
-                        currentPage === totalPages
-                          ? 'text-neutral-300 dark:text-neutral-600 cursor-not-allowed'
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#2a2a2c]'
-                      )}
-                    >
-                      <CaretRight className="w-5 h-5" />
-                    </button>
+                  <div className="mt-6 flex justify-center">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
                   </div>
                 )}
               </>
@@ -462,25 +433,25 @@ export default function PagosPage() {
             )}
 
             {/* Quick Links */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t('dashboard.quickActions')}</h3>
+            <div className="rounded-xl bg-surface-muted p-5">
+              <h3 className="font-semibold text-fg mb-4">{t('dashboard.quickActions')}</h3>
               <div className="space-y-2">
                 {[
                   { href: '/inquilino/documentos', icon: Receipt, label: locale === 'es' ? 'Ver recibos' : 'View receipts', desc: locale === 'es' ? 'Historial de comprobantes' : 'Receipt history' },
                   { href: '/inquilino/arriendo', icon: Buildings, label: t('nav.myRental'), desc: locale === 'es' ? 'Ver contrato actual' : 'View current contract' },
                 ].map((action, i) => (
                   <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#2a2a2c] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm group-hover:shadow transition-shadow">
-                        <action.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
+                        <action.icon className="w-5 h-5 text-fg-muted" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <p className="text-sm font-medium text-fg group-hover:text-primary transition-colors">
                           {action.label}
                         </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{action.desc}</p>
+                        <p className="text-xs text-fg-muted truncate">{action.desc}</p>
                       </div>
-                      <CaretRight className="w-4 h-4 text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                      <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-primary transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -537,20 +508,20 @@ function PeriodStatusCard({
   // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
   if (status === 'PENDING_VALIDATION') {
     return (
-      <div className="rounded-3xl bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-950/40 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 p-6">
+      <div className="rounded-xl bg-warning-soft border border-warning/30 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+            <Clock className="w-5 h-5 text-warning" />
           </div>
-          <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+          <span className="text-sm text-warning font-medium">
             {locale === 'es' ? 'Pago en verificación' : 'Payment in verification'}
           </span>
         </div>
-        <p className="text-3xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+        <p className="text-3xl font-bold tracking-tight mb-1 text-fg">
           {formatCurrency(amount)}
         </p>
-        <p className="text-neutral-600 dark:text-neutral-400 text-sm capitalize mb-4">{periodLabel}</p>
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+        <p className="text-fg-muted text-sm capitalize mb-4">{periodLabel}</p>
+        <p className="text-sm text-fg-muted">
           {locale === 'es'
             ? 'Tu banco está verificando el pago. Vas a ver la confirmación cuando termine.'
             : 'Your bank is verifying the payment. You\'ll see the confirmation when it completes.'}
@@ -562,20 +533,20 @@ function PeriodStatusCard({
   // APPROVED — pago confirmado por el landlord
   if (status === 'APPROVED') {
     return (
-      <div className="rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-950/40 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 p-6">
+      <div className="rounded-xl bg-success-soft border border-success/30 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+            <Check className="w-5 h-5 text-success" />
           </div>
-          <span className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+          <span className="text-sm text-success font-medium">
             {locale === 'es' ? 'Pago confirmado' : 'Payment confirmed'}
           </span>
         </div>
-        <p className="text-3xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+        <p className="text-3xl font-bold tracking-tight mb-1 text-fg">
           {formatCurrency(amount)}
         </p>
-        <p className="text-neutral-600 dark:text-neutral-400 text-sm capitalize mb-4">{periodLabel}</p>
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+        <p className="text-fg-muted text-sm capitalize mb-4">{periodLabel}</p>
+        <p className="text-sm text-fg-muted">
           {locale === 'es'
             ? 'Tu pago de este mes ya está al día.'
             : 'You\'re up to date for this month.'}
@@ -586,12 +557,12 @@ function PeriodStatusCard({
 
   // NONE | REJECTED — mostrar CTA "Pagar arriendo"
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
+    <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-          <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+          <CreditCard className="w-5 h-5 text-primary" />
         </div>
-        <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+        <span className="text-sm text-primary font-medium">
           {status === 'REJECTED'
             ? (locale === 'es' ? 'Pago rechazado' : 'Payment rejected')
             : t('dashboard.nextPayment')}
@@ -599,38 +570,33 @@ function PeriodStatusCard({
       </div>
 
       {status === 'REJECTED' && rejectionReason && (
-        <div className="mb-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-3">
-          <p className="text-xs text-rose-700 dark:text-rose-400">{rejectionReason}</p>
+        <div className="mb-4 rounded-xl border border-danger/30 bg-danger-soft p-3">
+          <p className="text-xs text-danger">{rejectionReason}</p>
         </div>
       )}
 
-      <p className="text-4xl font-bold tracking-tight mb-1 text-neutral-900 dark:text-white">
+      <p className="text-4xl font-bold tracking-tight mb-1 text-fg">
         {formatCurrency(amount)}
       </p>
-      <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-6 truncate">
+      <p className="text-fg-muted text-sm mb-6 truncate">
         {propertyTitle}
       </p>
 
       <div className="mb-4">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-neutral-500 dark:text-neutral-400">
+          <span className="text-fg-muted">
             {locale === 'es' ? 'Progreso del mes' : 'Monthly progress'}
           </span>
-          <span className="text-neutral-900 dark:text-white font-medium">{progress}%</span>
+          <span className="text-fg font-medium">{progress}%</span>
         </div>
-        <div className="h-2 bg-indigo-200 dark:bg-indigo-900/50 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <Progress value={progress} size="sm" />
       </div>
 
-      <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-indigo-200 dark:border-indigo-800">
-        <span className="text-neutral-500 dark:text-neutral-400">
+      <div className="flex items-center justify-between text-sm mb-6 pb-4 border-b border-primary/30">
+        <span className="text-fg-muted">
           {locale === 'es' ? 'Día de pago' : 'Payment day'}
         </span>
-        <span className="text-neutral-900 dark:text-white font-medium">
+        <span className="text-fg font-medium">
           {locale === 'es' ? `Día ${paymentDay}` : `Day ${paymentDay}`}
         </span>
       </div>
@@ -638,22 +604,19 @@ function PeriodStatusCard({
       {daysUntil !== null && (
         <div className="flex items-center justify-between text-sm mb-6">
           <span className={cn(
-            daysUntil <= 3 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-500 dark:text-neutral-400'
+            daysUntil <= 3 ? 'text-warning font-medium' : 'text-fg-muted'
           )}>
             {daysUntil === 0 ? t('dashboard.dueToday') : t('dashboard.dueIn', { days: daysUntil })}
           </span>
         </div>
       )}
 
-      <button
-        onClick={onPay}
-        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-semibold rounded-full transition-colors flex items-center justify-center gap-2"
-      >
+      <Button onClick={onPay} hideArrow className="w-full">
         {status === 'REJECTED'
           ? (locale === 'es' ? 'Reintentar pago' : 'Retry payment')
           : t('dashboard.payNow')}
         <ArrowUpRight className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   );
 }

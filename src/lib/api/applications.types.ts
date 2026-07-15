@@ -134,6 +134,10 @@ export interface CreateApplicationDto {
   coSigner?: Record<string, unknown>;
   agentCode?: string;
   linkCode?: string;
+  /** true when the candidate explicitly accepted the habeas-data consent */
+  habeasDataConsent?: boolean;
+  /** version string from GET /legal/consent-text — omit when text fetch failed */
+  authorizationVersion?: string;
 }
 
 export interface ApplicationPaginationMeta {
@@ -205,6 +209,78 @@ export interface LandlordApplicationDetail extends LandlordCandidate {
     title: string;
     monthlyRent: number;
   };
+}
+
+// ============================================================================
+// Credit bureau check types
+// ============================================================================
+
+export type CreditCheckStatus =
+  | 'approved'
+  | 'rejected_credit'
+  | 'rejected_income'
+  | 'blocked_admin'
+  | 'awaiting_authorization'
+  | 'error'
+  | 'not_evaluated';
+
+export type CreditCheckReasonCode =
+  | 'credit_history_rejection'
+  | 'declared_income_insufficient'
+  | 'study_payment_pending'
+  | 'unknown_rejection'
+  | 'awaiting_habeas_data'
+  | 'study_error'
+  | null;
+
+/**
+ * Credit bureau check result returned as part of EvaluationResponseDto.
+ * Present only when status is COMPLETED or FAILED; absent on old evaluations.
+ * Top-level key is snake_case `credit_check`; inner keys are camelCase (backend asymmetry).
+ * Absence must be treated as not_evaluated.
+ */
+export interface CreditCheck {
+  status: CreditCheckStatus;
+  bureauScore: number | null;
+  monthlyCapacity: number | null;
+  reasonCode: CreditCheckReasonCode;
+  progressPercentage: number | null;
+}
+
+// ============================================================================
+// Protection options — insurance/bond carriers panel (agente de seguros)
+// ============================================================================
+
+export type ProtectionProductType = 'seguro' | 'fianza';
+export type ProtectionOptionStatus = 'available' | 'not_available';
+
+/**
+ * One carrier entry from the backend's tier2_carriers block.
+ * Derived by the Tenant-Scoring agent; present only on new evaluations.
+ * Absence of the whole `protection_options` array must be tolerated silently.
+ *
+ * Key naming matches the backend mapping exactly (camelCase for premium/canon fields).
+ *  - `isDemo` MUST be displayed visually when true — prices are stubs until the
+ *    backend flips the flag to false (real carrier API integration).
+ *  - `maxBackedCanonCop` is fianly-only: the max rent it would back even when
+ *    this tenant is rejected — enables an actionable "lower rent or add co-signer"
+ *    suggestion instead of a dead-end rejection card.
+ */
+export interface ProtectionOption {
+  carrier: string;
+  productType: ProtectionProductType;
+  status: ProtectionOptionStatus;
+  /** Monthly premium in COP. Null when carrier rejected or no pricing available. */
+  monthlyPremiumCop: number | null;
+  /** True when the price is a demo/stub — MUST be shown as a badge on the card. */
+  isDemo: boolean;
+  /** Why the carrier rejected this tenant. Null when available or no reason given. */
+  rejectionReason: string | null;
+  /**
+   * Fianly-only: the maximum canon the carrier would back.
+   * Present even when status is not_available — drives the actionable co-signer card.
+   */
+  maxBackedCanonCop: number | null;
 }
 
 // ============================================================================
@@ -287,7 +363,82 @@ export interface EvaluationResult {
   // Timestamps
   createdAt?: string;
   completedAt?: string;
+  /**
+   * Credit bureau check result. Present when backend returns it (COMPLETED/FAILED only).
+   * Absent on old evaluations → treat as not_evaluated.
+   * Top-level key is snake_case; inner keys are camelCase (backend asymmetry).
+   */
+  credit_check?: CreditCheck;
+  /**
+   * Insurance/bond carrier options for this tenant's lease.
+   * Derived from the agent's tier2_carriers block.
+   * Absent on old evaluations → render nothing (do NOT error).
+   */
+  protection_options?: ProtectionOption[];
 }
+
+// ============================================================================
+// Wizard prefill — GET /applications/prefill
+// ============================================================================
+
+/** Returned when the tenant has no previous application to prefill from */
+export interface ApplicationPrefillEmpty {
+  hasPreviousApplication: false;
+}
+
+/** Returned when the tenant has a previous application; every scalar may be null */
+export interface ApplicationPrefillData {
+  hasPreviousApplication: true;
+  fullName: string | null;
+  documentType: string | null;
+  documentNumber: string | null;
+  dateOfBirth: string | null;
+  phone: string | null;
+  email: string | null;
+  currentAddress: string | null;
+  timeAtCurrentAddress: number | null;
+  maritalStatus: string | null;
+  dependents: number | null;
+  employmentStatus: string | null;
+  companyName: string | null;
+  industry: string | null;
+  position: string | null;
+  contractType: string | null;
+  timeAtJob: number | null;
+  employerPhone: string | null;
+  employerAddress: string | null;
+  monthlySalary: number | null;
+  additionalIncome: number | null;
+  additionalIncomeSource: string | null;
+  totalMonthlyIncome: number | null;
+  monthlyObligations: number | null;
+  availableForRent: number | null;
+  references: {
+    previousLandlords: Array<{
+      name: string;
+      phone: string;
+      address: string;
+      duration: number;
+      relationship: string;
+    }>;
+    employmentReferences: Array<{
+      name: string;
+      phone: string;
+      company: string;
+      relationship: string;
+    }>;
+    personalReferences: Array<{
+      name: string;
+      phone: string;
+      relationship: string;
+    }>;
+  } | null;
+  hasCoSigner: boolean | null;
+  coSigner: Record<string, unknown> | null;
+}
+
+/** Discriminated union returned by GET /applications/prefill */
+export type ApplicationPrefill = ApplicationPrefillEmpty | ApplicationPrefillData;
 
 export interface EvaluationTriggerResponse {
   runId?: string;

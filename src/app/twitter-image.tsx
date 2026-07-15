@@ -17,7 +17,7 @@ export default async function Image() {
           justifyContent: 'center',
           alignItems: 'flex-start',
           padding: '80px',
-          background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a3e 40%, #5B5FEF 100%)',
+          background: 'linear-gradient(135deg, #0f0f1a 0%, #121230 40%, #1A40FF 100%)',
           fontFamily: 'system-ui, -apple-system, sans-serif',
           position: 'relative',
           overflow: 'hidden',
@@ -57,7 +57,7 @@ export default async function Image() {
             left: 0,
             right: 0,
             height: '6px',
-            background: 'linear-gradient(90deg, #5B5FEF 0%, #8B8FFF 50%, #5B5FEF 100%)',
+            background: 'linear-gradient(90deg, #1A40FF 0%, #8A9CFF 50%, #1A40FF 100%)',
             display: 'flex',
           }}
         />
@@ -82,7 +82,7 @@ export default async function Image() {
           style={{
             fontSize: 42,
             fontWeight: 600,
-            color: '#c4c6ff',
+            color: '#8A9CFF',
             lineHeight: 1.2,
             display: 'flex',
             marginBottom: '16px',
@@ -119,7 +119,7 @@ export default async function Image() {
             style={{
               width: '40px',
               height: '4px',
-              background: '#5B5FEF',
+              background: '#1A40FF',
               borderRadius: '2px',
               display: 'flex',
             }}

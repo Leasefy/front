@@ -98,7 +98,7 @@ function renderContent(content: string) {
       // Handle inline bold
       const parts = line.split(/(\*\*.*?\*\*)/g);
       elements.push(
-        <p key={key++} className="text-[15px] leading-[1.85] text-muted-foreground mb-1">
+        <p key={key++} className="text-base sm:text-[15px] leading-[1.85] text-muted-foreground mb-1">
           {parts.map((part, i) =>
             part.startsWith("**") && part.endsWith("**") ? (
               <strong key={i} className="text-foreground font-medium">
@@ -172,7 +172,7 @@ export default async function BlogArticlePage({ params }: Props) {
           <div className="container-platform"><div className="max-w-[720px]">
             <Link
               href="/"
-              className="group inline-flex items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white px-3 py-2 -ml-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all mb-10"
+              className="group inline-flex items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white px-3 py-2 -ml-3 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all mb-10"
             >
               <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" weight="bold" />
               Volver al inicio
@@ -203,8 +203,7 @@ export default async function BlogArticlePage({ params }: Props) {
                   <Link
                     key={r.slug}
                     href={r.href}
-                    className="group block overflow-hidden"
-                    style={{ border: "1px solid rgba(0,0,0,0.06)" }}
+                    className="group block overflow-hidden border border-border-faint"
                   >
                     <div className="relative h-[200px] overflow-hidden">
                       <Image
@@ -218,19 +217,19 @@ export default async function BlogArticlePage({ params }: Props) {
 
                     <div className="p-5">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[11px] font-medium text-indigo-600 tracking-wide uppercase">
+                        <span className="text-[11px] font-medium text-primary tracking-wide uppercase">
                           {r.category}
                         </span>
                         <span className="text-[11px] text-muted-foreground">{r.readTime}</span>
                       </div>
 
-                      <h3 className="text-[15px] font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors duration-300 mb-2">
+                      <h3 className="text-[15px] font-medium text-foreground tracking-[-0.01em] leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 mb-2">
                         {r.title}
                       </h3>
 
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-muted-foreground/70">{r.date}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-indigo-600 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                       </div>
                     </div>
                   </Link>

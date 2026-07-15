@@ -11,7 +11,7 @@ export default function APIPage() {
   return (
     <>
       <Navbar />
-      <main className="overflow-hidden bg-white min-h-screen">
+      <main className="overflow-hidden bg-background min-h-screen">
         {/* Coming Soon Section */}
         <section className="relative min-h-[calc(100vh-72px)] flex items-center justify-center py-24">
           {/* Background Pattern */}
@@ -26,7 +26,7 @@ export default function APIPage() {
                 transition={{ duration: 0.5 }}
                 className="mb-8"
               >
-                <div className="w-20 h-20 rounded-2xl bg-foreground mx-auto flex items-center justify-center">
+                <div className="w-20 h-20 rounded-xl bg-foreground mx-auto flex items-center justify-center">
                   <Terminal className="w-10 h-10 text-white" />
                 </div>
               </motion.div>
@@ -38,7 +38,7 @@ export default function APIPage() {
                 transition={{ delay: 0.1 }}
                 className="mb-6"
               >
-                <span className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-foreground/70 bg-sand-100 rounded-full px-4 py-2">
+                <span className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-foreground/70 bg-sand-100 dark:bg-muted rounded-full px-4 py-2">
                   <Sparkle className="w-3.5 h-3.5" />
                   Próximamente
                 </span>
@@ -75,7 +75,7 @@ export default function APIPage() {
                 {['Evaluaciones', 'Contratos', 'Pagos', 'Webhooks'].map((feature, i) => (
                   <div
                     key={feature}
-                    className="bg-sand-50 rounded-xl p-4 text-center"
+                    className="bg-sand-50 dark:bg-card rounded-xl p-4 text-center"
                   >
                     <p className="text-[13px] font-medium text-foreground">{feature}</p>
                   </div>
@@ -91,6 +91,7 @@ export default function APIPage() {
               >
                 <Button
                   size="lg"
+                  hideArrow
                   className="w-full sm:w-auto h-12 px-6 rounded-xl bg-foreground text-white hover:bg-foreground/90"
                 >
                   <Bell className="w-4 h-4 mr-2" />

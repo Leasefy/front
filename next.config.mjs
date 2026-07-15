@@ -1,5 +1,20 @@
+import path from "path";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // @leasefy/cadence is symlinked (file:../cadence) and resolves its own copy of
+  // @radix-ui/react-accordion from ../cadence/node_modules, while this app's
+  // accordion adapter (src/components/ui/accordion.tsx) uses the local copy.
+  // Two module instances create two Radix contexts and crash at runtime with
+  // "`Accordion` must be used within `Accordion`". Alias to a single copy.
+  // REMOVE together with the temporary flags below once cadence is published.
+  webpack: (config) => {
+    config.resolve.alias["@radix-ui/react-accordion"] = path.resolve(
+      process.cwd(),
+      "node_modules/@radix-ui/react-accordion"
+    );
+    return config;
+  },
   // TEMPORARY (stg-demo integration): the redesign depends on @leasefy/cadence, linked
   // locally via `file:../cadence` (no real pnpm workspace, no published tarball yet).
   // That linkage still surfaces type errors and some lint noise. We let `next build`

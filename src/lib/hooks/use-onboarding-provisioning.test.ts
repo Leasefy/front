@@ -133,4 +133,91 @@ describe('useOnboardingProvisioning', () => {
     expect(get().status).toBe('ready')
     expect(get().sessionId).toBe('sess-retry')
   })
+
+  it('falls back lastName to firstName when the user has a firstName but no lastName', async () => {
+    mockUseAuth.mockReturnValue({ user: { firstName: 'Ana', lastName: '' } })
+    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
+    renderHook()
+    await flush()
+
+    expect(postUsersOnboardingMock).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'Ana',
+      userType: AGENCY_OWNER_USER_TYPE,
+    })
+  })
+})
+
+// The /auth signup never captures names and the back rejects an empty
+// firstName/lastName with a 400 (`@IsNotEmpty`) — so a fresh user must NOT
+// be auto-provisioned; the caller collects the name and provisions explicitly.
+describe('useOnboardingProvisioning — name capture', () => {
+  it('does NOT auto-provision on mount when the user lacks a firstName', async () => {
+    mockUseAuth.mockReturnValue({ user: { firstName: '', lastName: '' } })
+    const { get } = renderHook()
+    await flush()
+
+    expect(postUsersOnboardingMock).not.toHaveBeenCalled()
+    expect(get().status).toBe('needs-name')
+    expect(get().sessionId).toBeNull()
+  })
+
+  it('does NOT auto-provision when there is no user yet', async () => {
+    mockUseAuth.mockReturnValue({ user: null })
+    const { get } = renderHook()
+    await flush()
+
+    expect(postUsersOnboardingMock).not.toHaveBeenCalled()
+    expect(get().status).toBe('needs-name')
+  })
+
+  it('provision({ firstName, lastName }) posts the explicit names and resolves to ready', async () => {
+    mockUseAuth.mockReturnValue({ user: { firstName: '', lastName: '' } })
+    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
+    const { get } = renderHook()
+    await flush()
+
+    act(() => {
+      get().provision({ firstName: 'Ana', lastName: 'Pérez Gómez' })
+    })
+    expect(get().status).toBe('provisioning')
+    await flush()
+
+    expect(postUsersOnboardingMock).toHaveBeenCalledTimes(1)
+    expect(postUsersOnboardingMock).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'Pérez Gómez',
+      userType: AGENCY_OWNER_USER_TYPE,
+    })
+    expect(get().status).toBe('ready')
+    expect(get().sessionId).toBe('sess-abc')
+  })
+
+  it('retry() after a failed explicit provision re-posts the same explicit names', async () => {
+    mockUseAuth.mockReturnValue({ user: { firstName: '', lastName: '' } })
+    postUsersOnboardingMock.mockRejectedValueOnce(new Error('network down'))
+    const { get } = renderHook()
+    await flush()
+
+    act(() => {
+      get().provision({ firstName: 'Ana', lastName: 'Pérez' })
+    })
+    await flush()
+    expect(get().status).toBe('error')
+
+    postUsersOnboardingMock.mockResolvedValueOnce({ agentSessionId: 'sess-retry', tenantId: 'tenant-1' })
+    act(() => {
+      get().retry()
+    })
+    await flush()
+
+    expect(postUsersOnboardingMock).toHaveBeenCalledTimes(2)
+    expect(postUsersOnboardingMock).toHaveBeenLastCalledWith({
+      firstName: 'Ana',
+      lastName: 'Pérez',
+      userType: AGENCY_OWNER_USER_TYPE,
+    })
+    expect(get().status).toBe('ready')
+    expect(get().sessionId).toBe('sess-retry')
+  })
 })

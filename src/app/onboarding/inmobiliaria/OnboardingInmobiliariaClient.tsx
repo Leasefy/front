@@ -9,6 +9,7 @@ import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioni
 import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/OnboardingWizardStepper'
 import { OnboardingSessionErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingSessionErrorBanner'
 import { OnboardingProvisioningErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingProvisioningErrorBanner'
+import { OwnerNameStepForm } from '@/components/onboarding/inmobiliaria/OwnerNameStepForm'
 import { AgencyStepForm } from '@/components/onboarding/inmobiliaria/AgencyStepForm'
 import { MembersStepForm, type PendingMembersInvites } from '@/components/onboarding/inmobiliaria/MembersStepForm'
 import { PaymentProviderStepForm } from '@/components/onboarding/inmobiliaria/PaymentProviderStepForm'
@@ -40,7 +41,19 @@ export default function OnboardingInmobiliariaClient() {
 }
 
 function ProvisionedOnboardingWizard() {
-  const { status, sessionId, retry } = useOnboardingProvisioning()
+  const { status, sessionId, retry, provision } = useOnboardingProvisioning()
+
+  // Fresh signups never captured a name and the back rejects empty names —
+  // collect it here and provision explicitly (see useOnboardingProvisioning).
+  if (status === 'needs-name') {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+        <div className="max-w-sm w-full">
+          <OwnerNameStepForm onSubmit={provision} />
+        </div>
+      </div>
+    )
+  }
 
   if (status === 'error') {
     return (

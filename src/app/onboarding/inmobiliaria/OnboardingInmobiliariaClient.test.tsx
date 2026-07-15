@@ -56,6 +56,7 @@ function baseProvisioningResult(overrides: Record<string, unknown> = {}) {
     status: 'ready',
     sessionId: 'sess-provisioned',
     retry: vi.fn(),
+    provision: vi.fn(),
     ...overrides,
   }
 }
@@ -166,6 +167,75 @@ describe('<OnboardingInmobiliariaClient> — session provisioning (work-unit #4)
       retryBtn.click()
     })
     expect(retry).toHaveBeenCalledTimes(1)
+  })
+})
+
+// The /auth signup never captures names — when the hook reports `needs-name`
+// the wizard shows a pre-step collecting the full name, splits it like the
+// canonical onboarding/propietario pattern, and provisions explicitly.
+describe('<OnboardingInmobiliariaClient> — name pre-step', () => {
+  function submitNameForm() {
+    const submitBtn = container.querySelector(
+      '[data-testid="owner-name-step-form"] button[type="submit"]',
+    ) as HTMLButtonElement
+    act(() => {
+      submitBtn.click()
+    })
+  }
+
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams()
+  })
+
+  it('renders the name pre-step and does not mount the wizard nor auto-provision UI', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-name', sessionId: null }),
+    )
+    render()
+
+    expect(container.querySelector('[data-testid="owner-name-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="provisioning-loading"]')).toBeFalsy()
+    expect(mockUseOnboardingSession).not.toHaveBeenCalled()
+  })
+
+  it('splits the full name (first word → firstName, rest → lastName) and provisions', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-name', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), '  Ana María  Pérez Gómez ')
+    submitNameForm()
+
+    expect(provision).toHaveBeenCalledTimes(1)
+    expect(provision).toHaveBeenCalledWith({ firstName: 'Ana', lastName: 'María Pérez Gómez' })
+  })
+
+  it('falls back lastName to firstName for a single-word name', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-name', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana')
+    submitNameForm()
+
+    expect(provision).toHaveBeenCalledWith({ firstName: 'Ana', lastName: 'Ana' })
+  })
+
+  it('blocks submit and shows a hint when the name is empty', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-name', sessionId: null, provision }),
+    )
+    render()
+
+    submitNameForm()
+
+    expect(provision).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Ingresa tu nombre completo para continuar.')
   })
 })
 

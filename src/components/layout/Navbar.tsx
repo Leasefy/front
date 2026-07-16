@@ -44,8 +44,8 @@ const audienceLinks = [
 
 const productLinks = [
   { href: '/productos/inquilino', label: 'Evaluación de inquilinos', icon: ShieldCheck, description: 'Scoring crediticio y verificación de antecedentes' },
-  { href: '/productos/cobranza', label: 'Pagos y recaudo', icon: Wallet, description: 'PSE, tarjeta y efectivo con transferencia automática' },
-  { href: '/productos/crm', label: 'Contratos digitales', icon: FileText, description: 'Firma electrónica con validez legal' },
+  { href: '/productos/cobranza', label: 'Cobranza automática', icon: Wallet, description: 'Recordatorios y seguimiento de mora con IA, sin llamadas manuales' },
+  { href: '/productos/crm', label: 'CRM inmobiliario', icon: FileText, description: 'Leads, visitas y cierres en un solo pipeline comercial' },
   { href: '/productos/matching', label: 'Aplicaciones online', icon: Tray, description: 'Recibe y gestiona candidatos' },
   { href: '/productos/asegurabilidad', label: 'Seguro de arrendamiento', icon: ShieldPlus, description: 'Protección hasta 24 meses ante impagos' },
   { href: '/', label: 'API para desarrolladores', icon: Terminal, description: 'Integra en tu plataforma', comingSoon: true },

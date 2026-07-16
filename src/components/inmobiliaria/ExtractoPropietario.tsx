@@ -120,7 +120,9 @@ export function ExtractoPropietario({
 
   // Get propietario details for bank info
   const { propietarios } = usePropietarios();
-  const { config: agencyConfig } = useInmobiliariaConfig();
+  const { config } = useInmobiliariaConfig();
+  // Real agency profile lives under the `agency` key of GET /inmobiliaria/config.
+  const agencyConfig = config?.agency;
   const propietario = React.useMemo(() => {
     return propietarios.find((p) => p.id === extracto.propietarioId);
   }, [extracto.propietarioId, propietarios]);

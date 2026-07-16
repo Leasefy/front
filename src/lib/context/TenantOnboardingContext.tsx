@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react'
+import { toast } from 'sonner'
 import type { TenantOnboardingData } from '@/lib/auth/types'
 import { apiClient } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -214,11 +215,22 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
   )
 
   const submitOnboarding = useCallback(async () => {
+    // Defense for restored/corrupt drafts: the back rejects empty names with
+    // a 400 (@IsNotEmpty) — never fire a doomed POST. Route back to the name
+    // step instead (mirrors 'needs-name' in use-onboarding-provisioning).
+    const trimmedName = (draft.displayName || '').trim()
+    if (!trimmedName) {
+      toast.error('Cuéntanos tu nombre para completar tu perfil.')
+      setCurrentStep(1)
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      // Split displayName into first/last for backend
-      const nameParts = (draft.displayName || '').trim().split(/\s+/)
-      const firstName = nameParts[0] || ''
+      // Split displayName into first/last for backend (canonical convention:
+      // first word → firstName, rest → lastName, falls back to firstName)
+      const nameParts = trimmedName.split(/\s+/)
+      const firstName = nameParts[0]
       const lastName = nameParts.slice(1).join(' ') || firstName
 
       // Call backend onboarding endpoint
@@ -251,6 +263,9 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       setIsComplete(true)
     } catch (error) {
       console.error('Error submitting tenant onboarding:', error)
+      // Surface the failure (was console-only): the user stays on the step
+      // with the draft intact and can retry.
+      toast.error('No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.')
       throw error
     } finally {
       setIsSubmitting(false)

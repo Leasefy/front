@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   fetchFunnelApplications,
   shortApplicationRef,
@@ -30,10 +30,32 @@ function mockFetch(status: number, body: unknown) {
   } as Response)
 }
 
-describe('fetchFunnelApplications', () => {
+describe('fetchFunnelApplications (real fetch path, prod posture)', () => {
   const realFetch = globalThis.fetch
+  beforeEach(() => {
+    // Prod case: agent URL configured, override var unset → REAL fetch.
+    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://agent.test')
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', undefined)
+  })
   afterEach(() => {
     globalThis.fetch = realFetch
+    vi.unstubAllEnvs()
+  })
+
+  it('fetches for real when the agent URL is set and the override var is unset (prod case)', async () => {
+    const f = mockFetch(200, OK)
+    globalThis.fetch = f
+    await fetchFunnelApplications(AGENCY)
+    expect(f).toHaveBeenCalledTimes(1)
+    expect(String(f.mock.calls[0][0])).toContain('http://agent.test/api/agency/')
+  })
+
+  it('fetches for real when the agent URL is set and the var is explicitly "false"', async () => {
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'false')
+    const f = mockFetch(200, OK)
+    globalThis.fetch = f
+    await fetchFunnelApplications(AGENCY)
+    expect(f).toHaveBeenCalledTimes(1)
   })
 
   it('returns items on 200', async () => {
@@ -68,6 +90,65 @@ describe('fetchFunnelApplications', () => {
     globalThis.fetch = f
     await expect(fetchFunnelApplications('')).rejects.toThrow(/agencia/i)
     expect(f).not.toHaveBeenCalled()
+  })
+})
+
+describe('fetchFunnelApplications (mock mode)', () => {
+  const realFetch = globalThis.fetch
+  afterEach(() => {
+    globalThis.fetch = realFetch
+    vi.unstubAllEnvs()
+  })
+
+  it('returns deterministic items without hitting the network when the agent URL is not configured', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', undefined)
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', undefined)
+    const f = mockFetch(200, OK)
+    globalThis.fetch = f
+
+    const res = await fetchFunnelApplications(AGENCY, { limit: 50 })
+
+    expect(f).not.toHaveBeenCalled()
+    expect(res.items.length).toBeGreaterThanOrEqual(3)
+    expect(res.generatedAt).toBeTruthy()
+  })
+
+  it('returns mock items when NEXT_PUBLIC_USE_MOCK_API === "true" even with the agent URL configured', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://agent.test')
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'true')
+    const f = mockFetch(200, OK)
+    globalThis.fetch = f
+
+    const res = await fetchFunnelApplications(AGENCY)
+
+    expect(f).not.toHaveBeenCalled()
+    expect(res.items.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('covers both verdicts with realistic scores, levels and ISO scoredAt, using stable ids', async () => {
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'true')
+
+    const first = await fetchFunnelApplications(AGENCY)
+    const second = await fetchFunnelApplications(AGENCY)
+
+    const verdicts = new Set(first.items.map((i) => i.verdict))
+    expect(verdicts).toContain('approved')
+    expect(verdicts).toContain('review')
+
+    for (const item of first.items) {
+      expect(item.applicationId).toBeTruthy()
+      expect(typeof item.score).toBe('number')
+      expect(item.level).toBeTruthy()
+      expect(Number.isNaN(new Date(item.scoredAt).getTime())).toBe(false)
+    }
+
+    // Stable ids across calls.
+    expect(second.items.map((i) => i.applicationId)).toEqual(first.items.map((i) => i.applicationId))
+  })
+
+  it('still rejects a missing agencyId in mock mode', async () => {
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'true')
+    await expect(fetchFunnelApplications('')).rejects.toThrow(/agencia/i)
   })
 })
 

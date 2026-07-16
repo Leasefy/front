@@ -26,7 +26,8 @@ import {
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
-import { propertiesApi } from '@/lib/api/properties.service';
+import { propertiesApi, createPublishedWithDraftFallback } from '@/lib/api/properties.service';
+import { uploadPropertyPhotos } from '@/lib/api/property-photos';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { COLOMBIAN_CITIES } from '@/lib/types/property';
 import type { PropertyType } from '@/lib/types/property';
@@ -297,7 +298,7 @@ export function PropertyIACapture() {
     setIsCreating(true);
     setErrorMsg(null);
     try {
-      const payload: Parameters<typeof propertiesApi.create>[0] = {
+      const payload: Parameters<typeof createPublishedWithDraftFallback>[0] = {
         title: form.title,
         description: form.description,
         type: form.type,
@@ -316,7 +317,27 @@ export function PropertyIACapture() {
         payload.longitude = form.longitude;
       }
 
-      const property = await propertiesApi.create(payload);
+      // Publish on create (marketplace contract); on the plan-limit 403 the
+      // helper retries once as DRAFT so the reviewed ficha is never lost.
+      const { property, publishBlocked } = await createPublishedWithDraftFallback(payload);
+
+      if (publishBlocked) {
+        toast.warning(t(k('planLimitDraft')));
+      }
+
+      // The property exists from here on: photo/assign failures must never be
+      // surfaced as a creation error (a retry would duplicate the property).
+      if (photos.length > 0) {
+        const { failed } = await uploadPropertyPhotos(property.id, photos);
+        if (failed.length > 0) {
+          toast.warning(
+            t(k('photosUploadPartial'), {
+              failed: String(failed.length),
+              total: String(photos.length),
+            }),
+          );
+        }
+      }
 
       if (isAdmin && form.title /* admin self-skip handled by manual page */) {
         // mirror /nueva: agents auto-assign themselves; admins assign later from the list

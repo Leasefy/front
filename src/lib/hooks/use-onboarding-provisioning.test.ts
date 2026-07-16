@@ -1,8 +1,13 @@
 /**
  * use-onboarding-provisioning.test.ts — provisions the agent onboarding
- * session for the agency owner via `POST /users/me/onboarding`, handling
- * the `agentSessionId: null` edge case (back created the user row but the
- * agent handoff failed) as a retry-able error, same as a network failure.
+ * session for the agency owner via `POST /users/me/onboarding` with
+ * `userType: 'INMOBILIARIA'` and the `agency: { name, nit }` object (the
+ * back only creates the agency + agent session for that combination).
+ *
+ * The hook never auto-provisions on mount: razón social + NIT are always
+ * captured by the caller first (`status: 'needs-info'`), then posted via
+ * `provision()`. `agentSessionId: null` (back created the rows but the
+ * agent handoff failed) is a retry-able error, same as a network failure.
  *
  * Render harness mirrors use-onboarding-session.test.ts (createRoot + act —
  * no @testing-library/react in this repo).
@@ -15,11 +20,6 @@ import { act } from 'react'
 
 void React // jsx-preserve
 
-const mockUseAuth = vi.fn()
-vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => mockUseAuth(),
-}))
-
 const postUsersOnboardingMock = vi.fn()
 vi.mock('@/lib/api/onboarding-provisioning.service', () => ({
   postUsersOnboarding: (...args: unknown[]) => postUsersOnboardingMock(...args),
@@ -27,10 +27,25 @@ vi.mock('@/lib/api/onboarding-provisioning.service', () => ({
 
 import {
   useOnboardingProvisioning,
-  AGENCY_OWNER_USER_TYPE,
+  INMOBILIARIA_USER_TYPE,
+  type ProvisioningInput,
 } from './use-onboarding-provisioning'
 
 type Hook = ReturnType<typeof useOnboardingProvisioning>
+
+const VALID_INPUT: ProvisioningInput = {
+  firstName: 'Ana',
+  lastName: 'Pérez',
+  agencyName: 'Inmobiliaria Andes SAS',
+  nit: '900123456-7',
+}
+
+const EXPECTED_BODY = {
+  firstName: 'Ana',
+  lastName: 'Pérez',
+  userType: INMOBILIARIA_USER_TYPE,
+  agency: { name: 'Inmobiliaria Andes SAS', nit: '900123456-7' },
+}
 
 let container: HTMLDivElement
 let root: Root
@@ -58,7 +73,6 @@ beforeEach(() => {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  mockUseAuth.mockReturnValue({ user: { firstName: 'Ana', lastName: 'Pérez' } })
 })
 
 afterEach(() => {
@@ -71,35 +85,41 @@ afterEach(() => {
 })
 
 describe('useOnboardingProvisioning', () => {
-  it('calls POST /users/me/onboarding on mount with the agency-owner userType', async () => {
+  it('reports needs-info on mount and never auto-provisions (razón social + NIT are always required)', async () => {
+    const { get } = renderHook()
+    await flush()
+
+    expect(postUsersOnboardingMock).not.toHaveBeenCalled()
+    expect(get().status).toBe('needs-info')
+    expect(get().sessionId).toBeNull()
+  })
+
+  it('provision() posts userType INMOBILIARIA with the agency object and resolves to ready', async () => {
     postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
     const { get } = renderHook()
+    await flush()
 
+    act(() => {
+      get().provision(VALID_INPUT)
+    })
     expect(get().status).toBe('provisioning')
     await flush()
 
     expect(postUsersOnboardingMock).toHaveBeenCalledTimes(1)
-    expect(postUsersOnboardingMock).toHaveBeenCalledWith({
-      firstName: 'Ana',
-      lastName: 'Pérez',
-      userType: AGENCY_OWNER_USER_TYPE,
-    })
-  })
-
-  // (a) agentSessionId present → ready with that id
-  it('resolves to ready with the sessionId when agentSessionId is present', async () => {
-    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
-    const { get } = renderHook()
-    await flush()
-
+    expect(postUsersOnboardingMock).toHaveBeenCalledWith(EXPECTED_BODY)
     expect(get().status).toBe('ready')
     expect(get().sessionId).toBe('sess-abc')
   })
 
-  // (b) agentSessionId === null → error, no sessionId
-  it('resolves to error (no retry-less crash) when agentSessionId is null', async () => {
+  // agentSessionId === null → the back created the user/agency rows but the
+  // agent handoff failed. Retry-able error, NOT ready.
+  it('resolves to error (no sessionId) when the back returns agentSessionId null', async () => {
     postUsersOnboardingMock.mockResolvedValue({ agentSessionId: null, tenantId: 'tenant-1' })
     const { get } = renderHook()
+
+    act(() => {
+      get().provision(VALID_INPUT)
+    })
     await flush()
 
     expect(get().status).toBe('error')
@@ -109,16 +129,23 @@ describe('useOnboardingProvisioning', () => {
   it('resolves to error when the request itself rejects (network/HTTP failure)', async () => {
     postUsersOnboardingMock.mockRejectedValue(new Error('network down'))
     const { get } = renderHook()
+
+    act(() => {
+      get().provision(VALID_INPUT)
+    })
     await flush()
 
     expect(get().status).toBe('error')
     expect(get().sessionId).toBeNull()
   })
 
-  // (d) retry after null → calls provisioning again
-  it('retry() re-runs the provisioning call', async () => {
-    postUsersOnboardingMock.mockResolvedValueOnce({ agentSessionId: null, tenantId: 'tenant-1' })
+  it('retry() re-posts the exact same captured data after a failure', async () => {
+    postUsersOnboardingMock.mockRejectedValueOnce(new Error('network down'))
     const { get } = renderHook()
+
+    act(() => {
+      get().provision(VALID_INPUT)
+    })
     await flush()
     expect(get().status).toBe('error')
 
@@ -130,94 +157,80 @@ describe('useOnboardingProvisioning', () => {
     await flush()
 
     expect(postUsersOnboardingMock).toHaveBeenCalledTimes(2)
+    expect(postUsersOnboardingMock).toHaveBeenLastCalledWith(EXPECTED_BODY)
     expect(get().status).toBe('ready')
     expect(get().sessionId).toBe('sess-retry')
   })
 
-  it('falls back lastName to firstName when the user has a firstName but no lastName', async () => {
-    mockUseAuth.mockReturnValue({ user: { firstName: 'Ana', lastName: '' } })
-    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
-    renderHook()
-    await flush()
-
-    expect(postUsersOnboardingMock).toHaveBeenCalledWith({
-      firstName: 'Ana',
-      lastName: 'Ana',
-      userType: AGENCY_OWNER_USER_TYPE,
-    })
-  })
-})
-
-// The /auth signup never captures names and the back rejects an empty
-// firstName/lastName with a 400 (`@IsNotEmpty`) — so a fresh user must NOT
-// be auto-provisioned; the caller collects the name and provisions explicitly.
-describe('useOnboardingProvisioning — name capture', () => {
-  it('does NOT auto-provision on mount when the user lacks a firstName', async () => {
-    mockUseAuth.mockReturnValue({ user: { firstName: '', lastName: '' } })
+  // The back's createAgency is a non-atomic findFirst-then-create — a fast
+  // double submit must never fire two POSTs for the same owner.
+  it('ignores provision()/retry() while a request is already in flight (double submit posts once)', async () => {
+    let resolveRequest!: (value: unknown) => void
+    postUsersOnboardingMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve
+        }),
+    )
     const { get } = renderHook()
-    await flush()
-
-    expect(postUsersOnboardingMock).not.toHaveBeenCalled()
-    expect(get().status).toBe('needs-name')
-    expect(get().sessionId).toBeNull()
-  })
-
-  it('does NOT auto-provision when there is no user yet', async () => {
-    mockUseAuth.mockReturnValue({ user: null })
-    const { get } = renderHook()
-    await flush()
-
-    expect(postUsersOnboardingMock).not.toHaveBeenCalled()
-    expect(get().status).toBe('needs-name')
-  })
-
-  it('provision({ firstName, lastName }) posts the explicit names and resolves to ready', async () => {
-    mockUseAuth.mockReturnValue({ user: { firstName: '', lastName: '' } })
-    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
-    const { get } = renderHook()
-    await flush()
 
     act(() => {
-      get().provision({ firstName: 'Ana', lastName: 'Pérez Gómez' })
+      get().provision(VALID_INPUT)
     })
-    expect(get().status).toBe('provisioning')
-    await flush()
+    act(() => {
+      get().provision(VALID_INPUT)
+    })
+    act(() => {
+      get().retry()
+    })
 
     expect(postUsersOnboardingMock).toHaveBeenCalledTimes(1)
-    expect(postUsersOnboardingMock).toHaveBeenCalledWith({
-      firstName: 'Ana',
-      lastName: 'Pérez Gómez',
-      userType: AGENCY_OWNER_USER_TYPE,
+    expect(get().status).toBe('provisioning')
+
+    await act(async () => {
+      resolveRequest({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
+      await Promise.resolve()
+      await Promise.resolve()
     })
     expect(get().status).toBe('ready')
     expect(get().sessionId).toBe('sess-abc')
+
+    // Once settled, retry() is allowed again.
+    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-2', tenantId: 'tenant-1' })
+    act(() => {
+      get().retry()
+    })
+    await flush()
+    expect(postUsersOnboardingMock).toHaveBeenCalledTimes(2)
   })
 
-  it('retry() after a failed explicit provision re-posts the same explicit names', async () => {
-    mockUseAuth.mockReturnValue({ user: { firstName: '', lastName: '' } })
-    postUsersOnboardingMock.mockRejectedValueOnce(new Error('network down'))
+  it('retry() before any provision() does nothing (no data to re-post)', async () => {
     const { get } = renderHook()
     await flush()
 
-    act(() => {
-      get().provision({ firstName: 'Ana', lastName: 'Pérez' })
-    })
-    await flush()
-    expect(get().status).toBe('error')
-
-    postUsersOnboardingMock.mockResolvedValueOnce({ agentSessionId: 'sess-retry', tenantId: 'tenant-1' })
     act(() => {
       get().retry()
     })
     await flush()
 
-    expect(postUsersOnboardingMock).toHaveBeenCalledTimes(2)
-    expect(postUsersOnboardingMock).toHaveBeenLastCalledWith({
-      firstName: 'Ana',
-      lastName: 'Pérez',
-      userType: AGENCY_OWNER_USER_TYPE,
+    expect(postUsersOnboardingMock).not.toHaveBeenCalled()
+    expect(get().status).toBe('needs-info')
+  })
+
+  // The back rejects an empty lastName with a 400 (`@IsNotEmpty`) — mirror
+  // the canonical split in src/app/onboarding/propietario/page.tsx.
+  it('falls back lastName to firstName when lastName is empty', async () => {
+    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
+    const { get } = renderHook()
+
+    act(() => {
+      get().provision({ ...VALID_INPUT, lastName: '' })
     })
-    expect(get().status).toBe('ready')
-    expect(get().sessionId).toBe('sess-retry')
+    await flush()
+
+    expect(postUsersOnboardingMock).toHaveBeenCalledWith({
+      ...EXPECTED_BODY,
+      lastName: 'Ana',
+    })
   })
 })

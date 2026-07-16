@@ -21,8 +21,10 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-/** Map a backend user response to our frontend User type */
-function mapBackendUser(data: Record<string, unknown>): User {
+/** Map a backend user response to our frontend User type.
+ *  `emailConfirmedAt` comes from the Supabase session (the backend does not
+ *  track email confirmation) — pass it through when a session is at hand. */
+function mapBackendUser(data: Record<string, unknown>, emailConfirmedAt?: string): User {
   const backendRole = (data.role as string) || 'TENANT'
   const firstName = (data.firstName as string) || ''
   const lastName = (data.lastName as string) || ''
@@ -65,6 +67,7 @@ function mapBackendUser(data: Record<string, unknown>): User {
     birthDate: (data.birthDate as string) || undefined,
     emergencyContactName: (data.emergencyContactName as string) || undefined,
     emergencyContactPhone: (data.emergencyContactPhone as string) || undefined,
+    emailConfirmedAt,
     role: frontendRole,
     backendRole: backendRole as import('./types').BackendRole,
     onboardingCompleted: !!data.firstName,
@@ -87,6 +90,7 @@ function mapSupabaseUser(session: Session): User {
     firstName: meta.first_name || fullName.split(' ')[0] || '',
     lastName: meta.last_name || fullName.split(' ').slice(1).join(' ') || '',
     avatar: meta.avatar_url || meta.picture || undefined,
+    emailConfirmedAt: supabaseUser.email_confirmed_at ?? undefined,
     role: 'tenant',
     // When the backend is unreachable we have no way to confirm onboarding status.
     // Default to true so the user isn't incorrectly sent to the onboarding flow —
@@ -180,7 +184,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }),
         )
       }
-      return { user: mapBackendUser(data), needsOnboarding: false }
+      return {
+        user: mapBackendUser(data, session?.user?.email_confirmed_at ?? undefined),
+        needsOnboarding: false,
+      }
     } catch (err) {
       // JWT valid but user doesn't exist in public.users yet → needs onboarding
       if (isUserNotFoundError(err)) {
@@ -436,9 +443,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [])
 
   /** Update user profile fields and refresh local user state */
-  const updateProfile = useCallback(async (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }): Promise<void> => {
+  const updateProfile = useCallback(async (data: { firstName?: string | null; lastName?: string | null; phone?: string | null; rut?: string | null; address?: string | null; birthDate?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null }): Promise<void> => {
     const updated = await apiClient.patch<Record<string, unknown>>('/users/me', data)
-    setUser(mapBackendUser(updated))
+    // PATCH /users/me has no session at hand — keep the confirmation stamp we already had
+    setUser((prev) => ({ ...mapBackendUser(updated, prev?.emailConfirmedAt) }))
   }, [])
 
   /** Sign out and clear state. Synchronous cleanup runs first; backend

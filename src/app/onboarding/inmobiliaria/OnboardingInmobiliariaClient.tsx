@@ -43,13 +43,15 @@ export default function OnboardingInmobiliariaClient() {
 function ProvisionedOnboardingWizard() {
   const { status, sessionId, retry, provision } = useOnboardingProvisioning()
 
-  // Fresh signups never captured a name and the back rejects empty names —
-  // collect it here and provision explicitly (see useOnboardingProvisioning).
-  if (status === 'needs-name') {
+  // Provisioning always needs the owner's name plus the agency's razón
+  // social and NIT — collect them here and provision explicitly (see
+  // useOnboardingProvisioning). The form stays mounted while the request is
+  // in flight so the submit button can disable itself (double-submit guard).
+  if (status === 'needs-info' || status === 'provisioning') {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-6">
         <div className="max-w-sm w-full">
-          <OwnerNameStepForm onSubmit={provision} />
+          <OwnerNameStepForm onSubmit={provision} isSubmitting={status === 'provisioning'} />
         </div>
       </div>
     )

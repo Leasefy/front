@@ -626,7 +626,15 @@ export function initLandingFx(): () => void {
     if(!h2) return;
     var wis = h2.querySelectorAll('.wi');
     Array.prototype.forEach.call(wis, function(wi){
-      if(wi.__ch) return;
+      if(wi.__ch){
+        /* Ya se dividió en un montaje anterior sobre este mismo DOM (p.ej. el
+           doble-invoke de efectos de React 18 Strict Mode en dev, o un remount
+           por navegación cliente que reutiliza el DOM persistido) — reusar los
+           .ch existentes en vez de descartarlos, o el arreglo de este cierre
+           queda vacío para siempre y el titular nunca avanza de opacity:0. */
+        Array.prototype.forEach.call(wi.querySelectorAll('.ch'), function(ch){ arr.push(ch); });
+        return;
+      }
       wi.__ch = 1;
       var txt = wi.textContent;
       wi.textContent = '';
@@ -1153,9 +1161,16 @@ export function initLandingFx(): () => void {
       var zp = 0;
       if(arqStick && window.innerWidth >= 1024){
         var travel = ar.height - arqStick.offsetHeight;
-        zp = travel > 40 ? clamp01(-ar.top / travel) : 0;
+        /* rawZp (sin recortar) distingue "recién completado" de "hace rato que
+           pasamos de largo": una vez el sticky se despega (deja de pinnearse),
+           su getBoundingClientRect() natural sigue moviéndose con el scroll, y
+           sin este freno el "deshacer transform del frame anterior" de abajo
+           lo confunde con desplazamiento propio — la traslación crece sin
+           límite para siempre en vez de sostenerse en el estado final. */
+        var rawZp = travel > 40 ? (-ar.top / travel) : -1;
+        zp = clamp01(rawZp);
         var zt = zp < 0.5 ? 2 * zp * zp : 1 - Math.pow(-2 * zp + 2, 2) / 2;
-        if(zp > 0 && cols.length === 3){
+        if(rawZp > 0 && rawZp <= 1 && cols.length === 3){
           if(!zoomC){
             var h3z = cols[2].querySelector('h3');
             var fr3 = (h3z || cols[2]).getBoundingClientRect();

@@ -10,28 +10,31 @@ Una plataforma de administración de arriendos para el mercado colombiano donde 
 
 Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Agentes → Resultado debe funcionar con autonomía inteligente y escalamiento a humano cuando se requiera una decisión.
 
-## Current Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (Frontend-First)
+## Current Milestone: v7.0 — Portal del Inquilino (Frontend-First)
 
-**Goal:** Que TODAS las secciones de un ERP inmobiliario existan en el panel `panel/inmobiliaria` (facturación, conciliación bancaria, egresos/tesorería, informes contables, PQRS, agenda) de forma **aditiva y sin romper el CRM existente**, más los momentos autopilot que no dependen del motor backend (insights proactivos, creación de terceros por IA, captura de propiedad por foto+audio). Es el arranque **frontend-first** de un programa multi-repo de 6 milestones.
+**Problema (P1):** después de firmar, el inquilino **solo tiene a quién escribir si hay un problema**. El producto está construido para **cerrar** (funnel de adquisición), no para **operar la relación** → mora, quejas, menor renovación, mala reputación. Canal actual: WhatsApp + llamadas.
 
-**Principio clave:** El diferencial no son más módulos, es que **el sistema opere la inmobiliaria** ("¿qué hace esto que no haga un Excel?"). v6.0 deja el FRENTE del ERP+CRM+Autopilot completo (UI + contrato de api-client); los motores (DIAN, conciliación real, posteo contable, egreso neto autoritativo) llegan en milestones de backend M1–M3 en `back-main`/`agent`.
+**Goal:** Darle al inquilino un portal donde **opere su arriendo** (pagar, pedir, ver, seguir, acordar, comunicar), no solo un canal de queja. El portal `/inquilino` **ya existe** (~55-60% cableado a datos reales, con firma electrónica OTP), pero es un funnel de adquisición **sin capa de operación post-firma**. v7.0 **suma** esa capa + **sube parcial→real** 3 pilares + **limpia** superficies fake.
 
-**⛔ Restricción dura:** ADITIVO — no romper el CRM/módulos existentes. Todo entra como rutas/módulos nuevos vía `canAccess(module,'view')`. Leer `docs/DESIGN.md` antes de cualquier UI.
+**Principio clave:** El diferencial no es "un portal más", es que el inquilino **opere la relación**. Frontend-first: UI + contrato de api-client + empty-states honestos ahora; la data real (Wompi productivo, rutas/RLS tenant en `agent`, endpoints lease-scoped NestJS) se cablea detrás — igual que v6.0.
 
-**Target features (Phases v6-01..v6-08 — namespace `v6-NN` para no colisionar con el stream `agent` v2.1-frontend en mvp):**
-- [x] **v6-01** IA Unificada & Command Center — nav agrupada + landing "Hoy" ✅
-- [ ] **v6-02** Facturación ⭐ — venta/compra, FE-DIAN (estado), notas débito/crédito, recurrente
-- [ ] **v6-03** Conciliación bancaria — cargar fuente, matches, parciales/dup/no-identificados, cola revisión
-- [ ] **v6-04** Egresos a propietarios / Tesorería — neto + comprobante, sobre dispersiones
-- [ ] **v6-05** Informes & Insights — catálogo de informes + "de informes a insights"
-- [ ] **v6-06** PQRS / Solicitudes + Agenda interna
-- [ ] **v6-07** Creación de terceros por IA — foto/audio → IA → prellena
-- [ ] **v6-08** Captura de propiedad foto+audio (stretch)
+**⛔ Restricción dura:** ADITIVO — no romper el portal `/inquilino` existente ni el CRM. Reusar contratos (`pqrs.types.ts`, `tenant-payment-requests.types.ts`, `SignatureForm`, patrón Wompi de avalúos), NO forkear. Leer `docs/DESIGN.md` antes de cualquier UI.
 
-**Backbone:** `.planning/ERP-CRM-AUTOPILOT-PROGRAM.md` · **Gap:** `.planning/research/ERP-VISION/GAP-ANALYSIS.md` · **Detalle:** `milestones/v6.0-{REQUIREMENTS,ROADMAP}.md`
-**Arquitectura de referencia:** `docs/AI-AGENT-ARCHITECTURE.md`
+**Target features (6 pilares + limpieza — namespace de fases `v7-NN`):**
+- [ ] **Pagos** — subir de PSE-mock a Wompi/Bold real, comprobantes PDF, autopago
+- [ ] **Solicitudes / PQRS** — abrir/seguir tickets con fotos (reusa `pqrs.types.ts`, SLA 15 días)
+- [ ] **Documentos** — docs del arriendo (contrato, paz y salvo, recibos, póliza, cert. retención), Habeas Data
+- [ ] **Estado de casos** — "mis casos" (PQRS + mantenimiento + acuerdos + responsable) — hub que fija P1
+- [ ] **Acuerdos de pago** — ver/aceptar/pagar acuerdo aprobado por agencia (nunca auto-aprueba, T-323)
+- [ ] **Comunicación** — chat atado al arriendo/caso (hoy scoped a la aplicación); WhatsApp como canal
+- [ ] **Limpieza** — dashboard con estado real, perfil real (quitar datos chilenos mock), config, dead code
 
-> v5.0 (Agency Plan-Gated Features) quedó **pausado** 2026-05-12 (Phases 1–33 completas; items diferidos: Automatic Reminders, Contract Expiry Reminders). v6.0 lo reemplaza como milestone activo.
+**Guardrails legales (NO negociables):** Ley 2300/2023 (frecuencia de contacto, no preguntar "por qué" la mora), T-323/2024 + SIC 001/2025 (acuerdos no auto-aprueban), Habeas Data 1581/2012 (docs), SLA PQRS 15 días (Ley 1480/2011), saldo desde única fuente de verdad.
+
+**Gap analysis + research:** `.planning/research/portal-inquilino/GAP-ANALYSIS.md` (+ `AUDIT-A/B`, `FEATURES`, `PITFALLS`, `ARCHITECTURE`, `STACK`) · **Detalle:** `REQUIREMENTS.md` + `ROADMAP.md`
+**Arquitectura de referencia:** `docs/AI-AGENT-ARCHITECTURE.md` · **Post-firma:** `POST_APPROVAL_STRATEGY.md`
+
+> **v6.0** (Backoffice Unificado ERP·CRM·Autopilot) quedó **COMPLETO** (8/8, frontend-first; motores DIAN/conciliación/ledger → programa M1–M3). **v5.0** (Agency Plan-Gated) quedó **pausado** 2026-05-12.
 
 ## Requirements
 
@@ -53,7 +56,20 @@ Si todo lo demás falla, el flujo conversacional Usuario → Orquestador → Age
 
 ### Active
 
-#### v6.0 — Backoffice Unificado ERP·CRM·Autopilot (current, frontend-first)
+#### v7.0 — Portal del Inquilino (current, frontend-first)
+
+Lista completa de REQ-IDs en `.planning/REQUIREMENTS.md`. Categorías (por pilar):
+- **PAGO** — pagos: PSE-mock → Wompi/Bold real, comprobantes, autopago
+- **SOLI** — solicitudes/PQRS del inquilino (reusa `pqrs.types.ts`, SLA 15 días)
+- **DOCU** — documentos del arriendo (contrato, paz y salvo, recibos, póliza, cert. retención)
+- **CASO** — estado de casos ("mis casos" unificado) — hub que fija P1
+- **ACUE** — acuerdos de pago (ver/aceptar/pagar; nunca auto-aprueba, T-323)
+- **COMU** — comunicación atada al arriendo/caso (hoy scoped a la aplicación)
+- **BASE** — limpieza: dashboard real, perfil real, config, dead code
+
+Aditivo, sin romper el portal `/inquilino` ni el CRM. Data real (Wompi productivo, RLS tenant en `agent`, endpoints lease-scoped) → detrás, frontend-first.
+
+#### v6.0 — Backoffice Unificado ERP·CRM·Autopilot (shipped, frontend-first)
 
 Lista completa de REQ-IDs en `milestones/v6.0-REQUIREMENTS.md`. Categorías:
 - **UNIF** — IA unificada & command center (nav agrupada + landing Operación)
@@ -279,5 +295,22 @@ applicationId, hostId, note, createdAt
 | WhatsApp via Twilio | Canal dominante en Colombia, API madura | — Pending |
 | Conversación > Dashboard | El chat es la interfaz principal, dashboard es vista pasiva | — Pending |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-05-29 after milestone v6.0 initialization (Backoffice Unificado ERP·CRM·Autopilot, frontend-first)*
+*Last updated: 2026-07-16 after milestone v7.0 initialization (Portal del Inquilino, frontend-first). v6.0 marcado COMPLETO.*

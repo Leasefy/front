@@ -103,6 +103,16 @@ describe('<BlogArticle>', () => {
     }
   })
 
+  it('groups consecutive numbered list items into a single <ol>, not one <ol> per item', () => {
+    act(() => {
+      root.render(<BlogArticle post={post} related={related} />)
+    })
+    const body = container.querySelector('[data-testid="article-body"]') as HTMLElement
+    const lists = body.querySelectorAll('ol')
+    expect(lists.length).toBe(1)
+    expect(lists[0].children.length).toBe(5)
+  })
+
   it('omits the related section entirely when there are no related posts', () => {
     act(() => {
       root.render(<BlogArticle post={post} related={[]} />)

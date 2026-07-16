@@ -41,6 +41,7 @@ import { PRODUCTS, PRODUCT_SLUGS } from '@/lib/landing/products'
 export function MegaMenu() {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
   const products = PRODUCT_SLUGS.map((slug) => PRODUCTS[slug])
   const systemProducts = products.filter((product) => product.eyebrow.startsWith('Sistema'))
   const agentProducts = products.filter((product) => product.eyebrow.startsWith('Agentes'))
@@ -49,11 +50,16 @@ export function MegaMenu() {
     if (!open) return
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
     }
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        const focusWasInsidePanel = containerRef.current.contains(document.activeElement)
         setOpen(false)
+        if (focusWasInsidePanel) triggerRef.current?.focus()
       }
     }
 
@@ -74,6 +80,7 @@ export function MegaMenu() {
       onMouseLeave={() => setOpen(false)}
     >
       <button
+        ref={triggerRef}
         type="button"
         className="landing-mega__trigger"
         aria-expanded={open}

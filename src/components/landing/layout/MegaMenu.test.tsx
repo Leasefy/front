@@ -109,4 +109,21 @@ describe('<MegaMenu>', () => {
 
     expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
   })
+
+  it('returns focus to the trigger on Escape when focus was inside the panel', () => {
+    openMenu()
+    const trigger = container.querySelector('[aria-controls="landing-mega-panel"]') as HTMLButtonElement
+    const panelLink = container.querySelector('[data-testid="mega-menu-tile"]') as HTMLAnchorElement
+    act(() => {
+      panelLink.focus()
+    })
+    expect(document.activeElement).toBe(panelLink)
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
 })

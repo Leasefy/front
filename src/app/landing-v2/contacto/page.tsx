@@ -1,5 +1,12 @@
-import ComingSoon from "@/components/landing-v2/ComingSoon";
+import type { Metadata } from "next";
+import ContactPage from "@/components/landing-v2/ContactPage";
+
+export const metadata: Metadata = {
+  title: "Contacto — Leasefy",
+  description: "Hablemos de tu operación. Te mostramos, con tus propios casos, cómo se ve en piloto automático.",
+  robots: { index: false, follow: false },
+};
 
 export default function LandingV2ContactoPage() {
-  return <ComingSoon eyebrow="Contacto" title="La página de contacto llega en la Fase 3" />;
+  return <ContactPage />;
 }

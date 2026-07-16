@@ -1,5 +1,12 @@
-import ComingSoon from "@/components/landing-v2/ComingSoon";
+import type { Metadata } from "next";
+import BlogPage from "@/components/landing-v2/BlogPage";
+
+export const metadata: Metadata = {
+  title: "Blog — Leasefy",
+  description: "Ideas, guías y tendencias del mercado inmobiliario en Colombia.",
+  robots: { index: false, follow: false },
+};
 
 export default function LandingV2BlogPage() {
-  return <ComingSoon eyebrow="Blog" title="El blog llega en la Fase 3" />;
+  return <BlogPage />;
 }

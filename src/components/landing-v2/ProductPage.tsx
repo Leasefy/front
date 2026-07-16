@@ -4,6 +4,8 @@
 import { useEffect, useRef } from "react";
 import { PRODUCTS, TEXOF } from "./products-data";
 import LogoDefs from "./LogoDefs";
+import SiteFooter from "./SiteFooter";
+import ClosingBanner from "./ClosingBanner";
 
 /**
  * ProductPage — port fiel de las páginas internas de producto (estilo Cohere) del
@@ -107,75 +109,6 @@ function VgCard({ v }: { v: any }) {
   );
 }
 
-// ---- cierre + footer (fieles al home) ----
-function ClosingBanner() {
-  return (
-    <section className="sec" id="pp-closer" style={{ padding: "80px 0 0" }}>
-      <div className="container">
-        <div className="banner in">
-          <div className="banner-photo" aria-hidden="true" />
-          <img className="banner-video" alt="" aria-hidden="true" data-vsrc="/landing-v2/assets/6eb389ad5e.webp" />
-          <div className="banner-veil" aria-hidden="true" />
-          <div className="banner-in">
-            <h2 style={{ maxWidth: 760 }}>Pon tu operación en piloto&nbsp;automático y dedícate a traer clientes.</h2>
-            <div className="bcta in">
-              <a className="btn inverse lg" href="mailto:hola@leasefy.com">Hablemos</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SiteFooter() {
-  return (
-    <footer>
-      <div className="fstrip" aria-hidden="true"><div className="lbg" /></div>
-      <div className="container">
-        <div className="fgrid2">
-          <div className="fbrand in">
-            <span className="logo flogo"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></span>
-            <p>El sistema operativo inteligente para inmobiliarias: CRM, ERP y agentes AI para operar arriendos de punta a punta.</p>
-            <span className="fstatus">
-              <span className="pingw" style={{ width: 6, height: 6 }}><span className="pinga" style={{ background: "rgba(52,211,153,.6)" }} /><span className="pingb" style={{ width: 6, height: 6, background: "#34d399" }} /></span>
-              Operando con normalidad
-            </span>
-            <div className="btns">
-              <a className="btn primary sm" href="http://localhost:3001/registro" target="_blank" rel="noopener">Empezar ahora</a>
-              <a className="btn odark sm" href="https://wa.me/573000000000" target="_blank" rel="noopener">Escribir por WhatsApp</a>
-            </div>
-          </div>
-          <div />
-          <div className="fcol in">
-            <p className="k">Producto</p>
-            <ul>
-              <li><a href="/landing-v2/p/crm">CRM inmobiliario</a></li>
-              <li><a href="/landing-v2/p/erp">ERP de arriendos</a></li>
-              <li><a href="/landing-v2/p/asegurabilidad">Asegurabilidad</a></li>
-              <li><a href="/landing-v2/p/matching">Matching</a></li>
-              <li><a href="/landing-v2/p/cobranza">Cobranza</a></li>
-            </ul>
-          </div>
-          <div className="fcol in">
-            <p className="k">Empresa</p>
-            <ul>
-              <li><a href="/landing-v2/blog">Blog</a></li>
-              <li><a href="/landing-v2/contacto">Contacto</a></li>
-              <li><a href="mailto:hola@leasefy.com">Soporte</a></li>
-            </ul>
-          </div>
-        </div>
-        <div className="wm" aria-hidden="true"><div /></div>
-        <div className="fbot">
-          <p>© 2026 Leasefy. Todos los derechos reservados.</p>
-          <span className="fbr"><span>Medellín, Colombia · CRM · ERP · Agentes AI</span><a className="ftop" href="/landing-v2">Volver al inicio <span>↑</span></a></span>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 const SHEAD = {
   feats: { k: "Por qué importa", h: "Lo que cambia en tu operación", l: "Tres cambios que se sienten desde la primera semana de operación." },
   caps: { k: "Capacidades", h: "Qué hace por ti", l: "Lo esencial, sin letra menuda." },
@@ -206,38 +139,6 @@ export default function ProductPage({ slug }: { slug: string }) {
       disposers.push(() => io.disconnect());
     } else {
       items.forEach((el) => el.classList.add("pin"));
-    }
-
-    // Wordmark del footer (Leasefy.)
-    const wm = host.querySelector<HTMLElement>(".wm > div") || host.querySelector<HTMLElement>(".wm");
-    if (wm && !wm.childElementCount) {
-      "Leasefy.".split("").forEach((ch, i) => {
-        const s = document.createElement("span");
-        s.textContent = ch;
-        s.style.setProperty("--d", `${0.1 + i * 0.05}s`);
-        if (ch === ".") s.className = "bd";
-        wm.appendChild(s);
-      });
-    }
-
-    // "Video" WebP del cierre: carga diferida + funde a foto
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const banner = host.querySelector<HTMLElement>(".banner");
-    const vid = host.querySelector<HTMLImageElement>(".banner-video");
-    if (banner && vid) {
-      if (reduced) banner.classList.add("vdone");
-      else {
-        let fired = false;
-        const finish = () => { if (!fired) { fired = true; banner.classList.add("vdone"); } };
-        vid.addEventListener("load", () => setTimeout(finish, 13200));
-        vid.addEventListener("error", finish);
-        const arm = () => { if (vid.src) return; const s = vid.getAttribute("data-vsrc"); if (s) { vid.src = s; vid.removeAttribute("data-vsrc"); } };
-        if ("IntersectionObserver" in window) {
-          const vio = new IntersectionObserver((es) => { if (es[0]?.isIntersecting) { arm(); vio.disconnect(); } }, { threshold: 0.2, rootMargin: "0px 0px 15% 0px" });
-          vio.observe(banner);
-          disposers.push(() => vio.disconnect());
-        } else arm();
-      }
     }
 
     return () => { for (const dp of disposers) { try { dp(); } catch { /* noop */ } } };

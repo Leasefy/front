@@ -1707,3 +1707,10 @@ html.product-open .pp-hero>*:nth-child(5){animation-delay:.22s}
   opacity:1;visibility:visible;transform:none;
   -webkit-overflow-scrolling:auto;transition:none;
 }
+
+/* rutas contacto/blog (Fase 3): fuera del modo overlay -> flujo normal */
+#contactPage.cp-route,#blogPage.bp-route{
+  position:static;inset:auto;z-index:auto;overflow:visible;
+  opacity:1;visibility:visible;transform:none;
+  -webkit-overflow-scrolling:auto;transition:none;
+}

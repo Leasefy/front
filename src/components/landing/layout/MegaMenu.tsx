@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { PRODUCTS, PRODUCT_SLUGS } from '@/lib/landing/products'
 
@@ -30,15 +30,44 @@ import { PRODUCTS, PRODUCT_SLUGS } from '@/lib/landing/products'
  * Groups products by `eyebrow` prefix ("Sistema" vs "Agentes AI") instead
  * of a hardcoded slug list, so the grouping stays correct if `PRODUCTS`
  * ever reorders or gains an entry.
+ *
+ * A11y (R1 fix): rendered as a plain disclosure panel, not an ARIA menu —
+ * the panel holds regular links, not `menuitem`s, so `role="menu"` was a
+ * mismatch with no keyboard support to back it up. The trigger's
+ * `aria-expanded`/`aria-controls` plus the parent `<nav>` landmark (see
+ * `LandingHeader`) are the real a11y contract here. Escape and
+ * click-outside both close the panel per docs/DESIGN.md overlay rules.
  */
 export function MegaMenu() {
   const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const products = PRODUCT_SLUGS.map((slug) => PRODUCTS[slug])
   const systemProducts = products.filter((product) => product.eyebrow.startsWith('Sistema'))
   const agentProducts = products.filter((product) => product.eyebrow.startsWith('Agentes'))
 
+  useEffect(() => {
+    if (!open) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [open])
+
   return (
     <div
+      ref={containerRef}
       className="landing-mega"
       data-testid="mega-menu"
       onMouseEnter={() => setOpen(true)}
@@ -55,7 +84,7 @@ export function MegaMenu() {
       </button>
 
       {open && (
-        <div id="landing-mega-panel" className="landing-mega__panel" role="menu" data-testid="mega-menu-panel">
+        <div id="landing-mega-panel" className="landing-mega__panel" data-testid="mega-menu-panel">
           <div className="landing-mega__col">
             <p className="landing-mega__kicker">El sistema</p>
             {systemProducts.map((product, i) => (

@@ -79,4 +79,34 @@ describe('<MegaMenu>', () => {
     expect(cols[1].textContent).toContain('Agentes AI')
     expect(cols[1].querySelectorAll('[data-testid="mega-menu-tile"]').length).toBe(6)
   })
+
+  it('does not use role="menu" — it is a plain disclosure panel, not an ARIA menu', () => {
+    openMenu()
+    const panel = container.querySelector('[data-testid="mega-menu-panel"]')
+    expect(panel?.getAttribute('role')).toBeNull()
+  })
+
+  it('closes on Escape', () => {
+    openMenu()
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeTruthy()
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
+    const trigger = container.querySelector('[aria-controls="landing-mega-panel"]')
+    expect(trigger?.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('closes when clicking outside the menu', () => {
+    openMenu()
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeTruthy()
+
+    act(() => {
+      document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
+  })
 })

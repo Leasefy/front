@@ -29,10 +29,20 @@
  *   (inline @2619, `.tframe .tpimg`).
  * - `LANDING_CLOSING.bannerBackdrop`: the closing section's animated
  *   Ken-Burns backdrop photo (inline @824, `.banner-photo`).
- * - `LANDING_CLOSING.cierre`: the ~11MB closing WebP still (inline @2690,
- *   `.banner-video#bvid`) — single source of truth, copied verbatim with
- *   no re-encode per design ADR-7. Rendered lazily (never `priority`) since
- *   it sits at the end of a long scroll narrative, not the initial LCP.
+ * - `LANDING_CLOSING.cierre`: the closing section's centerpiece (inline
+ *   @2690, `.banner-video#bvid`/`data-vsrc`) — turned out to be a 234-frame
+ *   **animated WebP** (~13s, plays once), not a static photo; that's why the
+ *   standalone named it "video". `next/image`'s built-in optimizer refuses
+ *   to resize animated images (confirmed at runtime: identical byte count
+ *   for every `w=` variant, plus an explicit server warning) — the resize
+ *   MUST happen at asset-build time. Original extraction was 1600x900 /
+ *   8.79MB; pre-downscaled once to 720x405 @ q60 (3.47MB, still animated,
+ *   all 234 frames preserved) per design's own documented fallback ("if the
+ *   optimizer passes it through, pre-downscale the source"). Still heavy for
+ *   a single asset — the real fix is the already-tracked mp4 + poster-jpg
+ *   swap (deferred: originals unavailable). Rendered with `unoptimized`
+ *   (next/image cannot help) and lazily (never `priority`) since it sits at
+ *   the end of a long scroll narrative, not the initial LCP.
  */
 
 export type TextureId = 't1' | 't2' | 't3' | 't4' | 't5' | 't6' | 't7'
@@ -105,8 +115,8 @@ export const LANDING_CLOSING = {
   // reading the 8MB source file from the client).
   cierre: {
     src: '/landing/closing/cierre.webp',
-    width: 1600,
-    height: 900,
+    width: 720,
+    height: 405,
     blurDataURL:
       'data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADQAQCdASoMAAcAA4BaJQBOgBnOxzN/AADOPlLvKfdHpYKkkck020Qu2WOm/7ud/YPM6yeNGpDjIJ84nbjIfyIGz3sPEAAA',
   } satisfies LandingAssetWithBlur,

@@ -81,6 +81,15 @@ describe('<ClosingImage>', () => {
     expect(props.src).toContain('cierre.webp')
   })
 
+  it('marks the closing asset unoptimized (next/image cannot resize animated WebP)', () => {
+    act(() => {
+      root.render(<ClosingImage />)
+    })
+    const img = container.querySelector('[data-testid="next-image-mock"]')!
+    const props = JSON.parse(img.getAttribute('data-props')!)
+    expect(props.unoptimized).toBe(true)
+  })
+
   it('renders inside a fixed-aspect-ratio box to avoid layout shift', () => {
     act(() => {
       root.render(<ClosingImage />)

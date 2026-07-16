@@ -16,11 +16,16 @@ export function LandingImage({ width, height, alt, ...rest }: LandingImageProps)
 }
 
 /**
- * The ~11MB closing WebP still (`landing/closing/cierre.webp`). It sits at
- * the END of a long scroll narrative, so it is NOT the initial-viewport LCP
- * element — never mark it `priority`. Rendered lazily with a tiny
- * blurDataURL placeholder inside a fixed-aspect-ratio box so there is no
- * layout shift while it loads (design ADR-7).
+ * The closing section's animated WebP (`landing/closing/cierre.webp`,
+ * 234 frames). `next/image` refuses to resize animated images (verified at
+ * runtime — every `w=` variant returns the exact same byte count), so
+ * `unoptimized` is set deliberately: it isn't a missed opportunity, it is
+ * documenting a real constraint. The file itself was pre-downscaled once at
+ * asset-build time (see assets.ts) since that is the only place resizing an
+ * animated WebP actually works. It sits at the END of a long scroll
+ * narrative, so it is NOT the initial-viewport LCP element — never mark it
+ * `priority`. Rendered lazily with a tiny blurDataURL placeholder inside a
+ * fixed-aspect-ratio box so there is no layout shift while it loads.
  */
 export function ClosingImage({ className }: { className?: string }) {
   const { cierre } = LANDING_CLOSING
@@ -35,6 +40,7 @@ export function ClosingImage({ className }: { className?: string }) {
         alt=""
         fill
         loading="lazy"
+        unoptimized
         placeholder="blur"
         blurDataURL={cierre.blurDataURL}
         sizes="100vw"

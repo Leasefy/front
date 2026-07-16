@@ -56,24 +56,30 @@ export function FinanceEquation() {
 
       <div className="landing-finance__panel" data-testid="finance-equation-panel">
         <div className="landing-finance__panel-header">
-          <span>CARTERA · JULIO 2026</span>
+          <span>CARTERA · JULIO</span>
           <span>ACTUALIZADO HOY</span>
         </div>
         <dl className="landing-finance__kpis">
           <div>
             <dt>Pagos recibidos</dt>
-            <dd>$184,2M</dd>
-            <span>46 contratos</span>
+            <dd>
+              $184,2M
+              <span>46 contratos</span>
+            </dd>
           </div>
           <div>
             <dt>Pendientes</dt>
-            <dd>$12,8M</dd>
-            <span>7 contratos</span>
+            <dd>
+              $12,8M
+              <span>7 contratos</span>
+            </dd>
           </div>
           <div>
             <dt>En mora</dt>
-            <dd>$4,1M</dd>
-            <span>3 casos</span>
+            <dd>
+              $4,1M
+              <span>3 casos</span>
+            </dd>
           </div>
         </dl>
       </div>

@@ -617,6 +617,8 @@
   color: var(--landing-ink);
 }
 .landing-scope .landing-finance__kpis span {
+  display: block;
+  margin-top: 4px;
   font-size: 11px;
   color: var(--landing-muted);
 }

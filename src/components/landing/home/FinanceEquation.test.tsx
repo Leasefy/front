@@ -80,6 +80,28 @@ describe('<FinanceEquation>', () => {
     )
   })
 
+  it('renders KPI groups as a valid dl -> div(dt+dd) structure, no stray direct children', () => {
+    act(() => {
+      root.render(<FinanceEquation />)
+    })
+    const dl = container.querySelector('.landing-finance__kpis') as HTMLElement
+    const groups = Array.from(dl.children)
+    expect(groups.length).toBeGreaterThan(0)
+    for (const group of groups) {
+      const childTags = Array.from(group.children).map((child) => child.tagName)
+      expect(childTags).toEqual(['DT', 'DD'])
+    }
+  })
+
+  it('shows a generic month label for the KPI panel header, with no absolute year baked in', () => {
+    act(() => {
+      root.render(<FinanceEquation />)
+    })
+    const panel = container.querySelector('[data-testid="finance-equation-panel"]') as HTMLElement
+    expect(panel.textContent).toContain('CARTERA · JULIO')
+    expect(panel.textContent).not.toMatch(/JULIO\s*\d{4}/)
+  })
+
   it('shows every item and the total fully settled when reduced motion is preferred', () => {
     useReducedMotionMock.mockReturnValue(true)
     act(() => {

@@ -158,6 +158,17 @@ describe('landing.css coverage', () => {
     expect(missing).toEqual([])
   })
 
+  it('renders visible ordered-list numbers in the blog article body (Preflight ol reset override)', () => {
+    // Tailwind Preflight resets `ol { list-style: none; padding: 0 }` globally.
+    // `BlogArticle`'s renderContent() relies on native <ol> counters (it
+    // strips the literal "1., 2., ..." text from the source), so the scoped
+    // stylesheet MUST restore list-style + indentation or the numbers never
+    // render.
+    const css = fs.readFileSync(CSS_PATH, 'utf-8')
+    expect(css).toMatch(/\.landing-scope\s+\.landing-ba__body\s+ol\s*\{[^}]*list-style:\s*decimal/)
+    expect(css).toMatch(/\.landing-scope\s+\.landing-ba__body\s+ol\s*\{[^}]*padding-left:/)
+  })
+
   it('scopes every rule under .landing-scope (except keyframes/font-face)', () => {
     const css = fs.readFileSync(CSS_PATH, 'utf-8')
     const stripped = stripExemptAtRuleBlocks(stripComments(css))

@@ -80,4 +80,34 @@ describe('<LandingHeader>', () => {
     })
     expect(container.querySelector('header')?.getAttribute('data-state')).toBe('solid')
   })
+
+  it('renders overlay-dark by default on home routes ("/" and "/landing-preview")', () => {
+    usePathnameMock.mockReturnValue('/')
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('overlay-dark')
+
+    usePathnameMock.mockReturnValue('/landing-preview')
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('overlay-dark')
+  })
+
+  it('renders solid by default (no forceSolid prop needed) on internal routes with no dark hero', () => {
+    usePathnameMock.mockReturnValue('/blog')
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('solid')
+  })
+
+  it('lets an explicit forceSolid prop override the pathname-derived default', () => {
+    usePathnameMock.mockReturnValue('/')
+    act(() => {
+      root.render(<LandingHeader forceSolid />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('solid')
+  })
 })

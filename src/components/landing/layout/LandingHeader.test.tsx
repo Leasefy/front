@@ -81,14 +81,8 @@ describe('<LandingHeader>', () => {
     expect(container.querySelector('header')?.getAttribute('data-state')).toBe('solid')
   })
 
-  it('renders overlay-dark by default on home routes ("/" and "/landing-preview")', () => {
+  it('renders overlay-dark by default on the home route ("/")', () => {
     usePathnameMock.mockReturnValue('/')
-    act(() => {
-      root.render(<LandingHeader />)
-    })
-    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('overlay-dark')
-
-    usePathnameMock.mockReturnValue('/landing-preview')
     act(() => {
       root.render(<LandingHeader />)
     })

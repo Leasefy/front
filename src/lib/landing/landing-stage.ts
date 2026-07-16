@@ -1,13 +1,15 @@
 /**
  * Staging flag for the landing-react-port change.
  *
- * While `LANDING_STAGE` is `true`, every landing route spreads
+ * While `LANDING_STAGE` was `true`, every landing route spread
  * `landingRobots()` into its `metadata.robots` so search engines never
- * index the in-progress port. The final-flip PR (SLICE 9) sets this to
+ * indexed the in-progress port. F1 (final integration slice) flips this to
  * `false`, which atomically drops noindex from every landing route in one
- * reviewable boolean change — no env var drift.
+ * reviewable boolean change — no env var drift. The `/landing-preview`
+ * staging route this flag also gated has been deleted (`/` is now the real,
+ * shipped v2 home).
  */
-export const LANDING_STAGE = true
+export const LANDING_STAGE = false
 
 interface LandingRobots {
   index: boolean

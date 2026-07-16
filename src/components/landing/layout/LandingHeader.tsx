@@ -17,12 +17,14 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Contacto', href: '/contacto' },
 ]
 
-// Routes that render the dark theatrical hero underneath the header —
-// every other route has no dark hero to sit over, so the header must
-// render solid from first paint there. Includes the pre-flip staging
-// route (`/landing-preview`) AND the eventual flip target (`/`) so this
-// list keeps working unchanged once SLICE 9 swaps the home route.
-const HOME_PATHS = ['/landing-preview', '/']
+// Routes that render a dark theatrical hero underneath the header — every
+// other route has no dark hero to sit over, so the header must render
+// solid from first paint there. F1 (landing-react-port final integration)
+// retired the pre-flip `/landing-preview` staging route once `/` became
+// the real home; kept for defensive reuse if LandingHeader is ever mounted
+// elsewhere (it is NOT rendered on `/` today — see (landing)/layout.tsx
+// SELF_CONTAINED_CHROME_PATHS, since the v2 home ships its own header).
+const HOME_PATHS = ['/']
 
 interface LandingHeaderProps {
   /** Internal pages (no dark hero to sit over) render solid from first paint. */

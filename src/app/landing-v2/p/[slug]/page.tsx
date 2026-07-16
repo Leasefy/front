@@ -1,17 +1,23 @@
-import ComingSoon from "@/components/landing-v2/ComingSoon";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import ProductPage from "@/components/landing-v2/ProductPage";
+import { PRODUCTS } from "@/components/landing-v2/products-data";
 
-const NAMES: Record<string, string> = {
-  crm: "CRM inmobiliario",
-  erp: "ERP de arriendos",
-  cobranza: "Cobranza",
-  inquilino: "Estudio del inquilino",
-  avaluos: "Avalúos",
-  conciliacion: "Conciliación",
-  matching: "Matching",
-  asegurabilidad: "Asegurabilidad",
-};
+export function generateStaticParams() {
+  return Object.keys(PRODUCTS).map((slug) => ({ slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const d = PRODUCTS[params.slug];
+  if (!d) return { title: "Leasefy", robots: { index: false, follow: false } };
+  return {
+    title: `${d.t} — Leasefy`,
+    description: d.lead,
+    robots: { index: false, follow: false }, // preview — no indexar hasta el swap de /
+  };
+}
 
 export default function LandingV2ProductPage({ params }: { params: { slug: string } }) {
-  const name = NAMES[params.slug] ?? "Producto";
-  return <ComingSoon eyebrow="Producto" title={`${name} — página de producto en la Fase 2`} />;
+  if (!PRODUCTS[params.slug]) notFound();
+  return <ProductPage slug={params.slug} />;
 }

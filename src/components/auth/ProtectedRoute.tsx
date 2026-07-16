@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
+import { getRoleHomeRoute } from '@/lib/auth/role-routes'
 import type { AgencyMemberRole } from '@/lib/auth/types'
 
 const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
@@ -133,13 +134,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
     if (allowedRoles && effectiveUser && !allowedRoles.includes(effectiveUser.role as 'tenant' | 'landlord' | 'agency')) {
       // User is authenticated but doesn't have required role
       // Redirect to appropriate dashboard based on their role
-      if (effectiveUser.role === 'agency') {
-        router.replace('/panel/inmobiliaria')
-      } else if (effectiveUser.role === 'landlord') {
-        router.replace('/panel')
-      } else {
-        router.replace('/inquilino')
-      }
+      router.replace(getRoleHomeRoute(effectiveUser.role))
       return
     }
 

@@ -1251,7 +1251,7 @@ body.arq-on .lv2 #contacto .banner-in{transition:none;will-change:transform}
 .lv2 .wm span{display:inline-block;transform:translateY(60%);opacity:0;transition:transform .9s var(--ease),opacity .9s var(--ease);transition-delay:var(--d)}
 .lv2 .wm.in span{transform:none;opacity:1}
 .lv2 .wm .bd{background:linear-gradient(90deg,#1a40ff 0%,#7fd3ff 24%,#f6f1e6 46%,#f3c9a1 64%,#b7a3ff 82%,#2437c9 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.lv2 .fbot{display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,.1);margin-top:8px;padding:24px 0;font-size:12px;color:rgba(248,247,245,.45)}
+.lv2 .fbot{display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,.1);margin-top:8px;padding:24px 0;font-size:12px;color:rgba(248,247,245,.48)}
 @media(min-width:640px){.lv2 .fbot{flex-direction:row;align-items:center;justify-content:space-between}}
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
@@ -1278,10 +1278,10 @@ body.arq-on .lv2 #contacto .banner-in{transition:none;will-change:transform}
 .lv2 .oc-tall.on .oc-stick{position:sticky;top:0;height:100vh;display:flex;align-items:center;z-index:2}
 .lv2 .oc-tall.on .oc-shell{width:100%}
 .lv2 .oc-shell{background:var(--night);border-radius:28px;padding:clamp(32px,6vw,72px);overflow:hidden}
-.lv2 .oc-eb{font-family:var(--fm);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:10px}
+.lv2 .oc-eb{font-family:var(--fm);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:10px}
 .lv2 .oc-eb i{width:6px;height:6px;background:var(--blue);display:inline-block}
 .lv2 .oc-list{margin-top:32px}
-.lv2 .oc-line{font-family:var(--fd);font-weight:600;letter-spacing:-.035em;line-height:1.06;font-size:clamp(2.4rem,min(8.5vw,8.6vh),6.6rem);color:rgba(244,241,234,.32)}
+.lv2 .oc-line{font-family:var(--fd);font-weight:600;letter-spacing:-.035em;line-height:1.06;font-size:clamp(2.4rem,min(8.5vw,8.6vh),6.6rem);color:rgba(244,241,234,.4)}
 .lv2 .oc-line span{position:relative;display:inline-block}
 .lv2 .oc-line span::after{content:"";position:absolute;left:-.05em;right:-.05em;top:.55em;height:.065em;background:var(--blue);transform:scaleX(var(--k,0));transform-origin:left}
 .lv2 .oc-final{font-family:var(--fd);font-weight:600;letter-spacing:-.035em;line-height:1.06;font-size:clamp(2.4rem,min(8.5vw,8.6vh),6.6rem);color:var(--cream);opacity:0;transform:translateY(14px)}

@@ -800,14 +800,367 @@
 }
 
 /* ---------------------------------------------------------------------
+ * Vignette/scard shell (standalone lines 617-621 `.pchat`/`.pb(a|b)`/
+ * `.pmeta`, 646-649 `.stamp`, 721-739 `.scard`/`.schead`/`.adot`/`.scbody`,
+ * 1656-1677 `#productPage` overrides, 1679-1707 `.vg-steps`/`.vg-stat`/
+ * `.vg-ledger`/`.vg-doc`) — SLICE 4a scope. Class names use the project's
+ * `landing-*` BEM convention (not the standalone's bare `.scard`/`.schead`/
+ * `.pchat` names) so the generic `landing-css-coverage.test.ts` guard
+ * enforces this CSS automatically, same rationale as the S3c `--landing-*`
+ * custom-property deviation. `.pp-*` template CSS (app-window chrome,
+ * hero, stories grid, snapshot, steps, night panel) is SLICE 4b scope —
+ * NOT ported here.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-vg-card {
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 30px 70px -35px rgba(17, 17, 17, 0.4), 0 0 0 1px var(--landing-line);
+}
+.landing-scope .landing-vg-card__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+}
+.landing-scope .landing-vg-card__head--chat {
+  border-bottom: 1px solid var(--landing-line);
+  background: #fff;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-vg-card__head--ag {
+  background: var(--landing-blue);
+  color: #fff;
+}
+.landing-scope .landing-vg-card__head--sys {
+  background: #121212;
+  color: var(--landing-cream);
+}
+.landing-scope .landing-vg-card__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--fm);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.landing-scope .landing-vg-card__meta {
+  flex: 0 0 auto;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  opacity: 0.8;
+}
+.landing-scope .landing-vg-card__dot {
+  position: relative;
+  display: inline-flex;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+}
+.landing-scope .landing-vg-card__dot-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  animation: landing-vg-card-ping 1.4s ease-out infinite;
+}
+.landing-scope .landing-vg-card__head--chat .landing-vg-card__dot-ping {
+  background: rgba(52, 211, 153, 0.6);
+}
+.landing-scope .landing-vg-card__dot-core {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fff;
+}
+.landing-scope .landing-vg-card__head--chat .landing-vg-card__dot-core {
+  background: #34d399;
+}
+@keyframes landing-vg-card-ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  80%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.landing-scope .landing-vg-card__body {
+  background: rgba(248, 247, 245, 0.6);
+  padding: 16px;
+}
+.landing-scope .landing-vg-card__stamp {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 2;
+  border: 2px solid var(--landing-blue);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(1px);
+  padding: 2px 8px;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--landing-blue);
+}
+
+/* -- rows -- */
+.landing-scope .landing-vg-rows {
+  display: flex;
+  flex-direction: column;
+}
+.landing-scope .landing-vg-rows__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--landing-line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  color: rgba(17, 17, 17, 0.85);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.05);
+}
+.landing-scope .landing-vg-rows__row + .landing-vg-rows__row {
+  margin-top: 8px;
+}
+.landing-scope .landing-vg-rows__value {
+  margin-left: auto;
+  text-align: right;
+  font-weight: 600;
+}
+.landing-scope .landing-vg-rows__value--ok {
+  color: #0a7d44;
+}
+.landing-scope .landing-vg-rows__value--mb {
+  color: var(--landing-blue);
+}
+
+/* -- chat -- */
+.landing-scope .landing-vg-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.landing-scope .landing-vg-chat__bubble {
+  width: fit-content;
+  max-width: 85%;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.landing-scope .landing-vg-chat__bubble--in {
+  border-top-left-radius: 4px;
+  background: #fff;
+  color: var(--landing-ink);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.08);
+}
+.landing-scope .landing-vg-chat__bubble--out {
+  margin-left: auto;
+  border-top-right-radius: 4px;
+  background: var(--landing-blue);
+  color: #fff;
+}
+.landing-scope .landing-vg-chat__meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: -4px;
+  font-size: 9px;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-vg-chat__meta--out {
+  justify-content: flex-end;
+}
+.landing-scope .landing-vg-chat__meta--in {
+  justify-content: flex-start;
+}
+
+/* -- steps -- */
+.landing-scope .landing-vg-steps {
+  padding: 6px 2px;
+}
+.landing-scope .landing-vg-steps__item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 15px;
+}
+.landing-scope .landing-vg-steps__item:last-child {
+  padding-bottom: 0;
+}
+.landing-scope .landing-vg-steps__item::before {
+  content: '';
+  position: absolute;
+  left: 5.5px;
+  top: 15px;
+  bottom: 1px;
+  width: 1px;
+  background: rgba(17, 17, 17, 0.14);
+}
+.landing-scope .landing-vg-steps__item:last-child::before {
+  display: none;
+}
+.landing-scope .landing-vg-steps__dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border-radius: 50%;
+  margin-top: 2px;
+  border: 2px solid rgba(17, 17, 17, 0.25);
+  background: #fff;
+}
+.landing-scope .landing-vg-steps__item--done .landing-vg-steps__dot {
+  background: var(--landing-blue);
+  border-color: var(--landing-blue);
+}
+.landing-scope .landing-vg-steps__item--on .landing-vg-steps__dot {
+  border-color: var(--landing-blue);
+  box-shadow: 0 0 0 4px rgba(26, 64, 255, 0.14);
+}
+.landing-scope .landing-vg-steps__title {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.landing-scope .landing-vg-steps__meta {
+  display: block;
+  font-family: var(--fm);
+  font-size: 10px;
+  color: var(--landing-muted);
+  margin-top: 2px;
+}
+
+/* -- stat -- */
+.landing-scope .landing-vg-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 4px;
+}
+.landing-scope .landing-vg-stat__big {
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(32px, 3.2vw, 44px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-vg-stat__big em {
+  font-style: normal;
+  color: var(--landing-blue);
+}
+.landing-scope .landing-vg-stat__label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-top: 9px;
+}
+.landing-scope .landing-vg-stat__sub {
+  display: block;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--landing-muted);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+/* -- ledger -- */
+.landing-scope .landing-vg-ledger {
+  background: #fff;
+  border: 1px solid var(--landing-line);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 12px;
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.05);
+}
+.landing-scope .landing-vg-ledger__row {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 0.95fr;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px dashed rgba(17, 17, 17, 0.08);
+  align-items: baseline;
+}
+.landing-scope .landing-vg-ledger__row:last-child {
+  border-bottom: 0;
+}
+.landing-scope .landing-vg-ledger__row--head {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+  background: rgba(17, 17, 17, 0.02);
+  border-bottom: 1px solid var(--landing-line);
+}
+.landing-scope .landing-vg-ledger__row b {
+  font-weight: 600;
+}
+.landing-scope .landing-vg-ledger__cell--ok {
+  color: #0a7d44;
+  font-weight: 600;
+}
+.landing-scope .landing-vg-ledger__cell--mb {
+  color: var(--landing-blue);
+  font-weight: 600;
+}
+
+/* -- doc -- */
+.landing-scope .landing-vg-doc h4 {
+  margin: 2px 0 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 16.5px;
+  letter-spacing: -0.01em;
+  padding-right: 20px;
+}
+.landing-scope .landing-vg-doc__lines {
+  margin-top: 10px;
+  display: grid;
+  gap: 7px;
+}
+.landing-scope .landing-vg-doc__lines span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: rgba(17, 17, 17, 0.82);
+}
+.landing-scope .landing-vg-doc__lines span::before {
+  content: '✓';
+  color: #0a7d44;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------------------------
  * Reduced motion (standalone line 836 `.banner-photo{animation:none}`
- * pattern) — the only CSS keyframe animation ported is the closing
- * banner's Ken Burns pan; every other motion in this port is
+ * pattern, plus line 1000's `.pinga` entry) — the only CSS keyframe
+ * animations ported are the closing banner's Ken Burns pan and the
+ * vg-card header's ping dot; every other motion in this port is
  * framer-motion, already gated by `useReducedMotion()` at the component
  * level (Reveal, ShaderHero, EclipseSection, FinanceEquation).
  * ------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .landing-scope .landing-closing__backdrop img {
+    animation: none;
+  }
+  .landing-scope .landing-vg-card__dot-ping {
     animation: none;
   }
 }

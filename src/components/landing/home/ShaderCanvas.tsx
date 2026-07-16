@@ -65,6 +65,13 @@ function compile(gl: WebGLRenderingContext, type: number, source: string): WebGL
   return shader
 }
 
+interface ShaderCanvasProps {
+  /** Called when the hero grain texture fails to load — `ShaderHero` uses
+   * this to fall back to the static poster instead of leaving a blank
+   * canvas on screen. */
+  onError?: () => void
+}
+
 /**
  * WebGL fluid-gradient field behind the hero heading. Ported from the
  * standalone's `initFluid()` — identical shader math, rewritten with
@@ -76,8 +83,12 @@ function compile(gl: WebGLRenderingContext, type: number, source: string): WebGL
  * reduced — this component assumes both are already true and does not
  * re-check them.
  */
-export function ShaderCanvas() {
+export function ShaderCanvas({ onError }: ShaderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  // Ref (not a dependency) so a new onError identity on every parent
+  // render never tears down and re-initializes the WebGL context.
+  const onErrorRef = useRef(onError)
+  onErrorRef.current = onError
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -167,6 +178,10 @@ export function ShaderCanvas() {
       gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGB, gl!.RGB, gl!.UNSIGNED_BYTE, image)
       resize()
       loop()
+    }
+    image.onerror = () => {
+      if (dead) return
+      onErrorRef.current?.()
     }
     image.src = LANDING_HERO_TEXTURE.src
 

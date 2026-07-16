@@ -108,4 +108,33 @@ describe('<ShaderCanvas>', () => {
       })
     }).not.toThrow()
   })
+
+  it('calls onError when the hero texture image fails to load', async () => {
+    class FakeImage {
+      onload: (() => void) | null = null
+      onerror: (() => void) | null = null
+      private _src = ''
+      get src() {
+        return this._src
+      }
+      set src(value: string) {
+        this._src = value
+        queueMicrotask(() => this.onerror?.())
+      }
+    }
+    vi.stubGlobal('Image', FakeImage as unknown as typeof Image)
+
+    const onError = vi.fn()
+    act(() => {
+      root.render(<ShaderCanvas onError={onError} />)
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(onError).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
 })

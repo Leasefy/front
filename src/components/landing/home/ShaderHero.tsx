@@ -34,19 +34,20 @@ function detectWebglSupport(): boolean {
 export function ShaderHero() {
   const prefersReducedMotion = useReducedMotion()
   const [webglSupported, setWebglSupported] = useState(false)
+  const [canvasError, setCanvasError] = useState(false)
 
   useEffect(() => {
     if (prefersReducedMotion) return
     setWebglSupported(detectWebglSupport())
   }, [prefersReducedMotion])
 
-  const showCanvas = webglSupported && !prefersReducedMotion
+  const showCanvas = webglSupported && !prefersReducedMotion && !canvasError
 
   return (
     <section className="landing-hero" data-testid="shader-hero">
       <div className="landing-hero__field" aria-hidden="true">
         {showCanvas ? (
-          <ShaderCanvas />
+          <ShaderCanvas onError={() => setCanvasError(true)} />
         ) : (
           <LandingImage
             src={LANDING_HERO_FALLBACK.src}

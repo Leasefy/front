@@ -37,10 +37,12 @@ vi.mock('next/image', () => ({
   },
 }))
 
+let capturedShaderCanvasProps: Record<string, unknown> = {}
 vi.mock('next/dynamic', () => ({
   default: () =>
     function ShaderCanvasStub(props: Record<string, unknown>) {
-      return <div data-testid="shader-canvas-mount" {...props} />
+      capturedShaderCanvasProps = props
+      return <div data-testid="shader-canvas-mount" />
     },
 }))
 
@@ -93,6 +95,23 @@ describe('<ShaderHero>', () => {
     })
     expect(container.querySelector('[data-testid="shader-canvas-mount"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="shader-hero-fallback"]')).toBeNull()
+  })
+
+  it('falls back to the static poster when the shader canvas reports a texture load error', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      () => ({}) as unknown as RenderingContext,
+    )
+    act(() => {
+      root.render(<ShaderHero />)
+    })
+    expect(container.querySelector('[data-testid="shader-canvas-mount"]')).toBeTruthy()
+
+    act(() => {
+      ;(capturedShaderCanvasProps.onError as () => void)()
+    })
+
+    expect(container.querySelector('[data-testid="shader-hero-fallback"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="shader-canvas-mount"]')).toBeNull()
   })
 
   it('renders the static fallback when reduced motion is preferred, even if WebGL is supported', () => {

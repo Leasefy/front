@@ -465,7 +465,7 @@ export function LandlordDashboardEmpty() {
                 {[
                   { icon: FileText, labelEs: 'Guía para propietarios', labelEn: 'Landlord guide', href: '/ayuda/propietarios' },
                   { icon: ChartBar, labelEs: 'Precios del mercado', labelEn: 'Market prices', href: '/propiedades' },
-                  { icon: Shield, labelEs: 'Cómo funciona el seguro', labelEn: 'How insurance works', href: '/productos/seguro' },
+                  { icon: Shield, labelEs: 'Cómo funciona el seguro', labelEn: 'How insurance works', href: '/productos/asegurabilidad' },
                 ].map((resource) => (
                   <Link
                     key={resource.labelEs}

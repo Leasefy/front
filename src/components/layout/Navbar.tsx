@@ -43,12 +43,12 @@ const audienceLinks = [
 ];
 
 const productLinks = [
-  { href: '/productos/evaluacion', label: 'Evaluación de inquilinos', icon: ShieldCheck, description: 'Scoring crediticio y verificación de antecedentes' },
-  { href: '/productos/pagos', label: 'Pagos y recaudo', icon: Wallet, description: 'PSE, tarjeta y efectivo con transferencia automática' },
-  { href: '/productos/contratos', label: 'Contratos digitales', icon: FileText, description: 'Firma electrónica con validez legal' },
-  { href: '/productos/aplicaciones', label: 'Aplicaciones online', icon: Tray, description: 'Recibe y gestiona candidatos' },
-  { href: '/productos/seguro', label: 'Seguro de arrendamiento', icon: ShieldPlus, description: 'Protección hasta 24 meses ante impagos' },
-  { href: '/productos/api', label: 'API para desarrolladores', icon: Terminal, description: 'Integra en tu plataforma', comingSoon: true },
+  { href: '/productos/inquilino', label: 'Evaluación de inquilinos', icon: ShieldCheck, description: 'Scoring crediticio y verificación de antecedentes' },
+  { href: '/productos/cobranza', label: 'Pagos y recaudo', icon: Wallet, description: 'PSE, tarjeta y efectivo con transferencia automática' },
+  { href: '/productos/crm', label: 'Contratos digitales', icon: FileText, description: 'Firma electrónica con validez legal' },
+  { href: '/productos/matching', label: 'Aplicaciones online', icon: Tray, description: 'Recibe y gestiona candidatos' },
+  { href: '/productos/asegurabilidad', label: 'Seguro de arrendamiento', icon: ShieldPlus, description: 'Protección hasta 24 meses ante impagos' },
+  { href: '/', label: 'API para desarrolladores', icon: Terminal, description: 'Integra en tu plataforma', comingSoon: true },
 ];
 
 export function Navbar() {
@@ -561,7 +561,7 @@ export function Navbar() {
                         Verifica inquilinos sin costo. El solicitante paga la verificación.
                       </p>
                       <Link
-                        href="/productos/evaluacion"
+                        href="/productos/inquilino"
                         onClick={() => setIsProductosOpen(false)}
                         className="inline-flex items-center gap-1 text-[11px] text-white/70 hover:text-white transition-colors"
                       >

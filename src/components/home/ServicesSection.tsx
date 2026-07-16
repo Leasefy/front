@@ -24,7 +24,7 @@ const services = [
     subtitle: "Scoring inteligente",
     description: "Evaluamos inquilinos con IA para decisiones informadas en minutos.",
     image: "https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=1600",
-    href: "/productos/evaluacion",
+    href: "/productos/inquilino",
     cta: "Cómo funciona",
     icon: ShieldCheck,
     className: "md:col-span-5 h-[280px] md:h-auto",

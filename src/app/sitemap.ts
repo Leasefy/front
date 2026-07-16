@@ -36,43 +36,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
-    // Product pages
-    {
-      url: `${baseUrl}/productos/evaluacion`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/productos/pagos`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/productos/contratos`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/productos/api`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/productos/aplicaciones`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/productos/seguro`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
+    // Product pages: the old /productos/{evaluacion,pagos,contratos,
+    // aplicaciones,seguro,api} taxonomy was retired in SLICE 8 (301
+    // redirects, see src/lib/landing/legacy-redirects.ts) — listing those
+    // dead URLs here would just point crawlers at redirects. The new
+    // 8-product taxonomy under (landing)/productos/* stays out of the
+    // sitemap while it is still noindex-gated (LANDING_STAGE=true,
+    // src/lib/landing/landing-stage.ts); add it back when SLICE 9 flips
+    // LANDING_STAGE to false.
     // Audience pages
     {
       url: `${baseUrl}/para/propietarios`,

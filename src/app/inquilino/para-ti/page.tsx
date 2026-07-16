@@ -184,7 +184,7 @@ export default function ParaTiPage() {
                 {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
               </Link>
               <Link
-                href="/productos/evaluacion"
+                href="/productos/inquilino"
                 className="px-5 py-2 border border-plan-border text-plan-primary text-sm font-medium hover:bg-surface-muted transition-colors"
               >
                 {locale === 'es' ? 'Solicitar evaluación' : 'Request evaluation'}

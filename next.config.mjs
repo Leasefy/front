@@ -1,4 +1,8 @@
 import path from "path";
+// Plain-ESM data file (not the .ts wrapper): next.config.mjs runs under
+// Node with no TypeScript loader on Next.js 14.2. See
+// src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
+import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -92,6 +96,15 @@ const nextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+  // SLICE 8 (landing-react-port): 301 the retired /productos/* taxonomy
+  // (evaluacion/pagos/contratos/aplicaciones/seguro/api) to their nearest
+  // equivalent in the new 8-product taxonomy. Map + rationale live in
+  // src/lib/landing/legacy-redirects.ts (unit-tested); this file just
+  // wires the same data into Next's redirects() (build-validated, not
+  // vitest-covered). CSP/security headers above are untouched.
+  async redirects() {
+    return LEGACY_PRODUCT_REDIRECTS_DATA;
   },
 };
 

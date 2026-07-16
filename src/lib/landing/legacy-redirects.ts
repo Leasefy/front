@@ -3,9 +3,12 @@
  * taxonomy (evaluacion/pagos/contratos/aplicaciones/seguro/api), replaced
  * by the new 8-product taxonomy (crm, erp + 6 AI agents) per decision #258
  * ("Taxonomy: new 8-product taxonomy ... replaces old /productos/* with
- * 301 redirects"). Exported as data so `next.config.mjs` `redirects()`
- * consumes it directly and the mapping table is unit-testable without a
- * running Next.js server (design §5 "301 redirects").
+ * 301 redirects"). The raw table lives in `legacy-redirects.data.mjs`
+ * (plain ESM, no TS syntax) so `next.config.mjs` — which runs under plain
+ * Node with no TypeScript loader on Next.js 14.2 (no `next.config.ts`
+ * support until Next 15) — can import it directly at build time. This
+ * module re-exports it typed for the rest of the app and for the unit
+ * test covering the mapping table (design §5 "301 redirects").
  *
  * Mapping rationale (nearest equivalent by page content, read during S8
  * apply):
@@ -29,17 +32,12 @@
  * All entries are `permanent: true` (real 301s — the old taxonomy is
  * retired, not temporarily moved).
  */
+import { LEGACY_PRODUCT_REDIRECTS_DATA } from './legacy-redirects.data.mjs'
+
 export interface LegacyRedirect {
   source: string
   destination: string
   permanent: boolean
 }
 
-export const LEGACY_PRODUCT_REDIRECTS: LegacyRedirect[] = [
-  { source: '/productos/evaluacion', destination: '/productos/inquilino', permanent: true },
-  { source: '/productos/pagos', destination: '/productos/cobranza', permanent: true },
-  { source: '/productos/contratos', destination: '/productos/crm', permanent: true },
-  { source: '/productos/aplicaciones', destination: '/productos/matching', permanent: true },
-  { source: '/productos/seguro', destination: '/productos/asegurabilidad', permanent: true },
-  { source: '/productos/api', destination: '/', permanent: true },
-]
+export const LEGACY_PRODUCT_REDIRECTS: LegacyRedirect[] = LEGACY_PRODUCT_REDIRECTS_DATA

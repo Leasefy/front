@@ -388,7 +388,7 @@ export function initLandingFx(): () => void {
     }
 
     function loop(){
-      if(killed) return;
+      if(!fxc.isConnected){ return; }
       raf = requestAnimationFrame(loop);
       if(!running || !visible) return;
       t += 0.016;

@@ -3,16 +3,16 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useHeaderScrollState } from './useHeaderScrollState'
+import { MegaMenu } from './MegaMenu'
 
 interface NavItem {
   label: string
   href: string
 }
 
-// "Producto" resolves to the product hub once SLICE 4/5 land the shared
-// template + 8 product routes; the mega menu itself is out of S1 scope.
+// "Producto" is rendered via <MegaMenu> (SLICE 4b) instead of a plain nav
+// link — it is a disclosure trigger, not a route by itself.
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Producto', href: '/productos' },
   { label: 'Blog', href: '/blog' },
   { label: 'Contacto', href: '/contacto' },
 ]
@@ -39,6 +39,7 @@ export function LandingHeader({ forceSolid = false }: LandingHeaderProps) {
         Leasefy
       </Link>
       <nav aria-label="Navegación principal" className="landing-header__nav">
+        <MegaMenu />
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href
           return (

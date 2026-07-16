@@ -12,6 +12,7 @@ import { act } from 'react'
 void React // jsx-preserve
 
 import { LandingFooter } from './LandingFooter'
+import { PRODUCT_SLUGS } from '@/lib/landing/products'
 
 let container: HTMLDivElement
 let root: Root
@@ -39,6 +40,16 @@ describe('<LandingFooter>', () => {
     const erpLink = container.querySelector('a[href="/productos/erp"]')
     expect(crmLink).toBeTruthy()
     expect(erpLink).toBeTruthy()
+  })
+
+  it('renders all 8 product links, sourced from the same PRODUCT_SLUGS catalog as MegaMenu', () => {
+    act(() => {
+      root.render(<LandingFooter />)
+    })
+    expect(PRODUCT_SLUGS.length).toBe(8)
+    for (const slug of PRODUCT_SLUGS) {
+      expect(container.querySelector(`a[href="/productos/${slug}"]`)).toBeTruthy()
+    }
   })
 
   it('renders blog and contact links with no # fragment', () => {

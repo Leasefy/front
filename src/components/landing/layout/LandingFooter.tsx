@@ -1,19 +1,18 @@
 import Link from 'next/link'
+import { PRODUCTS, PRODUCT_SLUGS } from '@/lib/landing/products'
 
 interface FooterLink {
   label: string
   href: string
 }
 
-// New taxonomy under /productos/{slug} — routes land in SLICE 5; hrefs
-// are real from day one (design §5), even before the page exists.
-const PRODUCT_LINKS: FooterLink[] = [
-  { label: 'CRM inmobiliario', href: '/productos/crm' },
-  { label: 'ERP de arriendos', href: '/productos/erp' },
-  { label: 'Asegurabilidad', href: '/productos/asegurabilidad' },
-  { label: 'Matching', href: '/productos/matching' },
-  { label: 'Cobranza', href: '/productos/cobranza' },
-]
+// Sourced from the same PRODUCT_SLUGS/PRODUCTS catalog as <MegaMenu> (S4b)
+// instead of a hand-maintained duplicate list — every product route stays
+// in sync automatically and can't silently drift out of the footer.
+const PRODUCT_LINKS: FooterLink[] = PRODUCT_SLUGS.map((slug) => ({
+  label: PRODUCTS[slug].name,
+  href: `/productos/${slug}`,
+}))
 
 const COMPANY_LINKS: FooterLink[] = [
   { label: 'Blog', href: '/blog' },

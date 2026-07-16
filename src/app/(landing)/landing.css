@@ -2234,6 +2234,9 @@
   line-height: 1.85;
   color: var(--landing-muted);
 }
+.landing-scope .landing-ba__body ol li + li {
+  margin-top: 8px;
+}
 .landing-scope .landing-ba__label {
   margin-top: 16px;
   font-weight: 600;

@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Inter_Tight, IBM_Plex_Mono } from 'next/font/google'
 import { LandingHeader } from '@/components/landing/layout/LandingHeader'
 import { LandingFooter } from '@/components/landing/layout/LandingFooter'
+import './landing.css'
 
 // Scoped font exception (ADR-2): Inter Tight (display) + IBM Plex Mono
 // load ONLY inside this route group, applied to a wrapper <div> — never

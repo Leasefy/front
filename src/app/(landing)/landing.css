@@ -1,0 +1,813 @@
+/*
+ * Landing port scoped stylesheet — SLICE 3c (incident remediation, see
+ * engram sdd/landing-react-port/incident-styling-gap). Ported from
+ * `landing-standalone/index.html`'s <style> block (source line references
+ * noted per section below) for the sections shipped in S1-S3b: header,
+ * footer, hero, eclipse, case rail, finance equation, closing banner.
+ * Product-page CSS (`.pp-*`) is S4+ scope — NOT ported here.
+ *
+ * CRITICAL SCOPING RULE: Next.js bundles plain CSS globally even when the
+ * file is only imported from a nested route-group layout — so EVERY rule
+ * below is nested under `.landing-scope` (the wrapper className rendered by
+ * `src/app/(landing)/layout.tsx`). This is what prevents these rules from
+ * leaking into the rest of the app. Do not add a bare, unscoped selector.
+ *
+ * Font vars (--fd/--fb/--fm) and --night are already bridged as inline
+ * styles on the `.landing-scope` wrapper (layout.tsx, design §5 / §S3a).
+ * Every other standalone token is declared below with a `--landing-`
+ * prefix, scoped to `.landing-scope`, to avoid colliding with Cadence's
+ * same-named tokens that use a different value/format inside this scope
+ * (HANDOFF "reglas de oro": audit new short names against existing
+ * globals before reusing them) — see the deviation note below.
+ *
+ * DEVIATION FROM DESIGN (#261 §0/§10 ADR-2): the design claims the
+ * standalone's `--blue` (#1a40ff) "already matches" Cadence's `--primary`.
+ * Verified against `src/app/globals.css`: `--primary` resolves to
+ * `--indigo-500` (#5B5FEF), a different hue entirely. Using
+ * `hsl(var(--primary))` here would visibly reskin the accent color away
+ * from the ported design's intent. Scoping `--landing-blue: #1a40ff`
+ * (the same pattern already used for `--night`, which also doesn't match
+ * Cadence's `--ink`) preserves fidelity without introducing a
+ * general-purpose parallel token system — only landing-specific,
+ * scope-local overrides for values that don't have a Cadence equivalent.
+ */
+
+.landing-scope {
+  --landing-blue: #1a40ff;
+  --landing-cream: #f4f1ea;
+  --landing-paper: #f8f7f5;
+  --landing-ink: #111111;
+  --landing-night2: #0d0d0d;
+  --landing-muted: #6f6a61;
+  --landing-line: rgba(17, 17, 17, 0.12);
+  --landing-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  font-family: var(--fb);
+  color: var(--landing-ink);
+  background: var(--landing-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-scope *,
+.landing-scope *::before,
+.landing-scope *::after {
+  box-sizing: border-box;
+}
+
+.landing-scope a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.landing-scope ul {
+  list-style: none;
+}
+
+/* ---------------------------------------------------------------------
+ * Buttons (standalone lines 144-152). `.btn`/`.primary`/`.outline`/
+ * `.inverse`/`.lg` are non-namespaced classNames kept verbatim on the React
+ * components (HANDOFF §7 collision rule): defined ONLY inside
+ * `.landing-scope`, components themselves are untouched.
+ * ------------------------------------------------------------------- */
+.landing-scope .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  border-radius: 999px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  height: 44px;
+  padding: 0 24px;
+  font-size: 14px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+.landing-scope .btn.lg {
+  height: 48px;
+  padding: 0 28px;
+  font-size: 15px;
+}
+.landing-scope .btn.primary {
+  background: var(--landing-blue);
+  color: #fff;
+}
+.landing-scope .btn.primary:hover {
+  background: #1233d6;
+}
+.landing-scope .btn.outline {
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  color: var(--landing-ink);
+}
+.landing-scope .btn.outline:hover {
+  border-color: rgba(17, 17, 17, 0.6);
+}
+.landing-scope .btn.inverse {
+  background: #fff;
+  color: var(--landing-ink);
+}
+.landing-scope .btn.inverse:hover {
+  background: var(--landing-paper);
+}
+
+/* ---------------------------------------------------------------------
+ * Quote / who (standalone lines 292-296, 1457-1461) — used verbatim by
+ * CaseRail's Portofino quote block.
+ * ------------------------------------------------------------------- */
+.landing-scope .quote {
+  border: 0;
+  margin: 30px 0 0;
+  padding: 0;
+  position: relative;
+}
+.landing-scope .quote p {
+  max-width: 560px;
+  font-family: var(--fd);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.375rem, 2.5vw, 2.125rem);
+}
+.landing-scope .quote .who {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .quote .who::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--landing-blue);
+  flex: 0 0 6px;
+}
+
+/* ---------------------------------------------------------------------
+ * Header (standalone lines 176-222)
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 76px;
+  padding: 0 clamp(20px, 4vw, 48px);
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.5s, border-color 0.5s, backdrop-filter 0.5s, color 0.4s;
+}
+.landing-scope .landing-header[data-state='solid'] {
+  background: rgba(248, 247, 245, 0.85);
+  backdrop-filter: blur(12px);
+  border-color: var(--landing-line);
+  color: var(--landing-ink);
+}
+.landing-scope .landing-header[data-state='overlay-dark'] {
+  color: #fff;
+}
+.landing-scope .landing-header__logo {
+  font-family: var(--fd);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: inherit;
+}
+.landing-scope .landing-header__nav {
+  display: none;
+  align-items: center;
+  gap: 32px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-header__nav {
+    display: flex;
+  }
+}
+.landing-scope .landing-header__nav a {
+  position: relative;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.75;
+  transition: opacity 0.3s;
+}
+.landing-scope .landing-header__nav a:hover,
+.landing-scope .landing-header__nav a[aria-current='page'] {
+  opacity: 1;
+}
+.landing-scope .landing-header__nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+.landing-scope .landing-header__nav a:hover::after,
+.landing-scope .landing-header__nav a[aria-current='page']::after {
+  transform: scaleX(1);
+}
+.landing-scope .landing-header__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  background: var(--landing-blue);
+  color: #fff;
+  transition: background-color 0.3s;
+}
+.landing-scope .landing-header[data-state='overlay-dark'] .landing-header__cta {
+  background: rgba(255, 255, 255, 0.14);
+}
+.landing-scope .landing-header__cta:hover {
+  background: #1233d6;
+}
+
+/* ---------------------------------------------------------------------
+ * Hero (standalone lines 237-283)
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--landing-paper);
+}
+.landing-scope .landing-hero__field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--night);
+}
+.landing-scope .landing-hero__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.landing-scope .landing-hero__fallback {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+.landing-scope .landing-hero__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 150px 20px 96px;
+}
+.landing-scope .landing-hero__content h1 {
+  font-family: var(--fd);
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-size: clamp(2.35rem, 5.8vw, 5.9rem);
+}
+.landing-scope .landing-hero__lead {
+  margin-top: 20px;
+  max-width: 560px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(248, 247, 245, 0.78);
+}
+.landing-scope .landing-hero__ctas {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.landing-scope .landing-hero__ctas .btn.outline {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.42);
+}
+.landing-scope .landing-hero__ctas .btn.outline:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+.landing-scope .landing-hero__frame {
+  position: relative;
+  z-index: 2;
+  margin: 56px auto 0;
+  width: 100%;
+  max-width: 1000px;
+  padding: 0 20px 64px;
+}
+.landing-scope .landing-hero__frame img {
+  display: block;
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid var(--landing-line);
+  box-shadow: 0 60px 120px -45px rgba(17, 17, 17, 0.38);
+}
+
+/* ---------------------------------------------------------------------
+ * Eclipse (standalone lines 1351, 4246-4280 — JS-driven `#nightBirth`
+ * math). Orb `background`/`scale`/`border-radius`/`box-shadow` are set via
+ * framer-motion inline styles in EclipseSection.tsx (ported `nfu` easing);
+ * this file only lays out structure/sizing, it must not fight those.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-eclipse {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 96px 20px;
+  background: var(--landing-paper);
+}
+.landing-scope .landing-eclipse__orb {
+  position: relative;
+  width: clamp(120px, 30vw, 420px);
+  aspect-ratio: 1 / 1;
+}
+.landing-scope .landing-eclipse__panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: clamp(24px, 6vw, 64px);
+  text-align: center;
+  color: rgba(248, 247, 245, 0.92);
+}
+.landing-scope .landing-eclipse__panel h2 {
+  font-family: var(--fd);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.5rem, 3.4vw, 2.5rem);
+  max-width: 640px;
+}
+.landing-scope .landing-eclipse__panel p {
+  max-width: 480px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(248, 247, 245, 0.6);
+}
+
+/* ---------------------------------------------------------------------
+ * Case rail (standalone lines 289-330, 1455-1469 — Portofino testimonial +
+ * note card). `.note`'s paper-grain radial-gradient (line 300) ported
+ * verbatim onto `.landing-case-rail__note`.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-case-rail {
+  padding: 112px 20px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-case-rail {
+    padding: 160px 48px;
+  }
+}
+.landing-scope .landing-case-rail__grid {
+  display: grid;
+  gap: 48px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-case-rail__grid {
+    grid-template-columns: 7fr 5fr;
+    align-items: start;
+    gap: 72px;
+  }
+}
+.landing-scope .landing-case-rail h2 {
+  font-family: var(--fd);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+}
+.landing-scope .landing-case-rail__meta {
+  margin-top: 12px;
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-case-rail__left {
+  min-width: 0;
+}
+.landing-scope .landing-case-rail__photo {
+  position: relative;
+}
+.landing-scope .landing-case-rail__frame {
+  position: relative;
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--landing-cream);
+  box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.1), 0 44px 96px -50px rgba(17, 17, 17, 0.42);
+}
+.landing-scope .landing-case-rail__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.landing-scope .landing-case-rail__frame-label {
+  position: absolute;
+  left: 22px;
+  top: 18px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+}
+.landing-scope .landing-case-rail__note {
+  position: relative;
+  max-width: 384px;
+  margin: -44px auto 0;
+  transform: rotate(-1.5deg);
+  background: #fdfbf5;
+  background-image: radial-gradient(rgba(17, 17, 17, 0.03) 1px, transparent 1px);
+  background-size: 3px 3px;
+  border-radius: 3px;
+  box-shadow: 0 30px 60px -30px rgba(17, 17, 17, 0.35);
+  padding: 28px;
+}
+.landing-scope .landing-case-rail__note-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-case-rail__note h3 {
+  margin-top: 22px;
+  font-family: var(--fd);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+.landing-scope .landing-case-rail__note-row--bottom {
+  margin-top: 30px;
+  border-top: 1px dashed rgba(17, 17, 17, 0.25);
+  padding-top: 14px;
+}
+
+/* ---------------------------------------------------------------------
+ * Finance equation (standalone lines 750-820 `.fo`/`.forow`/`.fopanel`,
+ * 1417-1453 `#finanzas` overrides). 5fr/7fr grid ratio ported verbatim
+ * from `.fgrid`/`.fo` (line 1204/755).
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-finance {
+  padding: 112px 20px;
+  display: grid;
+  gap: 56px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-finance {
+    padding: 160px 48px;
+    grid-template-columns: 5fr 7fr;
+    align-items: start;
+    gap: 32px;
+  }
+}
+.landing-scope .landing-finance__eyebrow {
+  margin-bottom: 12px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-finance__copy h2 {
+  max-width: 480px;
+  font-family: var(--fd);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+}
+.landing-scope .landing-finance__lead {
+  margin-top: 16px;
+  max-width: 440px;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-finance__equation {
+  margin-top: 40px;
+}
+.landing-scope .landing-finance__equation-label {
+  margin-bottom: 16px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-finance__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--landing-line);
+  padding: 16px 0;
+  font-size: 15px;
+  color: rgba(17, 17, 17, 0.85);
+}
+.landing-scope .landing-finance__check {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 999px;
+  background: var(--landing-blue);
+}
+.landing-scope .landing-finance__total {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--landing-line);
+  border-radius: 18px;
+  background: var(--night);
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 16px;
+  color: #fff;
+}
+.landing-scope .landing-finance__total i {
+  font-style: normal;
+  font-family: var(--fm);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--landing-blue);
+}
+.landing-scope .landing-finance__panel {
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--landing-line), 0 50px 110px -55px rgba(17, 17, 17, 0.4);
+}
+.landing-scope .landing-finance__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--landing-line);
+  padding: 16px 20px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-finance__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.landing-scope .landing-finance__kpis > div {
+  padding: 16px 20px;
+  border-left: 1px solid var(--landing-line);
+}
+.landing-scope .landing-finance__kpis > div:first-child {
+  border-left: 0;
+}
+.landing-scope .landing-finance__kpis dt {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-finance__kpis dd {
+  margin-top: 4px;
+  font-family: var(--fd);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-finance__kpis span {
+  font-size: 11px;
+  color: var(--landing-muted);
+}
+
+/* ---------------------------------------------------------------------
+ * Closing banner (standalone lines 823-843 `.banner*`, keyframe adapted
+ * from `.hero`'s `kb`/aurora `aurorapan` Ken Burns pans). Stacking order
+ * (back to front): backdrop -> veil -> animated centerpiece -> content.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-closing {
+  position: relative;
+  overflow: hidden;
+  min-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  color: #fff;
+  background: var(--night);
+}
+.landing-scope .landing-closing__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.landing-scope .landing-closing__backdrop img {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  animation: landing-closing-kenburns 18s ease-in-out infinite alternate;
+}
+@keyframes landing-closing-kenburns {
+  from {
+    transform: scale(1.05);
+  }
+  to {
+    transform: scale(1.14) translate(1.5%, -1.5%);
+  }
+}
+.landing-scope .landing-closing__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(0deg, rgba(6, 10, 20, 0.72), rgba(6, 10, 20, 0.1) 52%),
+    linear-gradient(90deg, rgba(6, 10, 20, 0.5), transparent 60%);
+}
+.landing-scope .landing-closing__animated {
+  position: relative;
+  z-index: 2;
+  width: min(90%, 640px);
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 44px 96px -50px rgba(0, 0, 0, 0.6);
+}
+.landing-scope .landing-closing__content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 26px;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 36px 32px 44px;
+  text-align: left;
+}
+.landing-scope .landing-closing__content h2 {
+  margin: 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(32px, 4.2vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(4, 8, 22, 0.4);
+}
+.landing-scope .landing-closing__cta .btn {
+  margin-top: 8px;
+  text-transform: none;
+  box-shadow: 0 14px 32px -14px rgba(4, 8, 22, 0.5);
+}
+
+/* ---------------------------------------------------------------------
+ * Footer (standalone lines 1308-1316 `.fcol`/`footer`, 860-869 `.ftop`).
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-footer {
+  position: relative;
+  background: var(--landing-night2);
+  color: var(--landing-cream);
+  padding: 80px 20px 40px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-footer {
+    display: grid;
+    grid-template-columns: 5fr 2fr 3fr;
+    gap: 48px;
+    align-items: start;
+    padding: 96px 48px 48px;
+  }
+}
+.landing-scope .landing-footer__brand {
+  max-width: 420px;
+}
+.landing-scope .landing-footer__brand p {
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(248, 247, 245, 0.65);
+}
+.landing-scope .landing-footer__logo {
+  font-family: var(--fd);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--landing-cream);
+}
+.landing-scope .landing-footer__cta {
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+}
+.landing-scope .landing-footer__cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: rgba(248, 247, 245, 0.85);
+  transition: color 0.3s;
+}
+.landing-scope .landing-footer__cta a:hover {
+  color: #fff;
+}
+.landing-scope .landing-footer__col {
+  margin-top: 40px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-footer__col {
+    margin-top: 0;
+  }
+}
+.landing-scope .landing-footer__col > p {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(248, 247, 245, 0.4);
+}
+.landing-scope .landing-footer__col ul {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+.landing-scope .landing-footer__col a {
+  position: relative;
+  display: inline-block;
+  font-size: 14px;
+  color: rgba(248, 247, 245, 0.65);
+  transition: color 0.3s, padding-left 0.3s;
+}
+.landing-scope .landing-footer__col a:hover {
+  padding-left: 14px;
+  color: #fff;
+}
+.landing-scope .landing-footer__bottom {
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  color: rgba(248, 247, 245, 0.5);
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-footer__bottom {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Reduced motion (standalone line 836 `.banner-photo{animation:none}`
+ * pattern) — the only CSS keyframe animation ported is the closing
+ * banner's Ken Burns pan; every other motion in this port is
+ * framer-motion, already gated by `useReducedMotion()` at the component
+ * level (Reveal, ShaderHero, EclipseSection, FinanceEquation).
+ * ------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .landing-scope .landing-closing__backdrop img {
+    animation: none;
+  }
+}

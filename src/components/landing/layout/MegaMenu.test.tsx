@@ -126,4 +126,73 @@ describe('<MegaMenu>', () => {
     expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
     expect(document.activeElement).toBe(trigger)
   })
+
+  it('does not steal focus on Escape when focus was outside the panel (opened via hover)', () => {
+    const outsideButton = document.createElement('button')
+    outsideButton.textContent = 'outside'
+    document.body.appendChild(outsideButton)
+
+    act(() => {
+      root.render(<MegaMenu />)
+    })
+    const menu = container.querySelector('[data-testid="mega-menu"]') as HTMLDivElement
+    act(() => {
+      // React's onMouseEnter is implemented on top of the native "mouseover"
+      // event (bubbling), not the native non-bubbling "mouseenter" event.
+      menu.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    })
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeTruthy()
+
+    act(() => {
+      outsideButton.focus()
+    })
+    expect(document.activeElement).toBe(outsideButton)
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
+    expect(document.activeElement).toBe(outsideButton)
+
+    outsideButton.remove()
+  })
+
+  it('restores focus to the trigger on click-outside when focus was inside the panel', () => {
+    openMenu()
+    const trigger = container.querySelector('[aria-controls="landing-mega-panel"]') as HTMLButtonElement
+    const panelLink = container.querySelector('[data-testid="mega-menu-tile"]') as HTMLAnchorElement
+    act(() => {
+      panelLink.focus()
+    })
+    expect(document.activeElement).toBe(panelLink)
+
+    act(() => {
+      document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('does not move focus on click-outside when focus was elsewhere', () => {
+    const outsideButton = document.createElement('button')
+    outsideButton.textContent = 'outside'
+    document.body.appendChild(outsideButton)
+
+    openMenu()
+    act(() => {
+      outsideButton.focus()
+    })
+    expect(document.activeElement).toBe(outsideButton)
+
+    act(() => {
+      document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-testid="mega-menu-panel"]')).toBeNull()
+    expect(document.activeElement).toBe(outsideButton)
+
+    outsideButton.remove()
+  })
 })

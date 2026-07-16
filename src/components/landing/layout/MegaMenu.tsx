@@ -51,8 +51,9 @@ export function MegaMenu() {
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        const focusWasInsidePanel = containerRef.current?.contains(document.activeElement) ?? false
         setOpen(false)
-        triggerRef.current?.focus()
+        if (focusWasInsidePanel) triggerRef.current?.focus()
       }
     }
     function handleClickOutside(event: MouseEvent) {

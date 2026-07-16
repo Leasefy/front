@@ -91,6 +91,18 @@ describe('<BlogArticle>', () => {
     expect(relatedLinks[0].textContent).toContain(related[0].title)
   })
 
+  it('wraps numbered list items in a valid <ol> instead of leaving orphan <li> elements', () => {
+    act(() => {
+      root.render(<BlogArticle post={post} related={related} />)
+    })
+    const body = container.querySelector('[data-testid="article-body"]') as HTMLElement
+    const items = Array.from(body.querySelectorAll('li'))
+    expect(items.length).toBeGreaterThan(0)
+    for (const item of items) {
+      expect(item.parentElement?.tagName).toBe('OL')
+    }
+  })
+
   it('omits the related section entirely when there are no related posts', () => {
     act(() => {
       root.render(<BlogArticle post={post} related={[]} />)

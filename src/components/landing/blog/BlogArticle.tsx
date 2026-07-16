@@ -74,41 +74,71 @@ export function BlogArticle({ post, related }: BlogArticleProps) {
   )
 }
 
+const LIST_ITEM_RE = /^\d+\.\s\*\*/
+
 /**
  * Renders the post's markdown-lite content — `## ` headings, `**bold**`
  * paragraph labels, numbered `**Title**: body` list items, and inline
  * `**bold**` emphasis. Ported verbatim from the pre-restyle `blog/[slug]`
- * page (logic untouched, only the surrounding chrome/typography changed).
+ * page (logic untouched except for grouping numbered list lines into a
+ * single `<ol>` instead of emitting orphan `<li>` elements — a11y fix,
+ * see landing-react-port R1). Blank lines between two numbered-list
+ * lines are treated as source-formatting spacing (the content data uses
+ * a blank line after every numbered item) rather than a real break, so
+ * the whole run stays inside one list.
  */
 function renderContent(content: string) {
   const lines = content.split('\n')
   const elements: React.ReactNode[] = []
   let key = 0
+  let listBuffer: React.ReactNode[] = []
 
-  for (const line of lines) {
+  function flushList() {
+    if (listBuffer.length > 0) {
+      elements.push(<ol key={key++}>{listBuffer}</ol>)
+      listBuffer = []
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    if (line.trim() === '') {
+      let nextIndex = i + 1
+      while (nextIndex < lines.length && lines[nextIndex].trim() === '') nextIndex++
+      const nextIsListItem = nextIndex < lines.length && LIST_ITEM_RE.test(lines[nextIndex])
+      if (listBuffer.length > 0 && nextIsListItem) {
+        continue
+      }
+      flushList()
+      elements.push(<div key={key++} className="landing-ba__spacer" />)
+      continue
+    }
+
     if (line.startsWith('## ')) {
+      flushList()
       elements.push(<h2 key={key++}>{line.slice(3)}</h2>)
     } else if (line.startsWith('**') && line.endsWith('**')) {
+      flushList()
       elements.push(
         <p className="landing-ba__label" key={key++}>
           {line.slice(2, -2)}
         </p>,
       )
-    } else if (line.match(/^\d+\.\s\*\*/)) {
+    } else if (LIST_ITEM_RE.test(line)) {
       const text = line.replace(/\*\*(.*?)\*\*/g, '$1')
       const match = line.match(/^\d+\.\s\*\*(.*?)\*\*:\s?(.*)/)
       if (match) {
-        elements.push(
+        listBuffer.push(
           <li key={key++}>
             <strong>{match[1]}</strong>: {match[2]}
           </li>,
         )
       } else {
-        elements.push(<li key={key++}>{text}</li>)
+        listBuffer.push(<li key={key++}>{text}</li>)
       }
-    } else if (line.trim() === '') {
-      elements.push(<div key={key++} className="landing-ba__spacer" />)
     } else {
+      flushList()
       const parts = line.split(/(\*\*.*?\*\*)/g)
       elements.push(
         <p key={key++}>
@@ -119,6 +149,8 @@ function renderContent(content: string) {
       )
     }
   }
+
+  flushList()
 
   return elements
 }

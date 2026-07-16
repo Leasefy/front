@@ -16,6 +16,12 @@ vi.mock('@/components/landing-v2/landing-fx', () => ({
   initLandingFx: () => initLandingFxMock(),
 }))
 
+// LandingHome now renders <LandingAuthCta>, which calls useAuth() — mock it
+// out here since this test renders HomePage without the real AuthProvider.
+vi.mock('@/lib/auth/use-auth', () => ({
+  useAuth: () => ({ user: null, isAuthenticated: false, isLoading: false }),
+}))
+
 import HomePage, { metadata } from './page'
 import { landingRobots } from '@/lib/landing/landing-stage'
 

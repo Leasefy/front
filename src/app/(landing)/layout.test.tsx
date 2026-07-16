@@ -77,6 +77,18 @@ describe('<LandingLayout>', () => {
     expect(container.querySelector('html')).toBeNull()
   })
 
+  it('bridges the --night CSS var used by the eclipse orb (no gradient allowed there)', () => {
+    act(() => {
+      root.render(
+        <LandingLayout>
+          <p>contenido</p>
+        </LandingLayout>,
+      )
+    })
+    const wrapper = container.querySelector('[data-testid="landing-scope"]') as HTMLElement
+    expect(wrapper.style.getPropertyValue('--night')).toBe('#080808')
+  })
+
   it('renders header, children, and footer inside the scoped wrapper', () => {
     act(() => {
       root.render(

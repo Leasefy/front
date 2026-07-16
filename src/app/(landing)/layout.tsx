@@ -38,6 +38,11 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
           '--fd': 'var(--font-inter-tight)',
           '--fb': 'var(--font-inter-tight)',
           '--fm': 'var(--font-ibm-plex-mono)',
+          // Locked (HANDOFF "reglas de oro"): the eclipse orb is a flat
+          // near-black, never a gradient. Scoped here (not Cadence's
+          // --ink, which is a warmer #14130F) to match the standalone's
+          // exact --night value.
+          '--night': '#080808',
         } as CSSProperties
       }
     >

@@ -60,6 +60,13 @@ describe('/ (home) page', () => {
     expect(shell.querySelector('#hdr')).toBeTruthy()
   })
 
+  it('renders #lfLogo exactly once (no duplicate id from LandingHome + LogoDefs)', () => {
+    act(() => {
+      root.render(<HomePage />)
+    })
+    expect(container.querySelectorAll('#lfLogo').length).toBe(1)
+  })
+
   it('renders exactly one <header> (no double header from the shared LandingHeader)', () => {
     act(() => {
       root.render(<HomePage />)

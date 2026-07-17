@@ -33,7 +33,6 @@ import type {
   SolicitudMantenimiento,
   Renovacion,
   InmobiliariaDashboardKPIs,
-  InmobiliariaConfigExtended,
   DocumentTemplate,
   PropertyDocument,
   ActaEntrega,
@@ -61,14 +60,19 @@ function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = [], skip = f
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
 
-  const refetch = useCallback(async () => {
+  // Returns the fetched data on success and null on failure (the error is
+  // captured in hook state, NOT rethrown) — callers that must react to a
+  // failed refetch (e.g. warn the user the view is stale) check for null.
+  const refetch = useCallback(async (): Promise<T | null> => {
     try {
       setIsLoading(true);
       setError(null);
       const result = await fetcher();
       setData(result);
+      return result;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar datos');
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -362,9 +366,15 @@ export function useActasEntrega() {
 // Configuracion
 // ============================================================================
 
+/**
+ * Config overview from GET /inmobiliaria/config.
+ * `config.agency` carries the real agency profile (name, nit, phone, logoUrl,
+ * financial defaults, memberRole...). There are no top-level `name`/`branding`
+ * fields — that shape never existed in the backend.
+ */
 export function useInmobiliariaConfig() {
   const { data, ...rest } = useApiData(
-    () => inmobiliariaConfigApi.getExtended(),
+    () => inmobiliariaConfigApi.getConfigOverview(),
     []
   );
   return { config: data, ...rest };

@@ -1166,7 +1166,9 @@
           "dayRange": "Day must be between 1 and 28",
           "fixErrors": "Please fix the errors before saving",
           "saveError": "Error saving configuration"
-        }
+        },
+        "adminOnlyHint": "Only agency administrators can edit this information.",
+        "remindersEmptyHint": "With no days selected, reminders are disabled."
       },
       "brandingSection": {
         "title": "Brand & Visual Style",
@@ -1183,19 +1185,14 @@
         "uploadNewLogo": "Upload New Logo",
         "dragOrClick": "Drag your logo here or",
         "clickHere": "click here",
-        "unsupportedFormat": "Unsupported format. Use PNG, JPG, or SVG.",
-        "fileTooLarge": "File exceeds the 2MB limit.",
+        "unsupportedFormat": "Unsupported format. Use JPG, PNG, or WebP.",
+        "fileTooLarge": "File exceeds the 5MB limit.",
         "readError": "Error reading the file.",
         "logoRemoved": "Logo removed",
         "brandColors": "Brand Colors",
         "restore": "Restore",
         "primaryColorDesc": "Used for primary buttons, links, and accents",
         "secondaryColorDesc": "Used for complementary indicators and states",
-        "accentColor": "Accent Color",
-        "accentColorDesc": "Used for alerts, notifications, and highlights",
-        "presetPalettes": "Preset Palettes",
-        "paletteApplied": "\"{{name}}\" palette applied",
-        "colorsReset": "Colors reset to default values",
         "myAgency": "My Agency",
         "buttons": "Buttons",
         "primaryButton": "Primary",
@@ -1207,7 +1204,14 @@
         "alertExample": "You have 3 pending payments to review.",
         "discard": "Discard",
         "saveBranding": "Save Branding",
-        "saveError": "Error saving branding"
+        "saveError": "Error saving branding",
+        "logoUpdated": "Logo updated",
+        "logoUpdatedDesc": "The new agency logo has been saved",
+        "logoUploadError": "Error uploading logo",
+        "uploading": "Uploading logo...",
+        "saveColors": "Save colors",
+        "colorsSaved": "Colors updated",
+        "invalidHex": "Invalid color. Use the #RRGGBB format."
       },
       "users": {
         "title": "Team",
@@ -2529,7 +2533,16 @@
           "renewSoon": "Renew consignment coming soon",
           "renewDesc": "You will be able to extend the consignment contract",
           "reassignSoon": "Reassign agent coming soon",
-          "reassignDesc": "You will be able to change the assigned agent"
+          "reassignDesc": "You will be able to change the assigned agent",
+          "updateError": "Changes could not be saved",
+          "statusChangeError": "The status could not be changed",
+          "terminated": "Consignment terminated",
+          "terminateError": "The consignment could not be terminated"
+        },
+        "terminateDialog": {
+          "title": "Terminate consignment?",
+          "body": "\"{{property}}\" will move to Terminated status and leave the active portfolio. This action cannot be undone.",
+          "confirm": "Terminate consignment"
         }
       },
       "new": {
@@ -2808,6 +2821,7 @@
         "estimatedPerMonth": "≈ {{amount}}/mo",
         "contractTerms": "Contract terms",
         "assignedAgent": "Assigned agent",
+        "agentReassignSoon": "Agent reassignment will be available soon",
         "selectAgent": "Select agent",
         "noZone": "No zone",
         "contractStartDate": "Contract start date",
@@ -7809,6 +7823,8 @@
       "errorMicNotFound": "No microphone found.",
       "errorMicUnsupported": "Your browser can't record audio here (requires HTTPS).",
       "assignWarning": "The property was created, but the agent couldn't be assigned. Assign it from the list.",
+      "photosUploadPartial": "The property was created, but {{failed}} of {{total}} photos failed to upload. You can add them later by editing the property.",
+      "planLimitDraft": "You reached your plan's published-property limit — the property was saved as a draft.",
       "photoFormatUnsupported": "Some photos have an unsupported format (e.g. HEIC) and were skipped. Use JPG or PNG.",
       "pageTitle": "Capture property with AI",
       "pageSubtitle": "Record a description and add photos; AI builds the listing for you to review.",

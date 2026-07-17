@@ -9,6 +9,16 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    server: {
+      deps: {
+        // `@leasefy/cadence` is a file:../cadence dep. Its transitive deps
+        // (Radix) live under cadence/node_modules and are externalized by
+        // default, so Node loads them with cadence's OWN React copy and every
+        // hook inside them crashes ("Invalid hook call"). Inlining routes
+        // them through Vite, where `resolve.dedupe` pins a single React.
+        inline: [/[\\/]cadence[\\/]node_modules[\\/]/],
+      },
+    },
     coverage: {
       provider: 'v8',
       include: ['src/lib/**'],
@@ -17,6 +27,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Pin React to the front's copy even for CJS deps under
+      // cadence/node_modules (e.g. react-remove-scroll) that `dedupe` misses.
+      react: path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
     },
+    // `@leasefy/cadence` is a file:../cadence dep — without dedupe, Radix
+    // modules under cadence/node_modules load their own React copy and every
+    // hook call inside them crashes ("Invalid hook call") in vitest.
+    dedupe: ['react', 'react-dom'],
   },
 });

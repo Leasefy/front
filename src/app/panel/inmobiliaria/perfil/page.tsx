@@ -74,48 +74,55 @@ export default function InmobiliariaPerfilPage() {
     emergencyContactPhone: user?.emergencyContactPhone || '',
   });
 
-  // Setup steps with completion status
+  // Setup steps derived from data the user has ACTUALLY provided — never
+  // hardcoded. There is no phone/identity verification system in the backend,
+  // so no "verify X" steps are shown.
   const setupSteps: SetupStep[] = [
     {
       id: 'basic-info',
       label: locale === 'es' ? 'Información básica' : 'Basic information',
-      description: locale === 'es' ? 'Nombre, email y datos personales' : 'Name, email and personal data',
+      description: locale === 'es' ? 'Nombre y apellido' : 'First and last name',
       icon: User,
-      completed: true,
+      completed: !!(user?.firstName && user?.lastName),
     },
     {
-      id: 'phone-verify',
-      label: locale === 'es' ? 'Verificar teléfono' : 'Verify phone',
-      description: locale === 'es' ? 'Confirma tu número de teléfono' : 'Confirm your phone number',
+      id: 'phone',
+      label: locale === 'es' ? 'Teléfono' : 'Phone',
+      description: locale === 'es' ? 'Agrega tu número de teléfono' : 'Add your phone number',
       icon: Phone,
-      completed: true,
+      completed: !!user?.phone,
     },
     {
-      id: 'identity-verify',
-      label: locale === 'es' ? 'Verificar identidad' : 'Verify identity',
-      description: locale === 'es' ? 'Sube tu documento de identidad' : 'Upload your ID document',
-      icon: Shield,
-      completed: true,
+      id: 'address',
+      label: locale === 'es' ? 'Dirección' : 'Address',
+      description: locale === 'es' ? 'Agrega tu dirección' : 'Add your address',
+      icon: MapPin,
+      completed: !!user?.address,
     },
     {
-      id: 'agency-verify',
-      label: locale === 'es' ? 'Verificar agencia' : 'Verify agency',
-      description: locale === 'es' ? 'Confirma los datos de tu inmobiliaria' : 'Confirm your agency details',
+      id: 'agency-info',
+      label: locale === 'es' ? 'Datos de la agencia' : 'Agency details',
+      description: locale === 'es' ? 'Completa el NIT de tu inmobiliaria' : 'Complete your agency tax ID',
       icon: Buildings,
-      completed: true,
+      completed: !!(agency?.name && agency?.nit),
     },
     {
       id: 'emergency-contact',
       label: locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact',
       description: locale === 'es' ? 'Agrega un contacto de emergencia' : 'Add an emergency contact',
       icon: UserPlus,
-      completed: true,
+      completed: !!(user?.emergencyContactName && user?.emergencyContactPhone),
     },
   ];
 
   const completedSteps = setupSteps.filter(s => s.completed).length;
   const totalSteps = setupSteps.length;
   const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
+
+  // Real verification signal: Supabase email confirmation (exposed by the auth
+  // context). There is no phone/identity/agency verification system in the
+  // backend, so no other badge is shown.
+  const emailVerified = !!user?.emailConfirmedAt;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -561,35 +568,26 @@ export default function InmobiliariaPerfilPage() {
               </div>
             </div>
 
-            {/* Verification Status Card */}
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h3 className="text-base font-semibold text-fg mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-fg-muted" />
-                {locale === 'es' ? 'Estado de verificación' : 'Verification status'}
-              </h3>
-              <div className="space-y-3">
-                {[
-                  { key: 'email', label: 'Email', verified: true },
-                  { key: 'phone', label: locale === 'es' ? 'Teléfono' : 'Phone', verified: true },
-                  { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
-                  { key: 'agency', label: locale === 'es' ? 'Agencia' : 'Agency', verified: true },
-                ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-md bg-surface-muted">
-                    <span className="text-sm font-medium text-fg">{item.label}</span>
-                    {item.verified ? (
-                      <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        {locale === 'es' ? 'Verificado' : 'Verified'}
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium text-primary bg-primary-soft px-2.5 py-1 rounded-full">
-                        {locale === 'es' ? 'Verificar' : 'Verify'}
-                      </span>
-                    )}
+            {/* Verification Status Card — only real signals (Supabase email
+                confirmation). There is no phone/identity/agency verification
+                system in the backend, so nothing else is shown as verified. */}
+            {emailVerified && (
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h3 className="text-base font-semibold text-fg mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-fg-muted" />
+                  {locale === 'es' ? 'Estado de verificación' : 'Verification status'}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2.5 px-3 rounded-md bg-surface-muted">
+                    <span className="text-sm font-medium text-fg">Email</span>
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {locale === 'es' ? 'Verificado' : 'Verified'}
+                    </span>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Profile Form */}

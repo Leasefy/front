@@ -176,6 +176,16 @@ export function MembersStepForm({
     await onSubmit(toMembersRequest(parsed.data))
   })
 
+  /**
+   * Bypasses row-level validation entirely — the agent now accepts an empty
+   * `members: []` POST (minItems: 0) and no longer gates `/complete` on this
+   * step having entries. This is the explicit "skip" affordance; the regular
+   * "Continuar" button still validates whatever rows are present.
+   */
+  const skipStep = async () => {
+    await onSubmit({ members: [] })
+  }
+
   if (pendingInvites) {
     return (
       <MembersInviteLinksScreen pendingInvites={pendingInvites} onContinueAfterInvites={onContinueAfterInvites} />
@@ -185,6 +195,10 @@ export function MembersStepForm({
   return (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="members-step-form">
       <p className="text-body-sm text-fg-muted">Invita a otras personas de tu inmobiliaria.</p>
+
+      <p data-testid="members-step-optional-notice" className="text-body-sm text-fg-muted">
+        Este paso es opcional: podés omitirlo ahora e invitar a tu equipo más adelante desde el panel.
+      </p>
 
       <FieldError message={errors.members?.message} />
 
@@ -280,6 +294,19 @@ export function MembersStepForm({
             <ArrowRight className="w-4 h-4" />
           </>
         )}
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        hideArrow
+        size="lg"
+        className="w-full"
+        disabled={isSubmitting}
+        onClick={skipStep}
+        data-testid="members-skip-step"
+      >
+        Omitir por ahora
       </Button>
     </form>
   )

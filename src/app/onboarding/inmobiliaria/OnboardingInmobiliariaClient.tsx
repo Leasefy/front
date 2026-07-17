@@ -9,7 +9,12 @@ import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioni
 import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/OnboardingWizardStepper'
 import { OnboardingSessionErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingSessionErrorBanner'
 import { OnboardingProvisioningErrorBanner } from '@/components/onboarding/inmobiliaria/OnboardingProvisioningErrorBanner'
+import { OwnerNameStepForm } from '@/components/onboarding/inmobiliaria/OwnerNameStepForm'
 import { AgencyStepForm } from '@/components/onboarding/inmobiliaria/AgencyStepForm'
+import {
+  computeAgencyStepPrefill,
+  type AgencyStepPreStepValues,
+} from '@/components/onboarding/inmobiliaria/agency-step-prefill'
 import { MembersStepForm, type PendingMembersInvites } from '@/components/onboarding/inmobiliaria/MembersStepForm'
 import { PaymentProviderStepForm } from '@/components/onboarding/inmobiliaria/PaymentProviderStepForm'
 import { PolicyStepForm } from '@/components/onboarding/inmobiliaria/PolicyStepForm'
@@ -40,7 +45,21 @@ export default function OnboardingInmobiliariaClient() {
 }
 
 function ProvisionedOnboardingWizard() {
-  const { status, sessionId, retry } = useOnboardingProvisioning()
+  const { status, sessionId, agencyPrefill, retry, provision } = useOnboardingProvisioning()
+
+  // Provisioning always needs the owner's name plus the agency's razón
+  // social and NIT — collect them here and provision explicitly (see
+  // useOnboardingProvisioning). The form stays mounted while the request is
+  // in flight so the submit button can disable itself (double-submit guard).
+  if (status === 'needs-info' || status === 'provisioning') {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+        <div className="max-w-sm w-full">
+          <OwnerNameStepForm onSubmit={provision} isSubmitting={status === 'provisioning'} />
+        </div>
+      </div>
+    )
+  }
 
   if (status === 'error') {
     return (
@@ -63,14 +82,27 @@ function ProvisionedOnboardingWizard() {
     )
   }
 
-  return <OnboardingWizard sessionId={sessionId} />
+  return <OnboardingWizard sessionId={sessionId} preStepAgency={agencyPrefill} />
 }
 
-function OnboardingWizard({ sessionId }: { sessionId: string }) {
+function OnboardingWizard({
+  sessionId,
+  preStepAgency,
+}: {
+  sessionId: string
+  /**
+   * Razón social + NIT captured in-session by `OwnerNameStepForm` (via
+   * `useOnboardingProvisioning`). `undefined` for the `?session=` dev
+   * override (no pre-step ran) — `computeAgencyStepPrefill` tolerates that
+   * and falls back entirely to the resume draft.
+   */
+  preStepAgency?: AgencyStepPreStepValues | null
+}) {
   const router = useRouter()
   const {
     status,
     currentStep,
+    draft,
     error,
     refresh,
     submitAgency,
@@ -168,6 +200,7 @@ function OnboardingWizard({ sessionId }: { sessionId: string }) {
                 isSubmitting={isSubmitting}
                 onSubmit={withOverrideClear(submitAgency)}
                 submitError={error !== null && error.kind === 'validation' ? error.message : null}
+                prefill={computeAgencyStepPrefill(preStepAgency, draft)}
               />
             ) : effectiveStep === 'members' || pendingMembersInvites ? (
               <MembersStepForm

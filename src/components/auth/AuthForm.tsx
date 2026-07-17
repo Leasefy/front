@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { Eyebrow } from '@/components/brand';
 import { useAuth } from '@/lib/auth/use-auth';
+import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import {
   Key,
@@ -183,9 +184,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       return;
     }
     // No returnUrl — redirect to the correct panel based on role
-    if (user.role === 'agency') window.location.href = '/panel/inmobiliaria';
-    else if (user.role === 'landlord') window.location.href = '/panel';
-    else window.location.href = '/inquilino';
+    window.location.href = getRoleHomeRoute(user.role);
   }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired]);
   const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
@@ -253,9 +252,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       router.push(returnUrl);
       return;
     }
-    if (role === 'landlord') router.push('/panel');
-    else if (role === 'agency') router.push('/panel/inmobiliaria');
-    else router.push('/inquilino'); // default: tenant
+    router.push(getRoleHomeRoute(role));
   }, [returnUrl, router]);
 
   // ── Login ────────────────────────────────────────────────────────────────

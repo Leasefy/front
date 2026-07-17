@@ -118,18 +118,18 @@ function CobrosContent() {
 
   // State for reminder config (initialized from API config)
   const [reminderConfig, setReminderConfig] = useState<RecordatorioConfigData>({
-    daysBefore: inmobiliariaConfig?.reminderDaysBefore ?? [5],
-    daysAfter: inmobiliariaConfig?.reminderDaysAfter ?? [3],
+    daysBefore: inmobiliariaConfig?.agency?.reminderDaysBefore ?? [5],
+    daysAfter: inmobiliariaConfig?.agency?.reminderDaysAfter ?? [3],
     channels: ['email', 'whatsapp'],
   });
 
   // Update reminder config when API config loads
   useEffect(() => {
-    if (inmobiliariaConfig) {
+    if (inmobiliariaConfig?.agency) {
       setReminderConfig((prev) => ({
         ...prev,
-        daysBefore: inmobiliariaConfig.reminderDaysBefore,
-        daysAfter: inmobiliariaConfig.reminderDaysAfter,
+        daysBefore: inmobiliariaConfig.agency.reminderDaysBefore ?? prev.daysBefore,
+        daysAfter: inmobiliariaConfig.agency.reminderDaysAfter ?? prev.daysAfter,
       }));
     }
   }, [inmobiliariaConfig]);

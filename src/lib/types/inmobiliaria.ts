@@ -659,38 +659,6 @@ export interface InmobiliariaDashboardKPIs {
 }
 
 // ============================================================================
-// Configuracion Inmobiliaria
-// ============================================================================
-
-export interface InmobiliariaConfig {
-  id: string;
-  name: string;
-  nit: string;
-  address: string;
-  city: string;
-  phone: string;
-  email: string;
-  website?: string;
-  logo?: string;
-
-  // Defaults
-  defaultCommissionPercent: number;
-  defaultLateFeePercent: number;
-  paymentDueDay: number; // Day of month rent is due
-  disbursementDay: number; // Day of month owner payments are made
-
-  // Collection accounts
-  collectionBankAccount?: PropietarioBankAccount;
-
-  // Notifications
-  reminderDaysBefore: number[];
-  reminderDaysAfter: number[];
-
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -956,62 +924,21 @@ export function getUrgencyColor(bucket: '0-30' | '31-60' | '61-90' | '90+'): str
 // Configuracion - Extended Agency Config
 // ============================================================================
 
+// NOTE: the old InmobiliariaConfig/InmobiliariaConfigExtended (top-level
+// name/branding/contact/legal/defaults) shapes were removed — that response
+// never existed in the backend. The real agency profile is `AgencyProfile`
+// (see below) under the `agency` key of GET /inmobiliaria/config.
+
 export interface AgencyBranding {
-  primaryColor: string;    // Hex color
-  secondaryColor: string;  // Hex color
-  accentColor: string;     // Hex color
-  logoUrl?: string;
-  logoFile?: string;       // Base64 for local demo
-  favicon?: string;
+  primaryColor: string;    // Hex color '#rrggbb'
+  secondaryColor: string;  // Hex color '#rrggbb'
 }
 
-export interface AgencyContactInfo {
-  phone: string;
-  alternatePhone?: string;
-  email: string;
-  supportEmail?: string;
-  whatsapp?: string;
-  website?: string;
-  address: string;
-  city: string;
-  department: string;
-  postalCode?: string;
-}
-
-export interface AgencyLegalInfo {
-  nit: string;
-  razonSocial: string;
-  representanteLegal: string;
-  representanteCedula: string;
-  matriculaInmobiliaria?: string;
-  registroCamara?: string;
-}
-
-export interface AgencyDefaults {
-  defaultCommissionPercent: number;
-  defaultAdminFeePercent: number;
-  defaultLateFeePercent: number;
-  paymentDueDay: number;
-  disbursementDay: number;
-  gracePeriodDays: number;
-  reminderDaysBefore: number[];
-  reminderDaysAfter: number[];
-}
-
-// Extended InmobiliariaConfig with all configuration sections
-export interface InmobiliariaConfigExtended extends InmobiliariaConfig {
-  branding: AgencyBranding;
-  contact: AgencyContactInfo;
-  legal: AgencyLegalInfo;
-  defaults: AgencyDefaults;
-}
-
-// Helper for default branding colors
+// Helper for default branding colors (used when the agency has none saved)
 export function getDefaultBranding(): AgencyBranding {
   return {
     primaryColor: '#1A40FF',   // Electric Blue
     secondaryColor: '#6B6B6B', // Neutral Mid
-    accentColor: '#9B9B9B',    // Neutral Light
   };
 }
 
@@ -1128,6 +1055,90 @@ export interface BillingInvoice {
 // GET /inmobiliaria/config/billing/invoices
 // ============================================================================
 
+/**
+ * Agency row as returned by the backend (GET /inmobiliaria/agency and the
+ * `agency` key of GET /inmobiliaria/config). Mirrors the Prisma `Agency`
+ * model plus the caller's membership (memberRole/memberStatus).
+ */
+export interface AgencyProfile {
+  id: string;
+  name: string;
+  nit?: string | null;
+  address?: string | null;
+  city?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  logoUrl?: string | null;
+  website?: string | null;
+  portfolioSize?: string | null;
+  yearsInBusiness?: number | null;
+  services?: string[] | null;
+  razonSocial?: string | null;
+  whatsapp?: string | null;
+  matriculaInmobiliaria?: string | null;
+  registroCamara?: string | null;
+  department?: string | null;
+  postalCode?: string | null;
+  supportEmail?: string | null;
+  /** Brand colors — hex '#rrggbb' only */
+  branding?: { primaryColor?: string | null; secondaryColor?: string | null } | null;
+  defaultCommissionPercent?: number;
+  defaultLateFeePercent?: number;
+  paymentDueDay?: number;
+  disbursementDay?: number;
+  /** Stored as Json in the backend — arrays of day offsets */
+  reminderDaysBefore?: number[];
+  reminderDaysAfter?: number[];
+  legalRepresentative?: string | null;
+  legalDocumentNumber?: string | null;
+  /** Caller's membership in this agency */
+  memberRole?: 'ADMIN' | 'AGENTE' | 'CONTADOR' | 'VIEWER';
+  memberStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  /** Backend includes provisioning fields, _count, etc. we don't model */
+  [key: string]: unknown;
+}
+
+/**
+ * Body for PUT /inmobiliaria/agency (backend UpdateAgencyDto).
+ * ONLY these fields are accepted — the backend runs ValidationPipe with
+ * `forbidNonWhitelisted: true`, so any extra key is a 400.
+ * reminderDaysBefore/After are arrays of day offsets (@IsArray + @IsInt each,
+ * 0..30 per element; empty array allowed; scalars rejected).
+ */
+export interface UpdateAgencyPayload {
+  name?: string;
+  nit?: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  logoUrl?: string;
+  website?: string;
+  portfolioSize?: string;
+  yearsInBusiness?: number;
+  services?: string[];
+  razonSocial?: string;
+  whatsapp?: string;
+  matriculaInmobiliaria?: string;
+  registroCamara?: string;
+  department?: string;
+  postalCode?: string;
+  supportEmail?: string;
+  /** Hex '#rrggbb' only — the backend rejects other formats */
+  branding?: { primaryColor?: string; secondaryColor?: string };
+  defaultCommissionPercent?: number;
+  defaultLateFeePercent?: number;
+  paymentDueDay?: number;
+  disbursementDay?: number;
+  /** Arrays of day offsets, 0..30 each; empty array allowed (= disabled) */
+  reminderDaysBefore?: number[];
+  reminderDaysAfter?: number[];
+  legalRepresentative?: string;
+  legalDocumentNumber?: string;
+}
+
 export interface AgencyConfigPermissions {
   canManageBilling: boolean;
   canManageMembers: boolean;
@@ -1141,13 +1152,7 @@ export interface AgencyConfigCounts {
 }
 
 export interface AgencyConfigOverview {
-  agency: {
-    id: string;
-    name: string;
-    nit?: string;
-    logo?: string;
-    [key: string]: unknown;
-  };
+  agency: AgencyProfile;
   counts: AgencyConfigCounts;
   /** Full subscription detail (null if caller is not admin) */
   subscription: import('../api/subscriptions.types').BackendSubscription | null;

@@ -55,7 +55,9 @@ function baseProvisioningResult(overrides: Record<string, unknown> = {}) {
   return {
     status: 'ready',
     sessionId: 'sess-provisioned',
+    agencyPrefill: null,
     retry: vi.fn(),
+    provision: vi.fn(),
     ...overrides,
   }
 }
@@ -123,14 +125,25 @@ describe('<OnboardingInmobiliariaClient> — session provisioning (work-unit #4)
     expect(mockUseOnboardingSession).toHaveBeenCalledWith('sess-1')
   })
 
-  it('shows a loading state while the session is being provisioned', () => {
+  it('keeps the pre-step mounted with a disabled submit while provisioning (no double POST)', () => {
     mockSearchParams = new URLSearchParams()
+    const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
-      baseProvisioningResult({ status: 'provisioning', sessionId: null }),
+      baseProvisioningResult({ status: 'provisioning', sessionId: null, provision }),
     )
     render()
 
-    expect(container.querySelector('[data-testid="provisioning-loading"]')).toBeTruthy()
+    const submitBtn = container.querySelector(
+      '[data-testid="owner-name-step-form"] button[type="submit"]',
+    ) as HTMLButtonElement
+    expect(submitBtn).toBeTruthy()
+    expect(submitBtn.disabled).toBe(true)
+
+    // A click on the disabled button must never fire another provision().
+    act(() => {
+      submitBtn.click()
+    })
+    expect(provision).not.toHaveBeenCalled()
     expect(mockUseOnboardingSession).not.toHaveBeenCalled()
   })
 
@@ -166,6 +179,208 @@ describe('<OnboardingInmobiliariaClient> — session provisioning (work-unit #4)
       retryBtn.click()
     })
     expect(retry).toHaveBeenCalledTimes(1)
+  })
+})
+
+// The provisioning contract always needs the owner's name PLUS the agency's
+// razón social and NIT (the back only creates the agency + agent session for
+// `userType: 'INMOBILIARIA'` with an `agency` object, and without a NIT the
+// agency is flipped to FAILED with no retry). When the hook reports
+// `needs-info` the wizard shows a pre-step collecting all three, splits the
+// name like the canonical onboarding/propietario pattern, and provisions
+// explicitly.
+describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
+  function submitNameForm() {
+    const submitBtn = container.querySelector(
+      '[data-testid="owner-name-step-form"] button[type="submit"]',
+    ) as HTMLButtonElement
+    act(() => {
+      submitBtn.click()
+    })
+  }
+
+  function fillAgencyFields() {
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    setInputValue(byId('agencyNit'), '900123456-7')
+  }
+
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams()
+  })
+
+  it('renders the pre-step and does not mount the wizard nor auto-provision UI', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null }),
+    )
+    render()
+
+    expect(container.querySelector('[data-testid="owner-name-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="provisioning-loading"]')).toBeFalsy()
+    expect(mockUseOnboardingSession).not.toHaveBeenCalled()
+  })
+
+  it('splits the full name (first word → firstName, rest → lastName) and provisions with the agency data', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), '  Ana María  Pérez Gómez ')
+    fillAgencyFields()
+    submitNameForm()
+
+    expect(provision).toHaveBeenCalledTimes(1)
+    expect(provision).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'María Pérez Gómez',
+      agencyName: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
+    })
+  })
+
+  it('falls back lastName to firstName for a single-word name', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana')
+    fillAgencyFields()
+    submitNameForm()
+
+    expect(provision).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'Ana',
+      agencyName: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
+    })
+  })
+
+  it('blocks submit and shows a hint per empty required field', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    submitNameForm()
+
+    expect(provision).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Ingresa tu nombre completo para continuar.')
+    expect(container.textContent).toContain('La razón social es obligatoria.')
+    expect(container.textContent).toContain('El NIT es obligatorio.')
+  })
+
+  // Colombian RUT documents print the NIT dot-separated ("900.123.456-7") —
+  // accept it, but always post the normalized digits-only form.
+  it('accepts a dotted RUT-style NIT and provisions with it normalized', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana Pérez')
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    setInputValue(byId('agencyNit'), '900.123.456-7')
+    submitNameForm()
+
+    expect(provision).toHaveBeenCalledTimes(1)
+    expect(provision).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'Pérez',
+      agencyName: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
+    })
+  })
+
+  it('blocks submit when the NIT is not digits with an optional check digit', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana Pérez')
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    setInputValue(byId('agencyNit'), 'NIT 900.123')
+    submitNameForm()
+
+    expect(provision).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Ingresa un NIT válido. Ej: 900123456-7')
+  })
+})
+
+// Bug report: the "Agencia" step re-asked razón social + NIT that the user
+// just typed one screen earlier in `OwnerNameStepForm`. These tests wire
+// `useOnboardingProvisioning().agencyPrefill` and `useOnboardingSession().draft`
+// through to `<AgencyStepForm prefill={...}>`.
+describe('<OnboardingInmobiliariaClient> — agency step prefill', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams()
+  })
+
+  it('prefills legalName/nit from the pre-step values captured during provisioning', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({
+        agencyPrefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' },
+      }),
+    )
+    mockUseOnboardingSession.mockReturnValue(baseHookResult())
+    render()
+
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+    expect(byId('nit').value).toBe('900123456-7')
+  })
+
+  it('falls back to proposedAgencyName/contactEmail from the resume draft when the pre-step values are absent (e.g. after a refresh)', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(baseProvisioningResult({ agencyPrefill: null }))
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ draft: { proposedAgencyName: 'Inmobiliaria Andes SAS', contactEmail: 'ana@andes.test' } }),
+    )
+    render()
+
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+    expect(byId('primaryContactEmail').value).toBe('ana@andes.test')
+    // NIT has no source at all once the pre-step values are gone.
+    expect(byId('nit').value).toBe('')
+  })
+
+  it('the pre-step legalName wins over draft.proposedAgencyName', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ agencyPrefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } }),
+    )
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ draft: { proposedAgencyName: 'Nombre Viejo Ltda' } }),
+    )
+    render()
+
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+  })
+
+  it('the ?session= dev override has no pre-step prefill but still applies the draft', () => {
+    mockSearchParams = new URLSearchParams({ session: 'sess-1' })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ draft: { proposedAgencyName: 'Inmobiliaria Andes SAS' } }),
+    )
+    render()
+
+    expect(mockUseOnboardingProvisioning).not.toHaveBeenCalled()
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+  })
+
+  it('prefilled fields stay editable', async () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ agencyPrefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } }),
+    )
+    mockUseOnboardingSession.mockReturnValue(baseHookResult())
+    render()
+
+    setInputValue(byId('legalName'), 'Otro Nombre SAS')
+
+    expect(byId('legalName').value).toBe('Otro Nombre SAS')
   })
 })
 
@@ -211,7 +426,7 @@ describe('<OnboardingInmobiliariaClient>', () => {
     })
 
     expect(submitMembers).toHaveBeenCalledWith({
-      members: [{ email: 'admin@inmobiliaria.test', role: 'OPERATOR' }],
+      members: [{ email: 'admin@inmobiliaria.test', role: 'AGENTE' }],
     })
   })
 

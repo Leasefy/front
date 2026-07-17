@@ -6548,6 +6548,8 @@ export interface components {
             contactEmail: string;
             /** @example +57 300 000 0000 */
             contactPhone?: string;
+            /** @example 900123456-7 */
+            nit?: string;
             /**
              * Format: uuid
              * @description Anchor this session to a tenant already provisioned by back (server-to-server only — requires AGENT_API_KEY).
@@ -6640,7 +6642,7 @@ export interface components {
              * @example ADMIN
              * @enum {string}
              */
-            role: "ADMIN" | "OPERATOR" | "VIEWER";
+            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "OPERATOR";
         };
         OnboardingMembersRequest: {
             members: components["schemas"]["OnboardingMemberInput"][];
@@ -6824,7 +6826,7 @@ export interface components {
             /** Format: email */
             email: string;
             /** @enum {string} */
-            role: "ADMIN" | "OPERATOR" | "VIEWER";
+            role: "ADMIN" | "AGENTE" | "CONTADOR" | "VIEWER" | "OPERATOR";
         };
         OnboardingSessionMembersRequest: {
             members: components["schemas"]["OnboardingSessionMemberInput"][];

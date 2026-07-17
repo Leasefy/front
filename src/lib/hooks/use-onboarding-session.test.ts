@@ -266,6 +266,42 @@ describe('useOnboardingSession — retry on unavailable', () => {
   })
 })
 
+describe('useOnboardingSession — StrictMode double-mount (dev)', () => {
+  // React 18 StrictMode runs effects as mount → cleanup → re-run on the SAME
+  // instance (refs preserved). A cleanup-only mountedRef effect flips the ref
+  // to false forever, so the second (surviving) resume resolves but the hook
+  // never leaves 'loading' — the wizard hangs on the loading screen in dev.
+  it('reaches idle with the resumed step after the StrictMode effect re-run', async () => {
+    resumeMock.mockResolvedValue({
+      sessionId: 'sess_1',
+      currentStep: 'members',
+      nextStep: 'payment_provider',
+      draft: { legalName: 'Acme SAS' },
+    })
+
+    let latest: Hook | null = null
+    function TestComponent() {
+      latest = useOnboardingSession('sess_1')
+      return null
+    }
+    act(() => {
+      root.render(
+        React.createElement(React.StrictMode, null, React.createElement(TestComponent)),
+      )
+    })
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    // StrictMode re-runs the rehydration effect: resume fires twice, both 200.
+    expect(resumeMock).toHaveBeenCalledTimes(2)
+    expect((latest as unknown as Hook).status).toBe('idle')
+    expect((latest as unknown as Hook).currentStep).toBe('members')
+    expect((latest as unknown as Hook).error).toBeNull()
+  })
+})
+
 describe('useOnboardingSession — non-envelope actions', () => {
   it('presignHabeasData does not touch currentStep/nextStep/draft', async () => {
     resumeMock.mockResolvedValueOnce(RESUME_START)

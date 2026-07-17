@@ -1,37 +1,42 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, ArrowLeft, CheckCircle, Circle, WarningCircle, FileText, Buildings, Briefcase, UserPlus, ArrowUpRight, X, Warning, TrashSimple, Pencil, Upload, Image as ImageIcon } from '@phosphor-icons/react';
+import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, X, Warning, TrashSimple, Pencil, Upload } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
+import {
+  buildChangedFields,
+  formDataFromUser,
+  PERSONAL_FIELDS,
+  EMERGENCY_FIELDS,
+  type ProfileFormData,
+} from './profile-form';
+import { settingsApi } from '@/lib/api/settings.service';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-// Setup steps definition
+// Setup steps definition (derived from real profile data — never hardcoded)
 interface SetupStep {
   id: string;
   label: string;
   description: string;
   icon: React.ElementType;
   completed: boolean;
-  action?: string;
-  actionHref?: string;
+  section: EditingSection;
 }
 
 type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PerfilPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, updateProfile, refreshUser, signOut } = useAuth();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showVerifyModal, setShowVerifyModal] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -39,57 +44,61 @@ export default function PerfilPage() {
 
   // Avatar upload state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: user?.name || 'María González',
-    email: user?.email || 'tenant@example.com',
-    phone: '+56 9 1234 5678',
-    rut: '12.345.678-9',
-    address: 'Av. Providencia 1234, Providencia',
-    birthDate: '1990-05-15',
-    emergencyContact: 'Juan González - +56 9 8765 4321',
-  });
+  // Form state — seeded from the real authenticated user
+  const [formData, setFormData] = useState<ProfileFormData>(() => formDataFromUser(user));
 
-  // Setup steps with completion status
+  // Re-seed whenever the user loads/refreshes while not editing (also resets on cancel)
+  useEffect(() => {
+    if (!editingSection) {
+      setFormData(formDataFromUser(user));
+    }
+  }, [user, editingSection]);
+
+  // Setup steps derived from fields the user has actually filled in
   const setupSteps: SetupStep[] = [
     {
       id: 'basic-info',
       label: locale === 'es' ? 'Información básica' : 'Basic information',
-      description: locale === 'es' ? 'Nombre, email y datos personales' : 'Name, email and personal data',
-      icon: User,
-      completed: true,
+      description: locale === 'es' ? 'Nombre y apellido' : 'First and last name',
+      icon: UserIcon,
+      completed: !!(user?.firstName && user?.lastName),
+      section: 'personal',
     },
     {
-      id: 'phone-verify',
-      label: locale === 'es' ? 'Verificar teléfono' : 'Verify phone',
-      description: locale === 'es' ? 'Confirma tu número de teléfono' : 'Confirm your phone number',
+      id: 'phone',
+      label: t('profile.phone'),
+      description: locale === 'es' ? 'Agrega tu número de teléfono' : 'Add your phone number',
       icon: Phone,
-      completed: true,
+      completed: !!user?.phone,
+      section: 'personal',
     },
     {
-      id: 'identity-verify',
-      label: locale === 'es' ? 'Verificar identidad' : 'Verify identity',
-      description: locale === 'es' ? 'Sube tu documento de identidad' : 'Upload your ID document',
+      id: 'id-number',
+      label: t('profile.idNumber'),
+      description: locale === 'es' ? 'Agrega tu documento de identidad' : 'Add your ID number',
       icon: Shield,
-      completed: true,
+      completed: !!user?.rut,
+      section: 'personal',
     },
     {
-      id: 'employment-verify',
-      label: locale === 'es' ? 'Verificar empleo' : 'Verify employment',
-      description: locale === 'es' ? 'Agrega tu información laboral' : 'Add your employment information',
-      icon: Briefcase,
-      completed: false,
-      action: t('profile.verification.verify'),
+      id: 'address',
+      label: t('profile.address'),
+      description: locale === 'es' ? 'Agrega tu dirección actual' : 'Add your current address',
+      icon: MapPin,
+      completed: !!user?.address,
+      section: 'personal',
     },
     {
       id: 'emergency-contact',
       label: t('profile.emergencyContact'),
       description: locale === 'es' ? 'Agrega un contacto de emergencia' : 'Add an emergency contact',
       icon: UserPlus,
-      completed: true,
+      completed: !!(user?.emergencyContactName && user?.emergencyContactPhone),
+      section: 'emergency',
     },
   ];
 
@@ -97,32 +106,68 @@ export default function PerfilPage() {
   const totalSteps = setupSteps.length;
   const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
 
-  const handleInputChange = (field: string, value: string) => {
+  // Real verification signal: Supabase email confirmation (exposed by the auth
+  // context). There is no phone/identity verification system in the backend,
+  // so no other badge is shown.
+  const emailVerified = !!user?.emailConfirmedAt;
+
+  const handleInputChange = (field: keyof ProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Saved avatar URL (persists after saving)
-  const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
+  const handleSaveProfile = async (fields: readonly (keyof ProfileFormData)[]) => {
+    const payload = buildChangedFields(fields, formData, user);
 
-  const handleSave = async (section: EditingSection) => {
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // If saving avatar section, preserve the uploaded image
-    if (section === 'avatar' && avatarPreview) {
-      setSavedAvatar(avatarPreview);
+    if (Object.keys(payload).length === 0) {
+      setEditingSection(null);
+      return;
     }
 
-    setIsSaving(false);
-    setEditingSection(null);
-    // Don't clear avatarPreview here - it will be cleared by handleCancelEdit if user cancels
-    toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
+    setIsSaving(true);
+    try {
+      await updateProfile(payload);
+      setEditingSection(null);
+      toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
+    } catch (err) {
+      // Surface the backend message (e.g. the Colombian phone format error)
+      const message = err instanceof Error && err.message
+        ? err.message
+        : (locale === 'es' ? 'No se pudieron guardar los cambios' : 'Could not save changes');
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!avatarFile) {
+      setEditingSection(null);
+      setAvatarPreview(null);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await settingsApi.uploadAvatar(avatarFile);
+      await refreshUser();
+      setEditingSection(null);
+      setAvatarPreview(null);
+      setAvatarFile(null);
+      toast.success(locale === 'es' ? 'Foto de perfil actualizada' : 'Profile photo updated');
+    } catch (err) {
+      const message = err instanceof Error && err.message
+        ? err.message
+        : (locale === 'es' ? 'No se pudo subir la foto' : 'Could not upload the photo');
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingSection(null);
-    // Reset avatar preview if cancelling avatar edit
     setAvatarPreview(null);
+    setAvatarFile(null);
   };
 
   // Avatar upload handlers
@@ -148,6 +193,7 @@ export default function PerfilPage() {
       toast.error(locale === 'es' ? 'La imagen debe ser menor a 5MB' : 'Image must be less than 5MB');
       return;
     }
+    setAvatarFile(file);
     // Create preview URL
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -177,13 +223,10 @@ export default function PerfilPage() {
 
   const handleRemoveAvatar = () => {
     setAvatarPreview(null);
+    setAvatarFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const handleVerifyStep = (stepId: string) => {
-    setShowVerifyModal(stepId);
   };
 
   const handleOpenDeleteModal = () => {
@@ -204,17 +247,31 @@ export default function PerfilPage() {
     if (deleteConfirmText !== requiredText) return;
 
     setIsDeleting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDeleting(false);
-    setDeleteStep(3);
-
-    // In real implementation, would redirect to logout/goodbye page
-    setTimeout(() => {
-      toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      handleCloseDeleteModal();
-    }, 2000);
+    try {
+      await settingsApi.deleteAccount();
+      setIsDeleting(false);
+      setDeleteStep(3);
+      // Let the user read the goodbye screen, then clear the session.
+      setTimeout(() => {
+        void signOut();
+      }, 2000);
+    } catch (err) {
+      setIsDeleting(false);
+      const message = err instanceof Error && err.message
+        ? err.message
+        : (locale === 'es' ? 'No se pudo eliminar la cuenta' : 'Could not delete the account');
+      toast.error(message);
+    }
   };
+
+  const displayName = user?.name ?? '';
+  const savedAvatar = user?.avatar ?? null;
+  const notSet = locale === 'es' ? 'No registrado' : 'Not set';
+
+  if (!user) {
+    // ProtectedRoute guards this page; user is only briefly null during hydration.
+    return <div className="min-h-screen bg-bg" data-testid="perfil-loading" />;
+  }
 
   return (
     <div className="min-h-screen bg-bg">
@@ -352,18 +409,16 @@ export default function PerfilPage() {
                         </p>
                         {step.completed ? (
                           <span className="text-xs text-success">{locale === 'es' ? 'Completado' : 'Completed'}</span>
-                        ) : step.action ? (
+                        ) : (
                           <Button
                             variant="link"
                             size="sm"
                             hideArrow
-                            onClick={() => handleVerifyStep(step.id)}
+                            onClick={() => setEditingSection(step.section)}
                             className="px-0 text-xs text-primary"
                           >
-                            {step.action} →
+                            {locale === 'es' ? 'Completar' : 'Complete'} →
                           </Button>
-                        ) : (
-                          <span className="text-xs text-fg-muted">{t('common.pending')}</span>
                         )}
                       </div>
                     </div>
@@ -389,10 +444,7 @@ export default function PerfilPage() {
                 {editingSection !== 'avatar' && (
                   <IconButton
                     variant="ghost"
-                    onClick={() => {
-                      setAvatarPreview(savedAvatar);
-                      setEditingSection('avatar');
-                    }}
+                    onClick={() => setEditingSection('avatar')}
                     className="absolute top-3 right-3 p-2 bg-surface/20 hover:bg-surface/30 backdrop-blur-sm rounded-full text-white"
                     aria-label={locale === 'es' ? 'Editar foto' : 'Edit photo'}
                     icon={<Pencil className="w-4 h-4" />}
@@ -418,9 +470,9 @@ export default function PerfilPage() {
                     )}
                     onClick={editingSection === 'avatar' ? handleAvatarClick : undefined}
                   >
-                    {(editingSection === 'avatar' ? avatarPreview : savedAvatar) ? (
+                    {(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar) ? (
                       <Image
-                        src={(editingSection === 'avatar' ? avatarPreview : savedAvatar)!}
+                        src={(editingSection === 'avatar' ? (avatarPreview ?? savedAvatar) : savedAvatar)!}
                         alt="Avatar"
                         width={112}
                         height={112}
@@ -428,7 +480,7 @@ export default function PerfilPage() {
                       />
                     ) : (
                       <div className="w-full h-full bg-surface-muted flex items-center justify-center text-fg uppercase tracking-wide font-mono font-bold text-4xl">
-                        {formData.name.charAt(0).toUpperCase()}
+                        {(displayName || user.email).charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -507,19 +559,8 @@ export default function PerfilPage() {
                   </div>
                 )}
 
-                {editingSection === 'avatar' ? (
-                  <Input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full text-lg font-semibold rounded-md bg-surface-muted"
-                  />
-                ) : (
-                  <h2 className="text-xl font-semibold text-fg">{formData.name}</h2>
-                )}
-                <p className="text-sm text-fg-muted mt-1">
-                  {locale === 'es' ? 'Inquilino desde Enero 2024' : 'Tenant since January 2024'}
-                </p>
+                <h2 className="text-xl font-semibold text-fg">{displayName}</h2>
+                <p className="text-sm text-fg-muted mt-1">{user.email}</p>
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
                 {editingSection === 'avatar' && (
@@ -538,7 +579,7 @@ export default function PerfilPage() {
                       size="sm"
                       hideArrow
                       isLoading={isSaving}
-                      onClick={() => handleSave('avatar')}
+                      onClick={handleSaveAvatar}
                       disabled={isSaving}
                       className="flex-1 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
                     >
@@ -547,72 +588,28 @@ export default function PerfilPage() {
                     </Button>
                   </div>
                 )}
+              </div>
+            </div>
 
-                {/* Quick Stats */}
-                <div className="mt-6 pt-6 border-t border-border-faint space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
-                      <Buildings className="w-5 h-5 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg">
-                        {locale === 'es' ? '1 Arriendo activo' : '1 Active rental'}
-                      </p>
-                      <p className="text-xs text-fg-muted">Departamento Providencia</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg">
-                        {locale === 'es' ? '12 Pagos realizados' : '12 Payments made'}
-                      </p>
-                      <p className="text-xs text-fg-muted">
-                        {locale === 'es' ? '100% a tiempo' : '100% on time'}
-                      </p>
-                    </div>
+            {/* Verification Status Card — only real signals (Supabase email confirmation).
+                There is no phone/identity verification system in the backend. */}
+            {emailVerified && (
+              <div className="rounded-xl border border-border bg-surface p-6">
+                <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-fg-subtle" />
+                  {t('profile.verification.title')}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-muted border border-border-faint">
+                    <span className="text-sm font-medium text-fg">Email</span>
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {t('profile.verification.verified')}
+                    </span>
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Verification Status Card */}
-            <div className="rounded-xl border border-border bg-surface p-6">
-              <h3 className="font-semibold text-fg mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-fg-subtle" />
-                {t('profile.verification.title')}
-              </h3>
-              <div className="space-y-3">
-                {[
-                  { key: 'email', label: 'Email', verified: true },
-                  { key: 'phone', label: locale === 'es' ? 'Teléfono' : 'Phone', verified: true },
-                  { key: 'identity', label: locale === 'es' ? 'Identidad' : 'Identity', verified: true },
-                  { key: 'employment', label: locale === 'es' ? 'Empleo' : 'Employment', verified: false },
-                ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-muted border border-border-faint">
-                    <span className="text-sm font-medium text-fg">{item.label}</span>
-                    {item.verified ? (
-                      <span className="flex items-center gap-1.5 text-xs font-medium text-success bg-success-soft px-2.5 py-1 rounded-full">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        {t('profile.verification.verified')}
-                      </span>
-                    ) : (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        hideArrow
-                        onClick={() => handleVerifyStep('employment-verify')}
-                        className="rounded-full px-2.5 py-1 text-xs text-primary bg-primary-soft"
-                      >
-                        {t('profile.verification.verify')}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </motion.div>
 
           {/* Profile Form */}
@@ -653,7 +650,7 @@ export default function PerfilPage() {
                       size="sm"
                       hideArrow
                       isLoading={isSaving}
-                      onClick={() => handleSave('personal')}
+                      onClick={() => handleSaveProfile(PERSONAL_FIELDS)}
                       disabled={isSaving}
                       className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
                     >
@@ -666,50 +663,51 @@ export default function PerfilPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
-                    {t('profile.fullName')}
+                    {t('profile.firstName')}
                   </label>
                   {editingSection === 'personal' ? (
                     <Input
                       type="text"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
                       className="w-full rounded-xl bg-surface-muted"
                     />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <User className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.name}</span>
+                      <UserIcon className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{user.firstName || notSet}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
-                    {t('profile.idNumber')}
+                    {t('profile.lastName')}
                   </label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                    <Shield className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{formData.rut}</span>
-                  </div>
+                  {editingSection === 'personal' ? (
+                    <Input
+                      type="text"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      className="w-full rounded-xl bg-surface-muted"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <UserIcon className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{user.lastName || notSet}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
                     Email
                   </label>
-                  {editingSection === 'personal' ? (
-                    <Input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                      <Envelope className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.email}</span>
-                    </div>
-                  )}
+                  {/* Email is managed by the auth provider and is not editable here */}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                    <Envelope className="w-4 h-4 text-fg-subtle" />
+                    <span className="text-sm text-fg">{user.email}</span>
+                  </div>
                 </div>
 
                 <div>
@@ -721,12 +719,32 @@ export default function PerfilPage() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="+573001234567"
                       className="w-full rounded-xl bg-surface-muted"
                     />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Phone className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.phone}</span>
+                      <span className="text-sm text-fg">{user.phone || notSet}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
+                    {t('profile.idNumber')}
+                  </label>
+                  {editingSection === 'personal' ? (
+                    <Input
+                      type="text"
+                      value={formData.rut}
+                      onChange={(e) => handleInputChange('rut', e.target.value)}
+                      className="w-full rounded-xl bg-surface-muted"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <Shield className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{user.rut || notSet}</span>
                     </div>
                   )}
                 </div>
@@ -746,11 +764,13 @@ export default function PerfilPage() {
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Calendar className="w-4 h-4 text-fg-subtle" />
                       <span className="text-sm text-fg">
-                        {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
+                        {user.birthDate
+                          ? new Date(user.birthDate.slice(0, 10) + 'T00:00:00').toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : notSet}
                       </span>
                     </div>
                   )}
@@ -770,7 +790,7 @@ export default function PerfilPage() {
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <MapPin className="w-4 h-4 text-fg-subtle" />
-                      <span className="text-sm text-fg">{formData.address}</span>
+                      <span className="text-sm text-fg">{user.address || notSet}</span>
                     </div>
                   )}
                 </div>
@@ -808,7 +828,7 @@ export default function PerfilPage() {
                       size="sm"
                       hideArrow
                       isLoading={isSaving}
-                      onClick={() => handleSave('emergency')}
+                      onClick={() => handleSaveProfile(EMERGENCY_FIELDS)}
                       disabled={isSaving}
                       className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
                     >
@@ -818,24 +838,45 @@ export default function PerfilPage() {
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-fg-muted mb-2">
-                  {locale === 'es' ? 'Nombre y teléfono' : 'Name and phone'}
-                </label>
-                {editingSection === 'emergency' ? (
-                  <Input
-                    type="text"
-                    value={formData.emergencyContact}
-                    onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                    className="w-full rounded-xl bg-surface-muted"
-                    placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'}
-                  />
-                ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
-                    <UserPlus className="w-4 h-4 text-fg-subtle" />
-                    <span className="text-sm text-fg">{formData.emergencyContact}</span>
-                  </div>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
+                    {locale === 'es' ? 'Nombre' : 'Name'}
+                  </label>
+                  {editingSection === 'emergency' ? (
+                    <Input
+                      type="text"
+                      value={formData.emergencyContactName}
+                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                      className="w-full rounded-xl bg-surface-muted"
+                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <UserPlus className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{user.emergencyContactName || notSet}</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-fg-muted mb-2">
+                    {t('profile.phone')}
+                  </label>
+                  {editingSection === 'emergency' ? (
+                    <Input
+                      type="tel"
+                      value={formData.emergencyContactPhone}
+                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                      className="w-full rounded-xl bg-surface-muted"
+                      placeholder="3001234567"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
+                      <Phone className="w-4 h-4 text-fg-subtle" />
+                      <span className="text-sm text-fg">{user.emergencyContactPhone || notSet}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -862,100 +903,6 @@ export default function PerfilPage() {
           </motion.div>
         </div>
       </div>
-
-      {/* Verify Employment Modal */}
-      {showVerifyModal === 'employment-verify' && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-surface rounded-xl max-w-md w-full p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-fg">
-                {locale === 'es' ? 'Verificar empleo' : 'Verify employment'}
-              </h3>
-              <IconButton
-                variant="ghost"
-                onClick={() => setShowVerifyModal(null)}
-                className="p-2 rounded-full hover:bg-surface-muted"
-                aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
-                icon={<X className="w-5 h-5 text-fg-muted" />}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-fg-muted mb-2">
-                  {locale === 'es' ? 'Empresa' : 'Company'}
-                </label>
-                <Input
-                  type="text"
-                  placeholder={locale === 'es' ? 'Nombre de tu empresa' : 'Your company name'}
-                  className="w-full rounded-xl bg-surface-muted"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-fg-muted mb-2">
-                  {locale === 'es' ? 'Cargo' : 'Position'}
-                </label>
-                <Input
-                  type="text"
-                  placeholder={locale === 'es' ? 'Tu cargo actual' : 'Your current position'}
-                  className="w-full rounded-xl bg-surface-muted"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-fg-muted mb-2">
-                  {locale === 'es' ? 'Ingreso mensual (CLP)' : 'Monthly income (CLP)'}
-                </label>
-                <Input
-                  type="text"
-                  placeholder={locale === 'es' ? 'Ej: $1.500.000' : 'E.g.: $1,500,000'}
-                  className="w-full rounded-xl bg-surface-muted"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-fg-muted mb-2">
-                  {locale === 'es' ? 'Comprobante de ingresos' : 'Proof of income'}
-                </label>
-                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/30 transition-colors cursor-pointer">
-                  <FileText className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
-                  <p className="text-sm text-fg-muted">
-                    {locale === 'es' ? 'Arrastra o haz clic para subir' : 'Drag or click to upload'}
-                  </p>
-                  <p className="text-xs text-fg-subtle mt-1">
-                    {locale === 'es' ? 'PDF, JPG o PNG (máx. 5MB)' : 'PDF, JPG or PNG (max. 5MB)'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <Button
-                variant="outline"
-                hideArrow
-                onClick={() => setShowVerifyModal(null)}
-                className="flex-1 rounded-full"
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="secondary"
-                hideArrow
-                onClick={() => {
-                  toast.success(locale === 'es' ? 'Verificación enviada. Te notificaremos cuando sea aprobada.' : 'Verification sent. We will notify you when approved.');
-                  setShowVerifyModal(null);
-                }}
-                className="flex-1 rounded-full bg-primary text-primary-fg hover:bg-primary-hover"
-              >
-                {locale === 'es' ? 'Enviar verificación' : 'Submit verification'}
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      )}
 
       {/* Delete Account Modal */}
       {showDeleteModal && (
@@ -1016,12 +963,12 @@ export default function PerfilPage() {
                       <WarningCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-warning">
-                          {locale === 'es' ? 'Tienes un arriendo activo' : 'You have an active rental'}
+                          {locale === 'es' ? '¿Tienes un arriendo activo?' : 'Do you have an active rental?'}
                         </p>
                         <p className="text-xs text-warning mt-0.5">
                           {locale === 'es'
-                            ? 'Eliminar tu cuenta no cancela tu contrato de arriendo vigente. Deberás contactar a tu arrendador.'
-                            : 'Deleting your account does not cancel your current lease agreement. You will need to contact your landlord.'}
+                            ? 'Eliminar tu cuenta no cancela un contrato de arriendo vigente. Deberás contactar a tu arrendador.'
+                            : 'Deleting your account does not cancel a current lease agreement. You will need to contact your landlord.'}
                         </p>
                       </div>
                     </div>

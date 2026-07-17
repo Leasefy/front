@@ -55,8 +55,7 @@ import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import type {
-  InmobiliariaConfigExtended,
-  AgencyBranding,
+  UpdateAgencyPayload,
   AgencyUser,
   AgencyIntegration,
   RolePermissions,
@@ -203,19 +202,31 @@ function ConfiguracionContent() {
     };
   }, [users]);
 
+  // Only agency ADMINs may write agency settings (backend enforces via 403).
+  const isAgencyAdmin = config?.agency?.memberRole === 'ADMIN';
+
   // -------------------------------------------------------------------------
   // Handlers - Perfil
   // -------------------------------------------------------------------------
 
-  const handleSaveConfig = async (newConfig: InmobiliariaConfigExtended) => {
+  /**
+   * Saves the agency profile via PUT /inmobiliaria/agency (real backend route).
+   * `payload` contains only the changed fields (backend UpdateAgencyDto).
+   * Rethrows on failure so the form stays in edit mode.
+   */
+  const handleSaveAgency = async (payload: UpdateAgencyPayload) => {
     try {
-      await inmobiliariaConfigApi.update(newConfig);
+      await agencyApi.updateAgency(payload);
       await refetchConfig();
       toast.success(t('inmobiliaria.config.toasts.configSaved'), {
         description: t('inmobiliaria.config.toasts.configSavedDesc'),
       });
     } catch (error) {
-      toast.error('Error al guardar configuración');
+      // Surface the backend message (e.g. 403 for non-admin members).
+      toast.error('Error al guardar configuración', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+      throw error;
     }
   };
 
@@ -223,15 +234,29 @@ function ConfiguracionContent() {
   // Handlers - Branding
   // -------------------------------------------------------------------------
 
-  const handleSaveBranding = async (branding: AgencyBranding) => {
-    try {
-      await inmobiliariaConfigApi.updateBranding(branding);
-      await refetchConfig();
-      toast.success(t('inmobiliaria.config.toasts.brandingSaved'), {
-        description: t('inmobiliaria.config.toasts.brandingSavedDesc'),
-      });
-    } catch (error) {
-      toast.error('Error al guardar branding');
+  /**
+   * The logo upload happens inside ConfigBranding — here we refresh the
+   * config so other tabs see the new logoUrl. `refetch` swallows errors into
+   * hook state and resolves null on failure, so we check the result: if the
+   * refetch failed, a tab switch would remount ConfigBranding from the stale
+   * agency.logoUrl — warn instead of silently reverting the preview. The
+   * upload itself already succeeded, so this is a warning, not an error.
+   */
+  const handleLogoUpdated = async () => {
+    const refreshed = await refetchConfig();
+    if (refreshed === null) {
+      toast.warning('El logo se guardó, pero no pudimos actualizar la vista. Recarga la página.');
+    }
+  };
+
+  /**
+   * Brand colors are saved inside ConfigBranding (PUT /inmobiliaria/agency,
+   * branding key) — here we just refresh the config so all tabs see them.
+   */
+  const handleBrandingUpdated = async () => {
+    const refreshed = await refetchConfig();
+    if (refreshed === null) {
+      toast.warning('Los colores se guardaron, pero no pudimos actualizar la vista. Recarga la página.');
     }
   };
 
@@ -435,8 +460,12 @@ function ConfiguracionContent() {
             <div className="flex items-center justify-center py-12">
               <Spinner size="lg" />
             </div>
-          ) : config ? (
-            <ConfigPerfilAgencia config={config} onSave={handleSaveConfig} />
+          ) : config?.agency ? (
+            <ConfigPerfilAgencia
+              agency={config.agency}
+              onSave={handleSaveAgency}
+              canEdit={isAgencyAdmin}
+            />
           ) : (
             <div className="text-center py-12 text-muted-foreground">No hay configuración disponible</div>
           )
@@ -448,8 +477,13 @@ function ConfiguracionContent() {
             <div className="flex items-center justify-center py-12">
               <Spinner size="lg" />
             </div>
-          ) : config?.branding ? (
-            <ConfigBranding branding={config.branding} onSave={handleSaveBranding} />
+          ) : config?.agency ? (
+            <ConfigBranding
+              agency={config.agency}
+              onLogoUpdated={handleLogoUpdated}
+              onBrandingUpdated={handleBrandingUpdated}
+              canEdit={isAgencyAdmin}
+            />
           ) : (
             <div className="text-center py-12 text-muted-foreground">No hay información de branding</div>
           )

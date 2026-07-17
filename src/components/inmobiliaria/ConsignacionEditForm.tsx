@@ -162,9 +162,10 @@ export function ConsignacionEditForm({
     if (!formData.commissionPercent || formData.commissionPercent <= 0) {
       newErrors.commissionPercent = t('inmobiliaria.consignaciones.editForm.validation.commissionPositive');
     }
-    if (!formData.agenteId) {
-      newErrors.agenteId = t('inmobiliaria.consignaciones.editForm.validation.agentRequired');
-    }
+    // NOTE: agenteId is intentionally NOT validated/required — agent
+    // reassignment is disabled below (agente ids are AgencyMember ids while
+    // the backend consignacion stores a User id; wiring it would corrupt the
+    // assignment). The service strips agenteId from the update payload.
     if (!formData.contractDate) {
       newErrors.contractDate = t('inmobiliaria.consignaciones.editForm.validation.startDateRequired');
     }
@@ -380,9 +381,15 @@ export function ConsignacionEditForm({
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.contractTerms')}</h3>
         </div>
 
-        {/* Agent Selection */}
-        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.assignedAgent')} required error={errors.agenteId}>
+        {/* Agent Selection — disabled: reassignment is not wired yet (the
+            backend expects a User id via assign-agent; the front only has
+            AgencyMember ids). No fake success: the field is read-only. */}
+        <InputWrapper
+          label={t('inmobiliaria.consignaciones.editForm.assignedAgent')}
+          helper={t('inmobiliaria.consignaciones.editForm.agentReassignSoon')}
+        >
           <Select
+            disabled
             value={formData.agenteId || undefined}
             onValueChange={(v) => {
               setFormData((prev) => ({ ...prev, agenteId: v }));

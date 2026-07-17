@@ -30,7 +30,13 @@ export default function PostulacionesPage() {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    if (!agencyId) return
+    if (!agencyId) {
+      // No agency in session (transient auth race or failed agency fetch):
+      // stop loading — the render falls to a retryable error, never to the
+      // definitive empty state. The effect re-runs when agencyId arrives.
+      setIsLoading(false)
+      return
+    }
     setIsLoading(true)
     setError(null)
     try {
@@ -60,6 +66,14 @@ export default function PostulacionesPage() {
         <div className="flex items-center justify-center py-24">
           <Spinner size="md" variant="muted" label="Cargando postulaciones" />
         </div>
+      ) : !agencyId ? (
+        // Nothing was fetched — re-running load() without an agency is
+        // useless, so retry reloads the page to re-resolve the session.
+        <ErrorState
+          title="No pudimos cargar la información de tu inmobiliaria"
+          description="Recarga la página para intentarlo de nuevo."
+          onRetry={() => window.location.reload()}
+        />
       ) : error ? (
         <ErrorState
           title="No se pudieron cargar las postulaciones"

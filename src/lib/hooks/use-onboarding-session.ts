@@ -143,12 +143,16 @@ export function useOnboardingSession(sessionId: string): UseOnboardingSessionRes
   // `sessionId` changes again before the previous resume call resolves.
   const requestIdRef = useRef(0)
 
-  useEffect(
-    () => () => {
+  // Set the flag in the effect BODY (not only the ref initializer): React 18
+  // StrictMode re-runs effects as mount → cleanup → re-run on the same
+  // instance, so a cleanup-only effect would leave the ref false forever and
+  // the hook would hang on 'loading' after a successful resume in dev.
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
       mountedRef.current = false
-    },
-    [],
-  )
+    }
+  }, [])
 
   const applyStepEnvelope = useCallback((envelope: StepEnvelope) => {
     if (!mountedRef.current) return

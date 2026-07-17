@@ -1167,7 +1167,9 @@
           "dayRange": "El dia debe estar entre 1 y 28",
           "fixErrors": "Por favor corrige los errores antes de guardar",
           "saveError": "Error al guardar la configuracion"
-        }
+        },
+        "adminOnlyHint": "Solo los administradores de la agencia pueden editar esta información.",
+        "remindersEmptyHint": "Sin días seleccionados, los recordatorios quedan desactivados."
       },
       "brandingSection": {
         "title": "Marca y Estilo Visual",
@@ -1184,19 +1186,14 @@
         "uploadNewLogo": "Subir nuevo logo",
         "dragOrClick": "Arrastra tu logo aqui o",
         "clickHere": "haz clic aqui",
-        "unsupportedFormat": "Formato no soportado. Usa PNG, JPG o SVG.",
-        "fileTooLarge": "El archivo excede el limite de 2MB.",
+        "unsupportedFormat": "Formato no soportado. Usa JPG, PNG o WebP.",
+        "fileTooLarge": "El archivo excede el límite de 5MB.",
         "readError": "Error al leer el archivo.",
         "logoRemoved": "Logo eliminado",
         "brandColors": "Colores de marca",
         "restore": "Restaurar",
         "primaryColorDesc": "Usado en botones, enlaces y acentos principales",
         "secondaryColorDesc": "Usado para indicadores y estados complementarios",
-        "accentColor": "Color de acento",
-        "accentColorDesc": "Usado para alertas, notificaciones y elementos destacados",
-        "presetPalettes": "Paletas predefinidas",
-        "paletteApplied": "Paleta \"{{name}}\" aplicada",
-        "colorsReset": "Colores restaurados a los valores por defecto",
         "myAgency": "Mi Agencia",
         "buttons": "Botones",
         "primaryButton": "Primario",
@@ -1208,7 +1205,14 @@
         "alertExample": "Tienes 3 pagos pendientes por revisar.",
         "discard": "Descartar",
         "saveBranding": "Guardar marca",
-        "saveError": "Error al guardar la marca"
+        "saveError": "Error al guardar la marca",
+        "logoUpdated": "Logo actualizado",
+        "logoUpdatedDesc": "El nuevo logo de la agencia ya está guardado",
+        "logoUploadError": "Error al subir el logo",
+        "uploading": "Subiendo logo...",
+        "saveColors": "Guardar colores",
+        "colorsSaved": "Colores actualizados",
+        "invalidHex": "Color inválido. Usa el formato #RRGGBB."
       },
       "users": {
         "title": "Equipo",
@@ -2530,7 +2534,16 @@
           "renewSoon": "Renovar consignación próximamente",
           "renewDesc": "Podrás extender el contrato de consignación",
           "reassignSoon": "Reasignar agente próximamente",
-          "reassignDesc": "Podrás cambiar el agente asignado"
+          "reassignDesc": "Podrás cambiar el agente asignado",
+          "updateError": "No se pudieron guardar los cambios",
+          "statusChangeError": "No se pudo cambiar el estado",
+          "terminated": "Consignación terminada",
+          "terminateError": "No se pudo terminar la consignación"
+        },
+        "terminateDialog": {
+          "title": "¿Terminar consignación?",
+          "body": "\"{{property}}\" pasará a estado Terminada y saldrá del portafolio activo. Esta acción no se puede deshacer.",
+          "confirm": "Terminar consignación"
         }
       },
       "new": {
@@ -2809,6 +2822,7 @@
         "estimatedPerMonth": "≈ {{amount}}/mes",
         "contractTerms": "Términos del contrato",
         "assignedAgent": "Agente asignado",
+        "agentReassignSoon": "La reasignación de agente estará disponible próximamente",
         "selectAgent": "Seleccionar agente",
         "noZone": "Sin zona",
         "contractStartDate": "Fecha inicio contrato",
@@ -7810,6 +7824,8 @@
       "errorMicNotFound": "No se encontró un micrófono.",
       "errorMicUnsupported": "Tu navegador no permite grabar audio aquí (requiere HTTPS).",
       "assignWarning": "La propiedad se creó, pero no se pudo asignar el agente. Asígnalo desde la lista.",
+      "photosUploadPartial": "La propiedad se creó, pero {{failed}} de {{total}} fotos no se subieron. Puedes agregarlas después editando la propiedad.",
+      "planLimitDraft": "Alcanzaste el límite de propiedades publicadas de tu plan — la propiedad se guardó como borrador.",
       "photoFormatUnsupported": "Algunas fotos tienen un formato no compatible (p. ej. HEIC) y se omitieron. Usa JPG o PNG.",
       "pageTitle": "Capturar propiedad con IA",
       "pageSubtitle": "Graba una descripción y agrega fotos; la IA arma la ficha para que la revises.",

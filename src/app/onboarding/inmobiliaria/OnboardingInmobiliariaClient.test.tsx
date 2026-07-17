@@ -442,8 +442,14 @@ describe('<OnboardingInmobiliariaClient>', () => {
         inviteTokens: [{ email: 'admin@inmobiliaria.test', rawToken: 'raw-token-1' }],
       }
     })
+    const submitPaymentProvider = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'payment_provider',
+      nextStep: 'policy',
+      draft: {},
+    })
     mockUseOnboardingSession.mockImplementation(() =>
-      baseHookResult({ get currentStep() { return hookCurrentStep }, submitMembers }),
+      baseHookResult({ get currentStep() { return hookCurrentStep }, submitMembers, submitPaymentProvider }),
     )
     render()
 
@@ -466,23 +472,80 @@ describe('<OnboardingInmobiliariaClient>', () => {
     const continueBtn = container.querySelector(
       '[data-testid="members-invite-continue"]',
     ) as HTMLButtonElement
-    act(() => {
+    await act(async () => {
       continueBtn.click()
+      await new Promise((r) => setTimeout(r, 0))
     })
 
+    // payment_provider is now invisible — no form, just a brief auto-skip
+    // loading flash while `{ skip: true }` round-trips.
     expect(container.querySelector('[data-testid="members-invite-links"]')).toBeFalsy()
-    expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="payment-provider-skip-loading"]')).toBeTruthy()
+    expect(submitPaymentProvider).toHaveBeenCalledTimes(1)
+    expect(submitPaymentProvider).toHaveBeenCalledWith({ skip: true })
   })
 
-  it('mounts <PaymentProviderStepForm> on the payment_provider step and forwards submitPaymentProvider', () => {
-    const submitPaymentProvider = vi.fn().mockResolvedValue(null)
+  // The payment_provider step is invisible (fix/onboarding-skip-payment) — an
+  // inmobiliaria can finish onboarding without a payment gateway and
+  // configure one later from the dashboard. Arriving at this step must never
+  // show PaymentProviderStepForm; it auto-submits `{ skip: true }` instead.
+  it('auto-skips the payment_provider step: no PaymentProviderStepForm, POSTs { skip: true } exactly once, then renders <PolicyStepForm> on success', async () => {
+    let hookCurrentStep: string = 'payment_provider'
+    const submitPaymentProvider = vi.fn().mockImplementation(async (body: unknown) => {
+      expect(body).toEqual({ skip: true })
+      hookCurrentStep = 'policy'
+      return { sessionId: 'sess-1', currentStep: 'policy', nextStep: 'habeas_data', draft: {} }
+    })
+    mockUseOnboardingSession.mockImplementation(() =>
+      baseHookResult({ get currentStep() { return hookCurrentStep }, submitPaymentProvider }),
+    )
+    render()
+
+    expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="payment-provider-skip-loading"]')).toBeTruthy()
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    // Mirrors what the real hook's own setState would trigger automatically —
+    // the mock here just mutates a variable, so force the re-render.
+    render()
+
+    expect(submitPaymentProvider).toHaveBeenCalledTimes(1)
+    expect(container.querySelector('[data-testid="policy-step-form"]')).toBeTruthy()
+  })
+
+  it('auto-skip failure shows an error with a retry, and retrying re-fires the skip exactly once (no auto-loop)', async () => {
+    const submitPaymentProvider = vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce({
+      sessionId: 'sess-1',
+      currentStep: 'policy',
+      nextStep: 'habeas_data',
+      draft: {},
+    })
     mockUseOnboardingSession.mockReturnValue(
       baseHookResult({ currentStep: 'payment_provider', submitPaymentProvider }),
     )
     render()
 
-    expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeTruthy()
-    expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(submitPaymentProvider).toHaveBeenCalledTimes(1)
+    const retryBtn = container.querySelector(
+      '[data-testid="payment-provider-skip-error"] button',
+    ) as HTMLButtonElement
+    expect(retryBtn).toBeTruthy()
+
+    await act(async () => {
+      retryBtn.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(submitPaymentProvider).toHaveBeenCalledTimes(2)
+    expect(container.querySelector('[data-testid="payment-provider-skip-error"]')).toBeFalsy()
   })
 
   it('mounts <PolicyStepForm> on the policy step and forwards submitPolicy', () => {
@@ -597,21 +660,33 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     expect(container.querySelector('[data-testid="members-step-form"]')).toBeTruthy()
   })
 
-  it('409 defensive — a requiredStep-only conflict (hook already corrected currentStep) renders that step form directly, no generic banner', () => {
+  it('409 defensive — a requiredStep-only conflict (hook already corrected currentStep) re-attempts the auto-skip directly, no generic banner', async () => {
     const error = new OnboardingSessionError('conflict', 409, 'Conflicto de sesión.', {
       error: 'Conflicto de sesión.',
       requiredStep: 'payment_provider',
+    })
+    const submitPaymentProvider = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'payment_provider',
+      nextStep: 'policy',
+      draft: {},
     })
     // Mirrors what the hook itself does on this conflict shape (applyError
     // corrects currentStep from `conflict.requiredStep`) — asserted here at
     // the wiring level via the mock, since the hook isn't touched by this task.
     mockUseOnboardingSession.mockReturnValue(
-      baseHookResult({ currentStep: 'payment_provider', status: 'error', error }),
+      baseHookResult({ currentStep: 'payment_provider', status: 'error', error, submitPaymentProvider }),
     )
     render()
 
-    expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="payment-provider-step-form"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="payment-provider-skip-loading"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="onboarding-error-banner-unknown"]')).toBeFalsy()
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(submitPaymentProvider).toHaveBeenCalledWith({ skip: true })
   })
 
   it('other error kinds on the complete step still show the generic banner, not the wizard content', () => {

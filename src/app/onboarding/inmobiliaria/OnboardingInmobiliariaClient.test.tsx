@@ -55,6 +55,7 @@ function baseProvisioningResult(overrides: Record<string, unknown> = {}) {
   return {
     status: 'ready',
     sessionId: 'sess-provisioned',
+    agencyPrefill: null,
     retry: vi.fn(),
     provision: vi.fn(),
     ...overrides,
@@ -309,6 +310,77 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
 
     expect(provision).not.toHaveBeenCalled()
     expect(container.textContent).toContain('Ingresa un NIT válido. Ej: 900123456-7')
+  })
+})
+
+// Bug report: the "Agencia" step re-asked razón social + NIT that the user
+// just typed one screen earlier in `OwnerNameStepForm`. These tests wire
+// `useOnboardingProvisioning().agencyPrefill` and `useOnboardingSession().draft`
+// through to `<AgencyStepForm prefill={...}>`.
+describe('<OnboardingInmobiliariaClient> — agency step prefill', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams()
+  })
+
+  it('prefills legalName/nit from the pre-step values captured during provisioning', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({
+        agencyPrefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' },
+      }),
+    )
+    mockUseOnboardingSession.mockReturnValue(baseHookResult())
+    render()
+
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+    expect(byId('nit').value).toBe('900123456-7')
+  })
+
+  it('falls back to proposedAgencyName/contactEmail from the resume draft when the pre-step values are absent (e.g. after a refresh)', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(baseProvisioningResult({ agencyPrefill: null }))
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ draft: { proposedAgencyName: 'Inmobiliaria Andes SAS', contactEmail: 'ana@andes.test' } }),
+    )
+    render()
+
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+    expect(byId('primaryContactEmail').value).toBe('ana@andes.test')
+    // NIT has no source at all once the pre-step values are gone.
+    expect(byId('nit').value).toBe('')
+  })
+
+  it('the pre-step legalName wins over draft.proposedAgencyName', () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ agencyPrefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } }),
+    )
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ draft: { proposedAgencyName: 'Nombre Viejo Ltda' } }),
+    )
+    render()
+
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+  })
+
+  it('the ?session= dev override has no pre-step prefill but still applies the draft', () => {
+    mockSearchParams = new URLSearchParams({ session: 'sess-1' })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ draft: { proposedAgencyName: 'Inmobiliaria Andes SAS' } }),
+    )
+    render()
+
+    expect(mockUseOnboardingProvisioning).not.toHaveBeenCalled()
+    expect(byId('legalName').value).toBe('Inmobiliaria Andes SAS')
+  })
+
+  it('prefilled fields stay editable', async () => {
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ agencyPrefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } }),
+    )
+    mockUseOnboardingSession.mockReturnValue(baseHookResult())
+    render()
+
+    setInputValue(byId('legalName'), 'Otro Nombre SAS')
+
+    expect(byId('legalName').value).toBe('Otro Nombre SAS')
   })
 })
 

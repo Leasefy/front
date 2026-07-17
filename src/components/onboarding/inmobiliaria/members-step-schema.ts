@@ -7,62 +7,50 @@
  * single source of truth for validation, validated on submit inside
  * `MembersStepForm`.
  *
- * `members` requires at least one row (`.min(1)`), matching the agent
- * contract's `OnboardingSessionMembersRequest.members` (`minItems: 1`),
- * which rejects an empty list with a 400. Previously this schema allowed an
- * empty list, which the agent rejected — see the discovery saved to engram
- * (project "front", topic "onboarding") for the bug this caused.
+ * Contract history (see engram, project "front"):
+ *  - Originally the step allowed an empty list (`members: []`), but the
+ *    agent's `OnboardingSessionMembersRequest.members` had `minItems: 1` and
+ *    rejected that with a 400 (topic "sdd/onboarding-members-min1").
+ *  - The schema was tightened to `.min(1)` to match (topic
+ *    "onboarding-members-min1").
+ *  - The agent contract has since been relaxed to `minItems: 0` and
+ *    `/onboarding/session/{id}/complete` no longer requires `members` entries
+ *    — only that the step was POSTed at least once (topic
+ *    "onboarding-members-optional-investigation" documents the earlier,
+ *    now-resolved blocker). `members: []` is a valid POST again, this time
+ *    actually accepted server-side. `MembersStepForm` exposes an explicit
+ *    "Omitir por ahora" action that submits `{ members: [] }` directly.
  *
- * This step CANNOT be made optional front-only (re-verified — see engram
- * "front", topic "onboarding-members-optional-investigation"):
- *  1. `OnboardingSessionMembersRequest.members` has `minItems: 1` — an empty
- *     POST is rejected with 400, there's no "empty array" escape hatch.
- *  2. Sequential state machine: `payment_provider`'s POST 409s with a
- *     state-machine violation (`requiredStep`) if `members` hasn't been
- *     submitted yet — the front cannot jump the wizard forward locally,
- *     `useOnboardingSession.currentStep` only advances via a successful
- *     step-endpoint response.
- *  3. `/onboarding/session/{id}/complete`'s 409 `missingSteps` can list
- *     `"members"` as required (see `CompleteStepForm.tsx`'s
- *     `MISSING_STEP_LABELS` + its tests, and
- *     `OnboardingInmobiliariaClient.test.tsx`'s `missingSteps: ['policy',
- *     'members']` fixture) — even a client-side-only "skip" would dead-end
- *     the user back here at the final step.
- * Making this step truly optional requires an agent-side contract change
- * (drop `members` from `/complete`'s required-completion steps AND accept an
- * empty `members: []` POST, or add a dedicated "skip" affordance to the
- * session state machine). Reported as an agent-side handoff.
- *
- * Role enum mismatch (also an agent-side handoff, NOT fixed here):
- * `OnboardingSessionMemberInput.role` is `"ADMIN" | "OPERATOR" | "VIEWER"`
- * (agent contract) — it does NOT match the panel's agency roles
- * `ADMIN | AGENTE | CONTADOR | VIEWER` (`src/lib/auth/agency-roles.ts`).
- * `OPERATOR` has no equivalent among the panel roles, and there is no
- * `CONTADOR` option at all. The front cannot invent values the contract
- * doesn't accept, so `MEMBER_ROLE_OPTIONS` below is intentionally left
- * as-is (contract-accurate), not aligned with the panel's role set.
+ * Role enum: the agent's `OnboardingSessionMemberInput.role` now accepts
+ * `ADMIN | AGENTE | CONTADOR | VIEWER | OPERATOR` (`OPERATOR` kept
+ * server-side only as a deprecated alias for pre-existing data). The front
+ * aligns `MEMBER_ROLE_OPTIONS` with the panel's agency roles
+ * (`src/lib/auth/agency-roles.ts`, same labels as
+ * `InviteFirstMemberForm.tsx`'s `ROLE_OPTIONS`) and never sends `OPERATOR`.
  */
 import { z } from 'zod'
 import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'
 
-export type MemberRole = 'ADMIN' | 'OPERATOR' | 'VIEWER'
+export type MemberRole = 'AGENTE' | 'CONTADOR' | 'ADMIN' | 'VIEWER'
 
 export const MEMBER_ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
+  { value: 'AGENTE', label: 'Agente' },
+  { value: 'CONTADOR', label: 'Contador' },
   { value: 'ADMIN', label: 'Administrador' },
-  { value: 'OPERATOR', label: 'Operador' },
   { value: 'VIEWER', label: 'Solo lectura' },
 ]
 
 const memberRowSchema = z.object({
   email: z.string().trim().min(1, 'El correo es obligatorio.').email('Ingresa un correo válido.'),
-  role: z.enum(['ADMIN', 'OPERATOR', 'VIEWER'], {
+  role: z.enum(['AGENTE', 'CONTADOR', 'ADMIN', 'VIEWER'], {
     errorMap: () => ({ message: 'Selecciona un rol.' }),
   }),
 })
 
 export const membersStepSchema = z
   .object({
-    members: z.array(memberRowSchema).min(1, 'Invitá al menos un miembro.'),
+    // No `.min(1)` — the agent now accepts an empty list (minItems: 0).
+    members: z.array(memberRowSchema),
   })
   .superRefine((value, ctx) => {
     const seen = new Set<string>()
@@ -85,10 +73,10 @@ export type MembersStepFormValues = z.infer<typeof membersStepSchema>
 /** Default row appended when the user clicks "Agregar miembro". */
 export const MEMBERS_STEP_NEW_ROW: MembersStepFormValues['members'][number] = {
   email: '',
-  role: 'OPERATOR',
+  role: 'AGENTE',
 }
 
-/** Starts with one empty row — the step requires at least one member. */
+/** Starts with one empty row as an affordance — the step itself is optional. */
 export const MEMBERS_STEP_DEFAULT_VALUES: MembersStepFormValues = {
   members: [MEMBERS_STEP_NEW_ROW],
 }

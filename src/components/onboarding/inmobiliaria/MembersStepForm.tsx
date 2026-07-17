@@ -176,6 +176,16 @@ export function MembersStepForm({
     await onSubmit(toMembersRequest(parsed.data))
   })
 
+  /**
+   * Bypasses row-level validation entirely — the agent now accepts an empty
+   * `members: []` POST (minItems: 0) and no longer gates `/complete` on this
+   * step having entries. This is the explicit "skip" affordance; the regular
+   * "Continuar" button still validates whatever rows are present.
+   */
+  const skipStep = async () => {
+    await onSubmit({ members: [] })
+  }
+
   if (pendingInvites) {
     return (
       <MembersInviteLinksScreen pendingInvites={pendingInvites} onContinueAfterInvites={onContinueAfterInvites} />
@@ -186,20 +196,8 @@ export function MembersStepForm({
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="members-step-form">
       <p className="text-body-sm text-fg-muted">Invita a otras personas de tu inmobiliaria.</p>
 
-      {/*
-        This step CANNOT be made optional front-only: the agent's
-        OnboardingSessionMembersRequest.members has minItems: 1 (rejects an
-        empty POST with 400) and /onboarding/session/{id}/complete's 409
-        missingSteps can list "members" as required (see
-        CompleteStepForm.tsx's MISSING_STEP_LABELS + its tests). Skipping
-        ahead is also blocked server-side: payment_provider's POST 409s with
-        a state-machine violation if members hasn't been submitted yet. Until
-        the agent contract changes (drop members from required completion
-        steps or accept an empty POST), the best honest UX is to keep the
-        requirement and explain it clearly instead of a fake "skip" action.
-      */}
-      <p data-testid="members-step-required-notice" className="text-body-sm text-fg-muted">
-        Este paso es obligatorio: invita al menos un miembro de tu equipo para continuar.
+      <p data-testid="members-step-optional-notice" className="text-body-sm text-fg-muted">
+        Este paso es opcional: podés omitirlo ahora e invitar a tu equipo más adelante desde el panel.
       </p>
 
       <FieldError message={errors.members?.message} />
@@ -296,6 +294,19 @@ export function MembersStepForm({
             <ArrowRight className="w-4 h-4" />
           </>
         )}
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        hideArrow
+        size="lg"
+        className="w-full"
+        disabled={isSubmitting}
+        onClick={skipStep}
+        data-testid="members-skip-step"
+      >
+        Omitir por ahora
       </Button>
     </form>
   )

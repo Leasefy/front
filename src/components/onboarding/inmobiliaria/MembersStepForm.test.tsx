@@ -6,7 +6,7 @@ import { act } from 'react'
 void React
 
 import { MembersStepForm } from './MembersStepForm'
-import { membersStepSchema } from './members-step-schema'
+import { membersStepSchema, MEMBER_ROLE_OPTIONS, MEMBERS_STEP_NEW_ROW } from './members-step-schema'
 
 let container: HTMLDivElement
 let root: Root
@@ -78,11 +78,39 @@ describe('<MembersStepForm>', () => {
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
   })
 
-  it('shows a notice clarifying the step is required — the agent contract forbids an empty members list (minItems: 1) and gates /complete on it, so this step cannot be skipped', () => {
+  it('shows a notice clarifying the step is optional — the agent contract now accepts an empty members list (minItems: 0)', () => {
     render()
-    const notice = container.querySelector('[data-testid="members-step-required-notice"]')
+    const notice = container.querySelector('[data-testid="members-step-optional-notice"]')
     expect(notice).toBeTruthy()
-    expect(notice?.textContent).toContain('obligatorio')
+    expect(notice?.textContent).toContain('opcional')
+    expect(container.querySelector('[data-testid="members-step-required-notice"]')).toBeFalsy()
+  })
+
+  it('renders a secondary "Omitir por ahora" action', () => {
+    render()
+    const skipBtn = container.querySelector('[data-testid="members-skip-step"]')
+    expect(skipBtn).toBeTruthy()
+    expect(skipBtn?.textContent).toContain('Omitir por ahora')
+  })
+
+  it('clicking "Omitir por ahora" submits an empty members list, bypassing row validation', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(null)
+    render({ onSubmit })
+
+    // Leave the default row empty (would normally block the regular submit).
+    await act(async () => {
+      clickButton('members-skip-step')
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit).toHaveBeenCalledWith({ members: [] })
+  })
+
+  it('disables "Omitir por ahora" while submitting', () => {
+    render({ isSubmitting: true })
+    const skipBtn = container.querySelector('[data-testid="members-skip-step"]') as HTMLButtonElement
+    expect(skipBtn.disabled).toBe(true)
   })
 
   it('adds and removes member rows', () => {
@@ -135,13 +163,39 @@ describe('<MembersStepForm>', () => {
     expect(container.textContent).toContain('Este correo ya está en la lista.')
   })
 
-  it('rejects an empty member list at the schema level (agent contract requires min 1)', () => {
+  it('accepts an empty member list at the schema level (agent contract now allows minItems: 0)', () => {
     const parsed = membersStepSchema.safeParse({ members: [] })
 
-    expect(parsed.success).toBe(false)
-    if (!parsed.success) {
-      expect(parsed.error.issues[0]?.message).toBe('Invitá al menos un miembro.')
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.members).toEqual([])
     }
+  })
+
+  it('exposes the panel agency roles (ADMIN/AGENTE/CONTADOR/VIEWER) — no OPERATOR', () => {
+    expect(MEMBER_ROLE_OPTIONS.map((option) => option.value)).toEqual([
+      'AGENTE',
+      'CONTADOR',
+      'ADMIN',
+      'VIEWER',
+    ])
+    expect(MEMBER_ROLE_OPTIONS.map((option) => option.label)).toEqual([
+      'Agente',
+      'Contador',
+      'Administrador',
+      'Solo lectura',
+    ])
+  })
+
+  it('defaults a new member row to the AGENTE role', () => {
+    expect(MEMBERS_STEP_NEW_ROW.role).toBe('AGENTE')
+  })
+
+  it('rejects the deprecated OPERATOR role at the schema level', () => {
+    const parsed = membersStepSchema.safeParse({
+      members: [{ email: 'a@test.com', role: 'OPERATOR' }],
+    })
+    expect(parsed.success).toBe(false)
   })
 
   it('blocks submit when the single default row is left with an empty email', async () => {
@@ -167,8 +221,8 @@ describe('<MembersStepForm>', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit).toHaveBeenCalledWith({
       members: [
-        { email: 'admin@inmobiliaria.test', role: 'OPERATOR' },
-        { email: 'viewer@inmobiliaria.test', role: 'OPERATOR' },
+        { email: 'admin@inmobiliaria.test', role: 'AGENTE' },
+        { email: 'viewer@inmobiliaria.test', role: 'AGENTE' },
       ],
     })
   })

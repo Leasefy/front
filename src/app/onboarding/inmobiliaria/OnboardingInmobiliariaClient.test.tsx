@@ -426,7 +426,7 @@ describe('<OnboardingInmobiliariaClient>', () => {
     })
 
     expect(submitMembers).toHaveBeenCalledWith({
-      members: [{ email: 'admin@inmobiliaria.test', role: 'OPERATOR' }],
+      members: [{ email: 'admin@inmobiliaria.test', role: 'AGENTE' }],
     })
   })
 

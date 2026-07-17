@@ -45,13 +45,23 @@ describe('computeAgencyStepPrefill', () => {
     expect(result.legalName).toBe('Inmobiliaria Andes SAS')
   })
 
-  it('nit only ever comes from the pre-step — the draft never carries it', () => {
+  it('falls back to draft.nit when the pre-step nit is absent', () => {
     const result = computeAgencyStepPrefill(null, {
       proposedAgencyName: 'Inmobiliaria Andes SAS',
-      // Even if some future draft shape smuggled a `nit` key, it must be ignored:
-      // NIT is not part of the agent's onboarding-start draft contract today.
       nit: '900999999-1',
     })
+
+    expect(result.nit).toBe('900999999-1')
+  })
+
+  it('the pre-step nit wins over draft.nit when both are present', () => {
+    const result = computeAgencyStepPrefill({ nit: '900123456-7' }, { nit: '900999999-1' })
+
+    expect(result.nit).toBe('900123456-7')
+  })
+
+  it('ignores a blank/whitespace-only draft.nit', () => {
+    const result = computeAgencyStepPrefill(null, { nit: '   ' })
 
     expect(result.nit).toBeUndefined()
   })

@@ -14,27 +14,18 @@
  *  2. `draft` — the agent's `resumeOnboarding` draft
  *     (`OnboardingSessionResumeResponse.draft`, untyped
  *     `Record<string, unknown>` on the wire). Agent-persisted, so it
- *     survives a refresh, but today only carries whatever the agent's
- *     `/onboarding/start` step received: `proposedAgencyName`,
- *     `contactEmail`, `contactPhone` (see `OnboardingStartRequest`,
- *     src/lib/api/generated/agent.ts). It NEVER carries `nit` — the back
- *     never forwards it to the agent's start step (see handoff note below).
+ *     survives a refresh. It carries whatever the agent's `/onboarding/start`
+ *     step received: `proposedAgencyName`, `contactEmail`, `contactPhone`,
+ *     and now `nit` too (`OnboardingStartRequest.nit` is optional — see
+ *     `src/lib/api/generated/agent.ts`).
  *
- * Priority: `preStep` wins for `legalName` (typed one screen ago, more
- * likely correct than a possibly-stale agent draft). `nit` ONLY ever comes
- * from `preStep` — there is no other source. Both `preStep` and `draft` can
- * be null/undefined independently (e.g. after a refresh `preStep` is gone);
- * this function degrades gracefully to prefilling fewer fields, never throws.
- *
- * ── Backend/agent handoff note ──────────────────────────────────────────
- * The agent's onboarding-start draft (`GET .../onboarding/session/{id}/resume`)
- * does not carry the NIT anywhere. After a page refresh mid-wizard (pre-step
- * values lost, only the draft survives), the NIT cannot be prefilled from any
- * source and the user must retype it. If this is undesirable, the fix is on
- * the agent side: accept/persist `nit` in `OnboardingStartRequest` (or a
- * later step) so `resume`'s draft can carry it, mirroring
- * `proposedAgencyName`/`contactEmail`. Not implemented here — out of scope
- * for this front-only change.
+ * Priority: `preStep` wins for both `legalName` and `nit` (typed one screen
+ * ago, more likely correct/fresher than a possibly-stale agent draft).
+ * `draft.nit` is only used as a fallback when `preStep.nit` is absent (e.g.
+ * after a hard page refresh mid-wizard, when in-memory pre-step values are
+ * gone but the agent-persisted draft survives). Both `preStep` and `draft`
+ * can be null/undefined independently; this function degrades gracefully to
+ * prefilling fewer fields, never throws.
  */
 import type { AgencyStepFormValues } from './agency-step-schema'
 
@@ -59,9 +50,8 @@ export function computeAgencyStepPrefill(
   const legalName = preStep?.legalName || readDraftString(draft, 'proposedAgencyName')
   if (legalName) prefill.legalName = legalName
 
-  // NIT is only ever collected by the pre-step — the agent's draft never
-  // carries it today (see the handoff note above).
-  if (preStep?.nit) prefill.nit = preStep.nit
+  const nit = preStep?.nit || readDraftString(draft, 'nit')
+  if (nit) prefill.nit = nit
 
   const primaryContactEmail = readDraftString(draft, 'contactEmail')
   if (primaryContactEmail) prefill.primaryContactEmail = primaryContactEmail

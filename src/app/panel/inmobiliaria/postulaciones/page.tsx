@@ -23,7 +23,7 @@ function formatScoredAt(iso: string): string {
 }
 
 export default function PostulacionesPage() {
-  const { agency } = useAuth()
+  const { agency, refreshAgency } = useAuth()
   const agencyId = agency?.id
   const [items, setItems] = useState<FunnelApplication[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -68,11 +68,12 @@ export default function PostulacionesPage() {
         </div>
       ) : !agencyId ? (
         // Nothing was fetched — re-running load() without an agency is
-        // useless, so retry reloads the page to re-resolve the session.
+        // useless, so retry re-fetches the agency membership directly
+        // (see AuthProvider's self-heal backstop in auth-context.tsx).
         <ErrorState
           title="No pudimos cargar la información de tu inmobiliaria"
-          description="Recarga la página para intentarlo de nuevo."
-          onRetry={() => window.location.reload()}
+          description="Intenta de nuevo para reconectar con tu inmobiliaria."
+          onRetry={() => void refreshAgency()}
         />
       ) : error ? (
         <ErrorState

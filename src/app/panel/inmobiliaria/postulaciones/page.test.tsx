@@ -17,13 +17,16 @@ void React // jsx-preserve
 // react-dom/client needs this flag to recognize our act() wrapping.
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }))
+const { fetchMock, refreshAgencyMock } = vi.hoisted(() => ({
+  fetchMock: vi.fn(),
+  refreshAgencyMock: vi.fn(),
+}))
 
 // ── Controllable auth mock ────────────────────────────────────────────────
 let _agency: { id: string } | null = null
 
 vi.mock('@/lib/auth', () => ({
-  useAuth: () => ({ agency: _agency, user: { id: 'user-test' } }),
+  useAuth: () => ({ agency: _agency, user: { id: 'user-test' }, refreshAgency: refreshAgencyMock }),
 }))
 
 // ── Mock the service module (keep real helpers) ──────────────────────────
@@ -47,8 +50,19 @@ vi.mock('@/components/data-display/EmptyState', () => ({
 }))
 
 vi.mock('@/components/ui/error-state', () => ({
-  ErrorState: ({ title }: { title: string }) =>
-    React.createElement('div', { 'data-testid': 'error-state' }, title),
+  ErrorState: ({ title, onRetry }: { title: string; onRetry?: () => void }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'error-state' },
+      title,
+      onRetry
+        ? React.createElement(
+            'button',
+            { 'data-testid': 'error-state-retry', onClick: onRetry },
+            'Intentar de nuevo',
+          )
+        : null,
+    ),
 }))
 
 vi.mock('@leasefy/cadence', () => ({
@@ -110,6 +124,7 @@ beforeEach(() => {
   root = createRoot(container)
   _agency = null
   fetchMock.mockReset()
+  refreshAgencyMock.mockReset()
 })
 
 afterEach(() => {
@@ -156,6 +171,26 @@ describe('PostulacionesPage — no agency in session', () => {
     await renderPage()
 
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('retry button calls refreshAgency() instead of reloading the page', async () => {
+    _agency = null
+    const reloadSpy = vi.fn()
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadSpy },
+    })
+
+    await renderPage()
+    const retryButton = container.querySelector<HTMLButtonElement>('[data-testid="error-state-retry"]')
+    expect(retryButton).not.toBeNull()
+
+    await act(async () => {
+      retryButton!.click()
+    })
+
+    expect(refreshAgencyMock).toHaveBeenCalledTimes(1)
+    expect(reloadSpy).not.toHaveBeenCalled()
   })
 })
 

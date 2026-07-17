@@ -3,6 +3,7 @@
 import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { User, AuthContextType, Agency, AgencyMemberRole } from './types'
 import { toFrontendRole } from './types'
+import { fetchAgencyProfile } from './agency-fetch'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
@@ -213,18 +214,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAgencyRole(role)
   }, [])
 
-  /** Fetch agency membership for agency/agent roles */
-  const fetchAgency = useCallback(async (token?: string): Promise<{ agency: Agency | null; role: AgencyMemberRole | null }> => {
-    try {
-      // Backend returns { ...agencyFields, memberRole, memberStatus }
-      const data = await apiClient.get<Agency & { memberRole: AgencyMemberRole }>('/inmobiliaria/agency', token)
-      const { memberRole, ...agencyFields } = data as Agency & { memberRole: AgencyMemberRole; memberStatus: string }
-      return { agency: agencyFields as Agency, role: memberRole }
-    } catch {
-      // User may not belong to an agency yet (e.g. just registered)
-      return { agency: null, role: null }
-    }
-  }, [])
+  /** Fetch agency membership for agency/agent roles. Delegates to
+   *  `fetchAgencyProfile` (agency-fetch.ts) which tolerates legacy/partial
+   *  response shapes and logs (console.warn) the reason on any failure —
+   *  instead of silently collapsing every failure mode (no membership yet,
+   *  network blip, malformed body) into an unexplained null. */
+  const fetchAgency = useCallback((token?: string) => fetchAgencyProfile(token), [])
 
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {

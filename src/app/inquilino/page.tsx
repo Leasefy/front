@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb } from '@phosphor-icons/react';
+import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, ArrowRight, Lightbulb } from '@phosphor-icons/react';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
+import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
+import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { useEvaluation } from '@/lib/hooks/useEvaluation';
@@ -95,20 +97,49 @@ export default function InquilinoPage() {
   };
 
   // ==========================================================================
-  // TODO (Backend): Replace these with actual API calls
-  // For a new user, these should all be empty
+  // Real data — single source of truth (mismos hooks que pagos/page.tsx).
+  // Sin arrays hardcodeados: el arriendo activo, el próximo pago y las
+  // aplicaciones vienen del backend. Nada fabricado.
   // ==========================================================================
-  const activeLeases: any[] = []; // Empty for new users
-  const activeApplications: any[] = []; // Empty for new users
-  const nextPayment: { amount: number; dueDate: string } | null = null; // No payments for new users
-  const primaryLease: { id: string; propertyName: string } | null = null;
-  // ==========================================================================
+  const { getActive, isLoading: leasesLoading } = useLeases();
+  const { isLoading: requestsLoading } = useMyPaymentRequests(); // gate honesto del historial
+  const { active: activeApplications, isLoading: appsLoading } = useTenantApplications();
+
+  const activeLeases = isOnboardingComplete ? getActive() : [];
+  const primaryLease = activeLeases[0];
+
+  const { info: paymentInfo, isLoading: payInfoLoading } = useLeasePaymentInfo(
+    primaryLease?.id ?? null
+  );
+
+  // Próximo pago sin fabricar (idéntico a pagos/page.tsx:90-92): sólo hay
+  // "próximo pago" cuando el período actual está NONE o REJECTED. El monto SIEMPRE
+  // sale de paymentInfo.monthlyRent — nunca se suma/computa un saldo aquí (PAGO-01).
+  const showNextPaymentCta =
+    paymentInfo?.currentPeriodStatus === 'NONE' ||
+    paymentInfo?.currentPeriodStatus === 'REJECTED';
+  const nextAmount = showNextPaymentCta ? (paymentInfo?.monthlyRent ?? 0) : 0;
+
+  // Fecha de vencimiento derivada del paymentDay (idéntico a pagos/page.tsx:110-111).
+  const today = new Date();
+  let due = new Date(today.getFullYear(), today.getMonth(), paymentInfo?.paymentDay ?? 1);
+  if (due < today) {
+    due = new Date(today.getFullYear(), today.getMonth() + 1, paymentInfo?.paymentDay ?? 1);
+  }
+  const nextPayment =
+    paymentInfo && nextAmount > 0 ? { amount: nextAmount, dueDate: due } : null;
 
   // Featured properties for recommendation (always show)
   const { properties: featuredProperties, isLoading: featuredLoading } = useFeaturedProperties(4);
 
-  // Loading state
-  if (isOnboardingComplete === null) {
+  // Loading state — no leer `.length` sobre datos en vuelo.
+  if (
+    isOnboardingComplete === null ||
+    leasesLoading ||
+    payInfoLoading ||
+    appsLoading ||
+    requestsLoading
+  ) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
         <Spinner size="lg" />
@@ -222,6 +253,8 @@ export default function InquilinoPage() {
             </p>
           </div>
 
+          {/* Casos abiertos: hub llega en v7-03 — no fabricar conteo */}
+
           {/* Next Payment or CTA */}
           {nextPayment && primaryLease ? (
             <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5">
@@ -230,7 +263,14 @@ export default function InquilinoPage() {
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('dashboard.nextPayment')}</p>
               <p className="text-2xl font-bold text-fg dark:text-white">
-                {i18nFormatCurrency((nextPayment as { amount: number }).amount)}
+                {i18nFormatCurrency(nextPayment.amount)}
+              </p>
+              <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+                {locale === 'es' ? 'Vence el ' : 'Due '}
+                {nextPayment.dueDate.toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+                  day: 'numeric',
+                  month: 'long',
+                })}
               </p>
             </div>
           ) : (
@@ -296,11 +336,7 @@ export default function InquilinoPage() {
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
 
-                      {/* Match badge */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 text-white text-xs font-medium rounded-full flex items-center gap-1" style={{ backgroundColor: '#14130f' }}>
-                        <Check className="w-3 h-3" weight="bold" />
-                        {92 - index * 5}% match
-                      </div>
+                      {/* Match badge eliminado: el "% match" era dato inventado (v7-01 R1/PITFALLS 1) */}
 
                       {/* Heart - Glass effect */}
                       <div

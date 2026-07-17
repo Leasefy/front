@@ -566,6 +566,12 @@
             "maxLength": 20,
             "example": "+57 300 000 0000"
           },
+          "nit": {
+            "type": "string",
+            "maxLength": 20,
+            "pattern": "^\\d{9,10}(?:-\\d)?$",
+            "example": "900123456-7"
+          },
           "existingTenantId": {
             "type": "string",
             "format": "uuid",
@@ -864,8 +870,10 @@
             "type": "string",
             "enum": [
               "ADMIN",
-              "OPERATOR",
-              "VIEWER"
+              "AGENTE",
+              "CONTADOR",
+              "VIEWER",
+              "OPERATOR"
             ],
             "example": "ADMIN"
           }
@@ -883,7 +891,7 @@
             "items": {
               "$ref": "#/components/schemas/OnboardingMemberInput"
             },
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 50
           }
         },
@@ -1518,8 +1526,10 @@
             "type": "string",
             "enum": [
               "ADMIN",
-              "OPERATOR",
-              "VIEWER"
+              "AGENTE",
+              "CONTADOR",
+              "VIEWER",
+              "OPERATOR"
             ]
           }
         },
@@ -1536,7 +1546,7 @@
             "items": {
               "$ref": "#/components/schemas/OnboardingSessionMemberInput"
             },
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 50
           },
           "tenantId": {

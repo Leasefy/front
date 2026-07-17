@@ -1,9 +1,9 @@
 'use client'
 
-import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User, AuthContextType, Agency, AgencyMemberRole } from './types'
 import { toFrontendRole } from './types'
-import { fetchAgencyProfile } from './agency-fetch'
+import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
@@ -113,6 +113,16 @@ function isUserNotFoundError(err: unknown): boolean {
   return msg.includes('user not found')
 }
 
+/** Whether this user should have an agency membership fetched at all
+ *  (AGENT/agency role). Tenants and landlords never call `/inmobiliaria/agency`. */
+function isAgencyCapable(u: User | null): boolean {
+  return !!u && (u.role === 'agency' || u.backendRole === 'AGENT')
+}
+
+/** Bounded backoff schedule (ms) for the agency self-heal backstop —
+ *  see `AuthProvider`'s agency self-healing effect below. */
+const AGENCY_SELF_HEAL_DELAYS_MS = [0, 2000, 8000]
+
 /**
  * Recover a previously-known agency tuple from localStorage so consumers that
  * read `useAuth().agency` immediately on mount (cobranza/cotizador hooks)
@@ -221,6 +231,99 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *  network blip, malformed body) into an unexplained null. */
   const fetchAgency = useCallback((token?: string) => fetchAgencyProfile(token), [])
 
+  /** Apply a `fetchAgencyProfile` result to state WITHOUT ever downgrading an
+   *  already-loaded agency. A failed fetch (`agency: null`) leaves whatever
+   *  is currently in state untouched — only a successful fetch overwrites it.
+   *  This is the single write path used by the auth-event handlers, the
+   *  self-heal backstop, and `refreshAgency()` below. */
+  const applyAgencyFetchResult = useCallback((result: AgencyFetchResult) => {
+    if (!result.agency) return
+    setAgencyState(result.agency)
+    setAgencyRole(result.role)
+  }, [])
+
+  // ---------------------------------------------------------------------
+  // Agency self-healing backstop
+  //
+  // fetchAgency() only ever ran inside onAuthStateChange handlers — one shot
+  // per auth event. If that single shot failed (network blip, dev HMR partial
+  // reload losing state), `agency` stayed null for the rest of the session
+  // with nothing ever re-requesting it, silently breaking anything gated on
+  // `agency?.id` (useBetaChat, the postulaciones panel). The effect below
+  // retries with bounded backoff whenever `user` is agency-capable and
+  // `agency` is still null — no new Supabase auth event required.
+  // ---------------------------------------------------------------------
+  const agencySelfHealActiveRef = useRef(false)
+  const agencySelfHealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const agencySelfHealTokenRef = useRef(0)
+
+  /** Starts (or no-ops if already running) a bounded retry chain for the
+   *  agency fetch: attempts at 0s / 2s / 8s, then gives up until either a
+   *  dependency change restarts it or `refreshAgency()` re-arms it. Guarded
+   *  by `agencySelfHealActiveRef` so overlapping effect runs / manual
+   *  refreshes never stack concurrent chains. */
+  const startAgencySelfHeal = useCallback(() => {
+    if (agencySelfHealActiveRef.current) return
+    agencySelfHealActiveRef.current = true
+    const localToken = ++agencySelfHealTokenRef.current
+
+    const attempt = (index: number) => {
+      agencySelfHealTimeoutRef.current = setTimeout(async () => {
+        if (localToken !== agencySelfHealTokenRef.current) return
+        console.warn(
+          `[Auth] agency self-heal retry attempt ${index + 1}/${AGENCY_SELF_HEAL_DELAYS_MS.length} (no agency loaded yet)`,
+        )
+        const result = await fetchAgency()
+        if (localToken !== agencySelfHealTokenRef.current) return
+        if (result.agency) {
+          applyAgencyFetchResult(result)
+          agencySelfHealActiveRef.current = false
+          return
+        }
+        const next = index + 1
+        if (next < AGENCY_SELF_HEAL_DELAYS_MS.length) {
+          attempt(next)
+        } else {
+          console.warn('[Auth] agency self-heal retries exhausted — call refreshAgency() to retry manually')
+          agencySelfHealActiveRef.current = false
+        }
+      }, AGENCY_SELF_HEAL_DELAYS_MS[index])
+    }
+    attempt(0)
+  }, [fetchAgency, applyAgencyFetchResult])
+
+  useEffect(() => {
+    if (!isAgencyCapable(user) || agency) return
+    startAgencySelfHeal()
+    return () => {
+      // Invalidate any pending/in-flight attempt from this chain and clear
+      // its timer — a fresh chain starts on the next effect run if still needed.
+      agencySelfHealTokenRef.current += 1
+      if (agencySelfHealTimeoutRef.current) {
+        clearTimeout(agencySelfHealTimeoutRef.current)
+        agencySelfHealTimeoutRef.current = null
+      }
+      agencySelfHealActiveRef.current = false
+    }
+  }, [user, agency, startAgencySelfHeal])
+
+  /** Manually retry the agency fetch (e.g. a page's "Intentar de nuevo"
+   *  button). Always performs one direct fetch; if it also fails, re-arms
+   *  the automatic backstop above (even if it had already given up). */
+  const refreshAgency = useCallback(async () => {
+    console.warn('[Auth] agency manual refresh requested')
+    const result = await fetchAgency()
+    applyAgencyFetchResult(result)
+    if (!result.agency) {
+      agencySelfHealActiveRef.current = false
+      if (agencySelfHealTimeoutRef.current) {
+        clearTimeout(agencySelfHealTimeoutRef.current)
+        agencySelfHealTimeoutRef.current = null
+      }
+      startAgencySelfHeal()
+    }
+  }, [fetchAgency, applyAgencyFetchResult, startAgencySelfHeal])
+
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {
     // Use the already-stored token to avoid an extra getSession() lock acquisition.
@@ -230,12 +333,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(userData)
     setNeedsOnboarding(needsOnb)
     // Also refresh agency data for agency/agent roles (or when just completing inmobiliaria onboarding)
-    if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-      const { agency: agencyData, role } = await fetchAgency()
-      setAgencyState(agencyData)
-      setAgencyRole(role)
+    if (isAgencyCapable(userData)) {
+      applyAgencyFetchResult(await fetchAgency())
     }
-  }, [fetchUser, fetchAgency])
+  }, [fetchUser, fetchAgency, applyAgencyFetchResult])
 
   /** Check MFA assurance level and update mfaRequired state */
   const checkMfaLevel = useCallback(async () => {
@@ -296,10 +397,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (userData?.onboardingCompleted) {
               requestNotificationPermission().catch(() => {})
             }
-            if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-              const { agency: agencyData, role } = await fetchAgency(session.access_token)
-              setAgencyState(agencyData)
-              setAgencyRole(role)
+            if (isAgencyCapable(userData)) {
+              applyAgencyFetchResult(await fetchAgency(session.access_token))
             }
           }
           setIsLoading(false)
@@ -314,10 +413,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (userData?.onboardingCompleted) {
             requestNotificationPermission().catch(() => {})
           }
-          if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-            const { agency: agencyData, role } = await fetchAgency(session.access_token)
-            setAgencyState(agencyData)
-            setAgencyRole(role)
+          if (isAgencyCapable(userData)) {
+            applyAgencyFetchResult(await fetchAgency(session.access_token))
           }
         } else if (event === 'SIGNED_OUT') {
           setAccessToken(null)
@@ -335,10 +432,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setNeedsOnboarding(needsOnb)
           await checkMfaLevel()
           // Also refresh agency data for agency/agent roles
-          if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-            const { agency: agencyData, role } = await fetchAgency(session.access_token)
-            setAgencyState(agencyData)
-            setAgencyRole(role)
+          if (isAgencyCapable(userData)) {
+            applyAgencyFetchResult(await fetchAgency(session.access_token))
           }
           // CRITICAL: if the very first event on page load is TOKEN_REFRESHED
           // (Supabase auto-refreshed the expired token before emitting INITIAL_SESSION),
@@ -352,7 +447,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel, fetchAgency])
+  }, [fetchUser, checkMfaLevel, fetchAgency, applyAgencyFetchResult])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -498,6 +593,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     needsOnboarding,
     agency,
     agencyRole,
+    refreshAgency,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,

@@ -193,6 +193,7 @@ export interface AuthState {
   agencyRole: AgencyMemberRole | null
 }
 
+
 export interface AuthContextType extends AuthState {
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<User | null>
@@ -213,6 +214,10 @@ export interface AuthContextType extends AuthState {
   setMfaVerified: () => void
   /** Set agency context (called after registration or login for agency members) */
   setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
+  /** Manually retry fetching the agency membership (e.g. an error card's
+   *  "Intentar de nuevo" button). Also re-arms the automatic self-heal
+   *  backstop in `AuthProvider` if it had already given up retrying. */
+  refreshAgency: () => Promise<void>
 }
 
 /**

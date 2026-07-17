@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Check, WarningCircle } from '@phosphor-icons/react';
+import { ArrowLeft, MapPin, Check, WarningCircle, Info, X } from '@phosphor-icons/react';
 
 import { Progress } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -80,6 +80,8 @@ export function WizardShell({
     attemptedAdvance,
     tryAdvanceStep,
     mode,
+    showPrefillNotice,
+    dismissPrefillNotice,
   } = useApplication();
 
   const currentStepConfig = WIZARD_STEPS[currentStep - 1];
@@ -293,6 +295,29 @@ export function WizardShell({
         {/* Main Content */}
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
+            {/* Prefill disclosure — data was seeded from a previous application */}
+            {showPrefillNotice && (
+              <div
+                role="status"
+                className="mb-4 flex items-start gap-3 p-4 bg-primary-soft border border-primary/20 rounded-[14px]"
+                data-testid="prefill-notice"
+              >
+                <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <p className="flex-1 text-sm text-fg">
+                  Precargamos los datos de tu postulación anterior. Revisa cada paso
+                  antes de enviar.
+                </p>
+                <button
+                  type="button"
+                  onClick={dismissPrefillNotice}
+                  aria-label="Cerrar aviso"
+                  className="p-1 rounded-md text-fg-muted hover:text-fg hover:bg-surface/60 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
             {/* Step content */}
             <div className="bg-surface rounded-[22px] border border-border">
               {/* Desktop step header - hidden on mobile since sidebar shows it */}

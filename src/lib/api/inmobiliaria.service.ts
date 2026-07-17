@@ -3,8 +3,10 @@
  * Connects to backend /api/v1/inmobiliaria endpoints
  */
 
-import { apiClient } from '@/lib/api/client';
+import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import type {
+  AgencyProfile,
+  UpdateAgencyPayload,
   Propietario,
   PropietarioFormData,
   Agente,
@@ -20,8 +22,6 @@ import type {
   SolicitudMantenimiento,
   Renovacion,
   InmobiliariaDashboardKPIs,
-  InmobiliariaConfig,
-  InmobiliariaConfigExtended,
   DocumentTemplate,
   PropertyDocument,
   ActaEntrega,
@@ -50,6 +50,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 
 const BASE = '/inmobiliaria';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
 // Permission response types
 export interface UserPermissionsResponse {
@@ -176,6 +177,65 @@ export const agentesApi = {
 // Consignaciones (Portafolio)
 // ============================================================================
 
+/**
+ * Backend consignacion row: Prisma returns UPPER_SNAKE enums
+ * (status ACTIVE/TERMINATED/…, availability AVAILABLE/RENTED/…,
+ * propertyType APARTMENT/…) and the agent link as `agenteUserId`.
+ * The frontend `Consignacion` type declares lowercase enums and `agenteId`,
+ * so every read/write goes through this boundary mapping.
+ */
+type RawConsignacion = Omit<
+  Consignacion,
+  'status' | 'availability' | 'propertyType' | 'agenteId'
+> & {
+  status?: string | null;
+  availability?: string | null;
+  propertyType?: string | null;
+  agenteUserId?: string | null;
+  agenteId?: string | null;
+};
+
+export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
+  const lower = (v?: string | null) => (v ?? '').toLowerCase();
+  return {
+    ...(raw as unknown as Consignacion),
+    status: (lower(raw.status) || 'active') as Consignacion['status'],
+    availability: (lower(raw.availability) || 'available') as Consignacion['availability'],
+    propertyType: (lower(raw.propertyType) || 'apartment') as Consignacion['propertyType'],
+    agenteId: raw.agenteId ?? raw.agenteUserId ?? '',
+  };
+}
+
+/**
+ * Fields accepted by PUT /inmobiliaria/consignaciones/:id
+ * (UpdateConsignacionDto = Partial<CreateConsignacionDto> + status/availability/…).
+ * NOTE: `agenteId` is accepted here only to be STRIPPED: the backend key is
+ * `agenteUserId` (a User id), while the front's agente ids are AgencyMember
+ * ids — sending either would corrupt the assignment or 400
+ * (forbidNonWhitelisted). Agent reassignment needs the dedicated
+ * assign-agent endpoint plus a userId the frontend does not have yet.
+ */
+export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
+  status?: Consignacion['status'];
+  availability?: Consignacion['availability'];
+  contractDate?: string;
+  contractEndDate?: string;
+  currentTenantName?: string;
+  leaseEndDate?: string;
+  consignmentContractUrl?: string;
+};
+
+function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, unknown> {
+  // Strip front-only keys the backend whitelist would reject (see note above).
+  const { agenteId: _agenteId, propertyType, status, availability, ...rest } = data;
+  void _agenteId;
+  const payload: Record<string, unknown> = { ...rest };
+  if (propertyType !== undefined) payload.propertyType = propertyType.toUpperCase();
+  if (status !== undefined) payload.status = status.toUpperCase();
+  if (availability !== undefined) payload.availability = availability.toUpperCase();
+  return payload;
+}
+
 export const consignacionesApi = {
   async getAll(params?: {
     status?: string;
@@ -193,20 +253,34 @@ export const consignacionesApi = {
     if (params?.minRent) query.set('minRent', String(params.minRent));
     if (params?.maxRent) query.set('maxRent', String(params.maxRent));
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Consignacion[] }>(`${BASE}/consignaciones${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: RawConsignacion[] } | RawConsignacion[]>(
+      `${BASE}/consignaciones${qs ? `?${qs}` : ''}`,
+    );
+    // Backend returns a plain array; tolerate a { data } envelope too.
+    const rows = Array.isArray(res) ? res : res.data;
+    return rows.map(normalizeConsignacion);
   },
 
   async getById(id: string): Promise<Consignacion> {
-    return apiClient.get<Consignacion>(`${BASE}/consignaciones/${id}`);
+    const raw = await apiClient.get<RawConsignacion>(`${BASE}/consignaciones/${id}`);
+    return normalizeConsignacion(raw);
   },
 
-  async create(data: ConsignacionFormData): Promise<Consignacion> {
-    return apiClient.post<Consignacion>(`${BASE}/consignaciones`, data);
+  async create(data: ConsignacionFormData & { contractDate: string }): Promise<Consignacion> {
+    const raw = await apiClient.post<RawConsignacion>(
+      `${BASE}/consignaciones`,
+      toConsignacionPayload(data),
+    );
+    return normalizeConsignacion(raw);
   },
 
-  async update(id: string, data: Partial<ConsignacionFormData>): Promise<Consignacion> {
-    return apiClient.patch<Consignacion>(`${BASE}/consignaciones/${id}`, data);
+  /** PUT (not PATCH — the backend route is @Put) with backend-cased enums. */
+  async update(id: string, data: ConsignacionUpdateInput): Promise<Consignacion> {
+    const raw = await apiClient.put<RawConsignacion>(
+      `${BASE}/consignaciones/${id}`,
+      toConsignacionPayload(data),
+    );
+    return normalizeConsignacion(raw);
   },
 
   async delete(id: string): Promise<void> {
@@ -613,25 +687,11 @@ export const actasApi = {
 // ============================================================================
 
 export const inmobiliariaConfigApi = {
-  async get(): Promise<InmobiliariaConfig> {
-    return apiClient.get<InmobiliariaConfig>(`${BASE}/config`);
-  },
-
-  async getExtended(): Promise<InmobiliariaConfigExtended> {
-    return apiClient.get<InmobiliariaConfigExtended>(`${BASE}/config`);
-  },
-
-  async update(data: Partial<InmobiliariaConfigExtended>): Promise<InmobiliariaConfigExtended> {
-    return apiClient.patch<InmobiliariaConfigExtended>(`${BASE}/config`, data);
-  },
-
-  async updateBranding(data: Partial<InmobiliariaConfigExtended['branding']>): Promise<void> {
-    await apiClient.patch(`${BASE}/config/branding`, data);
-  },
-
-  async updateDefaults(data: Partial<InmobiliariaConfigExtended['defaults']>): Promise<void> {
-    await apiClient.patch(`${BASE}/config/defaults`, data);
-  },
+  // NOTE: the old `get`/`getExtended`/`update`/`updateBranding`/`updateDefaults`
+  // methods were removed — PATCH /inmobiliaria/config and
+  // PATCH /inmobiliaria/config/branding|defaults NEVER existed in the backend.
+  // Agency profile/branding is read from GET /inmobiliaria/config (`agency` key)
+  // and written through agencyApi.updateAgency / agencyApi.uploadAgencyLogo.
 
   // Users — canonical route is /inmobiliaria/agency/members
   async getUsers(): Promise<AgencyUser[]> {
@@ -770,11 +830,61 @@ export const agencyApi = {
   },
 
   /**
-   * PUT /inmobiliaria/agency
-   * Updates agency settings (including reminder config).
+   * GET /inmobiliaria/agency
+   * Returns the caller's agency (full row + memberRole/memberStatus).
+   * 404 if the user has no agency membership.
    */
-  async updateAgency(data: { reminderDaysBefore?: number[]; reminderDaysAfter?: number[] }): Promise<unknown> {
-    return apiClient.put(`${BASE}/agency`, data);
+  async getMyAgency(): Promise<AgencyProfile> {
+    return apiClient.get<AgencyProfile>(`${BASE}/agency`);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency
+   * Updates agency settings (profile, legal, financial defaults, logoUrl).
+   * Requires agency ADMIN role — the backend answers 403 otherwise.
+   * Send ONLY changed fields: the backend rejects unknown keys
+   * (ValidationPipe forbidNonWhitelisted).
+   */
+  async updateAgency(data: UpdateAgencyPayload): Promise<AgencyProfile> {
+    return apiClient.put<AgencyProfile>(`${BASE}/agency`, data);
+  },
+
+  /**
+   * POST /inmobiliaria/agency/logo
+   * Uploads the agency logo (multipart, field `file`; jpeg/png/webp, max 5MB).
+   * Uses fetch directly for FormData — same pattern as propertiesApi.uploadImage.
+   * Returns the public URL of the stored logo.
+   */
+  async uploadAgencyLogo(file: File): Promise<{ logoUrl: string }> {
+    const token = getAccessToken();
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/agency/logo`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(
+        res.status,
+        (body as { message?: string }).message || `Error al subir el logo (${res.status})`,
+      );
+    }
+
+    return res.json();
   },
 
   /**

@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { House } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
-import { propertiesApi } from '@/lib/api/properties.service';
+import { propertiesApi, createPublishedWithDraftFallback } from '@/lib/api/properties.service';
+import { uploadPropertyPhotos } from '@/lib/api/property-photos';
+import { PropertyPhotoPicker } from '@/components/inmobiliaria/PropertyPhotoPicker';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Input, Textarea, Spinner } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +31,7 @@ function NuevaPropiedadContent() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
 
   const [form, setForm] = useState({
     title:        '',
@@ -74,7 +78,10 @@ function NuevaPropiedadContent() {
     setError(null);
 
     try {
-      const property = await propertiesApi.create({
+      // Publish on create (status AVAILABLE, marketplace contract). If the
+      // plan limit rejects the publish, the helper retries once as DRAFT so
+      // the form is never lost at the limit.
+      const { property, publishBlocked } = await createPublishedWithDraftFallback({
         title:        form.title,
         description:  form.description,
         type:         form.type,
@@ -89,12 +96,41 @@ function NuevaPropiedadContent() {
         area:         Number(form.area),
       });
 
+      if (publishBlocked) {
+        toast.warning(
+          'Alcanzaste el límite de propiedades publicadas de tu plan — la propiedad se guardó como borrador.',
+          { description: 'Actualiza tu plan para publicarla.' },
+        );
+      }
+
+      // The property exists from here on: photo/assign failures must not be
+      // surfaced as a creation error (a retry would duplicate the property).
+      if (photos.length > 0) {
+        const { failed, uploaded } = await uploadPropertyPhotos(property.id, photos);
+        if (failed.length > 0) {
+          toast.warning(
+            `La propiedad se creó, pero ${failed.length} de ${photos.length} fotos no se subieron.`,
+            { description: 'Puedes agregarlas más tarde editando la propiedad.' },
+          );
+        } else if (uploaded > 0) {
+          toast.success(`Propiedad creada con ${uploaded} foto${uploaded === 1 ? '' : 's'}.`);
+        }
+      } else {
+        toast.success('Propiedad creada.');
+      }
+
       // Admin: assign the entered agent email (optional)
       // Agent: auto-assign themselves
-      if (isAdmin && form.agentEmail.trim()) {
-        await propertiesApi.assignAgent(property.id, form.agentEmail.trim());
-      } else if (!isAdmin && user?.email) {
-        await propertiesApi.assignAgent(property.id, user.email);
+      try {
+        if (isAdmin && form.agentEmail.trim()) {
+          await propertiesApi.assignAgent(property.id, form.agentEmail.trim());
+        } else if (!isAdmin && user?.email) {
+          await propertiesApi.assignAgent(property.id, user.email);
+        }
+      } catch {
+        toast.warning('La propiedad se creó, pero no se pudo asignar el agente.', {
+          description: 'Asignalo desde la lista de propiedades.',
+        });
       }
 
       router.push('/panel/inmobiliaria/propiedades');
@@ -268,6 +304,17 @@ function NuevaPropiedadContent() {
               />
             </div>
           </div>
+        </section>
+
+        {/* ── Fotos ─────────────────────────────────────── */}
+        <section className="bg-card rounded-xl border border-border p-6 space-y-4">
+          <div>
+            <h2 className="text-base font-semibold text-fg">Fotos</h2>
+            <p className="text-sm text-fg-muted mt-0.5">
+              Opcional. Se suben al crear la propiedad.
+            </p>
+          </div>
+          <PropertyPhotoPicker photos={photos} onChange={setPhotos} disabled={isSubmitting} />
         </section>
 
         {/* ── Asignación de agente ───────────────────────── */}

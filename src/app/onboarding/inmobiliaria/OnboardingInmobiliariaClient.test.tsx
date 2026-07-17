@@ -124,14 +124,25 @@ describe('<OnboardingInmobiliariaClient> — session provisioning (work-unit #4)
     expect(mockUseOnboardingSession).toHaveBeenCalledWith('sess-1')
   })
 
-  it('shows a loading state while the session is being provisioned', () => {
+  it('keeps the pre-step mounted with a disabled submit while provisioning (no double POST)', () => {
     mockSearchParams = new URLSearchParams()
+    const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
-      baseProvisioningResult({ status: 'provisioning', sessionId: null }),
+      baseProvisioningResult({ status: 'provisioning', sessionId: null, provision }),
     )
     render()
 
-    expect(container.querySelector('[data-testid="provisioning-loading"]')).toBeTruthy()
+    const submitBtn = container.querySelector(
+      '[data-testid="owner-name-step-form"] button[type="submit"]',
+    ) as HTMLButtonElement
+    expect(submitBtn).toBeTruthy()
+    expect(submitBtn.disabled).toBe(true)
+
+    // A click on the disabled button must never fire another provision().
+    act(() => {
+      submitBtn.click()
+    })
+    expect(provision).not.toHaveBeenCalled()
     expect(mockUseOnboardingSession).not.toHaveBeenCalled()
   })
 
@@ -170,10 +181,14 @@ describe('<OnboardingInmobiliariaClient> — session provisioning (work-unit #4)
   })
 })
 
-// The /auth signup never captures names — when the hook reports `needs-name`
-// the wizard shows a pre-step collecting the full name, splits it like the
-// canonical onboarding/propietario pattern, and provisions explicitly.
-describe('<OnboardingInmobiliariaClient> — name pre-step', () => {
+// The provisioning contract always needs the owner's name PLUS the agency's
+// razón social and NIT (the back only creates the agency + agent session for
+// `userType: 'INMOBILIARIA'` with an `agency` object, and without a NIT the
+// agency is flipped to FAILED with no retry). When the hook reports
+// `needs-info` the wizard shows a pre-step collecting all three, splits the
+// name like the canonical onboarding/propietario pattern, and provisions
+// explicitly.
+describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
   function submitNameForm() {
     const submitBtn = container.querySelector(
       '[data-testid="owner-name-step-form"] button[type="submit"]',
@@ -183,13 +198,18 @@ describe('<OnboardingInmobiliariaClient> — name pre-step', () => {
     })
   }
 
+  function fillAgencyFields() {
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    setInputValue(byId('agencyNit'), '900123456-7')
+  }
+
   beforeEach(() => {
     mockSearchParams = new URLSearchParams()
   })
 
-  it('renders the name pre-step and does not mount the wizard nor auto-provision UI', () => {
+  it('renders the pre-step and does not mount the wizard nor auto-provision UI', () => {
     mockUseOnboardingProvisioning.mockReturnValue(
-      baseProvisioningResult({ status: 'needs-name', sessionId: null }),
+      baseProvisioningResult({ status: 'needs-info', sessionId: null }),
     )
     render()
 
@@ -198,37 +218,49 @@ describe('<OnboardingInmobiliariaClient> — name pre-step', () => {
     expect(mockUseOnboardingSession).not.toHaveBeenCalled()
   })
 
-  it('splits the full name (first word → firstName, rest → lastName) and provisions', () => {
+  it('splits the full name (first word → firstName, rest → lastName) and provisions with the agency data', () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
-      baseProvisioningResult({ status: 'needs-name', sessionId: null, provision }),
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
     )
     render()
 
     setInputValue(byId('ownerFullName'), '  Ana María  Pérez Gómez ')
+    fillAgencyFields()
     submitNameForm()
 
     expect(provision).toHaveBeenCalledTimes(1)
-    expect(provision).toHaveBeenCalledWith({ firstName: 'Ana', lastName: 'María Pérez Gómez' })
+    expect(provision).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'María Pérez Gómez',
+      agencyName: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
+    })
   })
 
   it('falls back lastName to firstName for a single-word name', () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
-      baseProvisioningResult({ status: 'needs-name', sessionId: null, provision }),
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
     )
     render()
 
     setInputValue(byId('ownerFullName'), 'Ana')
+    fillAgencyFields()
     submitNameForm()
 
-    expect(provision).toHaveBeenCalledWith({ firstName: 'Ana', lastName: 'Ana' })
+    expect(provision).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'Ana',
+      agencyName: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
+    })
   })
 
-  it('blocks submit and shows a hint when the name is empty', () => {
+  it('blocks submit and shows a hint per empty required field', () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
-      baseProvisioningResult({ status: 'needs-name', sessionId: null, provision }),
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
     )
     render()
 
@@ -236,6 +268,47 @@ describe('<OnboardingInmobiliariaClient> — name pre-step', () => {
 
     expect(provision).not.toHaveBeenCalled()
     expect(container.textContent).toContain('Ingresa tu nombre completo para continuar.')
+    expect(container.textContent).toContain('La razón social es obligatoria.')
+    expect(container.textContent).toContain('El NIT es obligatorio.')
+  })
+
+  // Colombian RUT documents print the NIT dot-separated ("900.123.456-7") —
+  // accept it, but always post the normalized digits-only form.
+  it('accepts a dotted RUT-style NIT and provisions with it normalized', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana Pérez')
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    setInputValue(byId('agencyNit'), '900.123.456-7')
+    submitNameForm()
+
+    expect(provision).toHaveBeenCalledTimes(1)
+    expect(provision).toHaveBeenCalledWith({
+      firstName: 'Ana',
+      lastName: 'Pérez',
+      agencyName: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
+    })
+  })
+
+  it('blocks submit when the NIT is not digits with an optional check digit', () => {
+    const provision = vi.fn()
+    mockUseOnboardingProvisioning.mockReturnValue(
+      baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
+    )
+    render()
+
+    setInputValue(byId('ownerFullName'), 'Ana Pérez')
+    setInputValue(byId('agencyName'), 'Inmobiliaria Andes SAS')
+    setInputValue(byId('agencyNit'), 'NIT 900.123')
+    submitNameForm()
+
+    expect(provision).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Ingresa un NIT válido. Ej: 900123456-7')
   })
 })
 

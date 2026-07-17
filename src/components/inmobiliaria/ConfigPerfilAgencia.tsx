@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Buildings,
@@ -8,6 +8,7 @@ import {
   Phone,
   MapPin,
   Globe,
+  WhatsappLogo,
   IdentificationCard,
   User,
   Certificate,
@@ -17,9 +18,6 @@ import {
   Check,
   Warning,
   Info,
-  X,
-  Plus,
-  WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -35,30 +33,143 @@ import {
 import { Chip } from '@leasefy/cadence';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
-import type {
-  InmobiliariaConfigExtended,
-  AgencyContactInfo,
-  AgencyLegalInfo,
-  AgencyDefaults,
-} from '@/lib/types/inmobiliaria';
+import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
 
 interface ConfigPerfilAgenciaProps {
-  config: InmobiliariaConfigExtended;
-  onSave?: (config: InmobiliariaConfigExtended) => void;
+  /** Real agency row from GET /inmobiliaria/config (`agency` key) */
+  agency: AgencyProfile;
+  /**
+   * Called with ONLY the changed fields (backend UpdateAgencyDto shape).
+   * Should throw/reject on failure so the form stays in edit mode.
+   */
+  onSave?: (payload: UpdateAgencyPayload) => Promise<void> | void;
+  /** Agency ADMINs only — the backend rejects PUT /inmobiliaria/agency otherwise */
+  canEdit?: boolean;
   isLoading?: boolean;
 }
 
-// Day options for reminder chips
+/** Editable fields — the exact subset the backend UpdateAgencyDto accepts */
+interface PerfilFormState {
+  name: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  supportEmail: string;
+  website: string;
+  address: string;
+  city: string;
+  department: string;
+  postalCode: string;
+  nit: string;
+  razonSocial: string;
+  legalRepresentative: string;
+  legalDocumentNumber: string;
+  matriculaInmobiliaria: string;
+  registroCamara: string;
+  defaultCommissionPercent: number;
+  defaultLateFeePercent: number;
+  paymentDueDay: number;
+  disbursementDay: number;
+  reminderDaysBefore: number[];
+  reminderDaysAfter: number[];
+}
+
+// Day offsets offered as reminder chips (backend accepts 0..30)
 const REMINDER_DAYS_OPTIONS = [1, 2, 3, 5, 7, 10, 15, 30];
 
+/** Chip options: the presets plus any day already saved outside them. */
+function reminderDayOptions(current: number[]): number[] {
+  return Array.from(new Set([...REMINDER_DAYS_OPTIONS, ...current])).sort((a, b) => a - b);
+}
+
+// Module-level so React doesn't remount the inputs (and drop focus) on every
+// keystroke — a defect the previous inline-component version had.
+const InputWrapper = ({
+  label,
+  required,
+  error,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  hint?: string;
+  children: React.ReactNode;
+}) => (
+  <div className="space-y-1.5">
+    <label className="block text-sm font-medium text-foreground">
+      {label}
+      {required && <span className="text-danger ml-0.5">*</span>}
+    </label>
+    {children}
+    {error ? (
+      <p className="text-xs text-danger flex items-center gap-1">
+        <Warning className="w-3 h-3" />
+        {error}
+      </p>
+    ) : hint ? (
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    ) : null}
+  </div>
+);
+
+const SectionHeader = ({
+  icon: Icon,
+  title,
+  color = 'text-fg-muted',
+}: {
+  icon: React.ElementType;
+  title: string;
+  color?: string;
+}) => (
+  <div className="flex items-center gap-2 text-foreground">
+    <Icon className={cn('w-5 h-5', color)} weight="duotone" />
+    <h3 className="text-base font-semibold">{title}</h3>
+  </div>
+);
+
+function buildFormState(agency: AgencyProfile): PerfilFormState {
+  return {
+    name: agency.name ?? '',
+    phone: agency.phone ?? '',
+    whatsapp: agency.whatsapp ?? '',
+    email: agency.email ?? '',
+    supportEmail: agency.supportEmail ?? '',
+    website: agency.website ?? '',
+    address: agency.address ?? '',
+    city: agency.city ?? '',
+    department: agency.department ?? '',
+    postalCode: agency.postalCode ?? '',
+    nit: agency.nit ?? '',
+    razonSocial: agency.razonSocial ?? '',
+    legalRepresentative: agency.legalRepresentative ?? '',
+    legalDocumentNumber: agency.legalDocumentNumber ?? '',
+    matriculaInmobiliaria: agency.matriculaInmobiliaria ?? '',
+    registroCamara: agency.registroCamara ?? '',
+    defaultCommissionPercent: agency.defaultCommissionPercent ?? 10,
+    defaultLateFeePercent: agency.defaultLateFeePercent ?? 2,
+    paymentDueDay: agency.paymentDueDay ?? 5,
+    disbursementDay: agency.disbursementDay ?? 15,
+    reminderDaysBefore: [...(agency.reminderDaysBefore ?? [])].sort((a, b) => a - b),
+    reminderDaysAfter: [...(agency.reminderDaysAfter ?? [])].sort((a, b) => a - b),
+  };
+}
+
 /**
- * ConfigPerfilAgencia - Form for editing agency profile information
- * Includes profile, contact, legal, and default settings sections
+ * ConfigPerfilAgencia — agency profile form wired to the real backend contract.
+ *
+ * Reads from the agency row (GET /inmobiliaria/config → `agency`) and saves via
+ * PUT /inmobiliaria/agency with only the changed fields, including the extended
+ * design fields (website, whatsapp, razonSocial, matriculaInmobiliaria,
+ * registroCamara, department, postalCode, supportEmail) and the reminder day
+ * arrays (number[], 0..30 each; empty array = disabled).
  */
 export function ConfigPerfilAgencia({
-  config,
+  agency,
   onSave,
+  canEdit = true,
   isLoading = false,
 }: ConfigPerfilAgenciaProps) {
   const { t } = useI18n();
@@ -67,63 +178,21 @@ export function ConfigPerfilAgencia({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: config.name,
-    contact: { ...config.contact },
-    legal: { ...config.legal },
-    defaults: { ...config.defaults },
-  });
+  const [formData, setFormData] = useState<PerfilFormState>(() => buildFormState(agency));
 
-  // Defensive: the read-only view must not crash when the loaded config is
-  // partial (the backend may omit contact/legal/defaults). Fall back to {} so
-  // missing fields render blank instead of throwing on `.phone` etc.
-  const contact = config.contact ?? ({} as InmobiliariaConfigExtended['contact']);
-  const legal = config.legal ?? ({} as InmobiliariaConfigExtended['legal']);
-  const defaults = config.defaults ?? ({} as InmobiliariaConfigExtended['defaults']);
+  const reminderDaysBefore = agency.reminderDaysBefore ?? [];
+  const reminderDaysAfter = agency.reminderDaysAfter ?? [];
 
-  const updateContact = useCallback(
-    (field: keyof AgencyContactInfo, value: string) => {
-      setFormData((prev) => ({
-        ...prev,
-        contact: { ...prev.contact, [field]: value },
-      }));
-      setTouched((prev) => ({ ...prev, [`contact.${field}`]: true }));
-      if (errors[`contact.${field}`]) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[`contact.${field}`];
-          return newErrors;
-        });
-      }
-    },
-    [errors]
-  );
-
-  const updateLegal = useCallback(
-    (field: keyof AgencyLegalInfo, value: string) => {
-      setFormData((prev) => ({
-        ...prev,
-        legal: { ...prev.legal, [field]: value },
-      }));
-      setTouched((prev) => ({ ...prev, [`legal.${field}`]: true }));
-      if (errors[`legal.${field}`]) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[`legal.${field}`];
-          return newErrors;
-        });
-      }
-    },
-    [errors]
-  );
-
-  const updateDefaults = useCallback(
-    (field: keyof AgencyDefaults, value: number | number[]) => {
-      setFormData((prev) => ({
-        ...prev,
-        defaults: { ...prev.defaults, [field]: value },
-      }));
+  const updateField = useCallback(
+    (field: keyof PerfilFormState, value: string | number | number[]) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      setTouched((prev) => ({ ...prev, [field]: true }));
+      setErrors((prev) => {
+        if (!prev[field]) return prev;
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
     },
     []
   );
@@ -132,17 +201,16 @@ export function ConfigPerfilAgencia({
     field: 'reminderDaysBefore' | 'reminderDaysAfter',
     day: number
   ) => {
-    const current = formData.defaults[field];
-    const newDays = current.includes(day)
+    const current = formData[field];
+    const next = current.includes(day)
       ? current.filter((d) => d !== day)
       : [...current, day].sort((a, b) => a - b);
-    updateDefaults(field, newDays);
+    updateField(field, next);
   };
 
-  // NIT format validation: XXX.XXX.XXX-X
+  // NIT format validation: XXX.XXX.XXX-X (also accepted without dots)
   const validateNIT = (nit: string): boolean => {
     const nitPattern = /^\d{3}\.\d{3}\.\d{3}-\d$/;
-    // Also accept without dots: 9 digits + dash + 1 digit
     const nitPatternAlt = /^\d{9}-\d$/;
     return nitPattern.test(nit) || nitPatternAlt.test(nit);
   };
@@ -150,77 +218,94 @@ export function ConfigPerfilAgencia({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Name validation
     if (!formData.name.trim()) {
       newErrors.name = t('inmobiliaria.config.profile.validation.nameRequired');
     }
-
-    // Contact validation
-    if (!formData.contact.phone.trim()) {
-      newErrors['contact.phone'] = t('inmobiliaria.config.profile.validation.phoneRequired');
-    }
-    if (!formData.contact.email.trim()) {
-      newErrors['contact.email'] = t('inmobiliaria.config.profile.validation.emailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact.email)) {
-      newErrors['contact.email'] = t('inmobiliaria.config.profile.validation.emailInvalid');
-    }
-    if (!formData.contact.address.trim()) {
-      newErrors['contact.address'] = t('inmobiliaria.config.profile.validation.addressRequired');
-    }
-    if (!formData.contact.city.trim()) {
-      newErrors['contact.city'] = t('inmobiliaria.config.profile.validation.cityRequired');
-    }
-    if (!formData.contact.department) {
-      newErrors['contact.department'] = t('inmobiliaria.config.profile.validation.departmentRequired');
-    }
-
-    // Legal validation
-    if (!formData.legal.nit.trim()) {
-      newErrors['legal.nit'] = t('inmobiliaria.config.profile.validation.nitRequired');
-    } else if (!validateNIT(formData.legal.nit)) {
-      newErrors['legal.nit'] = t('inmobiliaria.config.profile.validation.nitInvalid');
-    }
-    if (!formData.legal.razonSocial.trim()) {
-      newErrors['legal.razonSocial'] = t('inmobiliaria.config.profile.validation.razonSocialRequired');
-    }
-    if (!formData.legal.representanteLegal.trim()) {
-      newErrors['legal.representanteLegal'] =
-        t('inmobiliaria.config.profile.validation.representanteRequired');
-    }
-    if (!formData.legal.representanteCedula.trim()) {
-      newErrors['legal.representanteCedula'] =
-        t('inmobiliaria.config.profile.validation.cedulaRequired');
-    }
-
-    // Defaults validation
-    if (
-      formData.defaults.defaultCommissionPercent < 0 ||
-      formData.defaults.defaultCommissionPercent > 100
-    ) {
-      newErrors['defaults.commission'] = t('inmobiliaria.config.profile.validation.commissionRange');
+    // Optional in the backend — validate format only when provided
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = t('inmobiliaria.config.profile.validation.emailInvalid');
     }
     if (
-      formData.defaults.defaultAdminFeePercent < 0 ||
-      formData.defaults.defaultAdminFeePercent > 100
+      formData.supportEmail.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.supportEmail)
     ) {
-      newErrors['defaults.adminFee'] =
-        t('inmobiliaria.config.profile.validation.adminFeeRange');
+      newErrors.supportEmail = t('inmobiliaria.config.profile.validation.emailInvalid');
+    }
+    if (formData.nit.trim() && !validateNIT(formData.nit)) {
+      newErrors.nit = t('inmobiliaria.config.profile.validation.nitInvalid');
     }
     if (
-      formData.defaults.paymentDueDay < 1 ||
-      formData.defaults.paymentDueDay > 28
+      formData.defaultCommissionPercent < 0 ||
+      formData.defaultCommissionPercent > 100
     ) {
-      newErrors['defaults.paymentDueDay'] = t('inmobiliaria.config.profile.validation.dayRange');
+      newErrors.defaultCommissionPercent = t('inmobiliaria.config.profile.validation.commissionRange');
     }
-    if (
-      formData.defaults.disbursementDay < 1 ||
-      formData.defaults.disbursementDay > 28
-    ) {
-      newErrors['defaults.disbursementDay'] = t('inmobiliaria.config.profile.validation.dayRange');
+    if (formData.defaultLateFeePercent < 0 || formData.defaultLateFeePercent > 100) {
+      newErrors.defaultLateFeePercent = t('inmobiliaria.config.profile.validation.commissionRange');
+    }
+    if (formData.paymentDueDay < 1 || formData.paymentDueDay > 28) {
+      newErrors.paymentDueDay = t('inmobiliaria.config.profile.validation.dayRange');
+    }
+    if (formData.disbursementDay < 1 || formData.disbursementDay > 28) {
+      newErrors.disbursementDay = t('inmobiliaria.config.profile.validation.dayRange');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  /** Diff form state against the loaded agency: only changed fields are sent. */
+  const buildChangedPayload = (): UpdateAgencyPayload => {
+    const original = buildFormState(agency);
+    const payload: UpdateAgencyPayload = {};
+
+    const stringFields = [
+      'name',
+      'phone',
+      'whatsapp',
+      'email',
+      'supportEmail',
+      'website',
+      'address',
+      'city',
+      'department',
+      'postalCode',
+      'nit',
+      'razonSocial',
+      'legalRepresentative',
+      'legalDocumentNumber',
+      'matriculaInmobiliaria',
+      'registroCamara',
+    ] as const;
+    for (const field of stringFields) {
+      const value = formData[field].trim();
+      if (value !== original[field]) {
+        payload[field] = value;
+      }
+    }
+
+    const numberFields = [
+      'defaultCommissionPercent',
+      'defaultLateFeePercent',
+      'paymentDueDay',
+      'disbursementDay',
+    ] as const;
+    for (const field of numberFields) {
+      if (formData[field] !== original[field]) {
+        payload[field] = formData[field];
+      }
+    }
+
+    // Reminder arrays: send the FULL array only when its content changed
+    // (both are kept sorted, so a join comparison is exact).
+    const arrayFields = ['reminderDaysBefore', 'reminderDaysAfter'] as const;
+    for (const field of arrayFields) {
+      if (formData[field].join(',') !== original[field].join(',')) {
+        payload[field] = formData[field];
+      }
+    }
+
+    return payload;
   };
 
   const handleSave = async () => {
@@ -229,92 +314,36 @@ export function ConfigPerfilAgencia({
       return;
     }
 
+    const payload = buildChangedPayload();
+    if (Object.keys(payload).length === 0) {
+      setIsEditing(false);
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const updatedConfig: InmobiliariaConfigExtended = {
-        ...config,
-        name: formData.name,
-        contact: formData.contact,
-        legal: formData.legal,
-        defaults: formData.defaults,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Save to localStorage for demo
-      localStorage.setItem(
-        'inmobiliaria-config',
-        JSON.stringify(updatedConfig)
-      );
-
-      onSave?.(updatedConfig);
+      await onSave?.(payload);
       setIsEditing(false);
-      toast.success(t('inmobiliaria.config.toasts.configSaved'));
-    } catch (err) {
-      toast.error(t('inmobiliaria.config.profile.validation.saveError'));
+    } catch {
+      // The parent surfaced the error (toast with the backend message,
+      // e.g. 403 for non-admins) — keep the form in edit mode.
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleCancel = () => {
-    setFormData({
-      name: config.name,
-      contact: { ...config.contact },
-      legal: { ...config.legal },
-      defaults: { ...config.defaults },
-    });
+    setFormData(buildFormState(agency));
     setErrors({});
     setTouched({});
     setIsEditing(false);
   };
 
-  const InputWrapper = ({
-    label,
-    required,
-    error,
-    hint,
-    children,
-  }: {
-    label: string;
-    required?: boolean;
-    error?: string;
-    hint?: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-foreground">
-        {label}
-        {required && <span className="text-danger ml-0.5">*</span>}
-      </label>
-      {children}
-      {error ? (
-        <p className="text-xs text-danger flex items-center gap-1">
-          <Warning className="w-3 h-3" />
-          {error}
-        </p>
-      ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      ) : null}
-    </div>
-  );
-
-  const SectionHeader = ({
-    icon: Icon,
-    title,
-    color = 'text-fg-muted',
-  }: {
-    icon: React.ElementType;
-    title: string;
-    color?: string;
-  }) => (
-    <div className="flex items-center gap-2 text-foreground">
-      <Icon className={cn('w-5 h-5', color)} weight="duotone" />
-      <h3 className="text-base font-semibold">{title}</h3>
-    </div>
-  );
+  const handleStartEditing = () => {
+    // Re-seed from the freshest agency data on entering edit mode
+    setFormData(buildFormState(agency));
+    setIsEditing(true);
+  };
 
   if (isLoading) {
     return (
@@ -338,13 +367,19 @@ export function ConfigPerfilAgencia({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-fg">{config.name}</h2>
+          <h2 className="text-base font-semibold text-fg">{agency.name}</h2>
           <p className="text-sm text-fg-muted">
             {t('inmobiliaria.config.profile.subtitle')}
           </p>
+          {!canEdit && (
+            <p className="text-xs text-fg-muted flex items-center gap-1">
+              <Info className="w-3.5 h-3.5" />
+              {t('inmobiliaria.config.profile.adminOnlyHint')}
+            </p>
+          )}
         </div>
-        {!isEditing && (
-          <Button hideArrow size="sm" className="shrink-0" onClick={() => setIsEditing(true)}>
+        {!isEditing && canEdit && (
+          <Button hideArrow size="sm" className="shrink-0" onClick={handleStartEditing}>
             {t('inmobiliaria.common.edit')}
           </Button>
         )}
@@ -364,10 +399,7 @@ export function ConfigPerfilAgencia({
               <Input
                 type="text"
                 value={formData.name}
-                onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, name: e.target.value }));
-                  setTouched((prev) => ({ ...prev, name: true }));
-                }}
+                onChange={(e) => updateField('name', e.target.value)}
                 className={cn('w-full pl-10', touched.name && errors.name && 'border-danger/30')}
               />
             </div>
@@ -385,31 +417,14 @@ export function ConfigPerfilAgencia({
 
         {isEditing ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <InputWrapper
-              label={t('inmobiliaria.config.profile.mainPhone')}
-              required
-              error={touched['contact.phone'] ? errors['contact.phone'] : undefined}
-            >
+            <InputWrapper label={t('inmobiliaria.config.profile.mainPhone')}>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="tel"
-                  value={formData.contact.phone}
-                  onChange={(e) => updateContact('phone', e.target.value)}
+                  value={formData.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
                   placeholder="+57 601 345 6789"
-                  className={cn('w-full pl-10', touched['contact.phone'] && errors['contact.phone'] && 'border-danger/30')}
-                />
-              </div>
-            </InputWrapper>
-
-            <InputWrapper label={t('inmobiliaria.config.profile.alternatePhone')} hint={t('common.optional')}>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="tel"
-                  value={formData.contact.alternatePhone || ''}
-                  onChange={(e) => updateContact('alternatePhone', e.target.value)}
-                  placeholder="+57 601 000 0000"
                   className="w-full pl-10"
                 />
               </div>
@@ -417,30 +432,33 @@ export function ConfigPerfilAgencia({
 
             <InputWrapper
               label={t('inmobiliaria.config.profile.mainEmail')}
-              required
-              error={touched['contact.email'] ? errors['contact.email'] : undefined}
+              error={touched.email ? errors.email : undefined}
             >
               <div className="relative">
                 <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="email"
-                  value={formData.contact.email}
-                  onChange={(e) => updateContact('email', e.target.value)}
+                  value={formData.email}
+                  onChange={(e) => updateField('email', e.target.value)}
                   placeholder="contacto@agencia.co"
-                  className={cn('w-full pl-10', touched['contact.email'] && errors['contact.email'] && 'border-danger/30')}
+                  className={cn('w-full pl-10', touched.email && errors.email && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
 
-            <InputWrapper label={t('inmobiliaria.config.profile.supportEmail')} hint={t('common.optional')}>
+            <InputWrapper
+              label={t('inmobiliaria.config.profile.supportEmail')}
+              hint={t('common.optional')}
+              error={touched.supportEmail ? errors.supportEmail : undefined}
+            >
               <div className="relative">
                 <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="email"
-                  value={formData.contact.supportEmail || ''}
-                  onChange={(e) => updateContact('supportEmail', e.target.value)}
+                  value={formData.supportEmail}
+                  onChange={(e) => updateField('supportEmail', e.target.value)}
                   placeholder="soporte@agencia.co"
-                  className="w-full pl-10"
+                  className={cn('w-full pl-10', touched.supportEmail && errors.supportEmail && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
@@ -450,8 +468,8 @@ export function ConfigPerfilAgencia({
                 <WhatsappLogo className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="tel"
-                  value={formData.contact.whatsapp || ''}
-                  onChange={(e) => updateContact('whatsapp', e.target.value)}
+                  value={formData.whatsapp}
+                  onChange={(e) => updateField('whatsapp', e.target.value)}
                   placeholder="+57 310 555 1234"
                   className="w-full pl-10"
                 />
@@ -463,8 +481,8 @@ export function ConfigPerfilAgencia({
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="url"
-                  value={formData.contact.website || ''}
-                  onChange={(e) => updateContact('website', e.target.value)}
+                  value={formData.website}
+                  onChange={(e) => updateField('website', e.target.value)}
                   placeholder="https://agencia.co"
                   className="w-full pl-10"
                 />
@@ -472,50 +490,36 @@ export function ConfigPerfilAgencia({
             </InputWrapper>
 
             <div className="sm:col-span-2">
-              <InputWrapper
-                label={t('inmobiliaria.config.profile.address')}
-                required
-                error={touched['contact.address'] ? errors['contact.address'] : undefined}
-              >
+              <InputWrapper label={t('inmobiliaria.config.profile.address')}>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                   <Textarea
-                    value={formData.contact.address}
-                    onChange={(e) => updateContact('address', e.target.value)}
+                    value={formData.address}
+                    onChange={(e) => updateField('address', e.target.value)}
                     placeholder="Cra 11 #82-76, Oficina 501"
                     rows={2}
-                    className={cn('w-full pl-10 resize-none', touched['contact.address'] && errors['contact.address'] && 'border-danger/30')}
+                    className="w-full pl-10 resize-none"
                   />
                 </div>
               </InputWrapper>
             </div>
 
-            <InputWrapper
-              label={t('inmobiliaria.config.profile.city')}
-              required
-              error={touched['contact.city'] ? errors['contact.city'] : undefined}
-            >
+            <InputWrapper label={t('inmobiliaria.config.profile.city')}>
               <Input
                 type="text"
-                value={formData.contact.city}
-                onChange={(e) => updateContact('city', e.target.value)}
+                value={formData.city}
+                onChange={(e) => updateField('city', e.target.value)}
                 placeholder="Bogota"
-                className={cn('w-full', touched['contact.city'] && errors['contact.city'] && 'border-danger/30')}
+                className="w-full"
               />
             </InputWrapper>
 
-            <InputWrapper
-              label={t('inmobiliaria.config.profile.department')}
-              required
-              error={touched['contact.department'] ? errors['contact.department'] : undefined}
-            >
+            <InputWrapper label={t('inmobiliaria.config.profile.department')} hint={t('common.optional')}>
               <Select
-                value={formData.contact.department || undefined}
-                onValueChange={(v) => updateContact('department', v)}
+                value={formData.department || undefined}
+                onValueChange={(v) => updateField('department', v)}
               >
-                <SelectTrigger
-                  className={cn('w-full', touched['contact.department'] && errors['contact.department'] && 'border-danger/30')}
-                >
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder={t('inmobiliaria.config.profile.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -531,8 +535,8 @@ export function ConfigPerfilAgencia({
             <InputWrapper label={t('inmobiliaria.config.profile.postalCode')} hint={t('common.optional')}>
               <Input
                 type="text"
-                value={formData.contact.postalCode || ''}
-                onChange={(e) => updateContact('postalCode', e.target.value)}
+                value={formData.postalCode}
+                onChange={(e) => updateField('postalCode', e.target.value)}
                 placeholder="110221"
                 className="w-full"
               />
@@ -542,24 +546,30 @@ export function ConfigPerfilAgencia({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.phone')}:</span>
-              <span className="ml-2 text-foreground">{contact.phone}</span>
+              <span className="ml-2 text-foreground">{agency.phone || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.email')}:</span>
-              <span className="ml-2 text-foreground">{contact.email}</span>
+              <span className="ml-2 text-foreground">{agency.email || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">WhatsApp:</span>
-              <span className="ml-2 text-foreground">{contact.whatsapp || '-'}</span>
+              <span className="ml-2 text-foreground">{agency.whatsapp || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.website')}:</span>
-              <span className="ml-2 text-foreground">{contact.website || '-'}</span>
+              <span className="ml-2 text-foreground">{agency.website || '—'}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">{t('inmobiliaria.config.profile.supportEmail')}:</span>
+              <span className="ml-2 text-foreground">{agency.supportEmail || '—'}</span>
             </div>
             <div className="sm:col-span-2">
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.address')}:</span>
               <span className="ml-2 text-foreground">
-                {[contact.address, contact.city, contact.department].filter(Boolean).join(', ') || '—'}
+                {[agency.address, agency.city, agency.department, agency.postalCode]
+                  .filter(Boolean)
+                  .join(', ') || '—'}
               </span>
             </div>
           </div>
@@ -578,66 +588,53 @@ export function ConfigPerfilAgencia({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputWrapper
               label={t('inmobiliaria.config.profile.nit')}
-              required
-              error={touched['legal.nit'] ? errors['legal.nit'] : undefined}
+              error={touched.nit ? errors.nit : undefined}
               hint={t('inmobiliaria.config.profile.nitFormat')}
             >
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  value={formData.legal.nit}
-                  onChange={(e) => updateLegal('nit', e.target.value)}
+                  value={formData.nit}
+                  onChange={(e) => updateField('nit', e.target.value)}
                   placeholder="901.234.567-8"
-                  className={cn('w-full pl-10', touched['legal.nit'] && errors['legal.nit'] && 'border-danger/30')}
+                  className={cn('w-full pl-10', touched.nit && errors.nit && 'border-danger/30')}
                 />
               </div>
             </InputWrapper>
 
-            <InputWrapper
-              label={t('inmobiliaria.config.profile.legalName')}
-              required
-              error={touched['legal.razonSocial'] ? errors['legal.razonSocial'] : undefined}
-            >
+            <InputWrapper label={t('inmobiliaria.config.profile.legalName')} hint={t('common.optional')}>
               <Input
                 type="text"
-                value={formData.legal.razonSocial}
-                onChange={(e) => updateLegal('razonSocial', e.target.value)}
+                value={formData.razonSocial}
+                onChange={(e) => updateField('razonSocial', e.target.value)}
                 placeholder="Nombre S.A.S."
-                className={cn('w-full', touched['legal.razonSocial'] && errors['legal.razonSocial'] && 'border-danger/30')}
+                className="w-full"
               />
             </InputWrapper>
 
-            <InputWrapper
-              label={t('inmobiliaria.config.profile.legalRep')}
-              required
-              error={touched['legal.representanteLegal'] ? errors['legal.representanteLegal'] : undefined}
-            >
+            <InputWrapper label={t('inmobiliaria.config.profile.legalRep')}>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  value={formData.legal.representanteLegal}
-                  onChange={(e) => updateLegal('representanteLegal', e.target.value)}
+                  value={formData.legalRepresentative}
+                  onChange={(e) => updateField('legalRepresentative', e.target.value)}
                   placeholder="Juan Perez Garcia"
-                  className={cn('w-full pl-10', touched['legal.representanteLegal'] && errors['legal.representanteLegal'] && 'border-danger/30')}
+                  className="w-full pl-10"
                 />
               </div>
             </InputWrapper>
 
-            <InputWrapper
-              label={t('inmobiliaria.config.profile.legalRepId')}
-              required
-              error={touched['legal.representanteCedula'] ? errors['legal.representanteCedula'] : undefined}
-            >
+            <InputWrapper label={t('inmobiliaria.config.profile.legalRepId')}>
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  value={formData.legal.representanteCedula}
-                  onChange={(e) => updateLegal('representanteCedula', e.target.value)}
+                  value={formData.legalDocumentNumber}
+                  onChange={(e) => updateField('legalDocumentNumber', e.target.value)}
                   placeholder="80.123.456"
-                  className={cn('w-full pl-10', touched['legal.representanteCedula'] && errors['legal.representanteCedula'] && 'border-danger/30')}
+                  className="w-full pl-10"
                 />
               </div>
             </InputWrapper>
@@ -645,8 +642,8 @@ export function ConfigPerfilAgencia({
             <InputWrapper label={t('inmobiliaria.config.profile.realEstateRegistration')} hint={t('common.optional')}>
               <Input
                 type="text"
-                value={formData.legal.matriculaInmobiliaria || ''}
-                onChange={(e) => updateLegal('matriculaInmobiliaria', e.target.value)}
+                value={formData.matriculaInmobiliaria}
+                onChange={(e) => updateField('matriculaInmobiliaria', e.target.value)}
                 placeholder="INM-2024-001234"
                 className="w-full"
               />
@@ -655,8 +652,8 @@ export function ConfigPerfilAgencia({
             <InputWrapper label={t('inmobiliaria.config.profile.chamberRegistration')} hint={t('common.optional')}>
               <Input
                 type="text"
-                value={formData.legal.registroCamara || ''}
-                onChange={(e) => updateLegal('registroCamara', e.target.value)}
+                value={formData.registroCamara}
+                onChange={(e) => updateField('registroCamara', e.target.value)}
                 placeholder="S0012345"
                 className="w-full"
               />
@@ -666,27 +663,27 @@ export function ConfigPerfilAgencia({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.nit')}:</span>
-              <span className="ml-2 text-foreground tabular-nums">{legal.nit}</span>
+              <span className="ml-2 text-foreground tabular-nums">{agency.nit || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalName')}:</span>
-              <span className="ml-2 text-foreground">{legal.razonSocial}</span>
+              <span className="ml-2 text-foreground">{agency.razonSocial || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalRep')}:</span>
-              <span className="ml-2 text-foreground">{legal.representanteLegal}</span>
+              <span className="ml-2 text-foreground">{agency.legalRepresentative || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.legalRepId')}:</span>
-              <span className="ml-2 text-foreground tabular-nums">{legal.representanteCedula}</span>
+              <span className="ml-2 text-foreground tabular-nums">{agency.legalDocumentNumber || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.realEstateRegistration')}:</span>
-              <span className="ml-2 text-foreground">{legal.matriculaInmobiliaria || '-'}</span>
+              <span className="ml-2 text-foreground">{agency.matriculaInmobiliaria || '—'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">{t('inmobiliaria.config.profile.chamberRegistrationShort')}:</span>
-              <span className="ml-2 text-foreground">{legal.registroCamara || '-'}</span>
+              <span className="ml-2 text-foreground">{agency.registroCamara || '—'}</span>
             </div>
           </div>
         )}
@@ -711,11 +708,10 @@ export function ConfigPerfilAgencia({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputWrapper
                 label={t('inmobiliaria.config.profile.commissionPercent')}
-                required
-                error={errors['defaults.commission']}
+                error={errors.defaultCommissionPercent}
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -724,39 +720,18 @@ export function ConfigPerfilAgencia({
                     min={0}
                     max={100}
                     step={0.5}
-                    value={formData.defaults.defaultCommissionPercent}
+                    value={formData.defaultCommissionPercent}
                     onChange={(e) =>
-                      updateDefaults('defaultCommissionPercent', parseFloat(e.target.value) || 0)
+                      updateField('defaultCommissionPercent', parseFloat(e.target.value) || 0)
                     }
-                    className={cn('w-full pl-10', errors['defaults.commission'] && 'border-danger/30')}
-                  />
-                </div>
-              </InputWrapper>
-
-              <InputWrapper
-                label={t('inmobiliaria.config.profile.adminFeePercent')}
-                required
-                error={errors['defaults.adminFee']}
-              >
-                <div className="relative">
-                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.5}
-                    value={formData.defaults.defaultAdminFeePercent}
-                    onChange={(e) =>
-                      updateDefaults('defaultAdminFeePercent', parseFloat(e.target.value) || 0)
-                    }
-                    className={cn('w-full pl-10', errors['defaults.adminFee'] && 'border-danger/30')}
+                    className={cn('w-full pl-10', errors.defaultCommissionPercent && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
 
               <InputWrapper
                 label={t('inmobiliaria.config.profile.lateFeePercent')}
-                required
+                error={errors.defaultLateFeePercent}
               >
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -765,21 +740,18 @@ export function ConfigPerfilAgencia({
                     min={0}
                     max={100}
                     step={0.5}
-                    value={formData.defaults.defaultLateFeePercent}
+                    value={formData.defaultLateFeePercent}
                     onChange={(e) =>
-                      updateDefaults('defaultLateFeePercent', parseFloat(e.target.value) || 0)
+                      updateField('defaultLateFeePercent', parseFloat(e.target.value) || 0)
                     }
-                    className="w-full pl-10"
+                    className={cn('w-full pl-10', errors.defaultLateFeePercent && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <InputWrapper
                 label={t('inmobiliaria.config.profile.paymentDueDay')}
-                required
-                error={errors['defaults.paymentDueDay']}
+                error={errors.paymentDueDay}
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -787,19 +759,18 @@ export function ConfigPerfilAgencia({
                     type="number"
                     min={1}
                     max={28}
-                    value={formData.defaults.paymentDueDay}
+                    value={formData.paymentDueDay}
                     onChange={(e) =>
-                      updateDefaults('paymentDueDay', parseInt(e.target.value) || 1)
+                      updateField('paymentDueDay', parseInt(e.target.value) || 1)
                     }
-                    className={cn('w-full pl-10', errors['defaults.paymentDueDay'] && 'border-danger/30')}
+                    className={cn('w-full pl-10', errors.paymentDueDay && 'border-danger/30')}
                   />
                 </div>
               </InputWrapper>
 
               <InputWrapper
                 label={t('inmobiliaria.config.profile.disbursementDay')}
-                required
-                error={errors['defaults.disbursementDay']}
+                error={errors.disbursementDay}
               >
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -807,129 +778,109 @@ export function ConfigPerfilAgencia({
                     type="number"
                     min={1}
                     max={28}
-                    value={formData.defaults.disbursementDay}
+                    value={formData.disbursementDay}
                     onChange={(e) =>
-                      updateDefaults('disbursementDay', parseInt(e.target.value) || 15)
+                      updateField('disbursementDay', parseInt(e.target.value) || 15)
                     }
-                    className={cn('w-full pl-10', errors['defaults.disbursementDay'] && 'border-danger/30')}
+                    className={cn('w-full pl-10', errors.disbursementDay && 'border-danger/30')}
                   />
+                </div>
+              </InputWrapper>
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.commission')}</div>
+              <div className="text-foreground font-semibold">
+                {agency.defaultCommissionPercent ?? '—'}%
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.lateFee')}</div>
+              <div className="text-foreground font-semibold">
+                {agency.defaultLateFeePercent ?? '—'}%
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>
+              <div className="text-foreground font-semibold">
+                {agency.paymentDueDay ?? '—'}
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.disbursementDayLabel')}</div>
+              <div className="text-foreground font-semibold">
+                {agency.disbursementDay ?? '—'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reminders — day-offset arrays saved through the same PUT
+            (UpdateAgencyDto: number[], 0..30 each; empty array = disabled). */}
+        <div className="space-y-2 pt-4 border-t border-border">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">{t('inmobiliaria.config.profile.reminders')}</span>
+          </div>
+          {isEditing ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InputWrapper
+                label={t('inmobiliaria.config.profile.daysBeforeDue')}
+                hint={t('inmobiliaria.config.profile.remindersEmptyHint')}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {reminderDayOptions(formData.reminderDaysBefore).map((day) => (
+                    <Chip
+                      key={`before-${day}`}
+                      type="button"
+                      data-testid={`reminder-before-${day}`}
+                      selected={formData.reminderDaysBefore.includes(day)}
+                      onClick={() => toggleReminderDay('reminderDaysBefore', day)}
+                    >
+                      {day}d
+                    </Chip>
+                  ))}
                 </div>
               </InputWrapper>
 
               <InputWrapper
-                label={t('inmobiliaria.config.profile.gracePeriodDays')}
-                required
+                label={t('inmobiliaria.config.profile.daysAfterDue')}
+                hint={t('inmobiliaria.config.profile.remindersEmptyHint')}
               >
-                <Input
-                  type="number"
-                  min={0}
-                  max={30}
-                  value={formData.defaults.gracePeriodDays}
-                  onChange={(e) =>
-                    updateDefaults('gracePeriodDays', parseInt(e.target.value) || 0)
-                  }
-                  className="w-full"
-                />
+                <div className="flex flex-wrap gap-2">
+                  {reminderDayOptions(formData.reminderDaysAfter).map((day) => (
+                    <Chip
+                      key={`after-${day}`}
+                      type="button"
+                      data-testid={`reminder-after-${day}`}
+                      selected={formData.reminderDaysAfter.includes(day)}
+                      onClick={() => toggleReminderDay('reminderDaysAfter', day)}
+                    >
+                      {day}d
+                    </Chip>
+                  ))}
+                </div>
               </InputWrapper>
             </div>
-
-            {/* Reminder Days */}
-            <div className="space-y-4 pt-4 border-t border-border">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{t('inmobiliaria.config.profile.reminders')}</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputWrapper label={t('inmobiliaria.config.profile.daysBeforeDue')}>
-                  <div className="flex flex-wrap gap-2">
-                    {REMINDER_DAYS_OPTIONS.map((day) => (
-                      <Chip
-                        key={`before-${day}`}
-                        type="button"
-                        selected={formData.defaults.reminderDaysBefore.includes(day)}
-                        onClick={() => toggleReminderDay('reminderDaysBefore', day)}
-                      >
-                        {day}d
-                      </Chip>
-                    ))}
-                  </div>
-                </InputWrapper>
-
-                <InputWrapper label={t('inmobiliaria.config.profile.daysAfterDue')}>
-                  <div className="flex flex-wrap gap-2">
-                    {REMINDER_DAYS_OPTIONS.map((day) => (
-                      <Chip
-                        key={`after-${day}`}
-                        type="button"
-                        selected={formData.defaults.reminderDaysAfter.includes(day)}
-                        onClick={() => toggleReminderDay('reminderDaysAfter', day)}
-                      >
-                        {day}d
-                      </Chip>
-                    ))}
-                  </div>
-                </InputWrapper>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-              <div className="p-3 rounded-md bg-muted/50">
-                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.commission')}</div>
-                <div className="text-foreground font-semibold">
-                  {defaults.defaultCommissionPercent}%
-                </div>
-              </div>
-              <div className="p-3 rounded-md bg-muted/50">
-                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.adminFee')}</div>
-                <div className="text-foreground font-semibold">
-                  {defaults.defaultAdminFeePercent}%
-                </div>
-              </div>
-              <div className="p-3 rounded-md bg-muted/50">
-                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.lateFee')}</div>
-                <div className="text-foreground font-semibold">
-                  {defaults.defaultLateFeePercent}%
-                </div>
-              </div>
-              <div className="p-3 rounded-md bg-muted/50">
-                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.paymentDay')}</div>
-                <div className="text-foreground font-semibold">
-                  {defaults.paymentDueDay}
-                </div>
-              </div>
-              <div className="p-3 rounded-md bg-muted/50">
-                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.disbursementDayLabel')}</div>
-                <div className="text-foreground font-semibold">
-                  {defaults.disbursementDay}
-                </div>
-              </div>
-              <div className="p-3 rounded-md bg-muted/50">
-                <div className="text-muted-foreground text-xs">{t('inmobiliaria.config.profile.gracePeriodDays')}</div>
-                <div className="text-foreground font-semibold">
-                  {defaults.gracePeriodDays}
-                </div>
-              </div>
-            </div>
-
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersBefore')}:</span>
                 <span className="ml-2 text-foreground">
-                  {(defaults.reminderDaysBefore ?? []).map((d) => `${d}d`).join(', ')}
+                  {reminderDaysBefore.length > 0 ? reminderDaysBefore.map((d) => `${d}d`).join(', ') : '—'}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">{t('inmobiliaria.config.profile.remindersAfter')}:</span>
                 <span className="ml-2 text-foreground">
-                  {(defaults.reminderDaysAfter ?? []).map((d) => `${d}d`).join(', ')}
+                  {reminderDaysAfter.length > 0 ? reminderDaysAfter.map((d) => `${d}d`).join(', ') : '—'}
                 </span>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Actions */}
@@ -948,7 +899,7 @@ export function ConfigPerfilAgencia({
             type="button"
             hideArrow
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || !canEdit}
             isLoading={isSaving}
           >
             {isSaving ? (

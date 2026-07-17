@@ -56,6 +56,12 @@ const nextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      // Google OAuth avatars (users who sign in with Google get their
+      // profile photo served from googleusercontent.com)
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
     ],
   },
   async headers() {

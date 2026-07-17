@@ -156,6 +156,8 @@ export interface User {
   birthDate?: string
   emergencyContactName?: string
   emergencyContactPhone?: string
+  /** ISO timestamp of Supabase email confirmation; undefined if not confirmed */
+  emailConfirmedAt?: string
   role: UserRole
   /** The raw backend role before frontend mapping */
   backendRole?: BackendRole
@@ -206,7 +208,8 @@ export interface AuthContextType extends AuthState {
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
-  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }) => Promise<void>
+  /** null clears a field on the backend; undefined leaves it unchanged */
+  updateProfile: (data: { firstName?: string | null; lastName?: string | null; phone?: string | null; rut?: string | null; address?: string | null; birthDate?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null }) => Promise<void>
   setMfaVerified: () => void
   /** Set agency context (called after registration or login for agency members) */
   setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void

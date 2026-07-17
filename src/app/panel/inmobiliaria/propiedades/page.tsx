@@ -13,14 +13,28 @@ import {
   Plus,
   Sparkle,
   CheckCircle,
+  PencilSimple,
+  Trash,
 } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
 import { Button, Input, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ErrorState } from '@/components/ui/error-state';
+import { PropertyEditModal } from '@/components/inmobiliaria/PropertyEditModal';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import type { AgencyProperty } from '@/lib/types/property';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
@@ -214,6 +228,9 @@ function PropiedadesContent() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [changingAgent, setChangingAgent] = useState<AgencyProperty | null>(null);
+  const [editingProperty, setEditingProperty] = useState<AgencyProperty | null>(null);
+  const [deletingProperty, setDeletingProperty] = useState<AgencyProperty | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchProperties = useCallback(async () => {
     setIsLoading(true);
@@ -264,6 +281,28 @@ function PropiedadesContent() {
   const handleAgentChanged = () => {
     setChangingAgent(null);
     fetchProperties();
+  };
+
+  const handleEdited = () => {
+    setEditingProperty(null);
+    fetchProperties();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingProperty || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await propertiesApi.delete(deletingProperty.id);
+      toast.success('Propiedad eliminada');
+      setDeletingProperty(null);
+      fetchProperties();
+    } catch (err) {
+      toast.error('No se pudo eliminar la propiedad', {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -471,6 +510,29 @@ function PropiedadesContent() {
                               <Eye className="w-4 h-4" />
                             </Button>
                           </IconTooltip>
+                          <IconTooltip label="Editar propiedad">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              hideArrow
+                              onClick={() => setEditingProperty(property)}
+                              aria-label="Editar propiedad"
+                            >
+                              <PencilSimple className="w-4 h-4" />
+                            </Button>
+                          </IconTooltip>
+                          <IconTooltip label="Eliminar propiedad">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              hideArrow
+                              onClick={() => setDeletingProperty(property)}
+                              aria-label="Eliminar propiedad"
+                              className="text-danger hover:text-danger hover:bg-danger-soft"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </Button>
+                          </IconTooltip>
                           {isAdmin && (
                             <>
                               <IconTooltip label="Ver candidatos">
@@ -516,6 +578,39 @@ function PropiedadesContent() {
           onSuccess={handleAgentChanged}
         />
       )}
+
+      {/* Edit property modal */}
+      {editingProperty && (
+        <PropertyEditModal
+          property={editingProperty}
+          onClose={() => setEditingProperty(null)}
+          onSuccess={handleEdited}
+        />
+      )}
+
+      {/* Delete confirmation — shadcn AlertDialog, NOT browser confirm() */}
+      <AlertDialog
+        open={!!deletingProperty}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeletingProperty(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar propiedad?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará &quot;{deletingProperty?.title}&quot; de forma permanente,
+              incluyendo sus imágenes. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction tone="danger" onClick={handleDeleteConfirm} disabled={isDeleting}>
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

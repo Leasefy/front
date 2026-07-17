@@ -29,7 +29,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 
 ### Phases
 
-- [ ] **v7-01: Fundación & Limpieza del Portal** — Shell real post-firma: dashboard con estado real, estado de cuenta, perfil Colombia, config, nav; borra dead code.
+- [x] **v7-01: Fundación & Limpieza del Portal** — Shell real post-firma: dashboard con estado real, estado de cuenta, perfil Colombia, config, nav; borra dead code. ✅ 2026-07-16
 - [ ] **v7-02: Documentos del Arriendo** — Docs del arriendo (contrato, recibos, paz y salvo, cert. retención) con disciplina Habeas Data.
 - [ ] **v7-03: Estado de Casos (Hub)** — "Mis casos" unificado (PQRS + mantenimiento + acuerdos + pagos) con estado, responsable y timeline. Fija P1.
 - [ ] **v7-04: Pagos Reales (Wompi)** — Pago de arriendo con Wompi/Bold real, comprobantes PDF, autopago; reemplaza el PSE-mock.
@@ -155,7 +155,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| v7-01. Fundación & Limpieza | v7.0 | 0/4 | Not started | - |
+| v7-01. Fundación & Limpieza | v7.0 | 4/4 | Complete | 2026-07-16 |
 | v7-02. Documentos del Arriendo | v7.0 | 0/TBD | Not started | - |
 | v7-03. Estado de Casos (Hub) | v7.0 | 0/TBD | Not started | - |
 | v7-04. Pagos Reales (Wompi) | v7.0 | 0/TBD | Not started | - |

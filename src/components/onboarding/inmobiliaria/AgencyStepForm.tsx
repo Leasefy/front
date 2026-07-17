@@ -25,6 +25,14 @@ export interface AgencyStepFormProps {
    * as one form-level notice rather than a specific field error.
    */
   submitError?: string | null
+  /**
+   * Everything already known about the agency — the pre-step
+   * (`OwnerNameStepForm`) razón social/NIT and/or the agent resume draft's
+   * `proposedAgencyName`/`contactEmail`/`contactPhone` (see
+   * `computeAgencyStepPrefill` in `agency-step-prefill.ts`). Only sets the
+   * form's INITIAL values — every field stays fully editable.
+   */
+  prefill?: Partial<AgencyStepFormValues>
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -32,14 +40,20 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1.5 text-xs text-danger">{message}</p>
 }
 
-export function AgencyStepForm({ isSubmitting, onSubmit, submitError }: AgencyStepFormProps) {
+export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }: AgencyStepFormProps) {
   const {
     register,
     handleSubmit,
     control,
     setError,
     formState: { errors },
-  } = useForm<AgencyStepFormValues>({ defaultValues: AGENCY_STEP_DEFAULT_VALUES })
+  } = useForm<AgencyStepFormValues>({
+    defaultValues: {
+      ...AGENCY_STEP_DEFAULT_VALUES,
+      ...prefill,
+      address: { ...AGENCY_STEP_DEFAULT_VALUES.address, ...prefill?.address },
+    },
+  })
 
   const submit = handleSubmit(async (values) => {
     const parsed = agencyStepSchema.safeParse(values)

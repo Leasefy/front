@@ -11,6 +11,10 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { getSupabase } from '@/lib/supabase/client';
+import { settingsApi } from '@/lib/api/settings.service';
+import type { NotificationSettings } from '@/lib/api/settings.service';
+import { useNotificationSettings } from '@/lib/hooks/useSettings';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,13 +74,6 @@ function Modal({
   );
 }
 
-// Mock active sessions
-const mockSessions = [
-  { id: '1', device: 'Chrome en Windows', location: 'Bogotá, Colombia', current: true, lastActive: 'Ahora' },
-  { id: '2', device: 'Safari en iPhone', location: 'Bogotá, Colombia', current: false, lastActive: 'Hace 2 horas' },
-  { id: '3', device: 'Firefox en MacOS', location: 'Medellín, Colombia', current: false, lastActive: 'Hace 1 día' },
-];
-
 export default function ConfiguracionPage() {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -88,14 +85,17 @@ export default function ConfiguracionPage() {
     setMounted(true);
   }, []);
 
-  // Gear state
-  const [settings, setGear] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    smsNotifications: false,
-    paymentReminders: true,
-    marketingEmails: false,
-  });
+  // Real notification settings from backend (persisted via useNotificationSettings)
+  const { settings: notifSettings, updateSetting } = useNotificationSettings();
+
+  // Map tenant UI toggle keys to backend notification setting keys.
+  // smsNotifications has NO backend field → rendered disabled ("No disponible"), never persisted.
+  const notifKeyMap: Record<string, keyof NotificationSettings> = {
+    emailNotifications: 'emailMessages',
+    pushNotifications: 'pushAll',
+    paymentReminders: 'emailPayments',
+    marketingEmails: 'emailMarketing',
+  };
 
   // Modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -106,12 +106,17 @@ export default function ConfiguracionPage() {
   // Form states
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState(mockSessions);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const handleToggle = (key: keyof typeof settings) => {
-    setGear(prev => ({ ...prev, [key]: !prev[key] }));
-    toast.success(t('common.success'));
+  const handleNotifToggle = async (uiKey: string) => {
+    const backendKey = notifKeyMap[uiKey];
+    if (!backendKey) return;
+    try {
+      await updateSetting(backendKey, !notifSettings[backendKey]);
+      toast.success(t('common.success'));
+    } catch {
+      toast.error(locale === 'es' ? 'Error al actualizar configuración' : 'Error updating settings');
+    }
   };
 
   const handleDarkModeToggle = () => {
@@ -135,24 +140,56 @@ export default function ConfiguracionPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setShowPasswordModal(false);
-    setPasswordForm({ current: '', new: '', confirm: '' });
-    toast.success('Contraseña actualizada correctamente');
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.new });
+      if (error) throw error;
+      setShowPasswordModal(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+      toast.success('Contraseña actualizada correctamente');
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al cambiar contraseña');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCloseSession = (sessionId: string) => {
-    setSessions(prev => prev.filter(s => s.id !== sessionId));
-    toast.success('Sesión cerrada correctamente');
+  const handleCloseAllSessions = async () => {
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase not initialized');
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) throw error;
+      toast.success(locale === 'es' ? 'Todas las sesiones han sido cerradas' : 'All sessions closed');
+      // Global signout logs out the current session too → redirect to auth
+      setTimeout(() => router.push('/auth'), 1000);
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al cerrar sesiones');
+    }
   };
 
   const handleDownloadData = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    setShowDownloadModal(false);
-    toast.success('Se te enviará un correo con tus datos en las próximas 24 horas');
+    try {
+      const data = await settingsApi.requestDataExport();
+      // Real ARCO / Habeas Data export — download the returned JSON blob
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leasefy-datos-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setShowDownloadModal(false);
+      toast.success(locale === 'es' ? 'Tus datos se descargaron correctamente' : 'Your data was downloaded');
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al exportar datos');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -161,10 +198,18 @@ export default function ConfiguracionPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    toast.success('Cuenta eliminada. Serás redirigido...');
-    setTimeout(() => router.push('/'), 2000);
+    try {
+      await settingsApi.deleteAccount();
+      // Sign out from Supabase after the account is actually deleted
+      const supabase = getSupabase();
+      if (supabase) await supabase.auth.signOut();
+      toast.success('Cuenta eliminada. Serás redirigido...');
+      setTimeout(() => router.push('/'), 2000);
+    } catch (err) {
+      toast.error((err as Error).message || 'Error al eliminar cuenta');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResetOnboarding = () => {
@@ -174,6 +219,11 @@ export default function ConfiguracionPage() {
     toast.success(locale === 'es' ? 'Onboarding reiniciado' : 'Onboarding reset');
     setTimeout(() => router.push('/inquilino'), 500);
   };
+
+  // Derive current session label from the browser (SSR-guarded)
+  const currentSessionDevice = typeof navigator !== 'undefined'
+    ? navigator.userAgent.split('(')[1]?.split(')')[0] || 'Navegador actual'
+    : 'Navegador actual';
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] dark:bg-[#0a0a0b] transition-colors">
@@ -216,36 +266,37 @@ export default function ConfiguracionPage() {
                 icon={Envelope}
                 title={t('settings.notifications.email')}
                 description={locale === 'es' ? 'Recibe actualizaciones sobre tu arriendo' : 'Receive updates about your rental'}
-                enabled={settings.emailNotifications}
-                onToggle={() => handleToggle('emailNotifications')}
+                enabled={notifSettings.emailMessages}
+                onToggle={() => handleNotifToggle('emailNotifications')}
               />
               <SettingToggle
                 icon={DeviceMobile}
                 title={t('settings.notifications.push')}
                 description={locale === 'es' ? 'Recibe notificaciones en tu dispositivo' : 'Receive notifications on your device'}
-                enabled={settings.pushNotifications}
-                onToggle={() => handleToggle('pushNotifications')}
+                enabled={notifSettings.pushAll}
+                onToggle={() => handleNotifToggle('pushNotifications')}
               />
               <SettingToggle
                 icon={DeviceMobile}
                 title={t('settings.notifications.sms')}
-                description={locale === 'es' ? 'Mensajes de texto para alertas importantes' : 'Text messages for important alerts'}
-                enabled={settings.smsNotifications}
-                onToggle={() => handleToggle('smsNotifications')}
+                description={locale === 'es' ? 'No disponible por ahora' : 'Not available yet'}
+                enabled={false}
+                onToggle={() => {}}
+                disabled
               />
               <SettingToggle
                 icon={CreditCard}
                 title={t('settings.notifications.payments')}
                 description={locale === 'es' ? 'Recordatorios antes del vencimiento' : 'Reminders before due date'}
-                enabled={settings.paymentReminders}
-                onToggle={() => handleToggle('paymentReminders')}
+                enabled={notifSettings.emailPayments}
+                onToggle={() => handleNotifToggle('paymentReminders')}
               />
               <SettingToggle
                 icon={Tag}
                 title={t('settings.notifications.marketing')}
                 description={locale === 'es' ? 'Ofertas y novedades de la plataforma' : 'Offers and platform news'}
-                enabled={settings.marketingEmails}
-                onToggle={() => handleToggle('marketingEmails')}
+                enabled={notifSettings.emailMarketing}
+                onToggle={() => handleNotifToggle('marketingEmails')}
               />
             </div>
           </motion.section>
@@ -281,9 +332,8 @@ export default function ConfiguracionPage() {
                 <SettingLink
                   icon={Monitor}
                   title={t('settings.account.sessions')}
-                  description={locale === 'es' ? `${sessions.length} dispositivos` : `${sessions.length} devices`}
+                  description={locale === 'es' ? 'Cerrar sesión en todos los dispositivos' : 'Sign out from all devices'}
                   onClick={() => setShowSessionsModal(true)}
-                  badge={sessions.length > 1 ? `${sessions.length}` : undefined}
                 />
               </div>
             </motion.section>
@@ -488,45 +538,29 @@ export default function ConfiguracionPage() {
       {/* Sessions Modal */}
       <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title="Sesiones activas">
         <div className="space-y-3">
-          {sessions.map((session) => (
-            <div key={session.id} className="flex items-center justify-between p-4 border border-border dark:border-border-strong rounded-xl bg-surface dark:bg-[#1f1f21]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center">
-                  <Monitor className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-fg dark:text-white">{session.device}</p>
-                  <p className="text-xs text-fg-muted dark:text-fg-subtle">{session.location} · {session.lastActive}</p>
-                </div>
+          {/* Current session (derived from the browser, read-only). No per-device
+              endpoint exists, so we do NOT fabricate a multi-device list. */}
+          <div className="flex items-center justify-between p-4 border border-border dark:border-border-strong rounded-xl bg-surface dark:bg-[#1f1f21]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center">
+                <Monitor className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
               </div>
-              {session.current ? (
-                <span className="px-3 py-1.5 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-xs font-medium rounded-full">Actual</span>
-              ) : (
-                <Button
-                  variant="link"
-                  size="sm"
-                  hideArrow
-                  onClick={() => handleCloseSession(session.id)}
-                  className="px-0 text-xs text-[#C4503B] dark:text-[#E0664D]"
-                >
-                  Cerrar
-                </Button>
-              )}
+              <div>
+                <p className="text-sm font-medium text-fg dark:text-white">{currentSessionDevice}</p>
+                <p className="text-xs text-fg-muted dark:text-fg-subtle">{locale === 'es' ? 'Sesión actual' : 'Current session'}</p>
+              </div>
             </div>
-          ))}
-          {sessions.length > 1 && (
-            <Button
-              variant="outline"
-              hideArrow
-              onClick={() => {
-                setSessions(prev => prev.filter(s => s.current));
-                toast.success('Todas las otras sesiones han sido cerradas');
-              }}
-              className="w-full border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 hover:text-[#C4503B] dark:hover:text-[#E0664D]"
-            >
-              Cerrar todas las otras sesiones
-            </Button>
-          )}
+            <span className="px-3 py-1.5 bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70] text-xs font-medium rounded-full">{locale === 'es' ? 'Actual' : 'Current'}</span>
+          </div>
+          {/* Real global sign-out — closes every session, including this one */}
+          <Button
+            variant="outline"
+            hideArrow
+            onClick={handleCloseAllSessions}
+            className="w-full border-2 border-[#C4503B]/30 dark:border-[#C4503B]/40 text-[#C4503B] dark:text-[#E0664D] hover:bg-[#F8EAE7] dark:hover:bg-[#C4503B]/20 hover:text-[#C4503B] dark:hover:text-[#E0664D]"
+          >
+            {locale === 'es' ? 'Cerrar todas las sesiones' : 'Close all sessions'}
+          </Button>
         </div>
       </Modal>
 
@@ -642,6 +676,7 @@ function SettingToggle({
   enabled,
   onToggle,
   accent,
+  disabled,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
@@ -649,9 +684,10 @@ function SettingToggle({
   enabled: boolean;
   onToggle: () => void;
   accent?: 'emerald' | 'indigo';
+  disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-surface/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+    <div className={cn('flex items-center justify-between px-6 py-4 hover:bg-surface/50 dark:hover:bg-[#1f1f21]/50 transition-colors', disabled && 'opacity-60')}>
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#1f1f21] flex items-center justify-center">
           <Icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
@@ -664,6 +700,7 @@ function SettingToggle({
       <Switch
         checked={enabled}
         onCheckedChange={onToggle}
+        disabled={disabled}
         aria-label={title}
         className={accent === 'emerald' ? 'data-[state=checked]:bg-[#2C7A53]' : undefined}
       />

@@ -111,6 +111,38 @@ describe('useOnboardingProvisioning', () => {
     expect(get().sessionId).toBe('sess-abc')
   })
 
+  // The "Agencia" step (AgencyStepForm) re-asks razón social/NIT unless the
+  // caller threads these captured values back in as its prefill source.
+  it('exposes the captured razón social + NIT as agencyPrefill once provisioning succeeds', async () => {
+    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: 'sess-abc', tenantId: 'tenant-1' })
+    const { get } = renderHook()
+    await flush()
+
+    expect(get().agencyPrefill).toBeNull()
+
+    act(() => {
+      get().provision(VALID_INPUT)
+    })
+    await flush()
+
+    expect(get().agencyPrefill).toEqual({
+      legalName: 'Inmobiliaria Andes SAS',
+      nit: '900123456-7',
+    })
+  })
+
+  it('does not expose agencyPrefill when provisioning fails', async () => {
+    postUsersOnboardingMock.mockResolvedValue({ agentSessionId: null, tenantId: 'tenant-1' })
+    const { get } = renderHook()
+
+    act(() => {
+      get().provision(VALID_INPUT)
+    })
+    await flush()
+
+    expect(get().agencyPrefill).toBeNull()
+  })
+
   // agentSessionId === null → the back created the user/agency rows but the
   // agent handoff failed. Retry-able error, NOT ready.
   it('resolves to error (no sessionId) when the back returns agentSessionId null', async () => {

@@ -50,10 +50,22 @@ export interface ProvisioningInput {
   nit: string
 }
 
+/** Razón social + NIT captured by the pre-step — feeds the "Agencia" step's prefill. */
+export interface AgencyPrefill {
+  legalName: string
+  nit: string
+}
+
 export interface UseOnboardingProvisioningResult {
   status: OnboardingProvisioningStatus
   /** Only populated once `status === 'ready'`. */
   sessionId: string | null
+  /**
+   * Razón social + NIT captured by `OwnerNameStepForm`, exposed so the
+   * caller can prefill the "Agencia" step instead of re-asking them. `null`
+   * until provisioning succeeds (never populated on a failed attempt).
+   */
+  agencyPrefill: AgencyPrefill | null
   /** Re-posts the last `provision()` payload. Wired to the "Reintentar" CTA. */
   retry: () => void
   /** Provisions with the explicitly captured owner + agency data. */
@@ -63,6 +75,7 @@ export interface UseOnboardingProvisioningResult {
 export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
   const [status, setStatus] = useState<OnboardingProvisioningStatus>('needs-info')
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [agencyPrefill, setAgencyPrefill] = useState<AgencyPrefill | null>(null)
 
   const mountedRef = useRef(true)
   // Guards against a stale response overwriting state after a later retry.
@@ -103,6 +116,7 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         if (!mountedRef.current || requestIdRef.current !== requestId) return
         if (res.agentSessionId) {
           setSessionId(res.agentSessionId)
+          setAgencyPrefill({ legalName: input.agencyName, nit: input.nit })
           setStatus('ready')
         } else {
           setSessionId(null)
@@ -125,5 +139,5 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
     [runProvision],
   )
 
-  return { status, sessionId, retry: runProvision, provision }
+  return { status, sessionId, agencyPrefill, retry: runProvision, provision }
 }

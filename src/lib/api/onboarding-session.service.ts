@@ -28,6 +28,7 @@ import type {
   OnboardingSessionMembersRequest,
   OnboardingSessionMembersResponse,
   OnboardingSessionPaymentProviderRequest,
+  OnboardingSessionPaymentProviderSkipRequest,
   OnboardingSessionPaymentProviderResponse,
   OnboardingSessionPolicyRequest,
   OnboardingSessionPolicyResponse,
@@ -167,7 +168,7 @@ export function submitMembers(
 
 export function submitPaymentProvider(
   sessionId: string,
-  body: OnboardingSessionPaymentProviderRequest,
+  body: OnboardingSessionPaymentProviderRequest | OnboardingSessionPaymentProviderSkipRequest,
 ): Promise<OnboardingSessionPaymentProviderResponse> {
   return postStep(sessionId, '/payment-provider', body)
 }

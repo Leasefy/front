@@ -12,6 +12,35 @@
  * which rejects an empty list with a 400. Previously this schema allowed an
  * empty list, which the agent rejected — see the discovery saved to engram
  * (project "front", topic "onboarding") for the bug this caused.
+ *
+ * This step CANNOT be made optional front-only (re-verified — see engram
+ * "front", topic "onboarding-members-optional-investigation"):
+ *  1. `OnboardingSessionMembersRequest.members` has `minItems: 1` — an empty
+ *     POST is rejected with 400, there's no "empty array" escape hatch.
+ *  2. Sequential state machine: `payment_provider`'s POST 409s with a
+ *     state-machine violation (`requiredStep`) if `members` hasn't been
+ *     submitted yet — the front cannot jump the wizard forward locally,
+ *     `useOnboardingSession.currentStep` only advances via a successful
+ *     step-endpoint response.
+ *  3. `/onboarding/session/{id}/complete`'s 409 `missingSteps` can list
+ *     `"members"` as required (see `CompleteStepForm.tsx`'s
+ *     `MISSING_STEP_LABELS` + its tests, and
+ *     `OnboardingInmobiliariaClient.test.tsx`'s `missingSteps: ['policy',
+ *     'members']` fixture) — even a client-side-only "skip" would dead-end
+ *     the user back here at the final step.
+ * Making this step truly optional requires an agent-side contract change
+ * (drop `members` from `/complete`'s required-completion steps AND accept an
+ * empty `members: []` POST, or add a dedicated "skip" affordance to the
+ * session state machine). Reported as an agent-side handoff.
+ *
+ * Role enum mismatch (also an agent-side handoff, NOT fixed here):
+ * `OnboardingSessionMemberInput.role` is `"ADMIN" | "OPERATOR" | "VIEWER"`
+ * (agent contract) — it does NOT match the panel's agency roles
+ * `ADMIN | AGENTE | CONTADOR | VIEWER` (`src/lib/auth/agency-roles.ts`).
+ * `OPERATOR` has no equivalent among the panel roles, and there is no
+ * `CONTADOR` option at all. The front cannot invent values the contract
+ * doesn't accept, so `MEMBER_ROLE_OPTIONS` below is intentionally left
+ * as-is (contract-accurate), not aligned with the panel's role set.
  */
 import { z } from 'zod'
 import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'

@@ -78,6 +78,13 @@ describe('<MembersStepForm>', () => {
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
   })
 
+  it('shows a notice clarifying the step is required — the agent contract forbids an empty members list (minItems: 1) and gates /complete on it, so this step cannot be skipped', () => {
+    render()
+    const notice = container.querySelector('[data-testid="members-step-required-notice"]')
+    expect(notice).toBeTruthy()
+    expect(notice?.textContent).toContain('obligatorio')
+  })
+
   it('adds and removes member rows', () => {
     render()
 

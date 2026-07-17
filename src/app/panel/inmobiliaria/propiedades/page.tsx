@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
@@ -227,6 +228,7 @@ function PropiedadesContent() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [changingAgent, setChangingAgent] = useState<AgencyProperty | null>(null);
   const [editingProperty, setEditingProperty] = useState<AgencyProperty | null>(null);
   const [deletingProperty, setDeletingProperty] = useState<AgencyProperty | null>(null);
@@ -253,10 +255,15 @@ function PropiedadesContent() {
     fetchProperties();
   }, [fetchProperties, permissionsLoading]);
 
+  useAutoRefresh(fetchProperties);
+
   const filtered = useMemo(() => {
     let result = [...properties];
     if (filterStatus !== 'all') {
       result = result.filter((p) => p.status === filterStatus);
+    }
+    if (unassignedOnly) {
+      result = result.filter((p) => p.agents.length === 0);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -268,7 +275,7 @@ function PropiedadesContent() {
       );
     }
     return result;
-  }, [properties, filterStatus, search]);
+  }, [properties, filterStatus, unassignedOnly, search]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -305,7 +312,8 @@ function PropiedadesContent() {
     }
   };
 
-  if (isLoading) {
+  // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
+  if (isLoading && properties.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
         <Spinner size="md" className="text-primary" />
@@ -336,10 +344,6 @@ function PropiedadesContent() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="secondary" hideArrow onClick={fetchProperties} aria-label="Actualizar">
-            <ArrowsClockwise className="w-4 h-4" />
-            Actualizar
-          </Button>
           <Button
             variant="secondary"
             hideArrow
@@ -348,7 +352,7 @@ function PropiedadesContent() {
             <Sparkle className="w-4 h-4 text-primary" weight="fill" />
             Capturar con IA
           </Button>
-          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}>
+          <Button hideArrow onClick={() => router.push('/publicar')}>
             <Plus className="w-4 h-4" />
             Nueva propiedad
           </Button>
@@ -357,10 +361,39 @@ function PropiedadesContent() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatTile value={stats.total} label="Total" tone="neutral" />
-        <StatTile value={stats.available} label="Disponibles" tone="ok" />
-        <StatTile value={stats.rented} label="Arrendadas" tone="info" />
-        {!isAgent && <StatTile value={stats.unassigned} label="Sin agente" tone="warn" />}
+        <StatTile
+          value={stats.total}
+          label="Total"
+          tone="neutral"
+          active={filterStatus === 'all' && !unassignedOnly}
+          onClick={() => {
+            setFilterStatus('all');
+            setUnassignedOnly(false);
+          }}
+        />
+        <StatTile
+          value={stats.available}
+          label="Disponibles"
+          tone="ok"
+          active={filterStatus === 'available'}
+          onClick={() => setFilterStatus(filterStatus === 'available' ? 'all' : 'available')}
+        />
+        <StatTile
+          value={stats.rented}
+          label="Arrendadas"
+          tone="info"
+          active={filterStatus === 'rented'}
+          onClick={() => setFilterStatus(filterStatus === 'rented' ? 'all' : 'rented')}
+        />
+        {!isAgent && (
+          <StatTile
+            value={stats.unassigned}
+            label="Sin agente"
+            tone="warn"
+            active={unassignedOnly}
+            onClick={() => setUnassignedOnly((prev) => !prev)}
+          />
+        )}
       </div>
 
       {/* Filters */}
@@ -521,14 +554,36 @@ function PropiedadesContent() {
                               <PencilSimple className="w-4 h-4" />
                             </Button>
                           </IconTooltip>
-                          <IconTooltip label="Eliminar propiedad">
+                          <IconTooltip
+                            label={
+                              property.status === 'rented'
+                                ? 'Propiedad arrendada — protegida por su contrato'
+                                : 'Eliminar propiedad'
+                            }
+                          >
                             <Button
                               variant="ghost"
                               size="icon"
                               hideArrow
-                              onClick={() => setDeletingProperty(property)}
-                              aria-label="Eliminar propiedad"
-                              className="text-danger hover:text-danger hover:bg-danger-soft"
+                              onClick={() => {
+                                if (property.status === 'rented') {
+                                  toast.error('No se puede eliminar esta propiedad', {
+                                    description:
+                                      'Está arrendada y tiene un contrato vigente. Podrás eliminarla cuando el arriendo finalice.',
+                                  });
+                                  return;
+                                }
+                                setDeletingProperty(property);
+                              }}
+                              aria-label={
+                                property.status === 'rented'
+                                  ? 'Propiedad arrendada — no se puede eliminar'
+                                  : 'Eliminar propiedad'
+                              }
+                              className={cn(
+                                'text-danger hover:text-danger hover:bg-danger-soft',
+                                property.status === 'rented' && 'opacity-40',
+                              )}
                             >
                               <Trash className="w-4 h-4" />
                             </Button>
@@ -636,14 +691,28 @@ function StatTile({
   value,
   label,
   tone,
+  active = false,
+  onClick,
 }: {
   value: number;
   label: string;
   tone: keyof typeof TILE_TONES;
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const Icon = TILE_ICONS[tone];
   return (
-    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'flex items-center gap-3 p-4 rounded-xl border bg-card text-left transition-colors',
+        active
+          ? 'border-primary ring-1 ring-primary'
+          : 'border-border hover:bg-surface-muted',
+      )}
+    >
       <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
         <Icon className="w-5 h-5" weight="duotone" />
       </div>
@@ -651,7 +720,7 @@ function StatTile({
         <p className="text-2xl font-semibold text-fg tabular-nums leading-none">{value}</p>
         <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
       </div>
-    </div>
+    </button>
   );
 }
 

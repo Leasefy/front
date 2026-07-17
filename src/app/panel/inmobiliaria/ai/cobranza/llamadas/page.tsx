@@ -13,10 +13,11 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowClockwise, PhoneCall, Warning } from '@phosphor-icons/react'
+import { PhoneCall, Warning } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
   Button,
@@ -150,6 +151,8 @@ function LlamadasContent() {
     direction: directionFilter,
   })
 
+  useAutoRefresh(refetch)
+
   const navigateToCall = useCallback(
     (id: string) => {
       router.push(`/panel/inmobiliaria/ai/cobranza/llamadas/${id}`)
@@ -212,17 +215,6 @@ function LlamadasContent() {
             {t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          aria-label={isEs ? 'Actualizar' : 'Refresh'}
-          className="shrink-0"
-        >
-          <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
-          {isEs ? 'Actualizar' : 'Refresh'}
-        </Button>
       </div>
 
       {/* Filters */}

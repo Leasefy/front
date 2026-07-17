@@ -28,12 +28,14 @@ import { HabeasDataSlaCard } from '@/components/inmobiliaria/cobranza/HabeasData
 import { ComplianceSparkline } from '@/components/inmobiliaria/cobranza/ComplianceSparkline'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui'
 import { MonoLabel } from '@leasefy/cadence'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 
 function ComplianceOverviewContent() {
   const { t, locale } = useI18n()
   const { data, isLoading, error, refetch } = useComplianceOverview()
+
+  useAutoRefresh(refetch)
 
   // D-34-RES-A1 banner trigger — any open request meets the 15-day cutoff
   // by definition, but the explicit predicate stays for defense-in-depth.
@@ -104,16 +106,6 @@ function ComplianceOverviewContent() {
             </p>
           )}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => void refetch()}
-          hideArrow
-          aria-label="refresh"
-        >
-          {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </Button>
       </div>
 
       {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15 */}

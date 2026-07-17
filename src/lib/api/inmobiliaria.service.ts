@@ -292,34 +292,121 @@ export const consignacionesApi = {
 // Pipeline
 // ============================================================================
 
+/** Raw pipeline item as the backend returns it (UPPER_SNAKE stage, nested consignacion). */
+interface BackendPipelineItem {
+  id: string;
+  consignacionId: string;
+  agenteUserId?: string | null;
+  candidateName: string;
+  candidateEmail?: string | null;
+  candidatePhone?: string | null;
+  candidateAvatar?: string | null;
+  riskScore?: number | null;
+  riskLevel?: string | null;
+  stage: string;
+  enteredStageAt: string;
+  daysInStage: number;
+  nextAction?: string | null;
+  nextActionDate?: string | null;
+  lastContactDate?: string | null;
+  notes?: string | null;
+  lostReason?: string | null;
+  completedLeaseId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  consignacion?: {
+    propertyId?: string | null;
+    propertyTitle?: string | null;
+    propertyAddress?: string | null;
+    monthlyRent?: number | null;
+  } | null;
+}
+
+/** Stats shape of GET /inmobiliaria/pipeline/stats (stageCounts keys in UPPER_SNAKE). */
+export interface PipelineStats {
+  stageCounts: Record<string, number>;
+  totalAll: number;
+  totalActive: number;
+  totalCompleted: number;
+  totalLost: number;
+  closedThisMonth: number;
+  conversionRate: number;
+}
+
+/** Boundary mapper: backend item (UPPER stage + nested consignacion) → flat front shape. */
+function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
+  return {
+    id: raw.id,
+    consignacionId: raw.consignacionId,
+    propertyId: raw.consignacion?.propertyId ?? '',
+    candidateId: '',
+    agenteId: raw.agenteUserId ?? '',
+    propertyTitle: raw.consignacion?.propertyTitle ?? '',
+    propertyAddress: raw.consignacion?.propertyAddress ?? '',
+    monthlyRent: raw.consignacion?.monthlyRent ?? 0,
+    candidateName: raw.candidateName,
+    candidateEmail: raw.candidateEmail ?? '',
+    candidatePhone: raw.candidatePhone ?? '',
+    candidateAvatar: raw.candidateAvatar ?? undefined,
+    riskScore: raw.riskScore ?? undefined,
+    riskLevel: (raw.riskLevel as PipelineItem['riskLevel']) ?? undefined,
+    stage: raw.stage.toLowerCase() as PipelineStage,
+    enteredStageAt: raw.enteredStageAt,
+    daysInStage: raw.daysInStage,
+    nextAction: raw.nextAction ?? undefined,
+    nextActionDate: raw.nextActionDate ?? undefined,
+    lastContactDate: raw.lastContactDate ?? undefined,
+    notes: raw.notes ?? undefined,
+    lostReason: raw.lostReason ?? undefined,
+    completedLeaseId: raw.completedLeaseId ?? undefined,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
 export const pipelineApi = {
   async getAll(): Promise<PipelineItem[]> {
-    const res = await apiClient.get<{ data: PipelineItem[] }>(`${BASE}/pipeline`);
-    return res.data;
+    const res = await apiClient.get<BackendPipelineItem[]>(`${BASE}/pipeline`);
+    return (Array.isArray(res) ? res : []).map(normalizePipelineItem);
   },
 
   async getById(id: string): Promise<PipelineItem> {
-    return apiClient.get<PipelineItem>(`${BASE}/pipeline/${id}`);
+    const res = await apiClient.get<BackendPipelineItem>(`${BASE}/pipeline/${id}`);
+    return normalizePipelineItem(res);
+  },
+
+  async getStats(): Promise<PipelineStats> {
+    return apiClient.get<PipelineStats>(`${BASE}/pipeline/stats`);
   },
 
   async create(data: Partial<PipelineItem>): Promise<PipelineItem> {
-    return apiClient.post<PipelineItem>(`${BASE}/pipeline`, data);
+    const { stage, ...rest } = data;
+    const res = await apiClient.post<BackendPipelineItem>(`${BASE}/pipeline`, {
+      ...rest,
+      ...(stage ? { stage: stage.toUpperCase() } : {}),
+    });
+    return normalizePipelineItem(res);
   },
 
   async update(id: string, data: Partial<PipelineItem>): Promise<PipelineItem> {
-    return apiClient.patch<PipelineItem>(`${BASE}/pipeline/${id}`, data);
+    const { stage, ...rest } = data;
+    const res = await apiClient.put<BackendPipelineItem>(`${BASE}/pipeline/${id}`, {
+      ...rest,
+      ...(stage ? { stage: stage.toUpperCase() } : {}),
+    });
+    return normalizePipelineItem(res);
   },
 
-  async moveStage(id: string, newStage: PipelineStage, notes?: string): Promise<PipelineItem> {
-    return apiClient.patch<PipelineItem>(`${BASE}/pipeline/${id}/stage`, { newStage, notes });
+  async moveStage(id: string, newStage: PipelineStage, lostReason?: string): Promise<PipelineItem> {
+    const res = await apiClient.put<BackendPipelineItem>(`${BASE}/pipeline/${id}/stage`, {
+      stage: newStage.toUpperCase(),
+      ...(lostReason ? { lostReason } : {}),
+    });
+    return normalizePipelineItem(res);
   },
 
   async delete(id: string): Promise<void> {
     await apiClient.delete(`${BASE}/pipeline/${id}`);
-  },
-
-  async convertToLease(id: string): Promise<void> {
-    await apiClient.post(`${BASE}/pipeline/${id}/convert`, {});
   },
 };
 

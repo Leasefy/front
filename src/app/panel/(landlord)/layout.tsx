@@ -149,7 +149,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={LANDLORD_NAV_ITEMS}
         logo={{
           title: 'PLan',
-          href: '/',
+          href: '/panel',
         }}
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"

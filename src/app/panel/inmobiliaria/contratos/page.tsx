@@ -17,7 +17,6 @@ import { useRouter } from 'next/navigation';
 import {
   FileText,
   Plus,
-  ArrowsClockwise,
   Warning,
   CaretRight,
   House,
@@ -26,6 +25,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@leasefy/cadence';
@@ -101,6 +101,8 @@ function ContratosContent() {
   const tx = (es: string, en: string) => (locale === 'en' ? en : es);
 
   const { contracts, stats, isLoading, error, refetch } = useContracts();
+
+  useAutoRefresh(refetch);
 
   const COLUMNS = [
     tx('Inquilino', 'Tenant'),
@@ -185,19 +187,6 @@ function ContratosContent() {
               </p>
             </div>
           </div>
-          {!isLoading && !error && (
-            <Button
-              onClick={() => void refetch()}
-              variant="ghost"
-              size="icon"
-              hideArrow
-              title={tx('Actualizar', 'Refresh')}
-              aria-label={tx('Actualizar', 'Refresh')}
-              className="h-8 w-8 text-muted-foreground"
-            >
-              <ArrowsClockwise className="w-4 h-4" />
-            </Button>
-          )}
         </div>
 
         <Table>
@@ -211,7 +200,7 @@ function ContratosContent() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableSkeleton />}
+            {isLoading && contracts.length === 0 && <TableSkeleton />}
 
             {!isLoading && !error && contracts.length === 0 && (
               <TableRow>
@@ -228,8 +217,7 @@ function ContratosContent() {
               </TableRow>
             )}
 
-            {!isLoading &&
-              contracts.map((c) => (
+            {contracts.map((c) => (
                 <TableRow
                   key={c.id}
                   onClick={() => openContract(c)}

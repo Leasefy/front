@@ -110,7 +110,7 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={navItems}
         logo={{
           title: 'Arriendo',
-          href: '/',
+          href: '/inquilino',
         }}
         profileCompletion={isLoaded ? {
           percentage,

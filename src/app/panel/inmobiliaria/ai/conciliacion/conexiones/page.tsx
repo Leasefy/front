@@ -28,11 +28,12 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { PlugsConnected, Plus, ArrowClockwise } from '@phosphor-icons/react'
+import { PlugsConnected, Plus } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useI18n } from '@/lib/i18n'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -331,6 +332,8 @@ function ConciliacionConexiones() {
     patchConnection,
   } = useConciliacionConnections()
 
+  useAutoRefresh(refetch)
+
   // Backend no disponible (404/503) o error de red → no se pueden persistir cambios.
   const backendUnavailable = notAvailable || error !== null
 
@@ -368,7 +371,7 @@ function ConciliacionConexiones() {
         {/* KPI: conectadas */}
         <div className="shrink-0 rounded-xl border border-border bg-card px-4 py-3 text-center">
           <p className="text-2xl font-semibold text-fg tabular-nums">
-            {isLoading ? '—' : connectedCount}
+            {isLoading && items.length === 0 ? '—' : connectedCount}
           </p>
           <p className="text-xs text-fg-muted">conectadas</p>
         </div>
@@ -398,21 +401,9 @@ function ConciliacionConexiones() {
           <h2 id="seccion-lista" className="text-base font-semibold text-fg">
             Conexiones registradas
           </h2>
-          {!isLoading && items.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              hideArrow
-              onClick={() => void refetch()}
-              data-testid="conexiones-refrescar"
-            >
-              <ArrowClockwise className="size-4" aria-hidden="true" />
-              Actualizar
-            </Button>
-          )}
         </div>
 
-        {isLoading ? (
+        {isLoading && items.length === 0 ? (
           <div className="space-y-2" data-testid="conexiones-loading">
             {[0, 1, 2].map((i) => (
               <div

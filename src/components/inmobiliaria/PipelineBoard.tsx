@@ -499,10 +499,16 @@ export function PipelineBoard({
     [items, onStageChange]
   );
 
-  // Get stages to display (all except lost at the end)
+  // Get stages to display (all except lost at the end).
+  // Columns holding cards come first (funnel order preserved within each
+  // group) so real activity is visible without horizontal scrolling.
   const mainStages = useMemo(() => {
-    return PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage);
-  }, []);
+    const ordered = PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage);
+    return [
+      ...ordered.filter((stage) => itemsByStage[stage].length > 0),
+      ...ordered.filter((stage) => itemsByStage[stage].length === 0),
+    ];
+  }, [itemsByStage]);
 
   return (
     <DndContext

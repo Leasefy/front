@@ -26,7 +26,6 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import {
-  ArrowClockwise,
   ChartLineUp,
   ChatCircleText,
   CheckCircle,
@@ -45,6 +44,7 @@ import type { Icon } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
 import { KpiCard } from '@leasefy/cadence'
@@ -296,6 +296,8 @@ function ResultadosContent() {
     void daily.refetch()
   }
 
+  useAutoRefresh(handleRefetch)
+
   // ── Header reutilizado en todos los estados ────────────────────────────────
   const header = (
     <header className="flex items-start justify-between gap-4 flex-wrap">
@@ -310,17 +312,6 @@ function ResultadosContent() {
           analítica.
         </p>
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        hideArrow
-        onClick={handleRefetch}
-        aria-label="Actualizar"
-        className="shrink-0"
-      >
-        <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
-        Actualizar
-      </Button>
     </header>
   )
 

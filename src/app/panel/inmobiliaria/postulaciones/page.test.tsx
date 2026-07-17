@@ -1,44 +1,49 @@
 /**
- * page.test.tsx — PostulacionesPage loading/empty-state behavior.
+ * page.test.tsx — PostulacionesPage loading/empty/error/rows behavior.
  *
- * Bug under test: with `useAuth().agency === null` the page used to spin
- * forever (isLoading initialized to true and `load` bailed out early without
- * clearing it). It must fall through to the empty state instead.
+ * The page lists real marketplace applications via
+ * landlordApplicationsApi.getAllCandidates() (GET /landlord/candidates),
+ * filters with clickable stat tiles + search, and navigates to the property's
+ * candidatos page on row click.
  */
 
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import type { FunnelApplicationsResponse } from '@/lib/api/funnel-applications.service'
+import type { AllCandidatesResponse } from '@/lib/api/applications.types'
 
 void React // jsx-preserve
 
 // react-dom/client needs this flag to recognize our act() wrapping.
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }))
-
-// ── Controllable auth mock ────────────────────────────────────────────────
-let _agency: { id: string } | null = null
-
-vi.mock('@/lib/auth', () => ({
-  useAuth: () => ({ agency: _agency, user: { id: 'user-test' } }),
+const { getAllCandidatesMock, pushMock } = vi.hoisted(() => ({
+  getAllCandidatesMock: vi.fn(),
+  pushMock: vi.fn(),
 }))
 
-// ── Mock the service module (keep real helpers) ──────────────────────────
-vi.mock('@/lib/api/funnel-applications.service', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/api/funnel-applications.service')>()
-  return {
-    ...actual,
-    fetchFunnelApplications: (...args: unknown[]) => fetchMock(...args),
-  }
-})
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+}))
+
+vi.mock('@/lib/api/applications.service', () => ({
+  landlordApplicationsApi: {
+    getAllCandidates: (...args: unknown[]) => getAllCandidatesMock(...args),
+  },
+}))
+
+// Auto-refresh is interval/focus-driven — irrelevant in unit tests.
+vi.mock('@/lib/hooks/use-auto-refresh', () => ({
+  useAutoRefresh: () => undefined,
+}))
 
 // ── Mock presentational leaves (avoid pulling the whole DS in) ───────────
 vi.mock('@/components/ui', () => ({
   Spinner: ({ label }: { label?: string }) =>
     React.createElement('div', { 'data-testid': 'spinner' }, label ?? 'Loading'),
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) =>
+    React.createElement('input', props),
 }))
 
 vi.mock('@/components/data-display/EmptyState', () => ({
@@ -52,15 +57,40 @@ vi.mock('@/components/ui/error-state', () => ({
 }))
 
 vi.mock('@leasefy/cadence', () => ({
-  StatusBadge: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('span', { 'data-testid': 'status-badge' }, children),
+  IconButton: ({ onClick, 'aria-label': ariaLabel }: { onClick?: () => void; 'aria-label'?: string }) =>
+    React.createElement('button', { onClick, 'aria-label': ariaLabel }),
+  SegmentedControl: ({
+    value,
+    onChange,
+    options,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+    options: { value: string; label: string }[];
+  }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'segmented-control' },
+      options.map((o) =>
+        React.createElement(
+          'button',
+          {
+            key: o.value,
+            'data-segment': o.value,
+            'data-active': o.value === value,
+            onClick: () => onChange(o.value),
+          },
+          o.label,
+        ),
+      ),
+    ),
 }))
 
 // The table shim re-exports cadence primitives — replace it with plain elements.
 vi.mock('@/components/ui/table', () => {
   const el = (tag: string) => {
-    const MockEl = ({ children }: { children?: React.ReactNode }) =>
-      React.createElement(tag, null, children)
+    const MockEl = ({ children, onClick }: { children?: React.ReactNode; onClick?: () => void }) =>
+      React.createElement(tag, { onClick }, children)
     MockEl.displayName = `MockTable_${tag}`
     return MockEl
   }
@@ -77,28 +107,30 @@ vi.mock('@/components/ui/table', () => {
 // ── Import page AFTER mocks ───────────────────────────────────────────────
 import PostulacionesPage from './page'
 
-const RESPONSE: FunnelApplicationsResponse = {
-  items: [
+const RESPONSE: AllCandidatesResponse = {
+  candidates: [
     {
-      applicationId: 'app-aaaa1111bbbb',
-      verdict: 'approved',
-      score: 82,
-      level: 'A',
-      requiresManualReview: false,
-      escalate: false,
-      scoredAt: '2026-06-09T10:00:00.000Z',
+      id: 'app-1',
+      tenantName: 'Juan Pérez',
+      tenantEmail: 'juan@example.com',
+      status: 'UNDER_REVIEW',
+      submittedAt: '2026-07-16T20:42:22.179Z',
+      propertyId: 'prop-1',
+      propertyTitle: 'Apartamento 3 hab en robledo',
+      riskScore: { totalScore: 82, level: 'A' },
     },
     {
-      applicationId: 'app-cccc2222dddd',
-      verdict: 'review',
-      score: 55,
-      level: 'C',
-      requiresManualReview: true,
-      escalate: false,
-      scoredAt: '2026-06-08T10:00:00.000Z',
+      id: 'app-2',
+      tenantName: 'Ana Gómez',
+      tenantEmail: 'ana@example.com',
+      status: 'NEEDS_INFO',
+      submittedAt: '2026-07-15T10:00:00.000Z',
+      propertyId: 'prop-2',
+      propertyTitle: 'Habitación 1 hab en centro',
     },
   ],
-  generatedAt: '2026-06-09T11:00:00.000Z',
+  total: 2,
+  stats: { total: 2, pending: 2, approved: 0, rejected: 0 },
 }
 
 let container: HTMLDivElement
@@ -108,8 +140,8 @@ beforeEach(() => {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  _agency = null
-  fetchMock.mockReset()
+  getAllCandidatesMock.mockReset()
+  pushMock.mockReset()
 })
 
 afterEach(() => {
@@ -124,62 +156,117 @@ async function renderPage() {
   })
 }
 
-describe('PostulacionesPage — no agency in session', () => {
-  it('does not spin forever: renders a retryable error, never the definitive empty state', async () => {
-    _agency = null
-    await renderPage()
+function tiles(): HTMLButtonElement[] {
+  return Array.from(container.querySelectorAll('button[aria-pressed]'))
+}
 
-    expect(container.querySelector('[data-testid="spinner"]')).toBeNull()
-    // No fetch happened, so "Aún no hay postulaciones" would be a false claim.
-    expect(container.querySelector('[data-testid="empty-state"]')).toBeNull()
-    const error = container.querySelector('[data-testid="error-state"]')
-    expect(error).not.toBeNull()
-    expect(error?.textContent).toContain('No pudimos cargar la información de tu inmobiliaria')
-  })
-
-  it('fetches and replaces the error with rows when the agency arrives after mount', async () => {
-    _agency = null
-    fetchMock.mockResolvedValue(RESPONSE)
-    await renderPage()
-    expect(container.querySelector('[data-testid="error-state"]')).not.toBeNull()
-
-    _agency = { id: 'agency-test' }
-    await renderPage()
-
-    expect(container.querySelector('[data-testid="error-state"]')).toBeNull()
-    expect(fetchMock).toHaveBeenCalledWith('agency-test', { limit: 50 })
-    expect(container.querySelectorAll('tbody tr').length).toBe(2)
-  })
-
-  it('does not call the service without an agencyId', async () => {
-    _agency = null
-    await renderPage()
-
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-})
-
-describe('PostulacionesPage — agency present', () => {
-  it('loads applications and renders one row per item', async () => {
-    _agency = { id: 'agency-test' }
-    fetchMock.mockResolvedValue(RESPONSE)
+describe('PostulacionesPage', () => {
+  it('loads all candidates and renders one row per application', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
 
-    expect(fetchMock).toHaveBeenCalledWith('agency-test', { limit: 50 })
+    expect(getAllCandidatesMock).toHaveBeenCalledTimes(1)
     expect(container.querySelector('[data-testid="spinner"]')).toBeNull()
     expect(container.querySelector('[data-testid="empty-state"]')).toBeNull()
 
     const rows = container.querySelectorAll('tbody tr')
     expect(rows.length).toBe(2)
-    expect(container.textContent).toContain('app-aaaa…')
-    expect(container.textContent).toContain('Pre-aprobada')
+    expect(container.textContent).toContain('Juan Pérez')
+    expect(container.textContent).toContain('Apartamento 3 hab en robledo')
     expect(container.textContent).toContain('En revisión')
+    expect(container.textContent).toContain('Pide info')
   })
 
-  it('renders the empty state when the service returns no items', async () => {
-    _agency = { id: 'agency-test' }
-    fetchMock.mockResolvedValue({ items: [], generatedAt: '2026-06-09T11:00:00.000Z' })
+  it('renders the six clickable stat tiles with their counts', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const allTiles = tiles()
+    expect(allTiles.length).toBe(6)
+
+    const total = allTiles.find((b) => b.textContent?.includes('Total'))
+    expect(total?.textContent).toContain('2')
+    const review = allTiles.find((b) => b.textContent?.includes('En revisión'))
+    expect(review?.textContent).toContain('1')
+  })
+
+  it('filters rows when a stat tile is clicked, and resets on re-click', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const needsInfoTile = tiles().find((b) => b.textContent?.includes('Pide info'))
+    expect(needsInfoTile).toBeTruthy()
+
+    await act(async () => {
+      needsInfoTile!.click()
+    })
+    expect(container.querySelectorAll('tbody tr').length).toBe(1)
+    expect(container.textContent).toContain('Ana Gómez')
+    expect(container.textContent).not.toContain('Juan Pérez')
+
+    // Re-click resets to all
+    await act(async () => {
+      tiles().find((b) => b.textContent?.includes('Pide info'))!.click()
+    })
+    expect(container.querySelectorAll('tbody tr').length).toBe(2)
+  })
+
+  it('filters rows by search text', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const input = container.querySelector('input') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(input, 'robledo')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    expect(container.querySelectorAll('tbody tr').length).toBe(1)
+    expect(container.textContent).toContain('Juan Pérez')
+  })
+
+  it('filters rows from the segmented control, in sync with the tiles', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const segment = container.querySelector('[data-segment="NEEDS_INFO"]') as HTMLButtonElement
+    expect(segment).toBeTruthy()
+
+    await act(async () => {
+      segment.click()
+    })
+    expect(container.querySelectorAll('tbody tr').length).toBe(1)
+    expect(container.textContent).toContain('Ana Gómez')
+    // The matching tile reflects the same active filter
+    const activeTile = tiles().find((b) => b.getAttribute('aria-pressed') === 'true')
+    expect(activeTile?.textContent).toContain('Pide info')
+  })
+
+  it('navigates to the property candidatos page on row click', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const firstRow = container.querySelectorAll('tbody tr')[0] as HTMLElement
+    await act(async () => {
+      firstRow.click()
+    })
+
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/propiedades/prop-1/candidatos')
+  })
+
+  it('renders the empty state when there are no applications', async () => {
+    getAllCandidatesMock.mockResolvedValue({
+      candidates: [],
+      total: 0,
+      stats: { total: 0, pending: 0, approved: 0, rejected: 0 },
+    })
 
     await renderPage()
 
@@ -187,8 +274,7 @@ describe('PostulacionesPage — agency present', () => {
   })
 
   it('renders the error state when the service rejects', async () => {
-    _agency = { id: 'agency-test' }
-    fetchMock.mockRejectedValue(new Error('boom'))
+    getAllCandidatesMock.mockRejectedValue(new Error('boom'))
 
     await renderPage()
 

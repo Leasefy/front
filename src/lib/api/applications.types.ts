@@ -187,6 +187,24 @@ export interface LandlordCandidate {
   privateNote?: string | null;
 }
 
+/** Item of GET /landlord/candidates — candidate plus its property context */
+export interface AllCandidatesItem extends LandlordCandidate {
+  propertyId: string;
+  propertyTitle: string;
+}
+
+/** Shape returned by GET /landlord/candidates */
+export interface AllCandidatesResponse {
+  candidates: AllCandidatesItem[];
+  total: number;
+  stats: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
+}
+
 export interface LandlordApplicationDocument {
   id: string;
   type: string;

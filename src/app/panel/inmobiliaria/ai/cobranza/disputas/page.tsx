@@ -26,7 +26,6 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-  ArrowClockwise,
   CheckCircle,
   Scales,
   ShieldWarning,
@@ -34,7 +33,7 @@ import {
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAuth } from '@/lib/auth'
-import { useI18n } from '@/lib/i18n'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Input } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
@@ -401,14 +400,14 @@ function ResolverDisputaModal({
 // ── Contenido ────────────────────────────────────────────────────────────────
 
 function DisputasContent() {
-  const { locale } = useI18n()
   const { user: authUser } = useAuth()
-  const isEs = locale.startsWith('es')
 
   // Filtro server-side por estado (el endpoint soporta ?status).
   const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
   const { disputes, isLoading, error, refetch, openDispute, resolveDispute } =
     useDisputes(filtro === 'todas' ? {} : { status: filtro })
+
+  useAutoRefresh(refetch)
 
   const [abrirOpen, setAbrirOpen] = useState(false)
   const [resolviendo, setResolviendo] = useState<CobranzaDispute | null>(null)
@@ -473,16 +472,6 @@ function DisputasContent() {
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          aria-label={isEs ? 'Actualizar' : 'Refresh'}
-        >
-          <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
-          {isEs ? 'Actualizar' : 'Refresh'}
-        </Button>
         <Button
           size="sm"
           hideArrow

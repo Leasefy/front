@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
+import { ChatThread } from '@/components/messages/ChatThread';
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
@@ -901,6 +902,12 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 ))}
               </div>
             )}
+          </section>
+
+          {/* Messages — chat with the candidate without leaving the drawer */}
+          <section className="space-y-3">
+            <h3 className="font-semibold text-sm text-foreground">Mensajes</h3>
+            <ChatThread applicationId={candidate.id} />
           </section>
 
           {/* Actions */}

@@ -18,7 +18,6 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowClockwise,
   CheckCircle,
   Clock,
   Warning,
@@ -26,6 +25,7 @@ import {
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
 import { Chip } from '@leasefy/cadence'
@@ -210,8 +210,10 @@ function PendienteCard({ item }: { item: PendienteItem }) {
 // ── Página ───────────────────────────────────────────────────────────────────
 
 function PendientesContent() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const { items, counts, isLoading, error, refetch } = usePendientes()
+
+  useAutoRefresh(refetch)
 
   const [grupoFilter, setGrupoFilter] = useState<PendienteGrupo | null>(null)
 
@@ -268,17 +270,6 @@ function PendientesContent() {
             {t(`${NS}.desc`)}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          aria-label="refresh"
-          className="shrink-0"
-        >
-          <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
-          {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </Button>
       </header>
 
       {/* Error total — solo cuando ninguna fuente rindió datos */}

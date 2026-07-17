@@ -12,6 +12,11 @@ import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
+import { settingsApi } from '@/lib/api/settings.service';
+import { getSupabase } from '@/lib/supabase/client';
+import { useLeases, useMyPaymentRequests } from '@/lib/hooks/useLeases';
 
 // Setup steps definition
 interface SetupStep {
@@ -28,7 +33,8 @@ type EditingSection = 'avatar' | 'personal' | 'emergency' | null;
 
 export default function PerfilPage() {
   const { t, locale } = useI18n();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
+  const router = useRouter();
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState<string | null>(null);
@@ -39,19 +45,34 @@ export default function PerfilPage() {
 
   // Avatar upload state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
+  // Form state — sourced from auth context, Colombian demo fallbacks.
+  // When a user.* field is undefined the input shows empty/placeholder (honest),
+  // never a leftover Chilean literal.
   const [formData, setFormData] = useState({
-    name: user?.name || 'María González',
-    email: user?.email || 'tenant@example.com',
-    phone: '+56 9 1234 5678',
-    rut: '12.345.678-9',
-    address: 'Av. Providencia 1234, Providencia',
-    birthDate: '1990-05-15',
-    emergencyContact: 'Juan González - +56 9 8765 4321',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '+57 300 123 4567',
+    rut: user?.rut || '1.020.345.678',
+    address: user?.address || 'Cra. 7 #71-21, Bogotá',
+    birthDate: user?.birthDate || '',
+    emergencyContactName: user?.emergencyContactName || '',
+    emergencyContactPhone: user?.emergencyContactPhone || '',
   });
+
+  // Display helpers for the single-field UI (name + emergency contact)
+  const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || (locale === 'es' ? 'Inquilino' : 'Tenant');
+  const emergencyContactDisplay = [formData.emergencyContactName, formData.emergencyContactPhone].filter(Boolean).join(' - ');
+
+  // Real identity stats — derived from the tenant's own data, never fabricated.
+  const { getActive, isLoading: leasesLoading } = useLeases();
+  const { requests, isLoading: paymentsLoading } = useMyPaymentRequests();
+  const activeLeaseCount = getActive().length;
+  const approvedPaymentCount = requests.filter((r) => r.status === 'APPROVED').length;
 
   // Setup steps with completion status
   const setupSteps: SetupStep[] = [
@@ -101,28 +122,62 @@ export default function PerfilPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Single "Nombre completo" input → split into firstName / lastName
+  const handleNameChange = (value: string) => {
+    const parts = value.trim().split(/\s+/);
+    const firstName = parts.shift() ?? '';
+    const lastName = parts.join(' ');
+    setFormData(prev => ({ ...prev, firstName, lastName }));
+  };
+
+  // Single "Nombre - Teléfono" input → split into name / phone parts
+  const handleEmergencyContactChange = (value: string) => {
+    const [name, ...rest] = value.split(' - ');
+    setFormData(prev => ({
+      ...prev,
+      emergencyContactName: (name ?? '').trim(),
+      emergencyContactPhone: rest.join(' - ').trim(),
+    }));
+  };
+
   // Saved avatar URL (persists after saving)
   const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
 
   const handleSave = async (section: EditingSection) => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // If saving avatar section, preserve the uploaded image
-    if (section === 'avatar' && avatarPreview) {
-      setSavedAvatar(avatarPreview);
+    try {
+      if (section === 'avatar' && avatarFile) {
+        const { url } = await settingsApi.uploadAvatar(avatarFile);
+        setSavedAvatar(url);
+        setAvatarFile(null);
+      } else if (section === 'personal') {
+        await updateProfile({
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phone: formData.phone.trim() || undefined,
+          address: formData.address.trim() || undefined,
+          birthDate: formData.birthDate || undefined,
+        });
+      } else if (section === 'emergency') {
+        await updateProfile({
+          emergencyContactName: formData.emergencyContactName.trim() || undefined,
+          emergencyContactPhone: formData.emergencyContactPhone.trim() || undefined,
+        });
+      }
+      setEditingSection(null);
+      toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
+    } catch {
+      toast.error(locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    setEditingSection(null);
-    // Don't clear avatarPreview here - it will be cleared by handleCancelEdit if user cancels
-    toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
   };
 
   const handleCancelEdit = () => {
     setEditingSection(null);
-    // Reset avatar preview if cancelling avatar edit
+    // Reset avatar selection if cancelling avatar edit
     setAvatarPreview(null);
+    setAvatarFile(null);
   };
 
   // Avatar upload handlers
@@ -148,7 +203,8 @@ export default function PerfilPage() {
       toast.error(locale === 'es' ? 'La imagen debe ser menor a 5MB' : 'Image must be less than 5MB');
       return;
     }
-    // Create preview URL
+    // Keep the real File for the multipart upload; the preview is display-only
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       setAvatarPreview(e.target?.result as string);
@@ -177,6 +233,7 @@ export default function PerfilPage() {
 
   const handleRemoveAvatar = () => {
     setAvatarPreview(null);
+    setAvatarFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -204,16 +261,23 @@ export default function PerfilPage() {
     if (deleteConfirmText !== requiredText) return;
 
     setIsDeleting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDeleting(false);
-    setDeleteStep(3);
-
-    // In real implementation, would redirect to logout/goodbye page
-    setTimeout(() => {
-      toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      handleCloseDeleteModal();
-    }, 2000);
+    try {
+      // Real, irreversible deletion (soft-delete + sign-out). Never show the
+      // success step without a persisted backend effect (Ley 1581 / ARCO).
+      await settingsApi.deleteAccount();
+      const supabase = getSupabase();
+      if (supabase) await supabase.auth.signOut();
+      setIsDeleting(false);
+      setDeleteStep(3);
+      setTimeout(() => {
+        toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
+        handleCloseDeleteModal();
+        router.push('/');
+      }, 1500);
+    } catch (err) {
+      setIsDeleting(false);
+      toast.error((err as Error)?.message || (locale === 'es' ? 'Error al eliminar cuenta' : 'Error deleting account'));
+    }
   };
 
   return (
@@ -428,7 +492,7 @@ export default function PerfilPage() {
                       />
                     ) : (
                       <div className="w-full h-full bg-surface dark:bg-[#1A40FF] flex items-center justify-center text-fg dark:text-white uppercase tracking-wide font-mono font-bold text-4xl">
-                        {formData.name.charAt(0).toUpperCase()}
+                        {fullName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -510,16 +574,13 @@ export default function PerfilPage() {
                 {editingSection === 'avatar' ? (
                   <Input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    value={fullName}
+                    onChange={(e) => handleNameChange(e.target.value)}
                     className="w-full text-lg font-semibold rounded-md bg-surface dark:bg-surface/5"
                   />
                 ) : (
-                  <h2 className="text-xl font-semibold text-fg dark:text-white">{formData.name}</h2>
+                  <h2 className="text-xl font-semibold text-fg dark:text-white">{fullName}</h2>
                 )}
-                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
-                  {locale === 'es' ? 'Inquilino desde Enero 2024' : 'Tenant since January 2024'}
-                </p>
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
                 {editingSection === 'avatar' && (
@@ -548,17 +609,26 @@ export default function PerfilPage() {
                   </div>
                 )}
 
-                {/* Quick Stats */}
+                {/* Quick Stats — derived from real tenant data (no fabricated counts) */}
                 <div className="mt-6 pt-6 border-t border-border-faint dark:border-white/10 space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
                       <Buildings className="w-5 h-5 text-[#2C7A53] dark:text-[#3EAE70]" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-fg dark:text-white">
-                        {locale === 'es' ? '1 Arriendo activo' : '1 Active rental'}
+                      {leasesLoading ? (
+                        <Skeleton className="h-4 w-32" />
+                      ) : (
+                        <p className="text-sm font-medium text-fg dark:text-white">
+                          <span className="font-mono tabular-nums">{activeLeaseCount}</span>{' '}
+                          {locale === 'es'
+                            ? (activeLeaseCount === 1 ? 'Arriendo activo' : 'Arriendos activos')
+                            : (activeLeaseCount === 1 ? 'Active rental' : 'Active rentals')}
+                        </p>
+                      )}
+                      <p className="text-xs text-fg-muted dark:text-fg-subtle">
+                        {locale === 'es' ? 'Contratos vigentes' : 'Current leases'}
                       </p>
-                      <p className="text-xs text-fg-muted dark:text-fg-subtle">Departamento Providencia</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -566,11 +636,18 @@ export default function PerfilPage() {
                       <FileText className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-fg dark:text-white">
-                        {locale === 'es' ? '12 Pagos realizados' : '12 Payments made'}
-                      </p>
+                      {paymentsLoading ? (
+                        <Skeleton className="h-4 w-32" />
+                      ) : (
+                        <p className="text-sm font-medium text-fg dark:text-white">
+                          <span className="font-mono tabular-nums">{approvedPaymentCount}</span>{' '}
+                          {locale === 'es'
+                            ? (approvedPaymentCount === 1 ? 'Pago realizado' : 'Pagos realizados')
+                            : (approvedPaymentCount === 1 ? 'Payment made' : 'Payments made')}
+                        </p>
+                      )}
                       <p className="text-xs text-fg-muted dark:text-fg-subtle">
-                        {locale === 'es' ? '100% a tiempo' : '100% on time'}
+                        {locale === 'es' ? 'Pagos aprobados' : 'Approved payments'}
                       </p>
                     </div>
                   </div>
@@ -671,21 +748,21 @@ export default function PerfilPage() {
                   {editingSection === 'personal' ? (
                     <Input
                       type="text"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      value={fullName}
+                      onChange={(e) => handleNameChange(e.target.value)}
                       className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     />
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
                       <User className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
-                      <span className="text-sm text-fg dark:text-white">{formData.name}</span>
+                      <span className="text-sm text-fg dark:text-white">{fullName}</span>
                     </div>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
-                    {t('profile.idNumber')}
+                    {t('landlordProfile.fields.cedula')}
                   </label>
                   <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
                     <Shield className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
@@ -746,11 +823,13 @@ export default function PerfilPage() {
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
                       <Calendar className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
                       <span className="text-sm text-fg dark:text-white">
-                        {new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
+                        {formData.birthDate
+                          ? new Date(formData.birthDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : (locale === 'es' ? 'Sin especificar' : 'Not set')}
                       </span>
                     </div>
                   )}
@@ -825,15 +904,15 @@ export default function PerfilPage() {
                 {editingSection === 'emergency' ? (
                   <Input
                     type="text"
-                    value={formData.emergencyContact}
-                    onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
+                    value={emergencyContactDisplay}
+                    onChange={(e) => handleEmergencyContactChange(e.target.value)}
                     className="w-full rounded-xl bg-surface dark:bg-surface/5"
                     placeholder={locale === 'es' ? 'Nombre - Teléfono' : 'Name - Phone'}
                   />
                 ) : (
                   <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted dark:bg-surface/5 rounded-xl">
                     <UserPlus className="w-4 h-4 text-fg-subtle dark:text-fg-muted" />
-                    <span className="text-sm text-fg dark:text-white">{formData.emergencyContact}</span>
+                    <span className="text-sm text-fg dark:text-white">{emergencyContactDisplay}</span>
                   </div>
                 )}
               </div>
@@ -908,11 +987,11 @@ export default function PerfilPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-fg dark:text-fg-subtle mb-2">
-                  {locale === 'es' ? 'Ingreso mensual (CLP)' : 'Monthly income (CLP)'}
+                  {locale === 'es' ? 'Ingreso mensual (COP)' : 'Monthly income (COP)'}
                 </label>
                 <Input
                   type="text"
-                  placeholder={locale === 'es' ? 'Ej: $1.500.000' : 'E.g.: $1,500,000'}
+                  placeholder={locale === 'es' ? 'Ej: $2.500.000' : 'E.g.: $2,500,000'}
                   className="w-full rounded-xl bg-surface dark:bg-surface/5"
                 />
               </div>
@@ -1010,22 +1089,24 @@ export default function PerfilPage() {
                     </ul>
                   </div>
 
-                  {/* Active lease warning */}
-                  <div className="p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 mb-6">
-                    <div className="flex items-start gap-3">
-                      <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
-                          {locale === 'es' ? 'Tienes un arriendo activo' : 'You have an active rental'}
-                        </p>
-                        <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-0.5">
-                          {locale === 'es'
-                            ? 'Eliminar tu cuenta no cancela tu contrato de arriendo vigente. Deberás contactar a tu arrendador.'
-                            : 'Deleting your account does not cancel your current lease agreement. You will need to contact your landlord.'}
-                        </p>
+                  {/* Active lease warning — only when the tenant actually has one */}
+                  {activeLeaseCount > 0 && (
+                    <div className="p-4 rounded-xl bg-[#F8F0E0] dark:bg-[#B7791F]/15 border border-[#B7791F]/30 dark:border-[#B7791F]/40 mb-6">
+                      <div className="flex items-start gap-3">
+                        <WarningCircle className="w-5 h-5 text-[#B7791F] dark:text-[#D2992F] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-[#B7791F] dark:text-[#D2992F]">
+                            {locale === 'es' ? 'Tienes un arriendo activo' : 'You have an active rental'}
+                          </p>
+                          <p className="text-xs text-[#B7791F] dark:text-[#D2992F] mt-0.5">
+                            {locale === 'es'
+                              ? 'Eliminar tu cuenta no cancela tu contrato de arriendo vigente. Deberás contactar a tu arrendador.'
+                              : 'Deleting your account does not cancel your current lease agreement. You will need to contact your landlord.'}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Buttons */}
                   <div className="flex gap-3">

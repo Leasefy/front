@@ -44,13 +44,17 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 **Depends on**: Nothing (fase de fundación)
 **Requirements**: BASE-01, BASE-02, BASE-03, BASE-04, PAGO-01
 **Success Criteria** (what must be TRUE):
-  1. El dashboard `/inquilino` muestra el arriendo activo, el próximo pago (fecha + monto) y los casos abiertos con data real del lease, sin los arrays hardcodeados vacíos (`TODO(Backend)`) (BASE-01, PAGO-01).
+  1. El dashboard `/inquilino` muestra el arriendo activo y el próximo pago (fecha + monto) con data real del lease, sin los arrays hardcodeados vacíos (`TODO(Backend)`); los **casos abiertos** quedan como placeholder honesto (sin conteo fabricado) — su data real llega en v7-03, no se entrega en v7-01 (BASE-01, PAGO-01).
   2. El estado de cuenta (saldo vigente + próximo pago) traza a `tenant-payment-requests`/lease como única fuente de verdad — no computa su propio número — y sin dark patterns/guilt-tripping en mora (PAGO-01).
   3. El perfil del inquilino carga y guarda vía API real con datos de Colombia (cédula, `+57`), eliminando los datos chilenos mock (RUT, `+56`) (BASE-02).
   4. La configuración ejecuta acciones reales donde existe backend o muestra empty-state honesto, eliminando el `setTimeout` theater (password/sesiones/descargar/borrar) (BASE-03).
   5. La navegación del layout expone Notificaciones/Perfil/Configuración y el dead code (`TenantDashboardSidebar.tsx`) queda eliminado (BASE-04).
-**External deps**: NestJS perfil get/update endpoint; endpoints de config (password/sesiones). Frontend-first: donde el backend no exista, entra el contrato api-client + empty-state honesto. La data del lease (arriendo/próximo pago/casos) **ya es real** hoy — esta fase la cablea al dashboard.
-**Plans**: TBD
+**External deps**: NestJS perfil get/update endpoint; endpoints de config (password/sesiones). Frontend-first: donde el backend no exista, entra el contrato api-client + empty-state honesto. La data del lease (arriendo/próximo pago/casos) **ya es real** hoy — esta fase la cablea al dashboard. **Nota (recon):** perfil get/update, password, data-export, delete y notif-prefs **ya existen y están cableados** al service layer — solo `active sessions` es gap real (empty-state honesto). Cases aggregation = forward-ref a v7-03 (no fabricar conteo).
+**Plans**: 4 plans
+- [ ] v7-01-01-PLAN.md — Dashboard + estado de cuenta con data real (lease/payment-info) + fix status hardcodeado (BASE-01, PAGO-01)
+- [ ] v7-01-02-PLAN.md — Perfil Colombia real (seed de `user`, `updateProfile`, delete ARCO; cédula/+57/es-CO/COP) (BASE-02)
+- [ ] v7-01-03-PLAN.md — Config acciones reales (password/export/delete/notif) + sessions honesto (BASE-03)
+- [ ] v7-01-04-PLAN.md — Nav expone Notif/Perfil/Config + badge real + borra `TenantDashboardSidebar.tsx` (BASE-04)
 **UI hint**: yes
 
 ### v7-02: Documentos del Arriendo
@@ -151,7 +155,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| v7-01. Fundación & Limpieza | v7.0 | 0/TBD | Not started | - |
+| v7-01. Fundación & Limpieza | v7.0 | 0/4 | Not started | - |
 | v7-02. Documentos del Arriendo | v7.0 | 0/TBD | Not started | - |
 | v7-03. Estado de Casos (Hub) | v7.0 | 0/TBD | Not started | - |
 | v7-04. Pagos Reales (Wompi) | v7.0 | 0/TBD | Not started | - |

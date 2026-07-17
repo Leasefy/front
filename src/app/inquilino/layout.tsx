@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, Bell, UserCircle, Gear } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantProfileContext';
+import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,7 @@ const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
  */
 function useTenantNavItems() {
   const { t, locale } = useI18n();
+  const { unreadCount } = useUnreadMessages();
 
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
@@ -33,7 +35,12 @@ function useTenantNavItems() {
     { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },
     { label: t('nav.payments'), href: '/inquilino/pagos', icon: CreditCard },
     { label: t('nav.documents'), href: '/inquilino/documentos', icon: FileText },
-    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: 2 },
+    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: unreadCount > 0 ? unreadCount : undefined },
+    // Notificaciones has no i18n key in the tenant nav dict, so use the literal
+    // locale form already used above for "Explorar" (t() would render the raw key).
+    { label: locale === 'es' ? 'Notificaciones' : 'Notifications', href: '/inquilino/notificaciones', icon: Bell },
+    { label: t('nav.profile'), href: '/inquilino/perfil', icon: UserCircle },
+    { label: t('nav.settings'), href: '/inquilino/configuracion', icon: Gear },
   ];
 }
 

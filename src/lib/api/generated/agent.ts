@@ -738,7 +738,7 @@ export interface paths {
         put?: never;
         /**
          * Onboarding step 3: payment provider + sealed credentials
-         * @description PUBLIC route — magic-link token IS the auth surface. Stores the provider name in draft.paymentProvider and a SEALED envelope of the credentials in draft.paymentCredentialsEncrypted (T-15-07 interim base64; KMS AES-256-GCM seal at /onboarding/complete). Raw credentials are NEVER logged or echoed back to the client.
+         * @description PUBLIC route — magic-link token IS the auth surface. Stores the provider name in draft.paymentProvider and a SEALED envelope of the credentials in draft.paymentCredentialsEncrypted (T-15-07 interim base64; KMS AES-256-GCM seal at /onboarding/complete). Raw credentials are NEVER logged or echoed back to the client. Accepts either the credentials body OR `{ skip: true }` — an inmobiliaria may finish onboarding without a payment gateway and configure one later from the dashboard; draft.paymentProviderSkipped=true is recorded instead.
          */
         post: {
             parameters: {
@@ -751,7 +751,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["OnboardingPaymentProviderRequest"];
+                    "application/json": components["schemas"]["OnboardingPaymentProviderSkipRequest"] | components["schemas"]["OnboardingPaymentProviderRequest"];
                 };
             };
             responses: {
@@ -1445,7 +1445,7 @@ export interface paths {
         put?: never;
         /**
          * JWT onboarding wizard step 3: payment provider + sealed credentials
-         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/payment-provider via the payment-provider-core step handler. Raw credentials are NEVER logged or echoed back to the client.
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/payment-provider via the payment-provider-core step handler. Raw credentials are NEVER logged or echoed back to the client. Accepts either the credentials body OR `{ skip: true }` — an inmobiliaria may finish onboarding without a payment gateway and configure one later from the dashboard; draft.paymentProviderSkipped=true is recorded instead.
          */
         post: {
             parameters: {
@@ -1458,7 +1458,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["OnboardingSessionPaymentProviderRequest"];
+                    "application/json": components["schemas"]["OnboardingSessionPaymentProviderSkipRequest"] | components["schemas"]["OnboardingSessionPaymentProviderRequest"];
                 };
             };
             responses: {
@@ -6658,6 +6658,10 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        OnboardingPaymentProviderSkipRequest: {
+            /** @enum {boolean} */
+            skip: true;
+        };
         OnboardingPaymentCredentials: {
             /** @example pub_prod_xxx (NEVER LOGGED) */
             apiKey: string;
@@ -6843,6 +6847,12 @@ export interface components {
             draft: {
                 [key: string]: unknown;
             };
+        };
+        OnboardingSessionPaymentProviderSkipRequest: {
+            /** @enum {boolean} */
+            skip: true;
+            /** Format: uuid */
+            tenantId?: string;
         };
         OnboardingSessionPaymentCredentials: {
             apiKey: string;

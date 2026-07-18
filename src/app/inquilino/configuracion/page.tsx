@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth';
 import { settingsApi } from '@/lib/api/settings.service';
+import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
@@ -158,9 +159,12 @@ export default function ConfiguracionPage() {
     toast.success('Se te enviará un correo con tus datos en las próximas 24 horas');
   };
 
+  // Canonical deletion strings (single source of truth for all five flows).
+  const deletionCopy = accountDeletionCopy(locale);
+
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'ELIMINAR') {
-      toast.error('Escribe ELIMINAR para confirmar');
+    if (deleteConfirmText !== deletionCopy.confirmWord) {
+      toast.error(deletionCopy.confirmInstruction);
       return;
     }
     setIsLoading(true);
@@ -170,11 +174,7 @@ export default function ConfiguracionPage() {
       await settingsApi.deleteAccount();
       setIsLoading(false);
       setShowDeleteModal(false);
-      toast.success(
-        locale === 'es'
-          ? 'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.'
-          : 'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.',
-      );
+      toast.success(deletionCopy.successToast);
       // Let the user read the message, then clear the session and leave.
       setTimeout(() => {
         void signOut();
@@ -184,7 +184,7 @@ export default function ConfiguracionPage() {
       setIsLoading(false);
       const message = err instanceof Error && err.message
         ? err.message
-        : (locale === 'es' ? 'No se pudo eliminar la cuenta' : 'Could not delete the account');
+        : deletionCopy.errorFallback;
       toast.error(message);
     }
   };
@@ -605,31 +605,29 @@ export default function ConfiguracionPage() {
       </Modal>
 
       {/* Delete Account Modal */}
-      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar cuenta">
+      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={deletionCopy.modalTitle}>
         <div className="space-y-4">
           <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex gap-3">
             <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
               <Warning className="w-5 h-5 text-danger" />
             </div>
             <div>
-              <p className="text-sm font-medium text-danger">Eliminarás tu cuenta y todos tus datos</p>
+              <p className="text-sm font-medium text-danger">{deletionCopy.warningTitle}</p>
               <p className="text-xs text-danger mt-1">
-                Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados.
-                Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese
-                plazo, se recuperará automáticamente con todos tus datos.
+                {deletionCopy.warningBody}
               </p>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-fg mb-2">
-              Escribe <span className="font-bold text-danger">ELIMINAR</span> para confirmar
+              {deletionCopy.confirmShortPrefix} <span className="font-bold text-danger">{deletionCopy.confirmWord}</span> {deletionCopy.confirmShortSuffix}
             </label>
             <Input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               className="w-full h-12 rounded-xl bg-surface focus-visible:border-danger/30 focus-visible:ring-danger/20"
-              placeholder="ELIMINAR"
+              placeholder={deletionCopy.inputPlaceholder}
             />
           </div>
           <div className="flex gap-3 pt-2">
@@ -649,11 +647,11 @@ export default function ConfiguracionPage() {
               hideArrow
               isLoading={isLoading}
               onClick={handleDeleteAccount}
-              disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
+              disabled={isLoading || deleteConfirmText !== deletionCopy.confirmWord}
               className="flex-1"
             >
               {!isLoading && <TrashSimple className="w-4 h-4" />}
-              {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}
+              {isLoading ? deletionCopy.deleting : deletionCopy.deleteButton}
             </Button>
           </div>
         </div>

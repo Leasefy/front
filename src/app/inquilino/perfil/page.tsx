@@ -15,6 +15,7 @@ import {
   type ProfileFormData,
 } from './profile-form';
 import { settingsApi } from '@/lib/api/settings.service';
+import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { PreferencesSection } from './PreferencesSection';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -244,9 +245,11 @@ export default function PerfilPage() {
     setIsDeleting(false);
   };
 
+  // Canonical deletion strings (single source of truth for all five flows).
+  const deletionCopy = accountDeletionCopy(locale);
+
   const handleDeleteAccount = async () => {
-    const requiredText = locale === 'es' ? 'ELIMINAR' : 'DELETE';
-    if (deleteConfirmText !== requiredText) return;
+    if (deleteConfirmText !== deletionCopy.confirmWord) return;
 
     setIsDeleting(true);
     try {
@@ -261,7 +264,7 @@ export default function PerfilPage() {
       setIsDeleting(false);
       const message = err instanceof Error && err.message
         ? err.message
-        : (locale === 'es' ? 'No se pudo eliminar la cuenta' : 'Could not delete the account');
+        : deletionCopy.errorFallback;
       toast.error(message);
     }
   };
@@ -937,10 +940,10 @@ export default function PerfilPage() {
                     <Warning className="w-8 h-8 text-danger" />
                   </div>
                   <h3 className="text-xl font-semibold text-danger">
-                    {locale === 'es' ? '¿Eliminar tu cuenta?' : 'Delete your account?'}
+                    {deletionCopy.warningTitle}
                   </h3>
                   <p className="text-sm text-danger mt-1">
-                    {locale === 'es' ? 'Esta acción es permanente e irreversible' : 'This action is permanent and irreversible'}
+                    {deletionCopy.recovery}
                   </p>
                 </div>
 
@@ -1030,26 +1033,16 @@ export default function PerfilPage() {
 
                 <div className="p-6">
                   <p className="text-sm text-fg-muted mb-4">
-                    {locale === 'es' ? (
-                      <>
-                        Para confirmar la eliminación de tu cuenta, escribe{' '}
-                        <span className="font-mono font-semibold text-danger">ELIMINAR</span>{' '}
-                        en el campo de abajo:
-                      </>
-                    ) : (
-                      <>
-                        To confirm account deletion, type{' '}
-                        <span className="font-mono font-semibold text-danger">DELETE</span>{' '}
-                        in the field below:
-                      </>
-                    )}
+                    {deletionCopy.confirmInstructionPrefix}{' '}
+                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    {deletionCopy.confirmInstructionSuffix}
                   </p>
 
                   <Input
                     type="text"
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-                    placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
+                    placeholder={deletionCopy.inputPlaceholder}
                     className="w-full rounded-xl bg-surface-muted font-mono text-center tracking-widest focus-visible:border-danger/30 focus-visible:ring-danger/20"
                   />
 
@@ -1067,12 +1060,10 @@ export default function PerfilPage() {
                       hideArrow
                       isLoading={isDeleting}
                       onClick={handleDeleteAccount}
-                      disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
+                      disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
                       className="flex-1 rounded-full"
                     >
-                      {isDeleting
-                        ? (locale === 'es' ? 'Eliminando...' : 'Deleting...')
-                        : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
+                      {isDeleting ? deletionCopy.deleting : deletionCopy.deleteButton}
                     </Button>
                   </div>
                 </div>
@@ -1086,12 +1077,10 @@ export default function PerfilPage() {
                   <CheckCircle className="w-8 h-8 text-fg-muted" />
                 </div>
                 <h3 className="text-xl font-semibold text-fg mb-2">
-                  {locale === 'es' ? 'Cuenta eliminada' : 'Account deleted'}
+                  {deletionCopy.goodbyeTitle}
                 </h3>
                 <p className="text-sm text-fg-muted">
-                  {locale === 'es'
-                    ? 'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos. Gracias por usar Leasefy.'
-                    : 'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data. Thank you for using Leasefy.'}
+                  {deletionCopy.goodbyeBody}
                 </p>
               </div>
             )}

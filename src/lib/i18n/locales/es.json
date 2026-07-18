@@ -678,8 +678,8 @@
       },
       "deleteAccount": {
         "title": "Eliminar cuenta",
-        "warning": "Eliminarás tu cuenta y todos tus datos",
-        "warningDesc": "Todos tus datos, propiedades, contratos e historial serán eliminados. Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.",
+        "warning": "¿Eliminar tu cuenta?",
+        "warningDesc": "Todos tus datos, documentos e historial serán eliminados. Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.",
         "typeToConfirm": "Escribe",
         "confirmWord": "ELIMINAR",
         "toConfirm": "para confirmar",

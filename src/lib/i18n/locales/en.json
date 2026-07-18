@@ -678,8 +678,8 @@
       },
       "deleteAccount": {
         "title": "Delete account",
-        "warning": "This will delete your account and all your data",
-        "warningDesc": "All your data, properties, contracts, and history will be deleted. Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.",
+        "warning": "Delete your account?",
+        "warningDesc": "All your data, documents, and history will be deleted. Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.",
         "typeToConfirm": "Type",
         "confirmWord": "DELETE",
         "toConfirm": "to confirm",

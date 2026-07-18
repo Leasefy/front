@@ -20,9 +20,6 @@ export const agencyStepSchema = z.object({
   }),
   primaryContactEmail: z.string().trim().min(1, 'El correo es obligatorio.').email('Ingresa un correo válido.'),
   primaryContactPhone: z.string().trim().min(7, 'Ingresa un teléfono válido.'),
-  billingModel: z.enum(['standard', 'performance', 'hybrid'], {
-    errorMap: () => ({ message: 'Selecciona un modelo de facturación.' }),
-  }),
 })
 
 export type AgencyStepFormValues = z.infer<typeof agencyStepSchema>
@@ -33,16 +30,13 @@ export const AGENCY_STEP_DEFAULT_VALUES: AgencyStepFormValues = {
   address: { calle: '', ciudad: '', departamento: '', codigoPostal: '' },
   primaryContactEmail: '',
   primaryContactPhone: '',
-  billingModel: 'standard',
 }
 
-export const BILLING_MODEL_OPTIONS: { value: AgencyStepFormValues['billingModel']; label: string }[] = [
-  { value: 'standard', label: 'Estándar' },
-  { value: 'performance', label: 'Por desempeño' },
-  { value: 'hybrid', label: 'Híbrido' },
-]
-
-/** Drops the empty-string `codigoPostal` so it's omitted, not sent as `''`. */
+/**
+ * Drops the empty-string `codigoPostal` so it's omitted, not sent as `''`.
+ * `billingModel` is required by the agent contract but no longer user-facing,
+ * so it is always sent as `'standard'`.
+ */
 export function toAgencyRequest(values: AgencyStepFormValues): OnboardingSessionAgencyRequest {
   const { calle, ciudad, departamento, codigoPostal } = values.address
   return {
@@ -56,6 +50,6 @@ export function toAgencyRequest(values: AgencyStepFormValues): OnboardingSession
     },
     primaryContactEmail: values.primaryContactEmail,
     primaryContactPhone: values.primaryContactPhone,
-    billingModel: values.billingModel,
+    billingModel: 'standard',
   }
 }

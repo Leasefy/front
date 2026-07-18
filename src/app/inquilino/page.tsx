@@ -10,6 +10,8 @@ import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { useEvaluation } from '@/lib/hooks/useEvaluation';
+import { useTenantApplications } from '@/lib/hooks/useApplications';
+import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
 import { ScoreCard } from '@/components/tenant/ScoreCard';
@@ -94,21 +96,25 @@ export default function InquilinoPage() {
     setSheetOpen(true);
   };
 
-  // ==========================================================================
-  // TODO (Backend): Replace these with actual API calls
-  // For a new user, these should all be empty
-  // ==========================================================================
-  const activeLeases: any[] = []; // Empty for new users
-  const activeApplications: any[] = []; // Empty for new users
-  const nextPayment: { amount: number; dueDate: string } | null = null; // No payments for new users
-  const primaryLease: { id: string; propertyName: string } | null = null;
-  // ==========================================================================
+  // Real data: applications, leases and next payment come from the backend.
+  const { active: activeApplications, isLoading: applicationsLoading } = useTenantApplications();
+  const { getActive: getActiveLeases, isLoading: leasesLoading } = useLeases();
+  const { getNextPayment } = useMyPayments();
+
+  const activeLeases = getActiveLeases();
+  const nextPaymentRaw = getNextPayment();
+  const nextPayment: { amount: number; dueDate: string } | null = nextPaymentRaw
+    ? { amount: nextPaymentRaw.amount, dueDate: nextPaymentRaw.dueDate }
+    : null;
+  const primaryLease: { id: string; propertyName: string } | null = activeLeases[0]
+    ? { id: activeLeases[0].id, propertyName: activeLeases[0].propertyTitle }
+    : null;
 
   // Featured properties for recommendation (always show)
   const { properties: featuredProperties, isLoading: featuredLoading } = useFeaturedProperties(4);
 
-  // Loading state
-  if (isOnboardingComplete === null) {
+  // Loading state — wait for real data so the "new user" banner doesn't flash
+  if (isOnboardingComplete === null || applicationsLoading || leasesLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
         <Spinner size="lg" />
@@ -195,44 +201,50 @@ export default function InquilinoPage() {
           />
 
           {/* Active Leases */}
-          <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
-              <House className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+          <Link href="/inquilino/arriendo" className="group">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                <House className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+              </div>
+              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
+              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{activeLeases.length}</p>
+              <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+                {activeLeases.length === 0
+                  ? (locale === 'es' ? 'Sin arriendos activos' : 'No active rentals')
+                  : (locale === 'es' ? 'Contratos vigentes' : 'Active contracts')}
+              </p>
             </div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
-            <p className="text-2xl font-bold text-fg dark:text-white">{activeLeases.length}</p>
-            <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
-              {activeLeases.length === 0
-                ? (locale === 'es' ? 'Sin arriendos activos' : 'No active rentals')
-                : (locale === 'es' ? 'Contratos vigentes' : 'Active contracts')}
-            </p>
-          </div>
+          </Link>
 
           {/* Applications */}
-          <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5">
-            <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
-              <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+          <Link href="/inquilino/aplicaciones" className="group">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+              </div>
+              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('nav.applications')}</p>
+              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{activeApplications.length}</p>
+              <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+                {activeApplications.length === 0
+                  ? (locale === 'es' ? 'Sin aplicaciones' : 'No applications')
+                  : (locale === 'es' ? 'En proceso' : 'In progress')}
+              </p>
             </div>
-            <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('nav.applications')}</p>
-            <p className="text-2xl font-bold text-fg dark:text-white">{activeApplications.length}</p>
-            <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
-              {activeApplications.length === 0
-                ? (locale === 'es' ? 'Sin aplicaciones' : 'No applications')
-                : (locale === 'es' ? 'En proceso' : 'In progress')}
-            </p>
-          </div>
+          </Link>
 
           {/* Next Payment or CTA */}
           {nextPayment && primaryLease ? (
-            <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
-                <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+            <Link href="/inquilino/pagos" className="group">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                  <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+                </div>
+                <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('dashboard.nextPayment')}</p>
+                <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">
+                  {i18nFormatCurrency((nextPayment as { amount: number }).amount)}
+                </p>
               </div>
-              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('dashboard.nextPayment')}</p>
-              <p className="text-2xl font-bold text-fg dark:text-white">
-                {i18nFormatCurrency((nextPayment as { amount: number }).amount)}
-              </p>
-            </div>
+            </Link>
           ) : (
             <Link href="/inquilino/explorar" className="group">
               <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">

@@ -31,6 +31,7 @@ import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phospho
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { useDailyReport, useDailyReportHistory, downloadHistoryCsv } from '@/lib/hooks/cobranza/use-daily-report'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -67,6 +68,9 @@ function ReporteViewerContent() {
   }, [])
 
   const { data, isLoading, error, refetch } = useDailyReport()
+
+  useAutoRefresh(refetch)
+
   const { active: thresholds } = useThresholds()
   const {
     items: history,
@@ -163,15 +167,6 @@ function ReporteViewerContent() {
               <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
               {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
             </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            aria-label="refresh"
-          >
-            {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
           </Button>
         </div>
       </div>

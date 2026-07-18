@@ -13,6 +13,7 @@ import {
   DownloadSimple,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import {
   useDispersiones,
   usePropietarios,
@@ -60,12 +61,12 @@ function getCurrentMonth(): string {
  * DispersionesPage - Main page for managing disbursements to property owners
  * Route: /panel/inmobiliaria/dispersiones
  *
- * TODO [BACKEND]: Las dispersiones deben actualizarse en tiempo real.
- * Implementar WebSocket o Server-Sent Events para:
+ * Las dispersiones se auto-refrescan vía useAutoRefresh (30s + focus/visibility).
+ * TODO [BACKEND]: para tiempo real fino, implementar WebSocket o Server-Sent
+ * Events para:
  * - Cambios de estado de dispersiones (pending → processing → completed)
  * - Nuevas dispersiones generadas
  * - Actualizaciones de montos o datos de propietarios
- * El botón "Actualizar" ha sido eliminado - la UI espera datos en tiempo real.
  */
 function DispersionesContent() {
   const { t, locale } = useI18n();
@@ -90,6 +91,8 @@ function DispersionesContent() {
     status: filters.status !== 'all' ? filters.status : undefined,
     propietarioId: filters.propietarioId !== 'all' ? filters.propietarioId : undefined,
   });
+
+  useAutoRefresh(refetchDispersiones);
 
   // Fetch propietarios for dropdown
   const { propietarios } = usePropietarios();

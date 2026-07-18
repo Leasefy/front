@@ -18,10 +18,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowClockwise, CheckCircle, Warning } from '@phosphor-icons/react'
+import { CheckCircle, Warning } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import {
@@ -35,7 +36,7 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Spinner } from '@/components/ui'
+import { Spinner } from '@/components/ui'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -44,6 +45,8 @@ function EscalacionesContent() {
   const { canAccess } = usePermissionsContext()
 
   const { data, isLoading, error, mutate, claim, assign, resolve } = useEscalations()
+
+  useAutoRefresh(mutate)
 
   const hasResolvePerm = canAccess('cobranza', 'resolve-escalation')
   const hasAssignPerm = canAccess('cobranza', 'assign-escalation')
@@ -205,17 +208,6 @@ function EscalacionesContent() {
             </p>
           )}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void mutate()}
-          aria-label="refresh"
-          className="shrink-0"
-        >
-          <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
-          {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </Button>
       </div>
 
       {/* Loading state — DESIGN.md §11 */}

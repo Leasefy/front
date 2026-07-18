@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, ArrowsClockwise, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
+import { User, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { Button, Textarea, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
 import { ErrorState } from '@/components/ui/error-state';
 import { BackButton } from '@leasefy/cadence';
@@ -71,16 +72,16 @@ const ACTION_CONFIG: Record<
 > = {
   preapprove: {
     title: 'Pre-aprobar candidato',
-    label: 'Nota interna (opcional)',
-    placeholder: 'Observaciones internas...',
+    label: 'Mensaje al candidato (opcional)',
+    placeholder: 'Mensaje que verá el candidato...',
     required: false,
     confirmLabel: 'Pre-aprobar',
     confirmVariant: 'default',
   },
   approve: {
     title: 'Aprobar candidato',
-    label: 'Nota interna (opcional)',
-    placeholder: 'Observaciones finales...',
+    label: 'Mensaje al candidato (opcional)',
+    placeholder: 'Mensaje que verá el candidato...',
     required: false,
     confirmLabel: 'Aprobar',
     confirmVariant: 'default',
@@ -349,6 +350,8 @@ function CandidatosContent() {
     fetchData();
   }, [fetchData]);
 
+  useAutoRefresh(fetchData);
+
   const handleAction = useCallback((type: ActionType, candidate: LandlordCandidate) => {
     setActionModal({ type, candidate });
   }, []);
@@ -359,10 +362,10 @@ function CandidatosContent() {
     const id = candidate.id;
     switch (type) {
       case 'preapprove':
-        await landlordApplicationsApi.preapprove(id, text ? { notes: text } : {});
+        await landlordApplicationsApi.preapprove(id, text ? { message: text } : {});
         break;
       case 'approve':
-        await landlordApplicationsApi.approve(id, text ? { notes: text } : {});
+        await landlordApplicationsApi.approve(id, text ? { message: text } : {});
         break;
       case 'reject':
         await landlordApplicationsApi.reject(id, text);
@@ -379,7 +382,8 @@ function CandidatosContent() {
   const preapprovedCount = candidates.filter((c) => c.status === 'PREAPPROVED').length;
   const approvedCount   = candidates.filter((c) => c.status === 'APPROVED').length;
 
-  if (isLoading) {
+  // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
+  if (isLoading && !property) {
     return (
       <div className="flex items-center justify-center py-24">
         <Spinner size="md" />
@@ -413,10 +417,6 @@ function CandidatosContent() {
               </p>
             )}
           </div>
-          <Button variant="outline" hideArrow onClick={fetchData} className="w-fit shrink-0">
-            <ArrowsClockwise className="w-4 h-4" />
-            Actualizar
-          </Button>
         </div>
       </div>
 

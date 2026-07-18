@@ -13,7 +13,7 @@
  * Token count debounced 300ms; thresholds amber ≥80% (1600/2000), rose ≥100% (2000/2000).
  *
  * WA section (only for category='whatsapp'):
- *   Shows Meta submission status pill + last-checked + "Actualizar estado" button.
+ *   Shows Meta submission status pill + last-checked (auto-refreshed via useAutoRefresh).
  *   Rejected templates show a destructive Alert with rejection reason.
  *
  * Security (T-36-10-01): If draft contains unknown {{variable}} tokens (not in
@@ -36,6 +36,7 @@ import {
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templates'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
@@ -425,6 +426,13 @@ function TemplateEditorContent({
     }
   }, [agencyId, template.id, showErrorToast, t])
 
+  // Auto-refresh WA submission status (only meaningful for whatsapp templates).
+  useAutoRefresh(() => {
+    if (template.category === 'whatsapp' && !isRefreshingWa) {
+      void handleRefreshWaStatus()
+    }
+  })
+
   // Live preview — replace known {{var}} with sample values
   const previewText = useMemo(() => {
     return localDraft.replace(/\{\{(\w+)\}\}/g, (_match, varName: string) => {
@@ -603,20 +611,6 @@ function TemplateEditorContent({
                 </span>
               )}
             </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void handleRefreshWaStatus()}
-              disabled={isRefreshingWa}
-              aria-label={`${t('inmobiliaria.ai.templates.updateWaStatus')} ${template.name}`}
-              className="min-h-[44px]"
-            >
-              {isRefreshingWa ? (
-                <Spinner size="sm" variant="current" className="mr-1" />
-              ) : null}
-              {t('inmobiliaria.ai.templates.updateWaStatus')}
-            </Button>
 
             {localWaStatus === 'rejected' && localWaRejectionReason && (
               <Alert variant="destructive">

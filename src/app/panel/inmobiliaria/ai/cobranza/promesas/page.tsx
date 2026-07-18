@@ -28,13 +28,12 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowClockwise,
   Handshake,
   Warning,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { useI18n } from '@/lib/i18n'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
 import { SegmentedControl } from '@leasefy/cadence'
@@ -75,12 +74,12 @@ const ACCION_POR_ESTADO: Record<PromesaEstado, string> = {
 // ── Contenido ────────────────────────────────────────────────────────────────
 
 function PromesasContent() {
-  const { t, locale } = useI18n()
   // Histórico agency-wide (no solo hoy). El backend ya devuelve `derivedStatus`
   // y la PII enmascarada; pedimos sin filtro de estado para filtrar client-side
   // por estado derivado (el SegmentedControl). limit alto = una sola página.
   const { promises, isLoading, error, refetch } = usePromises({ limit: 200 })
-  const isEs = locale.startsWith('es')
+
+  useAutoRefresh(refetch)
 
   const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
 
@@ -125,17 +124,6 @@ function PromesasContent() {
           la acción sugerida. El seguimiento real se hace desde el detalle del deudor.
         </p>
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        hideArrow
-        onClick={() => void refetch()}
-        aria-label={isEs ? 'Actualizar' : 'Refresh'}
-        className="shrink-0"
-      >
-        <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
-        {isEs ? 'Actualizar' : 'Refresh'}
-      </Button>
     </header>
   )
 

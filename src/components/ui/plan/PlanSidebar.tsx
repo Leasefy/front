@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { LeasefyMark, LeasefyLogo } from '@/components/brand';
 import { useAuth } from '@/lib/auth';
@@ -43,6 +43,8 @@ type MobileSidebarListener = () => void;
 const mobileSidebarListeners = new Set<MobileSidebarListener>();
 
 /** Opens the PlanSidebar mobile navigation Sheet (called from PlanHeader). */
+const INVITE_DISMISSED_KEY = 'leasefy-sidebar-invite-dismissed';
+
 export function openPlanMobileSidebar() {
   mobileSidebarListeners.forEach((listener) => listener());
 }
@@ -353,6 +355,25 @@ function SidebarContent({
   const router = useRouter();
   const { user, logout } = useAuth();
 
+  // Dismissible invite card — hidden persists across sessions via localStorage.
+  // Read in an effect (not the initializer) to avoid an SSR hydration mismatch.
+  const [inviteDismissed, setInviteDismissed] = useState(false);
+  useEffect(() => {
+    try {
+      setInviteDismissed(localStorage.getItem(INVITE_DISMISSED_KEY) === '1');
+    } catch {
+      // localStorage unavailable — keep the card visible
+    }
+  }, []);
+  const dismissInvite = () => {
+    setInviteDismissed(true);
+    try {
+      localStorage.setItem(INVITE_DISMISSED_KEY, '1');
+    } catch {
+      // Non-critical: card stays hidden for this session only
+    }
+  };
+
   const isActive = (item: NavItem) => {
     if (item.exact) return pathname === item.href;
     return pathname.startsWith(item.href);
@@ -556,7 +577,19 @@ function SidebarContent({
         </div>
       ) : (
         <div className="px-3 pb-3 space-y-2.5">
-          {showInvite && <SidebarInviteCard onInvite={onInvite} />}
+          {showInvite && !inviteDismissed && (
+            <div className="relative group/invite">
+              <button
+                type="button"
+                onClick={dismissInvite}
+                aria-label="Ocultar tarjeta de invitación"
+                className="absolute top-1.5 right-1.5 z-10 flex items-center justify-center w-5 h-5 rounded-full text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+              <SidebarInviteCard onInvite={onInvite} />
+            </div>
+          )}
           {showUpgrade && (
             <SidebarUpgradeButton
               label={upgradeLabel ?? 'Upgrade'}

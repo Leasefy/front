@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -24,6 +24,7 @@ import {
 import { useTenantApplication } from '@/lib/hooks/useApplications';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { applicationsApi } from '@/lib/api/applications.service';
+import { ChatThread } from '@/components/messages/ChatThread';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 
@@ -141,9 +142,12 @@ export default function ApplicationDetailPage() {
   const { t, locale, formatCurrency } = useI18n();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [copied, setCopied] = useState(false);
   const [confirmWithdrawOpen, setConfirmWithdrawOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  // ?chat=1 (e.g. arriving from a new-message notification) opens the conversation directly.
+  const [showChat, setShowChat] = useState(searchParams.get('chat') === '1');
 
   const applicationId = params.applicationId as string;
   const { application, isLoading, error, refetch } = useTenantApplication(applicationId);
@@ -868,7 +872,7 @@ export default function ApplicationDetailPage() {
 
               <div className="space-y-3">
                 <button
-                  onClick={() => router.push(`/inquilino/mensajes?applicationId=${applicationId}`)}
+                  onClick={() => setShowChat((prev) => !prev)}
                   className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-all group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center group-hover:opacity-90 transition-colors">
@@ -879,10 +883,14 @@ export default function ApplicationDetailPage() {
                       {locale === 'es' ? 'Contactar propietario' : 'Contact landlord'}
                     </p>
                     <p className="text-xs text-fg-muted">
-                      {locale === 'es' ? 'Envía un mensaje' : 'Send a message'}
+                      {locale === 'es'
+                        ? (showChat ? 'Ocultar conversación' : 'Envía un mensaje sin salir de aquí')
+                        : (showChat ? 'Hide conversation' : 'Send a message without leaving')}
                     </p>
                   </div>
                 </button>
+
+                {showChat && <ChatThread applicationId={applicationId} />}
 
                 <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-all group">
                   <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center group-hover:bg-success transition-colors">

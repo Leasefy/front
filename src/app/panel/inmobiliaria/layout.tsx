@@ -46,6 +46,7 @@ import { MobileNavBar } from '@/components/layout/MobileNavBar';
 import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/CommandPaletteContext';
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
+import { useMySubscription } from '@/lib/hooks/useSubscription';
 
 /** Registers the global ⌘K keyboard shortcut for the command palette. */
 function CommandPaletteShortcuts() {
@@ -89,6 +90,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole } = usePermissionsContext();
   const { open: openCommandPalette } = useCommandPalette();
   const router = useRouter();
+  // Upgrade CTA only for the base (starter) tier — paid plans (pro/flex)
+  // hide it. While loading or on error the CTA stays hidden so paying
+  // users never see a flash of "Upgrade".
+  const { subscription } = useMySubscription();
+  const showUpgradeCta = subscription?.planId === 'starter';
 
   // All nav items with their corresponding permission module (null = always visible).
   // Items with children use a helper type that extends NavItem with an optional module field.
@@ -276,7 +282,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         loading={permissionsLoading}
         logo={{
           title: t('inmobiliaria.common.title'),
-          href: '/',
+          href: '/panel/inmobiliaria',
         }}
         // cadence §Navigation: workspace switcher + search-opens-⌘K + footer cards
         workspaceName={t('inmobiliaria.common.title')}
@@ -292,7 +298,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         searchPlaceholder="Buscar"
         showInvite
         onInvite={() => router.push('/panel/inmobiliaria/agentes')}
-        showUpgrade
+        showUpgrade={showUpgradeCta}
         upgradeHref="/panel/inmobiliaria/configuracion"
       />
 

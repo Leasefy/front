@@ -3,8 +3,13 @@
  * Endpoints for fetching, uploading, downloading, and deleting documents
  */
 
-import { apiClient, getAccessToken } from './client';
-import type { BackendDocumentFull, UploadDocumentDto } from './documents.types';
+import { apiClient, getAccessToken, ApiError } from './client';
+import type {
+  BackendDocumentFull,
+  UploadDocumentDto,
+  DocumentSignedUrl,
+  DocumentConsent,
+} from './documents.types';
 import type { BackendDocument } from './applications.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -102,9 +107,58 @@ export const documentsApi = {
     await apiClient.delete(`/documents/${id}`);
   },
 
-  /** Get the download URL for a document */
+  /**
+   * GET /documents/:id/signed-url — short-lived, ownership-checked URL to the
+   * document's bytes. Returns `{ url, expiresAt }` ({@link DocumentSignedUrl}),
+   * modeled 1:1 on `contractsApi.getSignedPdfUrl` ({@link file://src/lib/api/contracts.service.ts}:214).
+   *
+   * This is the anti-IDOR download path: the **backend** mints the URL, verifies
+   * the caller owns the document, and stamps `expiresAt`. The frontend can neither
+   * sign nor ownership-check — so if this endpoint is missing/blocked this throws
+   * (an `ApiError`); it never fabricates a fake signed URL. Callers on
+   * tenant-reachable paths must consume this instead of `getDownloadUrl`.
+   */
+  async getSignedUrl(docId: string): Promise<DocumentSignedUrl> {
+    return apiClient.get<DocumentSignedUrl>(`/documents/${docId}/signed-url`);
+  },
+
+  /**
+   * @deprecated Returns the **raw persistent Supabase URL** (`DocumentItem.url`)
+   * with **no expiry and no server-side ownership check** — an IDOR-shaped
+   * exposure: anyone who obtains the URL can read the bytes indefinitely, and the
+   * URL is guessable/enumerable to the extent the backend's storage path is.
+   *
+   * This is the disclosed DOCU-04 backend gap: FULL IDOR closure requires the
+   * backend to sign `/documents/:id` (see `getSignedUrl`); the frontend alone
+   * CANNOT satisfy "sin IDOR". Kept only for back-compat with non-tenant callers.
+   * Any caller on a tenant-reachable path MUST migrate to `getSignedUrl`.
+   */
   getDownloadUrl(doc: DocumentItem): string {
     // The URL from the backend is already a valid download URL (Supabase storage)
     return doc.url;
+  },
+
+  /**
+   * POST /documents/:id/consent — records the tenant's per-purpose Ley 1581
+   * consent ({@link DocumentConsent}) for SIC audit.
+   *
+   * Best-effort: the authoritative, SIC-audit consent store is **backend-owned**.
+   * If the endpoint is absent (404) or forbidden (403) this degrades to a resolved
+   * no-op rather than blocking the flow — the real, enforcing gate is the
+   * unchecked-default consent UI (v7-02-03), which won't let the user proceed
+   * without ticking `purposeDocAccess`. Any other error is re-thrown so genuine
+   * failures are not swallowed.
+   */
+  async recordConsent(docId: string, consent: DocumentConsent): Promise<void> {
+    try {
+      await apiClient.post<void>(`/documents/${docId}/consent`, consent);
+    } catch (err) {
+      // Missing/blocked endpoint → silent no-op (persistence is a disclosed
+      // backend dependency). Surface everything else.
+      if (err instanceof ApiError && (err.status === 404 || err.status === 403)) {
+        return;
+      }
+      throw err;
+    }
   },
 };

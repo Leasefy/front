@@ -67,7 +67,11 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
   3. El inquilino obtiene su certificado de retención en la fuente (3.5%) auto-generado (DOCU-03).
   4. Cada documento se sirve por URL firmada/expira (sin IDOR), con consentimiento por propósito (checkbox no pre-marcado por propósito) y una acción de borrar (ARCO) funcional — Habeas Data (Ley 1581/2012) (DOCU-04).
 **External deps**: NestJS documents.service.ts lease-scoped + signed/expiring URLs (contrato `useSignedPdfUrl`); auto-generación real de cert. retención → backend (frontend-first: contrato + empty-state). El comprobante/recibo del portal se etiqueta **"comprobante interno"**, no "factura", hasta que exista la FE-DIAN (FACT/M2).
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] v7-02-01-PLAN.md — Docs del arriendo en el hub: contrato firmado (signed hook existente) + recibos ("comprobante interno") + fix es-CL→es-CO (DOCU-01)
+- [ ] v7-02-02-PLAN.md — Backbone Habeas Data: contrato api-client `getSignedUrl`/`useSignedDocUrl` + consent contract; disclosure del gap raw-URL `/documents` (DOCU-04)
+- [ ] v7-02-03-PLAN.md — Hardening de la página: acceso por URL firmada (blob), consent por propósito (unchecked), borrar ARCO con confirm (contrato excluido) (DOCU-04)
+- [ ] v7-02-04-PLAN.md — Paz y salvo + cert. retención 3.5%: contrato api-client + empty-state honesto "Próximamente", sin fabricar (DOCU-02, DOCU-03)
 **UI hint**: yes
 
 ### v7-03: Estado de Casos (Hub — fija P1)
@@ -156,7 +160,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | v7-01. Fundación & Limpieza | v7.0 | 4/4 | Complete | 2026-07-16 |
-| v7-02. Documentos del Arriendo | v7.0 | 0/TBD | Not started | - |
+| v7-02. Documentos del Arriendo | v7.0 | 0/4 | Not started | - |
 | v7-03. Estado de Casos (Hub) | v7.0 | 0/TBD | Not started | - |
 | v7-04. Pagos Reales (Wompi) | v7.0 | 0/TBD | Not started | - |
 | v7-05. Comunicación | v7.0 | 0/TBD | Not started | - |

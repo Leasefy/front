@@ -238,7 +238,8 @@ describe('useTenantCases — pago rows from real payment requests', () => {
     expect(pending.estadoLabel).toBe('En validación');
     expect(pending.tone).toBe('info');
     expect(pending.responsable).toBe('Inmobiliaria');
-    expect(pending.detailLink).toBe('/inquilino/pagos');
+    expect(pending.detailLink).toBe(`/inquilino/casos/${encodeURIComponent(pending.id)}`);
+    expect(pending.sourceLink).toBe('/inquilino/pagos');
   });
 
   it('rejected/disputed rows carry attention tone (never above)', () => {
@@ -304,7 +305,8 @@ describe('useTenantCases — aplicacion rows from real applications', () => {
     const underReview = apps.find((c) => c.id === 'a-1')!;
     expect(underReview.estadoLabel).toBe('En revisión'); // from APPLICATION_STATUS_LABELS
     expect(underReview.tone).toBe('info');
-    expect(underReview.detailLink).toBe('/inquilino/aplicaciones/a-1');
+    expect(underReview.detailLink).toBe(`/inquilino/casos/${encodeURIComponent(underReview.id)}`);
+    expect(underReview.sourceLink).toBe('/inquilino/aplicaciones/a-1');
 
     const needsInfo = apps.find((c) => c.id === 'a-2')!;
     expect(needsInfo.tone).toBe('attention');

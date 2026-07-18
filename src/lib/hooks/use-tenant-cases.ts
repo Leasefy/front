@@ -95,16 +95,18 @@ function paymentRequestToCase(req: BackendTenantPaymentRequest): TenantCase {
     tone: paymentStatusToTone(req.status),
     responsable: RESPONSABLE_INMOBILIARIA,
     updatedAt: req.validatedAt ?? req.updatedAt,
-    detailLink: PAGOS_LINK,
+    // Unified case detail (timeline). sourceLink is the "ver en origen" out-link.
+    detailLink: `/inquilino/casos/${encodeURIComponent(req.id)}`,
     sourceLink: PAGOS_LINK,
     events,
   };
 }
 
 function nextPaymentCase(lease: Lease, month: number, year: number): TenantCase {
+  // Derived from the opaque lease UUID — stable, never a guessable sequence.
+  const id = `proximo-pago:${lease.id}`;
   return {
-    // Derived from the opaque lease UUID — stable, never a guessable sequence.
-    id: `proximo-pago:${lease.id}`,
+    id,
     type: 'pago',
     titulo: `Próximo pago — ${monthLabel(month, year)} ${year}`,
     estadoLabel: 'Por pagar',
@@ -112,7 +114,8 @@ function nextPaymentCase(lease: Lease, month: number, year: number): TenantCase 
     responsable: RESPONSABLE_INMOBILIARIA,
     // Real source timestamp carried by the lease row — nothing fabricated.
     updatedAt: lease.updatedAt,
-    detailLink: PAGOS_LINK,
+    // Unified case detail (timeline). sourceLink is the "ver en origen" out-link.
+    detailLink: `/inquilino/casos/${encodeURIComponent(id)}`,
     sourceLink: PAGOS_LINK,
     events: [],
   };
@@ -138,7 +141,8 @@ function applicationToCase(app: TenantApplicationView): TenantCase {
     tone: applicationStatusToTone(app.status),
     responsable: RESPONSABLE_INMOBILIARIA,
     updatedAt: app.updatedAt,
-    detailLink: `/inquilino/aplicaciones/${app.id}`,
+    // Unified case detail (timeline). sourceLink is the "ver en origen" out-link.
+    detailLink: `/inquilino/casos/${encodeURIComponent(app.id)}`,
     sourceLink: `/inquilino/aplicaciones/${app.id}`,
     events,
   };

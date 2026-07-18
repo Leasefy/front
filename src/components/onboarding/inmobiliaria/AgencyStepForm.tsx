@@ -1,15 +1,13 @@
 'use client'
 
-import { Controller, useForm, type FieldPath } from 'react-hook-form'
+import { useForm, type FieldPath } from 'react-hook-form'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { OnboardingSessionAgencyRequest } from '@/lib/api/generated/agency'
 import {
   AGENCY_STEP_DEFAULT_VALUES,
-  BILLING_MODEL_OPTIONS,
   agencyStepSchema,
   toAgencyRequest,
   type AgencyStepFormValues,
@@ -44,7 +42,6 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
   const {
     register,
     handleSubmit,
-    control,
     setError,
     formState: { errors },
   } = useForm<AgencyStepFormValues>({
@@ -152,31 +149,6 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
           {...register('primaryContactPhone')}
         />
         <FieldError message={errors.primaryContactPhone?.message} />
-      </div>
-
-      <div>
-        <label htmlFor="billingModel" className="block text-sm font-medium text-fg mb-2">
-          Modelo de facturación <span className="text-danger">*</span>
-        </label>
-        <Controller
-          control={control}
-          name="billingModel"
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="billingModel">
-                <SelectValue placeholder="Selecciona un modelo" />
-              </SelectTrigger>
-              <SelectContent>
-                {BILLING_MODEL_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-        <FieldError message={errors.billingModel?.message} />
       </div>
 
       {submitError && (

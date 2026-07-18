@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
@@ -329,6 +329,10 @@ function CandidatosContent() {
   // Permite mostrar "Ver contrato" en vez de "Crear contrato" en la fila correspondiente.
   const { getByApplicationId: getContractByApplicationId } = useContracts();
 
+  // Once content has loaded, background refresh failures must NOT swap the
+  // page for the full ErrorState (silent auto-refresh contract).
+  const hasLoadedRef = useRef(false);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -339,8 +343,11 @@ function CandidatosContent() {
       ]);
       setProperty(propertyData);
       setCandidates(candidatesData);
+      hasLoadedRef.current = true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar los datos');
+      if (!hasLoadedRef.current) {
+        setError(err instanceof Error ? err.message : 'Error al cargar los datos');
+      }
     } finally {
       setIsLoading(false);
     }

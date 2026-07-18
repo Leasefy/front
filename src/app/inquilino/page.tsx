@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, ArrowRight, Lightbulb } from '@phosphor-icons/react';
+import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, ArrowRight, Lightbulb, ClipboardText } from '@phosphor-icons/react';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { useTenantApplications } from '@/lib/hooks/useApplications';
+import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { useEvaluation } from '@/lib/hooks/useEvaluation';
@@ -104,6 +105,8 @@ export default function InquilinoPage() {
   const { getActive, isLoading: leasesLoading } = useLeases();
   const { isLoading: requestsLoading } = useMyPaymentRequests(); // gate honesto del historial
   const { active: activeApplications, isLoading: appsLoading } = useTenantApplications();
+  // Casos abiertos — conteo REAL (proyección de las fuentes ya cargadas). Nunca fabricado.
+  const { openCasesCount, isLoading: casesLoading } = useTenantCases();
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
   const primaryLease = activeLeases[0];
@@ -138,7 +141,8 @@ export default function InquilinoPage() {
     leasesLoading ||
     payInfoLoading ||
     appsLoading ||
-    requestsLoading
+    requestsLoading ||
+    casesLoading
   ) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
@@ -253,7 +257,21 @@ export default function InquilinoPage() {
             </p>
           </div>
 
-          {/* Casos abiertos: hub llega en v7-03 — no fabricar conteo */}
+          {/* Casos abiertos — conteo real (openCasesCount) con deep-link al hub /inquilino/casos */}
+          <Link href="/inquilino/casos" className="group">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                <ClipboardText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+              </div>
+              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Casos' : 'Cases'}</p>
+              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{openCasesCount}</p>
+              <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+                {openCasesCount === 0
+                  ? (locale === 'es' ? 'Sin casos abiertos' : 'No open cases')
+                  : (locale === 'es' ? 'Abiertos' : 'Open')}
+              </p>
+            </div>
+          </Link>
 
           {/* Next Payment or CTA */}
           {nextPayment && primaryLease ? (
